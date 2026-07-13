@@ -1,0 +1,43 @@
+diff --git a/src/modules/realtime/presence.controller.ts b/src/modules/realtime/presence.controller.ts
+--- a/src/modules/realtime/presence.controller.ts
++++ b/src/modules/realtime/presence.controller.ts
+@@ -1,15 +1,28 @@
+ import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+-import { ApiBearerAuth, ApiOkResponse, ApiProperty, ApiTags } from '@nestjs/swagger';
++import { ApiBearerAuth, ApiOkResponse, ApiParam, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+ import { CmsJwtGuard } from '../auth/cms-jwt.guard.js';
+ import { CmsProjectGuard } from '../auth/cms-project.guard.js';
+ import { RealtimeService } from './realtime.service.js';
+ 
++class ActiveConnectionResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) sessionId!: string;
++  @ApiProperty({ enum: ['SOCKET_IO', 'ANY_CABLE'] }) transport!: 'SOCKET_IO' | 'ANY_CABLE';
++  @ApiProperty({ type: String, format: 'date-time' }) connectedAt!: string;
++  @ApiProperty({ type: String, format: 'date-time' }) lastHeartbeatAt!: string;
++}
++
+ class ActiveUserResponseDto {
+   @ApiProperty({ format: 'uuid' }) id!: string;
+   @ApiProperty() externalId!: string;
++  @ApiProperty() isGuest!: boolean;
++  @ApiPropertyOptional({ type: String, nullable: true }) locale!: string | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) segment!: string | null;
++  @ApiProperty({ type: 'object', additionalProperties: true }) profile!: Record<string, unknown>;
++  @ApiProperty({ type: String, format: 'date-time' }) lastSeenAt!: string;
+   @ApiProperty({ enum: ['online'] }) presence!: 'online';
+   @ApiProperty() activeConnectionCount!: number;
+   @ApiProperty() activeSessionCount!: number;
+-  @ApiProperty({ type: 'array', items: { type: 'object', additionalProperties: true } })
+-  connections!: Record<string, unknown>[];
++  @ApiProperty({ type: () => [ActiveConnectionResponseDto] })
++  connections!: ActiveConnectionResponseDto[];
+ }
+@@ -24,6 +37,7 @@ export class PresenceController {
+ 
+   @Get()
+   @ApiOkResponse({ type: ActiveUserResponseDto, isArray: true })
++  @ApiParam({ name: 'projectId', format: 'uuid' })
+   list(@Param('projectId') projectId: string) {
+     return this.realtime.listActiveUsers(projectId);
+   }

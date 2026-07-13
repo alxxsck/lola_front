@@ -1,0 +1,52 @@
+--- /dev/null
++++ b/src/modules/audit/dto/audit-log-response.dto.ts
+@@ -0,0 +1,26 @@
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
++
++export class AuditAdminUserResponseDto {
++  @ApiProperty({ type: String, format: 'uuid' }) id!: string;
++  @ApiProperty({ type: String }) login!: string;
++  @ApiPropertyOptional({ type: String, nullable: true }) displayName!: string | null;
++}
++
++export class AuditLogResponseDto {
++  @ApiProperty({ type: String, format: 'uuid' }) id!: string;
++  @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
++  adminUserId!: string | null;
++  @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true }) projectId!: string | null;
++  @ApiProperty({ type: String, example: 'PATCH /admin/projects/:projectId' }) action!: string;
++  @ApiProperty({ enum: ['SUCCEEDED', 'FAILED'], enumName: 'AuditStatus' })
++  status!: 'SUCCEEDED' | 'FAILED';
++  @ApiPropertyOptional({ type: String, nullable: true }) resourceType!: string | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) resourceId!: string | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) requestId!: string | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) ipAddress!: string | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) userAgent!: string | null;
++  @ApiProperty({ type: 'object', additionalProperties: true }) metadata!: Record<string, unknown>;
++  @ApiProperty({ type: String, format: 'date-time' }) createdAt!: string;
++  @ApiPropertyOptional({ type: AuditAdminUserResponseDto, nullable: true })
++  adminUser!: AuditAdminUserResponseDto | null;
++}
+--- a/src/modules/audit/audit.controller.ts
++++ b/src/modules/audit/audit.controller.ts
+@@ -1,8 +1,9 @@
+ import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
++import { ApiBearerAuth, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+ import { CmsJwtGuard } from '../auth/cms-jwt.guard.js';
+ import { CmsProjectGuard } from '../auth/cms-project.guard.js';
+ import { AuditService } from './audit.service.js';
++import { AuditLogResponseDto } from './dto/audit-log-response.dto.js';
+ 
+ @ApiTags('admin audit')
+ @ApiBearerAuth()
+@@ -12,6 +13,8 @@
+   constructor(private readonly audit: AuditService) {}
+ 
+   @Get()
++  @ApiParam({ name: 'projectId', type: String, format: 'uuid' })
++  @ApiOkResponse({ type: AuditLogResponseDto, isArray: true })
+   list(@Param('projectId') projectId: string) {
+     return this.audit.list(projectId);
+   }
+

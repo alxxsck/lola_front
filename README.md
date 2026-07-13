@@ -1,0 +1,46 @@
+# Lola CMS
+
+Документация графового редактора сценариев: [docs/scenario-graph-editor.ru.md](docs/scenario-graph-editor.ru.md).
+
+Административная SaaS-панель для настройки Lola AI Assistant. Это отдельное Vue 3 приложение, которое работает поверх Lola Backend и не входит в пользовательский SDK.
+
+## Быстрый старт
+
+```bash
+cp .env.example .env
+npm install
+npm run dev
+```
+
+По умолчанию приложение безопасно запускается в `api`-режиме. Demo-данные включаются только явно через `VITE_DATA_MODE=mock`. Для подключения существующего backend:
+
+```env
+VITE_DATA_MODE=api
+VITE_API_BASE_URL=http://localhost:3000/api/v1
+```
+
+CMS авторизуется через пользовательский JWT flow: access token хранится только в памяти, refresh token — в `sessionStorage` текущей вкладки.
+
+## Команды
+
+- `npm run dev` — dev server;
+- `npm run build` — type-check и production build;
+- `npm run typecheck` — TypeScript/Vue проверка;
+- `npm run lint` — ESLint;
+- `npm test` — Vitest.
+
+## Архитектура
+
+Используется FSD-lite без лишних слоёв:
+
+- `app` — bootstrap, router, глобальные стили;
+- `pages` — route-level экраны;
+- `widgets` — каркас приложения;
+- `features` — auth, scenario/live actions и формы;
+- `shared/api` — единый repository boundary для API и demo data;
+- `shared/types` — контракты домена;
+- `shared/lib` — небольшие общие функции.
+
+API-режим подключает авторизацию и существующие CRUD endpoints проектов, UI elements, event definitions, scenarios и users. Функции без backend-контракта остаются только в mock implementation и явно сообщают об отсутствии API.
+
+Полный MVP scope и требуемые backend-контракты описаны в [docs/cms-mvp-spec.md](docs/cms-mvp-spec.md). Матрица покрытия актуального ТЗ перед презентацией — в [docs/cms-coverage-audit.md](docs/cms-coverage-audit.md).

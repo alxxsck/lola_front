@@ -1,0 +1,4973 @@
+{
+  "components": {
+    "schemas": {
+      "ActiveConnectionResponseDto": {
+        "properties": {
+          "connectedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastHeartbeatAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sessionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "transport": {
+            "enum": [
+              "SOCKET_IO",
+              "ANY_CABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sessionId",
+          "transport",
+          "connectedAt",
+          "lastHeartbeatAt"
+        ],
+        "type": "object"
+      },
+      "ActiveUserResponseDto": {
+        "properties": {
+          "activeConnectionCount": {
+            "type": "number"
+          },
+          "activeSessionCount": {
+            "type": "number"
+          },
+          "connections": {
+            "items": {
+              "$ref": "#/components/schemas/ActiveConnectionResponseDto"
+            },
+            "type": "array"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "locale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "presence": {
+            "enum": [
+              "online"
+            ],
+            "type": "string"
+          },
+          "profile": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "segment": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId",
+          "isGuest",
+          "profile",
+          "lastSeenAt",
+          "presence",
+          "activeConnectionCount",
+          "activeSessionCount",
+          "connections"
+        ],
+        "type": "object"
+      },
+      "AdminConversationMessageCountResponseDto": {
+        "properties": {
+          "messages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "AdminConversationMessageResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageRole"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageStatus"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "threadId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "threadId",
+          "role",
+          "status",
+          "text",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AdminConversationMessagesPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminConversationMessageResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "AdminConversationPolicy": {
+        "enum": [
+          "reuse_active",
+          "create_new"
+        ],
+        "type": "string"
+      },
+      "AdminConversationPreviewMessageResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageRole"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "text",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "AdminConversationResponseDto": {
+        "properties": {
+          "_count": {
+            "$ref": "#/components/schemas/AdminConversationMessageCountResponseDto"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/AdminConversationPreviewMessageResponseDto"
+            },
+            "type": "array"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sessionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ThreadStatus"
+              }
+            ]
+          },
+          "title": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "endUserId",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "_count",
+          "messages"
+        ],
+        "type": "object"
+      },
+      "AdminConversationsPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminConversationResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "AdminMessageThreadResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sessionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ThreadStatus"
+              }
+            ]
+          },
+          "title": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "endUserId",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AdminStoredMessageResponseDto": {
+        "properties": {
+          "clientMessageId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "commands": {
+            "items": {},
+            "type": "array"
+          },
+          "content": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "description": "Internal idempotency fingerprint returned by the current service.",
+            "nullable": true,
+            "type": "string"
+          },
+          "inputTokens": {
+            "nullable": true,
+            "type": "number"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "model": {
+            "nullable": true,
+            "type": "string"
+          },
+          "outputTokens": {
+            "nullable": true,
+            "type": "number"
+          },
+          "provider": {
+            "nullable": true,
+            "type": "string"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageRole"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageStatus"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "thread": {
+            "$ref": "#/components/schemas/AdminMessageThreadResponseDto"
+          },
+          "threadId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "threadId",
+          "role",
+          "status",
+          "text",
+          "commands",
+          "metadata",
+          "createdAt",
+          "updatedAt",
+          "thread"
+        ],
+        "type": "object"
+      },
+      "AdminUserResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastLoginAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "login": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "login",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "AuditAdminUserResponseDto": {
+        "properties": {
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "login": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "login"
+        ],
+        "type": "object"
+      },
+      "AuditLogResponseDto": {
+        "properties": {
+          "action": {
+            "example": "PATCH /admin/projects/:projectId",
+            "type": "string"
+          },
+          "adminUser": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuditAdminUserResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "adminUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ipAddress": {
+            "nullable": true,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "requestId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "resourceId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "resourceType": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuditStatus"
+              }
+            ]
+          },
+          "userAgent": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "status",
+          "metadata",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "AuditStatus": {
+        "enum": [
+          "SUCCEEDED",
+          "FAILED"
+        ],
+        "type": "string"
+      },
+      "CmsAuthResponseDto": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "description": "Access token lifetime in seconds.",
+            "type": "number"
+          },
+          "refreshExpiresIn": {
+            "description": "Refresh token lifetime in seconds.",
+            "type": "number"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "example": "Bearer",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AdminUserResponseDto"
+          }
+        },
+        "required": [
+          "tokenType",
+          "accessToken",
+          "expiresIn",
+          "refreshToken",
+          "refreshExpiresIn",
+          "user"
+        ],
+        "type": "object"
+      },
+      "CmsLoginDto": {
+        "properties": {
+          "login": {
+            "example": "owner@example.com",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "password": {
+            "format": "password",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "login",
+          "password"
+        ],
+        "type": "object"
+      },
+      "CompatibilityCreateMessageDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "CompatibilitySessionDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "ConversationStatus": {
+        "enum": [
+          "OPEN",
+          "CLOSED"
+        ],
+        "type": "string"
+      },
+      "CreateConversationDto": {
+        "properties": {
+          "title": {
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CreateCustomerDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "CreateEventDefinitionDto": {
+        "properties": {
+          "code": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "payloadSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "payloadSchema"
+        ],
+        "type": "object"
+      },
+      "CreateGuestSessionDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "CreateInteractionSessionDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "CreateMemberDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRole"
+              }
+            ]
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "CreateProjectDto": {
+        "properties": {
+          "assistantName": {
+            "maxLength": 80,
+            "type": "string"
+          },
+          "defaultLocale": {
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 2,
+            "type": "string"
+          },
+          "organizationName": {
+            "maxLength": 100,
+            "minLength": 2,
+            "type": "string"
+          },
+          "organizationSlug": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "slug": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "supportedLocales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "systemPrompt": {
+            "maxLength": 20000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "organizationName",
+          "organizationSlug",
+          "name",
+          "slug"
+        ],
+        "type": "object"
+      },
+      "CreateProjectResponseDto": {
+        "properties": {
+          "credentials": {
+            "$ref": "#/components/schemas/ProjectCredentialsResponseDto"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectResponseDto"
+          }
+        },
+        "required": [
+          "project",
+          "credentials"
+        ],
+        "type": "object"
+      },
+      "CreateScenarioActionDefinitionDto": {
+        "properties": {
+          "commandType": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "configSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "type": "boolean"
+          },
+          "executor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioActionExecutor"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "serverHandler": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServerActionHandler"
+              }
+            ]
+          },
+          "type": {
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "type": "string"
+          },
+          "uiSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "executor",
+          "configSchema",
+          "uiSchema"
+        ],
+        "type": "object"
+      },
+      "CreateScenarioDto": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioActionDto"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array"
+          },
+          "activeFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "activeTo": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "code": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioConditionDto"
+            },
+            "type": "array"
+          },
+          "cooldownSeconds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "eventDefinitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxRunsPerUser": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "priority": {
+            "maximum": 1000,
+            "minimum": -1000,
+            "type": "number"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "eventDefinitionId",
+          "actions"
+        ],
+        "type": "object"
+      },
+      "CreateUiElementDto": {
+        "properties": {
+          "code": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "handler": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UiElementKind"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "route": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "selector": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "DirectAdminActionDto": {
+        "properties": {
+          "config": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DirectAdminActionType"
+              }
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "config"
+        ],
+        "type": "object"
+      },
+      "DirectAdminActionType": {
+        "enum": [
+          "SHOW_ASSISTANT",
+          "HIDE_ASSISTANT",
+          "OPEN_CHAT",
+          "CLOSE_CHAT",
+          "PLAY_ANIMATION",
+          "HIGHLIGHT_ELEMENT",
+          "REMOVE_HIGHLIGHT",
+          "SHOW_CTA",
+          "OPEN_PAGE",
+          "OPEN_MODAL"
+        ],
+        "type": "string"
+      },
+      "EndUserResponseDto": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "locale": {
+            "nullable": true,
+            "type": "object"
+          },
+          "preferences": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "profile": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "segment": {
+            "nullable": true,
+            "type": "object"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "externalId",
+          "isGuest",
+          "profile",
+          "attributes",
+          "preferences",
+          "lastSeenAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "payloadSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "code",
+          "name",
+          "version",
+          "payloadSchema",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EventIngestResponseDto": {
+        "properties": {
+          "commandIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "matchedScenarios": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "scenarioRunIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "success": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "eventId",
+          "matchedScenarios",
+          "scenarioRunIds"
+        ],
+        "type": "object"
+      },
+      "EventLogResponseDto": {
+        "properties": {
+          "context": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/EndUserResponseDto"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "error": {
+            "nullable": true,
+            "type": "object"
+          },
+          "eventDefinition": {
+            "$ref": "#/components/schemas/EventDefinitionResponseDto"
+          },
+          "eventDefinitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "externalEventId": {
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "message": {
+            "nullable": true,
+            "type": "object"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "processingResult": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventSource"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "eventDefinitionId",
+          "endUserId",
+          "source",
+          "payload",
+          "context",
+          "occurredAt",
+          "receivedAt",
+          "status",
+          "eventDefinition",
+          "endUser"
+        ],
+        "type": "object"
+      },
+      "EventSource": {
+        "enum": [
+          "SERVER",
+          "FRONTEND",
+          "INTERNAL"
+        ],
+        "type": "string"
+      },
+      "EventStatus": {
+        "enum": [
+          "RECEIVED",
+          "PROCESSED",
+          "FAILED"
+        ],
+        "type": "string"
+      },
+      "IngestEventDto": {
+        "properties": {
+          "context": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "eventCode": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "externalEventId": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "externalUserId": {
+            "deprecated": true,
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 5000,
+            "type": "string"
+          },
+          "occurredAt": {
+            "deprecated": true,
+            "format": "date-time",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventCode",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "ListMessagesDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "ListThreadMessagesDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "LogoutDto": {
+        "properties": {
+          "refreshToken": {
+            "description": "Opaque CMS refresh JWT",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object"
+      },
+      "MessageRole": {
+        "enum": [
+          "USER",
+          "ASSISTANT",
+          "ADMIN",
+          "SCENARIO",
+          "SYSTEM"
+        ],
+        "type": "string"
+      },
+      "MessageStatus": {
+        "enum": [
+          "WRITING",
+          "COMPLETED",
+          "FAILED"
+        ],
+        "type": "string"
+      },
+      "OrganizationResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ProjectCountsResponseDto": {
+        "properties": {
+          "eventLogs": {
+            "type": "number"
+          },
+          "scenarios": {
+            "type": "number"
+          },
+          "users": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "users",
+          "scenarios",
+          "eventLogs"
+        ],
+        "type": "object"
+      },
+      "ProjectCredentialsResponseDto": {
+        "properties": {
+          "publicKey": {
+            "type": "string"
+          },
+          "serverApiKey": {
+            "description": "Shown once; store securely.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "publicKey",
+          "serverApiKey"
+        ],
+        "type": "object"
+      },
+      "ProjectMemberResponseDto": {
+        "properties": {
+          "adminUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "nullable": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRole"
+              }
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "email",
+          "role",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ProjectResponseDto": {
+        "properties": {
+          "_count": {
+            "$ref": "#/components/schemas/ProjectCountsResponseDto"
+          },
+          "assistantName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "defaultLocale": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrganizationResponseDto"
+          },
+          "organizationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publicKey": {
+            "type": "string"
+          },
+          "serverKeyPrefix": {
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          },
+          "supportedLocales": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "systemPrompt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "name",
+          "slug",
+          "status",
+          "publicKey",
+          "serverKeyPrefix",
+          "defaultLocale",
+          "supportedLocales",
+          "assistantName",
+          "systemPrompt",
+          "settings",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ProjectRole": {
+        "enum": [
+          "OWNER",
+          "ADMIN",
+          "EDITOR",
+          "VIEWER"
+        ],
+        "type": "string"
+      },
+      "ProjectStatus": {
+        "enum": [
+          "ACTIVE",
+          "SUSPENDED",
+          "ARCHIVED"
+        ],
+        "type": "string"
+      },
+      "RefreshTokenDto": {
+        "properties": {
+          "refreshToken": {
+            "description": "Opaque CMS refresh JWT",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object"
+      },
+      "RenameConversationDto": {
+        "properties": {
+          "title": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "type": "object"
+      },
+      "RotateServerKeyResponseDto": {
+        "properties": {
+          "serverApiKey": {
+            "description": "Shown once; replaces the previous server key.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "serverApiKey"
+        ],
+        "type": "object"
+      },
+      "ScenarioActionDefinitionResponseDto": {
+        "properties": {
+          "builtIn": {
+            "type": "boolean"
+          },
+          "commandType": {
+            "nullable": true,
+            "type": "object"
+          },
+          "configSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "executor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioActionExecutor"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "serverHandler": {
+            "nullable": true,
+            "type": "object"
+          },
+          "type": {
+            "type": "string"
+          },
+          "uiSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "type",
+          "name",
+          "executor",
+          "configSchema",
+          "uiSchema",
+          "enabled",
+          "builtIn",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioActionDto": {
+        "properties": {
+          "config": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "nextNodeKey": {
+            "nullable": true,
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "nodeKey": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "type": {
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "type",
+          "config"
+        ],
+        "type": "object"
+      },
+      "ScenarioActionExecutor": {
+        "enum": [
+          "SERVER",
+          "FRONTEND"
+        ],
+        "type": "string"
+      },
+      "ScenarioActionResponseDto": {
+        "properties": {
+          "config": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nextNodeKey": {
+            "nullable": true,
+            "type": "object"
+          },
+          "nodeKey": {
+            "nullable": true,
+            "type": "object"
+          },
+          "position": {
+            "type": "number"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "scenarioId",
+          "position",
+          "type",
+          "config",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioConditionDto": {
+        "properties": {
+          "operator": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioConditionOperator"
+              }
+            ]
+          },
+          "path": {
+            "pattern": "^(event|user|project|scenario)(\\.[a-zA-Z0-9_-]+)+$",
+            "type": "string"
+          },
+          "value": {
+            "description": "Comparison value; omitted for existence checks.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "ScenarioConditionOperator": {
+        "enum": [
+          "eq",
+          "neq",
+          "gt",
+          "gte",
+          "lt",
+          "lte",
+          "in",
+          "exists",
+          "contains"
+        ],
+        "type": "string"
+      },
+      "ScenarioResponseDto": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioActionResponseDto"
+            },
+            "type": "array"
+          },
+          "activeFrom": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "activeTo": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "code": {
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "cooldownSeconds": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "object"
+          },
+          "eventDefinition": {
+            "$ref": "#/components/schemas/EventDefinitionResponseDto"
+          },
+          "eventDefinitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxRunsPerUser": {
+            "nullable": true,
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioStatus"
+              }
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "eventDefinitionId",
+          "code",
+          "name",
+          "status",
+          "priority",
+          "conditions",
+          "cooldownSeconds",
+          "createdAt",
+          "updatedAt",
+          "actions"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunCommandResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "sequence": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "payload",
+          "sequence",
+          "status",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunResponseDto": {
+        "properties": {
+          "context": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "currentStep": {
+            "type": "number"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/ScenarioRunUserSummaryDto"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "error": {
+            "nullable": true,
+            "type": "object"
+          },
+          "eventLogId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "interactionSessionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "scenario": {
+            "$ref": "#/components/schemas/ScenarioRunScenarioSummaryDto"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRunStatus"
+              }
+            ]
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRunStepResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "scenarioId",
+          "eventLogId",
+          "endUserId",
+          "status",
+          "context",
+          "startedAt",
+          "currentStep",
+          "scenario",
+          "endUser",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunScenarioSummaryDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunStatus": {
+        "enum": [
+          "RUNNING",
+          "COMPLETED",
+          "FAILED",
+          "SKIPPED",
+          "CANCELLED",
+          "EXPIRED"
+        ],
+        "type": "string"
+      },
+      "ScenarioRunStepResponseDto": {
+        "properties": {
+          "actionType": {
+            "type": "string"
+          },
+          "command": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRunCommandResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "commandType": {
+            "nullable": true,
+            "type": "object"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "error": {
+            "nullable": true,
+            "type": "object"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "object"
+          },
+          "executor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioActionExecutor"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          },
+          "result": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "resumeAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "serverHandler": {
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRunStepStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "actionType",
+          "executor",
+          "config",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunStepStatus": {
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "WAITING_TIME",
+          "WAITING_ACK",
+          "SUCCEEDED",
+          "FAILED",
+          "EXPIRED",
+          "SKIPPED"
+        ],
+        "type": "string"
+      },
+      "ScenarioRunUserSummaryDto": {
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId"
+        ],
+        "type": "object"
+      },
+      "ScenarioStatus": {
+        "enum": [
+          "DRAFT",
+          "ACTIVE",
+          "PAUSED",
+          "ARCHIVED"
+        ],
+        "type": "string"
+      },
+      "SendAdminMessageDto": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/DirectAdminActionDto"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
+          "conversationPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminConversationPolicy"
+              }
+            ]
+          },
+          "interactionSessionId": {
+            "description": "Optional preferred online session. If omitted, backend selects the most recently active session.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationPolicy",
+          "text"
+        ],
+        "type": "object"
+      },
+      "SendAdminMessageResponseDto": {
+        "properties": {
+          "commandIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "duplicate": {
+            "description": "True when the same Idempotency-Key was already processed.",
+            "type": "boolean"
+          },
+          "message": {
+            "$ref": "#/components/schemas/AdminStoredMessageResponseDto"
+          }
+        },
+        "required": [
+          "duplicate",
+          "message",
+          "commandIds"
+        ],
+        "type": "object"
+      },
+      "SendChatMessageDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "ServerActionHandler": {
+        "enum": [
+          "SAY",
+          "WAIT_FOR",
+          "ASK_CHOICE",
+          "CONDITION",
+          "TRACK",
+          "COMPLETE_SCENARIO"
+        ],
+        "type": "string"
+      },
+      "SpeechDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "SuccessResponseDto": {
+        "properties": {
+          "success": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ThreadStatus": {
+        "enum": [
+          "OPEN",
+          "CLOSED"
+        ],
+        "type": "string"
+      },
+      "UiElementKind": {
+        "enum": [
+          "BUTTON",
+          "MODAL",
+          "PAGE",
+          "ELEMENT",
+          "HANDLER"
+        ],
+        "type": "string"
+      },
+      "UiElementResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "handler": {
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UiElementKind"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "route": {
+            "nullable": true,
+            "type": "object"
+          },
+          "selector": {
+            "nullable": true,
+            "type": "object"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "code",
+          "name",
+          "kind",
+          "config",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "UpdateEventDefinitionDto": {
+        "properties": {
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 120,
+            "type": "string"
+          },
+          "payloadSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateProjectDto": {
+        "properties": {
+          "assistantName": {
+            "maxLength": 80,
+            "type": "string"
+          },
+          "defaultLocale": {
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 2,
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          },
+          "supportedLocales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "systemPrompt": {
+            "maxLength": 20000,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateScenarioActionDefinitionDto": {
+        "properties": {
+          "commandType": {
+            "nullable": true,
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "configSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "executor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioActionExecutor"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "serverHandler": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServerActionHandler"
+              }
+            ],
+            "nullable": true
+          },
+          "uiSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateScenarioDto": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioActionDto"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array"
+          },
+          "activeFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "activeTo": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioConditionDto"
+            },
+            "type": "array"
+          },
+          "cooldownSeconds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "eventDefinitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxRunsPerUser": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 120,
+            "type": "string"
+          },
+          "priority": {
+            "maximum": 1000,
+            "minimum": -1000,
+            "type": "number"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioStatus"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateUiElementDto": {
+        "properties": {
+          "code": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "handler": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UiElementKind"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "route": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "selector": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpsertUserDto": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "externalId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "preferences": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "profile": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "segment": {
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "required": [
+          "externalId"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "project-key": {
+        "in": "header",
+        "name": "x-project-key",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "contact": {},
+    "description": "CMS, integration, chat and realtime API for Lola AI Assistant",
+    "title": "Lola Backend Platform",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/admin/projects": {
+      "get": {
+        "operationId": "Platform_listProjects",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "Platform_createProject",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateProjectResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}": {
+      "delete": {
+        "operationId": "Platform_archiveProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "get": {
+        "operationId": "Platform_getProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "Platform_updateProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/action-definitions": {
+      "get": {
+        "operationId": "Platform_actionDefinitions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScenarioActionDefinitionResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "Platform_createActionDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScenarioActionDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioActionDefinitionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/action-definitions/{id}": {
+      "delete": {
+        "operationId": "Platform_deleteActionDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioActionDefinitionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "get": {
+        "operationId": "Platform_actionDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioActionDefinitionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "Platform_updateActionDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScenarioActionDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioActionDefinitionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/audit-logs": {
+      "get": {
+        "operationId": "Audit_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditLogResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin audit"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-definitions": {
+      "get": {
+        "operationId": "Platform_eventDefinitions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventDefinitionResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "Platform_createEventDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-definitions/{id}": {
+      "delete": {
+        "operationId": "Platform_deleteEventDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "Platform_updateEventDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/members": {
+      "get": {
+        "operationId": "Platform_members",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectMemberResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "Platform_createMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMemberDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMemberResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/members/{id}": {
+      "delete": {
+        "operationId": "Platform_deleteMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMemberResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/rotate-server-key": {
+      "post": {
+        "operationId": "Platform_rotate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateServerKeyResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-runs": {
+      "get": {
+        "operationId": "ScenarioRuns_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScenarioRunResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario runs"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenarios": {
+      "get": {
+        "operationId": "Platform_scenarios",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScenarioResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "Platform_createScenario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScenarioDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenarios/{id}": {
+      "delete": {
+        "operationId": "Platform_deleteScenario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "Platform_updateScenario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScenarioDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ui-elements": {
+      "get": {
+        "operationId": "Platform_uiElements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UiElementResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "Platform_createUi",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUiElementDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UiElementResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ui-elements/{id}": {
+      "delete": {
+        "operationId": "Platform_deleteUi",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UiElementResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "Platform_updateUi",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUiElementDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UiElementResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users": {
+      "get": {
+        "operationId": "Platform_users",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EndUserResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "Platform_upsertUser",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertUserDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations": {
+      "get": {
+        "operationId": "AdminConversations_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Internal EndUser id.",
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ConversationStatus"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminConversationsPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin conversations"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/messages": {
+      "get": {
+        "operationId": "AdminConversations_listMessages",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Internal EndUser id.",
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminConversationMessagesPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin conversations"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/messages": {
+      "post": {
+        "operationId": "AdminMessaging_send",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Internal EndUser id.",
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated key. Reuse it only when retrying the same send operation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendAdminMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendAdminMessageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin messaging"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/active": {
+      "get": {
+        "operationId": "Presence_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ActiveUserResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin presence"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "CmsAuth_login",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsLoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsAuthResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": [
+          "CMS authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "CmsAuth_logout",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "CMS authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "operationId": "CmsAuth_logoutAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "CMS authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "CmsAuth_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "CMS authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "CmsAuth_refresh",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsAuthResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": [
+          "CMS authentication"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations": {
+      "get": {
+        "operationId": "Chat_listConversations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ConversationStatus"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      },
+      "post": {
+        "operationId": "Chat_createConversation",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversationId}": {
+      "get": {
+        "operationId": "Chat_getConversation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      },
+      "patch": {
+        "operationId": "Chat_renameConversation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameConversationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversationId}/close": {
+      "post": {
+        "operationId": "Chat_closeConversation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversationId}/messages": {
+      "get": {
+        "operationId": "Chat_listConversationMessages",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversationId}/reopen": {
+      "post": {
+        "operationId": "Chat_reopenConversation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversationId}/select": {
+      "post": {
+        "operationId": "Chat_selectConversation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/current": {
+      "get": {
+        "operationId": "Chat_currentConversation",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/messages": {
+      "get": {
+        "operationId": "Chat_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      },
+      "post": {
+        "operationId": "Chat_send",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendChatMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/speech": {
+      "post": {
+        "operationId": "Chat_speech",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeechDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/crm.Crm/CreateCustomer": {
+      "post": {
+        "operationId": "CompatibilityCrm_createCustomer",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CompatibilityCrm"
+        ]
+      }
+    },
+    "/api/v1/crm.Crm/CreateCustomerInteractionSession": {
+      "post": {
+        "operationId": "CompatibilityCrm_createSession",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompatibilitySessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CompatibilityCrm"
+        ]
+      }
+    },
+    "/api/v1/events": {
+      "post": {
+        "operationId": "Events_ingest",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestEventDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventIngestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/events/admin/{projectId}": {
+      "get": {
+        "operationId": "Events_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventLogResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/interaction-sessions": {
+      "post": {
+        "operationId": "InteractionSessions_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInteractionSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "integration sessions"
+        ]
+      }
+    },
+    "/api/v1/interaction-sessions/identify": {
+      "post": {
+        "operationId": "InteractionSessions_identifyGuest",
+        "parameters": [
+          {
+            "description": "Active guest interaction JWT proving ownership of the guest history.",
+            "in": "header",
+            "name": "X-Guest-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInteractionSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "integration sessions"
+        ]
+      }
+    },
+    "/api/v1/messenger.Messenger/CreateMessage": {
+      "post": {
+        "operationId": "CompatibilityMessenger_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompatibilityCreateMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CompatibilityMessenger"
+        ]
+      }
+    },
+    "/api/v1/messenger.Messenger/ListMessages": {
+      "post": {
+        "operationId": "CompatibilityMessenger_list",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListMessagesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CompatibilityMessenger"
+        ]
+      }
+    },
+    "/api/v1/messenger.Messenger/ListMessagesForThreads": {
+      "post": {
+        "operationId": "CompatibilityMessenger_listThreads",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListThreadMessagesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CompatibilityMessenger"
+        ]
+      }
+    },
+    "/api/v1/public/sessions": {
+      "post": {
+        "operationId": "Sessions_create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-project-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGuestSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "project-key": []
+          }
+        ],
+        "tags": [
+          "public sessions"
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "operationId": "IntegrationUsers_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EndUserResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "integration users"
+        ]
+      },
+      "post": {
+        "operationId": "IntegrationUsers_upsert",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertUserDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "integration users"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "App_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  },
+  "servers": [],
+  "tags": []
+}

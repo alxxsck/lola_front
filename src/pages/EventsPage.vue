@@ -1,0 +1,368 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
+import Select from 'primevue/select'
+import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { useAuthStore } from '@/features/auth/auth.store'
+import { repository } from '@/shared/api/repository'
+import { slugify, uid } from '@/shared/lib/format'
+import { buildEventExample, buildEventSchema } from '@/shared/lib/domain'
+import { useUnsavedChangesGuard } from '@/shared/lib/use-unsaved-changes-guard'
+import type { EventDefinition, EventField, EventFieldType } from '@/shared/types/domain'
+
+interface EventForm {
+  id?: string
+  name: string
+  code: string
+  description: string
+  enabled: boolean
+  fields: EventField[]
+}
+
+const fieldTypes: Array<{ label: string; value: EventFieldType }> = [
+  { label: 'Строка', value: 'string' },
+  { label: 'Число', value: 'number' },
+  { label: 'Целое число', value: 'integer' },
+  { label: 'Да / нет', value: 'boolean' },
+  { label: 'Объект', value: 'object' },
+  { label: 'Массив', value: 'array' },
+]
+
+const auth = useAuthStore()
+const toast = useToast()
+const confirm = useConfirm()
+const events = ref<EventDefinition[]>([])
+const search = ref('')
+const loading = ref(true)
+const saving = ref(false)
+const togglingId = ref<string | null>(null)
+const loadError = ref('')
+const formError = ref('')
+const dialogVisible = ref(false)
+const codeTouched = ref(false)
+const form = ref<EventForm>(emptyForm())
+const initialFormSnapshot = ref('')
+const isFormDirty = computed(() => dialogVisible.value && Boolean(initialFormSnapshot.value) && JSON.stringify(form.value) !== initialFormSnapshot.value)
+const { confirmDiscard } = useUnsavedChangesGuard(isFormDirty, 'Есть несохранённые изменения события. Закрыть форму?')
+
+const filteredEvents = computed(() => {
+  const query = search.value.trim().toLowerCase()
+  return events.value.filter((item) => !query || item.name.toLowerCase().includes(query) || item.code.toLowerCase().includes(query))
+})
+
+const eventExample = computed(() => JSON.stringify(buildEventExample(form.value.code, form.value.fields), null, 2))
+const enabledCount = computed(() => events.value.filter((item) => item.enabled).length)
+
+onMounted(loadEvents)
+
+function emptyForm(): EventForm {
+  return { name: '', code: '', description: '', enabled: true, fields: [newField()] }
+}
+
+function newField(): EventField {
+  return { id: uid('field'), name: '', code: '', type: 'string', required: false }
+}
+
+async function loadEvents() {
+  const projectId = auth.project?.id
+  if (!projectId) return
+  loading.value = true
+  loadError.value = ''
+  try {
+    events.value = await repository.getEvents(projectId)
+  } catch (cause) {
+    loadError.value = errorMessage(cause, 'Не удалось загрузить события')
+  } finally {
+    loading.value = false
+  }
+}
+
+function openCreate() {
+  form.value = emptyForm()
+  codeTouched.value = false
+  formError.value = ''
+  initialFormSnapshot.value = JSON.stringify(form.value)
+  dialogVisible.value = true
+}
+
+function openEdit(item: EventDefinition) {
+  form.value = {
+    id: item.id,
+    name: item.name,
+    code: item.code,
+    description: item.description ?? '',
+    enabled: item.enabled,
+    fields: fieldsFromSchema(item.payloadSchema),
+  }
+  codeTouched.value = true
+  formError.value = ''
+  initialFormSnapshot.value = JSON.stringify(form.value)
+  dialogVisible.value = true
+}
+
+function requestDialogVisibility(value: boolean) {
+  if (!value && !confirmDiscard()) return
+  dialogVisible.value = value
+}
+
+function onEventNameInput() {
+  if (!codeTouched.value && !form.value.id) form.value.code = slugify(form.value.name)
+}
+
+function onEventCodeInput() {
+  codeTouched.value = true
+}
+
+function onFieldNameInput(field: EventField) {
+  if (!field.code || field.code === slugify(field.name.slice(0, -1))) field.code = slugify(field.name)
+}
+
+function addField() {
+  form.value.fields.push(newField())
+}
+
+function removeField(id: string) {
+  form.value.fields = form.value.fields.filter((field) => field.id !== id)
+}
+
+async function copyEventExample() {
+  try {
+    await navigator.clipboard.writeText(eventExample.value)
+    toast.add({ severity: 'success', summary: 'JSON скопирован', life: 2200 })
+  } catch {
+    toast.add({ severity: 'error', summary: 'Не удалось скопировать', detail: 'Выделите и скопируйте JSON вручную.', life: 3200 })
+  }
+}
+
+function fieldsFromSchema(schema: Record<string, any>): EventField[] {
+  const properties = schema?.properties && typeof schema.properties === 'object' ? schema.properties as Record<string, Record<string, unknown>> : {}
+  const required = Array.isArray(schema?.required) ? schema.required as string[] : []
+  const result = Object.entries(properties).map(([code, definition]) => ({
+    id: uid('field'),
+    name: typeof definition.title === 'string' ? definition.title : code,
+    code,
+    type: isFieldType(definition.type) ? definition.type : 'string',
+    required: required.includes(code),
+  }))
+  return result.length ? result : [newField()]
+}
+
+function isFieldType(value: unknown): value is EventFieldType {
+  return fieldTypes.some((item) => item.value === value)
+}
+
+function validateForm(): string | null {
+  if (!form.value.name.trim()) return 'Укажите название события.'
+  if (!/^[a-z][a-z0-9_.-]*$/.test(form.value.code.trim())) return 'Код должен начинаться с буквы и содержать только a–z, 0–9, точку, дефис или подчёркивание.'
+  if (events.value.some((item) => item.code === form.value.code.trim() && item.id !== form.value.id)) return 'Событие с таким кодом уже существует.'
+  const completed = form.value.fields.filter((field) => field.name.trim() || field.code.trim())
+  if (completed.some((field) => !field.name.trim() || !field.code.trim())) return 'Заполните название и код каждого поля или удалите пустую строку.'
+  if (completed.some((field) => !/^[a-z][a-z0-9_.-]*$/.test(field.code.trim()))) return 'Коды полей должны начинаться с буквы и содержать только допустимые символы.'
+  const codes = completed.map((field) => field.code.trim())
+  if (new Set(codes).size !== codes.length) return 'Коды полей не должны повторяться.'
+  return null
+}
+
+async function saveEvent() {
+  const projectId = auth.project?.id
+  if (!projectId) return
+  formError.value = validateForm() ?? ''
+  if (formError.value) return
+
+  const common = {
+    name: form.value.name.trim(),
+    description: form.value.description.trim() || undefined,
+    payloadSchema: buildEventSchema(form.value.fields),
+    enabled: form.value.enabled,
+  }
+  const value = form.value.id
+    ? ({ ...common } as Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>)
+    : ({ ...common, code: form.value.code.trim(), version: 1 } as Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>)
+  if (form.value.id) attachUpdateIdentity(value, form.value.id, form.value.code.trim())
+
+  saving.value = true
+  try {
+    const saved = await repository.saveEvent(projectId, value)
+    const index = events.value.findIndex((item) => item.id === saved.id)
+    if (index >= 0) events.value.splice(index, 1, saved)
+    else events.value.unshift(saved)
+    initialFormSnapshot.value = ''
+    dialogVisible.value = false
+    toast.add({ severity: 'success', summary: form.value.id ? 'Событие обновлено' : 'Событие создано', detail: saved.name, life: 2800 })
+  } catch (cause) {
+    formError.value = errorMessage(cause, 'Не удалось сохранить событие')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function toggleEvent(item: EventDefinition, enabled: boolean) {
+  const projectId = auth.project?.id
+  if (!projectId) return
+  const value = { name: item.name, description: item.description, payloadSchema: item.payloadSchema, enabled } as Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>
+  attachUpdateIdentity(value, item.id, item.code)
+  togglingId.value = item.id
+  try {
+    const saved = await repository.saveEvent(projectId, value)
+    Object.assign(item, saved)
+  } catch (cause) {
+    toast.add({ severity: 'error', summary: 'Статус не изменён', detail: errorMessage(cause), life: 3500 })
+  } finally {
+    togglingId.value = null
+  }
+}
+
+function attachUpdateIdentity(value: Partial<EventDefinition>, id: string, code: string) {
+  if (repository.mode === 'mock') {
+    value.id = id
+    value.code = code
+    return
+  }
+  Object.defineProperties(value, {
+    id: { value: id, enumerable: false },
+    code: { value: code, enumerable: false },
+  })
+}
+
+function askDelete(item: EventDefinition) {
+  confirm.require({
+    header: 'Удалить событие?',
+    message: `Событие «${item.name}» может использоваться в сценариях.`,
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Отмена',
+    acceptLabel: 'Удалить',
+    acceptProps: { severity: 'danger' },
+    accept: () => deleteEvent(item),
+  })
+}
+
+async function deleteEvent(item: EventDefinition) {
+  const projectId = auth.project?.id
+  if (!projectId) return
+  try {
+    await repository.deleteEvent(projectId, item.id)
+    events.value = events.value.filter((value) => value.id !== item.id)
+    toast.add({ severity: 'success', summary: 'Событие удалено', detail: item.name, life: 2500 })
+  } catch (cause) {
+    toast.add({ severity: 'error', summary: 'Не удалось удалить', detail: errorMessage(cause, 'Проверьте, не используется ли событие в сценариях.'), life: 4500 })
+  }
+}
+
+function eventFields(item: EventDefinition) {
+  const properties = item.payloadSchema?.properties
+  return properties && typeof properties === 'object' ? Object.keys(properties) : []
+}
+
+function requiredCount(item: EventDefinition) {
+  return Array.isArray(item.payloadSchema?.required) ? item.payloadSchema.required.length : 0
+}
+
+function errorMessage(cause: unknown, fallback = 'Произошла ошибка') {
+  return cause instanceof Error ? cause.message : fallback
+}
+</script>
+
+<template>
+  <section class="page events-page">
+    <header class="page-header">
+      <div>
+        <div class="eyebrow">Event catalog</div>
+        <h1>События</h1>
+        <p class="subtitle">Опишите сигналы продукта и данные, с которыми будут запускаться сценарии.</p>
+      </div>
+      <Button label="Новое событие" icon="pi pi-plus" @click="openCreate" />
+    </header>
+
+    <div class="summary-grid">
+      <div class="summary-card card"><span class="summary-icon bolt"><i class="pi pi-bolt" /></span><div><strong>{{ events.length }}</strong><small>событий в каталоге</small></div></div>
+      <div class="summary-card card"><span class="summary-icon live"><i class="pi pi-check" /></span><div><strong>{{ enabledCount }}</strong><small>принимают данные</small></div></div>
+      <div class="contract-note card"><i class="pi pi-shield" /><div><strong>Проверка payload</strong><span>Backend сверяет поля, типы и обязательность до запуска сценария.</span></div></div>
+    </div>
+
+    <div class="toolbar card">
+      <span class="search-box"><i class="pi pi-search" /><InputText v-model="search" placeholder="Поиск по названию или коду" /></span>
+      <span class="result-count">Показано {{ filteredEvents.length }}</span>
+    </div>
+
+    <Message v-if="loadError" severity="error" :closable="false"><div class="message-content"><span>{{ loadError }}</span><Button label="Повторить" size="small" text @click="loadEvents" /></div></Message>
+
+    <div v-if="loading" class="events-list">
+      <div v-for="index in 4" :key="index" class="event-card card"><Skeleton shape="circle" size="3rem" /><div class="skeleton-copy"><Skeleton width="48%" height="1.15rem" /><Skeleton width="70%" /></div></div>
+    </div>
+    <div v-else-if="filteredEvents.length" class="events-list">
+      <article v-for="item in filteredEvents" :key="item.id" class="event-card card" :class="{ disabled: !item.enabled }">
+        <span class="event-icon"><i class="pi pi-bolt" /></span>
+        <div class="event-main">
+          <div class="event-title"><h2>{{ item.name }}</h2><code>{{ item.code }}</code><Tag :value="`v${item.version}`" severity="secondary" /></div>
+          <p>{{ item.description || 'Описание не добавлено' }}</p>
+          <div class="field-pills">
+            <span v-for="field in eventFields(item).slice(0, 5)" :key="field"><code>{{ field }}</code><i v-if="item.payloadSchema.required?.includes(field)" title="Обязательное поле">*</i></span>
+            <span v-if="eventFields(item).length > 5">+{{ eventFields(item).length - 5 }}</span>
+            <small v-if="!eventFields(item).length">Без полей payload</small>
+          </div>
+        </div>
+        <div class="event-stats"><strong>{{ eventFields(item).length }}</strong><span>полей</span><small>{{ requiredCount(item) }} обязательных</small></div>
+        <div class="event-actions">
+          <ToggleSwitch :model-value="item.enabled" :disabled="togglingId === item.id" :aria-label="`Включить ${item.name}`" @update:model-value="toggleEvent(item, $event)" />
+          <Button icon="pi pi-pencil" severity="secondary" text rounded :aria-label="`Изменить ${item.name}`" @click="openEdit(item)" />
+          <Button icon="pi pi-trash" severity="danger" text rounded :aria-label="`Удалить ${item.name}`" @click="askDelete(item)" />
+        </div>
+      </article>
+    </div>
+    <div v-else class="empty card">
+      <i :class="search ? 'pi pi-search' : 'pi pi-bolt'" />
+      <strong>{{ search ? 'События не найдены' : 'Каталог событий пока пуст' }}</strong>
+      <p>{{ search ? 'Попробуйте изменить поисковый запрос.' : 'Опишите первое событие, которое сможет запускать сценарий.' }}</p>
+      <Button v-if="!search" label="Создать событие" icon="pi pi-plus" size="small" @click="openCreate" />
+    </div>
+
+    <Dialog :visible="dialogVisible" modal :header="form.id ? 'Изменить событие' : 'Новое событие'" class="event-dialog" :style="{ width: 'min(920px, calc(100vw - 28px))' }" @update:visible="requestDialogVisibility">
+      <form id="event-form" class="dialog-form" @submit.prevent="saveEvent">
+        <div class="form-grid">
+          <div class="field"><label for="event-name">Название</label><InputText id="event-name" v-model="form.name" autofocus placeholder="Регистрация завершена" @input="onEventNameInput" /></div>
+          <div class="field"><label for="event-code">Код события</label><InputText id="event-code" v-model="form.code" class="mono" :disabled="Boolean(form.id)" placeholder="registration_completed" @input="onEventCodeInput" /><small v-if="form.id">Код опубликованного события не изменяется.</small></div>
+        </div>
+        <div class="field"><label for="event-description">Описание <span>необязательно</span></label><Textarea id="event-description" v-model="form.description" rows="2" auto-resize placeholder="Когда и почему продукт отправляет это событие" /></div>
+
+        <section class="fields-builder surface-soft">
+          <header><div><strong>Поля payload</strong><span>Backend проверит тип и обязательность каждого поля.</span></div><Button type="button" label="Добавить поле" icon="pi pi-plus" size="small" severity="secondary" @click="addField" /></header>
+          <div class="field-head"><span>Название</span><span>Код</span><span>Тип</span><span>Обязательное</span><span /></div>
+          <div v-for="field in form.fields" :key="field.id" class="field-row">
+            <InputText v-model="field.name" placeholder="Язык" @input="onFieldNameInput(field)" />
+            <InputText v-model="field.code" class="mono" placeholder="language" />
+            <Select v-model="field.type" :options="fieldTypes" option-label="label" option-value="value" />
+            <label class="required-check"><Checkbox v-model="field.required" binary /><span>Обязательное</span></label>
+            <Button type="button" icon="pi pi-times" severity="danger" text rounded aria-label="Удалить поле" @click="removeField(field.id)" />
+          </div>
+          <div v-if="!form.fields.length" class="no-fields">Payload без фиксированных полей. Можно добавить поле выше.</div>
+        </section>
+
+        <section class="event-example">
+          <header>
+            <strong><i class="pi pi-code" /> Пример события для интеграции</strong>
+            <Button type="button" icon="pi pi-copy" size="small" severity="secondary" aria-label="Копировать JSON" title="Копировать JSON" @click="copyEventExample" />
+          </header>
+          <pre>{{ eventExample }}</pre>
+        </section>
+        <div class="enabled-row surface-soft"><div><strong>Событие активно</strong><span>Неактивное событие останется в каталоге, но backend не примет его для сценариев.</span></div><ToggleSwitch v-model="form.enabled" /></div>
+        <Message v-if="formError" severity="error" size="small" :closable="false">{{ formError }}</Message>
+      </form>
+      <template #footer><Button label="Отмена" severity="secondary" text @click="requestDialogVisibility(false)" /><Button form="event-form" type="submit" label="Сохранить событие" icon="pi pi-check" :loading="saving" /></template>
+    </Dialog>
+  </section>
+</template>
+
+<style scoped>
+.summary-grid{display:grid;grid-template-columns:minmax(190px,220px) minmax(190px,220px) minmax(360px,1fr);gap:12px;margin-bottom:18px}.summary-card,.contract-note{min-height:88px;padding:15px 17px;display:flex;align-items:center;gap:12px}.summary-icon,.event-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:13px}.summary-icon.bolt,.event-icon{background:#f0edff;color:#7059df}.summary-icon.live{background:#e8f7e9;color:#4ba75a}.summary-card strong,.summary-card small{display:block}.summary-card strong{font:700 1.35rem Manrope}.summary-card small{color:var(--muted);font-size:.68rem;margin-top:2px}.contract-note{justify-content:flex-start;background:#292c26;color:#f5f6f0;border-color:#292c26}.contract-note>i{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:13px;background:#373c32;color:var(--accent)}.contract-note strong,.contract-note span{display:block}.contract-note strong{font-size:.78rem}.contract-note span{max-width:520px;color:#b9bdb3;font-size:.68rem;line-height:1.45;margin-top:3px}.toolbar{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:15px}.search-box{position:relative;display:block;max-width:460px;flex:1}.search-box>i{position:absolute;left:13px;top:50%;transform:translateY(-50%);z-index:1;color:#90948b}.search-box :deep(input){padding-left:38px;border:0;background:#f6f6f3}.result-count{font-size:.75rem;color:var(--muted)}.message-content{display:flex;align-items:center;justify-content:space-between;gap:16px}.events-list{display:flex;flex-direction:column;gap:10px}.event-card{display:grid;grid-template-columns:auto minmax(0,1fr) 105px auto;align-items:center;gap:16px;padding:16px 18px;transition:.18s ease}.event-card:hover{box-shadow:0 10px 32px rgba(41,45,35,.07);border-color:#d9dad3}.event-card.disabled{opacity:.62}.event-main{min-width:0}.event-title{display:flex;align-items:center;gap:9px;min-width:0}.event-title h2{font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.event-title code{max-width:min(320px,38vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.69rem;color:#686d63;background:#f2f2ee;border-radius:6px;padding:3px 6px}.event-main p{font-size:.76rem;color:var(--muted);margin:6px 0 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.field-pills{display:flex;align-items:center;gap:5px;min-height:22px;flex-wrap:wrap}.field-pills>span{font-size:.64rem;border:1px solid #e7e7e1;background:#fafaf8;border-radius:6px;padding:3px 6px;color:#696e64}.field-pills i{color:#d35e42;font-style:normal;margin-left:2px}.field-pills small{font-size:.67rem;color:#a0a49b}.event-stats{border-left:1px solid var(--line);padding-left:17px}.event-stats strong,.event-stats span,.event-stats small{display:block}.event-stats strong{font:700 1.1rem Manrope}.event-stats span{font-size:.67rem;color:var(--muted)}.event-stats small{font-size:.61rem;color:#989c93;margin-top:4px}.event-actions{display:flex;align-items:center;gap:2px}.skeleton-copy{flex:1;display:flex;flex-direction:column;gap:10px}.empty strong{display:block;color:var(--ink)}.empty p{margin:7px 0 18px}.dialog-form{display:flex;flex-direction:column;gap:18px;padding-top:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label span,.field small{font-weight:400;color:#999d94}.field small{font-size:.68rem}.fields-builder{padding:16px}.fields-builder>header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}.fields-builder header strong,.fields-builder header span{display:block}.fields-builder header strong{font-size:.86rem}.fields-builder header span{font-size:.68rem;color:var(--muted);margin-top:3px}.field-head,.field-row{display:grid;grid-template-columns:1.2fr 1.1fr .9fr 125px 36px;gap:8px;align-items:center}.field-head{padding:0 3px 6px;color:#8a8f84;font-size:.6rem;text-transform:uppercase;letter-spacing:.07em}.field-row+.field-row{margin-top:8px}.field-row :deep(.p-inputtext),.field-row :deep(.p-select){font-size:.78rem}.required-check{display:flex;align-items:center;gap:7px;font-size:.68rem;color:#60655c;white-space:nowrap}.no-fields{text-align:center;color:var(--muted);font-size:.75rem;padding:18px}.event-example{border:1px solid var(--line);border-radius:13px;overflow:hidden}.event-example>header{padding:12px 14px;background:#fafaf8;display:flex;align-items:center;justify-content:space-between;gap:12px}.event-example header strong,.event-example header span{display:block}.event-example header strong{font-size:.76rem}.event-example header strong i{color:#7059df;margin-right:5px}.event-example header span{color:var(--muted);font-size:.68rem;font-weight:400;margin-top:3px}.event-example pre{margin:0;padding:15px;max-height:260px;overflow:auto;background:#252821;color:#dce7c1;font-size:.7rem;line-height:1.55}.enabled-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 15px}.enabled-row strong,.enabled-row span{display:block}.enabled-row strong{font-size:.82rem}.enabled-row span{font-size:.7rem;color:var(--muted);margin-top:3px}
+@media(max-width:1100px){.summary-grid{grid-template-columns:1fr 1fr}.contract-note{grid-column:1/-1}}@media(max-width:900px){.event-card{grid-template-columns:auto minmax(0,1fr) auto}.event-stats{display:none}.field-head{display:none}.field-row{grid-template-columns:1fr 1fr}.field-row>:nth-child(3),.field-row>:nth-child(4){grid-row:2}.field-row>:last-child{grid-column:3;grid-row:1/3}.field-row{grid-template-columns:1fr 1fr 36px;padding:12px 0;border-top:1px solid var(--line)}}
+@media(max-width:620px){.summary-grid{grid-template-columns:1fr}.contract-note{grid-column:auto}.toolbar{align-items:stretch;flex-direction:column}.search-box{max-width:none}.result-count{align-self:flex-end}.event-card{grid-template-columns:auto minmax(0,1fr)}.event-actions{grid-column:1/-1;justify-content:flex-end;border-top:1px solid var(--line);padding-top:8px}.event-title{align-items:flex-start;flex-wrap:wrap}.event-title h2{width:100%}.form-grid{grid-template-columns:1fr}.fields-builder>header{align-items:flex-start;flex-direction:column}.field-row{grid-template-columns:1fr 36px}.field-row>:not(:last-child){grid-column:1}.field-row>:last-child{grid-column:2;grid-row:1/5}.required-check{padding:5px}.enabled-row{align-items:flex-start}}
+</style>

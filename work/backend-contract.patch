@@ -1,0 +1,1066 @@
+--- a/nest-cli.json
++++ b/nest-cli.json
+@@ -3,6 +3,15 @@
+   "collection": "@nestjs/schematics",
+   "sourceRoot": "src",
+   "compilerOptions": {
+-    "deleteOutDir": true
++    "deleteOutDir": true,
++    "plugins": [
++      {
++        "name": "@nestjs/swagger",
++        "options": {
++          "classValidatorShim": true,
++          "introspectComments": true
++        }
++      }
++    ]
+   }
+ }
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -7,6 +7,7 @@
+ import type { NextFunction, Request, Response } from 'express';
+ import { AppModule } from './app.module.js';
+ import { ApiExceptionFilter } from './common/api-exception.filter.js';
++import { swaggerOperationIdFactory } from './common/openapi.js';
+ 
+ async function bootstrap(): Promise<void> {
+   const app = await NestFactory.create(AppModule, { cors: false });
+@@ -57,7 +58,13 @@
+     .addBearerAuth()
+     .addApiKey({ type: 'apiKey', name: 'x-project-key', in: 'header' }, 'project-key')
+     .build();
+-  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, openApi));
++  SwaggerModule.setup(
++    'docs',
++    app,
++    SwaggerModule.createDocument(app, openApi, {
++      operationIdFactory: swaggerOperationIdFactory,
++    }),
++  );
+ 
+   await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
+ }
+--- /dev/null
++++ b/src/common/openapi.ts
+@@ -0,0 +1,6 @@
++import type { SwaggerDocumentOptions } from '@nestjs/swagger';
++
++/** Stable across controller refactors that keep the public controller and method names. */
++export const swaggerOperationIdFactory: NonNullable<
++  SwaggerDocumentOptions['operationIdFactory']
++> = (controllerKey, methodKey) => `${controllerKey.replace(/Controller$/, '')}_${methodKey}`;
+--- a/src/modules/auth/dto/cms-auth.dto.ts
++++ b/src/modules/auth/dto/cms-auth.dto.ts
+@@ -1,11 +1,15 @@
+ import { IsString, MaxLength, MinLength } from 'class-validator';
++import { ApiProperty } from '@nestjs/swagger';
+ 
+ export class CmsLoginDto {
++  @ApiProperty({ type: String, example: 'owner@example.com', maxLength: 200 })
+   @IsString() @MinLength(1) @MaxLength(200) login!: string;
++  @ApiProperty({ type: String, format: 'password', minLength: 1, maxLength: 200 })
+   @IsString() @MinLength(1) @MaxLength(200) password!: string;
+ }
+ 
+ export class RefreshTokenDto {
++  @ApiProperty({ type: String, description: 'Opaque CMS refresh JWT' })
+   @IsString() @MinLength(1) refreshToken!: string;
+ }
+ 
+--- /dev/null
++++ b/src/modules/auth/dto/cms-auth-response.dto.ts
+@@ -0,0 +1,23 @@
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
++
++export class AdminUserResponseDto {
++  @ApiProperty({ type: String, format: 'uuid' }) id!: string;
++  @ApiProperty({ type: String }) login!: string;
++  @ApiPropertyOptional({ type: String, format: 'email', nullable: true }) email!: string | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) displayName!: string | null;
++  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) lastLoginAt!: string | null;
++  @ApiProperty({ type: String, format: 'date-time' }) createdAt!: string;
++}
++
++export class CmsAuthResponseDto {
++  @ApiProperty({ type: String, example: 'Bearer' }) tokenType!: 'Bearer';
++  @ApiProperty({ type: String }) accessToken!: string;
++  @ApiProperty({ type: Number, description: 'Access token lifetime in seconds.' }) expiresIn!: number;
++  @ApiProperty({ type: String }) refreshToken!: string;
++  @ApiProperty({ type: Number, description: 'Refresh token lifetime in seconds.' }) refreshExpiresIn!: number;
++  @ApiProperty({ type: AdminUserResponseDto }) user!: AdminUserResponseDto;
++}
++
++export class SuccessResponseDto {
++  @ApiProperty({ type: Boolean, example: true }) success!: true;
++}
+--- a/src/modules/auth/cms-auth.controller.ts
++++ b/src/modules/auth/cms-auth.controller.ts
+@@ -1,10 +1,15 @@
+ import { Body, Controller, Get, Headers, Ip, Post, UseGuards } from '@nestjs/common';
+-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
++import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+ import type { AdminPrincipal } from '../../common/types.js';
+ import { CmsAuthService } from './cms-auth.service.js';
+ import { CmsJwtGuard } from './cms-jwt.guard.js';
+ import { CurrentAdmin } from './current-admin.decorator.js';
+ import { CmsLoginDto, LogoutDto, RefreshTokenDto } from './dto/cms-auth.dto.js';
++import {
++  AdminUserResponseDto,
++  CmsAuthResponseDto,
++  SuccessResponseDto,
++} from './dto/cms-auth-response.dto.js';
+ 
+ @ApiTags('CMS authentication')
+ @Controller('auth')
+@@ -12,6 +17,7 @@
+   constructor(private readonly cmsAuth: CmsAuthService) {}
+ 
+   @Post('login')
++  @ApiOkResponse({ type: CmsAuthResponseDto })
+   login(
+     @Body() dto: CmsLoginDto,
+     @Headers('user-agent') userAgent: string | undefined,
+@@ -21,6 +27,7 @@
+   }
+ 
+   @Post('refresh')
++  @ApiOkResponse({ type: CmsAuthResponseDto })
+   refresh(
+     @Body() dto: RefreshTokenDto,
+     @Headers('user-agent') userAgent: string | undefined,
+@@ -30,13 +37,15 @@
+   }
+ 
+   @Post('logout')
++  @ApiOkResponse({ type: SuccessResponseDto })
+   @ApiBearerAuth()
+   @UseGuards(CmsJwtGuard)
+   logout(@CurrentAdmin() admin: AdminPrincipal, @Body() dto: LogoutDto) {
+-    return this.cmsAuth.logout(admin.userId, admin.sessionJti, dto.refreshToken);
++    return this.cmsAuth.logout(admin.userId, dto.refreshToken);
+   }
+ 
+   @Post('logout-all')
++  @ApiOkResponse({ type: SuccessResponseDto })
+   @ApiBearerAuth()
+   @UseGuards(CmsJwtGuard)
+   logoutAll(@CurrentAdmin() admin: AdminPrincipal) {
+@@ -44,6 +53,7 @@
+   }
+ 
+   @Get('me')
++  @ApiOkResponse({ type: AdminUserResponseDto })
+   @ApiBearerAuth()
+   @UseGuards(CmsJwtGuard)
+   me(@CurrentAdmin() admin: AdminPrincipal) {
+--- a/src/modules/auth/cms-auth.service.ts
++++ b/src/modules/auth/cms-auth.service.ts
+@@ -41,6 +41,7 @@
+     if (!user || !user.isActive || !passwordMatches) {
+       throw new UnauthorizedException('Invalid login or password');
+     }
++    await this.linkProjectMemberships(user);
+     await this.prisma.adminUser.update({
+       where: { id: user.id },
+       data: { lastLoginAt: new Date() },
+@@ -100,20 +101,9 @@
+     return this.authResponse(stored.adminUser, next);
+   }
+ 
+-  async logout(
+-    userId: string,
+-    sessionJti: string,
+-    refreshToken: string,
+-  ): Promise<{ success: true }> {
+-    const session = await this.prisma.adminRefreshToken.findFirst({
+-      where: { adminUserId: userId, jti: sessionJti, revokedAt: null },
+-      select: { tokenHash: true },
+-    });
+-    if (!session || session.tokenHash !== hashSecret(refreshToken)) {
+-      throw new UnauthorizedException('Refresh token does not belong to the current CMS session');
+-    }
++  async logout(userId: string, refreshToken: string): Promise<{ success: true }> {
+     await this.prisma.adminRefreshToken.updateMany({
+-      where: { adminUserId: userId, jti: sessionJti, revokedAt: null },
++      where: { adminUserId: userId, tokenHash: hashSecret(refreshToken), revokedAt: null },
+       data: { revokedAt: new Date() },
+     });
+     return { success: true };
+@@ -174,6 +164,35 @@
+     return this.authResponse(user, tokens);
+   }
+ 
++  /**
++   * Links invitations created before the CMS account existed. Case-insensitive matching is
++   * intentional, while existing membership email values are left untouched to avoid a migration.
++   */
++  private async linkProjectMemberships(user: AdminUser): Promise<void> {
++    const email = (user.email ?? (user.login.includes('@') ? user.login : '')).trim().toLowerCase();
++    if (!email) return;
++    const candidates = await this.prisma.projectMember.findMany({
++      where: { adminUserId: null, email: { equals: email, mode: 'insensitive' } },
++      select: { id: true, projectId: true },
++    });
++    if (!candidates.length) return;
++    const projectIds = candidates.map((membership) => membership.projectId);
++    const existing = await this.prisma.projectMember.findMany({
++      where: { adminUserId: user.id, projectId: { in: projectIds } },
++      select: { projectId: true },
++    });
++    const alreadyLinked = new Set(existing.map((membership) => membership.projectId));
++    const ids = candidates
++      .filter((membership) => !alreadyLinked.has(membership.projectId))
++      .map((membership) => membership.id);
++    if (ids.length) {
++      await this.prisma.projectMember.updateMany({
++        where: { id: { in: ids }, adminUserId: null },
++        data: { adminUserId: user.id },
++      });
++    }
++  }
++
+   private createTokenPair(user: AdminUser) {
+     const jti = randomUUID();
+     const accessToken = this.jwt.sign(
+--- a/src/modules/platform/dto/platform.dto.ts
++++ b/src/modules/platform/dto/platform.dto.ts
+@@ -1,7 +1,7 @@
+ import { Type } from 'class-transformer';
++import { ApiProperty } from '@nestjs/swagger';
+ import {
+   ArrayMaxSize,
+-  ArrayMinSize,
+   IsArray,
+   IsBoolean,
+   IsEmail,
+@@ -21,6 +21,22 @@
+ 
+ const codePattern = /^[a-z][a-z0-9_.-]*$/;
+ 
++export enum ScenarioActionTypeDto {
++  SHOW_ASSISTANT = 'SHOW_ASSISTANT',
++  HIDE_ASSISTANT = 'HIDE_ASSISTANT',
++  OPEN_CHAT = 'OPEN_CHAT',
++  CLOSE_CHAT = 'CLOSE_CHAT',
++  SAY = 'SAY',
++  PLAY_ANIMATION = 'PLAY_ANIMATION',
++  HIGHLIGHT_ELEMENT = 'HIGHLIGHT_ELEMENT',
++  REMOVE_HIGHLIGHT = 'REMOVE_HIGHLIGHT',
++  SHOW_CTA = 'SHOW_CTA',
++  OPEN_PAGE = 'OPEN_PAGE',
++  OPEN_MODAL = 'OPEN_MODAL',
++  TRACK = 'TRACK',
++  COMPLETE_SCENARIO = 'COMPLETE_SCENARIO',
++}
++
+ export class CreateProjectDto {
+   @IsString() @MinLength(2) @MaxLength(100) organizationName!: string;
+   @IsString() @Matches(codePattern) organizationSlug!: string;
+@@ -102,39 +118,15 @@
+ }
+ 
+ export class ScenarioActionDto {
++  @ApiProperty({ type: Number, minimum: 0 })
+   @IsInt() @Min(0) position!: number;
+-  @IsIn([
+-    'SHOW_ASSISTANT',
+-    'HIDE_ASSISTANT',
+-    'OPEN_CHAT',
+-    'CLOSE_CHAT',
+-    'SAY',
+-    'PLAY_ANIMATION',
+-    'HIGHLIGHT_ELEMENT',
+-    'REMOVE_HIGHLIGHT',
+-    'SHOW_CTA',
+-    'OPEN_PAGE',
+-    'OPEN_MODAL',
+-    'TRACK',
+-    'COMPLETE_SCENARIO',
+-  ])
+-  type!: string;
++  @ApiProperty({ enum: ScenarioActionTypeDto, enumName: 'ScenarioActionType' })
++  @IsIn(Object.values(ScenarioActionTypeDto))
++  type!: ScenarioActionTypeDto;
++  @ApiProperty({ type: 'object', additionalProperties: true })
+   @IsObject() config!: Record<string, unknown>;
+ }
+ 
+-export class ScenarioConditionDto {
+-  @IsString()
+-  @Matches(/^(event|user|project|scenario)(\.[a-zA-Z0-9_-]+)+$/)
+-  path!: string;
+-
+-  @IsOptional()
+-  @IsIn(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'exists', 'contains'])
+-  operator?: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'exists' | 'contains';
+-
+-  @IsOptional()
+-  value?: unknown;
+-}
+-
+ export class CreateScenarioDto {
+   @IsString() @Matches(codePattern) code!: string;
+   @IsString() @MinLength(1) @MaxLength(120) name!: string;
+@@ -143,17 +135,12 @@
+   @IsOptional() @IsIn(['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED']) status?:
+     'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+   @IsOptional() @IsInt() @Min(-1000) @Max(1000) priority?: number;
+-  @IsOptional()
+-  @IsArray()
+-  @ValidateNested({ each: true })
+-  @Type(() => ScenarioConditionDto)
+-  conditions?: ScenarioConditionDto[];
++  @IsOptional() @IsArray() conditions?: Record<string, unknown>[];
+   @IsOptional() @IsInt() @Min(0) cooldownSeconds?: number;
+   @IsOptional() @IsInt() @Min(1) maxRunsPerUser?: number;
+   @IsOptional() @IsISO8601() activeFrom?: string;
+   @IsOptional() @IsISO8601() activeTo?: string;
+   @IsArray()
+-  @ArrayMinSize(1)
+   @ArrayMaxSize(50)
+   @ValidateNested({ each: true })
+   @Type(() => ScenarioActionDto)
+@@ -167,18 +154,13 @@
+   @IsOptional() @IsIn(['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED']) status?:
+     'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+   @IsOptional() @IsInt() @Min(-1000) @Max(1000) priority?: number;
+-  @IsOptional()
+-  @IsArray()
+-  @ValidateNested({ each: true })
+-  @Type(() => ScenarioConditionDto)
+-  conditions?: ScenarioConditionDto[];
++  @IsOptional() @IsArray() conditions?: Record<string, unknown>[];
+   @IsOptional() @IsInt() @Min(0) cooldownSeconds?: number;
+   @IsOptional() @IsInt() @Min(1) maxRunsPerUser?: number;
+   @IsOptional() @IsISO8601() activeFrom?: string;
+   @IsOptional() @IsISO8601() activeTo?: string;
+   @IsOptional()
+   @IsArray()
+-  @ArrayMinSize(1)
+   @ArrayMaxSize(50)
+   @ValidateNested({ each: true })
+   @Type(() => ScenarioActionDto)
+--- /dev/null
++++ b/src/modules/platform/dto/platform-response.dto.ts
+@@ -0,0 +1,165 @@
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
++import { ScenarioActionTypeDto } from './platform.dto.js';
++
++const jsonSchema = { type: 'object' as const, additionalProperties: true };
++
++export enum ProjectStatusDto {
++  ACTIVE = 'ACTIVE',
++  SUSPENDED = 'SUSPENDED',
++  ARCHIVED = 'ARCHIVED',
++}
++
++export enum ProjectRoleDto {
++  OWNER = 'OWNER',
++  ADMIN = 'ADMIN',
++  EDITOR = 'EDITOR',
++  VIEWER = 'VIEWER',
++}
++
++export enum UiElementKindDto {
++  BUTTON = 'BUTTON',
++  MODAL = 'MODAL',
++  PAGE = 'PAGE',
++  ELEMENT = 'ELEMENT',
++  HANDLER = 'HANDLER',
++}
++
++export enum ScenarioStatusDto {
++  DRAFT = 'DRAFT',
++  ACTIVE = 'ACTIVE',
++  PAUSED = 'PAUSED',
++  ARCHIVED = 'ARCHIVED',
++}
++
++export class OrganizationResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty() name!: string;
++  @ApiProperty() slug!: string;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
++}
++
++export class ProjectCountsResponseDto {
++  @ApiProperty() users!: number;
++  @ApiProperty() scenarios!: number;
++  @ApiProperty() eventLogs!: number;
++}
++
++export class ProjectResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) organizationId!: string;
++  @ApiProperty() name!: string;
++  @ApiProperty() slug!: string;
++  @ApiProperty({ enum: ProjectStatusDto, enumName: 'ProjectStatus' }) status!: ProjectStatusDto;
++  @ApiProperty() publicKey!: string;
++  @ApiProperty() serverKeyPrefix!: string;
++  @ApiProperty() defaultLocale!: string;
++  @ApiProperty({ type: [String] }) supportedLocales!: string[];
++  @ApiProperty() assistantName!: string;
++  @ApiProperty() systemPrompt!: string;
++  @ApiProperty(jsonSchema) settings!: Record<string, unknown>;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
++  @ApiPropertyOptional({ type: OrganizationResponseDto }) organization?: OrganizationResponseDto;
++  @ApiPropertyOptional({ type: ProjectCountsResponseDto }) _count?: ProjectCountsResponseDto;
++}
++
++export class ProjectCredentialsResponseDto {
++  @ApiProperty() publicKey!: string;
++  @ApiProperty({ description: 'Shown once; store securely.' }) serverApiKey!: string;
++}
++
++export class CreateProjectResponseDto {
++  @ApiProperty({ type: ProjectResponseDto }) project!: ProjectResponseDto;
++  @ApiProperty({ type: ProjectCredentialsResponseDto }) credentials!: ProjectCredentialsResponseDto;
++}
++
++export class RotateServerKeyResponseDto {
++  @ApiProperty({ description: 'Shown once; replaces the previous server key.' }) serverApiKey!: string;
++}
++
++export class ProjectMemberResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) projectId!: string;
++  @ApiPropertyOptional({ format: 'uuid', nullable: true }) adminUserId!: string | null;
++  @ApiProperty({ format: 'email' }) email!: string;
++  @ApiPropertyOptional({ nullable: true }) name!: string | null;
++  @ApiProperty({ enum: ProjectRoleDto, enumName: 'ProjectRole' }) role!: ProjectRoleDto;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
++}
++
++export class EndUserResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) projectId!: string;
++  @ApiProperty() externalId!: string;
++  @ApiProperty() isGuest!: boolean;
++  @ApiPropertyOptional({ nullable: true }) locale!: string | null;
++  @ApiPropertyOptional({ nullable: true }) segment!: string | null;
++  @ApiProperty(jsonSchema) profile!: Record<string, unknown>;
++  @ApiProperty(jsonSchema) attributes!: Record<string, unknown>;
++  @ApiProperty(jsonSchema) preferences!: Record<string, unknown>;
++  @ApiProperty({ format: 'date-time' }) lastSeenAt!: string;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
++}
++
++export class UiElementResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) projectId!: string;
++  @ApiProperty() code!: string;
++  @ApiProperty() name!: string;
++  @ApiProperty({ enum: UiElementKindDto, enumName: 'UiElementKind' }) kind!: UiElementKindDto;
++  @ApiPropertyOptional({ nullable: true }) selector!: string | null;
++  @ApiPropertyOptional({ nullable: true }) route!: string | null;
++  @ApiPropertyOptional({ nullable: true }) handler!: string | null;
++  @ApiProperty(jsonSchema) config!: Record<string, unknown>;
++  @ApiProperty() enabled!: boolean;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
++}
++
++export class EventDefinitionResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) projectId!: string;
++  @ApiProperty() code!: string;
++  @ApiProperty() name!: string;
++  @ApiPropertyOptional({ nullable: true }) description!: string | null;
++  @ApiProperty() version!: number;
++  @ApiProperty(jsonSchema) payloadSchema!: Record<string, unknown>;
++  @ApiProperty() enabled!: boolean;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
++}
++
++export class ScenarioActionResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) scenarioId!: string;
++  @ApiProperty() position!: number;
++  @ApiProperty({ enum: ScenarioActionTypeDto, enumName: 'ScenarioActionType' })
++  type!: ScenarioActionTypeDto;
++  @ApiProperty(jsonSchema) config!: Record<string, unknown>;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
++}
++
++export class ScenarioResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) projectId!: string;
++  @ApiProperty({ format: 'uuid' }) eventDefinitionId!: string;
++  @ApiProperty() code!: string;
++  @ApiProperty() name!: string;
++  @ApiPropertyOptional({ nullable: true }) description!: string | null;
++  @ApiProperty({ enum: ScenarioStatusDto, enumName: 'ScenarioStatus' }) status!: ScenarioStatusDto;
++  @ApiProperty() priority!: number;
++  @ApiProperty({ type: 'array', items: jsonSchema }) conditions!: Record<string, unknown>[];
++  @ApiProperty() cooldownSeconds!: number;
++  @ApiPropertyOptional({ nullable: true }) maxRunsPerUser!: number | null;
++  @ApiPropertyOptional({ format: 'date-time', nullable: true }) activeFrom!: string | null;
++  @ApiPropertyOptional({ format: 'date-time', nullable: true }) activeTo!: string | null;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
++  @ApiProperty({ type: [ScenarioActionResponseDto] }) actions!: ScenarioActionResponseDto[];
++  @ApiPropertyOptional({ type: EventDefinitionResponseDto })
++  eventDefinition?: EventDefinitionResponseDto;
++}
+--- a/src/modules/platform/platform.controller.ts
++++ b/src/modules/platform/platform.controller.ts
+@@ -1,5 +1,5 @@
+ import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
++import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+ import { CmsJwtGuard } from '../auth/cms-jwt.guard.js';
+ import { CmsProjectGuard } from '../auth/cms-project.guard.js';
+ import { CurrentAdmin } from '../auth/current-admin.decorator.js';
+@@ -17,6 +17,16 @@
+   UpsertUserDto,
+ } from './dto/platform.dto.js';
+ import { PlatformService } from './platform.service.js';
++import {
++  CreateProjectResponseDto,
++  EndUserResponseDto,
++  EventDefinitionResponseDto,
++  ProjectMemberResponseDto,
++  ProjectResponseDto,
++  RotateServerKeyResponseDto,
++  ScenarioResponseDto,
++  UiElementResponseDto,
++} from './dto/platform-response.dto.js';
+ 
+ @ApiTags('admin')
+ @ApiBearerAuth()
+@@ -25,120 +35,162 @@
+ export class PlatformController {
+   constructor(private readonly platform: PlatformService) {}
+ 
+-  @Post('projects') createProject(
++  @Post('projects')
++  @ApiCreatedResponse({ type: CreateProjectResponseDto })
++  createProject(
+     @CurrentAdmin() admin: AdminPrincipal,
+     @Body() dto: CreateProjectDto,
+   ) {
+     return this.platform.createProject(admin.userId, dto);
+   }
+-  @Get('projects') listProjects(@CurrentAdmin() admin: AdminPrincipal) {
++  @Get('projects')
++  @ApiOkResponse({ type: ProjectResponseDto, isArray: true })
++  listProjects(@CurrentAdmin() admin: AdminPrincipal) {
+     return this.platform.listProjects(admin.userId);
+   }
+-  @Get('projects/:projectId') getProject(@Param('projectId') id: string) {
++  @Get('projects/:projectId')
++  @ApiOkResponse({ type: ProjectResponseDto })
++  getProject(@Param('projectId') id: string) {
+     return this.platform.getProject(id);
+   }
+-  @Patch('projects/:projectId') updateProject(
++  @Patch('projects/:projectId')
++  @ApiOkResponse({ type: ProjectResponseDto })
++  updateProject(
+     @Param('projectId') id: string,
+     @Body() dto: UpdateProjectDto,
+   ) {
+     return this.platform.updateProject(id, dto);
+   }
+-  @Delete('projects/:projectId') archiveProject(@Param('projectId') id: string) {
++  @Delete('projects/:projectId')
++  @ApiOkResponse({ type: ProjectResponseDto })
++  archiveProject(@Param('projectId') id: string) {
+     return this.platform.archiveProject(id);
+   }
+-  @Post('projects/:projectId/rotate-server-key') rotate(@Param('projectId') id: string) {
++  @Post('projects/:projectId/rotate-server-key')
++  @ApiCreatedResponse({ type: RotateServerKeyResponseDto })
++  rotate(@Param('projectId') id: string) {
+     return this.platform.rotateServerKey(id);
+   }
+ 
+-  @Get('projects/:projectId/members') members(@Param('projectId') id: string) {
++  @Get('projects/:projectId/members')
++  @ApiOkResponse({ type: ProjectMemberResponseDto, isArray: true })
++  members(@Param('projectId') id: string) {
+     return this.platform.listMembers(id);
+   }
+-  @Post('projects/:projectId/members') createMember(
++  @Post('projects/:projectId/members')
++  @ApiCreatedResponse({ type: ProjectMemberResponseDto })
++  createMember(
+     @Param('projectId') id: string,
+     @Body() dto: CreateMemberDto,
+   ) {
+     return this.platform.createMember(id, dto);
+   }
+-  @Delete('projects/:projectId/members/:id') deleteMember(
++  @Delete('projects/:projectId/members/:id')
++  @ApiOkResponse({ type: ProjectMemberResponseDto })
++  deleteMember(
+     @Param('projectId') projectId: string,
+     @Param('id') id: string,
+   ) {
+     return this.platform.deleteMember(projectId, id);
+   }
+-
+-  @Get('projects/:projectId/users') users(@Param('projectId') id: string) {
++  @Get('projects/:projectId/users')
++  @ApiOkResponse({ type: EndUserResponseDto, isArray: true })
++  users(@Param('projectId') id: string) {
+     return this.platform.listUsers(id);
+   }
+-  @Post('projects/:projectId/users') upsertUser(
++  @Post('projects/:projectId/users')
++  @ApiCreatedResponse({ type: EndUserResponseDto })
++  upsertUser(
+     @Param('projectId') id: string,
+     @Body() dto: UpsertUserDto,
+   ) {
+     return this.platform.upsertUser(id, dto);
+   }
+-
+-  @Get('projects/:projectId/ui-elements') uiElements(@Param('projectId') id: string) {
++  @Get('projects/:projectId/ui-elements')
++  @ApiOkResponse({ type: UiElementResponseDto, isArray: true })
++  uiElements(@Param('projectId') id: string) {
+     return this.platform.listUiElements(id);
+   }
+-  @Post('projects/:projectId/ui-elements') createUi(
++  @Post('projects/:projectId/ui-elements')
++  @ApiCreatedResponse({ type: UiElementResponseDto })
++  createUi(
+     @Param('projectId') id: string,
+     @Body() dto: CreateUiElementDto,
+   ) {
+     return this.platform.createUiElement(id, dto);
+   }
+-  @Patch('projects/:projectId/ui-elements/:id') updateUi(
++  @Patch('projects/:projectId/ui-elements/:id')
++  @ApiOkResponse({ type: UiElementResponseDto })
++  updateUi(
+     @Param('projectId') projectId: string,
+     @Param('id') id: string,
+     @Body() dto: UpdateUiElementDto,
+   ) {
+     return this.platform.updateUiElement(projectId, id, dto);
+   }
+-  @Delete('projects/:projectId/ui-elements/:id') deleteUi(
++  @Delete('projects/:projectId/ui-elements/:id')
++  @ApiOkResponse({ type: UiElementResponseDto })
++  deleteUi(
+     @Param('projectId') projectId: string,
+     @Param('id') id: string,
+   ) {
+     return this.platform.deleteUiElement(projectId, id);
+   }
+-
+-  @Get('projects/:projectId/event-definitions') eventDefinitions(@Param('projectId') id: string) {
++  @Get('projects/:projectId/event-definitions')
++  @ApiOkResponse({ type: EventDefinitionResponseDto, isArray: true })
++  eventDefinitions(@Param('projectId') id: string) {
+     return this.platform.listEventDefinitions(id);
+   }
+-  @Post('projects/:projectId/event-definitions') createEventDefinition(
++  @Post('projects/:projectId/event-definitions')
++  @ApiCreatedResponse({ type: EventDefinitionResponseDto })
++  createEventDefinition(
+     @Param('projectId') id: string,
+     @Body() dto: CreateEventDefinitionDto,
+   ) {
+     return this.platform.createEventDefinition(id, dto);
+   }
+-  @Patch('projects/:projectId/event-definitions/:id') updateEventDefinition(
++  @Patch('projects/:projectId/event-definitions/:id')
++  @ApiOkResponse({ type: EventDefinitionResponseDto })
++  updateEventDefinition(
+     @Param('projectId') projectId: string,
+     @Param('id') id: string,
+     @Body() dto: UpdateEventDefinitionDto,
+   ) {
+     return this.platform.updateEventDefinition(projectId, id, dto);
+   }
+-  @Delete('projects/:projectId/event-definitions/:id') deleteEventDefinition(
++  @Delete('projects/:projectId/event-definitions/:id')
++  @ApiOkResponse({ type: EventDefinitionResponseDto })
++  deleteEventDefinition(
+     @Param('projectId') projectId: string,
+     @Param('id') id: string,
+   ) {
+     return this.platform.deleteEventDefinition(projectId, id);
+   }
+-
+-  @Get('projects/:projectId/scenarios') scenarios(@Param('projectId') id: string) {
++  @Get('projects/:projectId/scenarios')
++  @ApiOkResponse({ type: ScenarioResponseDto, isArray: true })
++  scenarios(@Param('projectId') id: string) {
+     return this.platform.listScenarios(id);
+   }
+-  @Post('projects/:projectId/scenarios') createScenario(
++  @Post('projects/:projectId/scenarios')
++  @ApiCreatedResponse({ type: ScenarioResponseDto })
++  createScenario(
+     @Param('projectId') id: string,
+     @Body() dto: CreateScenarioDto,
+   ) {
+     return this.platform.createScenario(id, dto);
+   }
+-  @Patch('projects/:projectId/scenarios/:id') updateScenario(
++  @Patch('projects/:projectId/scenarios/:id')
++  @ApiOkResponse({ type: ScenarioResponseDto })
++  updateScenario(
+     @Param('projectId') projectId: string,
+     @Param('id') id: string,
+     @Body() dto: UpdateScenarioDto,
+   ) {
+     return this.platform.updateScenario(projectId, id, dto);
+   }
+-  @Delete('projects/:projectId/scenarios/:id') deleteScenario(
++  @Delete('projects/:projectId/scenarios/:id')
++  @ApiOkResponse({ type: ScenarioResponseDto })
++  deleteScenario(
+     @Param('projectId') projectId: string,
+     @Param('id') id: string,
+   ) {
+--- a/src/modules/platform/integration-users.controller.ts
++++ b/src/modules/platform/integration-users.controller.ts
+@@ -1,9 +1,10 @@
+ import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
++import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+ import type { AuthenticatedRequest } from '../../common/types.js';
+ import { ServerKeyGuard } from '../auth/server-key.guard.js';
+ import { UpsertUserDto } from './dto/platform.dto.js';
+ import { PlatformService } from './platform.service.js';
++import { EndUserResponseDto } from './dto/platform-response.dto.js';
+ 
+ @ApiTags('integration users')
+ @ApiBearerAuth()
+@@ -12,10 +13,13 @@
+ export class IntegrationUsersController {
+   constructor(private readonly platform: PlatformService) {}
+ 
+-  @Get() list(@Req() request: AuthenticatedRequest) {
++  @Get()
++  @ApiOkResponse({ type: EndUserResponseDto, isArray: true })
++  list(@Req() request: AuthenticatedRequest) {
+     return this.platform.listUsers(request.project!.id);
+   }
+   @Post()
++  @ApiCreatedResponse({ type: EndUserResponseDto })
+   upsert(@Req() request: AuthenticatedRequest, @Body() dto: UpsertUserDto) {
+     return this.platform.upsertUser(request.project!.id, dto);
+   }
+--- a/src/modules/events/events.controller.ts
++++ b/src/modules/events/events.controller.ts
+@@ -1,21 +1,11 @@
+-import {
+-  Body,
+-  Controller,
+-  Get,
+-  Headers,
+-  HttpCode,
+-  HttpStatus,
+-  Param,
+-  Post,
+-  Req,
+-  UseGuards,
+-} from '@nestjs/common';
+-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
++import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
++import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+ import type { AuthenticatedRequest } from '../../common/types.js';
+ import { CmsJwtGuard } from '../auth/cms-jwt.guard.js';
+ import { CmsProjectGuard } from '../auth/cms-project.guard.js';
+ import { ServerKeyGuard } from '../auth/server-key.guard.js';
+ import { IngestEventDto } from './dto/event.dto.js';
++import { EventIngestResponseDto, EventLogResponseDto } from './dto/event-response.dto.js';
+ import { EventsService } from './events.service.js';
+ 
+ @ApiTags('events')
+@@ -24,18 +14,15 @@
+   constructor(private readonly events: EventsService) {}
+ 
+   @Post()
+-  @HttpCode(HttpStatus.ACCEPTED)
++  @ApiCreatedResponse({ type: EventIngestResponseDto })
+   @ApiBearerAuth()
+   @UseGuards(ServerKeyGuard)
+-  ingest(
+-    @Req() request: AuthenticatedRequest,
+-    @Headers('idempotency-key') idempotencyKey: string | undefined,
+-    @Body() dto: IngestEventDto,
+-  ) {
+-    return this.events.ingest(request.project!, dto, idempotencyKey);
++  ingest(@Req() request: AuthenticatedRequest, @Body() dto: IngestEventDto) {
++    return this.events.ingest(request.project!, dto);
+   }
+ 
+   @Get('admin/:projectId')
++  @ApiOkResponse({ type: EventLogResponseDto, isArray: true })
+   @ApiBearerAuth()
+   @UseGuards(CmsJwtGuard, CmsProjectGuard)
+   list(@Param('projectId') projectId: string) {
+--- /dev/null
++++ b/src/modules/events/dto/event-response.dto.ts
+@@ -0,0 +1,48 @@
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
++import {
++  EndUserResponseDto,
++  EventDefinitionResponseDto,
++} from '../../platform/dto/platform-response.dto.js';
++
++const jsonSchema = { type: 'object' as const, additionalProperties: true };
++
++export enum EventSourceDto {
++  SERVER = 'SERVER',
++  FRONTEND = 'FRONTEND',
++  INTERNAL = 'INTERNAL',
++}
++
++export enum EventStatusDto {
++  RECEIVED = 'RECEIVED',
++  PROCESSED = 'PROCESSED',
++  FAILED = 'FAILED',
++}
++
++export class EventIngestResponseDto {
++  @ApiProperty({ example: true }) success!: true;
++  @ApiPropertyOptional() duplicate?: boolean;
++  @ApiProperty({ format: 'uuid' }) eventId!: string;
++  @ApiProperty({ type: [String] }) matchedScenarios!: string[];
++  @ApiProperty({ type: [String], format: 'uuid' }) scenarioRunIds!: string[];
++  @ApiPropertyOptional({ type: [String], format: 'uuid' }) commandIds?: string[];
++}
++
++export class EventLogResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) projectId!: string;
++  @ApiProperty({ format: 'uuid' }) eventDefinitionId!: string;
++  @ApiProperty({ format: 'uuid' }) endUserId!: string;
++  @ApiPropertyOptional({ nullable: true }) externalEventId!: string | null;
++  @ApiProperty({ enum: EventSourceDto, enumName: 'EventSource' }) source!: EventSourceDto;
++  @ApiProperty(jsonSchema) payload!: Record<string, unknown>;
++  @ApiProperty(jsonSchema) context!: Record<string, unknown>;
++  @ApiPropertyOptional({ nullable: true }) message!: string | null;
++  @ApiProperty({ format: 'date-time' }) occurredAt!: string;
++  @ApiProperty({ format: 'date-time' }) receivedAt!: string;
++  @ApiProperty({ enum: EventStatusDto, enumName: 'EventStatus' }) status!: EventStatusDto;
++  @ApiPropertyOptional({ ...jsonSchema, nullable: true })
++  processingResult!: Record<string, unknown> | null;
++  @ApiPropertyOptional({ nullable: true }) error!: string | null;
++  @ApiProperty({ type: EventDefinitionResponseDto }) eventDefinition!: EventDefinitionResponseDto;
++  @ApiProperty({ type: EndUserResponseDto }) endUser!: EndUserResponseDto;
++}
+--- a/src/modules/scenarios/scenario-runs.controller.ts
++++ b/src/modules/scenarios/scenario-runs.controller.ts
+@@ -1,8 +1,9 @@
+ import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
++import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+ import { CmsJwtGuard } from '../auth/cms-jwt.guard.js';
+ import { CmsProjectGuard } from '../auth/cms-project.guard.js';
+ import { ScenarioRunnerService } from './scenario-runner.service.js';
++import { ScenarioRunResponseDto } from './dto/scenario-run-response.dto.js';
+ 
+ @ApiTags('scenario runs')
+ @ApiBearerAuth()
+@@ -12,6 +13,7 @@
+   constructor(private readonly runner: ScenarioRunnerService) {}
+ 
+   @Get()
++  @ApiOkResponse({ type: ScenarioRunResponseDto, isArray: true })
+   list(@Param('projectId') projectId: string) {
+     return this.runner.listRuns(projectId);
+   }
+--- /dev/null
++++ b/src/modules/scenarios/dto/scenario-run-response.dto.ts
+@@ -0,0 +1,77 @@
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
++import { ScenarioActionTypeDto } from '../../platform/dto/platform.dto.js';
++
++const jsonSchema = { type: 'object' as const, additionalProperties: true };
++
++export enum ScenarioRunStatusDto {
++  RUNNING = 'RUNNING',
++  COMPLETED = 'COMPLETED',
++  FAILED = 'FAILED',
++  SKIPPED = 'SKIPPED',
++  CANCELLED = 'CANCELLED',
++  EXPIRED = 'EXPIRED',
++}
++
++export enum ScenarioRunStepStatusDto {
++  PENDING = 'PENDING',
++  RUNNING = 'RUNNING',
++  WAITING_ACK = 'WAITING_ACK',
++  SUCCEEDED = 'SUCCEEDED',
++  FAILED = 'FAILED',
++  EXPIRED = 'EXPIRED',
++  SKIPPED = 'SKIPPED',
++}
++
++export class ScenarioRunCommandResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty() type!: string;
++  @ApiProperty(jsonSchema) payload!: Record<string, unknown>;
++  @ApiProperty() sequence!: number;
++  @ApiProperty() status!: string;
++  @ApiPropertyOptional({ format: 'date-time', nullable: true }) expiresAt!: string | null;
++  @ApiProperty({ format: 'date-time' }) createdAt!: string;
++}
++
++export class ScenarioRunStepResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty() position!: number;
++  @ApiProperty({ enum: ScenarioActionTypeDto, enumName: 'ScenarioActionType' })
++  actionType!: ScenarioActionTypeDto;
++  @ApiProperty(jsonSchema) config!: Record<string, unknown>;
++  @ApiProperty({ enum: ScenarioRunStepStatusDto, enumName: 'ScenarioRunStepStatus' })
++  status!: ScenarioRunStepStatusDto;
++  @ApiPropertyOptional({ nullable: true }) errorCode!: string | null;
++  @ApiPropertyOptional({ nullable: true }) error!: string | null;
++  @ApiPropertyOptional({ ...jsonSchema, nullable: true }) result!: Record<string, unknown> | null;
++  @ApiPropertyOptional({ type: ScenarioRunCommandResponseDto, nullable: true })
++  command!: ScenarioRunCommandResponseDto | null;
++}
++
++export class ScenarioRunScenarioSummaryDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty() code!: string;
++  @ApiProperty() name!: string;
++}
++
++export class ScenarioRunUserSummaryDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty() externalId!: string;
++}
++
++export class ScenarioRunResponseDto {
++  @ApiProperty({ format: 'uuid' }) id!: string;
++  @ApiProperty({ format: 'uuid' }) projectId!: string;
++  @ApiProperty({ format: 'uuid' }) scenarioId!: string;
++  @ApiProperty({ format: 'uuid' }) eventLogId!: string;
++  @ApiProperty({ format: 'uuid' }) endUserId!: string;
++  @ApiProperty({ enum: ScenarioRunStatusDto, enumName: 'ScenarioRunStatus' })
++  status!: ScenarioRunStatusDto;
++  @ApiProperty(jsonSchema) context!: Record<string, unknown>;
++  @ApiPropertyOptional({ nullable: true }) error!: string | null;
++  @ApiProperty({ format: 'date-time' }) startedAt!: string;
++  @ApiPropertyOptional({ format: 'date-time', nullable: true }) finishedAt!: string | null;
++  @ApiProperty() currentStep!: number;
++  @ApiProperty({ type: ScenarioRunScenarioSummaryDto }) scenario!: ScenarioRunScenarioSummaryDto;
++  @ApiProperty({ type: ScenarioRunUserSummaryDto }) endUser!: ScenarioRunUserSummaryDto;
++  @ApiProperty({ type: [ScenarioRunStepResponseDto] }) steps!: ScenarioRunStepResponseDto[];
++}
+--- /dev/null
++++ b/test/cms-project-guard.test.ts
+@@ -0,0 +1,36 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++import { ForbiddenException, type ExecutionContext } from '@nestjs/common';
++import { CmsProjectGuard } from '../src/modules/auth/cms-project.guard.js';
++
++const contextFor = (request: Record<string, unknown>): ExecutionContext =>
++  ({
++    switchToHttp: () => ({ getRequest: () => request }),
++  }) as unknown as ExecutionContext;
++
++void test('CMS project guard allows an admin with a linked membership', async () => {
++  const prisma = {
++    projectMember: {
++      findFirst: ({ where }: { where: Record<string, unknown> }) => {
++        assert.deepEqual(where, { projectId: 'project-a', adminUserId: 'admin-a' });
++        return Promise.resolve({ id: 'membership-a' });
++      },
++    },
++  };
++  const guard = new CmsProjectGuard(prisma as never);
++  const allowed = await guard.canActivate(
++    contextFor({ params: { projectId: 'project-a' }, adminPrincipal: { userId: 'admin-a' } }),
++  );
++  assert.equal(allowed, true);
++});
++
++void test('CMS project guard rejects cross-project access', async () => {
++  const prisma = { projectMember: { findFirst: () => Promise.resolve(null) } };
++  const guard = new CmsProjectGuard(prisma as never);
++  await assert.rejects(
++    guard.canActivate(
++      contextFor({ params: { projectId: 'project-b' }, adminPrincipal: { userId: 'admin-a' } }),
++    ),
++    ForbiddenException,
++  );
++});
+--- /dev/null
++++ b/test/openapi-contract.test.ts
+@@ -0,0 +1,64 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++import { Body, Controller, Post } from '@nestjs/common';
++import { Test } from '@nestjs/testing';
++import {
++  ApiExtraModels,
++  ApiOkResponse,
++  ApiTags,
++  DocumentBuilder,
++  SwaggerModule,
++} from '@nestjs/swagger';
++import { swaggerOperationIdFactory } from '../src/common/openapi.js';
++import { CmsLoginDto } from '../src/modules/auth/dto/cms-auth.dto.js';
++import { CmsAuthResponseDto } from '../src/modules/auth/dto/cms-auth-response.dto.js';
++import { ScenarioActionDto } from '../src/modules/platform/dto/platform.dto.js';
++
++@ApiTags('contract fixture')
++@ApiExtraModels(CmsLoginDto, CmsAuthResponseDto, ScenarioActionDto)
++@Controller('contract-fixture')
++class ContractFixtureController {
++  @Post('login')
++  @ApiOkResponse({ type: CmsAuthResponseDto })
++  login(@Body() dto: CmsLoginDto): CmsLoginDto {
++    return dto;
++  }
++
++}
++
++void test('OpenAPI exposes stable operation ids and non-empty safe key schemas', async () => {
++  const module = await Test.createTestingModule({ controllers: [ContractFixtureController] }).compile();
++  const app = module.createNestApplication();
++  await app.init();
++  try {
++    const document = SwaggerModule.createDocument(
++      app,
++      new DocumentBuilder().setTitle('contract').setVersion('1').build(),
++      { operationIdFactory: swaggerOperationIdFactory },
++    );
++    assert.equal(document.paths['/contract-fixture/login']?.post?.operationId, 'ContractFixture_login');
++    const schemas = document.components?.schemas ?? {};
++    const authProperties = (schemas.CmsAuthResponseDto as { properties?: Record<string, unknown> })
++      ?.properties;
++    assert.deepEqual(schemas.CmsLoginDto?.required, ['login', 'password']);
++    assert.ok(Object.keys(authProperties ?? {}).length > 0);
++    assert.equal(authProperties?.passwordHash, undefined);
++    assert.deepEqual(schemas.ScenarioActionType?.enum, [
++      'SHOW_ASSISTANT',
++      'HIDE_ASSISTANT',
++      'OPEN_CHAT',
++      'CLOSE_CHAT',
++      'SAY',
++      'PLAY_ANIMATION',
++      'HIGHLIGHT_ELEMENT',
++      'REMOVE_HIGHLIGHT',
++      'SHOW_CTA',
++      'OPEN_PAGE',
++      'OPEN_MODAL',
++      'TRACK',
++      'COMPLETE_SCENARIO',
++    ]);
++  } finally {
++    await app.close();
++  }
++});
+

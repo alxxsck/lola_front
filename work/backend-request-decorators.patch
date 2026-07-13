@@ -1,0 +1,347 @@
+--- a/src/modules/platform/dto/platform.dto.ts
++++ b/src/modules/platform/dto/platform.dto.ts
+@@ -1,5 +1,5 @@
+ import { Type } from 'class-transformer';
+-import { ApiProperty } from '@nestjs/swagger';
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+ import {
+   ArrayMaxSize,
+   ArrayMinSize,
+@@ -38,123 +38,195 @@
+ ] as const;
+ 
+ export class CreateProjectDto {
++  @ApiProperty({ type: String, minLength: 2, maxLength: 100 })
+   @IsString() @MinLength(2) @MaxLength(100) organizationName!: string;
++  @ApiProperty({ type: String, pattern: codePattern.source })
+   @IsString() @Matches(codePattern) organizationSlug!: string;
++  @ApiProperty({ type: String, minLength: 2, maxLength: 100 })
+   @IsString() @MinLength(2) @MaxLength(100) name!: string;
++  @ApiProperty({ type: String, pattern: codePattern.source })
+   @IsString() @Matches(codePattern) slug!: string;
++  @ApiPropertyOptional({ type: String })
+   @IsOptional() @IsString() defaultLocale?: string;
++  @ApiPropertyOptional({ type: [String], maxItems: 20 })
+   @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) supportedLocales?: string[];
++  @ApiPropertyOptional({ type: String, maxLength: 80 })
+   @IsOptional() @IsString() @MaxLength(80) assistantName?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 20_000 })
+   @IsOptional() @IsString() @MaxLength(20_000) systemPrompt?: string;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() settings?: Record<string, unknown>;
+ }
+ 
+ export class UpdateProjectDto {
++  @ApiPropertyOptional({ type: String, minLength: 2, maxLength: 100 })
+   @IsOptional() @IsString() @MinLength(2) @MaxLength(100) name?: string;
++  @ApiPropertyOptional({ enum: ['ACTIVE', 'SUSPENDED', 'ARCHIVED'], enumName: 'ProjectStatus' })
+   @IsOptional() @IsIn(['ACTIVE', 'SUSPENDED', 'ARCHIVED']) status?:
+     'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
++  @ApiPropertyOptional({ type: String })
+   @IsOptional() @IsString() defaultLocale?: string;
++  @ApiPropertyOptional({ type: [String], maxItems: 20 })
+   @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) supportedLocales?: string[];
++  @ApiPropertyOptional({ type: String, maxLength: 80 })
+   @IsOptional() @IsString() @MaxLength(80) assistantName?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 20_000 })
+   @IsOptional() @IsString() @MaxLength(20_000) systemPrompt?: string;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() settings?: Record<string, unknown>;
+ }
+ 
+ export class CreateMemberDto {
++  @ApiProperty({ type: String, format: 'email' })
+   @IsEmail() email!: string;
++  @ApiPropertyOptional({ type: String })
+   @IsOptional() @IsString() name?: string;
++  @ApiPropertyOptional({ enum: ['OWNER', 'ADMIN', 'EDITOR', 'VIEWER'], enumName: 'ProjectRole' })
+   @IsOptional() @IsIn(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']) role?:
+     'OWNER' | 'ADMIN' | 'EDITOR' | 'VIEWER';
+ }
+ 
+ export class UpsertUserDto {
++  @ApiProperty({ type: String, minLength: 1, maxLength: 200 })
+   @IsString() @MinLength(1) @MaxLength(200) externalId!: string;
++  @ApiPropertyOptional({ type: Boolean })
+   @IsOptional() @IsBoolean() isGuest?: boolean;
++  @ApiPropertyOptional({ type: String })
+   @IsOptional() @IsString() locale?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 100 })
+   @IsOptional() @IsString() @MaxLength(100) segment?: string;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() profile?: Record<string, unknown>;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() attributes?: Record<string, unknown>;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() preferences?: Record<string, unknown>;
+ }
+ 
+ export class CreateUiElementDto {
++  @ApiProperty({ type: String, pattern: codePattern.source })
+   @IsString() @Matches(codePattern) code!: string;
++  @ApiProperty({ type: String, minLength: 1, maxLength: 100 })
+   @IsString() @MinLength(1) @MaxLength(100) name!: string;
++  @ApiProperty({ enum: ['BUTTON', 'MODAL', 'PAGE', 'ELEMENT', 'HANDLER'], enumName: 'UiElementKind' })
+   @IsIn(['BUTTON', 'MODAL', 'PAGE', 'ELEMENT', 'HANDLER']) kind!:
+     'BUTTON' | 'MODAL' | 'PAGE' | 'ELEMENT' | 'HANDLER';
++  @ApiPropertyOptional({ type: String, maxLength: 500 })
+   @IsOptional() @IsString() @MaxLength(500) selector?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 1000 })
+   @IsOptional() @IsString() @MaxLength(1000) route?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 200 })
+   @IsOptional() @IsString() @MaxLength(200) handler?: string;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() config?: Record<string, unknown>;
++  @ApiPropertyOptional({ type: Boolean })
+   @IsOptional() @IsBoolean() enabled?: boolean;
+ }
+ 
+ export class UpdateUiElementDto {
++  @ApiPropertyOptional({ type: String, pattern: codePattern.source })
+   @IsOptional() @IsString() @Matches(codePattern) code?: string;
++  @ApiPropertyOptional({ type: String, minLength: 1, maxLength: 100 })
+   @IsOptional() @IsString() @MinLength(1) @MaxLength(100) name?: string;
++  @ApiPropertyOptional({ enum: ['BUTTON', 'MODAL', 'PAGE', 'ELEMENT', 'HANDLER'], enumName: 'UiElementKind' })
+   @IsOptional() @IsIn(['BUTTON', 'MODAL', 'PAGE', 'ELEMENT', 'HANDLER']) kind?:
+     'BUTTON' | 'MODAL' | 'PAGE' | 'ELEMENT' | 'HANDLER';
++  @ApiPropertyOptional({ type: String, maxLength: 500 })
+   @IsOptional() @IsString() @MaxLength(500) selector?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 1000 })
+   @IsOptional() @IsString() @MaxLength(1000) route?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 200 })
+   @IsOptional() @IsString() @MaxLength(200) handler?: string;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() config?: Record<string, unknown>;
++  @ApiPropertyOptional({ type: Boolean })
+   @IsOptional() @IsBoolean() enabled?: boolean;
+ }
+ 
+ export class CreateEventDefinitionDto {
++  @ApiProperty({ type: String, pattern: codePattern.source })
+   @IsString() @Matches(codePattern) code!: string;
++  @ApiProperty({ type: String, minLength: 1, maxLength: 120 })
+   @IsString() @MinLength(1) @MaxLength(120) name!: string;
++  @ApiPropertyOptional({ type: String, maxLength: 2000 })
+   @IsOptional() @IsString() @MaxLength(2000) description?: string;
++  @ApiPropertyOptional({ type: Number, minimum: 1 })
+   @IsOptional() @IsInt() @Min(1) version?: number;
++  @ApiProperty({ type: 'object', additionalProperties: true })
+   @IsObject() payloadSchema!: Record<string, unknown>;
++  @ApiPropertyOptional({ type: Boolean })
+   @IsOptional() @IsBoolean() enabled?: boolean;
+ }
+ 
+ export class UpdateEventDefinitionDto {
++  @ApiPropertyOptional({ type: String, maxLength: 120 })
+   @IsOptional() @IsString() @MaxLength(120) name?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 2000 })
+   @IsOptional() @IsString() @MaxLength(2000) description?: string;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() payloadSchema?: Record<string, unknown>;
++  @ApiPropertyOptional({ type: Boolean })
+   @IsOptional() @IsBoolean() enabled?: boolean;
+ }
+ 
+ export class ScenarioActionDto {
++  @ApiProperty({ type: Number, minimum: 0 })
+   @IsInt() @Min(0) position!: number;
+   @ApiProperty({ enum: scenarioActionTypes, enumName: 'ScenarioActionType' })
+   @IsIn(scenarioActionTypes)
+   type!: string;
++  @ApiProperty({ type: 'object', additionalProperties: true })
+   @IsObject() config!: Record<string, unknown>;
+ }
+ 
+ export class ScenarioConditionDto {
++  @ApiProperty({ type: String, pattern: '^(event|user|project|scenario)(\\.[a-zA-Z0-9_-]+)+$' })
+   @IsString()
+   @Matches(/^(event|user|project|scenario)(\.[a-zA-Z0-9_-]+)+$/)
+   path!: string;
+ 
++  @ApiPropertyOptional({
++    enum: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'exists', 'contains'],
++    enumName: 'ScenarioConditionOperator',
++  })
+   @IsOptional()
+   @IsIn(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'exists', 'contains'])
+   operator?: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'exists' | 'contains';
+ 
++  @ApiPropertyOptional({ description: 'Comparison value; omitted for existence checks.' })
+   @IsOptional()
+   value?: unknown;
+ }
+ 
+ export class CreateScenarioDto {
++  @ApiProperty({ type: String, pattern: codePattern.source })
+   @IsString() @Matches(codePattern) code!: string;
++  @ApiProperty({ type: String, minLength: 1, maxLength: 120 })
+   @IsString() @MinLength(1) @MaxLength(120) name!: string;
++  @ApiPropertyOptional({ type: String, maxLength: 2000 })
+   @IsOptional() @IsString() @MaxLength(2000) description?: string;
++  @ApiProperty({ type: String, format: 'uuid' })
+   @IsString() eventDefinitionId!: string;
++  @ApiPropertyOptional({ enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED'], enumName: 'ScenarioStatus' })
+   @IsOptional() @IsIn(['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED']) status?:
+     'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
++  @ApiPropertyOptional({ type: Number, minimum: -1000, maximum: 1000 })
+   @IsOptional() @IsInt() @Min(-1000) @Max(1000) priority?: number;
++  @ApiPropertyOptional({ type: () => [ScenarioConditionDto] })
+   @IsOptional()
+   @IsArray()
+   @ValidateNested({ each: true })
+   @Type(() => ScenarioConditionDto)
+   conditions?: ScenarioConditionDto[];
++  @ApiPropertyOptional({ type: Number, minimum: 0 })
+   @IsOptional() @IsInt() @Min(0) cooldownSeconds?: number;
++  @ApiPropertyOptional({ type: Number, minimum: 1 })
+   @IsOptional() @IsInt() @Min(1) maxRunsPerUser?: number;
++  @ApiPropertyOptional({ type: String, format: 'date-time' })
+   @IsOptional() @IsISO8601() activeFrom?: string;
++  @ApiPropertyOptional({ type: String, format: 'date-time' })
+   @IsOptional() @IsISO8601() activeTo?: string;
++  @ApiProperty({ type: () => [ScenarioActionDto], minItems: 1, maxItems: 50 })
+   @IsArray()
+   @ArrayMinSize(1)
+   @ArrayMaxSize(50)
+@@ -164,21 +236,32 @@
+ }
+ 
+ export class UpdateScenarioDto {
++  @ApiPropertyOptional({ type: String, maxLength: 120 })
+   @IsOptional() @IsString() @MaxLength(120) name?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 2000 })
+   @IsOptional() @IsString() @MaxLength(2000) description?: string;
++  @ApiPropertyOptional({ type: String, format: 'uuid' })
+   @IsOptional() @IsString() eventDefinitionId?: string;
++  @ApiPropertyOptional({ enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED'], enumName: 'ScenarioStatus' })
+   @IsOptional() @IsIn(['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED']) status?:
+     'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
++  @ApiPropertyOptional({ type: Number, minimum: -1000, maximum: 1000 })
+   @IsOptional() @IsInt() @Min(-1000) @Max(1000) priority?: number;
++  @ApiPropertyOptional({ type: () => [ScenarioConditionDto] })
+   @IsOptional()
+   @IsArray()
+   @ValidateNested({ each: true })
+   @Type(() => ScenarioConditionDto)
+   conditions?: ScenarioConditionDto[];
++  @ApiPropertyOptional({ type: Number, minimum: 0 })
+   @IsOptional() @IsInt() @Min(0) cooldownSeconds?: number;
++  @ApiPropertyOptional({ type: Number, minimum: 1 })
+   @IsOptional() @IsInt() @Min(1) maxRunsPerUser?: number;
++  @ApiPropertyOptional({ type: String, format: 'date-time' })
+   @IsOptional() @IsISO8601() activeFrom?: string;
++  @ApiPropertyOptional({ type: String, format: 'date-time' })
+   @IsOptional() @IsISO8601() activeTo?: string;
++  @ApiPropertyOptional({ type: () => [ScenarioActionDto], minItems: 1, maxItems: 50 })
+   @IsOptional()
+   @IsArray()
+   @ArrayMinSize(1)
+--- a/src/modules/events/dto/event.dto.ts
++++ b/src/modules/events/dto/event.dto.ts
+@@ -1,14 +1,25 @@
+ import { IsISO8601, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+ 
+ export class IngestEventDto {
++  @ApiPropertyOptional({ type: String, format: 'uuid' })
+   @IsOptional() @IsString() projectId?: string;
++  @ApiPropertyOptional({ type: String, minLength: 1, maxLength: 200, deprecated: true })
+   @IsOptional() @IsString() @MinLength(1) @MaxLength(200) externalUserId?: string;
++  @ApiPropertyOptional({ type: String, minLength: 1, maxLength: 200 })
+   @IsOptional() @IsString() @MinLength(1) @MaxLength(200) userId?: string;
++  @ApiProperty({ type: String, minLength: 1, maxLength: 120 })
+   @IsString() @MinLength(1) @MaxLength(120) eventCode!: string;
++  @ApiProperty({ type: 'object', additionalProperties: true })
+   @IsObject() payload!: Record<string, unknown>;
++  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+   @IsOptional() @IsObject() context?: Record<string, unknown>;
++  @ApiPropertyOptional({ type: String, maxLength: 5000 })
+   @IsOptional() @IsString() @MaxLength(5000) message?: string;
++  @ApiPropertyOptional({ type: String, maxLength: 200 })
+   @IsOptional() @IsString() @MaxLength(200) externalEventId?: string;
++  @ApiPropertyOptional({ type: String, format: 'date-time', deprecated: true })
+   @IsOptional() @IsISO8601() occurredAt?: string;
++  @ApiPropertyOptional({ type: String, format: 'date-time' })
+   @IsOptional() @IsISO8601() timestamp?: string;
+ }
+--- a/test/openapi-contract.test.ts
++++ b/test/openapi-contract.test.ts
+@@ -12,10 +12,24 @@
+ import { swaggerOperationIdFactory } from '../src/common/openapi.js';
+ import { CmsLoginDto } from '../src/modules/auth/dto/cms-auth.dto.js';
+ import { CmsAuthResponseDto } from '../src/modules/auth/dto/cms-auth-response.dto.js';
+-import { ScenarioActionDto } from '../src/modules/platform/dto/platform.dto.js';
++import { IngestEventDto } from '../src/modules/events/dto/event.dto.js';
++import {
++  CreateProjectDto,
++  CreateScenarioDto,
++  ScenarioActionDto,
++  UpsertUserDto,
++} from '../src/modules/platform/dto/platform.dto.js';
+ 
+ @ApiTags('contract fixture')
+-@ApiExtraModels(CmsLoginDto, CmsAuthResponseDto, ScenarioActionDto)
++@ApiExtraModels(
++  CmsLoginDto,
++  CmsAuthResponseDto,
++  CreateProjectDto,
++  CreateScenarioDto,
++  IngestEventDto,
++  ScenarioActionDto,
++  UpsertUserDto,
++)
+ @Controller('contract-fixture')
+ class ContractFixtureController {
+   @Post('login')
+@@ -23,12 +37,11 @@
+   login(@Body() dto: CmsLoginDto): CmsLoginDto {
+     return dto;
+   }
++
+ }
+ 
+ void test('OpenAPI exposes stable operation ids and non-empty safe key schemas', async () => {
+-  const module = await Test.createTestingModule({
+-    controllers: [ContractFixtureController],
+-  }).compile();
++  const module = await Test.createTestingModule({ controllers: [ContractFixtureController] }).compile();
+   const app = module.createNestApplication();
+   await app.init();
+   try {
+@@ -37,16 +50,31 @@
+       new DocumentBuilder().setTitle('contract').setVersion('1').build(),
+       { operationIdFactory: swaggerOperationIdFactory },
+     );
+-    assert.equal(
+-      document.paths['/contract-fixture/login']?.post?.operationId,
+-      'ContractFixture_login',
+-    );
++    assert.equal(document.paths['/contract-fixture/login']?.post?.operationId, 'ContractFixture_login');
+     const schemas = document.components?.schemas ?? {};
+     const authProperties = (schemas.CmsAuthResponseDto as { properties?: Record<string, unknown> })
+       ?.properties;
++    const scenarioProperties = (schemas.CreateScenarioDto as {
++      properties?: Record<string, unknown>;
++    })?.properties;
+     assert.deepEqual(schemas.CmsLoginDto?.required, ['login', 'password']);
+     assert.ok(Object.keys(authProperties ?? {}).length > 0);
+     assert.equal(authProperties?.passwordHash, undefined);
++    assert.deepEqual(schemas.CreateProjectDto?.required, [
++      'organizationName',
++      'organizationSlug',
++      'name',
++      'slug',
++    ]);
++    assert.deepEqual(schemas.IngestEventDto?.required, ['eventCode', 'payload']);
++    assert.deepEqual(schemas.UpsertUserDto?.required, ['externalId']);
++    assert.deepEqual(schemas.CreateScenarioDto?.required, [
++      'code',
++      'name',
++      'eventDefinitionId',
++      'actions',
++    ]);
++    assert.ok(Object.keys(scenarioProperties ?? {}).length >= 12);
+     assert.deepEqual(schemas.ScenarioActionType?.enum, [
+       'SHOW_ASSISTANT',
+       'HIDE_ASSISTANT',
+

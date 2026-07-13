@@ -1,0 +1,167 @@
+--- a/src/modules/chat/dto/chat.dto.ts
++++ b/src/modules/chat/dto/chat.dto.ts
+@@ -10,6 +10,7 @@
+   ValidateNested,
+ } from 'class-validator';
+ import { Type } from 'class-transformer';
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+ 
+ export class SendChatMessageDto {
+   @IsString() @MinLength(1) @MaxLength(10_000) message!: string;
+@@ -55,6 +56,21 @@
+ }
+ 
+ export class DirectAdminActionDto {
++  @ApiProperty({
++    enum: [
++      'SHOW_ASSISTANT',
++      'HIDE_ASSISTANT',
++      'OPEN_CHAT',
++      'CLOSE_CHAT',
++      'PLAY_ANIMATION',
++      'HIGHLIGHT_ELEMENT',
++      'REMOVE_HIGHLIGHT',
++      'SHOW_CTA',
++      'OPEN_PAGE',
++      'OPEN_MODAL',
++    ],
++    enumName: 'DirectAdminActionType',
++  })
+   @IsIn([
+     'SHOW_ASSISTANT',
+     'HIDE_ASSISTANT',
+@@ -69,17 +85,29 @@
+   ])
+   type!: string;
+ 
++  @ApiProperty({ type: 'object', additionalProperties: true })
+   @IsObject() config!: Record<string, unknown>;
+ }
+ 
+ export class SendAdminMessageDto {
++  @ApiProperty({
++    enum: ['reuse_active', 'create_new'],
++    enumName: 'AdminConversationPolicy',
++  })
+   @IsIn(['reuse_active', 'create_new'])
+   conversationPolicy!: 'reuse_active' | 'create_new';
+ 
++  @ApiProperty({ type: String, minLength: 1, maxLength: 10_000 })
+   @IsString() @MinLength(1) @MaxLength(10_000) text!: string;
+ 
++  @ApiPropertyOptional({
++    type: String,
++    format: 'uuid',
++    description: 'Required when actions are present; must be an active online user session.',
++  })
+   @IsOptional() @IsString() interactionSessionId?: string;
+ 
++  @ApiPropertyOptional({ type: () => [DirectAdminActionDto], maxItems: 5 })
+   @IsOptional()
+   @IsArray()
+   @ArrayMaxSize(5)
+--- /dev/null
++++ b/src/modules/chat/dto/admin-messaging-response.dto.ts
+@@ -0,0 +1,54 @@
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
++
++const jsonSchema = { type: 'object' as const, additionalProperties: true };
++
++export class AdminMessageThreadResponseDto {
++  @ApiProperty({ type: String, format: 'uuid' }) id!: string;
++  @ApiProperty({ type: String, format: 'uuid' }) projectId!: string;
++  @ApiProperty({ type: String, format: 'uuid' }) endUserId!: string;
++  @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true }) sessionId!: string | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) title!: string | null;
++  @ApiProperty({ enum: ['OPEN', 'CLOSED'], enumName: 'ThreadStatus' }) status!: 'OPEN' | 'CLOSED';
++  @ApiProperty({ type: String, format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ type: String, format: 'date-time' }) updatedAt!: string;
++}
++
++export class AdminStoredMessageResponseDto {
++  @ApiProperty({ type: String, format: 'uuid' }) id!: string;
++  @ApiProperty({ type: String, format: 'uuid' }) threadId!: string;
++  @ApiProperty({
++    enum: ['USER', 'ASSISTANT', 'ADMIN', 'SCENARIO', 'SYSTEM'],
++    enumName: 'MessageRole',
++  })
++  role!: 'USER' | 'ASSISTANT' | 'ADMIN' | 'SCENARIO' | 'SYSTEM';
++  @ApiProperty({ enum: ['WRITING', 'COMPLETED', 'FAILED'], enumName: 'MessageStatus' })
++  status!: 'WRITING' | 'COMPLETED' | 'FAILED';
++  @ApiProperty({ type: String }) text!: string;
++  @ApiPropertyOptional({ ...jsonSchema, nullable: true }) content!: Record<string, unknown> | null;
++  @ApiProperty({ type: 'array', items: {} }) commands!: unknown[];
++  @ApiProperty(jsonSchema) metadata!: Record<string, unknown>;
++  @ApiPropertyOptional({ type: String, nullable: true }) provider!: string | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) model!: string | null;
++  @ApiPropertyOptional({ type: Number, nullable: true }) inputTokens!: number | null;
++  @ApiPropertyOptional({ type: Number, nullable: true }) outputTokens!: number | null;
++  @ApiPropertyOptional({ type: String, nullable: true }) clientMessageId!: string | null;
++  @ApiPropertyOptional({
++    type: String,
++    nullable: true,
++    description: 'Internal idempotency fingerprint returned by the current service.',
++  })
++  idempotencyKey!: string | null;
++  @ApiProperty({ type: String, format: 'date-time' }) createdAt!: string;
++  @ApiProperty({ type: String, format: 'date-time' }) updatedAt!: string;
++  @ApiProperty({ type: AdminMessageThreadResponseDto }) thread!: AdminMessageThreadResponseDto;
++}
++
++export class SendAdminMessageResponseDto {
++  @ApiProperty({
++    type: Boolean,
++    description: 'True when the same Idempotency-Key was already processed.',
++  })
++  duplicate!: boolean;
++  @ApiProperty({ type: AdminStoredMessageResponseDto }) message!: AdminStoredMessageResponseDto;
++  @ApiProperty({ type: [String], format: 'uuid' }) commandIds!: string[];
++}
+--- a/src/modules/chat/admin-messaging.controller.ts
++++ b/src/modules/chat/admin-messaging.controller.ts
+@@ -1,28 +1,33 @@
++import { Body, Controller, Headers, Param, Post, UseGuards } from '@nestjs/common';
+ import {
+-  Body,
+-  Controller,
+-  Headers,
+-  Param,
+-  Post,
+-  UseGuards,
+-  UseInterceptors,
+-} from '@nestjs/common';
+-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
++  ApiBearerAuth,
++  ApiCreatedResponse,
++  ApiHeader,
++  ApiParam,
++  ApiTags,
++} from '@nestjs/swagger';
+ import { CmsJwtGuard } from '../auth/cms-jwt.guard.js';
+ import { CmsProjectGuard } from '../auth/cms-project.guard.js';
+ import { SendAdminMessageDto } from './dto/chat.dto.js';
+ import { ChatService } from './chat.service.js';
+-import { CmsAuditInterceptor } from '../audit/cms-audit.interceptor.js';
++import { SendAdminMessageResponseDto } from './dto/admin-messaging-response.dto.js';
+ 
+ @ApiTags('admin messaging')
+ @ApiBearerAuth()
+ @UseGuards(CmsJwtGuard, CmsProjectGuard)
+-@UseInterceptors(CmsAuditInterceptor)
+ @Controller('admin/projects/:projectId/users/:userId/messages')
+ export class AdminMessagingController {
+   constructor(private readonly chat: ChatService) {}
+ 
+   @Post()
++  @ApiParam({ name: 'projectId', type: String, format: 'uuid' })
++  @ApiParam({ name: 'userId', type: String, format: 'uuid', description: 'Internal EndUser id.' })
++  @ApiHeader({
++    name: 'Idempotency-Key',
++    required: true,
++    description: 'Client-generated key. Reuse it only when retrying the same send operation.',
++  })
++  @ApiCreatedResponse({ type: SendAdminMessageResponseDto })
+   send(
+     @Param('projectId') projectId: string,
+     @Param('userId') userId: string,
+

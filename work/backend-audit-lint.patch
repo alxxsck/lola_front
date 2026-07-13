@@ -1,0 +1,12 @@
+diff --git a/src/modules/audit/cms-audit.interceptor.ts b/src/modules/audit/cms-audit.interceptor.ts
+--- a/src/modules/audit/cms-audit.interceptor.ts
++++ b/src/modules/audit/cms-audit.interceptor.ts
+@@ -18,7 +18,7 @@ export class CmsAuditInterceptor implements NestInterceptor {
+     if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(request.method)) return next.handle();
+     const param = (value: string | string[] | undefined): string | undefined =>
+       Array.isArray(value) ? value[0] : value;
+-    const routePath =
++    const routePath: string =
+       request.route &&
+       typeof request.route === 'object' &&
+       'path' in request.route &&
