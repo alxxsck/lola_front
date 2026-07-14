@@ -19,6 +19,7 @@ const sidebarOpen = ref(false)
 const navigation = [
   { label: 'Обзор', icon: 'pi pi-sparkles', to: '/overview' },
   { label: 'Проект', icon: 'pi pi-sliders-h', to: '/project' },
+  { label: 'База знаний', icon: 'pi pi-book', to: '/knowledge' },
   { label: 'Интерфейс', icon: 'pi pi-th-large', to: '/interface' },
   { label: 'События', icon: 'pi pi-bolt', to: '/events' },
   { label: 'Действия', icon: 'pi pi-directions-alt', to: '/actions' },

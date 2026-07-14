@@ -14,6 +14,7 @@ export const router = createRouter({
         { path: '', redirect: '/overview' },
         { path: 'overview', name: 'overview', component: () => import('@/pages/OverviewPage.vue') },
         { path: 'project', name: 'project', component: () => import('@/pages/ProjectPage.vue') },
+        { path: 'knowledge', name: 'knowledge', component: () => import('@/pages/KnowledgePage.vue') },
         { path: 'interface/:kind?', name: 'interface', component: () => import('@/pages/InterfacePage.vue') },
         { path: 'events', name: 'events', component: () => import('@/pages/EventsPage.vue') },
         { path: 'actions', name: 'actions', component: () => import('@/pages/ActionsPage.vue') },

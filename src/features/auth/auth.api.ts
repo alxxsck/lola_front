@@ -14,6 +14,15 @@ import { isMockMode } from '@/shared/config/data-mode'
 import type { CmsUser, Project } from '@/shared/types/domain'
 
 const DEMO_SESSION_KEY = 'lola-cms-demo-auth-v1'
+const DEMO_KNOWLEDGE_PREFIX = 'lola-cms-demo-knowledge-v1:'
+
+function clearDemoSession() {
+  sessionStorage.removeItem(DEMO_SESSION_KEY)
+  for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = sessionStorage.key(index)
+    if (key?.startsWith(DEMO_KNOWLEDGE_PREFIX)) sessionStorage.removeItem(key)
+  }
+}
 
 export interface AuthContext {
   user: CmsUser
@@ -114,7 +123,7 @@ export const authApi = {
 
   async logout(): Promise<void> {
     if (isMockMode) {
-      sessionStorage.removeItem(DEMO_SESSION_KEY)
+      clearDemoSession()
       return
     }
     const refreshToken = getRefreshToken()
@@ -135,7 +144,7 @@ export const authApi = {
 
   async logoutAll(): Promise<void> {
     if (isMockMode) {
-      sessionStorage.removeItem(DEMO_SESSION_KEY)
+      clearDemoSession()
       return
     }
     beginAuthTeardown()
