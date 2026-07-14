@@ -21,4 +21,32 @@ describe('normalizeApiError', () => {
       requestId: 'request-from-api',
     })
   })
+
+  it('normalizes the API error envelope with code and structured details', () => {
+    const config = { headers: new AxiosHeaders() }
+    const cause = new AxiosError('Conflict', 'ERR_BAD_REQUEST', config, undefined, {
+      data: {
+        error: {
+          code: 'EVENT_DEFINITION_IN_USE',
+          message: 'Event definition is used',
+          details: { eventLogCount: 3, scenarios: [{ id: 'scenario-1' }] },
+          requestId: 'request-1',
+        },
+      },
+      status: 409,
+      statusText: 'Conflict',
+      headers: {},
+      config,
+    })
+
+    const error = normalizeApiError(cause)
+
+    expect(error).toMatchObject({
+      status: 409,
+      code: 'EVENT_DEFINITION_IN_USE',
+      message: 'Event definition is used',
+      details: { eventLogCount: 3, scenarios: [{ id: 'scenario-1' }] },
+      requestId: 'request-1',
+    })
+  })
 })

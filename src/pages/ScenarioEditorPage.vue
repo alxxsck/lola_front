@@ -16,6 +16,7 @@ import '@vue-flow/controls/dist/style.css'
 import ScenarioFlowNode from '@/features/scenarios/ScenarioFlowNode.vue'
 import ScenarioNodeInspector from '@/features/scenarios/ScenarioNodeInspector.vue'
 import ScenarioConditionRows from '@/features/scenarios/ScenarioConditionRows.vue'
+import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
 import { useActionDefinitionsStore } from '@/features/actions/action-definitions.store'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { repository } from '@/shared/api/repository'
@@ -313,7 +314,7 @@ async function save() {
     initialSnapshot.value = JSON.stringify({ ...form, id: saved.id })
     await router.push('/scenarios')
   } catch (cause) {
-    saveError.value = cause instanceof Error ? cause.message : 'Не удалось сохранить сценарий'
+    saveError.value = scenarioApiErrorMessage(cause)
   } finally {
     saving.value = false
   }

@@ -12,6 +12,7 @@ import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'
 import { useActionDefinitionsStore } from '@/features/actions/action-definitions.store'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
 import { repository } from '@/shared/api/repository'
 import { formatDate } from '@/shared/lib/format'
 import { findActionDefinition, validateScenarioActionConfig } from '@/shared/lib/action-definition'
@@ -110,7 +111,7 @@ async function toggleScenario(scenario: Scenario) {
       life: 2600,
     })
   } catch (cause) {
-    toast.add({ severity: 'error', summary: 'Не удалось изменить статус', detail: errorMessage(cause), life: 4500 })
+    toast.add({ severity: 'error', summary: 'Не удалось изменить статус', detail: scenarioApiErrorMessage(cause, 'Попробуйте ещё раз'), life: 4500 })
   } finally {
     pendingIds.value.delete(scenario.id)
   }

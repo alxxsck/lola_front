@@ -13,6 +13,8 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { eventDefinitionError, type EventDefinitionError } from '@/features/events/event-definition-error'
+import { ApiError } from '@/shared/api/http/api-error'
 import { repository } from '@/shared/api/repository'
 import { slugify, uid } from '@/shared/lib/format'
 import { buildEventExample, buildEventSchema } from '@/shared/lib/domain'
@@ -27,6 +29,8 @@ interface EventForm {
   enabled: boolean
   fields: EventField[]
 }
+
+type EventPayload = Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>
 
 const fieldTypes: Array<{ label: string; value: EventFieldType }> = [
   { label: 'Строка', value: 'string' },
@@ -46,12 +50,18 @@ const loading = ref(true)
 const saving = ref(false)
 const togglingId = ref<string | null>(null)
 const loadError = ref('')
-const formError = ref('')
+const formError = ref<EventDefinitionError | null>(null)
+const deleteError = ref<EventDefinitionError | null>(null)
 const dialogVisible = ref(false)
 const codeTouched = ref(false)
 const form = ref<EventForm>(emptyForm())
 const initialFormSnapshot = ref('')
+const initialSchemaSnapshot = ref('')
 const isFormDirty = computed(() => dialogVisible.value && Boolean(initialFormSnapshot.value) && JSON.stringify(form.value) !== initialFormSnapshot.value)
+const deleteErrorVisible = computed({
+  get: () => Boolean(deleteError.value),
+  set: (value: boolean) => { if (!value) deleteError.value = null },
+})
 const { confirmDiscard } = useUnsavedChangesGuard(isFormDirty, 'Есть несохранённые изменения события. Закрыть форму?')
 
 const filteredEvents = computed(() => {
@@ -89,7 +99,8 @@ async function loadEvents() {
 function openCreate() {
   form.value = emptyForm()
   codeTouched.value = false
-  formError.value = ''
+  formError.value = null
+  initialSchemaSnapshot.value = ''
   initialFormSnapshot.value = JSON.stringify(form.value)
   dialogVisible.value = true
 }
@@ -104,8 +115,9 @@ function openEdit(item: EventDefinition) {
     fields: fieldsFromSchema(item.payloadSchema),
   }
   codeTouched.value = true
-  formError.value = ''
+  formError.value = null
   initialFormSnapshot.value = JSON.stringify(form.value)
+  initialSchemaSnapshot.value = canonicalJson(item.payloadSchema)
   dialogVisible.value = true
 }
 
@@ -172,10 +184,11 @@ function validateForm(): string | null {
   return null
 }
 
-async function saveEvent() {
+function submitEvent() {
   const projectId = auth.project?.id
   if (!projectId) return
-  formError.value = validateForm() ?? ''
+  const validationError = validateForm()
+  formError.value = validationError ? { message: validationError, scenarios: [] } : null
   if (formError.value) return
 
   const common = {
@@ -185,10 +198,28 @@ async function saveEvent() {
     enabled: form.value.enabled,
   }
   const value = form.value.id
-    ? ({ ...common } as Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>)
-    : ({ ...common, code: form.value.code.trim(), version: 1 } as Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>)
+    ? ({ ...common } as EventPayload)
+    : ({ ...common, code: form.value.code.trim(), version: 1 } as EventPayload)
   if (form.value.id) attachUpdateIdentity(value, form.value.id, form.value.code.trim())
 
+  const schemaChanged = Boolean(form.value.id)
+    && canonicalJson(value.payloadSchema) !== initialSchemaSnapshot.value
+  if (schemaChanged) {
+    confirm.require({
+      header: 'Изменить схему события?',
+      message: 'Backend не может проверить внешние системы, которые отправляют это событие. Перед сохранением убедитесь, что они готовы к новому payload.',
+      icon: 'pi pi-exclamation-triangle',
+      rejectLabel: 'Вернуться к форме',
+      acceptLabel: 'Сохранить схему',
+      accept: () => persistEvent(projectId, value),
+    })
+    return
+  }
+
+  return persistEvent(projectId, value)
+}
+
+async function persistEvent(projectId: string, value: EventPayload) {
   saving.value = true
   try {
     const saved = await repository.saveEvent(projectId, value)
@@ -199,7 +230,7 @@ async function saveEvent() {
     dialogVisible.value = false
     toast.add({ severity: 'success', summary: form.value.id ? 'Событие обновлено' : 'Событие создано', detail: saved.name, life: 2800 })
   } catch (cause) {
-    formError.value = errorMessage(cause, 'Не удалось сохранить событие')
+    formError.value = eventDefinitionError(cause, 'Не удалось сохранить событие')
   } finally {
     saving.value = false
   }
@@ -215,7 +246,7 @@ async function toggleEvent(item: EventDefinition, enabled: boolean) {
     const saved = await repository.saveEvent(projectId, value)
     Object.assign(item, saved)
   } catch (cause) {
-    toast.add({ severity: 'error', summary: 'Статус не изменён', detail: errorMessage(cause), life: 3500 })
+    toast.add({ severity: 'error', summary: 'Статус не изменён', detail: eventDefinitionError(cause, 'Произошла ошибка').message, life: 3500 })
   } finally {
     togglingId.value = null
   }
@@ -253,7 +284,12 @@ async function deleteEvent(item: EventDefinition) {
     events.value = events.value.filter((value) => value.id !== item.id)
     toast.add({ severity: 'success', summary: 'Событие удалено', detail: item.name, life: 2500 })
   } catch (cause) {
-    toast.add({ severity: 'error', summary: 'Не удалось удалить', detail: errorMessage(cause, 'Проверьте, не используется ли событие в сценариях.'), life: 4500 })
+    const error = eventDefinitionError(cause, 'Не удалось удалить событие')
+    if (cause instanceof ApiError && ['EVENT_DEFINITION_IN_USE', 'RESOURCE_IN_USE'].includes(cause.code ?? '')) {
+      deleteError.value = error
+    } else {
+      toast.add({ severity: 'error', summary: 'Не удалось удалить', detail: error.message, life: 4500 })
+    }
   }
 }
 
@@ -264,6 +300,28 @@ function eventFields(item: EventDefinition) {
 
 function requiredCount(item: EventDefinition) {
   return Array.isArray(item.payloadSchema?.required) ? item.payloadSchema.required.length : 0
+}
+
+function scenarioStatus(status?: string) {
+  return status ? ({ ACTIVE: 'Активен', DRAFT: 'Черновик', PAUSED: 'На паузе', ARCHIVED: 'Архив' }[status] ?? status) : ''
+}
+
+function eventLogCountLabel(count: number) {
+  const mod100 = count % 100
+  const mod10 = count % 10
+  const noun = mod100 >= 11 && mod100 <= 14 ? 'записей' : mod10 === 1 ? 'запись' : mod10 >= 2 && mod10 <= 4 ? 'записи' : 'записей'
+  return `${count} ${noun} в истории событий`
+}
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
+      .join(',')}}`
+  }
+  return JSON.stringify(value)
 }
 
 function errorMessage(cause: unknown, fallback = 'Произошла ошибка') {
@@ -326,7 +384,7 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
     </div>
 
     <Dialog :visible="dialogVisible" modal :header="form.id ? 'Изменить событие' : 'Новое событие'" class="event-dialog" :style="{ width: 'min(920px, calc(100vw - 28px))' }" @update:visible="requestDialogVisibility">
-      <form id="event-form" class="dialog-form" @submit.prevent="saveEvent">
+      <form id="event-form" class="dialog-form" @submit.prevent="submitEvent">
         <div class="form-grid">
           <div class="field"><label for="event-name">Название</label><InputText id="event-name" v-model="form.name" autofocus placeholder="Регистрация завершена" @input="onEventNameInput" /></div>
           <div class="field"><label for="event-code">Код события</label><InputText id="event-code" v-model="form.code" class="mono" :disabled="Boolean(form.id)" placeholder="registration_completed" @input="onEventCodeInput" /><small v-if="form.id">Код опубликованного события не изменяется.</small></div>
@@ -354,15 +412,38 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
           <pre>{{ eventExample }}</pre>
         </section>
         <div class="enabled-row surface-soft"><div><strong>Событие активно</strong><span>Неактивное событие останется в каталоге, но backend не примет его для сценариев.</span></div><ToggleSwitch v-model="form.enabled" /></div>
-        <Message v-if="formError" severity="error" size="small" :closable="false">{{ formError }}</Message>
+        <Message v-if="formError" severity="error" size="small" :closable="false">
+          <div class="event-error-message">
+            <strong>{{ formError.message }}</strong>
+            <ul v-if="formError.scenarios.length" class="dependency-list">
+              <li v-for="scenario in formError.scenarios" :key="scenario.id || scenario.code">
+                <div><span>{{ scenario.name }}</span><code v-if="scenario.code">{{ scenario.code }}</code></div>
+                <ul v-if="scenario.issues.length"><li v-for="issue in scenario.issues" :key="issue">{{ issue }}</li></ul>
+              </li>
+            </ul>
+          </div>
+        </Message>
       </form>
       <template #footer><Button label="Отмена" severity="secondary" text @click="requestDialogVisibility(false)" /><Button form="event-form" type="submit" label="Сохранить событие" icon="pi pi-check" :loading="saving" /></template>
+    </Dialog>
+
+    <Dialog v-model:visible="deleteErrorVisible" modal header="Событие нельзя удалить" :style="{ width: 'min(620px, calc(100vw - 28px))' }">
+      <div v-if="deleteError" class="delete-error-content">
+        <p>{{ deleteError.message }}</p>
+        <div v-if="deleteError.eventLogCount" class="dependency-stat"><i class="pi pi-history" /><span>{{ eventLogCountLabel(deleteError.eventLogCount) }}</span></div>
+        <ul v-if="deleteError.scenarios.length" class="dependency-list">
+          <li v-for="scenario in deleteError.scenarios" :key="scenario.id || scenario.code">
+            <div><span>{{ scenario.name }}</span><code v-if="scenario.code">{{ scenario.code }}</code><Tag v-if="scenario.status" :value="scenarioStatus(scenario.status)" severity="secondary" /></div>
+          </li>
+        </ul>
+      </div>
+      <template #footer><Button label="Понятно" @click="deleteErrorVisible = false" /></template>
     </Dialog>
   </section>
 </template>
 
 <style scoped>
-.summary-grid{display:grid;grid-template-columns:minmax(190px,220px) minmax(190px,220px) minmax(360px,1fr);gap:12px;margin-bottom:18px}.summary-card,.contract-note{min-height:88px;padding:15px 17px;display:flex;align-items:center;gap:12px}.summary-icon,.event-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:13px}.summary-icon.bolt,.event-icon{background:#f0edff;color:#7059df}.summary-icon.live{background:#e8f7e9;color:#4ba75a}.summary-card strong,.summary-card small{display:block}.summary-card strong{font:700 1.35rem Manrope}.summary-card small{color:var(--muted);font-size:.68rem;margin-top:2px}.contract-note{justify-content:flex-start;background:#292c26;color:#f5f6f0;border-color:#292c26}.contract-note>i{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:13px;background:#373c32;color:var(--accent)}.contract-note strong,.contract-note span{display:block}.contract-note strong{font-size:.78rem}.contract-note span{max-width:520px;color:#b9bdb3;font-size:.68rem;line-height:1.45;margin-top:3px}.toolbar{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:15px}.search-box{position:relative;display:block;max-width:460px;flex:1}.search-box>i{position:absolute;left:13px;top:50%;transform:translateY(-50%);z-index:1;color:#90948b}.search-box :deep(input){padding-left:38px;border:0;background:#f6f6f3}.result-count{font-size:.75rem;color:var(--muted)}.message-content{display:flex;align-items:center;justify-content:space-between;gap:16px}.events-list{display:flex;flex-direction:column;gap:10px}.event-card{display:grid;grid-template-columns:auto minmax(0,1fr) 105px auto;align-items:center;gap:16px;padding:16px 18px;transition:.18s ease}.event-card:hover{box-shadow:0 10px 32px rgba(41,45,35,.07);border-color:#d9dad3}.event-card.disabled{opacity:.62}.event-main{min-width:0}.event-title{display:flex;align-items:center;gap:9px;min-width:0}.event-title h2{font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.event-title code{max-width:min(320px,38vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.69rem;color:#686d63;background:#f2f2ee;border-radius:6px;padding:3px 6px}.event-main p{font-size:.76rem;color:var(--muted);margin:6px 0 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.field-pills{display:flex;align-items:center;gap:5px;min-height:22px;flex-wrap:wrap}.field-pills>span{font-size:.64rem;border:1px solid #e7e7e1;background:#fafaf8;border-radius:6px;padding:3px 6px;color:#696e64}.field-pills i{color:#d35e42;font-style:normal;margin-left:2px}.field-pills small{font-size:.67rem;color:#a0a49b}.event-stats{border-left:1px solid var(--line);padding-left:17px}.event-stats strong,.event-stats span,.event-stats small{display:block}.event-stats strong{font:700 1.1rem Manrope}.event-stats span{font-size:.67rem;color:var(--muted)}.event-stats small{font-size:.61rem;color:#989c93;margin-top:4px}.event-actions{display:flex;align-items:center;gap:2px}.skeleton-copy{flex:1;display:flex;flex-direction:column;gap:10px}.empty strong{display:block;color:var(--ink)}.empty p{margin:7px 0 18px}.dialog-form{display:flex;flex-direction:column;gap:18px;padding-top:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label span,.field small{font-weight:400;color:#999d94}.field small{font-size:.68rem}.fields-builder{padding:16px}.fields-builder>header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}.fields-builder header strong,.fields-builder header span{display:block}.fields-builder header strong{font-size:.86rem}.fields-builder header span{font-size:.68rem;color:var(--muted);margin-top:3px}.field-head,.field-row{display:grid;grid-template-columns:1.2fr 1.1fr .9fr 125px 36px;gap:8px;align-items:center}.field-head{padding:0 3px 6px;color:#8a8f84;font-size:.6rem;text-transform:uppercase;letter-spacing:.07em}.field-row+.field-row{margin-top:8px}.field-row :deep(.p-inputtext),.field-row :deep(.p-select){font-size:.78rem}.required-check{display:flex;align-items:center;gap:7px;font-size:.68rem;color:#60655c;white-space:nowrap}.no-fields{text-align:center;color:var(--muted);font-size:.75rem;padding:18px}.event-example{border:1px solid var(--line);border-radius:13px;overflow:hidden}.event-example>header{padding:12px 14px;background:#fafaf8;display:flex;align-items:center;justify-content:space-between;gap:12px}.event-example header strong,.event-example header span{display:block}.event-example header strong{font-size:.76rem}.event-example header strong i{color:#7059df;margin-right:5px}.event-example header span{color:var(--muted);font-size:.68rem;font-weight:400;margin-top:3px}.event-example pre{margin:0;padding:15px;max-height:260px;overflow:auto;background:#252821;color:#dce7c1;font-size:.7rem;line-height:1.55}.enabled-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 15px}.enabled-row strong,.enabled-row span{display:block}.enabled-row strong{font-size:.82rem}.enabled-row span{font-size:.7rem;color:var(--muted);margin-top:3px}
+.summary-grid{display:grid;grid-template-columns:minmax(190px,220px) minmax(190px,220px) minmax(360px,1fr);gap:12px;margin-bottom:18px}.summary-card,.contract-note{min-height:88px;padding:15px 17px;display:flex;align-items:center;gap:12px}.summary-icon,.event-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:13px}.summary-icon.bolt,.event-icon{background:#f0edff;color:#7059df}.summary-icon.live{background:#e8f7e9;color:#4ba75a}.summary-card strong,.summary-card small{display:block}.summary-card strong{font:700 1.35rem Manrope}.summary-card small{color:var(--muted);font-size:.68rem;margin-top:2px}.contract-note{justify-content:flex-start;background:#292c26;color:#f5f6f0;border-color:#292c26}.contract-note>i{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:13px;background:#373c32;color:var(--accent)}.contract-note strong,.contract-note span{display:block}.contract-note strong{font-size:.78rem}.contract-note span{max-width:520px;color:#b9bdb3;font-size:.68rem;line-height:1.45;margin-top:3px}.toolbar{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:15px}.search-box{position:relative;display:block;max-width:460px;flex:1}.search-box>i{position:absolute;left:13px;top:50%;transform:translateY(-50%);z-index:1;color:#90948b}.search-box :deep(input){padding-left:38px;border:0;background:#f6f6f3}.result-count{font-size:.75rem;color:var(--muted)}.message-content{display:flex;align-items:center;justify-content:space-between;gap:16px}.events-list{display:flex;flex-direction:column;gap:10px}.event-card{display:grid;grid-template-columns:auto minmax(0,1fr) 105px auto;align-items:center;gap:16px;padding:16px 18px;transition:.18s ease}.event-card:hover{box-shadow:0 10px 32px rgba(41,45,35,.07);border-color:#d9dad3}.event-card.disabled{opacity:.62}.event-main{min-width:0}.event-title{display:flex;align-items:center;gap:9px;min-width:0}.event-title h2{font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.event-title code{max-width:min(320px,38vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.69rem;color:#686d63;background:#f2f2ee;border-radius:6px;padding:3px 6px}.event-main p{font-size:.76rem;color:var(--muted);margin:6px 0 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.field-pills{display:flex;align-items:center;gap:5px;min-height:22px;flex-wrap:wrap}.field-pills>span{font-size:.64rem;border:1px solid #e7e7e1;background:#fafaf8;border-radius:6px;padding:3px 6px;color:#696e64}.field-pills i{color:#d35e42;font-style:normal;margin-left:2px}.field-pills small{font-size:.67rem;color:#a0a49b}.event-stats{border-left:1px solid var(--line);padding-left:17px}.event-stats strong,.event-stats span,.event-stats small{display:block}.event-stats strong{font:700 1.1rem Manrope}.event-stats span{font-size:.67rem;color:var(--muted)}.event-stats small{font-size:.61rem;color:#989c93;margin-top:4px}.event-actions{display:flex;align-items:center;gap:2px}.skeleton-copy{flex:1;display:flex;flex-direction:column;gap:10px}.empty strong{display:block;color:var(--ink)}.empty p{margin:7px 0 18px}.dialog-form{display:flex;flex-direction:column;gap:18px;padding-top:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label span,.field small{font-weight:400;color:#999d94}.field small{font-size:.68rem}.fields-builder{padding:16px}.fields-builder>header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}.fields-builder header strong,.fields-builder header span{display:block}.fields-builder header strong{font-size:.86rem}.fields-builder header span{font-size:.68rem;color:var(--muted);margin-top:3px}.field-head,.field-row{display:grid;grid-template-columns:1.2fr 1.1fr .9fr 125px 36px;gap:8px;align-items:center}.field-head{padding:0 3px 6px;color:#8a8f84;font-size:.6rem;text-transform:uppercase;letter-spacing:.07em}.field-row+.field-row{margin-top:8px}.field-row :deep(.p-inputtext),.field-row :deep(.p-select){font-size:.78rem}.required-check{display:flex;align-items:center;gap:7px;font-size:.68rem;color:#60655c;white-space:nowrap}.no-fields{text-align:center;color:var(--muted);font-size:.75rem;padding:18px}.event-example{border:1px solid var(--line);border-radius:13px;overflow:hidden}.event-example>header{padding:12px 14px;background:#fafaf8;display:flex;align-items:center;justify-content:space-between;gap:12px}.event-example header strong,.event-example header span{display:block}.event-example header strong{font-size:.76rem}.event-example header strong i{color:#7059df;margin-right:5px}.event-example header span{color:var(--muted);font-size:.68rem;font-weight:400;margin-top:3px}.event-example pre{margin:0;padding:15px;max-height:260px;overflow:auto;background:#252821;color:#dce7c1;font-size:.7rem;line-height:1.55}.enabled-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 15px}.enabled-row strong,.enabled-row span{display:block}.enabled-row strong{font-size:.82rem}.enabled-row span{font-size:.7rem;color:var(--muted);margin-top:3px}.event-error-message>strong{display:block}.dependency-list{margin:10px 0 0;padding-left:20px}.dependency-list>li+li{margin-top:9px}.dependency-list li>div{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.dependency-list code{font-size:.68rem;background:rgba(255,255,255,.65);border-radius:5px;padding:2px 5px}.dependency-list ul{margin:5px 0 0;padding-left:19px;font-size:.72rem}.delete-error-content>p{margin:0;color:var(--muted)}.dependency-stat{display:flex;align-items:center;gap:9px;margin-top:16px;padding:11px 13px;background:#f8f3e8;border-radius:11px;color:#796125;font-size:.8rem}
 @media(max-width:1100px){.summary-grid{grid-template-columns:1fr 1fr}.contract-note{grid-column:1/-1}}@media(max-width:900px){.event-card{grid-template-columns:auto minmax(0,1fr) auto}.event-stats{display:none}.field-head{display:none}.field-row{grid-template-columns:1fr 1fr}.field-row>:nth-child(3),.field-row>:nth-child(4){grid-row:2}.field-row>:last-child{grid-column:3;grid-row:1/3}.field-row{grid-template-columns:1fr 1fr 36px;padding:12px 0;border-top:1px solid var(--line)}}
 @media(max-width:620px){.summary-grid{grid-template-columns:1fr}.contract-note{grid-column:auto}.toolbar{align-items:stretch;flex-direction:column}.search-box{max-width:none}.result-count{align-self:flex-end}.event-card{grid-template-columns:auto minmax(0,1fr)}.event-actions{grid-column:1/-1;justify-content:flex-end;border-top:1px solid var(--line);padding-top:8px}.event-title{align-items:flex-start;flex-wrap:wrap}.event-title h2{width:100%}.form-grid{grid-template-columns:1fr}.fields-builder>header{align-items:flex-start;flex-direction:column}.field-row{grid-template-columns:1fr 36px}.field-row>:not(:last-child){grid-column:1}.field-row>:last-child{grid-column:2;grid-row:1/5}.required-check{padding:5px}.enabled-row{align-items:flex-start}}
 </style>
