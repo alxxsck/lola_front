@@ -26,5 +26,6 @@ export interface ProjectResponseDto {
   status: ProjectStatus;
   supportedLocales: string[];
   systemPrompt: string;
+  voiceInstructions: string;
   updatedAt: string;
 }

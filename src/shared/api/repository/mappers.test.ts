@@ -7,16 +7,16 @@ describe('repository domain mappers', () => {
     const dto: ProjectResponseDto = {
       id: 'project-1', organizationId: 'org-1', name: 'Lola', slug: 'lola', status: 'ACTIVE',
       publicKey: 'public', serverKeyPrefix: 'secret-prefix', defaultLocale: 'ru', supportedLocales: ['ru'],
-      assistantName: 'Lola', systemPrompt: 'Help', settings: { timezone: 'UTC' }, createdAt: 'now', updatedAt: 'now',
+      assistantName: 'Lola', systemPrompt: 'Help', voiceInstructions: 'Speak warmly', settings: { timezone: 'UTC' }, createdAt: 'now', updatedAt: 'now',
     }
-    expect(mapProject(dto)).toEqual(expect.objectContaining({ id: 'project-1', settings: { timezone: 'UTC' } }))
+    expect(mapProject(dto)).toEqual(expect.objectContaining({ id: 'project-1', voiceInstructions: 'Speak warmly', settings: { timezone: 'UTC' } }))
     expect(mapProject(dto)).not.toHaveProperty('serverKeyPrefix')
   })
 
   it('only sends editable project fields', () => {
     expect(toUpdateProjectDto({
-      id: 'immutable', slug: 'immutable', publicKey: 'immutable', name: 'Updated', settings: { description: 'New' },
-    })).toEqual({ name: 'Updated', settings: { description: 'New' } })
+      id: 'immutable', slug: 'immutable', publicKey: 'immutable', name: 'Updated', voiceInstructions: '  Speak slowly.\nPause.  ', settings: { description: 'New' },
+    })).toEqual({ name: 'Updated', voiceInstructions: '  Speak slowly.\nPause.  ', settings: { description: 'New' } })
   })
 
   it('normalizes nullable response fields and preserves JSON payloads', () => {

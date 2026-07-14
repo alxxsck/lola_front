@@ -41,6 +41,7 @@ function mapProject(project: ProjectResponseDto): Project {
     supportedLocales: project.supportedLocales,
     assistantName: project.assistantName,
     systemPrompt: project.systemPrompt,
+    voiceInstructions: project.voiceInstructions,
     settings: project.settings,
     organization: project.organization,
     _count: project._count,

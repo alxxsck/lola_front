@@ -42,6 +42,7 @@ export function mapProject(dto: ProjectResponseDto): Project {
     supportedLocales: dto.supportedLocales,
     assistantName: dto.assistantName,
     systemPrompt: dto.systemPrompt,
+    voiceInstructions: dto.voiceInstructions,
     settings: dto.settings,
     organization: dto.organization,
     _count: dto._count,
@@ -56,6 +57,7 @@ export function toUpdateProjectDto(patch: Partial<Project>): UpdateProjectDto {
     supportedLocales: patch.supportedLocales,
     assistantName: patch.assistantName,
     systemPrompt: patch.systemPrompt,
+    voiceInstructions: patch.voiceInstructions,
     settings: patch.settings,
   })
 }

@@ -826,6 +826,10 @@
           "systemPrompt": {
             "maxLength": 20000,
             "type": "string"
+          },
+          "voiceInstructions": {
+            "maxLength": 20000,
+            "type": "string"
           }
         },
         "required": [
@@ -1590,6 +1594,9 @@
           "systemPrompt": {
             "type": "string"
           },
+          "voiceInstructions": {
+            "type": "string"
+          },
           "updatedAt": {
             "format": "date-time",
             "type": "string"
@@ -1607,6 +1614,7 @@
           "supportedLocales",
           "assistantName",
           "systemPrompt",
+          "voiceInstructions",
           "settings",
           "createdAt",
           "updatedAt"
@@ -2525,6 +2533,10 @@
             "type": "array"
           },
           "systemPrompt": {
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "voiceInstructions": {
             "maxLength": 20000,
             "type": "string"
           }

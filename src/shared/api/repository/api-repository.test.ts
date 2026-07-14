@@ -79,7 +79,7 @@ describe('api repository adapter', () => {
     vi.mocked(platformUpdateProject).mockResolvedValue({
       id: 'project-1', organizationId: 'org-1', name: 'Updated', slug: 'lola', status: 'ACTIVE', publicKey: 'public',
       serverKeyPrefix: 'secret', defaultLocale: 'ru', supportedLocales: ['ru'], assistantName: 'Lola', systemPrompt: 'Help',
-      settings: {}, createdAt: 'now', updatedAt: 'now',
+      voiceInstructions: '', settings: {}, createdAt: 'now', updatedAt: 'now',
     })
     await apiRepository.updateProject('project-1', { id: 'ignored', slug: 'ignored', name: 'Updated' })
     expect(platformUpdateProject).toHaveBeenCalledWith('project-1', { name: 'Updated' })

@@ -22,6 +22,7 @@ export const demoProject: Project = {
   id: 'prj_lola_demo', name: 'Lucky Stars', slug: 'lucky_stars', status: 'ACTIVE',
   publicKey: 'lola_pub_demo_7f3b9', defaultLocale: 'ru', supportedLocales: ['ru', 'en'],
   assistantName: 'Lola', systemPrompt: 'Помогай пользователю коротко, дружелюбно и по существу.',
+  voiceInstructions: 'Говори мягко и уверенно, в спокойном темпе. Используй тёплую интонацию.',
   settings: {
     description: 'AI-ассистент для онбординга и поддержки пользователей',
     timezone: 'Europe/Madrid',

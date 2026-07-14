@@ -30,6 +30,7 @@ interface ProjectForm {
   voiceEnabled: boolean
   voiceTranscriptEnabled: boolean
   voice: RealtimeVoice
+  voiceInstructions: string
 }
 
 const localeOptions = [
@@ -81,6 +82,7 @@ const form = reactive<ProjectForm>({
   voiceEnabled: false,
   voiceTranscriptEnabled: true,
   voice: 'marin',
+  voiceInstructions: '',
 })
 
 const formSnapshot = computed(() => JSON.stringify(form))
@@ -103,6 +105,7 @@ function fillForm(nextProject: Project) {
     voiceEnabled: nextProject.settings.voiceEnabled === true,
     voiceTranscriptEnabled: nextProject.settings.voiceTranscriptEnabled !== false,
     voice: isRealtimeVoice(nextProject.settings.voice) ? nextProject.settings.voice : 'marin',
+    voiceInstructions: nextProject.voiceInstructions,
   })
   initialSnapshot.value = JSON.stringify(form)
 }
@@ -135,6 +138,7 @@ function validate() {
   else if (!form.supportedLocales.includes(form.defaultLocale)) validationError.value = 'Основной язык должен входить в список доступных языков.'
   else if (form.apiBaseUrl && !form.apiBaseUrl.startsWith('https://')) validationError.value = 'API URL должен использовать HTTPS.'
   else if (form.wsUrl && !form.wsUrl.startsWith('wss://')) validationError.value = 'WebSocket URL должен использовать WSS.'
+  else if (form.voiceInstructions.length > 20_000) validationError.value = 'Инструкция для голосовой модели не должна превышать 20 000 символов.'
   return !validationError.value
 }
 
@@ -150,6 +154,7 @@ async function saveProject() {
       supportedLocales: [...form.supportedLocales],
       assistantName: form.assistantName.trim(),
       systemPrompt: form.systemPrompt.trim(),
+      voiceInstructions: form.voiceInstructions,
       settings: {
         ...project.value.settings,
         description: form.description.trim(),
@@ -250,7 +255,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         </section>
 
         <section class="card card-pad settings-section">
-          <div class="section-title"><span class="section-icon blue"><i class="pi pi-microphone" /></span><div><h2>Голосовой чат</h2><p>Разрешите пользователям разговаривать с Lola голосом и выберите голос по умолчанию.</p></div></div>
+          <div class="section-title"><span class="section-icon blue"><i class="pi pi-microphone" /></span><div><h2>Голосовой чат</h2><p>Настройте голосовые диалоги, голос Lola и манеру её речи.</p></div></div>
           <div class="voice-settings">
             <div class="setting-toggle surface-soft">
               <div><strong>Разрешить голосовые диалоги</strong><span>Пока настройка выключена, начать голосовой разговор нельзя.</span></div>
@@ -262,6 +267,11 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
                 <div><strong>Сохранять транскрипты</strong><span>Реплики голосового диалога появятся в обычной истории сообщений.</span></div>
                 <ToggleSwitch v-model="form.voiceTranscriptEnabled" input-id="voice-transcripts" :disabled="saving || !form.voiceEnabled" aria-label="Сохранять транскрипты голосового чата" />
               </div>
+            </div>
+            <div class="field">
+              <label for="voice-instructions">Инструкция для голосовой модели</label>
+              <Textarea id="voice-instructions" v-model="form.voiceInstructions" rows="6" maxlength="20000" auto-resize placeholder="Опишите тон, темп, эмоции и манеру речи" :disabled="saving" />
+              <small>{{ form.voiceInstructions.length }}/20 000 символов</small>
             </div>
           </div>
         </section>

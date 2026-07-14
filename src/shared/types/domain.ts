@@ -79,6 +79,7 @@ export interface Project {
   supportedLocales: string[]
   assistantName: string
   systemPrompt: string
+  voiceInstructions: string
   settings: Record<string, unknown> & {
     description?: string
     timezone?: string

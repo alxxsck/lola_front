@@ -30,4 +30,6 @@ export interface CreateProjectDto {
   supportedLocales?: string[];
   /** @maxLength 20000 */
   systemPrompt?: string;
+  /** @maxLength 20000 */
+  voiceInstructions?: string;
 }
