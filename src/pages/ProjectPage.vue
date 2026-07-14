@@ -10,6 +10,7 @@ import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
+import AiUsageSection from '@/features/ai-usage/AiUsageSection.vue'
 import { useAuthStore } from '@/features/auth/auth.store'
 import type { RealtimeVoice } from '@/shared/api/generated/models'
 import { repository } from '@/shared/api/repository'
@@ -282,6 +283,8 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         </section>
       </aside>
     </form>
+
+    <AiUsageSection v-if="!loading && project" :project-id="project.id" />
   </div>
 </template>
 
