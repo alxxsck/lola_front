@@ -56,6 +56,10 @@ function propertyFor(field: ActionUiField) {
   return props.definition.configSchema.properties[field.key]
 }
 
+function booleanValue(field: ActionUiField) {
+  return Boolean(props.modelValue[field.key] ?? propertyFor(field)?.default)
+}
+
 function fieldId(field: ActionUiField) {
   return `${props.definition.type}-${props.instanceId || props.definition.id}-${field.key}`
 }
@@ -161,7 +165,7 @@ function fieldHint(field: ActionUiField) {
       <ToggleSwitch
         v-else-if="field.control === 'boolean'"
         :input-id="fieldId(field)"
-        :model-value="Boolean(modelValue[field.key])"
+        :model-value="booleanValue(field)"
         :disabled="readonly"
         @update:model-value="updateField(field.key, $event)"
       />

@@ -18,7 +18,11 @@ import type {
   CmsAuthResponseDto,
   CmsLoginDto,
   CompatibilityCreateMessageDto,
+  CompatibilityEndVoiceSessionDto,
+  CompatibilityGetVoiceSessionDto,
   CompatibilitySessionDto,
+  CompatibilityStartVoiceSessionDto,
+  ConnectVoiceSessionDto,
   CreateConversationDto,
   CreateCustomerDto,
   CreateEventDefinitionDto,
@@ -31,6 +35,7 @@ import type {
   CreateScenarioDto,
   CreateUiElementDto,
   EndUserResponseDto,
+  EndVoiceSessionDto,
   EventDefinitionResponseDto,
   EventIngestResponseDto,
   EventLogResponseDto,
@@ -50,6 +55,8 @@ import type {
   SendAdminMessageResponseDto,
   SendChatMessageDto,
   SpeechDto,
+  StartAdminVoiceConversationDto,
+  StartVoiceSessionDto,
   SuccessResponseDto,
   UiElementResponseDto,
   UpdateEventDefinitionDto,
@@ -533,12 +540,74 @@ export const adminMessagingSend = (
   );
 };
 
+export const adminVoiceStart = (
+  projectId: string,
+  userId: string,
+  startAdminVoiceConversationDto: BodyType<StartAdminVoiceConversationDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/voice-conversations`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: startAdminVoiceConversationDto,
+    },
+    options,
+  );
+};
+
 export const presenceList = (
   projectId: string,
   options?: SecondParameter<typeof request<ActiveUserResponseDto[]>>,
 ) => {
   return request<ActiveUserResponseDto[]>(
     { url: `/api/v1/admin/projects/${projectId}/users/active`, method: "GET" },
+    options,
+  );
+};
+
+export const compatibilityVoiceEnd = (
+  compatibilityEndVoiceSessionDto: BodyType<CompatibilityEndVoiceSessionDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/agents.Agents/EndVoiceSession`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: compatibilityEndVoiceSessionDto,
+    },
+    options,
+  );
+};
+
+export const compatibilityVoiceGet = (
+  compatibilityGetVoiceSessionDto: BodyType<CompatibilityGetVoiceSessionDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/agents.Agents/GetVoiceSession`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: compatibilityGetVoiceSessionDto,
+    },
+    options,
+  );
+};
+
+export const compatibilityVoiceStart = (
+  compatibilityStartVoiceSessionDto: BodyType<CompatibilityStartVoiceSessionDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/agents.Agents/StartVoiceSession`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: compatibilityStartVoiceSessionDto,
+    },
     options,
   );
 };
@@ -926,6 +995,76 @@ export const integrationUsersUpsert = (
   );
 };
 
+export const voiceStart = (
+  startVoiceSessionDto: BodyType<StartVoiceSessionDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/voice/sessions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: startVoiceSessionDto,
+    },
+    options,
+  );
+};
+
+export const voiceGet = (
+  voiceSessionId: string,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    { url: `/api/v1/voice/sessions/${voiceSessionId}`, method: "GET" },
+    options,
+  );
+};
+
+export const voiceEnd = (
+  voiceSessionId: string,
+  endVoiceSessionDto: BodyType<EndVoiceSessionDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/voice/sessions/${voiceSessionId}/end`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: endVoiceSessionDto,
+    },
+    options,
+  );
+};
+
+export const voiceIntroAudio = (
+  voiceSessionId: string,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/voice/sessions/${voiceSessionId}/intro-audio`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const voiceConnect = (
+  voiceSessionId: string,
+  connectVoiceSessionDto: BodyType<ConnectVoiceSessionDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/voice/sessions/${voiceSessionId}/webrtc`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: connectVoiceSessionDto,
+    },
+    options,
+  );
+};
+
 export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
   return request<void>({ url: `/health`, method: "GET" }, options);
 };
@@ -1029,8 +1168,20 @@ export type AdminConversationsListMessagesResult = NonNullable<
 export type AdminMessagingSendResult = NonNullable<
   Awaited<ReturnType<typeof adminMessagingSend>>
 >;
+export type AdminVoiceStartResult = NonNullable<
+  Awaited<ReturnType<typeof adminVoiceStart>>
+>;
 export type PresenceListResult = NonNullable<
   Awaited<ReturnType<typeof presenceList>>
+>;
+export type CompatibilityVoiceEndResult = NonNullable<
+  Awaited<ReturnType<typeof compatibilityVoiceEnd>>
+>;
+export type CompatibilityVoiceGetResult = NonNullable<
+  Awaited<ReturnType<typeof compatibilityVoiceGet>>
+>;
+export type CompatibilityVoiceStartResult = NonNullable<
+  Awaited<ReturnType<typeof compatibilityVoiceStart>>
 >;
 export type CmsAuthLoginResult = NonNullable<
   Awaited<ReturnType<typeof cmsAuthLogin>>
@@ -1114,6 +1265,17 @@ export type IntegrationUsersListResult = NonNullable<
 >;
 export type IntegrationUsersUpsertResult = NonNullable<
   Awaited<ReturnType<typeof integrationUsersUpsert>>
+>;
+export type VoiceStartResult = NonNullable<
+  Awaited<ReturnType<typeof voiceStart>>
+>;
+export type VoiceGetResult = NonNullable<Awaited<ReturnType<typeof voiceGet>>>;
+export type VoiceEndResult = NonNullable<Awaited<ReturnType<typeof voiceEnd>>>;
+export type VoiceIntroAudioResult = NonNullable<
+  Awaited<ReturnType<typeof voiceIntroAudio>>
+>;
+export type VoiceConnectResult = NonNullable<
+  Awaited<ReturnType<typeof voiceConnect>>
 >;
 export type AppHealthResult = NonNullable<
   Awaited<ReturnType<typeof appHealth>>

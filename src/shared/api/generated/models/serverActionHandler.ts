@@ -12,6 +12,7 @@ export type ServerActionHandler =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ServerActionHandler = {
   SAY: "SAY",
+  START_VOICE_CONVERSATION: "START_VOICE_CONVERSATION",
   WAIT_FOR: "WAIT_FOR",
   ASK_CHOICE: "ASK_CHOICE",
   CONDITION: "CONDITION",

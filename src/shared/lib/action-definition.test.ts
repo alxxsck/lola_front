@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { demoActionDefinitions } from '@/shared/api/mock-data'
 import {
   actionFieldOptions,
   createActionConfig,
@@ -62,5 +63,44 @@ describe('action definition schema helpers', () => {
     expect(validateActionConfig(definition, { label: 'Go', action: 'none', timeoutMs: 30000 })).toBe('')
     expect(validateScenarioActionConfig({ position: 0, type: 'SHOW_CTA', config: {} }, { ...definition, enabled: false }))
       .toBe('Действие Показать кнопку отключено')
+  })
+
+  it('describes and validates the non-blocking voice conversation action', () => {
+    const definition = demoActionDefinitions.find((item) => item.type === 'START_VOICE_CONVERSATION')
+
+    expect(definition).toMatchObject({
+      name: 'Начать голосовой диалог',
+      executor: 'SERVER',
+      serverHandler: 'START_VOICE_CONVERSATION',
+      commandType: null,
+      enabled: true,
+      builtIn: true,
+      configSchema: { required: ['text'] },
+    })
+    expect(definition?.uiSchema.fields.map((field) => field.key)).toEqual(['text', 'voice', 'onUnavailable'])
+    expect(validateActionConfig(definition!, {})).toBe('Первая голосовая реплика Lola: обязательное поле')
+    expect(validateActionConfig(definition!, { text: 'Привет!', voice: 'marin', onUnavailable: 'continue' })).toBe('')
+    expect(validateActionConfig(definition!, { text: 'Привет!', voice: 'nova' })).toBe('Голос: содержит недопустимое значение')
+    expect(validateActionConfig(definition!, { text: 'Привет!', onUnavailable: 'stop' })).toBe('Если голос недоступен: содержит недопустимое значение')
+  })
+
+  it('describes both SPEAK_TEXT playback modes and defaults to waiting', () => {
+    const definition = demoActionDefinitions.find((item) => item.type === 'SPEAK_TEXT')
+
+    expect(definition).toMatchObject({
+      executor: 'FRONTEND',
+      commandType: 'speak_text',
+      configSchema: {
+        properties: { waitForCompletion: { type: 'boolean', default: true } },
+        required: ['text'],
+      },
+    })
+    expect(definition?.uiSchema.fields.map((field) => field.key))
+      .toEqual(['text', 'voice', 'waitForCompletion', 'timeoutMs'])
+    expect(createActionConfig(definition!)).toEqual({ waitForCompletion: true })
+    expect(validateActionConfig(definition!, { text: 'Привет!', waitForCompletion: true })).toBe('')
+    expect(validateActionConfig(definition!, { text: 'Привет!', waitForCompletion: false })).toBe('')
+    expect(validateActionConfig(definition!, { text: 'Привет!', waitForCompletion: 'false' }))
+      .toBe('Дождаться окончания воспроизведения: должно иметь тип boolean')
   })
 })

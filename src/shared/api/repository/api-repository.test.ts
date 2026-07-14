@@ -9,6 +9,7 @@ import {
   platformUpdateProject,
   platformUpdateScenario,
   platformUpdateUi,
+  platformScenarios,
   adminMessagingSend,
   presenceList,
   platformActionDefinitions,
@@ -103,6 +104,24 @@ describe('api repository adapter', () => {
     expect(platformCreateScenario).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'welcome', actions: [{ position: 0, type: 'OPEN_PAGE', config: { pageId: 'home' } }] }))
     expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', expect.not.objectContaining({ code: 'welcome' }))
     expect(platformDeleteScenario).toHaveBeenCalledWith('project-1', 'scenario-1')
+  })
+
+  it('normalizes legacy non-array scenario conditions before saving', async () => {
+    const legacyResponse = {
+      id: 'scenario-1', projectId: 'project-1', code: 'open_deposit_modal', name: 'Open deposit modal',
+      eventDefinitionId: 'event-1', status: 'DRAFT' as const, priority: 0, conditions: {},
+      cooldownSeconds: 0, actions: [], createdAt: 'now', updatedAt: 'now',
+    }
+    vi.mocked(platformScenarios).mockResolvedValue([legacyResponse as never])
+    vi.mocked(platformUpdateScenario).mockResolvedValue({ ...legacyResponse, conditions: [] })
+
+    const [scenario] = await apiRepository.getScenarios('project-1')
+    expect(scenario.conditions).toEqual([])
+
+    await apiRepository.saveScenario('project-1', scenario)
+    expect(platformUpdateScenario).toHaveBeenCalledWith(
+      'project-1', 'scenario-1', expect.objectContaining({ conditions: [] }),
+    )
   })
 
   it('loads and parses project action definitions', async () => {

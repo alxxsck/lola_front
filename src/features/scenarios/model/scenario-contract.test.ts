@@ -60,6 +60,42 @@ describe('scenario API contract', () => {
     ])
   })
 
+  it('serializes the voice conversation step with its optional policy', () => {
+    expect(serializeApiScenarioActions([{
+      position: 0,
+      nodeKey: 'start_voice',
+      nextNodeKey: 'highlight_target',
+      type: 'START_VOICE_CONVERSATION',
+      config: {
+        text: 'Привет! Давай я помогу тебе с настройкой.',
+        voice: 'marin',
+        onUnavailable: 'continue',
+      },
+    }])).toEqual([{
+      position: 0,
+      nodeKey: 'start_voice',
+      nextNodeKey: 'highlight_target',
+      type: 'START_VOICE_CONVERSATION',
+      config: {
+        text: 'Привет! Давай я помогу тебе с настройкой.',
+        voice: 'marin',
+        onUnavailable: 'continue',
+      },
+    }])
+  })
+
+  it('serializes SPEAK_TEXT without waiting for playback completion', () => {
+    expect(serializeApiScenarioActions([{
+      position: 0,
+      type: 'SPEAK_TEXT',
+      config: { text: 'Привет!', voice: 'marin', waitForCompletion: false, timeoutMs: 60_000 },
+    }])).toEqual([{
+      position: 0,
+      type: 'SPEAK_TEXT',
+      config: { text: 'Привет!', voice: 'marin', waitForCompletion: false, timeoutMs: 60_000 },
+    }])
+  })
+
   it('creates a plain JSON payload from reactive-compatible object shapes', () => {
     const config = Object.create({ inherited: true }) as Record<string, unknown>
     config.payload = { amount: 10, omitted: undefined }

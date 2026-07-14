@@ -13,6 +13,7 @@ import type {
   ScenarioActionDefinition,
   UiElement,
 } from '@/shared/types/domain'
+import { RealtimeVoice, ServerActionHandler } from '@/shared/api/generated/models'
 
 const now = Date.now()
 const isoAgo = (minutes: number) => new Date(now - minutes * 60_000).toISOString()
@@ -27,12 +28,16 @@ export const demoProject: Project = {
     apiBaseUrl: 'https://api.lola.ai/api/v1',
     wsUrl: 'wss://api.lola.ai/assistant',
     allowedOrigins: ['https://luckystars.example'],
+    voiceEnabled: false,
+    voiceTranscriptEnabled: true,
+    voice: 'marin',
   },
   organization: { id: 'org_1', name: 'Lucky Group', slug: 'lucky_group' },
   _count: { users: 1284, scenarios: 4, eventLogs: 18742 },
 }
 
 const definitionDate = '2026-07-12T12:00:00.000Z'
+const realtimeVoices = Object.values(RealtimeVoice)
 const timeoutProperty = { type: 'integer' as const, minimum: 1000, maximum: 300000 }
 const timeoutField: ActionUiField = { key: 'timeoutMs', label: 'Таймаут, мс', control: 'number' }
 
@@ -53,7 +58,7 @@ function demoActionDefinition(
     name,
     description,
     executor,
-    serverHandler: executor === 'SERVER' ? type.toLowerCase() : null,
+    serverHandler: executor === 'SERVER' ? type : null,
     commandType: frontend ? type : null,
     configSchema: {
       type: 'object',
@@ -97,6 +102,27 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
   demoActionDefinition('SAY', 'Сказать текст', 'SERVER',
     { text: { type: 'string', minLength: 1 } }, ['text'],
     [{ key: 'text', label: 'Сообщение от Lola', control: 'textarea', supportsTemplates: true }]),
+  {
+    ...demoActionDefinition('SPEAK_TEXT', 'Озвучить текст', 'FRONTEND', {
+      text: { type: 'string', minLength: 1, maxLength: 2000 },
+      voice: { type: 'string', enum: realtimeVoices },
+      waitForCompletion: { type: 'boolean', default: true },
+    }, ['text'], [
+      { key: 'text', label: 'Текст для озвучивания', control: 'textarea', supportsTemplates: true },
+      { key: 'voice', label: 'Голос', control: 'select', options: realtimeVoices },
+      { key: 'waitForCompletion', label: 'Дождаться окончания воспроизведения', control: 'boolean' },
+    ], 'Генерирует речь Realtime-моделью и может дождаться окончания воспроизведения.'),
+    commandType: 'speak_text',
+  },
+  demoActionDefinition(ServerActionHandler.START_VOICE_CONVERSATION, 'Начать голосовой диалог', 'SERVER', {
+    text: { type: 'string', minLength: 1, maxLength: 2000 },
+    voice: { type: 'string', enum: realtimeVoices },
+    onUnavailable: { type: 'string', enum: ['continue', 'fail'] },
+  }, ['text'], [
+    { key: 'text', label: 'Первая голосовая реплика Lola', control: 'textarea', supportsTemplates: true },
+    { key: 'voice', label: 'Голос', control: 'select', options: realtimeVoices },
+    { key: 'onUnavailable', label: 'Если голос недоступен', control: 'select', options: ['continue', 'fail'] },
+  ], 'Неблокирующе приглашает пользователя в голосовой диалог и произносит первую реплику.'),
   demoActionDefinition('PLAY_ANIMATION', 'Проиграть анимацию', 'FRONTEND',
     { animation: { type: 'string', enum: ['greeting', 'excited', 'win_small', 'spin', 'pointing'] } }, ['animation'],
     [{ key: 'animation', label: 'Анимация', control: 'select', allowCustom: true, options: ['greeting', 'excited', 'win_small', 'spin', 'pointing'] }]),

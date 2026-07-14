@@ -79,7 +79,13 @@ export interface Project {
   supportedLocales: string[]
   assistantName: string
   systemPrompt: string
-  settings: Record<string, unknown> & { description?: string; timezone?: string }
+  settings: Record<string, unknown> & {
+    description?: string
+    timezone?: string
+    voiceEnabled?: boolean
+    voiceTranscriptEnabled?: boolean
+    voice?: string
+  }
   organization?: Organization
   _count?: { users: number; scenarios: number; eventLogs: number }
 }

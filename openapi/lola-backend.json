@@ -622,8 +622,83 @@
         "properties": {},
         "type": "object"
       },
+      "CompatibilityEndVoiceSessionDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "voiceSessionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "voiceSessionId"
+        ],
+        "type": "object"
+      },
+      "CompatibilityGetVoiceSessionDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
       "CompatibilitySessionDto": {
         "properties": {},
+        "type": "object"
+      },
+      "CompatibilityStartVoiceSessionDto": {
+        "properties": {
+          "agentId": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "voiceConfig": {
+            "$ref": "#/components/schemas/CompatibilityVoiceConfigDto"
+          },
+          "voiceModelId": {
+            "maxLength": 200,
+            "type": "string"
+          }
+        },
+        "required": [
+          "agentId"
+        ],
+        "type": "object"
+      },
+      "CompatibilityVoiceConfigDto": {
+        "properties": {
+          "voice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RealtimeVoice"
+              }
+            ]
+          }
+        },
+        "required": [
+          "voice"
+        ],
+        "type": "object"
+      },
+      "ConnectVoiceSessionDto": {
+        "properties": {
+          "offerSdp": {
+            "description": "WebRTC SDP offer",
+            "maxLength": 100000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "offerSdp"
+        ],
         "type": "object"
       },
       "ConversationStatus": {
@@ -1042,6 +1117,15 @@
           "createdAt",
           "updatedAt"
         ],
+        "type": "object"
+      },
+      "EndVoiceSessionDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "EventDefinitionResponseDto": {
@@ -1543,6 +1627,21 @@
           "ACTIVE",
           "SUSPENDED",
           "ARCHIVED"
+        ],
+        "type": "string"
+      },
+      "RealtimeVoice": {
+        "enum": [
+          "alloy",
+          "ash",
+          "ballad",
+          "coral",
+          "echo",
+          "sage",
+          "shimmer",
+          "verse",
+          "marin",
+          "cedar"
         ],
         "type": "string"
       },
@@ -2225,6 +2324,7 @@
       "ServerActionHandler": {
         "enum": [
           "SAY",
+          "START_VOICE_CONVERSATION",
           "WAIT_FOR",
           "ASK_CHOICE",
           "CONDITION",
@@ -2235,6 +2335,48 @@
       },
       "SpeechDto": {
         "properties": {},
+        "type": "object"
+      },
+      "StartAdminVoiceConversationDto": {
+        "properties": {
+          "interactionSessionId": {
+            "description": "Optional preferred online interaction session. Backend selects the latest active one when omitted.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "text": {
+            "description": "Exact first phrase that Lola will synthesize after the user accepts the call.",
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "voice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RealtimeVoice"
+              }
+            ]
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "StartVoiceSessionDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "voice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RealtimeVoice"
+              }
+            ]
+          }
+        },
         "type": "object"
       },
       "SuccessResponseDto": {
@@ -4036,6 +4178,64 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/voice-conversations": {
+      "post": {
+        "operationId": "AdminVoice_start",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Internal EndUser id.",
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated key. Reuse it only when retrying the same voice invitation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartAdminVoiceConversationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "A new conversation and pending voice invitation."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin voice"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/users/active": {
       "get": {
         "operationId": "Presence_list",
@@ -4072,6 +4272,93 @@
         ],
         "tags": [
           "admin presence"
+        ]
+      }
+    },
+    "/api/v1/agents.Agents/EndVoiceSession": {
+      "post": {
+        "operationId": "CompatibilityVoice_end",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompatibilityEndVoiceSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice-compatibility"
+        ]
+      }
+    },
+    "/api/v1/agents.Agents/GetVoiceSession": {
+      "post": {
+        "operationId": "CompatibilityVoice_get",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompatibilityGetVoiceSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice-compatibility"
+        ]
+      }
+    },
+    "/api/v1/agents.Agents/StartVoiceSession": {
+      "post": {
+        "operationId": "CompatibilityVoice_start",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompatibilityStartVoiceSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice-compatibility"
         ]
       }
     },
@@ -4950,6 +5237,167 @@
         ],
         "tags": [
           "integration users"
+        ]
+      }
+    },
+    "/api/v1/voice/sessions": {
+      "post": {
+        "operationId": "Voice_start",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartVoiceSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice"
+        ]
+      }
+    },
+    "/api/v1/voice/sessions/{voiceSessionId}": {
+      "get": {
+        "operationId": "Voice_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "voiceSessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice"
+        ]
+      }
+    },
+    "/api/v1/voice/sessions/{voiceSessionId}/end": {
+      "post": {
+        "operationId": "Voice_end",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "voiceSessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndVoiceSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice"
+        ]
+      }
+    },
+    "/api/v1/voice/sessions/{voiceSessionId}/intro-audio": {
+      "post": {
+        "operationId": "Voice_introAudio",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "voiceSessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice"
+        ]
+      }
+    },
+    "/api/v1/voice/sessions/{voiceSessionId}/webrtc": {
+      "post": {
+        "operationId": "Voice_connect",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "voiceSessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectVoiceSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice"
         ]
       }
     },
