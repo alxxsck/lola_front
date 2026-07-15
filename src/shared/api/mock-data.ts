@@ -182,14 +182,14 @@ export const demoEvents: EventDefinition[] = [
 ]
 
 export const demoScenarios: Scenario[] = [
-  { id: 'scn_1', projectId: demoProject.id, code: 'after_registration', name: 'После регистрации', description: 'Помочь сделать первый депозит', eventDefinitionId: 'evt_1', status: 'ACTIVE', priority: 100, conditions: [], cooldownSeconds: 86400, maxRunsPerUser: 1, actions: [
+  { id: 'scn_1', projectId: demoProject.id, code: 'after_registration', name: 'После регистрации', description: 'Помочь сделать первый депозит', eventDefinitionId: 'evt_1', status: 'ACTIVE', conversationPolicy: 'create_new', priority: 100, conditions: [], cooldownSeconds: 86400, maxRunsPerUser: 1, actions: [
     { id: 'act_1', position: 0, type: 'SHOW_ASSISTANT', config: {} },
     { id: 'act_2', position: 1, type: 'PLAY_ANIMATION', config: { animation: 'greeting' } },
     { id: 'act_3', position: 2, type: 'SAY', config: { text: 'Регистрация завершена. Давайте сделаем следующий шаг.' } },
     { id: 'act_4', position: 3, type: 'HIGHLIGHT_ELEMENT', config: { target: 'deposit_button' } },
     { id: 'act_5', position: 4, type: 'SHOW_CTA', config: { label: 'Пополнить баланс', action: 'open_modal', modalId: 'deposit_modal' } },
   ] },
-  { id: 'scn_2', projectId: demoProject.id, code: 'deposit_recovery', name: 'Помощь при ошибке оплаты', description: 'Подсказать альтернативный способ', eventDefinitionId: 'evt_2', status: 'DRAFT', priority: 80, conditions: [], actions: [
+  { id: 'scn_2', projectId: demoProject.id, code: 'deposit_recovery', name: 'Помощь при ошибке оплаты', description: 'Подсказать альтернативный способ', eventDefinitionId: 'evt_2', status: 'DRAFT', conversationPolicy: 'create_new', priority: 80, conditions: [], actions: [
     { position: 0, type: 'SAY', config: { text: 'Похоже, платеж не прошел. Помочь разобраться?' } },
     { position: 1, type: 'SHOW_CTA', config: { label: 'Посмотреть инструкцию', action: 'open_page', pageId: 'bonuses_page' } },
   ] },

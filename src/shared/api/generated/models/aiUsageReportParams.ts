@@ -6,6 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SpeechDto {
-  [key: string]: unknown;
-}
+export type AiUsageReportParams = {
+  from?: string;
+  to?: string;
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit?: number;
+  cursor?: string;
+};

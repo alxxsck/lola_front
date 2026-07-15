@@ -9,6 +9,7 @@ import type { ScenarioActionResponseDto } from "./scenarioActionResponseDto";
 import type { ScenarioResponseDtoActiveFrom } from "./scenarioResponseDtoActiveFrom";
 import type { ScenarioResponseDtoActiveTo } from "./scenarioResponseDtoActiveTo";
 import type { ScenarioResponseDtoConditionsItem } from "./scenarioResponseDtoConditionsItem";
+import type { ConversationPolicy } from "./conversationPolicy";
 import type { ScenarioResponseDtoDescription } from "./scenarioResponseDtoDescription";
 import type { EventDefinitionResponseDto } from "./eventDefinitionResponseDto";
 import type { ScenarioResponseDtoMaxRunsPerUser } from "./scenarioResponseDtoMaxRunsPerUser";
@@ -22,6 +23,7 @@ export interface ScenarioResponseDto {
   activeTo?: ScenarioResponseDtoActiveTo;
   code: string;
   conditions: ScenarioResponseDtoConditionsItem[];
+  conversationPolicy: ConversationPolicy;
   cooldownSeconds: number;
   createdAt: string;
   /** @nullable */

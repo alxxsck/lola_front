@@ -30,6 +30,9 @@ export interface CreateProjectDto {
   supportedLocales?: string[];
   /** @maxLength 20000 */
   systemPrompt?: string;
-  /** @maxLength 20000 */
+  /**
+   * Project-wide instructions for voice tone, pacing, emotion, and delivery.
+   * @maxLength 20000
+   */
   voiceInstructions?: string;
 }

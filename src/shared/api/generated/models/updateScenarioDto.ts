@@ -7,6 +7,7 @@
  */
 import type { ScenarioActionDto } from "./scenarioActionDto";
 import type { ScenarioConditionDto } from "./scenarioConditionDto";
+import type { ConversationPolicy } from "./conversationPolicy";
 import type { ScenarioStatus } from "./scenarioStatus";
 
 export interface UpdateScenarioDto {
@@ -18,6 +19,8 @@ export interface UpdateScenarioDto {
   activeFrom?: string;
   activeTo?: string;
   conditions?: ScenarioConditionDto[];
+  /** Selects a new conversation or continues the active one for the whole run. */
+  conversationPolicy?: ConversationPolicy;
   /** @minimum 0 */
   cooldownSeconds?: number;
   /** @maxLength 2000 */

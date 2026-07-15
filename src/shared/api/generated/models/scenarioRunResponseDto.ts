@@ -7,6 +7,7 @@
  */
 import type { ScenarioRunResponseDtoContext } from "./scenarioRunResponseDtoContext";
 import type { ScenarioRunResponseDtoConversationId } from "./scenarioRunResponseDtoConversationId";
+import type { ConversationPolicy } from "./conversationPolicy";
 import type { ScenarioRunUserSummaryDto } from "./scenarioRunUserSummaryDto";
 import type { ScenarioRunResponseDtoError } from "./scenarioRunResponseDtoError";
 import type { ScenarioRunResponseDtoFinishedAt } from "./scenarioRunResponseDtoFinishedAt";
@@ -19,6 +20,7 @@ export interface ScenarioRunResponseDto {
   context: ScenarioRunResponseDtoContext;
   /** @nullable */
   conversationId?: ScenarioRunResponseDtoConversationId;
+  conversationPolicy: ConversationPolicy;
   currentStep: number;
   endUser: ScenarioRunUserSummaryDto;
   endUserId: string;

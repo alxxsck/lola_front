@@ -152,6 +152,7 @@ function toPayload(scenario: Scenario, status = scenario.status): ScenarioPayloa
     description: scenario.description,
     eventDefinitionId: scenario.eventDefinitionId,
     status,
+    conversationPolicy: scenario.conversationPolicy,
     priority: scenario.priority,
     conditions: scenario.conditions,
     cooldownSeconds: scenario.cooldownSeconds,

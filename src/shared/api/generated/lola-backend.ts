@@ -12,6 +12,7 @@ import type {
   AdminConversationsListParams,
   AdminConversationsPageResponseDto,
   AdminUserResponseDto,
+  AiUsageReportParams,
   AuditLogResponseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
@@ -28,18 +29,25 @@ import type {
   CreateEventDefinitionDto,
   CreateGuestSessionDto,
   CreateInteractionSessionDto,
+  CreateKnowledgeTextDto,
   CreateMemberDto,
   CreateProjectDto,
   CreateProjectResponseDto,
   CreateScenarioActionDefinitionDto,
   CreateScenarioDto,
   CreateUiElementDto,
+  DeleteKnowledgeDocumentResponseDto,
   EndUserResponseDto,
   EndVoiceSessionDto,
   EventDefinitionResponseDto,
   EventIngestResponseDto,
   EventLogResponseDto,
   IngestEventDto,
+  KnowledgeDocumentDetailResponseDto,
+  KnowledgeDocumentListResponseDto,
+  KnowledgeDocumentMutationResponseDto,
+  KnowledgeListParams,
+  KnowledgeUploadFileBody,
   ListMessagesDto,
   ListThreadMessagesDto,
   LogoutDto,
@@ -54,7 +62,6 @@ import type {
   SendAdminMessageDto,
   SendAdminMessageResponseDto,
   SendChatMessageDto,
-  SpeechDto,
   StartAdminVoiceConversationDto,
   StartVoiceSessionDto,
   SuccessResponseDto,
@@ -215,6 +222,21 @@ export const platformUpdateActionDefinition = (
   );
 };
 
+export const aiUsageReport = (
+  projectId: string,
+  params?: AiUsageReportParams,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-usage`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const auditList = (
   projectId: string,
   options?: SecondParameter<typeof request<AuditLogResponseDto[]>>,
@@ -280,6 +302,113 @@ export const platformUpdateEventDefinition = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateEventDefinitionDto,
+    },
+    options,
+  );
+};
+
+export const knowledgeList = (
+  projectId: string,
+  params?: KnowledgeListParams,
+  options?: SecondParameter<typeof request<KnowledgeDocumentListResponseDto>>,
+) => {
+  return request<KnowledgeDocumentListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/knowledge/documents`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const knowledgeDelete = (
+  projectId: string,
+  documentId: string,
+  options?: SecondParameter<typeof request<DeleteKnowledgeDocumentResponseDto>>,
+) => {
+  return request<DeleteKnowledgeDocumentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/knowledge/documents/${documentId}`,
+      method: "DELETE",
+    },
+    options,
+  );
+};
+
+export const knowledgeGet = (
+  projectId: string,
+  documentId: string,
+  options?: SecondParameter<typeof request<KnowledgeDocumentDetailResponseDto>>,
+) => {
+  return request<KnowledgeDocumentDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/knowledge/documents/${documentId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const knowledgeRetry = (
+  projectId: string,
+  documentId: string,
+  options?: SecondParameter<
+    typeof request<KnowledgeDocumentMutationResponseDto>
+  >,
+) => {
+  return request<KnowledgeDocumentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/knowledge/documents/${documentId}/retry`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const knowledgeUploadFile = (
+  projectId: string,
+  knowledgeUploadFileBody: BodyType<KnowledgeUploadFileBody>,
+  options?: SecondParameter<
+    typeof request<KnowledgeDocumentMutationResponseDto>
+  >,
+) => {
+  const formData = new FormData();
+  if (knowledgeUploadFileBody.category !== undefined) {
+    formData.append(`category`, knowledgeUploadFileBody.category);
+  }
+  formData.append(`file`, knowledgeUploadFileBody.file);
+  if (knowledgeUploadFileBody.locale !== undefined) {
+    formData.append(`locale`, knowledgeUploadFileBody.locale);
+  }
+  if (knowledgeUploadFileBody.title !== undefined) {
+    formData.append(`title`, knowledgeUploadFileBody.title);
+  }
+
+  return request<KnowledgeDocumentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/knowledge/files`,
+      method: "POST",
+      headers: { "Content-Type": "multipart/form-data" },
+      data: formData,
+    },
+    options,
+  );
+};
+
+export const knowledgeCreateText = (
+  projectId: string,
+  createKnowledgeTextDto: BodyType<CreateKnowledgeTextDto>,
+  options?: SecondParameter<
+    typeof request<KnowledgeDocumentMutationResponseDto>
+  >,
+) => {
+  return request<KnowledgeDocumentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/knowledge/texts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createKnowledgeTextDto,
     },
     options,
   );
@@ -811,21 +940,6 @@ export const chatSend = (
   );
 };
 
-export const chatSpeech = (
-  speechDto: BodyType<SpeechDto>,
-  options?: SecondParameter<typeof request<void>>,
-) => {
-  return request<void>(
-    {
-      url: `/api/v1/chat/speech`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: speechDto,
-    },
-    options,
-  );
-};
-
 export const compatibilityCrmCreateCustomer = (
   createCustomerDto: BodyType<CreateCustomerDto>,
   options?: SecondParameter<typeof request<void>>,
@@ -971,6 +1085,16 @@ export const sessionsCreate = (
   );
 };
 
+export const scenarioSpeechAudio = (
+  commandId: string,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    { url: `/api/v1/scenario-commands/${commandId}/audio`, method: "POST" },
+    options,
+  );
+};
+
 export const integrationUsersList = (
   options?: SecondParameter<typeof request<EndUserResponseDto[]>>,
 ) => {
@@ -1099,6 +1223,9 @@ export type PlatformActionDefinitionResult = NonNullable<
 export type PlatformUpdateActionDefinitionResult = NonNullable<
   Awaited<ReturnType<typeof platformUpdateActionDefinition>>
 >;
+export type AiUsageReportResult = NonNullable<
+  Awaited<ReturnType<typeof aiUsageReport>>
+>;
 export type AuditListResult = NonNullable<
   Awaited<ReturnType<typeof auditList>>
 >;
@@ -1113,6 +1240,24 @@ export type PlatformDeleteEventDefinitionResult = NonNullable<
 >;
 export type PlatformUpdateEventDefinitionResult = NonNullable<
   Awaited<ReturnType<typeof platformUpdateEventDefinition>>
+>;
+export type KnowledgeListResult = NonNullable<
+  Awaited<ReturnType<typeof knowledgeList>>
+>;
+export type KnowledgeDeleteResult = NonNullable<
+  Awaited<ReturnType<typeof knowledgeDelete>>
+>;
+export type KnowledgeGetResult = NonNullable<
+  Awaited<ReturnType<typeof knowledgeGet>>
+>;
+export type KnowledgeRetryResult = NonNullable<
+  Awaited<ReturnType<typeof knowledgeRetry>>
+>;
+export type KnowledgeUploadFileResult = NonNullable<
+  Awaited<ReturnType<typeof knowledgeUploadFile>>
+>;
+export type KnowledgeCreateTextResult = NonNullable<
+  Awaited<ReturnType<typeof knowledgeCreateText>>
 >;
 export type PlatformMembersResult = NonNullable<
   Awaited<ReturnType<typeof platformMembers>>
@@ -1227,9 +1372,6 @@ export type ChatCurrentConversationResult = NonNullable<
 >;
 export type ChatListResult = NonNullable<Awaited<ReturnType<typeof chatList>>>;
 export type ChatSendResult = NonNullable<Awaited<ReturnType<typeof chatSend>>>;
-export type ChatSpeechResult = NonNullable<
-  Awaited<ReturnType<typeof chatSpeech>>
->;
 export type CompatibilityCrmCreateCustomerResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityCrmCreateCustomer>>
 >;
@@ -1259,6 +1401,9 @@ export type CompatibilityMessengerListThreadsResult = NonNullable<
 >;
 export type SessionsCreateResult = NonNullable<
   Awaited<ReturnType<typeof sessionsCreate>>
+>;
+export type ScenarioSpeechAudioResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioSpeechAudio>>
 >;
 export type IntegrationUsersListResult = NonNullable<
   Awaited<ReturnType<typeof integrationUsersList>>

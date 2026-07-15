@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RealtimeVoice } from "./realtimeVoice";
+import type { RealtimeModel } from "./realtimeModel";
 
 export interface StartVoiceSessionDto {
   conversationId?: string;
   voice?: RealtimeVoice;
+  voiceModelId?: RealtimeModel;
 }

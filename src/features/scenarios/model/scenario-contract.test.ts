@@ -35,10 +35,11 @@ describe('scenario API contract', () => {
     const value = scenario([{ id: 'action-1', position: 4, type: 'SAY', config: { text: 'Hello', draft: true } }])
     expect(toCreateScenarioDto(value)).toEqual({
       code: 'welcome_flow', name: 'Welcome flow', description: 'Greets a user', eventDefinitionId: 'event-1',
-      status: 'ACTIVE', priority: 20, conditions: [{ path: 'user.segment', operator: 'eq', value: 'new' }],
+      status: 'ACTIVE', conversationPolicy: 'create_new', priority: 20, conditions: [{ path: 'user.segment', operator: 'eq', value: 'new' }],
       cooldownSeconds: 60, maxRunsPerUser: 2, activeFrom: '2026-07-01T08:00:00.000Z',
       activeTo: '2026-08-01T08:00:00.000Z', actions: [{ position: 0, type: 'SAY', config: { text: 'Hello', draft: true } }],
     })
+    expect(toUpdateScenarioDto(value)).toHaveProperty('conversationPolicy', 'create_new')
     expect(toUpdateScenarioDto(value)).not.toHaveProperty('code')
     expect(toUpdateScenarioDto(value).actions?.[0]).not.toHaveProperty('id')
   })

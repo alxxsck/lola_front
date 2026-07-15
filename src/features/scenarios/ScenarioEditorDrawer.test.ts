@@ -28,6 +28,7 @@ describe('ScenarioEditorDrawer', () => {
     code: 'successful_deposit',
     name: 'Поздравление после депозита',
     status: 'ACTIVE',
+    conversationPolicy: 'create_new',
     eventDefinitionId: 'event-1',
     priority: 100,
     conditions: [{ path: 'event.payload.amount', operator: 'gt', value: 0 }],

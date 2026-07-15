@@ -85,20 +85,21 @@ describe('api repository adapter', () => {
   it('routes scenario CRUD through generated endpoints with backend DTOs', async () => {
     const response = {
       id: 'scenario-1', projectId: 'project-1', code: 'welcome', name: 'Welcome', eventDefinitionId: 'event-1',
-      status: 'DRAFT' as const, priority: 0, conditions: [], cooldownSeconds: 0, actions: [
+      status: 'DRAFT' as const, conversationPolicy: 'reuse_active' as const, priority: 0, conditions: [], cooldownSeconds: 0, actions: [
         { id: 'action-1', scenarioId: 'scenario-1', position: 0, type: 'OPEN_PAGE' as const, config: { pageId: 'home' }, createdAt: 'now', updatedAt: 'now' },
       ], createdAt: 'now', updatedAt: 'now',
     }
     vi.mocked(platformCreateScenario).mockResolvedValue(response)
     vi.mocked(platformUpdateScenario).mockResolvedValue(response)
     vi.mocked(platformDeleteScenario).mockResolvedValue(response)
-    const value = { code: 'welcome', name: 'Welcome', eventDefinitionId: 'event-1', actions: [{ position: 0, type: 'OPEN_PAGE' as const, config: { pageId: 'home' } }] }
+    const value = { code: 'welcome', name: 'Welcome', eventDefinitionId: 'event-1', conversationPolicy: 'reuse_active' as const, actions: [{ position: 0, type: 'OPEN_PAGE' as const, config: { pageId: 'home' } }] }
 
-    await apiRepository.saveScenario('project-1', value)
+    await expect(apiRepository.saveScenario('project-1', value)).resolves.toEqual(expect.objectContaining({ conversationPolicy: 'reuse_active' }))
     await apiRepository.saveScenario('project-1', { ...value, id: 'scenario-1' })
     await apiRepository.deleteScenario('project-1', 'scenario-1')
 
-    expect(platformCreateScenario).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'welcome', actions: [{ position: 0, type: 'OPEN_PAGE', config: { pageId: 'home' } }] }))
+    expect(platformCreateScenario).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'welcome', conversationPolicy: 'reuse_active', actions: [{ position: 0, type: 'OPEN_PAGE', config: { pageId: 'home' } }] }))
+    expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', expect.objectContaining({ conversationPolicy: 'reuse_active' }))
     expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', expect.not.objectContaining({ code: 'welcome' }))
     expect(platformDeleteScenario).toHaveBeenCalledWith('project-1', 'scenario-1')
   })
@@ -106,7 +107,7 @@ describe('api repository adapter', () => {
   it('normalizes legacy non-array scenario conditions before saving', async () => {
     const legacyResponse = {
       id: 'scenario-1', projectId: 'project-1', code: 'open_deposit_modal', name: 'Open deposit modal',
-      eventDefinitionId: 'event-1', status: 'DRAFT' as const, priority: 0, conditions: {},
+      eventDefinitionId: 'event-1', status: 'DRAFT' as const, conversationPolicy: 'create_new' as const, priority: 0, conditions: {},
       cooldownSeconds: 0, actions: [], createdAt: 'now', updatedAt: 'now',
     }
     vi.mocked(platformScenarios).mockResolvedValue([legacyResponse as never])

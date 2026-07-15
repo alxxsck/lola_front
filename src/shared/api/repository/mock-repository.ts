@@ -120,7 +120,7 @@ export const mockRepository: LolaRepository = {
   async getActionDefinitions() { await pause(); return structuredClone(demoActionDefinitions) },
   async saveScenario(projectId, value) {
     const data = readDemo()
-    const saved = { status: 'DRAFT', priority: 0, conditions: [], ...value, id: value.id ?? uid('scn'), projectId } as Scenario
+    const saved = { status: 'DRAFT', conversationPolicy: 'create_new', priority: 0, conditions: [], ...value, id: value.id ?? uid('scn'), projectId } as Scenario
     saved.actions = normalizeScenarioActions(saved.actions)
     const index = data.scenarios.findIndex((item) => item.id === saved.id)
     if (index >= 0) data.scenarios.splice(index, 1, saved); else data.scenarios.push(saved)

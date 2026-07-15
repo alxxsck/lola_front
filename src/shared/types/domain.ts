@@ -1,5 +1,6 @@
 export type EntityKind = 'BUTTON' | 'MODAL' | 'PAGE' | 'ELEMENT' | 'HANDLER'
 export type ScenarioStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
+export type ConversationPolicy = 'reuse_active' | 'create_new'
 export type ActionType = string
 export type ActionExecutor = 'SERVER' | 'FRONTEND'
 export type ActionControl = 'text' | 'textarea' | 'number' | 'select' | 'target' | 'event' | 'json' | 'boolean'
@@ -155,6 +156,7 @@ export interface Scenario {
   eventDefinitionId: string
   eventDefinition?: EventDefinition
   status: ScenarioStatus
+  conversationPolicy: ConversationPolicy
   priority: number
   conditions: ScenarioCondition[]
   cooldownSeconds?: number
@@ -318,7 +320,7 @@ export type DirectAdminActionType =
 export interface DirectAdminAction { type: DirectAdminActionType; config: Record<string, unknown> }
 export interface AdminMessageRequest {
   text: string
-  conversationPolicy: 'reuse_active' | 'create_new'
+  conversationPolicy: ConversationPolicy
   interactionSessionId?: string
   actions?: DirectAdminAction[]
   idempotencyKey?: string

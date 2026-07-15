@@ -46,6 +46,7 @@ function baseScenarioDto(value: SaveScenario) {
     description: value.description?.trim() || undefined,
     eventDefinitionId: value.eventDefinitionId,
     status: value.status,
+    conversationPolicy: value.conversationPolicy ?? 'create_new',
     priority: value.priority,
     conditions: value.conditions as ScenarioConditionDto[] | undefined,
     cooldownSeconds: value.cooldownSeconds,

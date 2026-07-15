@@ -664,8 +664,11 @@
             "$ref": "#/components/schemas/CompatibilityVoiceConfigDto"
           },
           "voiceModelId": {
-            "maxLength": 200,
-            "type": "string"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RealtimeModel"
+              }
+            ]
           }
         },
         "required": [
@@ -700,6 +703,13 @@
           "offerSdp"
         ],
         "type": "object"
+      },
+      "ConversationPolicy": {
+        "enum": [
+          "reuse_active",
+          "create_new"
+        ],
+        "type": "string"
       },
       "ConversationStatus": {
         "enum": [
@@ -761,6 +771,35 @@
       },
       "CreateInteractionSessionDto": {
         "properties": {},
+        "type": "object"
+      },
+      "CreateKnowledgeTextDto": {
+        "properties": {
+          "category": {
+            "example": "payments",
+            "maxLength": 80,
+            "type": "string"
+          },
+          "locale": {
+            "example": "ru",
+            "maxLength": 20,
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 500000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "text"
+        ],
         "type": "object"
       },
       "CreateMemberDto": {
@@ -828,6 +867,8 @@
             "type": "string"
           },
           "voiceInstructions": {
+            "default": "",
+            "description": "Project-wide instructions for voice tone, pacing, emotion, and delivery.",
             "maxLength": 20000,
             "type": "string"
           }
@@ -938,6 +979,15 @@
             },
             "type": "array"
           },
+          "conversationPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConversationPolicy"
+              }
+            ],
+            "default": "create_new",
+            "description": "Selects a new conversation or continues the active one for the whole run."
+          },
           "cooldownSeconds": {
             "minimum": 0,
             "type": "number"
@@ -996,7 +1046,6 @@
           "handler": {
             "deprecated": true,
             "description": "Legacy CMS field. Kept temporarily for backward compatibility and never used as the modal registry key.",
-            "maxLength": 200,
             "type": "string"
           },
           "kind": {
@@ -1006,14 +1055,14 @@
               }
             ]
           },
-          "name": {
-            "maxLength": 100,
-            "minLength": 1,
-            "type": "string"
-          },
           "modalName": {
             "description": "Required for MODAL. Stable key passed to the host modal registry.",
             "maxLength": 200,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
             "type": "string"
           },
           "route": {
@@ -1030,6 +1079,22 @@
           "code",
           "name",
           "kind"
+        ],
+        "type": "object"
+      },
+      "DeleteKnowledgeDocumentResponseDto": {
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "deleted",
+          "id"
         ],
         "type": "object"
       },
@@ -1392,6 +1457,209 @@
         ],
         "type": "object"
       },
+      "KnowledgeDocumentDetailResponseDto": {
+        "properties": {
+          "category": {
+            "nullable": true,
+            "type": "object"
+          },
+          "contentText": {
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "nullable": true,
+            "type": "object"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "object"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "locale": {
+            "nullable": true,
+            "type": "object"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "number"
+          },
+          "sourceType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KnowledgeSourceType"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KnowledgeDocumentStatus"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "sourceType",
+          "title",
+          "filename",
+          "mimeType",
+          "sizeBytes",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "KnowledgeDocumentListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeDocumentResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "KnowledgeDocumentMutationResponseDto": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/KnowledgeDocumentResponseDto"
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document",
+          "duplicate"
+        ],
+        "type": "object"
+      },
+      "KnowledgeDocumentResponseDto": {
+        "properties": {
+          "category": {
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "nullable": true,
+            "type": "object"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "object"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "locale": {
+            "nullable": true,
+            "type": "object"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "number"
+          },
+          "sourceType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KnowledgeSourceType"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KnowledgeDocumentStatus"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "sourceType",
+          "title",
+          "filename",
+          "mimeType",
+          "sizeBytes",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "KnowledgeDocumentStatus": {
+        "enum": [
+          "INDEXING",
+          "READY",
+          "FAILED"
+        ],
+        "type": "string"
+      },
+      "KnowledgeSourceType": {
+        "enum": [
+          "FILE",
+          "TEXT"
+        ],
+        "type": "string"
+      },
       "ListMessagesDto": {
         "properties": {},
         "type": "object"
@@ -1602,11 +1870,14 @@
           "systemPrompt": {
             "type": "string"
           },
-          "voiceInstructions": {
-            "type": "string"
-          },
           "updatedAt": {
             "format": "date-time",
+            "type": "string"
+          },
+          "voiceInstructions": {
+            "default": "",
+            "description": "Project-wide instructions for voice tone, pacing, emotion, and delivery.",
+            "maxLength": 20000,
             "type": "string"
           }
         },
@@ -1643,6 +1914,17 @@
           "ACTIVE",
           "SUSPENDED",
           "ARCHIVED"
+        ],
+        "type": "string"
+      },
+      "RealtimeModel": {
+        "enum": [
+          "gpt-realtime-2.1",
+          "gpt-realtime-2.1-mini",
+          "gpt-realtime-2",
+          "gpt-realtime-1.5",
+          "gpt-realtime",
+          "gpt-realtime-mini"
         ],
         "type": "string"
       },
@@ -1940,6 +2222,13 @@
             },
             "type": "array"
           },
+          "conversationPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConversationPolicy"
+              }
+            ]
+          },
           "cooldownSeconds": {
             "type": "number"
           },
@@ -1995,6 +2284,7 @@
           "code",
           "name",
           "status",
+          "conversationPolicy",
           "priority",
           "conditions",
           "cooldownSeconds",
@@ -2053,6 +2343,13 @@
             "format": "uuid",
             "nullable": true,
             "type": "object"
+          },
+          "conversationPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConversationPolicy"
+              }
+            ]
           },
           "currentStep": {
             "type": "number"
@@ -2121,6 +2418,7 @@
           "scenarioId",
           "eventLogId",
           "endUserId",
+          "conversationPolicy",
           "status",
           "context",
           "startedAt",
@@ -2349,10 +2647,6 @@
         ],
         "type": "string"
       },
-      "SpeechDto": {
-        "properties": {},
-        "type": "object"
-      },
       "StartAdminVoiceConversationDto": {
         "properties": {
           "interactionSessionId": {
@@ -2389,6 +2683,13 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/RealtimeVoice"
+              }
+            ]
+          },
+          "voiceModelId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RealtimeModel"
               }
             ]
           }
@@ -2444,7 +2745,7 @@
             "deprecated": true,
             "description": "Legacy CMS value. Runtime commands never use this field.",
             "nullable": true,
-            "type": "string"
+            "type": "object"
           },
           "id": {
             "format": "uuid",
@@ -2457,12 +2758,12 @@
               }
             ]
           },
-          "name": {
-            "type": "string"
-          },
           "modalName": {
             "description": "MODAL key passed to the product modal registry.",
             "nullable": true,
+            "type": "object"
+          },
+          "name": {
             "type": "string"
           },
           "projectId": {
@@ -2472,11 +2773,11 @@
           "route": {
             "description": "PAGE route passed to the product router.",
             "nullable": true,
-            "type": "string"
+            "type": "object"
           },
           "selector": {
             "nullable": true,
-            "type": "string"
+            "type": "object"
           },
           "updatedAt": {
             "format": "date-time",
@@ -2553,6 +2854,7 @@
             "type": "string"
           },
           "voiceInstructions": {
+            "description": "Project-wide instructions for voice tone, pacing, emotion, and delivery.",
             "maxLength": 20000,
             "type": "string"
           }
@@ -2628,6 +2930,14 @@
             },
             "type": "array"
           },
+          "conversationPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConversationPolicy"
+              }
+            ],
+            "description": "Selects a new conversation or continues the active one for the whole run."
+          },
           "cooldownSeconds": {
             "minimum": 0,
             "type": "number"
@@ -2679,7 +2989,6 @@
           "handler": {
             "deprecated": true,
             "description": "Legacy CMS field. Kept temporarily for backward compatibility and never used as the modal registry key.",
-            "maxLength": 200,
             "type": "string"
           },
           "kind": {
@@ -2689,14 +2998,14 @@
               }
             ]
           },
-          "name": {
-            "maxLength": 100,
-            "minLength": 1,
-            "type": "string"
-          },
           "modalName": {
             "description": "Required for MODAL. Stable key passed to the host modal registry.",
             "maxLength": 200,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
             "type": "string"
           },
           "route": {
@@ -3158,6 +3467,72 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/ai-usage": {
+      "get": {
+        "operationId": "AiUsage_report",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project AI usage totals, breakdown and raw billing records."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI usage"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/audit-logs": {
       "get": {
         "operationId": "Audit_list",
@@ -3309,6 +3684,9 @@
               }
             },
             "description": ""
+          },
+          "409": {
+            "description": "EVENT_DEFINITION_IN_USE: scenarios or historical event logs reference the definition"
           }
         },
         "security": [
@@ -3360,6 +3738,9 @@
               }
             },
             "description": ""
+          },
+          "409": {
+            "description": "EVENT_SCHEMA_BREAKS_SCENARIOS: the new schema invalidates conditions or templates in stored scenarios"
           }
         },
         "security": [
@@ -3369,6 +3750,299 @@
         ],
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/knowledge/documents": {
+      "get": {
+        "operationId": "Knowledge_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin knowledge"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/knowledge/documents/{documentId}": {
+      "delete": {
+        "operationId": "Knowledge_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteKnowledgeDocumentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin knowledge"
+        ]
+      },
+      "get": {
+        "operationId": "Knowledge_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin knowledge"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/knowledge/documents/{documentId}/retry": {
+      "post": {
+        "operationId": "Knowledge_retry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin knowledge"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/knowledge/files": {
+      "post": {
+        "operationId": "Knowledge_uploadFile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "category": {
+                    "maxLength": 80,
+                    "type": "string"
+                  },
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "locale": {
+                    "maxLength": 20,
+                    "type": "string"
+                  },
+                  "title": {
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin knowledge"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/knowledge/texts": {
+      "post": {
+        "operationId": "Knowledge_createText",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKnowledgeTextDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin knowledge"
         ]
       }
     },
@@ -4884,35 +5558,6 @@
         ]
       }
     },
-    "/api/v1/chat/speech": {
-      "post": {
-        "operationId": "Chat_speech",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SpeechDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "chat"
-        ]
-      }
-    },
     "/api/v1/crm.Crm/CreateCustomer": {
       "post": {
         "operationId": "CompatibilityCrm_createCustomer",
@@ -5213,6 +5858,34 @@
         ]
       }
     },
+    "/api/v1/scenario-commands/{commandId}/audio": {
+      "post": {
+        "operationId": "ScenarioSpeech_audio",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "commandId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Streaming PCM16 audio for the active SPEAK_TEXT command."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario speech"
+        ]
+      }
+    },
     "/api/v1/users": {
       "get": {
         "operationId": "IntegrationUsers_list",
@@ -5386,7 +6059,7 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Generated WAV audio for the scripted voice intro."
           }
         },
         "security": [

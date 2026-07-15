@@ -85,6 +85,7 @@ function mapScenario(dto: ScenarioResponseDto): Scenario {
     eventDefinitionId: dto.eventDefinitionId,
     eventDefinition: dto.eventDefinition ? mapEventDefinition(dto.eventDefinition) : undefined,
     status: dto.status,
+    conversationPolicy: dto.conversationPolicy,
     priority: dto.priority,
     conditions: Array.isArray(dto.conditions) ? dto.conditions as unknown as Scenario['conditions'] : [],
     cooldownSeconds: dto.cooldownSeconds,

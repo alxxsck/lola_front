@@ -16,20 +16,19 @@ export interface UpdateUiElementDto {
   /**
    * Legacy CMS field. Kept temporarily for backward compatibility and never used as the modal registry key.
    * @deprecated
-   * @maxLength 200
    */
   handler?: string;
   kind?: UiElementKind;
-  /**
-   * @minLength 1
-   * @maxLength 100
-   */
-  name?: string;
   /**
    * Required for MODAL. Stable key passed to the host modal registry.
    * @maxLength 200
    */
   modalName?: string;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  name?: string;
   /**
    * Required for PAGE. Product route passed to the host router.
    * @maxLength 1000
