@@ -6,4 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type CreateProjectDtoSettings = { [key: string]: unknown };
+export type SpeechIntegrationResponseDtoDefaults = { [key: string]: unknown };

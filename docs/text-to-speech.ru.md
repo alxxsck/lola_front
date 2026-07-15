@@ -1,0 +1,35 @@
+# Text-to-Speech в Lola CMS
+
+Обычная команда `SPEAK_TEXT` синтезируется через ElevenLabs `eleven_v3`. Этот поток отделён от OpenAI Realtime voice sessions: изменение TTS-голоса, языка или voice settings не меняет голосовой чат, WebRTC и realtime model.
+
+## CMS API
+
+- `GET /api/v1/admin/projects/{projectId}/speech-synthesis` — сохранённые overrides, состояние интеграции, server defaults и capabilities;
+- `PATCH /api/v1/admin/projects/{projectId}/speech-synthesis` — controlled merge только TTS-настроек;
+- `GET /api/v1/admin/projects/{projectId}/speech-synthesis/voices` — актуальные default voices ElevenLabs и явно назначенные проекту голоса с `search`, `limit` и cursor pagination;
+- `GET /api/v1/admin/projects/{projectId}/ai-usage` — токены OpenAI, символы и billed units ElevenLabs, estimated/billed cost.
+- `GET /api/v1/admin/provider-billing/elevenlabs` и `POST .../sync` — workspace usage/subscription snapshot только для platform admin; эти данные не распределяются искусственно по проектам.
+
+OpenAPI snapshot хранится в `openapi/lola-backend.json`, клиент и DTO генерируются в `src/shared/api/generated`. Ручное редактирование generated-файлов не допускается.
+
+## UI и сохранение
+
+Text-to-Speech имеет отдельную форму и отдельную кнопку сохранения. Общий Project PATCH не получает `settings`: это исключает обход dedicated authorization и случайную перезапись Realtime-настроек. Первая страница каталога загружает 20 голосов; поиск и cursor pagination выполняются через backend, поэтому ElevenLabs API key не попадает в браузер.
+
+CMS показывает только настройки, опубликованные в `integration.capabilities.settings`, и использует переданные backend диапазоны. Текущий контракт включает:
+
+- `voiceId`: голос из общего или project-specific allowlist; `null` включает server default;
+- `languageOverride`: двухбуквенный ISO 639-1; `null` включает auto-detection;
+- `stability`, `similarityBoost`, `style`: `0..1`;
+- `speed`: `0.7..1.2`;
+- `seed`: `0..4294967295` или `null`;
+- `applyTextNormalization`: `auto`, `on`, `off`;
+- `applyLanguageTextNormalization`: дополнительная нормализация для японского с возможным увеличением latency.
+
+Если backend возвращает `configured: false`, форма остаётся видимой для диагностики, но сохранение блокируется. API key никогда не передаётся браузеру.
+
+## Usage
+
+ElevenLabs не возвращает token usage, поэтому CMS показывает `inputCharacters` и официальный response header `character-cost` как `providerBilledUnits` отдельно от OpenAI tokens. Для ElevenLabs backend выставляет `costStatus=PROVIDER_REPORTED_USAGE`, а `estimatedCost` и `billedCost` оставляет `null`: invoice-exact сумму отдельного TTS-запроса провайдер не сообщает.
+
+Итоговый `estimatedCost` проекта относится только к операциям, для которых у backend есть rate card (сейчас это OpenAI). CMS предупреждает, что оценка может отличаться от фактического списания. Workspace credits, subscription limits и overage доступны только в отдельном platform-admin billing snapshot и не прибавляются к расходам проекта.

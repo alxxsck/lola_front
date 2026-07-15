@@ -83,6 +83,7 @@ describe('ProjectPage voice instructions', () => {
     await flushPromises()
 
     expect(mocks.updateProject).toHaveBeenCalledWith('project-1', expect.objectContaining({ voiceInstructions }))
+    expect(mocks.updateProject.mock.calls[0]?.[1]).not.toHaveProperty('settings')
   })
 
   it('does not save a voice instruction longer than the API limit', async () => {

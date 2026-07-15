@@ -8,6 +8,8 @@ export interface AiUsageRangeQuery {
 export interface AiUsageTotals {
   records: number
   unpricedRecords: number
+  inputCharacters: number
+  providerBilledUnits: number
   totalTokens: number
   inputTokens: number
   cachedInputTokens: number
@@ -34,10 +36,13 @@ export interface AiUsageBreakdown {
   operation: string
   currency: string
   records: number
+  inputCharacters: number
+  providerBilledUnits: number
   totalTokens: number
   inputTokens: number
   cachedInputTokens: number
   outputTokens: number
+  reasoningTokens: number
   inputTextTokens: number
   outputTextTokens: number
   inputAudioTokens: number
@@ -59,6 +64,8 @@ export interface AiModelUsage {
   model: string
   currency: string
   records: number
+  inputCharacters: number
+  providerBilledUnits: number
   totalTokens: number
   inputTokens: number
   cachedInputTokens: number
@@ -99,6 +106,8 @@ export function aggregateModelUsage(breakdown: readonly AiUsageBreakdown[]): AiM
     const current = models.get(key)
     if (current) {
       current.records += item.records
+      current.inputCharacters += item.inputCharacters
+      current.providerBilledUnits += item.providerBilledUnits
       current.totalTokens += item.totalTokens
       current.inputTokens += item.inputTokens
       current.cachedInputTokens += item.cachedInputTokens
@@ -113,6 +122,8 @@ export function aggregateModelUsage(breakdown: readonly AiUsageBreakdown[]): AiM
       model: item.model,
       currency: item.currency,
       records: item.records,
+      inputCharacters: item.inputCharacters,
+      providerBilledUnits: item.providerBilledUnits,
       totalTokens: item.totalTokens,
       inputTokens: item.inputTokens,
       cachedInputTokens: item.cachedInputTokens,
@@ -151,6 +162,10 @@ export function getReportCurrency(report: AiUsageReport): string | undefined {
   const currencies = new Set(report.breakdown.map((item) => item.currency.toUpperCase()))
   if (currencies.size === 0) return 'USD'
   return currencies.size === 1 ? currencies.values().next().value : undefined
+}
+
+export function hasEstimatedCost(row: AiModelUsage): boolean {
+  return row.provider.toLowerCase() !== 'elevenlabs'
 }
 
 export function formatTokenCount(value: number): string {

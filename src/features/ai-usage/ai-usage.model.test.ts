@@ -4,6 +4,7 @@ import {
   getAiUsageRange,
   getModalityUsage,
   getReportCurrency,
+  hasEstimatedCost,
   pluralizeRu,
   type AiUsageBreakdown,
   type AiUsageReport,
@@ -13,6 +14,8 @@ import {
 const totals: AiUsageTotals = {
   records: 3,
   unpricedRecords: 0,
+  inputCharacters: 0,
+  providerBilledUnits: 0,
   totalTokens: 1_300,
   inputTokens: 900,
   cachedInputTokens: 200,
@@ -40,10 +43,13 @@ function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
     operation: 'responses',
     currency: 'usd',
     records: 1,
+    inputCharacters: 0,
+    providerBilledUnits: 0,
     totalTokens: 100,
     inputTokens: 70,
     cachedInputTokens: 10,
     outputTokens: 30,
+    reasoningTokens: 0,
     inputTextTokens: 70,
     outputTextTokens: 30,
     inputAudioTokens: 0,
@@ -73,12 +79,18 @@ describe('AI usage model', () => {
 
   it('combines operations of the same provider model and currency', () => {
     const result = aggregateModelUsage([
-      breakdown(),
-      breakdown({ operation: 'scripted_intro', records: 2, totalTokens: 200, estimatedCost: 0.02 }),
+      breakdown({ inputCharacters: 100, providerBilledUnits: 110 }),
+      breakdown({ operation: 'scripted_intro', records: 2, inputCharacters: 200, providerBilledUnits: 220, totalTokens: 200, estimatedCost: 0.02 }),
     ])
 
     expect(result).toHaveLength(1)
-    expect(result[0]).toMatchObject({ records: 3, totalTokens: 300, estimatedCost: 0.03 })
+    expect(result[0]).toMatchObject({
+      records: 3,
+      inputCharacters: 300,
+      providerBilledUnits: 330,
+      totalTokens: 300,
+      estimatedCost: 0.03,
+    })
   })
 
   it('keeps currencies separate and refuses to combine their total', () => {
@@ -90,6 +102,30 @@ describe('AI usage model', () => {
 
     expect(aggregateModelUsage(report.breakdown)).toHaveLength(2)
     expect(getReportCurrency(report)).toBeUndefined()
+  })
+
+  it('does not present provider-reported ElevenLabs units as a zero-cost estimate', () => {
+    const row = aggregateModelUsage([breakdown({
+      provider: 'elevenlabs',
+      model: 'eleven_v3',
+      totalTokens: 0,
+      providerBilledUnits: 125,
+      estimatedCost: 0,
+    })])[0]!
+
+    expect(hasEstimatedCost(row)).toBe(false)
+  })
+
+  it('keeps rejected zero-unit ElevenLabs requests unpriced', () => {
+    const row = aggregateModelUsage([breakdown({
+      provider: 'elevenlabs',
+      model: 'eleven_v3',
+      totalTokens: 0,
+      providerBilledUnits: 0,
+      estimatedCost: 0,
+    })])[0]!
+
+    expect(hasEstimatedCost(row)).toBe(false)
   })
 
   it('uses non-overlapping text, audio and image modality totals', () => {

@@ -18,6 +18,12 @@ const requiredOperations = new Map([
   ['AdminMessaging_send', { label: 'admin messaging', request: 'SendAdminMessageDto', response: 'SendAdminMessageResponseDto' }],
   ['Audit_list', { label: 'audit logs', response: 'AuditLogResponseDto' }],
   ['Presence_list', { label: 'active sessions', response: 'ActiveUserResponseDto' }],
+  ['AdminSpeech_get', { label: 'speech synthesis settings', response: 'SpeechSettingsResponseDto' }],
+  ['AdminSpeech_update', { label: 'speech synthesis update', request: 'UpdateSpeechSettingsDto', response: 'SpeechSettingsResponseDto' }],
+  ['AdminSpeech_voices', { label: 'speech synthesis voices', response: 'SpeechVoicePageResponseDto' }],
+  ['AiUsage_report', { label: 'AI usage report', response: 'AiUsageReportResponseDto' }],
+  ['ProviderBilling_get', { label: 'ElevenLabs provider billing snapshot', response: 'ProviderBillingSnapshotResponseDto' }],
+  ['ProviderBilling_sync', { label: 'ElevenLabs provider billing refresh', response: 'ProviderBillingSnapshotResponseDto' }],
 ])
 
 const operations = Object.values(document.paths ?? {}).flatMap((path) =>
@@ -54,6 +60,13 @@ for (const [operationId, expectation] of requiredOperations) {
 
   if (!containsSchema(responseSchema, expectation.response)) {
     throw new Error(`OpenAPI operation ${operationId} does not return ${expectation.response}`)
+  }
+}
+
+for (const schemaName of ['CreateProjectDto', 'UpdateProjectDto']) {
+  const properties = document.components?.schemas?.[schemaName]?.properties ?? {}
+  if ('settings' in properties) {
+    throw new Error(`${schemaName} must not expose generic settings; TTS uses the dedicated API`)
   }
 }
 

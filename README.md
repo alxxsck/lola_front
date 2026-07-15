@@ -28,6 +28,8 @@ CMS авторизуется через пользовательский JWT flo
 - `npm run typecheck` — TypeScript/Vue проверка;
 - `npm run lint` — ESLint;
 - `npm test` — Vitest.
+- `npm run api:update` — загрузить актуальный Swagger и пересобрать TypeScript-клиент;
+- `npm run api:check` — проверить, что OpenAPI snapshot и generated client синхронизированы.
 
 ## Архитектура
 
@@ -42,5 +44,7 @@ CMS авторизуется через пользовательский JWT flo
 - `shared/lib` — небольшие общие функции.
 
 API-режим подключает авторизацию и существующие CRUD endpoints проектов, UI elements, event definitions, scenarios и users. Функции без backend-контракта остаются только в mock implementation и явно сообщают об отсутствии API.
+
+Настройки ElevenLabs для обычного `SPEAK_TEXT` вынесены в отдельный блок Text-to-Speech и сохраняются только через dedicated speech-synthesis API. Они не меняют OpenAI Realtime voice sessions. Контракты, диапазоны настроек, каталог голосов и отображение usage описаны в [docs/text-to-speech.ru.md](docs/text-to-speech.ru.md).
 
 Полный MVP scope и требуемые backend-контракты описаны в [docs/cms-mvp-spec.md](docs/cms-mvp-spec.md). Матрица покрытия актуального ТЗ перед презентацией — в [docs/cms-coverage-audit.md](docs/cms-coverage-audit.md).

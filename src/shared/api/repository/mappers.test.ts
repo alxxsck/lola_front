@@ -16,7 +16,7 @@ describe('repository domain mappers', () => {
   it('only sends editable project fields', () => {
     expect(toUpdateProjectDto({
       id: 'immutable', slug: 'immutable', publicKey: 'immutable', name: 'Updated', voiceInstructions: '  Speak slowly.\nPause.  ', settings: { description: 'New' },
-    })).toEqual({ name: 'Updated', voiceInstructions: '  Speak slowly.\nPause.  ', settings: { description: 'New' } })
+    })).toEqual({ name: 'Updated', voiceInstructions: '  Speak slowly.\nPause.  ' })
   })
 
   it('normalizes nullable response fields and preserves JSON payloads', () => {

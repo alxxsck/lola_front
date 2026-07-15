@@ -1,27 +1,27 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { AiModelUsage } from '../ai-usage.model'
-import { formatMoney, formatTokenCount, pluralizeRu } from '../ai-usage.model'
+import { formatMoney, formatTokenCount, hasEstimatedCost, pluralizeRu } from '../ai-usage.model'
 
 const props = defineProps<{
   rows: AiModelUsage[]
   currency?: string
 }>()
 
-type Metric = 'tokens' | 'cost'
+type Metric = 'tokens' | 'characters' | 'cost'
 
 const metric = ref<Metric>('tokens')
-const costAvailable = computed(() => Boolean(props.currency))
+const costAvailable = computed(() => Boolean(props.currency) && props.rows.some(hasEstimatedCost))
 const sortedRows = computed(() => [...props.rows]
-  .sort((left, right) => metric.value === 'cost'
-    ? right.estimatedCost - left.estimatedCost
-    : right.totalTokens - left.totalTokens)
+  .sort((left, right) => rowValue(right) - rowValue(left))
   .slice(0, 6))
 const hiddenCount = computed(() => Math.max(props.rows.length - sortedRows.value.length, 0))
 const maxValue = computed(() => Math.max(0, ...sortedRows.value.map(rowValue)))
 
 function rowValue(row: AiModelUsage): number {
-  return metric.value === 'cost' ? row.estimatedCost : row.totalTokens
+  if (metric.value === 'cost') return row.estimatedCost
+  if (metric.value === 'characters') return row.inputCharacters
+  return row.totalTokens
 }
 
 function rowWidth(row: AiModelUsage): string {
@@ -30,9 +30,11 @@ function rowWidth(row: AiModelUsage): string {
 }
 
 function rowLabel(row: AiModelUsage): string {
-  return metric.value === 'cost'
-    ? formatMoney(row.estimatedCost, row.currency)
-    : `${formatTokenCount(row.totalTokens)} токенов`
+  if (metric.value === 'cost') {
+    return hasEstimatedCost(row) ? formatMoney(row.estimatedCost, row.currency) : 'Нет оценки'
+  }
+  if (metric.value === 'characters') return `${formatTokenCount(row.inputCharacters)} символов`
+  return `${formatTokenCount(row.totalTokens)} токенов`
 }
 
 function providerLabel(provider: string): string {
@@ -58,6 +60,7 @@ watch(costAvailable, (available) => {
       </div>
       <div class="metric-switch" role="group" aria-label="Показатель графика">
         <button type="button" :class="{ active: metric === 'tokens' }" :aria-pressed="metric === 'tokens'" @click="chooseMetric('tokens')">Токены</button>
+        <button type="button" :class="{ active: metric === 'characters' }" :aria-pressed="metric === 'characters'" @click="chooseMetric('characters')">Символы</button>
         <button type="button" :class="{ active: metric === 'cost' }" :aria-pressed="metric === 'cost'" :disabled="!costAvailable" @click="chooseMetric('cost')">Стоимость</button>
       </div>
     </header>

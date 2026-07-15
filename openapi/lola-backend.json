@@ -463,6 +463,314 @@
         ],
         "type": "object"
       },
+      "AiUsageBreakdownResponseDto": {
+        "properties": {
+          "billedCost": {
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "currency": {
+            "example": "usd",
+            "type": "string"
+          },
+          "durationSeconds": {
+            "type": "string"
+          },
+          "estimatedCost": {
+            "type": "string"
+          },
+          "inputAudioTokens": {
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTextTokens": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "model": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "outputAudioTokens": {
+            "type": "number"
+          },
+          "outputTextTokens": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerBilledUnits": {
+            "example": "1250.000000000000",
+            "type": "string"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "records": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "records",
+          "inputCharacters",
+          "providerBilledUnits",
+          "totalTokens",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "reasoningTokens",
+          "inputTextTokens",
+          "outputTextTokens",
+          "inputAudioTokens",
+          "outputAudioTokens",
+          "durationSeconds",
+          "estimatedCost",
+          "billedCost",
+          "provider",
+          "model",
+          "operation",
+          "currency"
+        ],
+        "type": "object"
+      },
+      "AiUsageRangeResponseDto": {
+        "properties": {
+          "from": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "AiUsageRecordResponseDto": {
+        "properties": {
+          "billedCost": {
+            "nullable": true,
+            "type": "string"
+          },
+          "costStatus": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "estimatedCost": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "model": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "pricingVersion": {
+            "nullable": true,
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerBilledUnits": {
+            "nullable": true,
+            "type": "string"
+          },
+          "providerMetadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "providerRequestId": {
+            "type": "string"
+          },
+          "rawUsage": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "status": {
+            "nullable": true,
+            "type": "string"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "operation",
+          "providerRequestId",
+          "model",
+          "status",
+          "inputCharacters",
+          "providerBilledUnits",
+          "totalTokens",
+          "inputTokens",
+          "outputTokens",
+          "currency",
+          "costStatus",
+          "estimatedCost",
+          "billedCost",
+          "pricingVersion",
+          "rawUsage",
+          "providerMetadata",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "AiUsageReportResponseDto": {
+        "properties": {
+          "breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/AiUsageBreakdownResponseDto"
+            },
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiUsageRecordResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "range": {
+            "$ref": "#/components/schemas/AiUsageRangeResponseDto"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/AiUsageTotalsResponseDto"
+          }
+        },
+        "required": [
+          "projectId",
+          "range",
+          "totals",
+          "breakdown",
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "AiUsageTotalsResponseDto": {
+        "properties": {
+          "billedCost": {
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "durationSeconds": {
+            "type": "string"
+          },
+          "estimatedCost": {
+            "type": "string"
+          },
+          "inputAudioTokens": {
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTextTokens": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "outputAudioTokens": {
+            "type": "number"
+          },
+          "outputTextTokens": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "providerBilledUnits": {
+            "example": "1250.000000000000",
+            "type": "string"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "records": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          },
+          "unpricedRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "records",
+          "inputCharacters",
+          "providerBilledUnits",
+          "totalTokens",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "reasoningTokens",
+          "inputTextTokens",
+          "outputTextTokens",
+          "inputAudioTokens",
+          "outputAudioTokens",
+          "durationSeconds",
+          "estimatedCost",
+          "billedCost",
+          "unpricedRecords"
+        ],
+        "type": "object"
+      },
       "AuditAdminUserResponseDto": {
         "properties": {
           "displayName": {
@@ -846,10 +1154,6 @@
           "organizationSlug": {
             "pattern": "^[a-z][a-z0-9_.-]*$",
             "type": "string"
-          },
-          "settings": {
-            "additionalProperties": true,
-            "type": "object"
           },
           "slug": {
             "pattern": "^[a-z][a-z0-9_.-]*$",
@@ -1909,6 +2213,69 @@
         ],
         "type": "string"
       },
+      "ProjectSpeechSettingsResponseDto": {
+        "properties": {
+          "applyLanguageTextNormalization": {
+            "description": "Language-specific normalization; currently supported only for Japanese.",
+            "type": "boolean"
+          },
+          "applyTextNormalization": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TextNormalizationMode"
+              }
+            ]
+          },
+          "languageOverride": {
+            "description": "ISO 639-1 language override. Null enables automatic language detection.",
+            "nullable": true,
+            "pattern": "^[a-z]{2}$",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "enum": [
+              2
+            ],
+            "type": "number"
+          },
+          "seed": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "similarityBoost": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "speed": {
+            "maximum": 1.2,
+            "minimum": 0.7,
+            "type": "number"
+          },
+          "stability": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "style": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "voiceId": {
+            "maxLength": 100,
+            "minLength": 12,
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "schemaVersion"
+        ],
+        "type": "object"
+      },
       "ProjectStatus": {
         "enum": [
           "ACTIVE",
@@ -1916,6 +2283,73 @@
           "ARCHIVED"
         ],
         "type": "string"
+      },
+      "ProviderBillingSnapshotResponseDto": {
+        "properties": {
+          "currency": {
+            "nullable": true,
+            "type": "string"
+          },
+          "currentOverageAmount": {
+            "nullable": true,
+            "type": "string"
+          },
+          "error": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lastAttemptAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastSyncedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "provider": {
+            "example": "elevenlabs",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RUNNING",
+              "CURRENT",
+              "STALE"
+            ],
+            "example": "CURRENT",
+            "type": "string"
+          },
+          "subscription": {
+            "nullable": true,
+            "type": "object"
+          },
+          "ttsCreditsUsed": {
+            "description": "Provider credits.",
+            "nullable": true,
+            "type": "string"
+          },
+          "usageByProduct": {
+            "nullable": true,
+            "type": "object"
+          },
+          "windowEnd": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "windowStart": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "status",
+          "lastAttemptAt"
+        ],
+        "type": "object"
       },
       "RealtimeModel": {
         "enum": [
@@ -2647,6 +3081,164 @@
         ],
         "type": "string"
       },
+      "SpeechIntegrationResponseDto": {
+        "properties": {
+          "capabilities": {
+            "$ref": "#/components/schemas/SpeechProviderCapabilitiesResponseDto"
+          },
+          "configured": {
+            "description": "Whether the server-side provider credential is configured.",
+            "type": "boolean"
+          },
+          "defaults": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "id": {
+            "enum": [
+              "elevenlabs"
+            ],
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "configured",
+          "model",
+          "defaults",
+          "capabilities"
+        ],
+        "type": "object"
+      },
+      "SpeechProviderCapabilitiesResponseDto": {
+        "properties": {
+          "languageOverride": {
+            "type": "boolean"
+          },
+          "outputFormat": {
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object"
+          },
+          "streaming": {
+            "type": "boolean"
+          },
+          "unsupportedForModel": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "voices": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "streaming",
+          "voices",
+          "languageOverride",
+          "settings",
+          "unsupportedForModel"
+        ],
+        "type": "object"
+      },
+      "SpeechSettingsResponseDto": {
+        "properties": {
+          "integration": {
+            "$ref": "#/components/schemas/SpeechIntegrationResponseDto"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ProjectSpeechSettingsResponseDto"
+          }
+        },
+        "required": [
+          "settings",
+          "integration"
+        ],
+        "type": "object"
+      },
+      "SpeechVoicePageResponseDto": {
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SpeechVoiceResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "hasMore"
+        ],
+        "type": "object"
+      },
+      "SpeechVoiceResponseDto": {
+        "properties": {
+          "category": {
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "previewUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "elevenlabs"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "provider",
+          "labels",
+          "languages"
+        ],
+        "type": "object"
+      },
       "StartAdminVoiceConversationDto": {
         "properties": {
           "interactionSessionId": {
@@ -2707,6 +3299,14 @@
           "success"
         ],
         "type": "object"
+      },
+      "TextNormalizationMode": {
+        "enum": [
+          "auto",
+          "on",
+          "off"
+        ],
+        "type": "string"
       },
       "ThreadStatus": {
         "enum": [
@@ -2830,10 +3430,6 @@
             "maxLength": 100,
             "minLength": 2,
             "type": "string"
-          },
-          "settings": {
-            "additionalProperties": true,
-            "type": "object"
           },
           "status": {
             "allOf": [
@@ -2969,6 +3565,60 @@
                 "$ref": "#/components/schemas/ScenarioStatus"
               }
             ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateSpeechSettingsDto": {
+        "properties": {
+          "applyLanguageTextNormalization": {
+            "description": "Language-specific normalization; currently supported only for Japanese.",
+            "type": "boolean"
+          },
+          "applyTextNormalization": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TextNormalizationMode"
+              }
+            ]
+          },
+          "languageOverride": {
+            "description": "ISO 639-1 language override. Null enables automatic language detection.",
+            "nullable": true,
+            "pattern": "^[a-z]{2}$",
+            "type": "string"
+          },
+          "seed": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "similarityBoost": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "speed": {
+            "maximum": 1.2,
+            "minimum": 0.7,
+            "type": "number"
+          },
+          "stability": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "style": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "voiceId": {
+            "maxLength": 100,
+            "minLength": 12,
+            "nullable": true,
+            "type": "string"
           }
         },
         "type": "object"
@@ -3520,6 +4170,13 @@
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiUsageReportResponseDto"
+                }
+              }
+            },
             "description": "Project AI usage totals, breakdown and raw billing records."
           }
         },
@@ -4418,6 +5075,148 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/speech-synthesis": {
+      "get": {
+        "operationId": "AdminSpeech_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeechSettingsResponseDto"
+                }
+              }
+            },
+            "description": "Effective project TTS settings and provider capabilities."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin speech synthesis"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminSpeech_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSpeechSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeechSettingsResponseDto"
+                }
+              }
+            },
+            "description": "Updated project TTS settings. Provider secrets are never returned."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin speech synthesis"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/speech-synthesis/voices": {
+      "get": {
+        "operationId": "AdminSpeech_voices",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 500,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeechVoicePageResponseDto"
+                }
+              }
+            },
+            "description": "Normalized provider voice catalog with cursor pagination."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin speech synthesis"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/ui-elements": {
       "get": {
         "operationId": "Platform_uiElements",
@@ -4982,6 +5781,58 @@
         ],
         "tags": [
           "admin presence"
+        ]
+      }
+    },
+    "/api/v1/admin/provider-billing/elevenlabs": {
+      "get": {
+        "operationId": "ProviderBilling_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderBillingSnapshotResponseDto"
+                }
+              }
+            },
+            "description": "Sanitized ElevenLabs workspace usage/subscription snapshot."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "provider billing"
+        ]
+      }
+    },
+    "/api/v1/admin/provider-billing/elevenlabs/sync": {
+      "post": {
+        "operationId": "ProviderBilling_sync",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderBillingSnapshotResponseDto"
+                }
+              }
+            },
+            "description": "Refresh and return the ElevenLabs billing snapshot."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "provider billing"
         ]
       }
     },

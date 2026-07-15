@@ -11,8 +11,10 @@ import type {
   AdminConversationsListMessagesParams,
   AdminConversationsListParams,
   AdminConversationsPageResponseDto,
+  AdminSpeechVoicesParams,
   AdminUserResponseDto,
   AiUsageReportParams,
+  AiUsageReportResponseDto,
   AuditLogResponseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
@@ -53,6 +55,7 @@ import type {
   LogoutDto,
   ProjectMemberResponseDto,
   ProjectResponseDto,
+  ProviderBillingSnapshotResponseDto,
   RefreshTokenDto,
   RenameConversationDto,
   RotateServerKeyResponseDto,
@@ -62,6 +65,8 @@ import type {
   SendAdminMessageDto,
   SendAdminMessageResponseDto,
   SendChatMessageDto,
+  SpeechSettingsResponseDto,
+  SpeechVoicePageResponseDto,
   StartAdminVoiceConversationDto,
   StartVoiceSessionDto,
   SuccessResponseDto,
@@ -70,6 +75,7 @@ import type {
   UpdateProjectDto,
   UpdateScenarioActionDefinitionDto,
   UpdateScenarioDto,
+  UpdateSpeechSettingsDto,
   UpdateUiElementDto,
   UpsertUserDto,
 } from "./models";
@@ -225,9 +231,9 @@ export const platformUpdateActionDefinition = (
 export const aiUsageReport = (
   projectId: string,
   params?: AiUsageReportParams,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<typeof request<AiUsageReportResponseDto>>,
 ) => {
-  return request<void>(
+  return request<AiUsageReportResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/ai-usage`,
       method: "GET",
@@ -534,6 +540,50 @@ export const platformUpdateScenario = (
   );
 };
 
+export const adminSpeechGet = (
+  projectId: string,
+  options?: SecondParameter<typeof request<SpeechSettingsResponseDto>>,
+) => {
+  return request<SpeechSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/speech-synthesis`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const adminSpeechUpdate = (
+  projectId: string,
+  updateSpeechSettingsDto: BodyType<UpdateSpeechSettingsDto>,
+  options?: SecondParameter<typeof request<SpeechSettingsResponseDto>>,
+) => {
+  return request<SpeechSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/speech-synthesis`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateSpeechSettingsDto,
+    },
+    options,
+  );
+};
+
+export const adminSpeechVoices = (
+  projectId: string,
+  params?: AdminSpeechVoicesParams,
+  options?: SecondParameter<typeof request<SpeechVoicePageResponseDto>>,
+) => {
+  return request<SpeechVoicePageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/speech-synthesis/voices`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const platformUiElements = (
   projectId: string,
   options?: SecondParameter<typeof request<UiElementResponseDto[]>>,
@@ -692,6 +742,24 @@ export const presenceList = (
 ) => {
   return request<ActiveUserResponseDto[]>(
     { url: `/api/v1/admin/projects/${projectId}/users/active`, method: "GET" },
+    options,
+  );
+};
+
+export const providerBillingGet = (
+  options?: SecondParameter<typeof request<ProviderBillingSnapshotResponseDto>>,
+) => {
+  return request<ProviderBillingSnapshotResponseDto>(
+    { url: `/api/v1/admin/provider-billing/elevenlabs`, method: "GET" },
+    options,
+  );
+};
+
+export const providerBillingSync = (
+  options?: SecondParameter<typeof request<ProviderBillingSnapshotResponseDto>>,
+) => {
+  return request<ProviderBillingSnapshotResponseDto>(
+    { url: `/api/v1/admin/provider-billing/elevenlabs/sync`, method: "POST" },
     options,
   );
 };
@@ -1286,6 +1354,15 @@ export type PlatformDeleteScenarioResult = NonNullable<
 export type PlatformUpdateScenarioResult = NonNullable<
   Awaited<ReturnType<typeof platformUpdateScenario>>
 >;
+export type AdminSpeechGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminSpeechGet>>
+>;
+export type AdminSpeechUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof adminSpeechUpdate>>
+>;
+export type AdminSpeechVoicesResult = NonNullable<
+  Awaited<ReturnType<typeof adminSpeechVoices>>
+>;
 export type PlatformUiElementsResult = NonNullable<
   Awaited<ReturnType<typeof platformUiElements>>
 >;
@@ -1318,6 +1395,12 @@ export type AdminVoiceStartResult = NonNullable<
 >;
 export type PresenceListResult = NonNullable<
   Awaited<ReturnType<typeof presenceList>>
+>;
+export type ProviderBillingGetResult = NonNullable<
+  Awaited<ReturnType<typeof providerBillingGet>>
+>;
+export type ProviderBillingSyncResult = NonNullable<
+  Awaited<ReturnType<typeof providerBillingSync>>
 >;
 export type CompatibilityVoiceEndResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityVoiceEnd>>

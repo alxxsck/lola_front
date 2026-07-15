@@ -1,6 +1,6 @@
 # Lola CMS — аудит покрытия ТЗ перед owner demo
 
-Дата проверки: 10.07.2026.
+Дата проверки: 15.07.2026.
 
 Источники истины: `03-cms-admin.md`, приоритетные контракты `05-data-model-and-api-contracts.md` и критерии `06-mvp-scope-and-acceptance.md` из каталога ТЗ Lola.
 
@@ -12,12 +12,14 @@ Frontend готов к демонстрации продукта и полнос
 | --- | --- | --- |
 | Login + password | Готов, включая refresh/restore/logout и выбор проекта | CMS JWT login/refresh/logout опубликованы |
 | Tenant/project isolation | Доступные проекты загружаются по membership | Project guard проверяет membership для project routes |
-| Project settings | Готовы name, description, locales, timezone, assistant, API/WS URL, origins | Базовые project settings есть; secrets/allowed origins требуют контракта |
+| Project settings | Базовые поля проекта и отдельный ElevenLabs Text-to-Speech блок готовы | Generic PATCH принимает только типизированные поля проекта; TTS меняется через dedicated API |
+| Text-to-Speech | Актуальный provider catalog (20 голосов на страницу), language override, voice settings и normalization готовы | ElevenLabs `eleven_v3`, PCM16 mono 24 kHz, dedicated settings/voices API опубликованы |
+| AI usage | Токены OpenAI, provider-reported billed units ElevenLabs и честная estimated cost с предупреждением готовы | Project usage и отдельный platform-admin workspace billing snapshot опубликованы |
 | Dashboard | Готовы users, online, conversations, events, scenarios, CTA conversion, integration health и activity | Часть агрегатов пока demo data |
 | Interface map | Готов CRUD buttons/elements, pages и modals | Поддерживается общим `UiElement` CRUD |
 | CTA registry | CTA поддержан в сценариях и ручных действиях | Отдельной CTA entity/API пока нет |
 | Event definitions | Готов CRUD, unique code, field builder, strict JSON Schema preview | CRUD есть; schema validation/publish compatibility отсутствуют |
-| Scenario editor | Готов trigger, conditions, priority/frequency, ordered steps, linked targets, variables и graph preview | Базовые actions есть; TTS/integration/wait actions требуют расширения DTO/runtime |
+| Scenario editor | Готов trigger, conditions, priority/frequency, ordered steps, linked targets, variables и graph preview | `SPEAK_TEXT` использует ElevenLabs; остальные action capabilities определяются backend action definitions |
 | Activation | Status toggle и frontend validation готовы | Нет отдельного validate endpoint/version snapshot |
 | Product users | Готовы search, segment, online/stale/offline, lastSeenAt | Список есть без server pagination/search |
 | User activity | Готов unified timeline | Aggregated activity endpoint отсутствует |
