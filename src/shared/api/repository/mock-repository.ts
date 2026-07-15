@@ -81,11 +81,25 @@ export const mockRepository: LolaRepository = {
     const data = readDemo(); data.members = data.members.filter((item) => item.id !== memberId); writeDemo(data); await pause()
   },
   async getElements() { await pause(); return readDemo().elements },
-  async saveElement(projectId, value) {
+  async createElement(projectId, value) {
     const data = readDemo()
-    const saved = { config: {}, enabled: true, ...value, id: value.id ?? uid('ui'), projectId } as UiElement
-    const index = data.elements.findIndex((item) => item.id === saved.id)
-    if (index >= 0) data.elements.splice(index, 1, saved); else data.elements.push(saved)
+    const saved = { config: {}, enabled: true, ...value, id: uid('ui'), projectId } as UiElement
+    data.elements.push(saved)
+    writeDemo(data); await pause(); return saved
+  },
+  async updateElement(_projectId, id, value) {
+    const data = readDemo()
+    const index = data.elements.findIndex((item) => item.id === id)
+    if (index < 0) throw new Error('UI element not found')
+    const current = data.elements[index]!
+    const kind = value.kind ?? current.kind
+    const bindings = kind === 'PAGE'
+      ? { selector: undefined, route: value.route ?? current.route, modalName: undefined, handler: undefined }
+      : kind === 'MODAL'
+        ? { selector: undefined, route: undefined, modalName: value.modalName ?? current.modalName, handler: current.kind === 'MODAL' ? current.handler : undefined }
+        : { selector: value.selector === undefined ? current.selector : value.selector.trim() || undefined, route: undefined, modalName: undefined, handler: undefined }
+    const saved = { ...current, ...value, ...bindings, kind } as UiElement
+    data.elements.splice(index, 1, saved)
     writeDemo(data); await pause(); return saved
   },
   async deleteElement(_projectId, id) {

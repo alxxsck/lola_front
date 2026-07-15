@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AuditLogResponseDto, EndUserResponseDto, EventDefinitionResponseDto, EventLogResponseDto, ProjectResponseDto, ScenarioRunResponseDto, UiElementResponseDto } from '@/shared/api/generated/models'
-import { mapActiveSessions, mapAuditLog, mapConversation, mapConversationMessage, mapEndUser, mapEventDefinition, mapEventLog, mapProject, mapScenarioRun, mapUiElement, toCreateEventDefinitionDto, toUpdateProjectDto } from './mappers'
+import { mapActiveSessions, mapAuditLog, mapConversation, mapConversationMessage, mapEndUser, mapEventDefinition, mapEventLog, mapProject, mapScenarioRun, mapUiElement, toCreateEventDefinitionDto, toCreateUiElementDto, toUpdateProjectDto } from './mappers'
 
 describe('repository domain mappers', () => {
   it('maps the project contract without leaking backend-only fields', () => {
@@ -22,7 +22,7 @@ describe('repository domain mappers', () => {
   it('normalizes nullable response fields and preserves JSON payloads', () => {
     const ui = mapUiElement({
       id: 'ui-1', projectId: 'project-1', code: 'home', name: 'Home', kind: 'PAGE',
-      selector: null, route: '/home', handler: null, config: { direct: true }, enabled: true, createdAt: 'now', updatedAt: 'now',
+      selector: null, route: '/home', modalName: null, handler: null, config: { direct: true }, enabled: true, createdAt: 'now', updatedAt: 'now',
     } as unknown as UiElementResponseDto)
     const eventDto = {
       id: 'event-1', projectId: 'project-1', code: 'signup', name: 'Signup', description: null, version: 1,
@@ -39,6 +39,18 @@ describe('repository domain mappers', () => {
     expect(toCreateEventDefinitionDto(mapEventDefinition(eventDto))).toEqual({
       code: 'signup', name: 'Signup', version: 1, payloadSchema: { type: 'object' }, enabled: true,
     })
+  })
+
+  it('maps modalName in both directions without using the deprecated handler as a binding', () => {
+    const modal = mapUiElement({
+      id: 'ui-2', projectId: 'project-1', code: 'deposit_modal', name: 'Deposit', kind: 'MODAL',
+      selector: null, route: null, modalName: 'deposit', handler: 'openDepositModal', config: {}, enabled: true, createdAt: 'now', updatedAt: 'now',
+    } as unknown as UiElementResponseDto)
+
+    expect(modal).toMatchObject({ modalName: 'deposit', handler: 'openDepositModal' })
+    expect(toCreateUiElementDto({
+      code: modal.code, name: modal.name, kind: 'MODAL', modalName: modal.modalName!,
+    })).toEqual({ code: 'deposit_modal', name: 'Deposit', kind: 'MODAL', modalName: 'deposit' })
   })
 
   it('maps operational DTOs into page-safe domain models', () => {

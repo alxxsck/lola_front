@@ -6,25 +6,34 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UiElementResponseDtoConfig } from "./uiElementResponseDtoConfig";
-import type { UiElementResponseDtoHandler } from "./uiElementResponseDtoHandler";
 import type { UiElementKind } from "./uiElementKind";
-import type { UiElementResponseDtoRoute } from "./uiElementResponseDtoRoute";
-import type { UiElementResponseDtoSelector } from "./uiElementResponseDtoSelector";
 
 export interface UiElementResponseDto {
   code: string;
   config: UiElementResponseDtoConfig;
   createdAt: string;
   enabled: boolean;
-  /** @nullable */
-  handler?: UiElementResponseDtoHandler;
+  /**
+   * Legacy CMS value. Runtime commands never use this field.
+   * @deprecated
+   * @nullable
+   */
+  handler?: string | null;
   id: string;
   kind: UiElementKind;
   name: string;
+  /**
+   * MODAL key passed to the product modal registry.
+   * @nullable
+   */
+  modalName?: string | null;
   projectId: string;
+  /**
+   * PAGE route passed to the product router.
+   * @nullable
+   */
+  route?: string | null;
   /** @nullable */
-  route?: UiElementResponseDtoRoute;
-  /** @nullable */
-  selector?: UiElementResponseDtoSelector;
+  selector?: string | null;
   updatedAt: string;
 }

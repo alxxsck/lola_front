@@ -125,11 +125,12 @@ export const apiRepository: LolaRepository = {
     return (await platformUiElements(projectId)).map(mapUiElement)
   },
 
-  async saveElement(projectId, value) {
-    const dto = value.id
-      ? await platformUpdateUi(projectId, value.id, toUpdateUiElementDto(value))
-      : await platformCreateUi(projectId, toCreateUiElementDto(value))
-    return mapUiElement(dto)
+  async createElement(projectId, value) {
+    return mapUiElement(await platformCreateUi(projectId, toCreateUiElementDto(value)))
+  },
+
+  async updateElement(projectId, id, value) {
+    return mapUiElement(await platformUpdateUi(projectId, id, toUpdateUiElementDto(value)))
   },
 
   async deleteElement(projectId, id) {

@@ -13,7 +13,11 @@ export interface CreateUiElementDto {
   code: string;
   config?: CreateUiElementDtoConfig;
   enabled?: boolean;
-  /** @maxLength 200 */
+  /**
+   * Legacy CMS field. Kept temporarily for backward compatibility and never used as the modal registry key.
+   * @deprecated
+   * @maxLength 200
+   */
   handler?: string;
   kind: UiElementKind;
   /**
@@ -21,7 +25,15 @@ export interface CreateUiElementDto {
    * @maxLength 100
    */
   name: string;
-  /** @maxLength 1000 */
+  /**
+   * Required for MODAL. Stable key passed to the host modal registry.
+   * @maxLength 200
+   */
+  modalName?: string;
+  /**
+   * Required for PAGE. Product route passed to the host router.
+   * @maxLength 1000
+   */
   route?: string;
   /** @maxLength 500 */
   selector?: string;

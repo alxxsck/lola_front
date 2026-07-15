@@ -18,7 +18,7 @@ import type {
   AdminConversationMessageResponseDto,
 } from '@/shared/api/generated/models'
 import type { ActiveSession, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventLog, Project, ScenarioRun, UiElement } from '@/shared/types/domain'
-import type { SaveEventDefinition, SaveUiElement } from './contracts'
+import type { CreateUiElement, SaveEventDefinition, UpdateUiElement } from './contracts'
 import { parseActionDefinition } from '@/shared/lib/action-definition'
 
 const defined = <T extends object>(value: T): T => Object.fromEntries(
@@ -144,6 +144,7 @@ export function mapUiElement(dto: UiElementResponseDto): UiElement {
     kind: dto.kind,
     selector: optionalString(dto.selector),
     route: optionalString(dto.route),
+    modalName: optionalString(dto.modalName),
     handler: optionalString(dto.handler),
     config: dto.config,
     enabled: dto.enabled,
@@ -152,22 +153,22 @@ export function mapUiElement(dto: UiElementResponseDto): UiElement {
   }
 }
 
-const uiPayload = (value: SaveUiElement) => defined({
+const uiPayload = (value: UpdateUiElement) => defined({
   code: value.code,
   name: value.name,
   kind: value.kind,
   selector: value.selector,
   route: value.route,
-  handler: value.handler,
+  modalName: value.modalName,
   config: value.config,
   enabled: value.enabled,
 })
 
-export function toCreateUiElementDto(value: SaveUiElement): CreateUiElementDto {
-  return uiPayload(value)
+export function toCreateUiElementDto(value: CreateUiElement): CreateUiElementDto {
+  return { ...uiPayload(value), code: value.code, name: value.name, kind: value.kind }
 }
 
-export function toUpdateUiElementDto(value: SaveUiElement): UpdateUiElementDto {
+export function toUpdateUiElementDto(value: UpdateUiElement): UpdateUiElementDto {
   return uiPayload(value)
 }
 

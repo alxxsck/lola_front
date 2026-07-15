@@ -50,15 +50,12 @@ describe('api repository adapter', () => {
     vi.mocked(platformUpdateUi).mockResolvedValue(uiResponse)
     vi.mocked(platformDeleteUi).mockResolvedValue(uiResponse)
 
-    await apiRepository.saveElement('project-1', { code: 'deposit', name: 'Deposit', kind: 'BUTTON', selector: '#deposit' })
-    await apiRepository.saveElement('project-1', {
-      id: 'ui-1', projectId: 'project-1', code: 'deposit', name: 'Deposit updated', kind: 'BUTTON',
-      selector: '#deposit', config: {}, enabled: true,
-    })
+    await apiRepository.createElement('project-1', { code: 'deposit', name: 'Deposit', kind: 'ELEMENT', selector: '#deposit' })
+    await apiRepository.updateElement('project-1', 'ui-1', { name: 'Deposit updated' })
     await apiRepository.deleteElement('project-1', 'ui-1')
 
     expect(platformCreateUi).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'deposit', selector: '#deposit' }))
-    expect(platformUpdateUi).toHaveBeenCalledWith('project-1', 'ui-1', expect.not.objectContaining({ id: 'ui-1', projectId: 'project-1' }))
+    expect(platformUpdateUi).toHaveBeenCalledWith('project-1', 'ui-1', { name: 'Deposit updated' })
     expect(platformDeleteUi).toHaveBeenCalledWith('project-1', 'ui-1')
   })
 

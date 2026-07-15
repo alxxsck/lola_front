@@ -106,6 +106,8 @@ export interface UiElement {
   kind: EntityKind
   selector?: string
   route?: string
+  modalName?: string
+  /** @deprecated Legacy CMS value. Runtime commands never use this field. */
   handler?: string
   config: Record<string, unknown>
   enabled: boolean

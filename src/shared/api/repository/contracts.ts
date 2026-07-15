@@ -38,7 +38,13 @@ export interface RepositoryCapabilities {
   adminMessaging: boolean
 }
 
-export type SaveUiElement = Partial<UiElement> & Pick<UiElement, 'name' | 'code' | 'kind'>
+type UiElementCreateBase = Pick<UiElement, 'name' | 'code'> & Partial<Pick<UiElement, 'config' | 'enabled'>>
+export type CreateUiElement = UiElementCreateBase & (
+  | { kind: 'ELEMENT' | 'BUTTON'; selector?: string }
+  | { kind: 'PAGE'; route: string }
+  | { kind: 'MODAL'; modalName: string }
+)
+export type UpdateUiElement = Partial<Pick<UiElement, 'name' | 'code' | 'kind' | 'selector' | 'route' | 'modalName' | 'config' | 'enabled'>>
 export type SaveEventDefinition = Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>
 export type SaveScenario = Partial<Scenario> & Pick<Scenario, 'name' | 'code' | 'eventDefinitionId' | 'actions'>
 export type CreateProjectMember = Pick<CmsUser, 'email' | 'role'> & { name?: string }
@@ -62,7 +68,8 @@ export interface LolaRepository {
   createMember(projectId: string, member: CreateProjectMember): Promise<CmsUser>
   deleteMember(projectId: string, memberId: string): Promise<void>
   getElements(projectId: string): Promise<UiElement[]>
-  saveElement(projectId: string, value: SaveUiElement): Promise<UiElement>
+  createElement(projectId: string, value: CreateUiElement): Promise<UiElement>
+  updateElement(projectId: string, id: string, value: UpdateUiElement): Promise<UiElement>
   deleteElement(projectId: string, id: string): Promise<void>
   getEvents(projectId: string): Promise<EventDefinition[]>
   saveEvent(projectId: string, value: SaveEventDefinition): Promise<EventDefinition>

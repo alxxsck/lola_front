@@ -34,7 +34,7 @@ const statCards = computed(() => repository.mode === 'api' ? [
 const quickLinks = [
   { title: 'Создать событие', description: 'Опишите сигнал от продукта и его поля', icon: 'pi pi-bolt', to: '/events', tone: 'coral' },
   { title: 'Собрать сценарий', description: 'Свяжите событие с действиями ассистента', icon: 'pi pi-sitemap', to: '/scenarios', tone: 'violet' },
-  { title: 'Добавить элемент', description: 'Зарегистрируйте кнопку, страницу или модалку', icon: 'pi pi-plus-circle', to: '/interface', tone: 'lime' },
+  { title: 'Добавить элемент', description: 'Зарегистрируйте элемент, страницу или модалку', icon: 'pi pi-plus-circle', to: '/interface', tone: 'lime' },
   { title: 'Проверить операции', description: 'События, запуски сценариев и журнал аудита', icon: 'pi pi-chart-bar', to: '/operations', tone: 'green' },
 ]
 
