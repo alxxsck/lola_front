@@ -14,6 +14,8 @@ import {
 const totals: AiUsageTotals = {
   records: 3,
   unpricedRecords: 0,
+  providerReportedUsageRecords: 0,
+  estimatedCostRecords: 3,
   inputCharacters: 0,
   providerBilledUnits: 0,
   totalTokens: 1_300,
@@ -80,7 +82,14 @@ describe('AI usage model', () => {
   it('combines operations of the same provider model and currency', () => {
     const result = aggregateModelUsage([
       breakdown({ inputCharacters: 100, providerBilledUnits: 110 }),
-      breakdown({ operation: 'scripted_intro', records: 2, inputCharacters: 200, providerBilledUnits: 220, totalTokens: 200, estimatedCost: 0.02 }),
+      breakdown({
+        operation: 'scripted_intro',
+        records: 2,
+        inputCharacters: 200,
+        providerBilledUnits: 220,
+        totalTokens: 200,
+        estimatedCost: 0.02,
+      }),
     ])
 
     expect(result).toHaveLength(1)
@@ -105,35 +114,44 @@ describe('AI usage model', () => {
   })
 
   it('does not present provider-reported ElevenLabs units as a zero-cost estimate', () => {
-    const row = aggregateModelUsage([breakdown({
-      provider: 'elevenlabs',
-      model: 'eleven_v3',
-      totalTokens: 0,
-      providerBilledUnits: 125,
-      estimatedCost: 0,
-    })])[0]!
+    const row = aggregateModelUsage([
+      breakdown({
+        provider: 'elevenlabs',
+        model: 'eleven_v3',
+        totalTokens: 0,
+        providerBilledUnits: 125,
+        estimatedCost: 0,
+      }),
+    ])[0]!
 
     expect(hasEstimatedCost(row)).toBe(false)
   })
 
   it('keeps rejected zero-unit ElevenLabs requests unpriced', () => {
-    const row = aggregateModelUsage([breakdown({
-      provider: 'elevenlabs',
-      model: 'eleven_v3',
-      totalTokens: 0,
-      providerBilledUnits: 0,
-      estimatedCost: 0,
-    })])[0]!
+    const row = aggregateModelUsage([
+      breakdown({
+        provider: 'elevenlabs',
+        model: 'eleven_v3',
+        totalTokens: 0,
+        providerBilledUnits: 0,
+        estimatedCost: 0,
+      }),
+    ])[0]!
 
     expect(hasEstimatedCost(row)).toBe(false)
   })
 
   it('uses non-overlapping text, audio and image modality totals', () => {
-    expect(getModalityUsage(totals).map((item) => item.tokens)).toEqual([850, 450, 0])
+    expect(getModalityUsage(totals).map((item) => item.tokens)).toEqual([
+      850, 450, 0,
+    ])
   })
 
   it('uses correct Russian plural forms', () => {
-    expect([1, 2, 5, 11, 21, 24].map((value) => pluralizeRu(value, 'модель', 'модели', 'моделей')))
-      .toEqual(['модель', 'модели', 'моделей', 'моделей', 'модель', 'модели'])
+    expect(
+      [1, 2, 5, 11, 21, 24].map((value) =>
+        pluralizeRu(value, 'модель', 'модели', 'моделей'),
+      ),
+    ).toEqual(['модель', 'модели', 'моделей', 'моделей', 'модель', 'модели'])
   })
 })

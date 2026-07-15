@@ -468,6 +468,18 @@
           "billedCost": {
             "type": "string"
           },
+          "cacheWriteInputTokens": {
+            "type": "number"
+          },
+          "cachedInputAudioTokens": {
+            "type": "number"
+          },
+          "cachedInputImageTokens": {
+            "type": "number"
+          },
+          "cachedInputTextTokens": {
+            "type": "number"
+          },
           "cachedInputTokens": {
             "type": "number"
           },
@@ -487,6 +499,9 @@
           "inputCharacters": {
             "type": "number"
           },
+          "inputImageTokens": {
+            "type": "number"
+          },
           "inputTextTokens": {
             "type": "number"
           },
@@ -500,6 +515,9 @@
             "type": "string"
           },
           "outputAudioTokens": {
+            "type": "number"
+          },
+          "outputImageTokens": {
             "type": "number"
           },
           "outputTextTokens": {
@@ -532,12 +550,18 @@
           "totalTokens",
           "inputTokens",
           "cachedInputTokens",
+          "cacheWriteInputTokens",
           "outputTokens",
           "reasoningTokens",
           "inputTextTokens",
+          "cachedInputTextTokens",
           "outputTextTokens",
           "inputAudioTokens",
+          "cachedInputAudioTokens",
           "outputAudioTokens",
+          "inputImageTokens",
+          "cachedInputImageTokens",
+          "outputImageTokens",
           "durationSeconds",
           "estimatedCost",
           "billedCost",
@@ -704,6 +728,18 @@
           "billedCost": {
             "type": "string"
           },
+          "cacheWriteInputTokens": {
+            "type": "number"
+          },
+          "cachedInputAudioTokens": {
+            "type": "number"
+          },
+          "cachedInputImageTokens": {
+            "type": "number"
+          },
+          "cachedInputTextTokens": {
+            "type": "number"
+          },
           "cachedInputTokens": {
             "type": "number"
           },
@@ -713,10 +749,17 @@
           "estimatedCost": {
             "type": "string"
           },
+          "estimatedCostRecords": {
+            "description": "Records included in estimatedCost.",
+            "type": "number"
+          },
           "inputAudioTokens": {
             "type": "number"
           },
           "inputCharacters": {
+            "type": "number"
+          },
+          "inputImageTokens": {
             "type": "number"
           },
           "inputTextTokens": {
@@ -728,6 +771,9 @@
           "outputAudioTokens": {
             "type": "number"
           },
+          "outputImageTokens": {
+            "type": "number"
+          },
           "outputTextTokens": {
             "type": "number"
           },
@@ -737,6 +783,10 @@
           "providerBilledUnits": {
             "example": "1250.000000000000",
             "type": "string"
+          },
+          "providerReportedUsageRecords": {
+            "description": "Records measured in provider billing units without a per-request currency cost.",
+            "type": "number"
           },
           "reasoningTokens": {
             "type": "number"
@@ -758,16 +808,24 @@
           "totalTokens",
           "inputTokens",
           "cachedInputTokens",
+          "cacheWriteInputTokens",
           "outputTokens",
           "reasoningTokens",
           "inputTextTokens",
+          "cachedInputTextTokens",
           "outputTextTokens",
           "inputAudioTokens",
+          "cachedInputAudioTokens",
           "outputAudioTokens",
+          "inputImageTokens",
+          "cachedInputImageTokens",
+          "outputImageTokens",
           "durationSeconds",
           "estimatedCost",
           "billedCost",
-          "unpricedRecords"
+          "unpricedRecords",
+          "providerReportedUsageRecords",
+          "estimatedCostRecords"
         ],
         "type": "object"
       },

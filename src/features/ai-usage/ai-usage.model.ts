@@ -8,6 +8,8 @@ export interface AiUsageRangeQuery {
 export interface AiUsageTotals {
   records: number
   unpricedRecords: number
+  providerReportedUsageRecords?: number
+  estimatedCostRecords?: number
   inputCharacters: number
   providerBilledUnits: number
   totalTokens: number
@@ -80,14 +82,20 @@ export interface AiModalityUsage {
   tokens: number
 }
 
-export const AI_USAGE_RANGE_OPTIONS: ReadonlyArray<{ label: string; value: AiUsageRangeKey }> = [
+export const AI_USAGE_RANGE_OPTIONS: ReadonlyArray<{
+  label: string
+  value: AiUsageRangeKey
+}> = [
   { label: 'Сегодня', value: 'today' },
   { label: '7 дней', value: '7d' },
   { label: '30 дней', value: '30d' },
   { label: 'Всё время', value: 'all' },
 ]
 
-export function getAiUsageRange(key: AiUsageRangeKey, now = new Date()): AiUsageRangeQuery {
+export function getAiUsageRange(
+  key: AiUsageRangeKey,
+  now = new Date(),
+): AiUsageRangeQuery {
   if (key === 'all') return {}
 
   const from = new Date(now)
@@ -98,7 +106,9 @@ export function getAiUsageRange(key: AiUsageRangeKey, now = new Date()): AiUsage
   return { from: from.toISOString(), to: now.toISOString() }
 }
 
-export function aggregateModelUsage(breakdown: readonly AiUsageBreakdown[]): AiModelUsage[] {
+export function aggregateModelUsage(
+  breakdown: readonly AiUsageBreakdown[],
+): AiModelUsage[] {
   const models = new Map<string, AiModelUsage>()
 
   for (const item of breakdown) {
@@ -159,13 +169,15 @@ export function getModalityUsage(totals: AiUsageTotals): AiModalityUsage[] {
 }
 
 export function getReportCurrency(report: AiUsageReport): string | undefined {
-  const currencies = new Set(report.breakdown.map((item) => item.currency.toUpperCase()))
+  const currencies = new Set(
+    report.breakdown.map((item) => item.currency.toUpperCase()),
+  )
   if (currencies.size === 0) return 'USD'
   return currencies.size === 1 ? currencies.values().next().value : undefined
 }
 
 export function hasEstimatedCost(row: AiModelUsage): boolean {
-  return row.provider.toLowerCase() !== 'elevenlabs'
+  return row.estimatedCost > 0
 }
 
 export function formatTokenCount(value: number): string {
@@ -177,7 +189,9 @@ export function formatTokenCount(value: number): string {
 }
 
 export function formatMoney(value: number, currency: string): string {
-  const normalizedCurrency = /^[a-z]{3}$/i.test(currency) ? currency.toUpperCase() : 'USD'
+  const normalizedCurrency = /^[a-z]{3}$/i.test(currency)
+    ? currency.toUpperCase()
+    : 'USD'
   return new Intl.NumberFormat('ru-RU', {
     style: 'currency',
     currency: normalizedCurrency,
@@ -186,7 +200,12 @@ export function formatMoney(value: number, currency: string): string {
   }).format(value)
 }
 
-export function pluralizeRu(value: number, one: string, few: string, many: string): string {
+export function pluralizeRu(
+  value: number,
+  one: string,
+  few: string,
+  many: string,
+): string {
   const absolute = Math.abs(value)
   const lastTwo = absolute % 100
   const last = absolute % 10

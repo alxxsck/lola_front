@@ -8,17 +8,23 @@
 
 export interface AiUsageBreakdownResponseDto {
   billedCost: string;
+  cacheWriteInputTokens: number;
+  cachedInputAudioTokens: number;
+  cachedInputImageTokens: number;
+  cachedInputTextTokens: number;
   cachedInputTokens: number;
   currency: string;
   durationSeconds: string;
   estimatedCost: string;
   inputAudioTokens: number;
   inputCharacters: number;
+  inputImageTokens: number;
   inputTextTokens: number;
   inputTokens: number;
   model: string;
   operation: string;
   outputAudioTokens: number;
+  outputImageTokens: number;
   outputTextTokens: number;
   outputTokens: number;
   provider: string;

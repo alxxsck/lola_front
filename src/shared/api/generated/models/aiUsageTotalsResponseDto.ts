@@ -8,17 +8,27 @@
 
 export interface AiUsageTotalsResponseDto {
   billedCost: string;
+  cacheWriteInputTokens: number;
+  cachedInputAudioTokens: number;
+  cachedInputImageTokens: number;
+  cachedInputTextTokens: number;
   cachedInputTokens: number;
   durationSeconds: string;
   estimatedCost: string;
+  /** Records included in estimatedCost. */
+  estimatedCostRecords: number;
   inputAudioTokens: number;
   inputCharacters: number;
+  inputImageTokens: number;
   inputTextTokens: number;
   inputTokens: number;
   outputAudioTokens: number;
+  outputImageTokens: number;
   outputTextTokens: number;
   outputTokens: number;
   providerBilledUnits: string;
+  /** Records measured in provider billing units without a per-request currency cost. */
+  providerReportedUsageRecords: number;
   reasoningTokens: number;
   records: number;
   totalTokens: number;

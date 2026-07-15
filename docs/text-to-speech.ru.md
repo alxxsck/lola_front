@@ -30,6 +30,6 @@ CMS показывает только настройки, опубликован
 
 ## Usage
 
-ElevenLabs не возвращает token usage, поэтому CMS показывает `inputCharacters` и официальный response header `character-cost` как `providerBilledUnits` отдельно от OpenAI tokens. Для ElevenLabs backend выставляет `costStatus=PROVIDER_REPORTED_USAGE`, а `estimatedCost` и `billedCost` оставляет `null`: invoice-exact сумму отдельного TTS-запроса провайдер не сообщает.
+ElevenLabs не возвращает token usage, поэтому CMS показывает `inputCharacters` и официальный response header `character-cost` как `providerBilledUnits` отдельно от OpenAI tokens. ElevenLabs-only график автоматически открывается на «Символах», а строка модели не показывается как `0 tokens`. Для ElevenLabs backend выставляет `costStatus=PROVIDER_REPORTED_USAGE`, а `estimatedCost` и `billedCost` оставляет `null`: invoice-exact сумму отдельного TTS-запроса провайдер не сообщает.
 
-Итоговый `estimatedCost` проекта относится только к операциям, для которых у backend есть rate card (сейчас это OpenAI). CMS предупреждает, что оценка может отличаться от фактического списания. Workspace credits, subscription limits и overage доступны только в отдельном platform-admin billing snapshot и не прибавляются к расходам проекта.
+Итоговый `estimatedCost` проекта относится только к операциям, для которых у backend есть rate card (сейчас это OpenAI). `providerReportedUsageRecords` показывает успешные ElevenLabs-операции с credits, а `unpricedRecords` — только incomplete или неизвестные usage-записи. CMS предупреждает, что оценка может отличаться от фактического списания. Workspace credits, subscription limits и overage доступны только в отдельном platform-admin billing snapshot и не прибавляются к расходам проекта.

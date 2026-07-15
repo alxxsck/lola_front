@@ -5,16 +5,24 @@ import { parseAiUsageReport } from './ai-usage.api'
 const currentTotals = {
   records: 2,
   unpricedRecords: 0,
+  providerReportedUsageRecords: 0,
+  estimatedCostRecords: 2,
   inputCharacters: 0,
   totalTokens: 120,
   inputTokens: 80,
   cachedInputTokens: 20,
+  cacheWriteInputTokens: 0,
   outputTokens: 40,
   reasoningTokens: 0,
   inputTextTokens: 80,
+  cachedInputTextTokens: 20,
   outputTextTokens: 40,
   inputAudioTokens: 0,
+  cachedInputAudioTokens: 0,
   outputAudioTokens: 0,
+  inputImageTokens: 0,
+  cachedInputImageTokens: 0,
+  outputImageTokens: 0,
   durationSeconds: '0.000000000000',
   providerBilledUnits: '0.000000000000',
   estimatedCost: '0.001200000000',
@@ -25,27 +33,35 @@ const response = {
   projectId: 'project-1',
   range: { from: null, to: null },
   totals: currentTotals,
-  breakdown: [{
-    provider: 'openai',
-    model: 'gpt-5.4-mini',
-    operation: 'responses',
-    currency: 'usd',
-    records: 2,
-    inputCharacters: 0,
-    totalTokens: 120,
-    inputTokens: 80,
-    cachedInputTokens: 20,
-    outputTokens: 40,
-    reasoningTokens: 0,
-    inputTextTokens: 80,
-    outputTextTokens: 40,
-    inputAudioTokens: 0,
-    outputAudioTokens: 0,
-    durationSeconds: '0.000000000000',
-    providerBilledUnits: '0.000000000000',
-    estimatedCost: '0.001200000000',
-    billedCost: '0.000000000000',
-  }],
+  breakdown: [
+    {
+      provider: 'openai',
+      model: 'gpt-5.4-mini',
+      operation: 'responses',
+      currency: 'usd',
+      records: 2,
+      inputCharacters: 0,
+      totalTokens: 120,
+      inputTokens: 80,
+      cachedInputTokens: 20,
+      cacheWriteInputTokens: 0,
+      outputTokens: 40,
+      reasoningTokens: 0,
+      inputTextTokens: 80,
+      cachedInputTextTokens: 20,
+      outputTextTokens: 40,
+      inputAudioTokens: 0,
+      cachedInputAudioTokens: 0,
+      outputAudioTokens: 0,
+      inputImageTokens: 0,
+      cachedInputImageTokens: 0,
+      outputImageTokens: 0,
+      durationSeconds: '0.000000000000',
+      providerBilledUnits: '0.000000000000',
+      estimatedCost: '0.001200000000',
+      billedCost: '0.000000000000',
+    },
+  ],
   items: [],
   nextCursor: null,
 } satisfies AiUsageReportResponseDto
@@ -54,15 +70,26 @@ describe('AI usage API response validation', () => {
   it('normalizes decimal strings without exposing raw ledger rows', () => {
     expect(parseAiUsageReport(response, 'project-1')).toMatchObject({
       projectId: 'project-1',
-      totals: { inputCharacters: 0, providerBilledUnits: 0, estimatedCost: 0.0012 },
-      breakdown: [{ model: 'gpt-5.4-mini', inputCharacters: 0, providerBilledUnits: 0, estimatedCost: 0.0012 }],
+      totals: {
+        inputCharacters: 0,
+        providerBilledUnits: 0,
+        estimatedCost: 0.0012,
+      },
+      breakdown: [
+        {
+          model: 'gpt-5.4-mini',
+          inputCharacters: 0,
+          providerBilledUnits: 0,
+          estimatedCost: 0.0012,
+        },
+      ],
     })
   })
 
-  it('zero-fills modality details that are not part of the current backend DTO', () => {
+  it('parses modality details from the current backend DTO', () => {
     expect(parseAiUsageReport(response, 'project-1')?.totals).toMatchObject({
       cacheWriteInputTokens: 0,
-      cachedInputTextTokens: 0,
+      cachedInputTextTokens: 20,
       cachedInputAudioTokens: 0,
       inputImageTokens: 0,
       cachedInputImageTokens: 0,
@@ -70,7 +97,7 @@ describe('AI usage API response validation', () => {
     })
   })
 
-  it('keeps compatible detail fields returned by an older backend', () => {
+  it('parses nonzero cache and image modality details', () => {
     const legacyResponse = {
       ...response,
       totals: {
@@ -84,7 +111,9 @@ describe('AI usage API response validation', () => {
       },
     }
 
-    expect(parseAiUsageReport(legacyResponse, 'project-1')?.totals).toMatchObject({
+    expect(
+      parseAiUsageReport(legacyResponse, 'project-1')?.totals,
+    ).toMatchObject({
       cacheWriteInputTokens: 3,
       cachedInputTextTokens: 4,
       cachedInputAudioTokens: 5,
@@ -94,9 +123,65 @@ describe('AI usage API response validation', () => {
     })
   })
 
+  it('does not guess exact coverage counters from an aggregated legacy response', () => {
+    const legacyResponse = {
+      ...response,
+      totals: {
+        ...response.totals,
+        records: 3,
+        unpricedRecords: 3,
+        providerReportedUsageRecords: undefined,
+        estimatedCostRecords: undefined,
+        inputCharacters: 1_200,
+        providerBilledUnits: '1250.000000000000',
+        estimatedCost: '0.000000000000',
+      },
+      breakdown: [
+        {
+          ...response.breakdown[0],
+          provider: 'elevenlabs',
+          model: 'eleven_v3',
+          operation: 'speech',
+          records: 3,
+          inputCharacters: 1_200,
+          providerBilledUnits: '1250.000000000000',
+          totalTokens: 0,
+          inputTokens: 0,
+          cachedInputTokens: 0,
+          outputTokens: 0,
+          inputTextTokens: 0,
+          outputTextTokens: 0,
+          estimatedCost: '0.000000000000',
+        },
+      ],
+    }
+
+    expect(
+      parseAiUsageReport(legacyResponse, 'project-1')?.totals,
+    ).toMatchObject({
+      unpricedRecords: 3,
+    })
+    expect(
+      parseAiUsageReport(legacyResponse, 'project-1')?.totals,
+    ).not.toHaveProperty('providerReportedUsageRecords')
+    expect(
+      parseAiUsageReport(legacyResponse, 'project-1')?.totals,
+    ).not.toHaveProperty('estimatedCostRecords')
+  })
+
   it('rejects cross-project, negative and oversized responses', () => {
     expect(parseAiUsageReport(response, 'project-2')).toBeUndefined()
-    expect(parseAiUsageReport({ ...response, totals: { ...response.totals, totalTokens: -1 } }, 'project-1')).toBeUndefined()
-    expect(parseAiUsageReport({ ...response, breakdown: Array.from({ length: 1_001 }) }, 'project-1')).toBeUndefined()
+    expect(
+      parseAiUsageReport(
+        { ...response, totals: { ...response.totals, totalTokens: -1 } },
+        'project-1',
+      ),
+    ).toBeUndefined()
+    expect(
+      parseAiUsageReport(
+        { ...response, breakdown: Array.from({ length: 1_001 }) },
+        'project-1',
+      ),
+    ).toBeUndefined()
   })
 })
