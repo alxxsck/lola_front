@@ -1,5 +1,8 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
+import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Project } from '@/shared/types/domain'
 import ProjectPage from './ProjectPage.vue'
@@ -83,7 +86,7 @@ describe('ProjectPage voice instructions', () => {
     await flushPromises()
 
     expect(mocks.updateProject).toHaveBeenCalledWith('project-1', expect.objectContaining({ voiceInstructions }))
-    expect(mocks.updateProject.mock.calls[0]?.[1]).not.toHaveProperty('settings')
+    expect(mocks.updateProject.mock.calls[0]?.[1]).toHaveProperty('settings')
   })
 
   it('does not save a voice instruction longer than the API limit', async () => {
@@ -96,5 +99,93 @@ describe('ProjectPage voice instructions', () => {
 
     expect(mocks.updateProject).not.toHaveBeenCalled()
     expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(true)
+  })
+
+  it('keeps project connection and OpenAI Realtime settings editable in API mode', async () => {
+    mocks.getProject.mockResolvedValue(
+      project({
+        settings: {
+          description: 'Before',
+          timezone: 'Europe/Madrid',
+          apiBaseUrl: 'https://old.example.com',
+          wsUrl: 'wss://old.example.com',
+          allowedOrigins: ['https://old.example.com'],
+          voiceEnabled: true,
+          voiceTranscriptEnabled: true,
+          voice: 'marin',
+          speechSynthesis: { schemaVersion: 2, voiceId: 'server-owned-voice' },
+        },
+      }),
+    )
+    const wrapper = shallowMount(ProjectPage)
+    await flushPromises()
+
+    const description = wrapper
+      .findAllComponents(Textarea)
+      .find((component) => component.attributes('id') === 'project-description')!
+    const apiUrl = wrapper
+      .findAllComponents(InputText)
+      .find((component) => component.attributes('id') === 'api-url')!
+    const wsUrl = wrapper
+      .findAllComponents(InputText)
+      .find((component) => component.attributes('id') === 'ws-url')!
+    const timezone = wrapper
+      .findAllComponents(InputText)
+      .find((component) => component.attributes('id') === 'timezone')!
+    const allowedOrigins = wrapper
+      .findAllComponents(Textarea)
+      .find((component) => component.attributes('id') === 'allowed-origins')!
+    const voiceEnabled = wrapper
+      .findAllComponents(ToggleSwitch)
+      .find((component) => component.attributes('input-id') === 'voice-enabled')!
+    const voice = wrapper
+      .findAllComponents(Select)
+      .find((component) => component.attributes('id') === 'voice')!
+    const voiceTranscriptEnabled = wrapper
+      .findAllComponents(ToggleSwitch)
+      .find((component) => component.attributes('input-id') === 'voice-transcripts')!
+
+    for (const component of [
+      description,
+      apiUrl,
+      wsUrl,
+      timezone,
+      allowedOrigins,
+      voiceEnabled,
+      voice,
+      voiceTranscriptEnabled,
+    ]) {
+      expect(component.attributes('disabled')).toBe('false')
+    }
+    expect(wrapper.text()).not.toContain('Project PATCH больше не принимает общий settings')
+
+    description.vm.$emit('update:modelValue', 'After')
+    apiUrl.vm.$emit('update:modelValue', 'https://api.example.com')
+    wsUrl.vm.$emit('update:modelValue', 'wss://api.example.com')
+    timezone.vm.$emit('update:modelValue', 'UTC')
+    allowedOrigins.vm.$emit('update:modelValue', 'https://one.example.com\nhttps://two.example.com')
+    voice.vm.$emit('update:modelValue', 'cedar')
+    voiceTranscriptEnabled.vm.$emit('update:modelValue', false)
+    voiceEnabled.vm.$emit('update:modelValue', false)
+    await wrapper.vm.$nextTick()
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(mocks.updateProject).toHaveBeenCalledWith(
+      'project-1',
+      expect.objectContaining({
+        settings: expect.objectContaining({
+          description: 'After',
+          apiBaseUrl: 'https://api.example.com',
+          wsUrl: 'wss://api.example.com',
+          timezone: 'UTC',
+          allowedOrigins: ['https://one.example.com', 'https://two.example.com'],
+          voiceEnabled: false,
+          voiceTranscriptEnabled: false,
+          voice: 'cedar',
+          speechSynthesis: { schemaVersion: 2, voiceId: 'server-owned-voice' },
+        }),
+      }),
+    )
   })
 })

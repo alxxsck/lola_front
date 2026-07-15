@@ -1155,6 +1155,11 @@
             "pattern": "^[a-z][a-z0-9_.-]*$",
             "type": "string"
           },
+          "settings": {
+            "additionalProperties": true,
+            "description": "General project settings. Text-to-Speech settings are managed by the dedicated speech-synthesis endpoint.",
+            "type": "object"
+          },
           "slug": {
             "pattern": "^[a-z][a-z0-9_.-]*$",
             "type": "string"
@@ -3430,6 +3435,11 @@
             "maxLength": 100,
             "minLength": 2,
             "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "description": "General project settings. The speechSynthesis subtree is preserved and can only be changed through the dedicated endpoint.",
+            "type": "object"
           },
           "status": {
             "allOf": [

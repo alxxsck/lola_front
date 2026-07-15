@@ -69,7 +69,6 @@ const error = ref('')
 const validationError = ref('')
 const project = ref<Project | null>(null)
 const initialSnapshot = ref('')
-const projectSettingsReadOnly = repository.mode === 'api'
 const form = reactive<ProjectForm>({
   name: '',
   description: '',
@@ -138,8 +137,8 @@ function validate() {
   else if (!form.systemPrompt.trim()) validationError.value = 'Добавьте системную инструкцию для ассистента.'
   else if (!form.supportedLocales.length) validationError.value = 'Выберите хотя бы один язык проекта.'
   else if (!form.supportedLocales.includes(form.defaultLocale)) validationError.value = 'Основной язык должен входить в список доступных языков.'
-  else if (!projectSettingsReadOnly && form.apiBaseUrl && !form.apiBaseUrl.startsWith('https://')) validationError.value = 'API URL должен использовать HTTPS.'
-  else if (!projectSettingsReadOnly && form.wsUrl && !form.wsUrl.startsWith('wss://')) validationError.value = 'WebSocket URL должен использовать WSS.'
+  else if (form.apiBaseUrl && !form.apiBaseUrl.startsWith('https://')) validationError.value = 'API URL должен использовать HTTPS.'
+  else if (form.wsUrl && !form.wsUrl.startsWith('wss://')) validationError.value = 'WebSocket URL должен использовать WSS.'
   else if (form.voiceInstructions.length > 20_000) validationError.value = 'Инструкция для голосовой модели не должна превышать 20 000 символов.'
   return !validationError.value
 }
@@ -150,16 +149,14 @@ async function saveProject() {
   saving.value = true
   error.value = ''
   try {
-    const patch: Partial<Project> = {
+    const savedProject = await repository.updateProject(project.value.id, {
       name: form.name.trim(),
       defaultLocale: form.defaultLocale,
       supportedLocales: [...form.supportedLocales],
       assistantName: form.assistantName.trim(),
       systemPrompt: form.systemPrompt.trim(),
       voiceInstructions: form.voiceInstructions,
-    }
-    if (!projectSettingsReadOnly) {
-      patch.settings = {
+      settings: {
         ...project.value.settings,
         description: form.description.trim(),
         timezone: form.timezone.trim(),
@@ -169,9 +166,8 @@ async function saveProject() {
         voiceEnabled: form.voiceEnabled,
         voiceTranscriptEnabled: form.voiceTranscriptEnabled,
         voice: form.voice,
-      }
-    }
-    const savedProject = await repository.updateProject(project.value.id, patch)
+      },
+    })
     fillForm(savedProject)
     auth.updateProject(savedProject)
     toast.add({ severity: 'success', summary: 'Настройки сохранены', detail: 'Проект и ассистент обновлены.', life: 3200 })
@@ -222,14 +218,11 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 
     <form v-else-if="project" class="settings-layout" @submit.prevent="saveProject">
       <div class="settings-main stack">
-        <Message v-if="projectSettingsReadOnly" severity="info" :closable="false">
-          Project PATCH больше не принимает общий settings, поэтому поля подключения и переключатели OpenAI Realtime доступны только для чтения. Имя ассистента, системная и голосовая инструкции по-прежнему сохраняются. Text-to-Speech настраивается отдельно ниже.
-        </Message>
         <section class="card card-pad settings-section">
           <div class="section-title"><span class="section-icon lime"><i class="pi pi-building" /></span><div><h2>О проекте</h2><p>Эти данные видны только администраторам.</p></div></div>
           <div class="form-grid">
             <div class="field full"><label for="project-name">Название проекта</label><InputText id="project-name" v-model="form.name" placeholder="Название продукта" :disabled="saving" /></div>
-            <div class="field full"><label for="project-description">Описание</label><Textarea id="project-description" v-model="form.description" rows="4" maxlength="500" auto-resize placeholder="Коротко опишите назначение проекта" :disabled="saving || projectSettingsReadOnly" /><small>{{ form.description.length }}/500</small></div>
+            <div class="field full"><label for="project-description">Описание</label><Textarea id="project-description" v-model="form.description" rows="4" maxlength="500" auto-resize placeholder="Коротко опишите назначение проекта" :disabled="saving" /><small>{{ form.description.length }}/500</small></div>
           </div>
         </section>
 
@@ -244,10 +237,10 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         <section class="card card-pad settings-section">
           <div class="section-title"><span class="section-icon green"><i class="pi pi-link" /></span><div><h2>Подключение продукта</h2><p>Публичные адреса SDK и разрешённые домены. Секреты здесь не отображаются.</p></div><span class="integration-unknown"><i class="pi pi-minus-circle" /> Не проверено</span></div>
           <div class="form-grid columns">
-            <div class="field"><label for="api-url">Public API URL</label><InputText id="api-url" v-model="form.apiBaseUrl" class="mono" placeholder="https://api.example.com/api/v1" :disabled="saving || projectSettingsReadOnly" /></div>
-            <div class="field"><label for="ws-url">WebSocket URL</label><InputText id="ws-url" v-model="form.wsUrl" class="mono" placeholder="wss://api.example.com/assistant" :disabled="saving || projectSettingsReadOnly" /></div>
-            <div class="field"><label for="timezone">Часовой пояс</label><InputText id="timezone" v-model="form.timezone" placeholder="Europe/Madrid" :disabled="saving || projectSettingsReadOnly" /></div>
-            <div class="field"><label for="allowed-origins">Разрешённые origins <span>по одному в строке</span></label><Textarea id="allowed-origins" v-model="form.allowedOrigins" rows="3" class="mono" placeholder="https://app.example.com" :disabled="saving || projectSettingsReadOnly" /></div>
+            <div class="field"><label for="api-url">Public API URL</label><InputText id="api-url" v-model="form.apiBaseUrl" class="mono" placeholder="https://api.example.com/api/v1" :disabled="saving" /></div>
+            <div class="field"><label for="ws-url">WebSocket URL</label><InputText id="ws-url" v-model="form.wsUrl" class="mono" placeholder="wss://api.example.com/assistant" :disabled="saving" /></div>
+            <div class="field"><label for="timezone">Часовой пояс</label><InputText id="timezone" v-model="form.timezone" placeholder="Europe/Madrid" :disabled="saving" /></div>
+            <div class="field"><label for="allowed-origins">Разрешённые origins <span>по одному в строке</span></label><Textarea id="allowed-origins" v-model="form.allowedOrigins" rows="3" class="mono" placeholder="https://app.example.com" :disabled="saving" /></div>
           </div>
         </section>
 
@@ -267,13 +260,13 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
           <div class="voice-settings">
             <div class="setting-toggle surface-soft">
               <div><strong>Разрешить голосовые диалоги</strong><span>Пока настройка выключена, начать голосовой разговор нельзя.</span></div>
-              <ToggleSwitch v-model="form.voiceEnabled" input-id="voice-enabled" :disabled="saving || projectSettingsReadOnly" aria-label="Разрешить голосовые диалоги" />
+              <ToggleSwitch v-model="form.voiceEnabled" input-id="voice-enabled" :disabled="saving" aria-label="Разрешить голосовые диалоги" />
             </div>
             <div class="form-grid columns">
-              <div class="field"><label for="voice">Голос по умолчанию</label><Select id="voice" v-model="form.voice" :options="voiceOptions" option-label="label" option-value="value" :disabled="saving || projectSettingsReadOnly || !form.voiceEnabled" /></div>
+              <div class="field"><label for="voice">Голос по умолчанию</label><Select id="voice" v-model="form.voice" :options="voiceOptions" option-label="label" option-value="value" :disabled="saving || !form.voiceEnabled" /></div>
               <div class="setting-toggle compact surface-soft" :class="{ disabled: !form.voiceEnabled }">
                 <div><strong>Сохранять транскрипты</strong><span>Реплики голосового диалога появятся в обычной истории сообщений.</span></div>
-                <ToggleSwitch v-model="form.voiceTranscriptEnabled" input-id="voice-transcripts" :disabled="saving || projectSettingsReadOnly || !form.voiceEnabled" aria-label="Сохранять транскрипты голосового чата" />
+                <ToggleSwitch v-model="form.voiceTranscriptEnabled" input-id="voice-transcripts" :disabled="saving || !form.voiceEnabled" aria-label="Сохранять транскрипты голосового чата" />
               </div>
             </div>
             <div class="field">

@@ -65,8 +65,8 @@ for (const [operationId, expectation] of requiredOperations) {
 
 for (const schemaName of ['CreateProjectDto', 'UpdateProjectDto']) {
   const properties = document.components?.schemas?.[schemaName]?.properties ?? {}
-  if ('settings' in properties) {
-    throw new Error(`${schemaName} must not expose generic settings; TTS uses the dedicated API`)
+  if (properties.settings?.type !== 'object' || properties.settings?.additionalProperties !== true) {
+    throw new Error(`${schemaName} must expose general project settings`)
   }
 }
 

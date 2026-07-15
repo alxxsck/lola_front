@@ -58,6 +58,7 @@ export function toUpdateProjectDto(patch: Partial<Project>): UpdateProjectDto {
     assistantName: patch.assistantName,
     systemPrompt: patch.systemPrompt,
     voiceInstructions: patch.voiceInstructions,
+    settings: patch.settings,
   })
 }
 

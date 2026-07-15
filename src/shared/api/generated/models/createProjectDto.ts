@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateProjectDtoSettings } from "./createProjectDtoSettings";
 
 export interface CreateProjectDto {
   /** @maxLength 80 */
@@ -22,6 +23,8 @@ export interface CreateProjectDto {
   organizationName: string;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   organizationSlug: string;
+  /** General project settings. Text-to-Speech settings are managed by the dedicated speech-synthesis endpoint. */
+  settings?: CreateProjectDtoSettings;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   slug: string;
   /** @maxItems 20 */

@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateProjectDtoSettings } from "./updateProjectDtoSettings";
 import type { ProjectStatus } from "./projectStatus";
 
 export interface UpdateProjectDto {
@@ -16,6 +17,8 @@ export interface UpdateProjectDto {
    * @maxLength 100
    */
   name?: string;
+  /** General project settings. The speechSynthesis subtree is preserved and can only be changed through the dedicated endpoint. */
+  settings?: UpdateProjectDtoSettings;
   status?: ProjectStatus;
   /** @maxItems 20 */
   supportedLocales?: string[];
