@@ -22,7 +22,7 @@ const xAiRow: AiModelUsage = {
   inputTokens: 1_000,
   cachedInputTokens: 200,
   outputTokens: 250,
-  estimatedCost: 0,
+  estimatedCost: 0.005,
   billedCost: 0.025,
 }
 
@@ -84,7 +84,7 @@ const xAiBreakdown: AiUsageBreakdown = {
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
   durationSeconds: 0,
-  estimatedCost: 0,
+  estimatedCost: 0.005,
   billedCost: 0.025,
 }
 
@@ -97,7 +97,7 @@ describe('AI usage charts', () => {
     expect(wrapper.text()).toContain('1,3 тыс. токенов')
 
     await wrapper.setProps({ metric: 'cost' })
-    expect(wrapper.text()).toContain('0,0250 $')
+    expect(wrapper.text()).toContain('0,0300 $')
   })
 
   it('shows ElevenLabs credit usage by model and operation', () => {
@@ -127,7 +127,7 @@ describe('AI usage charts', () => {
     expect(wrapper.text()).not.toContain('ElevenLabs')
   })
 
-  it('switches the Grok donut from token formats to billed cost by operation', async () => {
+  it('switches the Grok donut from token formats to total cost by operation', async () => {
     const wrapper = mount(AiModalityChart, {
       props: {
         totals: {
@@ -140,6 +140,7 @@ describe('AI usage charts', () => {
           inputTextTokens: 1_000,
           cachedInputTextTokens: 200,
           outputTextTokens: 250,
+          estimatedCost: 0.005,
           billedCost: 0.025,
         },
         breakdown: [xAiBreakdown],
@@ -154,6 +155,7 @@ describe('AI usage charts', () => {
     await wrapper.setProps({ metric: 'cost' })
     expect(wrapper.text()).toContain('Структура стоимости Grok')
     expect(wrapper.text()).toContain('Web search')
-    expect(wrapper.text()).toContain('0,0250 $')
+    expect(wrapper.text()).toContain('0,0300 $')
+    expect(wrapper.text()).toContain('Фактическая и расчётная стоимость')
   })
 })

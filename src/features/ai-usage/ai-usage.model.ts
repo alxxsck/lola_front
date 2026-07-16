@@ -301,8 +301,14 @@ export function getUsageCurrency(
   return currencies.size === 1 ? currencies.values().next().value : undefined
 }
 
-export function hasBilledCost(row: AiModelUsage): boolean {
-  return row.billedCost > 0
+export function getUsageCost(
+  usage: Pick<AiModelUsage, 'billedCost' | 'estimatedCost'>,
+): number {
+  return usage.billedCost + usage.estimatedCost
+}
+
+export function hasUsageCost(row: AiModelUsage): boolean {
+  return getUsageCost(row) > 0
 }
 
 export function formatTokenCount(value: number): string {

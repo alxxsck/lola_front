@@ -7,7 +7,8 @@ import {
   getModalityUsage,
   getProviderBreakdown,
   getReportCurrency,
-  hasBilledCost,
+  getUsageCost,
+  hasUsageCost,
   pluralizeRu,
   type AiUsageBreakdown,
   type AiUsageReport,
@@ -200,13 +201,13 @@ describe('AI usage model', () => {
     expect(row.estimatedCost).toBe(0)
   })
 
-  it('recognizes provider-reported xAI billed cost', () => {
+  it('combines provider-reported and estimated xAI cost', () => {
     const row = aggregateModelUsage([
-      breakdown({ estimatedCost: 0, billedCost: 0.018152 }),
+      breakdown({ estimatedCost: 0.046208333333, billedCost: 0.018152 }),
     ])[0]!
 
-    expect(hasBilledCost(row)).toBe(true)
-    expect(row.billedCost).toBeCloseTo(0.018152)
+    expect(hasUsageCost(row)).toBe(true)
+    expect(getUsageCost(row)).toBeCloseTo(0.064360333333)
   })
 
   it('uses non-overlapping text, audio and image modality totals', () => {

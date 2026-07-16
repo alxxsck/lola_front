@@ -8,6 +8,7 @@ import type {
 import {
   formatMoney,
   formatTokenCount,
+  getUsageCost,
   getModalityUsage,
   pluralizeRu,
 } from '../ai-usage.model'
@@ -33,7 +34,7 @@ const modalities = computed(() =>
 const operations = computed(() => {
   const values = new Map<string, number>()
   for (const item of props.breakdown) {
-    values.set(item.operation, (values.get(item.operation) ?? 0) + item.billedCost)
+    values.set(item.operation, (values.get(item.operation) ?? 0) + getUsageCost(item))
   }
   const sorted = [...values]
     .filter(([, value]) => value > 0)
@@ -165,7 +166,7 @@ function percentage(itemValue: number): string {
       <strong>{{ formatTokenCount(totals.cachedInputTokens) }} токенов</strong>
     </footer>
     <footer v-else class="cache-row">
-      <span><i class="pi pi-receipt" /> Стоимость передана xAI</span>
+      <span><i class="pi pi-receipt" /> Фактическая и расчётная стоимость</span>
       <strong>{{ totals.records }} {{ pluralizeRu(totals.records, 'операция', 'операции', 'операций') }}</strong>
     </footer>
   </section>

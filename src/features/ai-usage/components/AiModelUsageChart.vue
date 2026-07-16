@@ -4,7 +4,8 @@ import type { AiModelUsage, AiUsageMetric } from '../ai-usage.model'
 import {
   formatMoney,
   formatTokenCount,
-  hasBilledCost,
+  getUsageCost,
+  hasUsageCost,
   pluralizeRu,
 } from '../ai-usage.model'
 
@@ -25,7 +26,7 @@ const hiddenCount = computed(() =>
 const maxValue = computed(() => Math.max(0, ...sortedRows.value.map(rowValue)))
 
 function rowValue(row: AiModelUsage): number {
-  if (props.metric === 'cost') return row.billedCost
+  if (props.metric === 'cost') return getUsageCost(row)
   return row.totalTokens
 }
 
@@ -36,8 +37,8 @@ function rowWidth(row: AiModelUsage): string {
 
 function rowLabel(row: AiModelUsage): string {
   if (props.metric === 'cost') {
-    return hasBilledCost(row)
-      ? formatMoney(row.billedCost, row.currency)
+    return hasUsageCost(row)
+      ? formatMoney(getUsageCost(row), row.currency)
       : 'Нет данных'
   }
   return `${formatTokenCount(row.totalTokens)} токенов`

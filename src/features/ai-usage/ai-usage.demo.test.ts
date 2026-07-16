@@ -5,7 +5,7 @@ vi.mock('@/shared/config/data-mode', () => ({ isMockMode: true }))
 import { fetchAiUsageReport } from './ai-usage.api'
 
 describe('AI usage demo report', () => {
-  it('keeps project totals aligned with xAI billed cost and ElevenLabs billed units', async () => {
+  it('keeps project totals aligned with xAI cost and ElevenLabs billed units', async () => {
     const report = await fetchAiUsageReport('project-1', {})
     const elevenLabs = report.breakdown.find(
       (row) => row.provider === 'elevenlabs',
@@ -16,6 +16,10 @@ describe('AI usage demo report', () => {
     )
     expect(report.totals.billedCost).toBeCloseTo(
       report.breakdown.reduce((sum, row) => sum + row.billedCost, 0),
+      12,
+    )
+    expect(report.totals.estimatedCost).toBeCloseTo(
+      report.breakdown.reduce((sum, row) => sum + row.estimatedCost, 0),
       12,
     )
     expect(report.totals.providerBilledUnits).toBe(
