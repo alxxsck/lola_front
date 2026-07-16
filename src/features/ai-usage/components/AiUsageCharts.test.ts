@@ -22,7 +22,8 @@ const xAiRow: AiModelUsage = {
   inputTokens: 1_000,
   cachedInputTokens: 200,
   outputTokens: 250,
-  estimatedCost: 0.025,
+  estimatedCost: 0,
+  billedCost: 0.025,
 }
 
 const elevenLabsRow: AiCreditUsage = {
@@ -83,8 +84,8 @@ const xAiBreakdown: AiUsageBreakdown = {
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
   durationSeconds: 0,
-  estimatedCost: 0.025,
-  billedCost: 0,
+  estimatedCost: 0,
+  billedCost: 0.025,
 }
 
 describe('AI usage charts', () => {
@@ -126,7 +127,7 @@ describe('AI usage charts', () => {
     expect(wrapper.text()).not.toContain('ElevenLabs')
   })
 
-  it('switches the Grok donut from token formats to estimated cost by operation', async () => {
+  it('switches the Grok donut from token formats to billed cost by operation', async () => {
     const wrapper = mount(AiModalityChart, {
       props: {
         totals: {
@@ -139,7 +140,7 @@ describe('AI usage charts', () => {
           inputTextTokens: 1_000,
           cachedInputTextTokens: 200,
           outputTextTokens: 250,
-          estimatedCost: 0.025,
+          billedCost: 0.025,
         },
         breakdown: [xAiBreakdown],
         metric: 'tokens',

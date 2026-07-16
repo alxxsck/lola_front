@@ -14,7 +14,7 @@ Frontend готов к демонстрации продукта и полнос
 | Tenant/project isolation | Доступные проекты загружаются по membership | Project guard проверяет membership для project routes |
 | Project settings | Базовые поля проекта и отдельный ElevenLabs Text-to-Speech блок готовы | Generic PATCH принимает только типизированные поля проекта; TTS меняется через dedicated API |
 | Text-to-Speech | Актуальный provider catalog (20 голосов на страницу), language override, voice settings и normalization готовы | ElevenLabs `eleven_v3`, PCM16 mono 24 kHz, dedicated settings/voices API опубликованы |
-| AI usage | Токены xAI, provider-reported billed units ElevenLabs и честная estimated cost с предупреждением готовы | Project usage и отдельный platform-admin workspace billing snapshot опубликованы |
+| AI usage | Токены и provider-reported billed cost xAI, а также billed units ElevenLabs готовы | Project usage и отдельный platform-admin workspace billing snapshot опубликованы |
 | Dashboard | Готовы users, online, conversations, events, scenarios, CTA conversion, integration health и activity | Часть агрегатов пока demo data |
 | Interface map | Готов CRUD buttons/elements, pages и modals | Поддерживается общим `UiElement` CRUD |
 | CTA registry | CTA поддержан в сценариях и ручных действиях | Отдельной CTA entity/API пока нет |

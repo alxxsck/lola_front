@@ -12,8 +12,8 @@ const demoReport = (projectId: string): AiUsageReport => ({
   totals: {
     records: 210,
     unpricedRecords: 0,
-    providerReportedUsageRecords: 24,
-    estimatedCostRecords: 186,
+    providerReportedUsageRecords: 210,
+    estimatedCostRecords: 0,
     inputCharacters: 18_460,
     providerBilledUnits: 19_120,
     totalTokens: 184_720,
@@ -32,8 +32,8 @@ const demoReport = (projectId: string): AiUsageReport => ({
     cachedInputImageTokens: 0,
     outputImageTokens: 0,
     durationSeconds: 428,
-    estimatedCost: 1.284599,
-    billedCost: 0,
+    estimatedCost: 0,
+    billedCost: 1.284599,
   },
   breakdown: [
     {
@@ -60,8 +60,8 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0.1765,
-      billedCost: 0,
+      estimatedCost: 0,
+      billedCost: 0.1765,
     },
     {
       provider: 'xai',
@@ -87,8 +87,8 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0.8467,
-      billedCost: 0,
+      estimatedCost: 0,
+      billedCost: 0.8467,
     },
     {
       provider: 'xai',
@@ -114,8 +114,8 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0.1964,
-      billedCost: 0,
+      estimatedCost: 0,
+      billedCost: 0.1964,
     },
     {
       provider: 'xai',
@@ -141,8 +141,8 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 428,
-      estimatedCost: 0.064999,
-      billedCost: 0,
+      estimatedCost: 0,
+      billedCost: 0.064999,
     },
     {
       provider: 'elevenlabs',

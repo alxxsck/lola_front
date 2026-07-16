@@ -18,7 +18,7 @@ import {
   getAiUsageRange,
   getProviderBreakdown,
   getUsageCurrency,
-  hasEstimatedCost,
+  hasBilledCost,
   pluralizeRu,
   type AiUsageMetric,
   type AiUsageRangeKey,
@@ -57,25 +57,25 @@ const elevenLabsCredits = computed(() =>
 )
 const xAiCurrency = computed(() => getUsageCurrency(xAiBreakdown.value))
 const xAiCostAvailable = computed(
-  () => Boolean(xAiCurrency.value) && xAiModels.value.some(hasEstimatedCost),
+  () => Boolean(xAiCurrency.value) && xAiModels.value.some(hasBilledCost),
 )
-const xAiEstimatedCostRecords = computed(() => {
-  const exactCount = totals.value?.estimatedCostRecords
-  if (exactCount !== undefined)
-    return Math.min(exactCount, xAiUsage.value.records)
-  return xAiUsage.value.estimatedCost > 0 ? xAiUsage.value.records : 0
-})
+const xAiBilledCostRecords = computed(() =>
+  xAiBreakdown.value.reduce(
+    (records, item) => records + (item.billedCost > 0 ? item.records : 0),
+    0,
+  ),
+)
 const xAiUnpricedRecords = computed(() =>
-  Math.max(xAiUsage.value.records - xAiEstimatedCostRecords.value, 0),
+  Math.max(xAiUsage.value.records - xAiBilledCostRecords.value, 0),
 )
 const xAiCostLabel = computed(() => {
   if (!xAiCurrency.value) return 'Несколько валют'
-  if (!xAiEstimatedCostRecords.value) return 'Нет USD-оценки'
-  return formatMoney(xAiUsage.value.estimatedCost, xAiCurrency.value)
+  if (!xAiBilledCostRecords.value) return 'Нет данных о стоимости'
+  return formatMoney(xAiUsage.value.billedCost, xAiCurrency.value)
 })
 const xAiCostCaption = computed(
   () =>
-    `${xAiEstimatedCostRecords.value} ${pluralizeRu(xAiEstimatedCostRecords.value, 'операция оценена', 'операции оценены', 'операций оценено')} по rate card`,
+    `${xAiBilledCostRecords.value} ${pluralizeRu(xAiBilledCostRecords.value, 'операция учтена', 'операции учтены', 'операций учтено')} по данным xAI`,
 )
 const xAiCachedShare = computed(() => {
   if (!xAiUsage.value.inputTokens) return '0% входящих'
@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
             <div>
               <span class="provider-kicker">Models & inference</span>
               <h3 id="xai-usage-title">xAI · Grok</h3>
-              <p>Токены, операции и расчётная стоимость по rate card.</p>
+              <p>Токены, операции и фактическая стоимость от xAI.</p>
             </div>
             <div class="metric-switch" role="group" aria-label="Показатель графиков Grok">
               <button
@@ -253,7 +253,7 @@ onBeforeUnmount(() => {
 
           <div class="provider-summary xai-summary">
             <article class="summary-card cost-card">
-              <span class="summary-label">Расчётная стоимость</span>
+              <span class="summary-label">Стоимость по данным xAI</span>
               <strong>{{ xAiCostLabel }}</strong>
               <small>{{ xAiCostCaption }}</small>
             </article>
@@ -295,13 +295,13 @@ onBeforeUnmount(() => {
                 {{
                   pluralizeRu(
                     xAiUnpricedRecords,
-                    'операция xAI без оценки',
-                    'операции xAI без оценки',
-                    'операций xAI без оценки',
+                    'операция xAI без стоимости',
+                    'операции xAI без стоимости',
+                    'операций xAI без стоимости',
                   )
                 }}.</strong
               >
-              Они учтены в количестве операций, но не в расчётной стоимости.</span
+              Они учтены в количестве операций, но не в стоимости.</span
             >
           </div>
 
@@ -365,7 +365,7 @@ onBeforeUnmount(() => {
           ><i class="pi pi-shield" /> Данные доступны только участникам проекта
           через защищённый CMS endpoint.</span
         >
-        <span>Стоимость xAI является оценкой и не заменяет счёт провайдера.</span>
+        <span>Стоимость Grok получена из usage-данных xAI.</span>
       </footer>
     </template>
   </section>

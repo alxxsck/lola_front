@@ -7,7 +7,7 @@ import {
   getModalityUsage,
   getProviderBreakdown,
   getReportCurrency,
-  hasEstimatedCost,
+  hasBilledCost,
   pluralizeRu,
   type AiUsageBreakdown,
   type AiUsageReport,
@@ -18,7 +18,7 @@ const totals: AiUsageTotals = {
   records: 3,
   unpricedRecords: 0,
   providerReportedUsageRecords: 0,
-  estimatedCostRecords: 3,
+  estimatedCostRecords: 0,
   inputCharacters: 0,
   providerBilledUnits: 0,
   totalTokens: 1_300,
@@ -37,8 +37,8 @@ const totals: AiUsageTotals = {
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
   durationSeconds: 0,
-  estimatedCost: 0.03,
-  billedCost: 0,
+  estimatedCost: 0,
+  billedCost: 0.03,
 }
 
 function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
@@ -66,8 +66,8 @@ function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
     durationSeconds: 0,
-    estimatedCost: 0.01,
-    billedCost: 0,
+    estimatedCost: 0,
+    billedCost: 0.01,
     ...patch,
   }
 }
@@ -97,7 +97,7 @@ describe('AI usage model', () => {
         inputCharacters: 200,
         providerBilledUnits: 220,
         totalTokens: 200,
-        estimatedCost: 0.02,
+        billedCost: 0.02,
       }),
     ])
 
@@ -107,7 +107,7 @@ describe('AI usage model', () => {
       inputCharacters: 300,
       providerBilledUnits: 330,
       totalTokens: 300,
-      estimatedCost: 0.03,
+      billedCost: 0.03,
     })
   })
 
@@ -138,6 +138,7 @@ describe('AI usage model', () => {
       inputTextTokens: 0,
       outputTextTokens: 0,
       estimatedCost: 0,
+      billedCost: 0,
     })
 
     const xAiUsage = aggregateProviderUsage(
@@ -177,10 +178,11 @@ describe('AI usage model', () => {
         totalTokens: 0,
         providerBilledUnits: 125,
         estimatedCost: 0,
+        billedCost: 0,
       }),
     ])[0]!
 
-    expect(hasEstimatedCost(row)).toBe(false)
+    expect(row.estimatedCost).toBe(0)
   })
 
   it('keeps rejected zero-unit ElevenLabs requests unpriced', () => {
@@ -191,10 +193,20 @@ describe('AI usage model', () => {
         totalTokens: 0,
         providerBilledUnits: 0,
         estimatedCost: 0,
+        billedCost: 0,
       }),
     ])[0]!
 
-    expect(hasEstimatedCost(row)).toBe(false)
+    expect(row.estimatedCost).toBe(0)
+  })
+
+  it('recognizes provider-reported xAI billed cost', () => {
+    const row = aggregateModelUsage([
+      breakdown({ estimatedCost: 0, billedCost: 0.018152 }),
+    ])[0]!
+
+    expect(hasBilledCost(row)).toBe(true)
+    expect(row.billedCost).toBeCloseTo(0.018152)
   })
 
   it('uses non-overlapping text, audio and image modality totals', () => {

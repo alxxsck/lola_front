@@ -97,6 +97,33 @@ describe('AI usage API response validation', () => {
     })
   })
 
+  it('parses provider-reported xAI billed cost when estimated cost is zero', () => {
+    const providerReportedResponse = {
+      ...response,
+      totals: {
+        ...response.totals,
+        providerReportedUsageRecords: 2,
+        estimatedCostRecords: 0,
+        estimatedCost: '0.000000000000',
+        billedCost: '0.018152000000',
+      },
+      breakdown: [
+        {
+          ...response.breakdown[0],
+          estimatedCost: '0.000000000000',
+          billedCost: '0.018152000000',
+        },
+      ],
+    }
+
+    expect(
+      parseAiUsageReport(providerReportedResponse, 'project-1'),
+    ).toMatchObject({
+      totals: { estimatedCost: 0, billedCost: 0.018152 },
+      breakdown: [{ estimatedCost: 0, billedCost: 0.018152 }],
+    })
+  })
+
   it('parses nonzero cache and image modality details', () => {
     const legacyResponse = {
       ...response,

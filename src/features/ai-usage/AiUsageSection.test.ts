@@ -17,8 +17,8 @@ describe('AiUsageSection', () => {
       totals: {
         records: 2,
         unpricedRecords: 0,
-        providerReportedUsageRecords: 1,
-        estimatedCostRecords: 1,
+        providerReportedUsageRecords: 2,
+        estimatedCostRecords: 0,
         inputCharacters: 1_200,
         providerBilledUnits: 1_250,
         totalTokens: 120,
@@ -37,8 +37,8 @@ describe('AiUsageSection', () => {
         cachedInputImageTokens: 0,
         outputImageTokens: 0,
         durationSeconds: 0,
-        estimatedCost: 0.0012,
-        billedCost: 0,
+        estimatedCost: 0,
+        billedCost: 0.0012,
       },
       breakdown: [
         {
@@ -65,8 +65,8 @@ describe('AiUsageSection', () => {
           cachedInputImageTokens: 0,
           outputImageTokens: 0,
           durationSeconds: 0,
-          estimatedCost: 0.0012,
-          billedCost: 0,
+          estimatedCost: 0,
+          billedCost: 0.0012,
         },
         {
           provider: 'elevenlabs',
@@ -99,7 +99,7 @@ describe('AiUsageSection', () => {
     })
   })
 
-  it('separates xAI estimates from ElevenLabs credits', async () => {
+  it('shows xAI billed cost separately from ElevenLabs credits', async () => {
     const wrapper = shallowMount(AiUsageSection, {
       props: { projectId: 'project-1' },
     })
@@ -110,9 +110,12 @@ describe('AiUsageSection', () => {
     expect(wrapper.text()).toContain('Использовано credits')
     expect(wrapper.text()).toContain('1,3 тыс.')
     expect(wrapper.text()).toContain('0,0012 $')
+    expect(wrapper.text()).toContain('Стоимость по данным xAI')
+    expect(wrapper.text()).not.toContain('Расчётная стоимость')
     expect(wrapper.text()).not.toContain('операция ElevenLabs учтена')
     expect(wrapper.text()).not.toContain('character-cost')
     expect(wrapper.text()).not.toContain('Расчётная стоимость может отличаться')
+    expect(wrapper.findAll('.metric-switch button')[1]!.attributes('disabled')).toBeUndefined()
   })
 
   it('uses one token and cost switch for both Grok charts', async () => {

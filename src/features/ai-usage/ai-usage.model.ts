@@ -104,6 +104,7 @@ export interface AiModelUsage {
   cachedInputTokens: number
   outputTokens: number
   estimatedCost: number
+  billedCost: number
 }
 
 export interface AiModalityUsage {
@@ -164,6 +165,7 @@ export function aggregateModelUsage(
       current.cachedInputTokens += item.cachedInputTokens
       current.outputTokens += item.outputTokens
       current.estimatedCost += item.estimatedCost
+      current.billedCost += item.billedCost
       continue
     }
 
@@ -180,6 +182,7 @@ export function aggregateModelUsage(
       cachedInputTokens: item.cachedInputTokens,
       outputTokens: item.outputTokens,
       estimatedCost: item.estimatedCost,
+      billedCost: item.billedCost,
     })
   }
 
@@ -298,8 +301,8 @@ export function getUsageCurrency(
   return currencies.size === 1 ? currencies.values().next().value : undefined
 }
 
-export function hasEstimatedCost(row: AiModelUsage): boolean {
-  return row.estimatedCost > 0
+export function hasBilledCost(row: AiModelUsage): boolean {
+  return row.billedCost > 0
 }
 
 export function formatTokenCount(value: number): string {
