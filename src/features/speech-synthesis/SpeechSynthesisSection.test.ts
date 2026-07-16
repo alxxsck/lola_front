@@ -82,14 +82,15 @@ describe('SpeechSynthesisSection', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Озвучивание текста')
-    expect(wrapper.text()).toContain('OpenAI Realtime-диалогов выше остаются без изменений')
+    expect(wrapper.text()).toContain('Голос для озвучивания текста')
+    expect(wrapper.text()).not.toContain('Поиск по каталогу')
+    expect(wrapper.text()).not.toContain('Загрузить ещё голоса')
     expect(mocks.fetchSettings).toHaveBeenCalledWith('project-1', expect.any(AbortSignal))
     expect(mocks.fetchVoices).toHaveBeenCalledWith(
       'project-1',
-      { search: undefined, cursor: undefined, limit: 20 },
+      { limit: 20 },
       expect.any(AbortSignal),
     )
-    expect(wrapper.find('audio').attributes('src')).toBe('https://example.com/rachel.mp3')
   })
 
   it('saves only the eleven_v3 settings supported by the CMS contract', async () => {
@@ -118,19 +119,20 @@ describe('SpeechSynthesisSection', () => {
     })
   })
 
-  it('collapses to the header and exposes the expanded state', async () => {
+  it('starts collapsed to the header and exposes the expanded state', async () => {
     const wrapper = shallowMount(SpeechSynthesisSection, {
       props: { projectId: 'project-1', supportedLocales: ['ru'] },
     })
     await flushPromises()
 
     const toggle = wrapper.find('[aria-controls="tts-content"]')
-    expect(toggle.attributes('aria-expanded')).toBe('true')
-    await toggle.trigger('click')
-
     expect(toggle.attributes('aria-expanded')).toBe('false')
     expect(wrapper.get('#tts-content').attributes('style')).toContain('display: none')
     expect(wrapper.classes()).toContain('collapsed')
+    await toggle.trigger('click')
+
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('#tts-content').attributes('style')).not.toContain('display: none')
   })
 
   it('clears the previous project state when the next project fails to load', async () => {
@@ -192,7 +194,7 @@ describe('SpeechSynthesisSection', () => {
     expect(wrapper.text()).toContain('выберите голос проекта')
   })
 
-  it('shows the catalog preview for the server-default voice', async () => {
+  it('identifies the server-default voice by its catalog metadata', async () => {
     const withServerDefault = settings()
     withServerDefault.settings.voiceId = undefined
     mocks.fetchSettings.mockResolvedValueOnce(withServerDefault)
@@ -201,10 +203,7 @@ describe('SpeechSynthesisSection', () => {
     })
     await flushPromises()
 
-    expect(wrapper.find('audio').attributes()).toMatchObject({
-      src: 'https://example.com/rachel.mp3',
-      'aria-label': 'Предпрослушивание голоса Rachel',
-    })
+    expect(wrapper.text()).toContain('Server default: Rachel')
   })
 
   it('clears an aborted voice spinner when the next project has no voice catalog', async () => {

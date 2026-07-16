@@ -101,17 +101,28 @@ describe('ProjectPage voice instructions', () => {
     expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(true)
   })
 
-  it('collapses voice chat settings to the section header', async () => {
+  it('starts voice chat collapsed and expands it from the section header', async () => {
     const wrapper = shallowMount(ProjectPage)
     await flushPromises()
 
     const toggle = wrapper.find('[aria-controls="voice-chat-settings"]')
-    expect(toggle.attributes('aria-expanded')).toBe('true')
-    await toggle.trigger('click')
-
     expect(toggle.attributes('aria-expanded')).toBe('false')
     expect(wrapper.get('#voice-chat-settings').attributes('style')).toContain('display: none')
     expect(toggle.element.closest('section')?.classList).toContain('collapsed')
+    await toggle.trigger('click')
+
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('#voice-chat-settings').attributes('style')).not.toContain('display: none')
+  })
+
+  it('keeps TTS in the settings column and submits the project form from the sidebar', async () => {
+    const wrapper = shallowMount(ProjectPage)
+    await flushPromises()
+
+    expect(wrapper.find('.settings-main > speech-synthesis-section-stub').exists()).toBe(true)
+    expect(wrapper.get('#project-settings-form').element.parentElement).toBe(wrapper.get('.settings-main').element)
+    expect(wrapper.get('.settings-aside').element.parentElement).toBe(wrapper.get('.settings-layout').element)
+    expect(wrapper.find('button-stub[form="project-settings-form"]').exists()).toBe(true)
   })
 
   it('keeps project connection and OpenAI Realtime settings editable in API mode', async () => {

@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch 
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
@@ -30,7 +29,7 @@ const props = defineProps<{
 const toast = useToast()
 const loading = ref(true)
 const saving = ref(false)
-const isExpanded = ref(true)
+const isExpanded = ref(false)
 const voicesLoading = ref(false)
 const error = ref('')
 const voicesError = ref('')
@@ -42,32 +41,23 @@ const form = reactive<SpeechSettingsForm>({
   stability: 0.5,
 })
 const initialSnapshot = ref('')
-const voiceSearch = ref('')
-const visibleVoices = shallowRef<SpeechVoiceResponseDto[]>([])
 const knownVoices = shallowRef<SpeechVoiceResponseDto[]>([])
-const nextCursor = ref<string | null>(null)
-const hasMoreVoices = ref(false)
 let settingsController: AbortController | undefined
 let voicesController: AbortController | undefined
-let searchTimer: ReturnType<typeof setTimeout> | undefined
 let requestGeneration = 0
 const VOICE_PAGE_SIZE = 20
 
 const isDirty = computed(() => Boolean(initialSnapshot.value) && JSON.stringify(form) !== initialSnapshot.value)
 const configured = computed(() => response.value?.integration.configured === true)
 const integration = computed(() => response.value?.integration)
-const effectiveVoiceId = computed(() => {
-  if (form.voiceId !== DEFAULT_VOICE_VALUE) return form.voiceId
+const serverDefaultVoiceId = computed(() => {
   const voiceId = integration.value?.defaults.voiceId
   return typeof voiceId === 'string' ? voiceId : ''
 })
-const selectedVoice = computed(() => knownVoices.value.find((voice) => voice.id === effectiveVoiceId.value))
-const selectedPreviewUrl = computed(() => selectedVoice.value?.previewUrl ?? null)
-const selectedVoiceDescription = computed(() => selectedVoice.value?.description ?? '')
 const hasServerDefaultVoice = computed(() => {
-  const voiceId = integration.value?.defaults.voiceId
-  return typeof voiceId === 'string' && /^[A-Za-z0-9_-]{12,100}$/.test(voiceId)
+  return /^[A-Za-z0-9_-]{12,100}$/.test(serverDefaultVoiceId.value)
 })
+const serverDefaultVoice = computed(() => knownVoices.value.find((voice) => voice.id === serverDefaultVoiceId.value))
 
 const localeNames: Record<string, string> = {
   de: 'Deutsch',
@@ -96,14 +86,16 @@ const voiceOptions = computed<SpeechVoiceOption[]>(() => {
   const options: SpeechVoiceOption[] = []
   const ids = new Set<string>()
   if (hasServerDefaultVoice.value) {
+    const voiceId = serverDefaultVoiceId.value
+    const voice = serverDefaultVoice.value
     ids.add(DEFAULT_VOICE_VALUE)
     options.push({
       id: DEFAULT_VOICE_VALUE,
-      name: 'Системный голос по умолчанию',
-      meta: 'Настраивается на backend',
+      name: `По умолчанию: ${voice?.name ?? voiceId}`,
+      meta: voice ? `ElevenLabs · ${voiceId}` : voiceId,
     })
   }
-  for (const voice of visibleVoices.value) {
+  for (const voice of knownVoices.value) {
     if (ids.has(voice.id)) continue
     ids.add(voice.id)
     options.push(toVoiceOption(voice))
@@ -132,14 +124,7 @@ function fillForm(nextResponse: SpeechSettingsResponseDto) {
   validationError.value = ''
 }
 
-function mergeKnownVoices(items: SpeechVoiceResponseDto[]) {
-  const voices = new Map(knownVoices.value.map((voice) => [voice.id, voice]))
-  for (const voice of items) voices.set(voice.id, voice)
-  knownVoices.value = [...voices.values()]
-}
-
 async function loadVoices(
-  reset = true,
   projectId = props.projectId,
   generation = requestGeneration,
 ) {
@@ -153,16 +138,9 @@ async function loadVoices(
   voicesLoading.value = true
   voicesError.value = ''
   try {
-    const page = await fetchSpeechVoices(projectId, {
-      search: voiceSearch.value.trim() || undefined,
-      cursor: reset ? undefined : nextCursor.value ?? undefined,
-      limit: VOICE_PAGE_SIZE,
-    }, controller.signal)
+    const page = await fetchSpeechVoices(projectId, { limit: VOICE_PAGE_SIZE }, controller.signal)
     if (controller.signal.aborted || generation !== requestGeneration || projectId !== props.projectId) return
-    visibleVoices.value = reset ? page.items : [...visibleVoices.value, ...page.items]
-    mergeKnownVoices(page.items)
-    nextCursor.value = page.nextCursor ?? null
-    hasMoreVoices.value = page.hasMore && Boolean(page.nextCursor)
+    knownVoices.value = page.items
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration || projectId !== props.projectId) return
     voicesError.value = cause instanceof Error ? cause.message : 'Не удалось загрузить доступные голоса'
@@ -176,7 +154,6 @@ async function load() {
   const generation = ++requestGeneration
   settingsController?.abort()
   voicesController?.abort()
-  if (searchTimer) clearTimeout(searchTimer)
   const controller = new AbortController()
   settingsController = controller
   loading.value = true
@@ -186,13 +163,12 @@ async function load() {
   voicesError.value = ''
   response.value = null
   initialSnapshot.value = ''
-  visibleVoices.value = []
   knownVoices.value = []
   try {
     const nextResponse = await fetchSpeechSettings(projectId, controller.signal)
     if (controller.signal.aborted || generation !== requestGeneration || projectId !== props.projectId) return
     fillForm(nextResponse)
-    await loadVoices(true, projectId, generation)
+    await loadVoices(projectId, generation)
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration || projectId !== props.projectId) return
     error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить настройки озвучивания'
@@ -229,11 +205,6 @@ async function save() {
   }
 }
 
-watch(voiceSearch, () => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => void loadVoices(), 300)
-})
-
 watch(() => props.projectId, () => void load(), { flush: 'sync' })
 
 useUnsavedChangesGuard(isDirty, 'Есть несохранённые настройки Text-to-Speech. Покинуть страницу?')
@@ -243,7 +214,6 @@ onBeforeUnmount(() => {
   requestGeneration += 1
   settingsController?.abort()
   voicesController?.abort()
-  if (searchTimer) clearTimeout(searchTimer)
 })
 </script>
 
@@ -255,7 +225,7 @@ onBeforeUnmount(() => {
         <div>
           <div class="eyebrow">Text-to-Speech · SPEAK_TEXT</div>
           <h2 id="tts-title">Озвучивание текста</h2>
-          <p>Команды SPEAK_TEXT озвучиваются через ElevenLabs. Настройки OpenAI Realtime-диалогов выше остаются без изменений.</p>
+          <p>Команды SPEAK_TEXT озвучиваются через ElevenLabs. Настройте голос тут.</p>
         </div>
       </div>
       <div class="tts-header-actions">
@@ -299,44 +269,28 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="voice-panel">
-        <div class="voice-panel-copy">
-          <h3>Голос ElevenLabs</h3>
-          <p>Показываем по 20 доступных голосов. Поиск и следующие страницы идут через backend, поэтому API key ElevenLabs не попадает в браузер.</p>
-        </div>
-        <div class="voice-fields">
-          <div class="field">
-            <label for="tts-voice-search">Поиск по каталогу</label>
-            <span class="search-input"><i class="pi pi-search" /><InputText id="tts-voice-search" v-model="voiceSearch" maxlength="100" placeholder="Имя или описание голоса" :disabled="!configured" /></span>
-          </div>
-          <div class="field">
-            <label for="tts-voice">Голос для SPEAK_TEXT</label>
-            <Select
-              id="tts-voice"
-              v-model="form.voiceId"
-              :options="voiceOptions"
-              option-label="name"
-              option-value="id"
-              :loading="voicesLoading"
-              :disabled="saving || !configured"
-              placeholder="Выберите голос"
-            >
-              <template #option="{ option }">
-                <span class="voice-option"><strong>{{ option.name }}</strong><small>{{ option.meta }}</small></span>
-              </template>
-            </Select>
-          <small v-if="form.voiceId === DEFAULT_VOICE_VALUE">Будет использован server default без сохранения его ID в проекте.</small>
+        <div class="field">
+          <label for="tts-voice">Голос для озвучивания текста</label>
+          <Select
+            id="tts-voice"
+            v-model="form.voiceId"
+            :options="voiceOptions"
+            option-label="name"
+            option-value="id"
+            :loading="voicesLoading"
+            :disabled="saving || !configured"
+            placeholder="Выберите голос"
+          >
+            <template #option="{ option }">
+              <span class="voice-option"><strong>{{ option.name }}</strong><small>{{ option.meta }}</small></span>
+            </template>
+          </Select>
+          <small v-if="form.voiceId === DEFAULT_VOICE_VALUE">Server default: {{ serverDefaultVoice?.name ?? serverDefaultVoiceId }}. ID голоса не сохраняется в проекте.</small>
           <small v-else-if="!form.voiceId">На backend нет голоса по умолчанию — выберите голос проекта.</small>
-          </div>
         </div>
         <Message v-if="voicesError" severity="warn" size="small" :closable="false">
           <div class="message-row"><span>{{ voicesError }}</span><Button label="Повторить" size="small" text @click="loadVoices()" /></div>
         </Message>
-        <Button v-if="hasMoreVoices" type="button" label="Загрузить ещё голоса" icon="pi pi-plus" severity="secondary" text :loading="voicesLoading" @click="loadVoices(false)" />
-        <div v-if="selectedVoice" class="voice-preview surface-soft">
-          <span><strong>{{ selectedVoice.name }}</strong><small>{{ selectedVoiceDescription || selectedVoice.id }}</small></span>
-          <audio v-if="selectedPreviewUrl" :src="selectedPreviewUrl" controls preload="none" :aria-label="`Предпрослушивание голоса ${selectedVoice.name}`">Предпрослушивание голоса не поддерживается браузером.</audio>
-          <span v-else class="preview-unavailable"><i class="pi pi-volume-off" /> Превью недоступно</span>
-        </div>
       </div>
 
       <div class="settings-grid">
@@ -363,8 +317,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.tts-section{margin-top:22px;padding:26px}.tts-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid #ecece7}.tts-section.collapsed .tts-header{padding-bottom:0;margin-bottom:0;border-bottom:0}.tts-heading{display:flex;align-items:flex-start;gap:14px}.tts-heading h2{font-size:1.18rem}.tts-heading p{max-width:680px;margin:5px 0 0;color:var(--muted);font-size:.76rem;line-height:1.5}.tts-icon{display:grid;place-items:center;width:43px;height:43px;flex:0 0 auto;border-radius:13px;background:#fff0eb;color:#d96747;box-shadow:inset 0 0 0 1px #f7ded5}.tts-header-actions{display:flex;align-items:center;gap:8px}.provider-state{display:flex;align-items:center;gap:9px;min-width:190px;padding:10px 12px;border:1px solid #eadfd9;border-radius:13px;background:#fff8f5}.provider-state.ready{border-color:#dce9be;background:#f7fbe9}.provider-state>span:last-child{display:flex;flex-direction:column}.provider-state strong{font-size:.7rem}.provider-state small{margin-top:2px;color:var(--muted);font-size:.61rem}.provider-dot{width:8px;height:8px;border-radius:50%;background:#d76e4f;box-shadow:0 0 0 4px #f6ddd5}.provider-state.ready .provider-dot{background:#88aa29;box-shadow:0 0 0 4px #e6efcd}.tts-content{display:flex;flex-direction:column;gap:20px}.message-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}.tts-skeleton{display:flex;flex-direction:column;gap:18px}.tts-skeleton>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tts-form{display:flex;flex-direction:column;gap:20px}.tts-provider-note{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tts-provider-note span{display:flex;align-items:center;gap:9px;padding:12px 14px;border:1px solid #e7e8e2;border-radius:12px;background:#fafbf7;color:#62675d;font-size:.7rem}.tts-provider-note i{color:#8ca52e}.voice-panel{padding:20px;border:1px solid #e6e7e1;border-radius:17px;background:#fff}.voice-panel-copy h3{font-size:.91rem}.voice-panel-copy p{margin:4px 0 18px;color:var(--muted);font-size:.69rem}.voice-fields{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(300px,1.2fr);gap:16px}.search-input{position:relative}.search-input i{position:absolute;z-index:1;top:50%;left:12px;transform:translateY(-50%);color:#999e94;font-size:.75rem}.search-input :deep(input){padding-left:34px}.voice-option{display:flex;min-width:0;flex-direction:column}.voice-option strong{font-size:.75rem}.voice-option small{overflow:hidden;margin-top:2px;color:var(--muted);font-size:.62rem;text-overflow:ellipsis;white-space:nowrap}.voice-preview{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:16px;padding:14px}.voice-preview>span:first-child{min-width:0}.voice-preview strong,.voice-preview small{display:block}.voice-preview strong{font-size:.78rem}.voice-preview small{overflow:hidden;max-width:480px;margin-top:3px;color:var(--muted);font-size:.65rem;text-overflow:ellipsis;white-space:nowrap}.voice-preview audio{width:min(310px,45%);height:34px}.preview-unavailable{color:var(--muted);font-size:.67rem}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.setting-field{min-height:106px;padding:16px;border:1px solid #e7e8e2;border-radius:14px;background:#fafbf7}.setting-field small{min-height:1.9em;text-align:left;line-height:1.4}.tts-save{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-radius:16px;background:#252920;color:#fff}.tts-save>div{min-width:180px}.tts-save strong,.tts-save span{display:block}.tts-save strong{font-size:.8rem}.tts-save span{margin-top:4px;color:#aeb3a8;font-size:.66rem}.tts-save :deep(.p-message){flex:1;margin:0}.tts-save :deep(.p-message-text){font-size:.69rem}
-@media(max-width:1100px){.voice-fields{grid-template-columns:1fr}}
-@media(max-width:900px){.tts-header{flex-direction:column}.provider-state{width:100%}.settings-grid{grid-template-columns:1fr}.tts-save{align-items:stretch;flex-direction:column}.tts-save :deep(.p-button){width:100%}.tts-provider-note{grid-template-columns:1fr}.voice-preview{align-items:flex-start;flex-direction:column}.voice-preview audio{width:100%}}
+.tts-section{margin-top:22px;padding:26px}.tts-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid #ecece7}.tts-section.collapsed .tts-header{padding-bottom:0;margin-bottom:0;border-bottom:0}.tts-heading{display:flex;align-items:flex-start;gap:14px}.tts-heading h2{font-size:1.18rem}.tts-heading p{max-width:680px;margin:5px 0 0;color:var(--muted);font-size:.76rem;line-height:1.5}.tts-icon{display:grid;place-items:center;width:43px;height:43px;flex:0 0 auto;border-radius:13px;background:#fff0eb;color:#d96747;box-shadow:inset 0 0 0 1px #f7ded5}.tts-header-actions{display:flex;align-items:center;gap:8px}.provider-state{display:flex;align-items:center;gap:9px;min-width:190px;padding:10px 12px;border:1px solid #eadfd9;border-radius:13px;background:#fff8f5}.provider-state.ready{border-color:#dce9be;background:#f7fbe9}.provider-state>span:last-child{display:flex;flex-direction:column}.provider-state strong{font-size:.7rem}.provider-state small{margin-top:2px;color:var(--muted);font-size:.61rem}.provider-dot{width:8px;height:8px;border-radius:50%;background:#d76e4f;box-shadow:0 0 0 4px #f6ddd5}.provider-state.ready .provider-dot{background:#88aa29;box-shadow:0 0 0 4px #e6efcd}.tts-content{display:flex;flex-direction:column;gap:20px}.message-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}.tts-skeleton{display:flex;flex-direction:column;gap:18px}.tts-skeleton>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tts-form{display:flex;flex-direction:column;gap:20px}.tts-provider-note{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tts-provider-note span{display:flex;align-items:center;gap:9px;padding:12px 14px;border:1px solid #e7e8e2;border-radius:12px;background:#fafbf7;color:#62675d;font-size:.7rem}.tts-provider-note i{color:#8ca52e}.voice-panel{padding:20px;border:1px solid #e6e7e1;border-radius:17px;background:#fff}.voice-option{display:flex;min-width:0;flex-direction:column}.voice-option strong{font-size:.75rem}.voice-option small{overflow:hidden;margin-top:2px;color:var(--muted);font-size:.62rem;text-overflow:ellipsis;white-space:nowrap}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.setting-field{min-height:106px;padding:16px;border:1px solid #e7e8e2;border-radius:14px;background:#fafbf7}.setting-field small{min-height:1.9em;text-align:left;line-height:1.4}.tts-save{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-radius:16px;background:#252920;color:#fff}.tts-save>div{min-width:180px}.tts-save strong,.tts-save span{display:block}.tts-save strong{font-size:.8rem}.tts-save span{margin-top:4px;color:#aeb3a8;font-size:.66rem}.tts-save :deep(.p-message){flex:1;margin:0}.tts-save :deep(.p-message-text){font-size:.69rem}
+@media(max-width:900px){.tts-header{flex-direction:column}.provider-state{width:100%}.settings-grid{grid-template-columns:1fr}.tts-save{align-items:stretch;flex-direction:column}.tts-save :deep(.p-button){width:100%}.tts-provider-note{grid-template-columns:1fr}}
 @media(max-width:650px){.tts-section{padding:20px}.tts-heading p{line-height:1.45}.tts-skeleton>div{grid-template-columns:1fr}}
 </style>

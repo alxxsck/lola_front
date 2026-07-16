@@ -65,7 +65,7 @@ const auth = useAuthStore()
 const toast = useToast()
 const loading = ref(true)
 const saving = ref(false)
-const voiceSettingsExpanded = ref(true)
+const voiceSettingsExpanded = ref(false)
 const error = ref('')
 const validationError = ref('')
 const project = ref<Project | null>(null)
@@ -217,8 +217,9 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       <div class="card card-pad skeleton-card"><Skeleton width="10rem" height="1.5rem" /><Skeleton height="13rem" /></div>
     </div>
 
-    <form v-else-if="project" class="settings-layout" @submit.prevent="saveProject">
+    <div v-else-if="project" class="settings-layout">
       <div class="settings-main stack">
+        <form id="project-settings-form" class="settings-main-form stack" @submit.prevent="saveProject">
         <section class="card card-pad settings-section">
           <div class="section-title"><span class="section-icon lime"><i class="pi pi-building" /></span><div><h2>О проекте</h2><p>Эти данные видны только администраторам.</p></div></div>
           <div class="form-grid">
@@ -291,6 +292,13 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
             </div>
           </div>
         </section>
+        </form>
+
+        <SpeechSynthesisSection
+          class="settings-main-tts"
+          :project-id="project.id"
+          :supported-locales="project.supportedLocales"
+        />
       </div>
 
       <aside class="settings-aside stack">
@@ -305,23 +313,17 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         <section class="save-card">
           <div><strong>{{ isDirty ? 'Есть несохранённые изменения' : 'Все изменения сохранены' }}</strong><span>{{ isDirty ? 'Сохраните настройки, чтобы применить их в проекте.' : 'Настройки проекта актуальны.' }}</span></div>
           <Message v-if="validationError" severity="warn" size="small">{{ validationError }}</Message>
-          <Button type="submit" label="Сохранить настройки" icon="pi pi-check" :loading="saving" :disabled="!isDirty" fluid />
+          <Button type="submit" form="project-settings-form" label="Сохранить настройки" icon="pi pi-check" :loading="saving" :disabled="!isDirty" fluid />
         </section>
       </aside>
-    </form>
-
-    <SpeechSynthesisSection
-      v-if="!loading && project"
-      :project-id="project.id"
-      :supported-locales="project.supportedLocales"
-    />
+    </div>
 
     <AiUsageSection v-if="!loading && project" :project-id="project.id" />
   </div>
 </template>
 
 <style scoped>
-.project-status{display:flex;align-items:center;gap:11px;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:14px}.project-status>span:last-child{display:flex;flex-direction:column}.project-status strong{font-size:.78rem}.project-status small{font-size:.65rem;color:var(--muted);margin-top:2px}.page-message{margin-bottom:18px}.message-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}.settings-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px;align-items:start}.settings-section{padding:26px}.section-title{display:flex;align-items:flex-start;gap:13px;padding-bottom:21px;margin-bottom:21px;border-bottom:1px solid #eeeeea}.settings-section.collapsed .section-title{padding-bottom:0;margin-bottom:0;border-bottom:0}.section-title>div{min-width:0;flex:1}.section-title>button{flex:0 0 auto}.section-title h2{font-size:1.08rem}.section-title p{color:var(--muted);font-size:.76rem;margin:4px 0 0}.section-icon{display:grid;place-items:center;width:39px;height:39px;border-radius:12px;flex:0 0 auto}.section-icon.lime{background:#f1f8d8;color:#729500}.section-icon.violet{background:#f0edff;color:#755ce1}.section-icon.coral{background:#fff0eb;color:#d96747}.form-grid{display:grid;gap:18px}.form-grid.columns{grid-template-columns:minmax(180px,.7fr) minmax(260px,1.3fr)}.field small{font-size:.68rem;color:#999d94;text-align:right}.assistant-fields{display:grid;grid-template-columns:140px minmax(0,1fr);gap:24px}.assistant-preview{display:flex;flex-direction:column;align-items:center;padding:22px 12px;background:#f8f8f5;border:1px solid #ecece7;border-radius:17px}.assistant-orbit{display:grid;place-items:center;width:76px;height:76px;border-radius:50%;background:linear-gradient(145deg,#8e77f5,#755ce5);box-shadow:0 0 0 8px #eeebff,0 13px 26px rgba(117,92,229,.24);margin:8px 0 20px}.assistant-orbit span{font:700 1.7rem Manrope;color:#fff}.assistant-preview small{font-size:.62rem;text-transform:uppercase;letter-spacing:.09em;color:#979b92}.assistant-preview strong{font-size:.84rem;margin-top:4px;text-align:center}.settings-aside{position:sticky;top:24px}.meta-card .eyebrow{margin-bottom:14px}.meta-row{padding:12px 0;border-top:1px solid #eeeeea}.meta-row span,.meta-row code{display:block}.meta-row span{font-size:.68rem;color:var(--muted);margin-bottom:5px}.meta-row code{font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#343832}.meta-card p{display:flex;gap:8px;margin:14px 0 0;padding:11px;background:#f8f8f5;border-radius:11px;color:var(--muted);font-size:.68rem;line-height:1.45}.meta-card p i{margin-top:2px}.save-card{display:flex;flex-direction:column;gap:14px;padding:20px;background:#24271f;color:#fff;border-radius:18px}.save-card strong,.save-card span{display:block}.save-card strong{font-size:.83rem}.save-card span{font-size:.69rem;color:#a5aa9e;line-height:1.4;margin-top:4px}.save-card :deep(.p-message-text){font-size:.72rem}.skeleton-card{display:flex;flex-direction:column;gap:20px}.skeleton-card:nth-child(2){min-height:280px}
+.project-status{display:flex;align-items:center;gap:11px;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:14px}.project-status>span:last-child{display:flex;flex-direction:column}.project-status strong{font-size:.78rem}.project-status small{font-size:.65rem;color:var(--muted);margin-top:2px}.page-message{margin-bottom:18px}.message-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}.settings-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px;align-items:start}.settings-main-tts{margin-top:0}.settings-section{padding:26px}.section-title{display:flex;align-items:flex-start;gap:13px;padding-bottom:21px;margin-bottom:21px;border-bottom:1px solid #eeeeea}.settings-section.collapsed .section-title{padding-bottom:0;margin-bottom:0;border-bottom:0}.section-title>div{min-width:0;flex:1}.section-title>button{flex:0 0 auto}.section-title h2{font-size:1.08rem}.section-title p{color:var(--muted);font-size:.76rem;margin:4px 0 0}.section-icon{display:grid;place-items:center;width:39px;height:39px;border-radius:12px;flex:0 0 auto}.section-icon.lime{background:#f1f8d8;color:#729500}.section-icon.violet{background:#f0edff;color:#755ce1}.section-icon.coral{background:#fff0eb;color:#d96747}.form-grid{display:grid;gap:18px}.form-grid.columns{grid-template-columns:minmax(180px,.7fr) minmax(260px,1.3fr)}.field small{font-size:.68rem;color:#999d94;text-align:right}.assistant-fields{display:grid;grid-template-columns:140px minmax(0,1fr);gap:24px}.assistant-preview{display:flex;flex-direction:column;align-items:center;padding:22px 12px;background:#f8f8f5;border:1px solid #ecece7;border-radius:17px}.assistant-orbit{display:grid;place-items:center;width:76px;height:76px;border-radius:50%;background:linear-gradient(145deg,#8e77f5,#755ce5);box-shadow:0 0 0 8px #eeebff,0 13px 26px rgba(117,92,229,.24);margin:8px 0 20px}.assistant-orbit span{font:700 1.7rem Manrope;color:#fff}.assistant-preview small{font-size:.62rem;text-transform:uppercase;letter-spacing:.09em;color:#979b92}.assistant-preview strong{font-size:.84rem;margin-top:4px;text-align:center}.settings-aside{position:sticky;top:24px}.meta-card .eyebrow{margin-bottom:14px}.meta-row{padding:12px 0;border-top:1px solid #eeeeea}.meta-row span,.meta-row code{display:block}.meta-row span{font-size:.68rem;color:var(--muted);margin-bottom:5px}.meta-row code{font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#343832}.meta-card p{display:flex;gap:8px;margin:14px 0 0;padding:11px;background:#f8f8f5;border-radius:11px;color:var(--muted);font-size:.68rem;line-height:1.45}.meta-card p i{margin-top:2px}.save-card{display:flex;flex-direction:column;gap:14px;padding:20px;background:#24271f;color:#fff;border-radius:18px}.save-card strong,.save-card span{display:block}.save-card strong{font-size:.83rem}.save-card span{font-size:.69rem;color:#a5aa9e;line-height:1.4;margin-top:4px}.save-card :deep(.p-message-text){font-size:.72rem}.skeleton-card{display:flex;flex-direction:column;gap:20px}.skeleton-card:nth-child(2){min-height:280px}
 @media(max-width:1050px){.settings-layout{grid-template-columns:1fr}.settings-aside{position:static;display:grid;grid-template-columns:1fr 1fr}.save-card{align-self:stretch;justify-content:center}}
 @media(max-width:700px){.settings-section{padding:20px}.form-grid.columns,.assistant-fields,.settings-aside{grid-template-columns:1fr}.assistant-preview{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;text-align:left;column-gap:18px}.assistant-orbit{grid-row:1/3;margin:4px 0}.assistant-preview small,.assistant-preview strong{text-align:left}.section-title{align-items:center}.project-status{width:100%}}
 .section-icon.green{background:#e8f7e9;color:#469a51}.section-icon.blue{background:#e8f2fb;color:#397dad}.integration-unknown{margin-left:auto;display:flex;align-items:center;gap:7px;color:#777c72;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.voice-settings{display:flex;flex-direction:column;gap:18px}.setting-toggle{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:15px}.setting-toggle strong,.setting-toggle span{display:block}.setting-toggle strong{font-size:.82rem}.setting-toggle span{max-width:620px;margin-top:4px;color:var(--muted);font-size:.7rem;line-height:1.45}.setting-toggle.compact{min-height:67px}.setting-toggle.disabled{opacity:.6}
