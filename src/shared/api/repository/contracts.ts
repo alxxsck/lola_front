@@ -16,6 +16,11 @@ import type {
   ScenarioActionDefinition,
   ScenarioRun,
   EventLog,
+  EventLogStatus,
+  UserAttributeSchema,
+  UserAttributeMutation,
+  UserAttributeType,
+  UserAttributeValidation,
   UiElement,
 } from '@/shared/types/domain'
 
@@ -36,6 +41,7 @@ export interface RepositoryCapabilities {
   operations: boolean
   auditLogs: boolean
   adminMessaging: boolean
+  userAttributes: boolean
 }
 
 type UiElementCreateBase = Pick<UiElement, 'name' | 'code'> & Partial<Pick<UiElement, 'config' | 'enabled'>>
@@ -59,6 +65,31 @@ export interface CursorPage<T> {
   nextCursor: string | null
 }
 
+export interface UserAttributeDefinitionInput {
+  key: string
+  label: string
+  description?: string
+  type: UserAttributeType
+  required?: boolean
+  clientVisible?: boolean
+  validation?: UserAttributeValidation
+  enabled?: boolean
+  position?: number
+}
+
+export type UpdateUserAttributeDefinitionInput = Partial<Omit<UserAttributeDefinitionInput, 'key' | 'type' | 'description'>> & { description?: string | null }
+
+export interface EventLogFilters extends CursorPageRequest {
+  eventCode?: string
+  externalUserId?: string
+  source?: EventLog['source']
+  status?: EventLogStatus
+  receivedFrom?: string
+  receivedTo?: string
+  occurredFrom?: string
+  occurredTo?: string
+}
+
 export interface LolaRepository {
   readonly mode: RepositoryMode
   readonly capabilities: RepositoryCapabilities
@@ -74,6 +105,10 @@ export interface LolaRepository {
   getEvents(projectId: string): Promise<EventDefinition[]>
   saveEvent(projectId: string, value: SaveEventDefinition): Promise<EventDefinition>
   deleteEvent(projectId: string, id: string): Promise<void>
+  getUserAttributeSchema(projectId: string): Promise<UserAttributeSchema>
+  createUserAttributeDefinition(projectId: string, value: UserAttributeDefinitionInput): Promise<UserAttributeMutation>
+  updateUserAttributeDefinition(projectId: string, id: string, value: UpdateUserAttributeDefinitionInput): Promise<UserAttributeMutation>
+  deleteUserAttributeDefinition(projectId: string, id: string): Promise<UserAttributeMutation>
   getScenarios(projectId: string): Promise<Scenario[]>
   getActionDefinitions(projectId: string): Promise<ScenarioActionDefinition[]>
   saveScenario(projectId: string, value: SaveScenario): Promise<Scenario>
@@ -85,6 +120,8 @@ export interface LolaRepository {
   getMessages(projectId: string, userId: string, conversationId: string, request?: CursorPageRequest): Promise<CursorPage<ConversationMessage>>
   sendAction(session: ActiveSession, action: ManualAction): Promise<{ commandId: string; status: string }>
   getEventLogs(projectId: string): Promise<EventLog[]>
+  getEventLogPage(projectId: string, filters?: EventLogFilters): Promise<CursorPage<EventLog>>
+  getEventLog(projectId: string, eventId: string): Promise<EventLog>
   getScenarioRuns(projectId: string): Promise<ScenarioRun[]>
   getAuditLogs(projectId: string): Promise<AuditLog[]>
   sendAdminMessage(projectId: string, userId: string, message: AdminMessageRequest): Promise<AdminMessageResult>

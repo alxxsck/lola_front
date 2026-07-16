@@ -6,11 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EventLogResponseDtoContext } from "./eventLogResponseDtoContext";
-import type { EndUserResponseDto } from "./endUserResponseDto";
-import type { EventLogResponseDtoError } from "./eventLogResponseDtoError";
-import type { EventDefinitionResponseDto } from "./eventDefinitionResponseDto";
-import type { EventLogResponseDtoExternalEventId } from "./eventLogResponseDtoExternalEventId";
-import type { EventLogResponseDtoMessage } from "./eventLogResponseDtoMessage";
+import type { EventLogUserRefResponseDto } from "./eventLogUserRefResponseDto";
+import type { EventLogDefinitionRefResponseDto } from "./eventLogDefinitionRefResponseDto";
 import type { EventLogResponseDtoPayload } from "./eventLogResponseDtoPayload";
 import type { EventLogResponseDtoProcessingResult } from "./eventLogResponseDtoProcessingResult";
 import type { EventSource } from "./eventSource";
@@ -18,17 +15,17 @@ import type { EventStatus } from "./eventStatus";
 
 export interface EventLogResponseDto {
   context: EventLogResponseDtoContext;
-  endUser: EndUserResponseDto;
+  endUser: EventLogUserRefResponseDto;
   endUserId: string;
   /** @nullable */
-  error?: EventLogResponseDtoError;
-  eventDefinition: EventDefinitionResponseDto;
+  error?: string | null;
+  eventDefinition: EventLogDefinitionRefResponseDto;
   eventDefinitionId: string;
   /** @nullable */
-  externalEventId?: EventLogResponseDtoExternalEventId;
+  externalEventId?: string | null;
   id: string;
   /** @nullable */
-  message?: EventLogResponseDtoMessage;
+  message?: string | null;
   occurredAt: string;
   payload: EventLogResponseDtoPayload;
   /** @nullable */

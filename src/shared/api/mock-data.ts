@@ -181,9 +181,9 @@ export const demoElements: UiElement[] = [
 ]
 
 export const demoEvents: EventDefinition[] = [
-  { id: 'evt_1', projectId: demoProject.id, code: 'registration_completed', name: 'Регистрация завершена', description: 'Пользователь завершил регистрацию', version: 1, payloadSchema: { type: 'object', properties: { language: { type: 'string' }, country: { type: 'string' } }, required: ['language'] }, enabled: true },
-  { id: 'evt_2', projectId: demoProject.id, code: 'deposit_failed', name: 'Ошибка пополнения', description: 'Пополнение не прошло', version: 1, payloadSchema: { type: 'object', properties: { reason: { type: 'string' }, amount: { type: 'number' } }, required: ['reason'] }, enabled: true },
-  { id: 'evt_3', projectId: demoProject.id, code: 'email_confirmation_required', name: 'Нужно подтвердить почту', version: 1, payloadSchema: { type: 'object', properties: { email: { type: 'string' } }, required: [] }, enabled: false },
+  { id: 'evt_1', projectId: demoProject.id, code: 'registration_completed', name: 'Регистрация завершена', description: 'Пользователь завершил регистрацию', version: 1, payloadSchema: { type: 'object', properties: { language: { type: 'string' }, country: { type: 'string' } }, required: ['language'] }, clientIngestible: true, enabled: true },
+  { id: 'evt_2', projectId: demoProject.id, code: 'deposit_failed', name: 'Ошибка пополнения', description: 'Пополнение не прошло', version: 1, payloadSchema: { type: 'object', properties: { reason: { type: 'string' }, amount: { type: 'number' } }, required: ['reason'] }, clientIngestible: false, enabled: true },
+  { id: 'evt_3', projectId: demoProject.id, code: 'email_confirmation_required', name: 'Нужно подтвердить почту', version: 1, payloadSchema: { type: 'object', properties: { email: { type: 'string' } }, required: [] }, clientIngestible: true, enabled: false },
 ]
 
 export const demoScenarios: Scenario[] = [

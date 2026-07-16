@@ -27,6 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
     projects.value = context.projects
     const selectedId = context.projects.length === 1 ? context.projects[0]?.id : context.selectedProjectId
     project.value = context.projects.find((item) => item.id === selectedId) ?? null
+    if (project.value && user.value) user.value = { ...user.value, role: project.value.memberRole ?? user.value.role }
     if (project.value) storeSelectedProjectId(project.value.id)
   }
 
@@ -57,12 +58,15 @@ export const useAuthStore = defineStore('auth', () => {
     const selected = projects.value.find((item) => item.id === projectId)
     if (!selected) throw new Error('Проект недоступен текущему пользователю')
     project.value = selected
+    if (user.value) user.value = { ...user.value, role: selected.memberRole ?? 'VIEWER' }
     storeSelectedProjectId(selected.id)
   }
 
   function updateProject(next: Project) {
-    project.value = next
-    projects.value = projects.value.map((item) => item.id === next.id ? next : item)
+    const memberRole = projects.value.find((item) => item.id === next.id)?.memberRole
+    const projectWithRole = { ...next, memberRole }
+    project.value = projectWithRole
+    projects.value = projects.value.map((item) => item.id === next.id ? projectWithRole : item)
   }
 
   async function logout(allDevices = false) {

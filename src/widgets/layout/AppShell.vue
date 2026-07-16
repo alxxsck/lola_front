@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
@@ -16,18 +16,19 @@ const actionDefinitions = useActionDefinitionsStore()
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null)
 const sidebarOpen = ref(false)
 
-const navigation = [
+const navigation = computed(() => [
   { label: 'Обзор', icon: 'pi pi-sparkles', to: '/overview' },
   { label: 'Проект', icon: 'pi pi-sliders-h', to: '/project' },
   { label: 'База знаний', icon: 'pi pi-book', to: '/knowledge' },
   { label: 'Интерфейс', icon: 'pi pi-th-large', to: '/interface' },
   { label: 'События', icon: 'pi pi-bolt', to: '/events' },
+  { label: 'Журнал событий', icon: 'pi pi-list', to: '/event-logs', adminOnly: true },
   { label: 'Действия', icon: 'pi pi-directions-alt', to: '/actions' },
   { label: 'Сценарии', icon: 'pi pi-sitemap', to: '/scenarios' },
   { label: 'Операции', icon: 'pi pi-chart-bar', to: '/operations' },
   { label: 'Пользователи', icon: 'pi pi-users', to: '/users' },
   { label: 'Сейчас онлайн', icon: 'pi pi-circle-fill', to: '/live', live: true },
-]
+].filter((item) => !item.adminOnly || auth.user?.role === 'OWNER' || auth.user?.role === 'ADMIN'))
 
 const profileItems = [
   { label: auth.user?.email, disabled: true },

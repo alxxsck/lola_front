@@ -8,6 +8,7 @@
 import type { CreateEventDefinitionDtoPayloadSchema } from "./createEventDefinitionDtoPayloadSchema";
 
 export interface CreateEventDefinitionDto {
+  clientIngestible?: boolean;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   code: string;
   /** @maxLength 2000 */

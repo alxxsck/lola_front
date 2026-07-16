@@ -5,7 +5,20 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CompatibilitySessionDtoAttributes } from "./compatibilitySessionDtoAttributes";
+import type { CompatibilitySessionDtoRecipient } from "./compatibilitySessionDtoRecipient";
 
 export interface CompatibilitySessionDto {
-  [key: string]: unknown;
+  attributes?: CompatibilitySessionDtoAttributes;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  customerId: string;
+  recipient?: CompatibilitySessionDtoRecipient;
+  /**
+   * @minimum 300
+   * @maximum 604800
+   */
+  ttlSeconds?: number;
 }

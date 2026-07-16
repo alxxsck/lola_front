@@ -5,7 +5,14 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateGuestSessionDtoContext } from "./createGuestSessionDtoContext";
 
 export interface CreateGuestSessionDto {
-  [key: string]: unknown;
+  context?: CreateGuestSessionDtoContext;
+  locale?: string;
+  /**
+   * @minimum 300
+   * @maximum 604800
+   */
+  ttlSeconds?: number;
 }

@@ -11,6 +11,7 @@ import type {
   AdminConversationsListMessagesParams,
   AdminConversationsListParams,
   AdminConversationsPageResponseDto,
+  AdminEventLogsListParams,
   AdminSpeechVoicesParams,
   AdminUserResponseDto,
   AiUsageReportParams,
@@ -38,18 +39,23 @@ import type {
   CreateScenarioActionDefinitionDto,
   CreateScenarioDto,
   CreateUiElementDto,
+  CreateUserAttributeDefinitionDto,
   DeleteKnowledgeDocumentResponseDto,
   EndUserResponseDto,
   EndVoiceSessionDto,
   EventDefinitionResponseDto,
   EventIngestResponseDto,
+  EventLogPageResponseDto,
   EventLogResponseDto,
+  IngestClientEventDto,
   IngestEventDto,
+  InteractionSessionResponseDto,
   KnowledgeDocumentDetailResponseDto,
   KnowledgeDocumentListResponseDto,
   KnowledgeDocumentMutationResponseDto,
   KnowledgeListParams,
   KnowledgeUploadFileBody,
+  LegacyEventLogResponseDto,
   ListMessagesDto,
   ListThreadMessagesDto,
   LogoutDto,
@@ -77,7 +83,10 @@ import type {
   UpdateScenarioDto,
   UpdateSpeechSettingsDto,
   UpdateUiElementDto,
+  UpdateUserAttributeDefinitionDto,
   UpsertUserDto,
+  UserAttributeDefinitionMutationResponseDto,
+  UserAttributeSchemaResponseDto,
 } from "./models";
 
 import { request } from "../http/orval-mutator";
@@ -308,6 +317,35 @@ export const platformUpdateEventDefinition = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateEventDefinitionDto,
+    },
+    options,
+  );
+};
+
+export const adminEventLogsList = (
+  projectId: string,
+  params?: AdminEventLogsListParams,
+  options?: SecondParameter<typeof request<EventLogPageResponseDto>>,
+) => {
+  return request<EventLogPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-logs`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const adminEventLogsGet = (
+  projectId: string,
+  eventId: string,
+  options?: SecondParameter<typeof request<EventLogResponseDto>>,
+) => {
+  return request<EventLogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-logs/${eventId}`,
+      method: "GET",
     },
     options,
   );
@@ -636,6 +674,72 @@ export const platformUpdateUi = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateUiElementDto,
+    },
+    options,
+  );
+};
+
+export const platformUserAttributeDefinitions = (
+  projectId: string,
+  options?: SecondParameter<typeof request<UserAttributeSchemaResponseDto>>,
+) => {
+  return request<UserAttributeSchemaResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/user-attribute-definitions`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const platformCreateUserAttributeDefinition = (
+  projectId: string,
+  createUserAttributeDefinitionDto: BodyType<CreateUserAttributeDefinitionDto>,
+  options?: SecondParameter<
+    typeof request<UserAttributeDefinitionMutationResponseDto>
+  >,
+) => {
+  return request<UserAttributeDefinitionMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/user-attribute-definitions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createUserAttributeDefinitionDto,
+    },
+    options,
+  );
+};
+
+export const platformDeleteUserAttributeDefinition = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<
+    typeof request<UserAttributeDefinitionMutationResponseDto>
+  >,
+) => {
+  return request<UserAttributeDefinitionMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/user-attribute-definitions/${id}`,
+      method: "DELETE",
+    },
+    options,
+  );
+};
+
+export const platformUpdateUserAttributeDefinition = (
+  projectId: string,
+  id: string,
+  updateUserAttributeDefinitionDto: BodyType<UpdateUserAttributeDefinitionDto>,
+  options?: SecondParameter<
+    typeof request<UserAttributeDefinitionMutationResponseDto>
+  >,
+) => {
+  return request<UserAttributeDefinitionMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/user-attribute-definitions/${id}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateUserAttributeDefinitionDto,
     },
     options,
   );
@@ -1055,19 +1159,34 @@ export const eventsIngest = (
 
 export const eventsList = (
   projectId: string,
-  options?: SecondParameter<typeof request<EventLogResponseDto[]>>,
+  options?: SecondParameter<typeof request<LegacyEventLogResponseDto[]>>,
 ) => {
-  return request<EventLogResponseDto[]>(
+  return request<LegacyEventLogResponseDto[]>(
     { url: `/api/v1/events/admin/${projectId}`, method: "GET" },
+    options,
+  );
+};
+
+export const eventsIngestClient = (
+  ingestClientEventDto: BodyType<IngestClientEventDto>,
+  options?: SecondParameter<typeof request<EventIngestResponseDto>>,
+) => {
+  return request<EventIngestResponseDto>(
+    {
+      url: `/api/v1/events/client`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: ingestClientEventDto,
+    },
     options,
   );
 };
 
 export const interactionSessionsCreate = (
   createInteractionSessionDto: BodyType<CreateInteractionSessionDto>,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<typeof request<InteractionSessionResponseDto>>,
 ) => {
-  return request<void>(
+  return request<InteractionSessionResponseDto>(
     {
       url: `/api/v1/interaction-sessions`,
       method: "POST",
@@ -1080,9 +1199,9 @@ export const interactionSessionsCreate = (
 
 export const interactionSessionsIdentifyGuest = (
   createInteractionSessionDto: BodyType<CreateInteractionSessionDto>,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<typeof request<InteractionSessionResponseDto>>,
 ) => {
-  return request<void>(
+  return request<InteractionSessionResponseDto>(
     {
       url: `/api/v1/interaction-sessions/identify`,
       method: "POST",
@@ -1140,9 +1259,9 @@ export const compatibilityMessengerListThreads = (
 
 export const sessionsCreate = (
   createGuestSessionDto: BodyType<CreateGuestSessionDto>,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<typeof request<InteractionSessionResponseDto>>,
 ) => {
-  return request<void>(
+  return request<InteractionSessionResponseDto>(
     {
       url: `/api/v1/public/sessions`,
       method: "POST",
@@ -1183,6 +1302,15 @@ export const integrationUsersUpsert = (
       headers: { "Content-Type": "application/json" },
       data: upsertUserDto,
     },
+    options,
+  );
+};
+
+export const integrationUsersSchema = (
+  options?: SecondParameter<typeof request<UserAttributeSchemaResponseDto>>,
+) => {
+  return request<UserAttributeSchemaResponseDto>(
+    { url: `/api/v1/users/schema`, method: "GET" },
     options,
   );
 };
@@ -1309,6 +1437,12 @@ export type PlatformDeleteEventDefinitionResult = NonNullable<
 export type PlatformUpdateEventDefinitionResult = NonNullable<
   Awaited<ReturnType<typeof platformUpdateEventDefinition>>
 >;
+export type AdminEventLogsListResult = NonNullable<
+  Awaited<ReturnType<typeof adminEventLogsList>>
+>;
+export type AdminEventLogsGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminEventLogsGet>>
+>;
 export type KnowledgeListResult = NonNullable<
   Awaited<ReturnType<typeof knowledgeList>>
 >;
@@ -1374,6 +1508,18 @@ export type PlatformDeleteUiResult = NonNullable<
 >;
 export type PlatformUpdateUiResult = NonNullable<
   Awaited<ReturnType<typeof platformUpdateUi>>
+>;
+export type PlatformUserAttributeDefinitionsResult = NonNullable<
+  Awaited<ReturnType<typeof platformUserAttributeDefinitions>>
+>;
+export type PlatformCreateUserAttributeDefinitionResult = NonNullable<
+  Awaited<ReturnType<typeof platformCreateUserAttributeDefinition>>
+>;
+export type PlatformDeleteUserAttributeDefinitionResult = NonNullable<
+  Awaited<ReturnType<typeof platformDeleteUserAttributeDefinition>>
+>;
+export type PlatformUpdateUserAttributeDefinitionResult = NonNullable<
+  Awaited<ReturnType<typeof platformUpdateUserAttributeDefinition>>
 >;
 export type PlatformUsersResult = NonNullable<
   Awaited<ReturnType<typeof platformUsers>>
@@ -1467,6 +1613,9 @@ export type EventsIngestResult = NonNullable<
 export type EventsListResult = NonNullable<
   Awaited<ReturnType<typeof eventsList>>
 >;
+export type EventsIngestClientResult = NonNullable<
+  Awaited<ReturnType<typeof eventsIngestClient>>
+>;
 export type InteractionSessionsCreateResult = NonNullable<
   Awaited<ReturnType<typeof interactionSessionsCreate>>
 >;
@@ -1493,6 +1642,9 @@ export type IntegrationUsersListResult = NonNullable<
 >;
 export type IntegrationUsersUpsertResult = NonNullable<
   Awaited<ReturnType<typeof integrationUsersUpsert>>
+>;
+export type IntegrationUsersSchemaResult = NonNullable<
+  Awaited<ReturnType<typeof integrationUsersSchema>>
 >;
 export type VoiceStartResult = NonNullable<
   Awaited<ReturnType<typeof voiceStart>>

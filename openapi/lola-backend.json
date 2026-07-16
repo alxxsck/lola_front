@@ -468,9 +468,6 @@
           "billedCost": {
             "type": "string"
           },
-          "cacheWriteInputTokens": {
-            "type": "number"
-          },
           "cachedInputAudioTokens": {
             "type": "number"
           },
@@ -481,6 +478,9 @@
             "type": "number"
           },
           "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheWriteInputTokens": {
             "type": "number"
           },
           "currency": {
@@ -728,9 +728,6 @@
           "billedCost": {
             "type": "string"
           },
-          "cacheWriteInputTokens": {
-            "type": "number"
-          },
           "cachedInputAudioTokens": {
             "type": "number"
           },
@@ -741,6 +738,9 @@
             "type": "number"
           },
           "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheWriteInputTokens": {
             "type": "number"
           },
           "durationSeconds": {
@@ -1017,7 +1017,29 @@
         "type": "object"
       },
       "CompatibilitySessionDto": {
-        "properties": {},
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "customerId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "recipient": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "ttlSeconds": {
+            "maximum": 604800,
+            "minimum": 300,
+            "type": "number"
+          }
+        },
+        "required": [
+          "customerId"
+        ],
         "type": "object"
       },
       "CompatibilityStartVoiceSessionDto": {
@@ -1060,7 +1082,7 @@
       "ConnectVoiceSessionDto": {
         "properties": {
           "offerSdp": {
-            "description": "WebRTC SDP offer",
+            "description": "Deprecated WebRTC SDP offer",
             "maxLength": 100000,
             "type": "string"
           }
@@ -1099,6 +1121,10 @@
       },
       "CreateEventDefinitionDto": {
         "properties": {
+          "clientIngestible": {
+            "default": false,
+            "type": "boolean"
+          },
           "code": {
             "pattern": "^[a-z][a-z0-9_.-]*$",
             "type": "string"
@@ -1132,11 +1158,54 @@
         "type": "object"
       },
       "CreateGuestSessionDto": {
-        "properties": {},
+        "properties": {
+          "context": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "ttlSeconds": {
+            "maximum": 604800,
+            "minimum": 300,
+            "type": "number"
+          }
+        },
         "type": "object"
       },
       "CreateInteractionSessionDto": {
-        "properties": {},
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "description": "Complete user attribute snapshot validated against the current project schema. Omit to preserve stored attributes.",
+            "type": "object"
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "externalUserId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "profile": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "ttlSeconds": {
+            "maximum": 604800,
+            "minimum": 300,
+            "type": "number"
+          }
+        },
+        "required": [
+          "externalUserId"
+        ],
         "type": "object"
       },
       "CreateKnowledgeTextDto": {
@@ -1449,6 +1518,59 @@
         ],
         "type": "object"
       },
+      "CreateUserAttributeDefinitionDto": {
+        "properties": {
+          "clientVisible": {
+            "default": false,
+            "type": "boolean"
+          },
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "type": "boolean"
+          },
+          "key": {
+            "pattern": "^[a-z][a-zA-Z0-9_]{0,63}$",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "position": {
+            "default": 0,
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "required": {
+            "default": false,
+            "type": "boolean"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserAttributeType"
+              }
+            ]
+          },
+          "validation": {
+            "additionalProperties": true,
+            "description": "Typed constraints: minLength/maxLength for STRING, minimum/maximum for NUMBER, and allowedValues for any type.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "type"
+        ],
+        "type": "object"
+      },
       "DeleteKnowledgeDocumentResponseDto": {
         "properties": {
           "deleted": {
@@ -1504,6 +1626,11 @@
         "properties": {
           "attributes": {
             "additionalProperties": true,
+            "type": "object"
+          },
+          "attributesSchemaRevisionId": {
+            "format": "uuid",
+            "nullable": true,
             "type": "object"
           },
           "createdAt": {
@@ -1574,6 +1701,9 @@
       },
       "EventDefinitionResponseDto": {
         "properties": {
+          "clientIngestible": {
+            "type": "boolean"
+          },
           "code": {
             "type": "string"
           },
@@ -1619,6 +1749,7 @@
           "version",
           "payloadSchema",
           "enabled",
+          "clientIngestible",
           "createdAt",
           "updatedAt"
         ],
@@ -1646,6 +1777,14 @@
             },
             "type": "array"
           },
+          "processingStatus": {
+            "enum": [
+              "received",
+              "processed",
+              "failed"
+            ],
+            "type": "string"
+          },
           "scenarioRunIds": {
             "items": {
               "format": "uuid",
@@ -1653,16 +1792,76 @@
             },
             "type": "array"
           },
-          "success": {
-            "example": true,
-            "type": "boolean"
+          "status": {
+            "enum": [
+              "accepted"
+            ],
+            "type": "string"
           }
         },
         "required": [
-          "success",
+          "status",
+          "processingStatus",
           "eventId",
           "matchedScenarios",
           "scenarioRunIds"
+        ],
+        "type": "object"
+      },
+      "EventLogDefinitionRefResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "version"
+        ],
+        "type": "object"
+      },
+      "EventLogPageInfoResponseDto": {
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "hasMore"
+        ],
+        "type": "object"
+      },
+      "EventLogPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EventLogResponseDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/EventLogPageInfoResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "pageInfo"
         ],
         "type": "object"
       },
@@ -1673,7 +1872,7 @@
             "type": "object"
           },
           "endUser": {
-            "$ref": "#/components/schemas/EndUserResponseDto"
+            "$ref": "#/components/schemas/EventLogUserRefResponseDto"
           },
           "endUserId": {
             "format": "uuid",
@@ -1681,10 +1880,10 @@
           },
           "error": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "eventDefinition": {
-            "$ref": "#/components/schemas/EventDefinitionResponseDto"
+            "$ref": "#/components/schemas/EventLogDefinitionRefResponseDto"
           },
           "eventDefinitionId": {
             "format": "uuid",
@@ -1692,7 +1891,7 @@
           },
           "externalEventId": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "id": {
             "format": "uuid",
@@ -1700,7 +1899,7 @@
           },
           "message": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "occurredAt": {
             "format": "date-time",
@@ -1754,6 +1953,22 @@
         ],
         "type": "object"
       },
+      "EventLogUserRefResponseDto": {
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId"
+        ],
+        "type": "object"
+      },
       "EventSource": {
         "enum": [
           "SERVER",
@@ -1769,6 +1984,45 @@
           "FAILED"
         ],
         "type": "string"
+      },
+      "IngestClientEventDto": {
+        "properties": {
+          "context": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "eventCode": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "externalEventId": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 5000,
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "timestamp": {
+            "deprecated": true,
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventCode",
+          "payload"
+        ],
+        "type": "object"
       },
       "IngestEventDto": {
         "properties": {
@@ -1786,7 +2040,6 @@
             "type": "string"
           },
           "externalUserId": {
-            "deprecated": true,
             "maxLength": 200,
             "minLength": 1,
             "type": "string"
@@ -1796,7 +2049,6 @@
             "type": "string"
           },
           "occurredAt": {
-            "deprecated": true,
             "format": "date-time",
             "type": "string"
           },
@@ -1809,10 +2061,12 @@
             "type": "string"
           },
           "timestamp": {
+            "deprecated": true,
             "format": "date-time",
             "type": "string"
           },
           "userId": {
+            "deprecated": true,
             "maxLength": 200,
             "minLength": 1,
             "type": "string"
@@ -1821,6 +2075,116 @@
         "required": [
           "eventCode",
           "payload"
+        ],
+        "type": "object"
+      },
+      "InteractionSessionProjectResponseDto": {
+        "properties": {
+          "assistantName": {
+            "type": "string"
+          },
+          "defaultLocale": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "assistantName",
+          "defaultLocale",
+          "settings"
+        ],
+        "type": "object"
+      },
+      "InteractionSessionRealtimeResponseDto": {
+        "properties": {
+          "anyCablePath": {
+            "type": "string"
+          },
+          "socketIoNamespace": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "socketIoNamespace",
+          "anyCablePath"
+        ],
+        "type": "object"
+      },
+      "InteractionSessionResponseDto": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "chatId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "project": {
+            "$ref": "#/components/schemas/InteractionSessionProjectResponseDto"
+          },
+          "realtime": {
+            "$ref": "#/components/schemas/InteractionSessionRealtimeResponseDto"
+          },
+          "sessionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "upgradedFrom": {
+            "$ref": "#/components/schemas/UpgradedGuestResponseDto"
+          },
+          "user": {
+            "$ref": "#/components/schemas/InteractionSessionUserResponseDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "chatId",
+          "sessionId",
+          "expiresAt",
+          "user",
+          "project",
+          "realtime"
+        ],
+        "type": "object"
+      },
+      "InteractionSessionUserResponseDto": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "externalId",
+          "isGuest",
+          "attributes"
         ],
         "type": "object"
       },
@@ -2026,6 +2390,218 @@
           "TEXT"
         ],
         "type": "string"
+      },
+      "LegacyEventDefinitionResponseDto": {
+        "properties": {
+          "clientIngestible": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "payloadSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "code",
+          "name",
+          "version",
+          "payloadSchema",
+          "enabled",
+          "clientIngestible",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "LegacyEventLogResponseDto": {
+        "properties": {
+          "context": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/LegacyEventUserResponseDto"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "error": {
+            "nullable": true,
+            "type": "string"
+          },
+          "eventDefinition": {
+            "$ref": "#/components/schemas/LegacyEventDefinitionResponseDto"
+          },
+          "eventDefinitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "externalEventId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "message": {
+            "nullable": true,
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "processingResult": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventSource"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "eventDefinitionId",
+          "endUserId",
+          "source",
+          "payload",
+          "context",
+          "occurredAt",
+          "receivedAt",
+          "status",
+          "eventDefinition",
+          "endUser"
+        ],
+        "type": "object"
+      },
+      "LegacyEventUserResponseDto": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "attributesSchemaRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "locale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "preferences": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "profile": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "segment": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "externalId",
+          "isGuest",
+          "profile",
+          "attributes",
+          "preferences",
+          "lastSeenAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
       },
       "ListMessagesDto": {
         "properties": {},
@@ -2384,7 +2960,8 @@
       },
       "RealtimeModel": {
         "enum": [
-          "grok-voice-think-fast-1.0"
+          "grok-voice-think-fast-1.0",
+          "grok-voice-latest"
         ],
         "type": "string"
       },
@@ -3412,6 +3989,9 @@
       },
       "UpdateEventDefinitionDto": {
         "properties": {
+          "clientIngestible": {
+            "type": "boolean"
+          },
           "description": {
             "maxLength": 2000,
             "type": "string"
@@ -3656,6 +4236,59 @@
         },
         "type": "object"
       },
+      "UpdateUserAttributeDefinitionDto": {
+        "properties": {
+          "clientVisible": {
+            "type": "boolean"
+          },
+          "description": {
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "position": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "validation": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "UpgradedGuestResponseDto": {
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mergedIntoExistingUser": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "externalId",
+          "mergedIntoExistingUser"
+        ],
+        "type": "object"
+      },
       "UpsertUserDto": {
         "properties": {
           "attributes": {
@@ -3690,6 +4323,159 @@
           "externalId"
         ],
         "type": "object"
+      },
+      "UserAttributeDefinitionMutationResponseDto": {
+        "properties": {
+          "currentRevision": {
+            "$ref": "#/components/schemas/UserAttributeSchemaRevisionResponseDto"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/UserAttributeDefinitionResponseDto"
+          }
+        },
+        "required": [
+          "definition",
+          "currentRevision"
+        ],
+        "type": "object"
+      },
+      "UserAttributeDefinitionResponseDto": {
+        "properties": {
+          "clientVisible": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserAttributeType"
+              }
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "validation": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "key",
+          "label",
+          "type",
+          "required",
+          "clientVisible",
+          "validation",
+          "enabled",
+          "position",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "UserAttributeSchemaResponseDto": {
+        "properties": {
+          "currentRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserAttributeSchemaRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "definitions": {
+            "items": {
+              "$ref": "#/components/schemas/UserAttributeDefinitionResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "definitions"
+        ],
+        "type": "object"
+      },
+      "UserAttributeSchemaRevisionResponseDto": {
+        "properties": {
+          "clientVisibleKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "schema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "schema",
+          "clientVisibleKeys",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "UserAttributeType": {
+        "enum": [
+          "STRING",
+          "NUMBER",
+          "BOOLEAN",
+          "DATETIME"
+        ],
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -4393,6 +5179,174 @@
         ],
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-logs": {
+      "get": {
+        "operationId": "AdminEventLogs_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventCode",
+            "required": false,
+            "schema": {
+              "maxLength": 120,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "externalUserId",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EventSource"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EventStatus"
+            }
+          },
+          {
+            "in": "query",
+            "name": "receivedFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "receivedTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "occurredFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "occurredTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventLogPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin event logs"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-logs/{eventId}": {
+      "get": {
+        "operationId": "AdminEventLogs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventLogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin event logs"
         ]
       }
     },
@@ -5362,6 +6316,178 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UiElementResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/user-attribute-definitions": {
+      "get": {
+        "operationId": "Platform_userAttributeDefinitions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAttributeSchemaResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "Platform_createUserAttributeDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserAttributeDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAttributeDefinitionMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/user-attribute-definitions/{id}": {
+      "delete": {
+        "operationId": "Platform_deleteUserAttributeDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAttributeDefinitionMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "Platform_updateUserAttributeDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserAttributeDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAttributeDefinitionMutationResponseDto"
                 }
               }
             },
@@ -6446,7 +7572,17 @@
     "/api/v1/events": {
       "post": {
         "operationId": "Events_ingest",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Unique event key, up to 200 characters",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -6498,9 +7634,55 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/EventLogResponseDto"
+                    "$ref": "#/components/schemas/LegacyEventLogResponseDto"
                   },
                   "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/events/client": {
+      "post": {
+        "operationId": "Events_ingestClient",
+        "parameters": [
+          {
+            "description": "Unique event key, up to 200 characters",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestClientEventDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventIngestResponseDto"
                 }
               }
             },
@@ -6533,6 +7715,13 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InteractionSessionResponseDto"
+                }
+              }
+            },
             "description": ""
           }
         },
@@ -6572,6 +7761,13 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InteractionSessionResponseDto"
+                }
+              }
+            },
             "description": ""
           }
         },
@@ -6682,6 +7878,13 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InteractionSessionResponseDto"
+                }
+              }
+            },
             "description": ""
           }
         },
@@ -6770,6 +7973,32 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EndUserResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "integration users"
+        ]
+      }
+    },
+    "/api/v1/users/schema": {
+      "get": {
+        "operationId": "IntegrationUsers_schema",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAttributeSchemaResponseDto"
                 }
               }
             },

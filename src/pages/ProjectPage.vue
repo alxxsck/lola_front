@@ -300,6 +300,11 @@ onBeforeUnmount(() => {
             <div class="field"><label for="timezone">Часовой пояс</label><InputText id="timezone" v-model="form.timezone" placeholder="Europe/Madrid" :disabled="saving" /></div>
             <div class="field"><label for="allowed-origins">Разрешённые origins <span>по одному в строке</span></label><Textarea id="allowed-origins" v-model="form.allowedOrigins" rows="3" class="mono" placeholder="https://app.example.com" :disabled="saving" /></div>
           </div>
+          <RouterLink to="/project/user-attributes" class="contract-link surface-soft">
+            <span class="contract-link-icon"><i class="pi pi-id-card" /></span>
+            <span><strong>Контракт пользовательских полей</strong><small>Типы, required‑поля, ограничения и доступность данных браузеру</small></span>
+            <i class="pi pi-arrow-right" />
+          </RouterLink>
         </section>
 
         <section class="card card-pad settings-section">
@@ -401,4 +406,5 @@ onBeforeUnmount(() => {
 @media(max-width:1050px){.settings-layout{grid-template-columns:1fr}.settings-aside{position:static;display:grid;grid-template-columns:1fr 1fr}.save-card{align-self:stretch;justify-content:center}}
 @media(max-width:700px){.settings-section{padding:20px}.form-grid.columns,.assistant-fields,.settings-aside{grid-template-columns:1fr}.assistant-preview{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;text-align:left;column-gap:18px}.assistant-orbit{grid-row:1/3;margin:4px 0}.assistant-preview small,.assistant-preview strong{text-align:left}.section-title{align-items:center}.project-status{width:100%}.system-prompt-textarea{padding-bottom:40px}.system-prompt-resizer{right:1px;bottom:1px;width:42px;height:42px}}
 .section-icon.green{background:#e8f7e9;color:#469a51}.section-icon.blue{background:#e8f2fb;color:#397dad}.integration-unknown{margin-left:auto;display:flex;align-items:center;gap:7px;color:#777c72;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.voice-settings{display:flex;flex-direction:column;gap:18px}.setting-toggle{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:15px}.setting-toggle strong,.setting-toggle span{display:block}.setting-toggle strong{font-size:.82rem}.setting-toggle span{max-width:620px;margin-top:4px;color:var(--muted);font-size:.7rem;line-height:1.45}.setting-toggle.compact{min-height:67px}.setting-toggle.disabled{opacity:.6}
+.contract-link{display:flex;align-items:center;gap:12px;margin-top:18px;padding:13px 14px;transition:.16s ease}.contract-link:hover{border-color:#cdd7ae;background:#fbfdf5}.contract-link-icon{display:grid;place-items:center;width:37px;height:37px;border-radius:11px;background:#eff8d7;color:#6d8d16}.contract-link>span:nth-child(2){flex:1}.contract-link strong,.contract-link small{display:block}.contract-link strong{font-size:.78rem}.contract-link small{font-size:.67rem;color:var(--muted);margin-top:3px}.contract-link>i{font-size:.75rem;color:#858a80}
 </style>

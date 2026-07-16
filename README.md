@@ -1,6 +1,6 @@
 # Lola CMS
 
-Документация графового редактора сценариев: [docs/scenario-graph-editor.ru.md](docs/scenario-graph-editor.ru.md).
+Документация графового редактора сценариев: [docs/scenario-graph-editor.ru.md](docs/scenario-graph-editor.ru.md). Настройка пользовательских атрибутов и новый журнал событий описаны в [docs/user-attributes-and-event-logs.ru.md](docs/user-attributes-and-event-logs.ru.md).
 
 Административная SaaS-панель для настройки Lola AI Assistant. Это отдельное Vue 3 приложение, которое работает поверх Lola Backend и не входит в пользовательский SDK.
 

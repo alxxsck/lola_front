@@ -8,7 +8,7 @@
 
 export interface ConnectVoiceSessionDto {
   /**
-   * WebRTC SDP offer
+   * Deprecated WebRTC SDP offer
    * @maxLength 100000
    */
   offerSdp: string;

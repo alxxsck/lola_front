@@ -25,6 +25,12 @@ import {
   presenceList,
   adminConversationsList,
   adminConversationsListMessages,
+  adminEventLogsGet,
+  adminEventLogsList,
+  platformCreateUserAttributeDefinition,
+  platformDeleteUserAttributeDefinition,
+  platformUpdateUserAttributeDefinition,
+  platformUserAttributeDefinitions,
 } from '@/shared/api/generated/lola-backend'
 import type { ScenarioResponseDto } from '@/shared/api/generated/models'
 import { toCreateScenarioDto, toUpdateScenarioDto } from './scenario-contract'
@@ -49,6 +55,8 @@ import {
   mapActionDefinition,
   mapConversation,
   mapConversationMessage,
+  mapUserAttributeSchema,
+  mapUserAttributeMutation,
 } from './mappers'
 
 const capabilities: RepositoryCapabilities = {
@@ -66,6 +74,7 @@ const capabilities: RepositoryCapabilities = {
   operations: true,
   auditLogs: true,
   adminMessaging: true,
+  userAttributes: true,
 }
 
 function unsupported(capability: keyof RepositoryCapabilities): never {
@@ -153,6 +162,22 @@ export const apiRepository: LolaRepository = {
     await platformDeleteEventDefinition(projectId, id)
   },
 
+  async getUserAttributeSchema(projectId) {
+    return mapUserAttributeSchema(await platformUserAttributeDefinitions(projectId))
+  },
+
+  async createUserAttributeDefinition(projectId, value) {
+    return mapUserAttributeMutation(await platformCreateUserAttributeDefinition(projectId, { ...value, validation: value.validation ? { ...value.validation } : undefined }))
+  },
+
+  async updateUserAttributeDefinition(projectId, id, value) {
+    return mapUserAttributeMutation(await platformUpdateUserAttributeDefinition(projectId, id, { ...value, validation: value.validation ? { ...value.validation } : undefined }))
+  },
+
+  async deleteUserAttributeDefinition(projectId, id) {
+    return mapUserAttributeMutation(await platformDeleteUserAttributeDefinition(projectId, id))
+  },
+
   async getScenarios(projectId) {
     return (await platformScenarios(projectId)).map(mapScenario)
   },
@@ -198,6 +223,18 @@ export const apiRepository: LolaRepository = {
 
   async getEventLogs(projectId) {
     return (await eventsList(projectId)).map(mapEventLog)
+  },
+
+  async getEventLogPage(projectId, filters) {
+    const response = await adminEventLogsList(projectId, filters)
+    return {
+      items: response.items.map(mapEventLog),
+      nextCursor: response.pageInfo.nextCursor ?? null,
+    }
+  },
+
+  async getEventLog(projectId, eventId) {
+    return mapEventLog(await adminEventLogsGet(projectId, eventId))
   },
 
   async getScenarioRuns(projectId) {

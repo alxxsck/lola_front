@@ -90,6 +90,7 @@ export interface Project {
   }
   organization?: Organization
   _count?: { users: number; scenarios: number; eventLogs: number }
+  memberRole?: CmsUser['role']
 }
 
 export interface CmsUser {
@@ -127,9 +128,56 @@ export interface EventDefinition {
   description?: string
   version: number
   payloadSchema: Record<string, any>
+  clientIngestible: boolean
   enabled: boolean
   createdAt?: string
   updatedAt?: string
+}
+
+export type UserAttributeType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATETIME'
+export type UserAttributeAllowedValue = string | number | boolean
+
+export interface UserAttributeValidation {
+  minLength?: number
+  maxLength?: number
+  minimum?: number
+  maximum?: number
+  allowedValues?: UserAttributeAllowedValue[]
+}
+
+export interface UserAttributeDefinition {
+  id: string
+  projectId: string
+  key: string
+  label: string
+  description?: string
+  type: UserAttributeType
+  required: boolean
+  clientVisible: boolean
+  validation: UserAttributeValidation
+  enabled: boolean
+  position: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UserAttributeSchemaRevision {
+  id: string
+  projectId: string
+  version: number
+  schema: Record<string, unknown>
+  clientVisibleKeys: string[]
+  createdAt: string
+}
+
+export interface UserAttributeSchema {
+  definitions: UserAttributeDefinition[]
+  currentRevision: UserAttributeSchemaRevision | null
+}
+
+export interface UserAttributeMutation {
+  definition: UserAttributeDefinition
+  currentRevision: UserAttributeSchemaRevision
 }
 
 export interface ScenarioAction {
@@ -248,16 +296,20 @@ export interface EventLog {
   id: string
   eventCode: string
   eventName: string
+  eventDefinitionId: string
+  eventVersion: number
   userId: string
   userExternalId: string
   source: 'SERVER' | 'FRONTEND' | 'INTERNAL'
   status: EventLogStatus
+  externalEventId?: string
+  message?: string
   occurredAt: string
   receivedAt: string
   payload: Record<string, unknown>
   context: Record<string, unknown>
   processingResult?: Record<string, unknown>
-  error?: Record<string, unknown>
+  error?: string | Record<string, unknown>
 }
 
 export interface ScenarioRunCommand {

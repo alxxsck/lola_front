@@ -8,6 +8,7 @@
 import type { UpdateEventDefinitionDtoPayloadSchema } from "./updateEventDefinitionDtoPayloadSchema";
 
 export interface UpdateEventDefinitionDto {
+  clientIngestible?: boolean;
   /** @maxLength 2000 */
   description?: string;
   enabled?: boolean;

@@ -18,19 +18,19 @@ export interface IngestEventDto {
   /** @maxLength 200 */
   externalEventId?: string;
   /**
-   * @deprecated
    * @minLength 1
    * @maxLength 200
    */
   externalUserId?: string;
   /** @maxLength 5000 */
   message?: string;
-  /** @deprecated */
   occurredAt?: string;
   payload: IngestEventDtoPayload;
   projectId?: string;
+  /** @deprecated */
   timestamp?: string;
   /**
+   * @deprecated
    * @minLength 1
    * @maxLength 200
    */

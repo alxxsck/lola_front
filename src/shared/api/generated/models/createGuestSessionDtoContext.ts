@@ -6,7 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type EventLogResponseDtoError = { [key: string]: unknown } | null;
+export type CreateGuestSessionDtoContext = { [key: string]: unknown };

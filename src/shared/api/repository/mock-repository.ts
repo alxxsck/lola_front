@@ -1,7 +1,7 @@
 import { demoActionDefinitions, demoActivity, demoConversations, demoElements, demoEvents, demoMessages, demoProject, demoScenarios, demoSessions, demoUsers } from '@/shared/api/mock-data'
 import { normalizeScenarioActions } from '@/shared/lib/domain'
 import { uid } from '@/shared/lib/format'
-import type { ActiveSession, ActivityItem, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventLog, Project, Scenario, ScenarioRun, UiElement } from '@/shared/types/domain'
+import type { ActiveSession, ActivityItem, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventLog, Project, Scenario, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeSchema } from '@/shared/types/domain'
 import type { LolaRepository } from './contracts'
 
 const DATA_KEY = 'lola-cms-demo-data-v2'
@@ -17,6 +17,8 @@ interface DemoData {
   activity: ActivityItem[]
   conversations: Conversation[]
   messages: ConversationMessage[]
+  userAttributes: UserAttributeDefinition[]
+  userAttributeRevision: number
 }
 
 const initialData = (): DemoData => structuredClone({
@@ -30,6 +32,11 @@ const initialData = (): DemoData => structuredClone({
   activity: demoActivity,
   conversations: demoConversations,
   messages: demoMessages,
+  userAttributes: [
+    { id: 'attr_1', projectId: demoProject.id, key: 'firstName', label: 'Имя', description: 'Имя пользователя в продукте', type: 'STRING', required: true, clientVisible: true, validation: { minLength: 1, maxLength: 100 }, enabled: true, position: 10, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 'attr_2', projectId: demoProject.id, key: 'depositCount', label: 'Количество пополнений', type: 'NUMBER', required: false, clientVisible: false, validation: { minimum: 0 }, enabled: true, position: 20, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  ],
+  userAttributeRevision: 2,
 })
 
 const readDemo = (): DemoData => {
@@ -45,6 +52,30 @@ const readDemo = (): DemoData => {
 
 const writeDemo = (data: DemoData) => localStorage.setItem(DATA_KEY, JSON.stringify(data))
 const pause = () => new Promise((resolve) => setTimeout(resolve, 180))
+
+function mockUserAttributeSchema(data: DemoData): UserAttributeSchema {
+  const definitions = [...data.userAttributes].sort((left, right) => left.position - right.position)
+  const properties = Object.fromEntries(definitions.filter((item) => item.enabled).map((item) => {
+    const { allowedValues, ...constraints } = item.validation
+    return [item.key, {
+      type: item.type === 'NUMBER' ? 'number' : item.type === 'BOOLEAN' ? 'boolean' : 'string',
+      ...(item.type === 'DATETIME' ? { format: 'date-time', pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:Z|[+-]\\d{2}:\\d{2})$' } : {}),
+      ...constraints,
+      ...(allowedValues ? { enum: allowedValues } : {}),
+    }]
+  }))
+  return {
+    definitions,
+    currentRevision: {
+      id: `revision_${data.userAttributeRevision}`,
+      projectId: data.project.id,
+      version: data.userAttributeRevision,
+      schema: { type: 'object', properties, required: definitions.filter((item) => item.enabled && item.required).map((item) => item.key), additionalProperties: false },
+      clientVisibleKeys: definitions.filter((item) => item.enabled && item.clientVisible).map((item) => item.key),
+      createdAt: new Date().toISOString(),
+    },
+  }
+}
 
 export const mockRepository: LolaRepository = {
   mode: 'mock',
@@ -63,6 +94,7 @@ export const mockRepository: LolaRepository = {
     operations: true,
     auditLogs: true,
     adminMessaging: true,
+    userAttributes: true,
   },
 
   async getProject() { await pause(); return readDemo().project },
@@ -116,6 +148,31 @@ export const mockRepository: LolaRepository = {
   async deleteEvent(_projectId, id) {
     const data = readDemo(); data.events = data.events.filter((item) => item.id !== id); writeDemo(data); await pause()
   },
+  async getUserAttributeSchema() { await pause(); return mockUserAttributeSchema(readDemo()) },
+  async createUserAttributeDefinition(projectId, value) {
+    const data = readDemo()
+    const now = new Date().toISOString()
+    const definition: UserAttributeDefinition = { required: false, clientVisible: false, validation: {}, enabled: true, position: data.userAttributes.length * 10 + 10, ...value, id: uid('attr'), projectId, createdAt: now, updatedAt: now }
+    data.userAttributes.push(definition)
+    data.userAttributeRevision += 1
+    writeDemo(data); await pause(); return { definition, currentRevision: mockUserAttributeSchema(data).currentRevision! }
+  },
+  async updateUserAttributeDefinition(_projectId, id, value) {
+    const data = readDemo()
+    const index = data.userAttributes.findIndex((item) => item.id === id)
+    if (index < 0) throw new Error('User attribute not found')
+    const { description, ...patch } = value
+    const definition = { ...data.userAttributes[index]!, ...patch, ...(description === null ? { description: undefined } : description === undefined ? {} : { description }), updatedAt: new Date().toISOString() }
+    data.userAttributes.splice(index, 1, definition)
+    data.userAttributeRevision += 1
+    writeDemo(data); await pause(); return { definition, currentRevision: mockUserAttributeSchema(data).currentRevision! }
+  },
+  async deleteUserAttributeDefinition(_projectId, id) {
+    const data = readDemo(); const definition = data.userAttributes.find((item) => item.id === id)
+    if (!definition) throw new Error('User attribute not found')
+    data.userAttributes = data.userAttributes.filter((item) => item.id !== id); data.userAttributeRevision += 1
+    writeDemo(data); await pause(); return { definition, currentRevision: mockUserAttributeSchema(data).currentRevision! }
+  },
   async getScenarios() { await pause(); return readDemo().scenarios },
   async getActionDefinitions() { await pause(); return structuredClone(demoActionDefinitions) },
   async saveScenario(projectId, value) {
@@ -159,11 +216,32 @@ export const mockRepository: LolaRepository = {
     await pause()
     const data = readDemo()
     return data.activity.filter((item) => item.type === 'EVENT').map((item, index): EventLog => ({
-      id: item.id, eventCode: item.title, eventName: item.title, userId: item.userId,
+      id: item.id, eventCode: item.title, eventName: item.title, eventDefinitionId: data.events.find((event) => event.code === item.title)?.id ?? 'evt_1', eventVersion: 1, userId: item.userId,
       userExternalId: data.users.find((user) => user.id === item.userId)?.externalId ?? item.userId,
       source: index % 2 ? 'SERVER' : 'FRONTEND', status: item.status === 'failed' ? 'FAILED' : 'PROCESSED',
       occurredAt: item.timestamp, receivedAt: item.timestamp, payload: { demo: true }, context: { locale: 'ru' },
     }))
+  },
+  async getEventLogPage(_projectId, filters) {
+    const items = await this.getEventLogs(_projectId)
+    const filtered = items.filter((item) =>
+      (!filters?.eventCode || item.eventCode === filters.eventCode)
+      && (!filters?.externalUserId || item.userExternalId === filters.externalUserId)
+      && (!filters?.source || item.source === filters.source)
+      && (!filters?.status || item.status === filters.status)
+      && (!filters?.receivedFrom || item.receivedAt >= filters.receivedFrom)
+      && (!filters?.receivedTo || item.receivedAt <= filters.receivedTo)
+      && (!filters?.occurredFrom || item.occurredAt >= filters.occurredFrom)
+      && (!filters?.occurredTo || item.occurredAt <= filters.occurredTo),
+    )
+    const offset = filters?.cursor ? Number(filters.cursor) : 0
+    const limit = filters?.limit ?? 50
+    return { items: filtered.slice(offset, offset + limit), nextCursor: offset + limit < filtered.length ? String(offset + limit) : null }
+  },
+  async getEventLog(projectId, eventId) {
+    const item = (await this.getEventLogs(projectId)).find((event) => event.id === eventId)
+    if (!item) throw new Error('Event log not found')
+    return item
   },
   async getScenarioRuns() {
     await pause()

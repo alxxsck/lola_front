@@ -5,6 +5,7 @@ import {
   cmsAuthMe,
   cmsAuthRefresh,
   platformListProjects,
+  platformMembers,
 } from '@/shared/api/generated/lola-backend'
 import type { AdminUserResponseDto, CmsAuthResponseDto, ProjectResponseDto } from '@/shared/api/generated/models'
 import { demoProject } from '@/shared/api/mock-data'
@@ -30,12 +31,12 @@ export interface AuthContext {
   selectedProjectId?: string
 }
 
-function mapUser(user: AdminUserResponseDto): CmsUser {
+function mapUser(user: AdminUserResponseDto, role: CmsUser['role']): CmsUser {
   return {
     id: user.id,
     email: user.email ?? user.login,
     name: user.displayName ?? user.email ?? user.login,
-    role: 'ADMIN',
+    role,
   }
 }
 
@@ -67,7 +68,19 @@ registerRefreshHandler(async (refreshToken) => {
 
 async function loadContext(user: AdminUserResponseDto): Promise<AuthContext> {
   const projects = (await platformListProjects()).map(mapProject)
-  return { user: mapUser(user), projects, selectedProjectId: getSelectedProjectId() }
+  const projectsWithRoles = await Promise.all(projects.map(async (project) => {
+    try {
+      const members = await platformMembers(project.id)
+      const membership = members.find((member) => (member.adminUserId as unknown) === user.id)
+        ?? members.find((member) => member.email.toLowerCase() === (user.email ?? '').toLowerCase())
+      return { ...project, memberRole: membership?.role ?? 'VIEWER' }
+    } catch {
+      return { ...project, memberRole: 'VIEWER' as const }
+    }
+  }))
+  const storedProjectId = getSelectedProjectId()
+  const selectedProject = projectsWithRoles.find((project) => project.id === storedProjectId) ?? (projectsWithRoles.length === 1 ? projectsWithRoles[0] : undefined)
+  return { user: mapUser(user, selectedProject?.memberRole ?? 'VIEWER'), projects: projectsWithRoles, selectedProjectId: storedProjectId }
 }
 
 function demoContext(login: string): AuthContext {
@@ -78,7 +91,7 @@ function demoContext(login: string): AuthContext {
       name: login.startsWith('admin@') ? 'Алексей' : login.split('@')[0] || 'Администратор',
       role: 'OWNER',
     },
-    projects: [structuredClone(demoProject)],
+    projects: [{ ...structuredClone(demoProject), memberRole: 'OWNER' }],
     selectedProjectId: demoProject.id,
   }
 }

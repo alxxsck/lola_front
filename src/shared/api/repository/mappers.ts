@@ -16,8 +16,12 @@ import type {
   ScenarioActionDefinitionResponseDto,
   AdminConversationResponseDto,
   AdminConversationMessageResponseDto,
+  UserAttributeDefinitionResponseDto,
+  UserAttributeSchemaRevisionResponseDto,
+  UserAttributeSchemaResponseDto,
+  UserAttributeDefinitionMutationResponseDto,
 } from '@/shared/api/generated/models'
-import type { ActiveSession, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventLog, Project, ScenarioRun, UiElement } from '@/shared/types/domain'
+import type { ActiveSession, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventLog, Project, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeMutation, UserAttributeSchema, UserAttributeSchemaRevision } from '@/shared/types/domain'
 import type { CreateUiElement, SaveEventDefinition, UpdateUiElement } from './contracts'
 import { parseActionDefinition } from '@/shared/lib/action-definition'
 
@@ -181,6 +185,7 @@ export function mapEventDefinition(dto: EventDefinitionResponseDto): EventDefini
     description: optionalString(dto.description),
     version: dto.version,
     payloadSchema: dto.payloadSchema,
+    clientIngestible: dto.clientIngestible,
     enabled: dto.enabled,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
@@ -194,6 +199,7 @@ export function toCreateEventDefinitionDto(value: SaveEventDefinition): CreateEv
     description: value.description,
     version: value.version,
     payloadSchema: value.payloadSchema,
+    clientIngestible: value.clientIngestible,
     enabled: value.enabled,
   })
 }
@@ -203,8 +209,52 @@ export function toUpdateEventDefinitionDto(value: SaveEventDefinition): UpdateEv
     name: value.name,
     description: value.description,
     payloadSchema: value.payloadSchema,
+    clientIngestible: value.clientIngestible,
     enabled: value.enabled,
   })
+}
+
+export function mapUserAttributeDefinition(dto: UserAttributeDefinitionResponseDto): UserAttributeDefinition {
+  return {
+    id: dto.id,
+    projectId: dto.projectId,
+    key: dto.key,
+    label: dto.label,
+    description: optionalString(dto.description),
+    type: dto.type,
+    required: dto.required,
+    clientVisible: dto.clientVisible,
+    validation: dto.validation,
+    enabled: dto.enabled,
+    position: dto.position,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+  }
+}
+
+function mapUserAttributeRevision(dto: UserAttributeSchemaRevisionResponseDto): UserAttributeSchemaRevision {
+  return {
+    id: dto.id,
+    projectId: dto.projectId,
+    version: dto.version,
+    schema: dto.schema,
+    clientVisibleKeys: dto.clientVisibleKeys,
+    createdAt: dto.createdAt,
+  }
+}
+
+export function mapUserAttributeSchema(dto: UserAttributeSchemaResponseDto): UserAttributeSchema {
+  return {
+    definitions: dto.definitions.map(mapUserAttributeDefinition),
+    currentRevision: dto.currentRevision ? mapUserAttributeRevision(dto.currentRevision) : null,
+  }
+}
+
+export function mapUserAttributeMutation(dto: UserAttributeDefinitionMutationResponseDto): UserAttributeMutation {
+  return {
+    definition: mapUserAttributeDefinition(dto.definition),
+    currentRevision: mapUserAttributeRevision(dto.currentRevision),
+  }
 }
 
 const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {}
@@ -214,16 +264,20 @@ export function mapEventLog(dto: EventLogResponseDto): EventLog {
     id: dto.id,
     eventCode: dto.eventDefinition.code,
     eventName: dto.eventDefinition.name,
+    eventDefinitionId: dto.eventDefinitionId,
+    eventVersion: dto.eventDefinition.version,
     userId: dto.endUserId,
     userExternalId: dto.endUser.externalId,
     source: dto.source,
     status: dto.status,
+    externalEventId: optionalString(dto.externalEventId),
+    message: optionalString(dto.message),
     occurredAt: dto.occurredAt,
     receivedAt: dto.receivedAt,
     payload: record(dto.payload),
     context: record(dto.context),
     processingResult: dto.processingResult ? record(dto.processingResult) : undefined,
-    error: dto.error ? record(dto.error) : undefined,
+    error: dto.error ?? undefined,
   }
 }
 

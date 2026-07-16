@@ -26,7 +26,7 @@ describe('repository domain mappers', () => {
     } as unknown as UiElementResponseDto)
     const eventDto = {
       id: 'event-1', projectId: 'project-1', code: 'signup', name: 'Signup', description: null, version: 1,
-      payloadSchema: { type: 'object' }, enabled: true, createdAt: 'now', updatedAt: 'now',
+      payloadSchema: { type: 'object' }, clientIngestible: false, enabled: true, createdAt: 'now', updatedAt: 'now',
     } as EventDefinitionResponseDto
     const user = mapEndUser({
       id: 'user-1', projectId: 'project-1', externalId: 'external', isGuest: false, locale: null, segment: null,
@@ -37,7 +37,7 @@ describe('repository domain mappers', () => {
     expect(mapEventDefinition(eventDto)).toMatchObject({ description: undefined, payloadSchema: { type: 'object' } })
     expect(user).toMatchObject({ locale: undefined, segment: undefined })
     expect(toCreateEventDefinitionDto(mapEventDefinition(eventDto))).toEqual({
-      code: 'signup', name: 'Signup', version: 1, payloadSchema: { type: 'object' }, enabled: true,
+      code: 'signup', name: 'Signup', version: 1, payloadSchema: { type: 'object' }, clientIngestible: false, enabled: true,
     })
   })
 

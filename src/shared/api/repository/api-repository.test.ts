@@ -15,6 +15,10 @@ import {
   platformActionDefinitions,
   adminConversationsList,
   adminConversationsListMessages,
+  adminEventLogsGet,
+  adminEventLogsList,
+  platformCreateUserAttributeDefinition,
+  platformUserAttributeDefinitions,
 } from '@/shared/api/generated/lola-backend'
 import type { UiElementResponseDto } from '@/shared/api/generated/models'
 import { apiRepository } from './api-repository'
@@ -30,6 +34,9 @@ vi.mock('@/shared/api/generated/lola-backend', () => ({
   adminMessagingSend: vi.fn(), auditList: vi.fn(), eventsList: vi.fn(), scenarioRunsList: vi.fn(),
   presenceList: vi.fn(),
   adminConversationsList: vi.fn(), adminConversationsListMessages: vi.fn(),
+  adminEventLogsGet: vi.fn(), adminEventLogsList: vi.fn(),
+  platformCreateUserAttributeDefinition: vi.fn(), platformDeleteUserAttributeDefinition: vi.fn(),
+  platformUpdateUserAttributeDefinition: vi.fn(), platformUserAttributeDefinitions: vi.fn(),
 }))
 
 const uiResponse = {
@@ -39,7 +46,7 @@ const uiResponse = {
 
 const eventResponse = {
   id: 'event-1', projectId: 'project-1', code: 'signup', name: 'Signup', version: 1,
-  payloadSchema: { type: 'object' }, enabled: true, createdAt: 'now', updatedAt: 'now',
+  payloadSchema: { type: 'object' }, clientIngestible: false, enabled: true, createdAt: 'now', updatedAt: 'now',
 }
 
 describe('api repository adapter', () => {
@@ -200,6 +207,46 @@ describe('api repository adapter', () => {
     })
     expect(adminConversationsList).toHaveBeenCalledWith('project-1', 'user-1', { cursor: 'previous', limit: 20 })
     expect(adminConversationsListMessages).toHaveBeenCalledWith('project-1', 'user-1', 'conversation-1', { cursor: 'older', limit: 50 })
+  })
+
+  it('uses the snapshot cursor CMS endpoint for filtered event logs and detail', async () => {
+    const eventLog = {
+      id: 'log-1', projectId: 'project-1', eventDefinitionId: 'event-1', endUserId: 'user-1',
+      source: 'FRONTEND' as const, status: 'PROCESSED' as const, occurredAt: '2026-07-16T10:00:00.000Z',
+      receivedAt: '2026-07-16T10:00:00.100Z', payload: { amount: 25 }, context: { route: '/wallet' },
+      eventDefinition: { id: 'event-1', code: 'deposit', name: 'Deposit', version: 2 },
+      endUser: { id: 'user-1', externalId: 'customer-1' }, externalEventId: 'browser-1',
+    }
+    vi.mocked(adminEventLogsList).mockResolvedValue({ items: [eventLog], pageInfo: { hasMore: true, nextCursor: 'cursor-2' } })
+    vi.mocked(adminEventLogsGet).mockResolvedValue(eventLog)
+
+    await expect(apiRepository.getEventLogPage('project-1', { eventCode: 'deposit', status: 'PROCESSED', cursor: 'cursor-1', limit: 25 })).resolves.toEqual({
+      items: [expect.objectContaining({ id: 'log-1', eventCode: 'deposit', eventVersion: 2, externalEventId: 'browser-1' })],
+      nextCursor: 'cursor-2',
+    })
+    await expect(apiRepository.getEventLog('project-1', 'log-1')).resolves.toEqual(expect.objectContaining({ userExternalId: 'customer-1' }))
+    expect(adminEventLogsList).toHaveBeenCalledWith('project-1', { eventCode: 'deposit', status: 'PROCESSED', cursor: 'cursor-1', limit: 25 })
+    expect(adminEventLogsGet).toHaveBeenCalledWith('project-1', 'log-1')
+  })
+
+  it('publishes a user attribute definition and reloads the current immutable schema', async () => {
+    const definition = {
+      id: 'attribute-1', projectId: 'project-1', key: 'plan', label: 'Plan', type: 'STRING' as const,
+      required: true, clientVisible: false, validation: { allowedValues: ['free', 'premium'] }, enabled: true,
+      position: 10, createdAt: '2026-07-16T10:00:00.000Z', updatedAt: '2026-07-16T10:00:00.000Z',
+    }
+    const revision = {
+      id: 'revision-3', projectId: 'project-1', version: 3, schema: { type: 'object' },
+      clientVisibleKeys: [], createdAt: '2026-07-16T10:00:00.000Z',
+    }
+    vi.mocked(platformCreateUserAttributeDefinition).mockResolvedValue({ definition, currentRevision: revision })
+    vi.mocked(platformUserAttributeDefinitions).mockResolvedValue({ definitions: [definition], currentRevision: revision })
+
+    await expect(apiRepository.createUserAttributeDefinition('project-1', {
+      key: 'plan', label: 'Plan', type: 'STRING', required: true, validation: { allowedValues: ['free', 'premium'] },
+    })).resolves.toEqual(expect.objectContaining({ currentRevision: expect.objectContaining({ version: 3 }), definition: expect.objectContaining({ key: 'plan' }) }))
+    expect(platformCreateUserAttributeDefinition).toHaveBeenCalledWith('project-1', expect.objectContaining({ validation: { allowedValues: ['free', 'premium'] } }))
+    expect(platformUserAttributeDefinitions).not.toHaveBeenCalled()
   })
 
   it('rejects direct actions without an active interaction session', async () => {

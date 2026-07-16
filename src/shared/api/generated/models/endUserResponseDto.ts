@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EndUserResponseDtoAttributes } from "./endUserResponseDtoAttributes";
+import type { EndUserResponseDtoAttributesSchemaRevisionId } from "./endUserResponseDtoAttributesSchemaRevisionId";
 import type { EndUserResponseDtoLocale } from "./endUserResponseDtoLocale";
 import type { EndUserResponseDtoPreferences } from "./endUserResponseDtoPreferences";
 import type { EndUserResponseDtoProfile } from "./endUserResponseDtoProfile";
@@ -13,6 +14,8 @@ import type { EndUserResponseDtoSegment } from "./endUserResponseDtoSegment";
 
 export interface EndUserResponseDto {
   attributes: EndUserResponseDtoAttributes;
+  /** @nullable */
+  attributesSchemaRevisionId?: EndUserResponseDtoAttributesSchemaRevisionId;
   createdAt: string;
   externalId: string;
   id: string;

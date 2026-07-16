@@ -9,6 +9,7 @@ import type { EventDefinitionResponseDtoDescription } from "./eventDefinitionRes
 import type { EventDefinitionResponseDtoPayloadSchema } from "./eventDefinitionResponseDtoPayloadSchema";
 
 export interface EventDefinitionResponseDto {
+  clientIngestible: boolean;
   code: string;
   createdAt: string;
   /** @nullable */

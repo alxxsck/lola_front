@@ -6,9 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type EventLogResponseDtoExternalEventId = {
+export type InteractionSessionProjectResponseDtoSettings = {
   [key: string]: unknown;
-} | null;
+};

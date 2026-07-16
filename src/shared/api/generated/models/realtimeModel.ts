@@ -11,4 +11,5 @@ export type RealtimeModel = (typeof RealtimeModel)[keyof typeof RealtimeModel];
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RealtimeModel = {
   "grok-voice-think-fast-10": "grok-voice-think-fast-1.0",
+  "grok-voice-latest": "grok-voice-latest",
 } as const;
