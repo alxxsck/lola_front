@@ -70,6 +70,8 @@ const error = ref('')
 const validationError = ref('')
 const project = ref<Project | null>(null)
 const initialSnapshot = ref('')
+const systemPromptControl = ref<HTMLElement | null>(null)
+let systemPromptResizeState: { pointerId: number; startY: number; startHeight: number; minHeight: number } | null = null
 const form = reactive<ProjectForm>({
   name: '',
   description: '',
@@ -180,6 +182,62 @@ async function saveProject() {
   }
 }
 
+function getSystemPromptTextarea() {
+  return systemPromptControl.value?.querySelector<HTMLTextAreaElement>('textarea') ?? null
+}
+
+function getTextareaMinHeight(textarea: HTMLTextAreaElement) {
+  const styles = window.getComputedStyle(textarea)
+  const lineHeight = Number.parseFloat(styles.lineHeight)
+  const verticalSpacing = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth']
+    .map((property) => Number.parseFloat(styles[property as keyof CSSStyleDeclaration] as string) || 0)
+    .reduce((total, value) => total + value, 0)
+
+  return Number.isFinite(lineHeight) ? Math.ceil(lineHeight * textarea.rows + verticalSpacing) : textarea.offsetHeight
+}
+
+function startSystemPromptResize(event: PointerEvent) {
+  const textarea = getSystemPromptTextarea()
+  if (!textarea) return
+
+  event.preventDefault()
+  systemPromptResizeState = {
+    pointerId: event.pointerId,
+    startY: event.clientY,
+    startHeight: textarea.offsetHeight,
+    minHeight: getTextareaMinHeight(textarea),
+  }
+  window.addEventListener('pointermove', resizeSystemPrompt)
+  window.addEventListener('pointerup', stopSystemPromptResize)
+  window.addEventListener('pointercancel', stopSystemPromptResize)
+}
+
+function resizeSystemPrompt(event: PointerEvent) {
+  const textarea = getSystemPromptTextarea()
+  if (!textarea || !systemPromptResizeState || event.pointerId !== systemPromptResizeState.pointerId) return
+
+  const height = Math.max(
+    systemPromptResizeState.minHeight,
+    systemPromptResizeState.startHeight + event.clientY - systemPromptResizeState.startY,
+  )
+  textarea.style.height = `${height}px`
+}
+
+function stopSystemPromptResize(event?: PointerEvent) {
+  if (event && event.pointerId !== systemPromptResizeState?.pointerId) return
+  systemPromptResizeState = null
+  window.removeEventListener('pointermove', resizeSystemPrompt)
+  window.removeEventListener('pointerup', stopSystemPromptResize)
+  window.removeEventListener('pointercancel', stopSystemPromptResize)
+}
+
+function resizeSystemPromptBy(offset: number) {
+  const textarea = getSystemPromptTextarea()
+  if (!textarea) return
+
+  textarea.style.height = `${Math.max(getTextareaMinHeight(textarea), textarea.offsetHeight + offset)}px`
+}
+
 function confirmDiscard() {
   return !isDirty.value || window.confirm('Есть несохранённые изменения. Покинуть страницу?')
 }
@@ -194,7 +252,10 @@ onMounted(() => {
   window.addEventListener('beforeunload', beforeUnload)
   void loadProject()
 })
-onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', beforeUnload)
+  stopSystemPromptResize()
+})
 </script>
 
 <template>
@@ -252,7 +313,24 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
             <div class="assistant-preview"><div class="assistant-orbit"><span>{{ assistantInitial }}</span></div><small>Предпросмотр</small><strong>{{ form.assistantName || 'Имя ассистента' }}</strong></div>
             <div class="form-grid">
               <div class="field"><label for="assistant-name">Имя ассистента</label><InputText id="assistant-name" v-model="form.assistantName" placeholder="Lola" :disabled="saving" /></div>
-              <div class="field"><label for="system-prompt">Системная инструкция</label><Textarea id="system-prompt" v-model="form.systemPrompt" rows="7" auto-resize placeholder="Как ассистент должен общаться и помогать пользователю?" :disabled="saving" /><small>{{ form.systemPrompt.length }} символов</small></div>
+              <div class="field">
+                <label for="system-prompt">Системная инструкция</label>
+                <div ref="systemPromptControl" class="system-prompt-control">
+                  <Textarea id="system-prompt" v-model="form.systemPrompt" class="system-prompt-textarea" rows="3" placeholder="Как ассистент должен общаться и помогать пользователю?" :disabled="saving" />
+                  <button
+                    type="button"
+                    class="system-prompt-resizer"
+                    aria-label="Изменить высоту системной инструкции"
+                    title="Потяните, чтобы изменить высоту"
+                    @pointerdown="startSystemPromptResize"
+                    @keydown.up.prevent="resizeSystemPromptBy(-24)"
+                    @keydown.down.prevent="resizeSystemPromptBy(24)"
+                  >
+                    <i class="pi pi-arrows-v" aria-hidden="true" />
+                  </button>
+                </div>
+                <small>{{ form.systemPrompt.length }} символов</small>
+              </div>
             </div>
           </div>
         </section>
@@ -324,7 +402,8 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 
 <style scoped>
 .project-status{display:flex;align-items:center;gap:11px;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:14px}.project-status>span:last-child{display:flex;flex-direction:column}.project-status strong{font-size:.78rem}.project-status small{font-size:.65rem;color:var(--muted);margin-top:2px}.page-message{margin-bottom:18px}.message-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}.settings-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px;align-items:start}.settings-main-tts{margin-top:0}.settings-section{padding:26px}.section-title{display:flex;align-items:flex-start;gap:13px;padding-bottom:21px;margin-bottom:21px;border-bottom:1px solid #eeeeea}.settings-section.collapsed .section-title{padding-bottom:0;margin-bottom:0;border-bottom:0}.section-title>div{min-width:0;flex:1}.section-title>button{flex:0 0 auto}.section-title h2{font-size:1.08rem}.section-title p{color:var(--muted);font-size:.76rem;margin:4px 0 0}.section-icon{display:grid;place-items:center;width:39px;height:39px;border-radius:12px;flex:0 0 auto}.section-icon.lime{background:#f1f8d8;color:#729500}.section-icon.violet{background:#f0edff;color:#755ce1}.section-icon.coral{background:#fff0eb;color:#d96747}.form-grid{display:grid;gap:18px}.form-grid.columns{grid-template-columns:minmax(180px,.7fr) minmax(260px,1.3fr)}.field small{font-size:.68rem;color:#999d94;text-align:right}.assistant-fields{display:grid;grid-template-columns:140px minmax(0,1fr);gap:24px}.assistant-preview{display:flex;flex-direction:column;align-items:center;padding:22px 12px;background:#f8f8f5;border:1px solid #ecece7;border-radius:17px}.assistant-orbit{display:grid;place-items:center;width:76px;height:76px;border-radius:50%;background:linear-gradient(145deg,#8e77f5,#755ce5);box-shadow:0 0 0 8px #eeebff,0 13px 26px rgba(117,92,229,.24);margin:8px 0 20px}.assistant-orbit span{font:700 1.7rem Manrope;color:#fff}.assistant-preview small{font-size:.62rem;text-transform:uppercase;letter-spacing:.09em;color:#979b92}.assistant-preview strong{font-size:.84rem;margin-top:4px;text-align:center}.settings-aside{position:sticky;top:24px}.meta-card .eyebrow{margin-bottom:14px}.meta-row{padding:12px 0;border-top:1px solid #eeeeea}.meta-row span,.meta-row code{display:block}.meta-row span{font-size:.68rem;color:var(--muted);margin-bottom:5px}.meta-row code{font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#343832}.meta-card p{display:flex;gap:8px;margin:14px 0 0;padding:11px;background:#f8f8f5;border-radius:11px;color:var(--muted);font-size:.68rem;line-height:1.45}.meta-card p i{margin-top:2px}.save-card{display:flex;flex-direction:column;gap:14px;padding:20px;background:#24271f;color:#fff;border-radius:18px}.save-card strong,.save-card span{display:block}.save-card strong{font-size:.83rem}.save-card span{font-size:.69rem;color:#a5aa9e;line-height:1.4;margin-top:4px}.save-card :deep(.p-message-text){font-size:.72rem}.skeleton-card{display:flex;flex-direction:column;gap:20px}.skeleton-card:nth-child(2){min-height:280px}
+.system-prompt-control{position:relative}.system-prompt-textarea{display:block;resize:none;overflow:auto;padding-bottom:32px}.system-prompt-resizer{position:absolute;right:3px;bottom:3px;display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:9px;background:transparent;color:#8d9188;cursor:ns-resize;touch-action:none;user-select:none}.system-prompt-resizer:hover{background:#f1f1ed;color:#555a51}.system-prompt-resizer:focus-visible{outline:2px solid var(--p-primary-color);outline-offset:-2px}.system-prompt-resizer i{font-size:.82rem;pointer-events:none}
 @media(max-width:1050px){.settings-layout{grid-template-columns:1fr}.settings-aside{position:static;display:grid;grid-template-columns:1fr 1fr}.save-card{align-self:stretch;justify-content:center}}
-@media(max-width:700px){.settings-section{padding:20px}.form-grid.columns,.assistant-fields,.settings-aside{grid-template-columns:1fr}.assistant-preview{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;text-align:left;column-gap:18px}.assistant-orbit{grid-row:1/3;margin:4px 0}.assistant-preview small,.assistant-preview strong{text-align:left}.section-title{align-items:center}.project-status{width:100%}}
+@media(max-width:700px){.settings-section{padding:20px}.form-grid.columns,.assistant-fields,.settings-aside{grid-template-columns:1fr}.assistant-preview{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;text-align:left;column-gap:18px}.assistant-orbit{grid-row:1/3;margin:4px 0}.assistant-preview small,.assistant-preview strong{text-align:left}.section-title{align-items:center}.project-status{width:100%}.system-prompt-textarea{padding-bottom:40px}.system-prompt-resizer{right:1px;bottom:1px;width:42px;height:42px}}
 .section-icon.green{background:#e8f7e9;color:#469a51}.section-icon.blue{background:#e8f2fb;color:#397dad}.integration-unknown{margin-left:auto;display:flex;align-items:center;gap:7px;color:#777c72;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.voice-settings{display:flex;flex-direction:column;gap:18px}.setting-toggle{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:15px}.setting-toggle strong,.setting-toggle span{display:block}.setting-toggle strong{font-size:.82rem}.setting-toggle span{max-width:620px;margin-top:4px;color:var(--muted);font-size:.7rem;line-height:1.45}.setting-toggle.compact{min-height:67px}.setting-toggle.disabled{opacity:.6}
 </style>

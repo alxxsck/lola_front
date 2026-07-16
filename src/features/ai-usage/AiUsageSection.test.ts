@@ -50,12 +50,18 @@ describe('AiUsageSection', () => {
           totalTokens: 0,
           inputTokens: 0,
           cachedInputTokens: 0,
+          cacheWriteInputTokens: 0,
           outputTokens: 0,
           reasoningTokens: 0,
           inputTextTokens: 0,
+          cachedInputTextTokens: 0,
           outputTextTokens: 0,
           inputAudioTokens: 0,
+          cachedInputAudioTokens: 0,
           outputAudioTokens: 0,
+          inputImageTokens: 0,
+          cachedInputImageTokens: 0,
+          outputImageTokens: 0,
           durationSeconds: 0,
           estimatedCost: 0,
           billedCost: 0,
@@ -64,19 +70,19 @@ describe('AiUsageSection', () => {
     })
   })
 
-  it('shows provider-reported ElevenLabs usage without presenting it as a zero-cost request', async () => {
+  it('separates OpenAI estimates from ElevenLabs credits', async () => {
     const wrapper = shallowMount(AiUsageSection, {
       props: { projectId: 'project-1' },
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Credits ElevenLabs')
+    expect(wrapper.text()).toContain('OpenAI')
+    expect(wrapper.text()).toContain('ElevenLabs')
+    expect(wrapper.text()).toContain('Использовано credits')
+    expect(wrapper.text()).toContain('1,3 тыс.')
     expect(wrapper.text()).toContain('Нет USD-оценки')
-    expect(wrapper.text()).toContain('1 операция ElevenLabs учтена')
-    expect(wrapper.text()).not.toContain('операция без цены')
-    expect(wrapper.text()).toContain(
-      'Расчётная стоимость может отличаться от фактического списания',
-    )
-    expect(wrapper.text()).toContain('character-cost')
+    expect(wrapper.text()).not.toContain('операция ElevenLabs учтена')
+    expect(wrapper.text()).not.toContain('character-cost')
+    expect(wrapper.text()).not.toContain('Расчётная стоимость может отличаться')
   })
 })

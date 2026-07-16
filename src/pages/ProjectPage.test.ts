@@ -64,6 +64,10 @@ function voiceInstructionsInput(wrapper: ReturnType<typeof shallowMount>) {
   return wrapper.findAllComponents(Textarea).find((component) => component.attributes('id') === 'voice-instructions')!
 }
 
+function systemPromptInput(wrapper: ReturnType<typeof shallowMount>) {
+  return wrapper.findAllComponents(Textarea).find((component) => component.attributes('id') === 'system-prompt')!
+}
+
 describe('ProjectPage voice instructions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -113,6 +117,17 @@ describe('ProjectPage voice instructions', () => {
 
     expect(toggle.attributes('aria-expanded')).toBe('true')
     expect(wrapper.get('#voice-chat-settings').attributes('style')).not.toContain('display: none')
+  })
+
+  it('shows the system instruction in a compact manually resizable textarea', async () => {
+    const wrapper = shallowMount(ProjectPage)
+    await flushPromises()
+
+    const input = systemPromptInput(wrapper)
+    expect(input.attributes('rows')).toBe('3')
+    expect(input.attributes('auto-resize')).toBeUndefined()
+    expect(input.classes()).toContain('system-prompt-textarea')
+    expect(wrapper.find('.system-prompt-resizer').attributes('aria-label')).toBe('Изменить высоту системной инструкции')
   })
 
   it('keeps TTS in the settings column and submits the project form from the sidebar', async () => {

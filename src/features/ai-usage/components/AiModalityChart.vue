@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AiUsageTotals } from '../ai-usage.model'
+import type { AiProviderUsage } from '../ai-usage.model'
 import { formatTokenCount, getModalityUsage } from '../ai-usage.model'
 
-const props = defineProps<{ totals: AiUsageTotals }>()
+const props = defineProps<{ totals: AiProviderUsage }>()
 
 const radius = 46
 const circumference = 2 * Math.PI * radius
@@ -82,11 +82,7 @@ function percentage(tokens: number): string {
       </div>
     </div>
     <div v-else class="chart-empty">
-      <i class="pi pi-chart-pie" /><span>{{
-        totals.inputCharacters
-          ? 'ElevenLabs считает символы и credits, а не токены по форматам'
-          : 'Детализация по форматам пока отсутствует'
-      }}</span>
+      <i class="pi pi-chart-pie" /><span>Детализация по форматам пока отсутствует</span>
     </div>
 
     <footer class="cache-row">

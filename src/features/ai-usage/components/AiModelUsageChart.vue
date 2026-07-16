@@ -13,7 +13,7 @@ const props = defineProps<{
   currency?: string
 }>()
 
-type Metric = 'tokens' | 'characters' | 'cost'
+type Metric = 'tokens' | 'cost'
 
 const metric = ref<Metric>('tokens')
 const costAvailable = computed(
@@ -32,7 +32,6 @@ const maxValue = computed(() => Math.max(0, ...sortedRows.value.map(rowValue)))
 
 function rowValue(row: AiModelUsage): number {
   if (metric.value === 'cost') return row.estimatedCost
-  if (metric.value === 'characters') return row.inputCharacters
   return row.totalTokens
 }
 
@@ -47,13 +46,7 @@ function rowLabel(row: AiModelUsage): string {
       ? formatMoney(row.estimatedCost, row.currency)
       : 'Нет оценки'
   }
-  if (metric.value === 'characters')
-    return `${formatTokenCount(row.inputCharacters)} символов`
   return `${formatTokenCount(row.totalTokens)} токенов`
-}
-
-function providerLabel(provider: string): string {
-  return provider.toLowerCase() === 'openai' ? 'OpenAI' : provider
 }
 
 function chooseMetric(nextMetric: Metric) {
@@ -73,11 +66,6 @@ watch(
       !props.rows.some((row) => row.totalTokens > 0)
     ) {
       metric.value = preferredMetric()
-    } else if (
-      metric.value === 'characters' &&
-      !props.rows.some((row) => row.inputCharacters > 0)
-    ) {
-      metric.value = preferredMetric()
     }
   },
   { deep: true, immediate: true },
@@ -85,7 +73,6 @@ watch(
 
 function preferredMetric(): Metric {
   if (props.rows.some((row) => row.totalTokens > 0)) return 'tokens'
-  if (props.rows.some((row) => row.inputCharacters > 0)) return 'characters'
   return costAvailable.value ? 'cost' : 'tokens'
 }
 </script>
@@ -95,7 +82,7 @@ function preferredMetric(): Metric {
     <header class="chart-header">
       <div>
         <span class="chart-kicker">Модели</span>
-        <h3 id="model-usage-title">Где расходуется AI</h3>
+        <h3 id="model-usage-title">Расход по моделям OpenAI</h3>
       </div>
       <div class="metric-switch" role="group" aria-label="Показатель графика">
         <button
@@ -105,14 +92,6 @@ function preferredMetric(): Metric {
           @click="chooseMetric('tokens')"
         >
           Токены
-        </button>
-        <button
-          type="button"
-          :class="{ active: metric === 'characters' }"
-          :aria-pressed="metric === 'characters'"
-          @click="chooseMetric('characters')"
-        >
-          Символы
         </button>
         <button
           type="button"
@@ -132,7 +111,7 @@ function preferredMetric(): Metric {
           <span
             ><strong>{{ row.model }}</strong
             ><small
-              >{{ providerLabel(row.provider) }} · {{ row.records }}
+              >{{ row.records }}
               {{
                 pluralizeRu(row.records, 'операция', 'операции', 'операций')
               }}</small

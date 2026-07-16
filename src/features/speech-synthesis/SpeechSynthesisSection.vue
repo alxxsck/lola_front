@@ -223,7 +223,6 @@ onBeforeUnmount(() => {
       <div class="tts-heading">
         <span class="tts-icon"><i class="pi pi-volume-up" /></span>
         <div>
-          <div class="eyebrow">Text-to-Speech · SPEAK_TEXT</div>
           <h2 id="tts-title">Озвучивание текста</h2>
           <p>Команды SPEAK_TEXT озвучиваются через ElevenLabs. Настройте голос тут.</p>
         </div>

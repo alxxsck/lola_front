@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  aggregateCreditUsage,
   aggregateModelUsage,
+  aggregateProviderUsage,
   getAiUsageRange,
   getModalityUsage,
+  getProviderBreakdown,
   getReportCurrency,
   hasEstimatedCost,
   pluralizeRu,
@@ -48,14 +51,20 @@ function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
     inputCharacters: 0,
     providerBilledUnits: 0,
     totalTokens: 100,
-    inputTokens: 70,
-    cachedInputTokens: 10,
-    outputTokens: 30,
-    reasoningTokens: 0,
-    inputTextTokens: 70,
-    outputTextTokens: 30,
-    inputAudioTokens: 0,
-    outputAudioTokens: 0,
+  inputTokens: 70,
+  cachedInputTokens: 10,
+  cacheWriteInputTokens: 0,
+  outputTokens: 30,
+  reasoningTokens: 0,
+  inputTextTokens: 70,
+  cachedInputTextTokens: 10,
+  outputTextTokens: 30,
+  inputAudioTokens: 0,
+  cachedInputAudioTokens: 0,
+  outputAudioTokens: 0,
+  inputImageTokens: 0,
+  cachedInputImageTokens: 0,
+  outputImageTokens: 0,
     durationSeconds: 0,
     estimatedCost: 0.01,
     billedCost: 0,
@@ -111,6 +120,53 @@ describe('AI usage model', () => {
 
     expect(aggregateModelUsage(report.breakdown)).toHaveLength(2)
     expect(getReportCurrency(report)).toBeUndefined()
+  })
+
+  it('separates provider totals and credit usage before presentation', () => {
+    const openAi = breakdown()
+    const elevenLabs = breakdown({
+      provider: 'elevenlabs',
+      model: 'eleven_v3',
+      operation: 'speech',
+      records: 3,
+      inputCharacters: 1_200,
+      providerBilledUnits: 1_250,
+      totalTokens: 0,
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
+      inputTextTokens: 0,
+      outputTextTokens: 0,
+      estimatedCost: 0,
+    })
+
+    const openAiUsage = aggregateProviderUsage(
+      getProviderBreakdown([openAi, elevenLabs], 'openai'),
+    )
+    const elevenLabsUsage = aggregateProviderUsage(
+      getProviderBreakdown([openAi, elevenLabs], 'elevenlabs'),
+    )
+    const creditRows = aggregateCreditUsage([elevenLabs])
+
+    expect(openAiUsage).toMatchObject({
+      records: 1,
+      totalTokens: 100,
+      providerBilledUnits: 0,
+    })
+    expect(elevenLabsUsage).toMatchObject({
+      records: 3,
+      totalTokens: 0,
+      providerBilledUnits: 1_250,
+    })
+    expect(creditRows).toEqual([
+      expect.objectContaining({
+        model: 'eleven_v3',
+        operation: 'speech',
+        records: 3,
+        inputCharacters: 1_200,
+        providerBilledUnits: 1_250,
+      }),
+    ])
   })
 
   it('does not present provider-reported ElevenLabs units as a zero-cost estimate', () => {

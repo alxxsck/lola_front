@@ -43,12 +43,42 @@ export interface AiUsageBreakdown {
   totalTokens: number
   inputTokens: number
   cachedInputTokens: number
+  cacheWriteInputTokens: number
   outputTokens: number
   reasoningTokens: number
   inputTextTokens: number
+  cachedInputTextTokens: number
   outputTextTokens: number
   inputAudioTokens: number
+  cachedInputAudioTokens: number
   outputAudioTokens: number
+  inputImageTokens: number
+  cachedInputImageTokens: number
+  outputImageTokens: number
+  durationSeconds: number
+  estimatedCost: number
+  billedCost: number
+}
+
+export interface AiProviderUsage {
+  records: number
+  inputCharacters: number
+  providerBilledUnits: number
+  totalTokens: number
+  inputTokens: number
+  cachedInputTokens: number
+  cacheWriteInputTokens: number
+  outputTokens: number
+  reasoningTokens: number
+  inputTextTokens: number
+  cachedInputTextTokens: number
+  outputTextTokens: number
+  inputAudioTokens: number
+  cachedInputAudioTokens: number
+  outputAudioTokens: number
+  inputImageTokens: number
+  cachedInputImageTokens: number
+  outputImageTokens: number
   durationSeconds: number
   estimatedCost: number
   billedCost: number
@@ -80,6 +110,16 @@ export interface AiModalityUsage {
   label: string
   color: string
   tokens: number
+}
+
+export interface AiCreditUsage {
+  key: string
+  provider: string
+  model: string
+  operation: string
+  records: number
+  inputCharacters: number
+  providerBilledUnits: number
 }
 
 export const AI_USAGE_RANGE_OPTIONS: ReadonlyArray<{
@@ -145,7 +185,84 @@ export function aggregateModelUsage(
   return [...models.values()]
 }
 
-export function getModalityUsage(totals: AiUsageTotals): AiModalityUsage[] {
+export function getProviderBreakdown(
+  breakdown: readonly AiUsageBreakdown[],
+  provider: string,
+): AiUsageBreakdown[] {
+  const normalizedProvider = provider.toLowerCase()
+  return breakdown.filter(
+    (item) => item.provider.toLowerCase() === normalizedProvider,
+  )
+}
+
+export function aggregateProviderUsage(
+  breakdown: readonly AiUsageBreakdown[],
+): AiProviderUsage {
+  const totals: AiProviderUsage = {
+    records: 0,
+    inputCharacters: 0,
+    providerBilledUnits: 0,
+    totalTokens: 0,
+    inputTokens: 0,
+    cachedInputTokens: 0,
+    cacheWriteInputTokens: 0,
+    outputTokens: 0,
+    reasoningTokens: 0,
+    inputTextTokens: 0,
+    cachedInputTextTokens: 0,
+    outputTextTokens: 0,
+    inputAudioTokens: 0,
+    cachedInputAudioTokens: 0,
+    outputAudioTokens: 0,
+    inputImageTokens: 0,
+    cachedInputImageTokens: 0,
+    outputImageTokens: 0,
+    durationSeconds: 0,
+    estimatedCost: 0,
+    billedCost: 0,
+  }
+
+  for (const item of breakdown) {
+    for (const key of Object.keys(totals) as Array<keyof AiProviderUsage>) {
+      totals[key] += item[key]
+    }
+  }
+
+  return totals
+}
+
+export function aggregateCreditUsage(
+  breakdown: readonly AiUsageBreakdown[],
+): AiCreditUsage[] {
+  const rows = new Map<string, AiCreditUsage>()
+
+  for (const item of breakdown) {
+    const key = `${item.provider}\u0000${item.model}\u0000${item.operation}`
+    const current = rows.get(key)
+    if (current) {
+      current.records += item.records
+      current.inputCharacters += item.inputCharacters
+      current.providerBilledUnits += item.providerBilledUnits
+      continue
+    }
+
+    rows.set(key, {
+      key,
+      provider: item.provider,
+      model: item.model,
+      operation: item.operation,
+      records: item.records,
+      inputCharacters: item.inputCharacters,
+      providerBilledUnits: item.providerBilledUnits,
+    })
+  }
+
+  return [...rows.values()]
+}
+
+export function getModalityUsage(
+  totals: AiUsageTotals | AiProviderUsage,
+): AiModalityUsage[] {
   return [
     {
       key: 'text',
@@ -169,9 +286,13 @@ export function getModalityUsage(totals: AiUsageTotals): AiModalityUsage[] {
 }
 
 export function getReportCurrency(report: AiUsageReport): string | undefined {
-  const currencies = new Set(
-    report.breakdown.map((item) => item.currency.toUpperCase()),
-  )
+  return getUsageCurrency(report.breakdown)
+}
+
+export function getUsageCurrency(
+  breakdown: readonly AiUsageBreakdown[],
+): string | undefined {
+  const currencies = new Set(breakdown.map((item) => item.currency.toUpperCase()))
   if (currencies.size === 0) return 'USD'
   return currencies.size === 1 ? currencies.values().next().value : undefined
 }
