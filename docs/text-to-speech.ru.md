@@ -20,11 +20,9 @@ CMS показывает только настройки, опубликован
 
 - `voiceId`: голос из общего или project-specific allowlist; `null` включает server default;
 - `languageOverride`: двухбуквенный ISO 639-1; `null` включает auto-detection;
-- `stability`, `similarityBoost`, `style`: `0..1`;
-- `speed`: `0.7..1.2`;
-- `seed`: `0..4294967295` или `null`;
-- `applyTextNormalization`: `auto`, `on`, `off`;
-- `applyLanguageTextNormalization`: дополнительная нормализация для японского с возможным увеличением latency.
+- `stability`: `0..1`.
+
+Темп и манера речи для `eleven_v3` задаются audio tags в тексте. `similarityBoost`, `style`, `speed`, `seed`, `applyTextNormalization` и `applyLanguageTextNormalization` не входят в публичные настройки CMS и не отправляются провайдеру.
 
 Если backend возвращает `configured: false`, форма остаётся видимой для диагностики, но сохранение блокируется. API key никогда не передаётся браузеру.
 

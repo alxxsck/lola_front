@@ -46,10 +46,10 @@ describe('speech synthesis API', () => {
   it('uses the generated dedicated settings endpoints', async () => {
     const controller = new AbortController()
     await fetchSpeechSettings('project-1', controller.signal)
-    await updateSpeechSettings('project-1', { voiceId: null, speed: 1.1 })
+    await updateSpeechSettings('project-1', { voiceId: null, stability: 0.4 })
 
     expect(mocks.get).toHaveBeenCalledWith('project-1', { signal: controller.signal })
-    expect(mocks.update).toHaveBeenCalledWith('project-1', { voiceId: null, speed: 1.1 })
+    expect(mocks.update).toHaveBeenCalledWith('project-1', { voiceId: null, stability: 0.4 })
   })
 
   it('passes search and opaque cursor to the generated voice catalog endpoint', async () => {

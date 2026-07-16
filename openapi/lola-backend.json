@@ -2278,17 +2278,6 @@
       },
       "ProjectSpeechSettingsResponseDto": {
         "properties": {
-          "applyLanguageTextNormalization": {
-            "description": "Language-specific normalization; currently supported only for Japanese.",
-            "type": "boolean"
-          },
-          "applyTextNormalization": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TextNormalizationMode"
-              }
-            ]
-          },
           "languageOverride": {
             "description": "ISO 639-1 language override. Null enables automatic language detection.",
             "nullable": true,
@@ -2301,28 +2290,7 @@
             ],
             "type": "number"
           },
-          "seed": {
-            "maximum": 4294967295,
-            "minimum": 0,
-            "nullable": true,
-            "type": "number"
-          },
-          "similarityBoost": {
-            "maximum": 1,
-            "minimum": 0,
-            "type": "number"
-          },
-          "speed": {
-            "maximum": 1.2,
-            "minimum": 0.7,
-            "type": "number"
-          },
           "stability": {
-            "maximum": 1,
-            "minimum": 0,
-            "type": "number"
-          },
-          "style": {
             "maximum": 1,
             "minimum": 0,
             "type": "number"
@@ -3363,14 +3331,6 @@
         ],
         "type": "object"
       },
-      "TextNormalizationMode": {
-        "enum": [
-          "auto",
-          "on",
-          "off"
-        ],
-        "type": "string"
-      },
       "ThreadStatus": {
         "enum": [
           "OPEN",
@@ -3639,45 +3599,13 @@
       },
       "UpdateSpeechSettingsDto": {
         "properties": {
-          "applyLanguageTextNormalization": {
-            "description": "Language-specific normalization; currently supported only for Japanese.",
-            "type": "boolean"
-          },
-          "applyTextNormalization": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TextNormalizationMode"
-              }
-            ]
-          },
           "languageOverride": {
             "description": "ISO 639-1 language override. Null enables automatic language detection.",
             "nullable": true,
             "pattern": "^[a-z]{2}$",
             "type": "string"
           },
-          "seed": {
-            "maximum": 4294967295,
-            "minimum": 0,
-            "nullable": true,
-            "type": "number"
-          },
-          "similarityBoost": {
-            "maximum": 1,
-            "minimum": 0,
-            "type": "number"
-          },
-          "speed": {
-            "maximum": 1.2,
-            "minimum": 0.7,
-            "type": "number"
-          },
           "stability": {
-            "maximum": 1,
-            "minimum": 0,
-            "type": "number"
-          },
-          "style": {
             "maximum": 1,
             "minimum": 0,
             "type": "number"

@@ -1,7 +1,6 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SpeechSettingsResponseDto } from '@/shared/api/generated/models'
 import SpeechSynthesisSection from './SpeechSynthesisSection.vue'
@@ -34,12 +33,6 @@ function settings(): SpeechSettingsResponseDto {
       voiceId: '21m00Tcm4TlvDq8ikWAM',
       languageOverride: 'ru',
       stability: 0.5,
-      similarityBoost: 0.75,
-      style: 0,
-      speed: 1,
-      seed: null,
-      applyTextNormalization: 'auto',
-      applyLanguageTextNormalization: false,
     },
     integration: {
       id: 'elevenlabs',
@@ -55,12 +48,6 @@ function settings(): SpeechSettingsResponseDto {
         unsupportedForModel: ['useSpeakerBoost'],
         settings: {
           stability: { type: 'number', minimum: 0, maximum: 1, default: 0.5 },
-          similarityBoost: { type: 'number', minimum: 0, maximum: 1, default: 0.75 },
-          style: { type: 'number', minimum: 0, maximum: 1, default: 0 },
-          speed: { type: 'number', minimum: 0.7, maximum: 1.2, default: 1 },
-          seed: { type: 'integer', minimum: 0, maximum: 4_294_967_295 },
-          applyTextNormalization: { type: 'string', enum: ['auto', 'on', 'off'] },
-          applyLanguageTextNormalization: { type: 'boolean' },
         },
       },
     },
@@ -105,7 +92,7 @@ describe('SpeechSynthesisSection', () => {
     expect(wrapper.find('audio').attributes('src')).toBe('https://example.com/rachel.mp3')
   })
 
-  it('saves every supported setting through the dedicated ElevenLabs contract', async () => {
+  it('saves only the eleven_v3 settings supported by the CMS contract', async () => {
     const wrapper = shallowMount(SpeechSynthesisSection, {
       props: { projectId: 'project-1', supportedLocales: ['ru'] },
     })
@@ -117,21 +104,9 @@ describe('SpeechSynthesisSection', () => {
     const language = wrapper.findAllComponents(Select)
       .find((component) => component.attributes('id') === 'tts-language')!
     language.vm.$emit('update:modelValue', 'en')
-    for (const [id, value] of [
-      ['tts-stability', 0.35],
-      ['tts-similarity', 0.9],
-      ['tts-style', 0.4],
-      ['tts-speed', 1.1],
-      ['tts-seed', 42],
-    ] as const) {
-      wrapper.findAllComponents(InputNumber)
-        .find((component) => component.attributes('id') === id)!
-        .vm.$emit('update:modelValue', value)
-    }
-    const normalization = wrapper.findAllComponents(Select)
-      .find((component) => component.attributes('id') === 'tts-normalization')!
-    normalization.vm.$emit('update:modelValue', 'on')
-    wrapper.findComponent(ToggleSwitch).vm.$emit('update:modelValue', true)
+    wrapper.findAllComponents(InputNumber)
+      .find((component) => component.attributes('id') === 'tts-stability')!
+      .vm.$emit('update:modelValue', 0.35)
     await wrapper.vm.$nextTick()
     await wrapper.get('form').trigger('submit')
     await flushPromises()
@@ -140,13 +115,22 @@ describe('SpeechSynthesisSection', () => {
       voiceId: 'EXAVITQu4vr4xnSDxMaL',
       languageOverride: 'en',
       stability: 0.35,
-      similarityBoost: 0.9,
-      style: 0.4,
-      speed: 1.1,
-      seed: 42,
-      applyTextNormalization: 'on',
-      applyLanguageTextNormalization: true,
     })
+  })
+
+  it('collapses to the header and exposes the expanded state', async () => {
+    const wrapper = shallowMount(SpeechSynthesisSection, {
+      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+    })
+    await flushPromises()
+
+    const toggle = wrapper.find('[aria-controls="tts-content"]')
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    await toggle.trigger('click')
+
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.get('#tts-content').attributes('style')).toContain('display: none')
+    expect(wrapper.classes()).toContain('collapsed')
   })
 
   it('clears the previous project state when the next project fails to load', async () => {
@@ -172,22 +156,22 @@ describe('SpeechSynthesisSection', () => {
     })
     await flushPromises()
 
-    const speed = wrapper.findAllComponents(InputNumber)
-      .find((component) => component.attributes('id') === 'tts-speed')!
-    speed.vm.$emit('update:modelValue', 1.1)
+    const stability = wrapper.findAllComponents(InputNumber)
+      .find((component) => component.attributes('id') === 'tts-stability')!
+    stability.vm.$emit('update:modelValue', 0.7)
     await wrapper.vm.$nextTick()
     await wrapper.get('form').trigger('submit')
     await wrapper.setProps({ projectId: 'project-2' })
     await flushPromises()
 
     const staleResponse = settings()
-    staleResponse.settings.speed = 0.8
+    staleResponse.settings.stability = 0.8
     resolveUpdate(staleResponse)
     await flushPromises()
 
-    const currentSpeed = wrapper.findAllComponents(InputNumber)
-      .find((component) => component.attributes('id') === 'tts-speed')!
-    expect(currentSpeed.attributes('modelvalue')).toBe('1')
+    const currentStability = wrapper.findAllComponents(InputNumber)
+      .find((component) => component.attributes('id') === 'tts-stability')!
+    expect(currentStability.attributes('modelvalue')).toBe('0.5')
     expect(mocks.addToast).not.toHaveBeenCalled()
   })
 

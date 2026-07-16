@@ -101,6 +101,19 @@ describe('ProjectPage voice instructions', () => {
     expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(true)
   })
 
+  it('collapses voice chat settings to the section header', async () => {
+    const wrapper = shallowMount(ProjectPage)
+    await flushPromises()
+
+    const toggle = wrapper.find('[aria-controls="voice-chat-settings"]')
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    await toggle.trigger('click')
+
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.get('#voice-chat-settings').attributes('style')).toContain('display: none')
+    expect(toggle.element.closest('section')?.classList).toContain('collapsed')
+  })
+
   it('keeps project connection and OpenAI Realtime settings editable in API mode', async () => {
     mocks.getProject.mockResolvedValue(
       project({

@@ -25,9 +25,6 @@ function response(): SpeechSettingsResponseDto {
         unsupportedForModel: ['useSpeakerBoost'],
         settings: {
           stability: { type: 'number', minimum: 0, maximum: 1, default: 0.4 },
-          similarityBoost: { type: 'number', minimum: 0, maximum: 1, default: 0.8 },
-          style: { type: 'number', minimum: 0, maximum: 1, default: 0 },
-          speed: { type: 'number', minimum: 0.7, maximum: 1.2, default: 1 },
         },
       },
     },
@@ -40,21 +37,33 @@ describe('speech synthesis settings model', () => {
       voiceId: DEFAULT_VOICE_VALUE,
       languageOverride: AUTO_LANGUAGE_VALUE,
       stability: 0.4,
-      similarityBoost: 0.8,
-      style: 0,
-      speed: 1,
-      seed: null,
-      applyTextNormalization: 'auto',
-      applyLanguageTextNormalization: false,
     })
   })
 
-  it('clears optional overrides with null in the dedicated PATCH', () => {
+  it('creates a dedicated PATCH with only the public eleven_v3 settings', () => {
     const form = createSpeechSettingsForm(response())
-    expect(toSpeechSettingsDto(form)).toMatchObject({
+    expect(toSpeechSettingsDto(form)).toEqual({
       voiceId: null,
       languageOverride: null,
-      seed: null,
+      stability: 0.4,
+    })
+  })
+
+  it('does not expose legacy settings returned by an old backend response', () => {
+    const contract = response()
+    Object.assign(contract.settings, {
+      similarityBoost: 0.8,
+      style: 0.2,
+      speed: 1.1,
+      seed: 42,
+      applyTextNormalization: 'on',
+      applyLanguageTextNormalization: true,
+    })
+
+    expect(createSpeechSettingsForm(contract)).toEqual({
+      voiceId: DEFAULT_VOICE_VALUE,
+      languageOverride: AUTO_LANGUAGE_VALUE,
+      stability: 0.4,
     })
   })
 
@@ -67,22 +76,12 @@ describe('speech synthesis settings model', () => {
     expect(validateSpeechSettings(form, contract)).toContain('доступный голос')
   })
 
-  it('validates the provider ranges and integer seed', () => {
+  it('validates the model-specific stability range', () => {
     const contract = response()
     const form = createSpeechSettingsForm(contract)
-    for (const [key, invalid, expected] of [
-      ['stability', -0.01, 'Стабильность'],
-      ['similarityBoost', 1.01, 'Сходство с голосом'],
-      ['style', 1.01, 'Выразительность'],
-      ['speed', 1.21, '0.7 до 1.2'],
-    ] as const) {
-      const next = createSpeechSettingsForm(contract)
-      next[key] = invalid
-      expect(validateSpeechSettings(next, contract)).toContain(expected)
-    }
+    form.stability = -0.01
 
-    form.seed = 1.5
-    expect(validateSpeechSettings(form, contract)).toContain('целым числом')
+    expect(validateSpeechSettings(form, contract)).toContain('Стабильность')
   })
 
   it('rejects an invalid language override', () => {

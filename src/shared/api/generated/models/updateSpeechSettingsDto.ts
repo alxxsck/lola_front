@@ -5,12 +5,8 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { TextNormalizationMode } from "./textNormalizationMode";
 
 export interface UpdateSpeechSettingsDto {
-  /** Language-specific normalization; currently supported only for Japanese. */
-  applyLanguageTextNormalization?: boolean;
-  applyTextNormalization?: TextNormalizationMode;
   /**
    * ISO 639-1 language override. Null enables automatic language detection.
    * @nullable
@@ -19,30 +15,9 @@ export interface UpdateSpeechSettingsDto {
   languageOverride?: string | null;
   /**
    * @minimum 0
-   * @maximum 4294967295
-   * @nullable
-   */
-  seed?: number | null;
-  /**
-   * @minimum 0
-   * @maximum 1
-   */
-  similarityBoost?: number;
-  /**
-   * @minimum 0.7
-   * @maximum 1.2
-   */
-  speed?: number;
-  /**
-   * @minimum 0
    * @maximum 1
    */
   stability?: number;
-  /**
-   * @minimum 0
-   * @maximum 1
-   */
-  style?: number;
   /**
    * @minLength 12
    * @maxLength 100

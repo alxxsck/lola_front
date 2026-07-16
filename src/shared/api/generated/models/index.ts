@@ -203,7 +203,6 @@ export * from "./speechVoiceResponseDtoProvider";
 export * from "./startAdminVoiceConversationDto";
 export * from "./startVoiceSessionDto";
 export * from "./successResponseDto";
-export * from "./textNormalizationMode";
 export * from "./threadStatus";
 export * from "./uiElementKind";
 export * from "./uiElementResponseDto";
