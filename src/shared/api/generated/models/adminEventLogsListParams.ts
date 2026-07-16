@@ -19,15 +19,23 @@ export type AdminEventLogsListParams = {
    */
   cursor?: string;
   /**
-   * @maxLength 120
+   * Repeat eventCode for each selected event.
+   * @minItems 1
+   * @maxItems 50
    */
-  eventCode?: string;
+  eventCode?: string[];
   /**
    * @maxLength 200
    */
   externalUserId?: string;
-  source?: EventSource;
-  status?: EventStatus;
+  /**
+   * Repeat source for each selected source.
+   */
+  source?: EventSource[];
+  /**
+   * Repeat status for each selected status.
+   */
+  status?: EventStatus[];
   receivedFrom?: string;
   receivedTo?: string;
   occurredFrom?: string;

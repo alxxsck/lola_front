@@ -18,12 +18,18 @@ function button(wrapper: ReturnType<typeof shallowMount>, label: string) {
   return value
 }
 
+function updateModel(wrapper: ReturnType<typeof shallowMount>, selector: string, value: unknown) {
+  const component = wrapper.findComponent(selector) as unknown as { vm: { $emit: (event: string, value: unknown) => void } }
+  component.vm.$emit('update:modelValue', value)
+}
+
 const mocks = vi.hoisted(() => ({
   role: 'OWNER' as 'OWNER' | 'VIEWER',
   getEvents: vi.fn(),
   getEventLogPage: vi.fn(),
   getEventLog: vi.fn(),
   replace: vi.fn(),
+  routeQuery: {} as Record<string, string | string[]>,
 }))
 
 vi.mock('@/features/auth/auth.store', () => ({
@@ -37,7 +43,7 @@ vi.mock('@/shared/api/repository', () => ({
 vi.mock('primevue/usetoast', () => ({ useToast: () => ({ add: vi.fn() }) }))
 vi.mock('vue-router', async (importOriginal) => ({
   ...await importOriginal<typeof import('vue-router')>(),
-  useRoute: () => ({ query: {} }),
+  useRoute: () => ({ query: mocks.routeQuery }),
   useRouter: () => ({ push: vi.fn(), replace: mocks.replace }),
 }))
 
@@ -47,6 +53,7 @@ describe('EventLogsPage', () => {
     mocks.role = 'OWNER'
     mocks.getEvents.mockResolvedValue([])
     mocks.getEventLogPage.mockResolvedValue({ items: [], nextCursor: null })
+    mocks.routeQuery = {}
     window.scrollTo = vi.fn()
   })
 
@@ -65,6 +72,46 @@ describe('EventLogsPage', () => {
 
     expect(mocks.getEventLogPage).not.toHaveBeenCalled()
     expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(true)
+  })
+
+  it('shows all-value defaults and sends multiple selected filters', async () => {
+    const wrapper = shallowMount(EventLogsPage)
+    await flushPromises()
+
+    expect(wrapper.find('multi-select-stub#event-filter').attributes('placeholder')).toBe('Все события')
+    expect(wrapper.find('multi-select-stub#status-filter').attributes('placeholder')).toBe('Все статусы')
+    expect(wrapper.find('multi-select-stub#source-filter').attributes('placeholder')).toBe('Все источники')
+
+    updateModel(wrapper, 'multi-select-stub#event-filter', ['deposit', 'purchase'])
+    updateModel(wrapper, 'multi-select-stub#status-filter', ['FAILED', 'PROCESSED'])
+    updateModel(wrapper, 'multi-select-stub#source-filter', ['SERVER', 'FRONTEND'])
+    await button(wrapper, 'Применить').trigger('click')
+    await flushPromises()
+
+    expect(mocks.getEventLogPage).toHaveBeenLastCalledWith('project-1', {
+      eventCode: ['deposit', 'purchase'],
+      status: ['FAILED', 'PROCESSED'],
+      source: ['SERVER', 'FRONTEND'],
+      limit: 25,
+    })
+    expect(mocks.replace).toHaveBeenCalledWith({ query: {
+      eventCode: ['deposit', 'purchase'],
+      status: ['FAILED', 'PROCESSED'],
+      source: ['SERVER', 'FRONTEND'],
+    } })
+  })
+
+  it('restores repeated and legacy single filters from the URL', async () => {
+    mocks.routeQuery = { eventCode: ['deposit', 'purchase'], status: 'FAILED', source: ['SERVER', 'FRONTEND'] }
+    shallowMount(EventLogsPage)
+    await flushPromises()
+
+    expect(mocks.getEventLogPage).toHaveBeenCalledWith('project-1', {
+      eventCode: ['deposit', 'purchase'],
+      status: ['FAILED'],
+      source: ['SERVER', 'FRONTEND'],
+      limit: 25,
+    })
   })
 
   it('retries a failed refresh from page one and resets cursor history only after success', async () => {
@@ -101,8 +148,7 @@ describe('EventLogsPage', () => {
     const wrapper = mountWithMessageSlots()
     await flushPromises()
 
-    const userInput = wrapper.findComponent('input-text-stub#user-filter') as unknown as { vm: { $emit: (event: string, value: string) => void } }
-    userInput.vm.$emit('update:modelValue', ' customer-42 ')
+    updateModel(wrapper, 'input-text-stub#user-filter', ' customer-42 ')
     await button(wrapper, 'Применить').trigger('click')
     await flushPromises()
     await button(wrapper, 'Повторить').trigger('click')

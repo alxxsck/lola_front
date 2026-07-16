@@ -220,12 +220,16 @@ describe('api repository adapter', () => {
     vi.mocked(adminEventLogsList).mockResolvedValue({ items: [eventLog], pageInfo: { hasMore: true, nextCursor: 'cursor-2' } })
     vi.mocked(adminEventLogsGet).mockResolvedValue(eventLog)
 
-    await expect(apiRepository.getEventLogPage('project-1', { eventCode: 'deposit', status: 'PROCESSED', cursor: 'cursor-1', limit: 25 })).resolves.toEqual({
+    await expect(apiRepository.getEventLogPage('project-1', { eventCode: ['deposit', 'purchase'], status: ['FAILED', 'PROCESSED'], cursor: 'cursor-1', limit: 25 })).resolves.toEqual({
       items: [expect.objectContaining({ id: 'log-1', eventCode: 'deposit', eventVersion: 2, externalEventId: 'browser-1' })],
       nextCursor: 'cursor-2',
     })
     await expect(apiRepository.getEventLog('project-1', 'log-1')).resolves.toEqual(expect.objectContaining({ userExternalId: 'customer-1' }))
-    expect(adminEventLogsList).toHaveBeenCalledWith('project-1', { eventCode: 'deposit', status: 'PROCESSED', cursor: 'cursor-1', limit: 25 })
+    expect(adminEventLogsList).toHaveBeenCalledWith(
+      'project-1',
+      { eventCode: ['deposit', 'purchase'], status: ['FAILED', 'PROCESSED'], cursor: 'cursor-1', limit: 25 },
+      { paramsSerializer: { indexes: null } },
+    )
     expect(adminEventLogsGet).toHaveBeenCalledWith('project-1', 'log-1')
   })
 

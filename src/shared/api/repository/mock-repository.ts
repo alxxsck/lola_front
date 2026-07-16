@@ -225,10 +225,10 @@ export const mockRepository: LolaRepository = {
   async getEventLogPage(_projectId, filters) {
     const items = await this.getEventLogs(_projectId)
     const filtered = items.filter((item) =>
-      (!filters?.eventCode || item.eventCode === filters.eventCode)
+      (!filters?.eventCode || filters.eventCode.includes(item.eventCode))
       && (!filters?.externalUserId || item.userExternalId === filters.externalUserId)
-      && (!filters?.source || item.source === filters.source)
-      && (!filters?.status || item.status === filters.status)
+      && (!filters?.source || filters.source.includes(item.source))
+      && (!filters?.status || filters.status.includes(item.status))
       && (!filters?.receivedFrom || item.receivedAt >= filters.receivedFrom)
       && (!filters?.receivedTo || item.receivedAt <= filters.receivedTo)
       && (!filters?.occurredFrom || item.occurredAt >= filters.occurredFrom)

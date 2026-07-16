@@ -5215,13 +5215,24 @@
             }
           },
           {
+            "description": "Repeat eventCode for each selected event.",
+            "explode": true,
             "in": "query",
             "name": "eventCode",
             "required": false,
             "schema": {
-              "maxLength": 120,
-              "type": "string"
-            }
+              "items": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "style": "form"
           },
           {
             "in": "query",
@@ -5233,20 +5244,32 @@
             }
           },
           {
+            "description": "Repeat source for each selected source.",
+            "explode": true,
             "in": "query",
             "name": "source",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/EventSource"
-            }
+              "items": {
+                "$ref": "#/components/schemas/EventSource"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
+            "description": "Repeat status for each selected status.",
+            "explode": true,
             "in": "query",
             "name": "status",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/EventStatus"
-            }
+              "items": {
+                "$ref": "#/components/schemas/EventStatus"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "in": "query",

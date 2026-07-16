@@ -25,7 +25,7 @@ CMS поддерживает `STRING`, `NUMBER`, `BOOLEAN` и `DATETIME`, requir
 
 Legacy `/events/admin/{projectId}` не используется новой страницей.
 
-Фильтры отправляются на backend: event code, external user ID, source, status, received range и occurred range. Диапазоны проверяются до запроса. Limit: 25, 50 или 100.
+Фильтры отправляются на backend: event code, external user ID, source, status, received range и occurred range. Event code, source и status поддерживают множественный выбор; пустой список означает «все». Массивы сериализуются как repeated query parameters с `form + explode`, например `?status=FAILED&status=PROCESSED`. Диапазоны проверяются до запроса. Limit: 25, 50 или 100.
 
 Пагинация cursor‑based. CMS хранит cursor начала каждой уже открытой страницы, поэтому поддерживает переходы «Назад» и «Дальше». При изменении фильтров cursor history сбрасывается. Cursor не интерпретируется и не объединяется с другим набором фильтров.
 

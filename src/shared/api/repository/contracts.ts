@@ -80,10 +80,10 @@ export interface UserAttributeDefinitionInput {
 export type UpdateUserAttributeDefinitionInput = Partial<Omit<UserAttributeDefinitionInput, 'key' | 'type' | 'description'>> & { description?: string | null }
 
 export interface EventLogFilters extends CursorPageRequest {
-  eventCode?: string
+  eventCode?: string[]
   externalUserId?: string
-  source?: EventLog['source']
-  status?: EventLogStatus
+  source?: EventLog['source'][]
+  status?: EventLogStatus[]
   receivedFrom?: string
   receivedTo?: string
   occurredFrom?: string

@@ -2,15 +2,19 @@ import type { EventLogFilters } from '@/shared/api/repository/contracts'
 import type { EventLog } from '@/shared/types/domain'
 
 export interface EventLogFilterInput {
-  eventCode: string
+  eventCode: string[]
   externalUserId: string
-  source: string
-  status: string
+  source: EventLog['source'][]
+  status: EventLog['status'][]
   receivedFrom: string
   receivedTo: string
   occurredFrom: string
   occurredTo: string
   limit: number
+}
+
+function uniqueValues<T extends string>(values: T[], limit: number): T[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean) as T[])].slice(0, limit)
 }
 
 function toIso(value: string): string | undefined {
@@ -20,12 +24,15 @@ function toIso(value: string): string | undefined {
 }
 
 export function buildEventLogFilters(input: EventLogFilterInput): EventLogFilters {
+  const eventCode = uniqueValues(input.eventCode, 50)
+  const source = uniqueValues(input.source, 3)
+  const status = uniqueValues(input.status, 3)
   return {
     limit: input.limit,
-    ...(input.eventCode ? { eventCode: input.eventCode } : {}),
+    ...(eventCode.length ? { eventCode } : {}),
     ...(input.externalUserId.trim() ? { externalUserId: input.externalUserId.trim() } : {}),
-    ...(input.source ? { source: input.source as EventLog['source'] } : {}),
-    ...(input.status ? { status: input.status as EventLog['status'] } : {}),
+    ...(source.length ? { source } : {}),
+    ...(status.length ? { status } : {}),
     ...(toIso(input.receivedFrom) ? { receivedFrom: toIso(input.receivedFrom) } : {}),
     ...(toIso(input.receivedTo) ? { receivedTo: toIso(input.receivedTo) } : {}),
     ...(toIso(input.occurredFrom) ? { occurredFrom: toIso(input.occurredFrom) } : {}),

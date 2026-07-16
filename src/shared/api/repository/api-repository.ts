@@ -226,7 +226,7 @@ export const apiRepository: LolaRepository = {
   },
 
   async getEventLogPage(projectId, filters) {
-    const response = await adminEventLogsList(projectId, filters)
+    const response = await adminEventLogsList(projectId, filters, { paramsSerializer: { indexes: null } })
     return {
       items: response.items.map(mapEventLog),
       nextCursor: response.pageInfo.nextCursor ?? null,
