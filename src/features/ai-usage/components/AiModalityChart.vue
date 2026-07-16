@@ -1,21 +1,73 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AiProviderUsage } from '../ai-usage.model'
-import { formatTokenCount, getModalityUsage } from '../ai-usage.model'
+import type {
+  AiProviderUsage,
+  AiUsageBreakdown,
+  AiUsageMetric,
+} from '../ai-usage.model'
+import {
+  formatMoney,
+  formatTokenCount,
+  getModalityUsage,
+  pluralizeRu,
+} from '../ai-usage.model'
 
-const props = defineProps<{ totals: AiProviderUsage }>()
+const props = defineProps<{
+  totals: AiProviderUsage
+  breakdown: AiUsageBreakdown[]
+  metric: AiUsageMetric
+  currency?: string
+}>()
 
 const radius = 46
 const circumference = 2 * Math.PI * radius
-const modalities = computed(() => getModalityUsage(props.totals))
-const modalityTotal = computed(() =>
-  modalities.value.reduce((sum, item) => sum + item.tokens, 0),
+const operationColors = ['#8e77f5', '#ff8c6b', '#9fc62d', '#52a9a5', '#e3af43', '#7688db']
+const modalities = computed(() =>
+  getModalityUsage(props.totals).map((item) => ({
+    key: item.key,
+    label: item.label,
+    color: item.color,
+    value: item.tokens,
+  })),
+)
+const operations = computed(() => {
+  const values = new Map<string, number>()
+  for (const item of props.breakdown) {
+    values.set(item.operation, (values.get(item.operation) ?? 0) + item.estimatedCost)
+  }
+  const sorted = [...values]
+    .filter(([, value]) => value > 0)
+    .sort((left, right) => right[1] - left[1])
+  const grouped = sorted.length <= operationColors.length
+    ? sorted
+    : [
+        ...sorted.slice(0, operationColors.length - 1),
+        [
+          '__other__',
+          sorted
+            .slice(operationColors.length - 1)
+            .reduce((sum, [, value]) => sum + value, 0),
+        ] as [string, number],
+      ]
+  return grouped
+    .map(([operation, value], index) => ({
+      key: operation,
+      label: operation === '__other__' ? 'Остальное' : operationLabel(operation),
+      color: operationColors[index]!,
+      value,
+    }))
+})
+const chartItems = computed(() =>
+  props.metric === 'cost' ? operations.value : modalities.value,
+)
+const chartTotal = computed(() =>
+  chartItems.value.reduce((sum, item) => sum + item.value, 0),
 )
 const chartSegments = computed(() => {
   let offset = 0
-  return modalities.value.map((item) => {
-    const length = modalityTotal.value
-      ? (item.tokens / modalityTotal.value) * circumference
+  return chartItems.value.map((item) => {
+    const length = chartTotal.value
+      ? (item.value / chartTotal.value) * circumference
       : 0
     const segment = { ...item, length, offset: -offset }
     offset += length
@@ -23,14 +75,35 @@ const chartSegments = computed(() => {
   })
 })
 const chartLabel = computed(() =>
-  modalities.value
-    .map((item) => `${item.label}: ${formatTokenCount(item.tokens)} токенов`)
+  chartItems.value
+    .map((item) => `${item.label}: ${formatValue(item.value)}`)
     .join('. '),
 )
 
-function percentage(tokens: number): string {
-  if (!modalityTotal.value) return '0%'
-  const value = (tokens / modalityTotal.value) * 100
+function formatValue(value: number): string {
+  if (props.metric === 'cost') return formatMoney(value, props.currency ?? 'USD')
+  return `${formatTokenCount(value)} токенов`
+}
+
+function operationLabel(operation: string): string {
+  const normalized = operation.toLowerCase()
+  const labels: Record<string, string> = {
+    responses: 'Текст',
+    response: 'Текст',
+    web_search: 'Web search',
+    knowledge_search: 'Knowledge search',
+    realtime_response: 'Голосовой ответ',
+    voice_response: 'Голосовой ответ',
+    transcription: 'Транскрипция',
+    input_transcription: 'Входная транскрипция',
+    output_transcription: 'Выходная транскрипция',
+  }
+  return labels[normalized] ?? operation.replaceAll(/[_-]+/g, ' ')
+}
+
+function percentage(itemValue: number): string {
+  if (!chartTotal.value) return '0%'
+  const value = (itemValue / chartTotal.value) * 100
   return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: value < 1 ? 1 : 0 }).format(value)}%`
 }
 </script>
@@ -39,16 +112,18 @@ function percentage(tokens: number): string {
   <section class="chart-card" aria-labelledby="modality-usage-title">
     <header class="chart-header">
       <div>
-        <span class="chart-kicker">Форматы</span>
-        <h3 id="modality-usage-title">Форматы токенов OpenAI</h3>
+        <span class="chart-kicker">{{ metric === 'cost' ? 'Операции' : 'Форматы' }}</span>
+        <h3 id="modality-usage-title">
+          {{ metric === 'cost' ? 'Структура стоимости Grok' : 'Форматы токенов Grok' }}
+        </h3>
       </div>
-      <span class="direction-badge"
-        >{{ formatTokenCount(totals.inputTokens) }} in ·
-        {{ formatTokenCount(totals.outputTokens) }} out</span
-      >
+      <span class="direction-badge">
+        <template v-if="metric === 'cost'">{{ formatMoney(chartTotal, currency ?? 'USD') }}</template>
+        <template v-else>{{ formatTokenCount(totals.inputTokens) }} in · {{ formatTokenCount(totals.outputTokens) }} out</template>
+      </span>
     </header>
 
-    <div v-if="modalityTotal" class="modality-layout">
+    <div v-if="chartTotal" class="modality-layout">
       <div class="donut-wrap">
         <svg viewBox="0 0 120 120" role="img" :aria-label="chartLabel">
           <circle class="donut-track" cx="60" cy="60" :r="radius" />
@@ -65,29 +140,33 @@ function percentage(tokens: number): string {
           />
         </svg>
         <div class="donut-total">
-          <strong>{{ formatTokenCount(modalityTotal) }}</strong
-          ><span>токенов</span>
+          <strong>{{ metric === 'cost' ? formatMoney(chartTotal, currency ?? 'USD') : formatTokenCount(chartTotal) }}</strong>
+          <span>{{ metric === 'cost' ? 'оценка' : 'токенов' }}</span>
         </div>
       </div>
 
       <div class="modality-legend">
-        <div v-for="item in modalities" :key="item.key" class="legend-row">
+        <div v-for="item in chartItems" :key="item.key" class="legend-row">
           <span class="legend-dot" :style="{ backgroundColor: item.color }" />
           <span
             ><strong>{{ item.label }}</strong
-            ><small>{{ formatTokenCount(item.tokens) }} токенов</small></span
+            ><small>{{ formatValue(item.value) }}</small></span
           >
-          <b>{{ percentage(item.tokens) }}</b>
+          <b>{{ percentage(item.value) }}</b>
         </div>
       </div>
     </div>
     <div v-else class="chart-empty">
-      <i class="pi pi-chart-pie" /><span>Детализация по форматам пока отсутствует</span>
+      <i class="pi pi-chart-pie" /><span>{{ metric === 'cost' ? 'Оценка стоимости пока отсутствует' : 'Детализация по форматам пока отсутствует' }}</span>
     </div>
 
-    <footer class="cache-row">
+    <footer v-if="metric === 'tokens'" class="cache-row">
       <span><i class="pi pi-bolt" /> Повторно использовано из кэша</span>
       <strong>{{ formatTokenCount(totals.cachedInputTokens) }} токенов</strong>
+    </footer>
+    <footer v-else class="cache-row">
+      <span><i class="pi pi-receipt" /> Оценено по операциям backend</span>
+      <strong>{{ totals.records }} {{ pluralizeRu(totals.records, 'операция', 'операции', 'операций') }}</strong>
     </footer>
   </section>
 </template>

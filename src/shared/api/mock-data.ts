@@ -31,7 +31,7 @@ export const demoProject: Project = {
     allowedOrigins: ['https://luckystars.example'],
     voiceEnabled: false,
     voiceTranscriptEnabled: true,
-    voice: 'marin',
+    voice: 'eve',
   },
   organization: { id: 'org_1', name: 'Lucky Group', slug: 'lucky_group' },
   _count: { users: 1284, scenarios: 4, eventLogs: 18742 },
@@ -39,6 +39,11 @@ export const demoProject: Project = {
 
 const definitionDate = '2026-07-12T12:00:00.000Z'
 const realtimeVoices = Object.values(RealtimeVoice)
+const speechVoiceIds = [
+  '21m00Tcm4TlvDq8ikWAM',
+  'EXAVITQu4vr4xnSDxMaL',
+  'ErXwobaYiN019PkySvjV',
+]
 const timeoutProperty = { type: 'integer' as const, minimum: 1000, maximum: 300000 }
 const timeoutField: ActionUiField = { key: 'timeoutMs', label: 'Таймаут, мс', control: 'number' }
 
@@ -106,13 +111,13 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
   {
     ...demoActionDefinition('SPEAK_TEXT', 'Озвучить текст', 'FRONTEND', {
       text: { type: 'string', minLength: 1, maxLength: 2000 },
-      voice: { type: 'string', enum: realtimeVoices },
+      voice: { type: 'string', enum: speechVoiceIds },
       waitForCompletion: { type: 'boolean', default: true },
     }, ['text'], [
       { key: 'text', label: 'Текст для озвучивания', control: 'textarea', supportsTemplates: true },
-      { key: 'voice', label: 'Голос', control: 'select', options: realtimeVoices },
+      { key: 'voice', label: 'Голос', control: 'select', options: speechVoiceIds },
       { key: 'waitForCompletion', label: 'Дождаться окончания воспроизведения', control: 'boolean' },
-    ], 'Генерирует речь Realtime-моделью и может дождаться окончания воспроизведения.'),
+    ], 'Генерирует речь через ElevenLabs и может дождаться окончания воспроизведения.'),
     commandType: 'speak_text',
   },
   demoActionDefinition(ServerActionHandler.START_VOICE_CONVERSATION, 'Начать голосовой диалог', 'SERVER', {

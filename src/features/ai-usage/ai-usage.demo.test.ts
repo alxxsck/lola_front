@@ -5,7 +5,7 @@ vi.mock('@/shared/config/data-mode', () => ({ isMockMode: true }))
 import { fetchAiUsageReport } from './ai-usage.api'
 
 describe('AI usage demo report', () => {
-  it('keeps project totals aligned with OpenAI estimates and ElevenLabs billed units', async () => {
+  it('keeps project totals aligned with xAI estimates and ElevenLabs billed units', async () => {
     const report = await fetchAiUsageReport('project-1', {})
     const elevenLabs = report.breakdown.find(
       (row) => row.provider === 'elevenlabs',

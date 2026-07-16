@@ -1,6 +1,8 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AiUsageSection from './AiUsageSection.vue'
+import AiModelUsageChart from './components/AiModelUsageChart.vue'
+import AiModalityChart from './components/AiModalityChart.vue'
 
 const mocks = vi.hoisted(() => ({ fetchReport: vi.fn() }))
 
@@ -13,21 +15,21 @@ describe('AiUsageSection', () => {
     mocks.fetchReport.mockResolvedValue({
       projectId: 'project-1',
       totals: {
-        records: 1,
+        records: 2,
         unpricedRecords: 0,
         providerReportedUsageRecords: 1,
-        estimatedCostRecords: 0,
+        estimatedCostRecords: 1,
         inputCharacters: 1_200,
         providerBilledUnits: 1_250,
-        totalTokens: 0,
-        inputTokens: 0,
-        cachedInputTokens: 0,
+        totalTokens: 120,
+        inputTokens: 80,
+        cachedInputTokens: 20,
         cacheWriteInputTokens: 0,
-        outputTokens: 0,
+        outputTokens: 40,
         reasoningTokens: 0,
-        inputTextTokens: 0,
-        cachedInputTextTokens: 0,
-        outputTextTokens: 0,
+        inputTextTokens: 80,
+        cachedInputTextTokens: 20,
+        outputTextTokens: 40,
         inputAudioTokens: 0,
         cachedInputAudioTokens: 0,
         outputAudioTokens: 0,
@@ -35,10 +37,37 @@ describe('AiUsageSection', () => {
         cachedInputImageTokens: 0,
         outputImageTokens: 0,
         durationSeconds: 0,
-        estimatedCost: 0,
+        estimatedCost: 0.0012,
         billedCost: 0,
       },
       breakdown: [
+        {
+          provider: 'xai',
+          model: 'grok-4.5',
+          operation: 'responses',
+          currency: 'usd',
+          records: 1,
+          inputCharacters: 0,
+          providerBilledUnits: 0,
+          totalTokens: 120,
+          inputTokens: 80,
+          cachedInputTokens: 20,
+          cacheWriteInputTokens: 0,
+          outputTokens: 40,
+          reasoningTokens: 0,
+          inputTextTokens: 80,
+          cachedInputTextTokens: 20,
+          outputTextTokens: 40,
+          inputAudioTokens: 0,
+          cachedInputAudioTokens: 0,
+          outputAudioTokens: 0,
+          inputImageTokens: 0,
+          cachedInputImageTokens: 0,
+          outputImageTokens: 0,
+          durationSeconds: 0,
+          estimatedCost: 0.0012,
+          billedCost: 0,
+        },
         {
           provider: 'elevenlabs',
           model: 'eleven_v3',
@@ -70,19 +99,34 @@ describe('AiUsageSection', () => {
     })
   })
 
-  it('separates OpenAI estimates from ElevenLabs credits', async () => {
+  it('separates xAI estimates from ElevenLabs credits', async () => {
     const wrapper = shallowMount(AiUsageSection, {
       props: { projectId: 'project-1' },
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('OpenAI')
+    expect(wrapper.text()).toContain('xAI · Grok')
     expect(wrapper.text()).toContain('ElevenLabs')
     expect(wrapper.text()).toContain('Использовано credits')
     expect(wrapper.text()).toContain('1,3 тыс.')
-    expect(wrapper.text()).toContain('Нет USD-оценки')
+    expect(wrapper.text()).toContain('0,0012 $')
     expect(wrapper.text()).not.toContain('операция ElevenLabs учтена')
     expect(wrapper.text()).not.toContain('character-cost')
     expect(wrapper.text()).not.toContain('Расчётная стоимость может отличаться')
+  })
+
+  it('uses one token and cost switch for both Grok charts', async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: 'project-1' },
+    })
+    await flushPromises()
+
+    expect(wrapper.getComponent(AiModelUsageChart).props('metric')).toBe('tokens')
+    expect(wrapper.getComponent(AiModalityChart).props('metric')).toBe('tokens')
+
+    await wrapper.findAll('.metric-switch button')[1]!.trigger('click')
+
+    expect(wrapper.getComponent(AiModelUsageChart).props('metric')).toBe('cost')
+    expect(wrapper.getComponent(AiModalityChart).props('metric')).toBe('cost')
   })
 })

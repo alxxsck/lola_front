@@ -1,4 +1,5 @@
 export type AiUsageRangeKey = 'today' | '7d' | '30d' | 'all'
+export type AiUsageMetric = 'tokens' | 'cost'
 
 export interface AiUsageRangeQuery {
   from?: string

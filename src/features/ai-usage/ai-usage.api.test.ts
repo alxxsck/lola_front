@@ -35,8 +35,8 @@ const response = {
   totals: currentTotals,
   breakdown: [
     {
-      provider: 'openai',
-      model: 'gpt-5.4-mini',
+      provider: 'xai',
+      model: 'grok-4.5',
       operation: 'responses',
       currency: 'usd',
       records: 2,
@@ -77,7 +77,7 @@ describe('AI usage API response validation', () => {
       },
       breakdown: [
         {
-          model: 'gpt-5.4-mini',
+          model: 'grok-4.5',
           inputCharacters: 0,
           providerBilledUnits: 0,
           estimatedCost: 0.0012,

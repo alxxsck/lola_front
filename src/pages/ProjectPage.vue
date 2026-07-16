@@ -45,16 +45,11 @@ const localeOptions = [
 ]
 
 const voiceOptions: { label: string; value: RealtimeVoice }[] = [
-  { label: 'Marin', value: 'marin' },
-  { label: 'Cedar', value: 'cedar' },
-  { label: 'Alloy', value: 'alloy' },
-  { label: 'Ash', value: 'ash' },
-  { label: 'Ballad', value: 'ballad' },
-  { label: 'Coral', value: 'coral' },
-  { label: 'Echo', value: 'echo' },
-  { label: 'Sage', value: 'sage' },
-  { label: 'Shimmer', value: 'shimmer' },
-  { label: 'Verse', value: 'verse' },
+  { label: 'Ara', value: 'ara' },
+  { label: 'Eve', value: 'eve' },
+  { label: 'Leo', value: 'leo' },
+  { label: 'Rex', value: 'rex' },
+  { label: 'Sal', value: 'sal' },
 ]
 
 function isRealtimeVoice(value: unknown): value is RealtimeVoice {
@@ -85,7 +80,7 @@ const form = reactive<ProjectForm>({
   allowedOrigins: '',
   voiceEnabled: false,
   voiceTranscriptEnabled: true,
-  voice: 'marin',
+  voice: 'eve',
   voiceInstructions: '',
 })
 
@@ -108,7 +103,7 @@ function fillForm(nextProject: Project) {
     allowedOrigins: Array.isArray(nextProject.settings.allowedOrigins) ? nextProject.settings.allowedOrigins.join('\n') : '',
     voiceEnabled: nextProject.settings.voiceEnabled === true,
     voiceTranscriptEnabled: nextProject.settings.voiceTranscriptEnabled !== false,
-    voice: isRealtimeVoice(nextProject.settings.voice) ? nextProject.settings.voice : 'marin',
+    voice: isRealtimeVoice(nextProject.settings.voice) ? nextProject.settings.voice : 'eve',
     voiceInstructions: nextProject.voiceInstructions,
   })
   initialSnapshot.value = JSON.stringify(form)

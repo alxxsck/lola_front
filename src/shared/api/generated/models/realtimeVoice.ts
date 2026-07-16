@@ -10,14 +10,9 @@ export type RealtimeVoice = (typeof RealtimeVoice)[keyof typeof RealtimeVoice];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RealtimeVoice = {
-  alloy: "alloy",
-  ash: "ash",
-  ballad: "ballad",
-  coral: "coral",
-  echo: "echo",
-  sage: "sage",
-  shimmer: "shimmer",
-  verse: "verse",
-  marin: "marin",
-  cedar: "cedar",
+  ara: "ara",
+  eve: "eve",
+  leo: "leo",
+  rex: "rex",
+  sal: "sal",
 } as const;

@@ -69,7 +69,7 @@ describe('scenario API contract', () => {
       type: 'START_VOICE_CONVERSATION',
       config: {
         text: 'Привет! Давай я помогу тебе с настройкой.',
-        voice: 'marin',
+        voice: 'eve',
         onUnavailable: 'continue',
       },
     }])).toEqual([{
@@ -79,7 +79,7 @@ describe('scenario API contract', () => {
       type: 'START_VOICE_CONVERSATION',
       config: {
         text: 'Привет! Давай я помогу тебе с настройкой.',
-        voice: 'marin',
+        voice: 'eve',
         onUnavailable: 'continue',
       },
     }])
@@ -89,11 +89,11 @@ describe('scenario API contract', () => {
     expect(serializeApiScenarioActions([{
       position: 0,
       type: 'SPEAK_TEXT',
-      config: { text: 'Привет!', voice: 'marin', waitForCompletion: false, timeoutMs: 60_000 },
+      config: { text: 'Привет!', voice: 'elevenlabs-voice-id', waitForCompletion: false, timeoutMs: 60_000 },
     }])).toEqual([{
       position: 0,
       type: 'SPEAK_TEXT',
-      config: { text: 'Привет!', voice: 'marin', waitForCompletion: false, timeoutMs: 60_000 },
+      config: { text: 'Привет!', voice: 'elevenlabs-voice-id', waitForCompletion: false, timeoutMs: 60_000 },
     }])
   })
 

@@ -79,8 +79,8 @@ describe('action definition schema helpers', () => {
     })
     expect(definition?.uiSchema.fields.map((field) => field.key)).toEqual(['text', 'voice', 'onUnavailable'])
     expect(validateActionConfig(definition!, {})).toBe('Первая голосовая реплика Lola: обязательное поле')
-    expect(validateActionConfig(definition!, { text: 'Привет!', voice: 'marin', onUnavailable: 'continue' })).toBe('')
-    expect(validateActionConfig(definition!, { text: 'Привет!', voice: 'nova' })).toBe('Голос: содержит недопустимое значение')
+    expect(validateActionConfig(definition!, { text: 'Привет!', voice: 'eve', onUnavailable: 'continue' })).toBe('')
+    expect(validateActionConfig(definition!, { text: 'Привет!', voice: 'marin' })).toBe('Голос: содержит недопустимое значение')
     expect(validateActionConfig(definition!, { text: 'Привет!', onUnavailable: 'stop' })).toBe('Если голос недоступен: содержит недопустимое значение')
   })
 

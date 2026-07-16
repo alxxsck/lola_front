@@ -30,7 +30,7 @@ const elements = ref<UiElement[]>([])
 const targetsLoading = ref(false)
 const pendingIdempotency = ref<{ fingerprint: string; key: string } | null>(null)
 const selectedSessionId = ref('')
-const form = reactive({ type: 'TEXT', text: '', policy: 'reuse_active', label: '', action: 'OPEN_PAGE', target: '', animation: 'greeting', voice: 'alloy', integrationCode: 'welcome_bonus', amount: 10, currency: 'EUR' })
+const form = reactive({ type: 'TEXT', text: '', policy: 'reuse_active', label: '', action: 'OPEN_PAGE', target: '', animation: 'greeting', voice: 'eve', integrationCode: 'welcome_bonus', amount: 10, currency: 'EUR' })
 
 const availableSessions = computed(() => props.sessions?.length ? props.sessions : props.session ? [props.session] : [])
 const selectedSession = computed(() => availableSessions.value.find((item) => item.id === selectedSessionId.value) ?? null)
@@ -162,7 +162,7 @@ async function send() {
       <div class="field"><label>Диалог</label><Select v-model="form.policy" :options="policies" option-label="label" option-value="value" /></div>
       <div v-if="availableSessions.length" class="field"><label>Активная сессия</label><Select v-model="selectedSessionId" :options="sessionOptions" option-label="label" option-value="value" /><small>Для текста backend может выбрать сессию автоматически. Кнопка или frontend-команда будет отправлена строго в выбранную сессию.</small></div>
       <template v-if="form.type === 'TEXT' || form.type === 'VOICE'">
-        <div v-if="form.type === 'VOICE'" class="field"><label>Голос</label><Select v-model="form.voice" :options="['alloy', 'nova', 'shimmer']" /></div>
+        <div v-if="form.type === 'VOICE'" class="field"><label>Голос</label><Select v-model="form.voice" :options="['ara', 'eve', 'leo', 'rex', 'sal']" /></div>
         <div class="field"><label>{{ form.type === 'VOICE' ? 'Текст для озвучивания' : 'Сообщение' }}</label><Textarea v-model="form.text" rows="5" maxlength="10000" placeholder="Что Lola должна сказать пользователю?" /></div>
       </template>
       <template v-else-if="form.type === 'BUTTON' || form.type === 'COMMAND'">

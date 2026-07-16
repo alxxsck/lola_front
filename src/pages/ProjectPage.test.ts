@@ -54,7 +54,7 @@ function project(overrides: Partial<Project> = {}): Project {
       description: '',
       voiceEnabled: true,
       voiceTranscriptEnabled: true,
-      voice: 'marin',
+      voice: 'eve',
     },
     ...overrides,
   }
@@ -140,7 +140,7 @@ describe('ProjectPage voice instructions', () => {
     expect(wrapper.find('button-stub[form="project-settings-form"]').exists()).toBe(true)
   })
 
-  it('keeps project connection and OpenAI Realtime settings editable in API mode', async () => {
+  it('keeps project connection and Grok voice settings editable in API mode', async () => {
     mocks.getProject.mockResolvedValue(
       project({
         settings: {
@@ -151,7 +151,7 @@ describe('ProjectPage voice instructions', () => {
           allowedOrigins: ['https://old.example.com'],
           voiceEnabled: true,
           voiceTranscriptEnabled: true,
-          voice: 'marin',
+          voice: 'eve',
           speechSynthesis: { schemaVersion: 2, voiceId: 'server-owned-voice' },
         },
       }),
@@ -203,7 +203,7 @@ describe('ProjectPage voice instructions', () => {
     wsUrl.vm.$emit('update:modelValue', 'wss://api.example.com')
     timezone.vm.$emit('update:modelValue', 'UTC')
     allowedOrigins.vm.$emit('update:modelValue', 'https://one.example.com\nhttps://two.example.com')
-    voice.vm.$emit('update:modelValue', 'cedar')
+    voice.vm.$emit('update:modelValue', 'rex')
     voiceTranscriptEnabled.vm.$emit('update:modelValue', false)
     voiceEnabled.vm.$emit('update:modelValue', false)
     await wrapper.vm.$nextTick()
@@ -221,7 +221,7 @@ describe('ProjectPage voice instructions', () => {
           allowedOrigins: ['https://one.example.com', 'https://two.example.com'],
           voiceEnabled: false,
           voiceTranscriptEnabled: false,
-          voice: 'cedar',
+          voice: 'rex',
           speechSynthesis: { schemaVersion: 2, voiceId: 'server-owned-voice' },
         }),
       }),

@@ -10,10 +10,5 @@ export type RealtimeModel = (typeof RealtimeModel)[keyof typeof RealtimeModel];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RealtimeModel = {
-  "gpt-realtime-21": "gpt-realtime-2.1",
-  "gpt-realtime-21-mini": "gpt-realtime-2.1-mini",
-  "gpt-realtime-2": "gpt-realtime-2",
-  "gpt-realtime-15": "gpt-realtime-1.5",
-  "gpt-realtime": "gpt-realtime",
-  "gpt-realtime-mini": "gpt-realtime-mini",
+  "grok-voice-think-fast-10": "grok-voice-think-fast-1.0",
 } as const;

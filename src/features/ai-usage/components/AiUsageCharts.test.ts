@@ -4,15 +4,16 @@ import type {
   AiCreditUsage,
   AiModelUsage,
   AiProviderUsage,
+  AiUsageBreakdown,
 } from '../ai-usage.model'
 import AiModalityChart from './AiModalityChart.vue'
 import AiModelUsageChart from './AiModelUsageChart.vue'
 import ElevenLabsCreditChart from './ElevenLabsCreditChart.vue'
 
-const openAiRow: AiModelUsage = {
-  key: 'openai\u0000gpt-5.4-mini\u0000usd',
-  provider: 'openai',
-  model: 'gpt-5.4-mini',
+const xAiRow: AiModelUsage = {
+  key: 'xai\u0000grok-4.5\u0000usd',
+  provider: 'xai',
+  model: 'grok-4.5',
   currency: 'usd',
   records: 3,
   inputCharacters: 0,
@@ -34,7 +35,7 @@ const elevenLabsRow: AiCreditUsage = {
   providerBilledUnits: 1_250,
 }
 
-const emptyOpenAiUsage: AiProviderUsage = {
+const emptyXAiUsage: AiProviderUsage = {
   records: 0,
   inputCharacters: 0,
   providerBilledUnits: 0,
@@ -58,19 +59,43 @@ const emptyOpenAiUsage: AiProviderUsage = {
   billedCost: 0,
 }
 
+const xAiBreakdown: AiUsageBreakdown = {
+  provider: 'xai',
+  model: 'grok-4.5',
+  operation: 'web_search',
+  currency: 'usd',
+  records: 3,
+  inputCharacters: 0,
+  providerBilledUnits: 0,
+  totalTokens: 1_250,
+  inputTokens: 1_000,
+  cachedInputTokens: 200,
+  cacheWriteInputTokens: 0,
+  outputTokens: 250,
+  reasoningTokens: 0,
+  inputTextTokens: 1_000,
+  cachedInputTextTokens: 200,
+  outputTextTokens: 250,
+  inputAudioTokens: 0,
+  cachedInputAudioTokens: 0,
+  outputAudioTokens: 0,
+  inputImageTokens: 0,
+  cachedInputImageTokens: 0,
+  outputImageTokens: 0,
+  durationSeconds: 0,
+  estimatedCost: 0.025,
+  billedCost: 0,
+}
+
 describe('AI usage charts', () => {
-  it('switches the OpenAI model chart between tokens and cost only', async () => {
+  it('renders the Grok model chart using the metric controlled by its parent', async () => {
     const wrapper = mount(AiModelUsageChart, {
-      props: { rows: [openAiRow], currency: 'USD' },
+      props: { rows: [xAiRow], metric: 'tokens' },
     })
 
-    expect(wrapper.findAll('button').map((button) => button.text())).toEqual([
-      'Токены',
-      'Стоимость',
-    ])
     expect(wrapper.text()).toContain('1,3 тыс. токенов')
 
-    await wrapper.findAll('button')[1]!.trigger('click')
+    await wrapper.setProps({ metric: 'cost' })
     expect(wrapper.text()).toContain('0,0250 $')
   })
 
@@ -87,13 +112,47 @@ describe('AI usage charts', () => {
     expect(wrapper.text()).toContain('а не USD')
   })
 
-  it('keeps the OpenAI modality empty state provider-specific', () => {
+  it('keeps the Grok modality empty state provider-specific', () => {
     const wrapper = mount(AiModalityChart, {
-      props: { totals: emptyOpenAiUsage },
+      props: {
+        totals: emptyXAiUsage,
+        breakdown: [],
+        metric: 'tokens',
+      },
     })
 
-    expect(wrapper.text()).toContain('Форматы токенов OpenAI')
+    expect(wrapper.text()).toContain('Форматы токенов Grok')
     expect(wrapper.text()).toContain('Детализация по форматам пока отсутствует')
     expect(wrapper.text()).not.toContain('ElevenLabs')
+  })
+
+  it('switches the Grok donut from token formats to estimated cost by operation', async () => {
+    const wrapper = mount(AiModalityChart, {
+      props: {
+        totals: {
+          ...emptyXAiUsage,
+          records: 3,
+          totalTokens: 1_250,
+          inputTokens: 1_000,
+          cachedInputTokens: 200,
+          outputTokens: 250,
+          inputTextTokens: 1_000,
+          cachedInputTextTokens: 200,
+          outputTextTokens: 250,
+          estimatedCost: 0.025,
+        },
+        breakdown: [xAiBreakdown],
+        metric: 'tokens',
+        currency: 'USD',
+      },
+    })
+
+    expect(wrapper.text()).toContain('Форматы токенов Grok')
+    expect(wrapper.text()).toContain('1,3 тыс. токенов')
+
+    await wrapper.setProps({ metric: 'cost' })
+    expect(wrapper.text()).toContain('Структура стоимости Grok')
+    expect(wrapper.text()).toContain('Web search')
+    expect(wrapper.text()).toContain('0,0250 $')
   })
 })

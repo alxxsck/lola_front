@@ -43,8 +43,8 @@ const totals: AiUsageTotals = {
 
 function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
   return {
-    provider: 'openai',
-    model: 'gpt-5.4-mini',
+    provider: 'xai',
+    model: 'grok-4.5',
     operation: 'responses',
     currency: 'usd',
     records: 1,
@@ -123,7 +123,7 @@ describe('AI usage model', () => {
   })
 
   it('separates provider totals and credit usage before presentation', () => {
-    const openAi = breakdown()
+    const xAi = breakdown()
     const elevenLabs = breakdown({
       provider: 'elevenlabs',
       model: 'eleven_v3',
@@ -140,15 +140,15 @@ describe('AI usage model', () => {
       estimatedCost: 0,
     })
 
-    const openAiUsage = aggregateProviderUsage(
-      getProviderBreakdown([openAi, elevenLabs], 'openai'),
+    const xAiUsage = aggregateProviderUsage(
+      getProviderBreakdown([xAi, elevenLabs], 'xai'),
     )
     const elevenLabsUsage = aggregateProviderUsage(
-      getProviderBreakdown([openAi, elevenLabs], 'elevenlabs'),
+      getProviderBreakdown([xAi, elevenLabs], 'elevenlabs'),
     )
     const creditRows = aggregateCreditUsage([elevenLabs])
 
-    expect(openAiUsage).toMatchObject({
+    expect(xAiUsage).toMatchObject({
       records: 1,
       totalTokens: 100,
       providerBilledUnits: 0,

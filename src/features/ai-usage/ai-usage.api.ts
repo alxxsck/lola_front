@@ -37,8 +37,8 @@ const demoReport = (projectId: string): AiUsageReport => ({
   },
   breakdown: [
     {
-      provider: 'openai',
-      model: 'gpt-5.4-mini',
+      provider: 'xai',
+      model: 'grok-4.5',
       operation: 'responses',
       currency: 'usd',
       records: 112,
@@ -64,9 +64,9 @@ const demoReport = (projectId: string): AiUsageReport => ({
       billedCost: 0,
     },
     {
-      provider: 'openai',
-      model: 'gpt-realtime-2.1-mini',
-      operation: 'realtime_response',
+      provider: 'xai',
+      model: 'grok-voice-think-fast-1.0',
+      operation: 'voice_response',
       currency: 'usd',
       records: 51,
       inputCharacters: 0,
@@ -91,8 +91,8 @@ const demoReport = (projectId: string): AiUsageReport => ({
       billedCost: 0,
     },
     {
-      provider: 'openai',
-      model: 'gpt-realtime-2.1-mini',
+      provider: 'xai',
+      model: 'grok-voice-think-fast-1.0',
       operation: 'scripted_intro',
       currency: 'usd',
       records: 9,
@@ -118,9 +118,9 @@ const demoReport = (projectId: string): AiUsageReport => ({
       billedCost: 0,
     },
     {
-      provider: 'openai',
-      model: 'gpt-4o-mini-transcribe',
-      operation: 'transcription',
+      provider: 'xai',
+      model: 'grok-voice-think-fast-1.0',
+      operation: 'input_transcription',
       currency: 'usd',
       records: 14,
       inputCharacters: 0,
