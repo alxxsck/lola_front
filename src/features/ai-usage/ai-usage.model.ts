@@ -103,6 +103,7 @@ export interface AiModelUsage {
   inputTokens: number
   cachedInputTokens: number
   outputTokens: number
+  durationSeconds: number
   estimatedCost: number
   billedCost: number
 }
@@ -164,6 +165,7 @@ export function aggregateModelUsage(
       current.inputTokens += item.inputTokens
       current.cachedInputTokens += item.cachedInputTokens
       current.outputTokens += item.outputTokens
+      current.durationSeconds += item.durationSeconds
       current.estimatedCost += item.estimatedCost
       current.billedCost += item.billedCost
       continue
@@ -181,6 +183,7 @@ export function aggregateModelUsage(
       inputTokens: item.inputTokens,
       cachedInputTokens: item.cachedInputTokens,
       outputTokens: item.outputTokens,
+      durationSeconds: item.durationSeconds,
       estimatedCost: item.estimatedCost,
       billedCost: item.billedCost,
     })

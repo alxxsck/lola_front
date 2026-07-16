@@ -112,6 +112,7 @@ describe('AiUsageSection', () => {
     expect(wrapper.text()).toContain('0,0012 $')
     expect(wrapper.text()).toContain('Стоимость Grok')
     expect(wrapper.text()).toContain('По данным xAI')
+    expect(wrapper.text()).toContain('Стоимость голосового Grok рассчитывается')
     expect(wrapper.text()).not.toContain('Расчётная стоимость')
     expect(wrapper.text()).not.toContain('операция ElevenLabs учтена')
     expect(wrapper.text()).not.toContain('character-cost')
@@ -134,17 +135,17 @@ describe('AiUsageSection', () => {
     expect(wrapper.getComponent(AiModalityChart).props('metric')).toBe('cost')
   })
 
-  it('includes estimated Voice cost and explains the applied xAI rate', async () => {
+  it('includes all estimated Voice costs from the backend response', async () => {
     const baseReport = await mocks.fetchReport()
     const textUsage = baseReport.breakdown[0]
     mocks.fetchReport.mockResolvedValue({
       ...baseReport,
       totals: {
         ...baseReport.totals,
-        records: 3,
-        estimatedCostRecords: 1,
-        durationSeconds: 60,
-        estimatedCost: 0.05,
+        records: 4,
+        estimatedCostRecords: 2,
+        durationSeconds: 170.35,
+        estimatedCost: 0.197958333333,
       },
       breakdown: [
         ...baseReport.breakdown,
@@ -152,7 +153,7 @@ describe('AiUsageSection', () => {
           ...textUsage,
           model: 'grok-voice-latest',
           operation: 'realtime_response',
-          records: 1,
+          records: 2,
           totalTokens: 0,
           inputTokens: 0,
           cachedInputTokens: 0,
@@ -160,8 +161,25 @@ describe('AiUsageSection', () => {
           inputTextTokens: 0,
           cachedInputTextTokens: 0,
           outputTextTokens: 0,
-          durationSeconds: 60,
-          estimatedCost: 0.05,
+          durationSeconds: 170.35,
+          estimatedCost: 0.141958333333,
+          billedCost: 0,
+        },
+        {
+          ...textUsage,
+          model: 'grok-voice-latest',
+          operation: 'realtime_text_input',
+          records: 2,
+          providerBilledUnits: 14,
+          totalTokens: 0,
+          inputTokens: 0,
+          cachedInputTokens: 0,
+          outputTokens: 0,
+          inputTextTokens: 0,
+          cachedInputTextTokens: 0,
+          outputTextTokens: 0,
+          durationSeconds: 0,
+          estimatedCost: 0.056,
           billedCost: 0,
         },
       ],
@@ -172,9 +190,9 @@ describe('AiUsageSection', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('0,0512 $')
+    expect(wrapper.text()).toContain('0,199158 $')
     expect(wrapper.text()).toContain('0,0012 $ фактически')
-    expect(wrapper.text()).toContain('0,0500 $ расчётно')
+    expect(wrapper.text()).toContain('0,197958 $ расчётно')
     expect(wrapper.text()).toContain('0,05 $ за минуту отправленного и полученного аудио')
     expect(wrapper.text()).toContain('Если ставка изменилась, сообщите в поддержку')
     expect(wrapper.get('.voice-pricing-note a').attributes()).toMatchObject({

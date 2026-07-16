@@ -16,7 +16,9 @@ const props = defineProps<{
 
 const sortedRows = computed(() =>
   [...props.rows]
-    .filter((row) => rowValue(row) > 0)
+    .filter((row) =>
+      props.metric === 'cost' ? rowValue(row) > 0 : row.records > 0,
+    )
     .sort((left, right) => rowValue(right) - rowValue(left))
     .slice(0, 6),
 )
@@ -41,7 +43,14 @@ function rowLabel(row: AiModelUsage): string {
       ? formatMoney(getUsageCost(row), row.currency)
       : 'Нет данных'
   }
+  if (!row.totalTokens && row.durationSeconds > 0) {
+    return `${formatDuration(row.durationSeconds)} аудио · токены не переданы`
+  }
   return `${formatTokenCount(row.totalTokens)} токенов`
+}
+
+function formatDuration(value: number): string {
+  return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(value)} сек.`
 }
 </script>
 

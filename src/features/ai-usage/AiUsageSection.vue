@@ -69,9 +69,6 @@ const xAiCostRecords = computed(() =>
 const xAiUnpricedRecords = computed(() =>
   Math.max(xAiUsage.value.records - xAiCostRecords.value, 0),
 )
-const hasXAiVoiceUsage = computed(() =>
-  xAiBreakdown.value.some((item) => item.model.toLowerCase().startsWith('grok-voice-')),
-)
 const xAiCostLabel = computed(() => {
   if (!xAiCurrency.value) return 'Несколько валют'
   if (!xAiCostRecords.value) return 'Нет данных о стоимости'
@@ -314,6 +311,23 @@ onBeforeUnmount(() => {
             >
           </div>
 
+          <aside
+            class="voice-pricing-note"
+            aria-label="Расчёт стоимости голосового Grok"
+          >
+            <i class="pi pi-info-circle" />
+            <p>
+              Стоимость голосового Grok рассчитывается по тарифу xAI Realtime:
+              <strong>0,05 $ за минуту отправленного и полученного аудио</strong>.
+              <a
+                href="https://docs.x.ai/developers/pricing#voice-api"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Открыть таблицу тарифов</a>.
+              Если ставка изменилась, сообщите в поддержку.
+            </p>
+          </aside>
+
           <div class="xai-charts">
             <AiModelUsageChart
               :rows="xAiModels"
@@ -327,24 +341,6 @@ onBeforeUnmount(() => {
             />
           </div>
 
-          <aside
-            v-if="hasXAiVoiceUsage"
-            class="voice-pricing-note"
-            aria-label="Расчёт стоимости голосового Grok"
-          >
-            <i class="pi pi-info-circle" />
-            <p>
-              Сейчас стоимость голосового Grok рассчитывается по тарифу xAI
-              Realtime: <strong>0,05 $ за минуту отправленного и полученного
-              аудио</strong>.
-              <a
-                href="https://docs.x.ai/developers/pricing#voice-api"
-                target="_blank"
-                rel="noopener noreferrer"
-              >Открыть таблицу тарифов</a>.
-              Если ставка изменилась, сообщите в поддержку.
-            </p>
-          </aside>
         </section>
 
         <section class="provider-panel elevenlabs-panel" aria-labelledby="elevenlabs-usage-title">

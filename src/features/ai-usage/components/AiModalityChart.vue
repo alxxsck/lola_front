@@ -81,8 +81,11 @@ const chartLabel = computed(() =>
     .join('. '),
 )
 
-function formatValue(value: number): string {
+function formatValue(value: number, key?: string): string {
   if (props.metric === 'cost') return formatMoney(value, props.currency ?? 'USD')
+  if (key === 'audio' && value === 0 && props.totals.durationSeconds > 0) {
+    return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(props.totals.durationSeconds)} сек. аудио · токены не переданы`
+  }
   return `${formatTokenCount(value)} токенов`
 }
 
@@ -95,6 +98,7 @@ function operationLabel(operation: string): string {
     knowledge_search: 'Knowledge search',
     realtime_response: 'Голосовой ответ',
     voice_response: 'Голосовой ответ',
+    realtime_text_input: 'Текстовые команды Voice',
     transcription: 'Транскрипция',
     input_transcription: 'Входная транскрипция',
     output_transcription: 'Выходная транскрипция',
@@ -151,7 +155,7 @@ function percentage(itemValue: number): string {
           <span class="legend-dot" :style="{ backgroundColor: item.color }" />
           <span
             ><strong>{{ item.label }}</strong
-            ><small>{{ formatValue(item.value) }}</small></span
+            ><small>{{ formatValue(item.value, item.key) }}</small></span
           >
           <b>{{ percentage(item.value) }}</b>
         </div>
