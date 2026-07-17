@@ -3,6 +3,7 @@ import {
   aggregateCreditUsage,
   aggregateModelUsage,
   aggregateProviderUsage,
+  formatMoney,
   getAiUsageRange,
   getModalityUsage,
   getProviderBreakdown,
@@ -222,5 +223,11 @@ describe('AI usage model', () => {
         pluralizeRu(value, 'модель', 'модели', 'моделей'),
       ),
     ).toEqual(['модель', 'модели', 'моделей', 'моделей', 'модель', 'модели'])
+  })
+
+  it('rounds money to cents and keeps grouping for large totals', () => {
+    expect(formatMoney(0.604959, 'usd')).toBe('0,60 $')
+    expect(formatMoney(12_345.678, 'usd')).toBe('12 345,68 $')
+    expect(formatMoney(0.0012, 'usd')).toBe('< 0,01 $')
   })
 })

@@ -158,10 +158,13 @@ function formatDuration(value: number): string {
   font-size: 0.62rem;
 }
 .model-value {
-  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 62%;
   color: #555a51;
   font-size: 0.72rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  text-align: right;
 }
 .bar-track {
   height: 8px;

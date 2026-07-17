@@ -109,7 +109,7 @@ describe('AiUsageSection', () => {
     expect(wrapper.text()).toContain('ElevenLabs')
     expect(wrapper.text()).toContain('Использовано credits')
     expect(wrapper.text()).toContain('1,3 тыс.')
-    expect(wrapper.text()).toContain('0,0012 $')
+    expect(wrapper.text()).toContain('< 0,01 $')
     expect(wrapper.text()).toContain('Стоимость Grok')
     expect(wrapper.text()).toContain('По данным xAI')
     expect(wrapper.text()).toContain('Стоимость голосового Grok рассчитывается')
@@ -190,9 +190,9 @@ describe('AiUsageSection', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('0,199158 $')
-    expect(wrapper.text()).toContain('0,0012 $ фактически')
-    expect(wrapper.text()).toContain('0,197958 $ расчётно')
+    expect(wrapper.text()).toContain('0,20 $')
+    expect(wrapper.text()).toContain('< 0,01 $ фактически')
+    expect(wrapper.text()).toContain('0,20 $ расчётно')
     expect(wrapper.text()).toContain('0,05 $ за минуту отправленного и полученного аудио')
     expect(wrapper.text()).toContain('Если ставка изменилась, сообщите в поддержку')
     expect(wrapper.get('.voice-pricing-note a').attributes()).toMatchObject({

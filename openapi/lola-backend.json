@@ -2535,6 +2535,60 @@
         ],
         "type": "object"
       },
+      "LegacyEventLogPaginationResponseDto": {
+        "properties": {
+          "hasNextPage": {
+            "type": "boolean"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "page": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalPages": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "totalPages",
+          "hasNextPage",
+          "hasPreviousPage"
+        ],
+        "type": "object"
+      },
+      "LegacyEventLogPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LegacyEventLogResponseDto"
+            },
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/LegacyEventLogPaginationResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "type": "object"
+      },
       "LegacyEventUserResponseDto": {
         "properties": {
           "attributes": {
@@ -7643,6 +7697,44 @@
         "operationId": "Events_list",
         "parameters": [
           {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EventStatus"
+            }
+          },
+          {
             "in": "path",
             "name": "projectId",
             "required": true,
@@ -7656,10 +7748,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/LegacyEventLogResponseDto"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/LegacyEventLogPageResponseDto"
                 }
               }
             },

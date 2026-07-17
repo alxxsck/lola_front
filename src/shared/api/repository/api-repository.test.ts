@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   platformCreateEventDefinition,
   platformCreateScenario,
@@ -17,6 +17,7 @@ import {
   adminConversationsListMessages,
   adminEventLogsGet,
   adminEventLogsList,
+  eventsList,
   platformCreateUserAttributeDefinition,
   platformUserAttributeDefinitions,
 } from '@/shared/api/generated/lola-backend'
@@ -51,6 +52,7 @@ const eventResponse = {
 
 describe('api repository adapter', () => {
   beforeEach(() => vi.clearAllMocks())
+  afterEach(() => vi.restoreAllMocks())
 
   it('routes UI create, update and delete through the generated client', async () => {
     vi.mocked(platformCreateUi).mockResolvedValue(uiResponse)
@@ -219,6 +221,16 @@ describe('api repository adapter', () => {
     }
     vi.mocked(adminEventLogsList).mockResolvedValue({ items: [eventLog], pageInfo: { hasMore: true, nextCursor: 'cursor-2' } })
     vi.mocked(adminEventLogsGet).mockResolvedValue(eventLog)
+    vi.mocked(eventsList).mockResolvedValue({
+      items: [eventLog as never],
+      pagination: { page: 2, limit: 25, total: 61, totalPages: 3, hasNextPage: true, hasPreviousPage: true },
+    })
+
+    await expect(apiRepository.getEventLogs('project-1', { page: 2, limit: 25, search: 'deposit', status: 'FAILED' })).resolves.toEqual({
+      items: [expect.objectContaining({ id: 'log-1', eventCode: 'deposit' })],
+      pagination: { page: 2, limit: 25, total: 61, totalPages: 3, hasNextPage: true, hasPreviousPage: true },
+    })
+    expect(eventsList).toHaveBeenCalledWith('project-1', { page: 2, limit: 25, search: 'deposit', status: 'FAILED' })
 
     await expect(apiRepository.getEventLogPage('project-1', { eventCode: ['deposit', 'purchase'], status: ['FAILED', 'PROCESSED'], cursor: 'cursor-1', limit: 25 })).resolves.toEqual({
       items: [expect.objectContaining({ id: 'log-1', eventCode: 'deposit', eventVersion: 2, externalEventId: 'browser-1' })],
@@ -231,6 +243,33 @@ describe('api repository adapter', () => {
       { paramsSerializer: { indexes: null } },
     )
     expect(adminEventLogsGet).toHaveBeenCalledWith('project-1', 'log-1')
+  })
+
+  it('uses pagination totals for dashboard event and failure counts', async () => {
+    vi.spyOn(apiRepository, 'getProject').mockResolvedValue({ _count: undefined } as never)
+    vi.spyOn(apiRepository, 'getScenarios').mockResolvedValue([])
+    vi.spyOn(apiRepository, 'getUsers').mockResolvedValue([])
+    vi.spyOn(apiRepository, 'getSessions').mockResolvedValue([])
+    const getEventLogs = vi.spyOn(apiRepository, 'getEventLogs')
+      .mockResolvedValueOnce({
+        items: [],
+        pagination: { page: 1, limit: 1, total: 250, totalPages: 250, hasNextPage: true, hasPreviousPage: false },
+      })
+      .mockResolvedValueOnce({
+        items: [],
+        pagination: { page: 1, limit: 1, total: 37, totalPages: 37, hasNextPage: true, hasPreviousPage: false },
+      })
+    vi.spyOn(apiRepository, 'getScenarioRuns').mockResolvedValue([
+      { status: 'FAILED' },
+      { status: 'COMPLETED' },
+    ] as never)
+
+    await expect(apiRepository.getStats('project-1')).resolves.toEqual(expect.objectContaining({
+      events: 250,
+      integrationErrors: 38,
+    }))
+    expect(getEventLogs).toHaveBeenNthCalledWith(1, 'project-1', { limit: 1 })
+    expect(getEventLogs).toHaveBeenNthCalledWith(2, 'project-1', { status: 'FAILED', limit: 1 })
   })
 
   it('publishes a user attribute definition and reloads the current immutable schema', async () => {

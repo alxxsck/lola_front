@@ -65,6 +65,30 @@ export interface CursorPage<T> {
   nextCursor: string | null
 }
 
+export interface PageRequest {
+  page?: number
+  limit?: number
+}
+
+export interface PageInfo {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+export interface Page<T> {
+  items: T[]
+  pagination: PageInfo
+}
+
+export interface EventLogsPageRequest extends PageRequest {
+  search?: string
+  status?: EventLogStatus
+}
+
 export interface UserAttributeDefinitionInput {
   key: string
   label: string
@@ -119,7 +143,7 @@ export interface LolaRepository {
   getConversations(projectId: string, userId: string, request?: CursorPageRequest): Promise<CursorPage<Conversation>>
   getMessages(projectId: string, userId: string, conversationId: string, request?: CursorPageRequest): Promise<CursorPage<ConversationMessage>>
   sendAction(session: ActiveSession, action: ManualAction): Promise<{ commandId: string; status: string }>
-  getEventLogs(projectId: string): Promise<EventLog[]>
+  getEventLogs(projectId: string, request?: EventLogsPageRequest): Promise<Page<EventLog>>
   getEventLogPage(projectId: string, filters?: EventLogFilters): Promise<CursorPage<EventLog>>
   getEventLog(projectId: string, eventId: string): Promise<EventLog>
   getScenarioRuns(projectId: string): Promise<ScenarioRun[]>

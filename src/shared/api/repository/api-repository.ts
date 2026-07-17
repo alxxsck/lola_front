@@ -221,8 +221,12 @@ export const apiRepository: LolaRepository = {
   },
   async sendAction() { return unsupported('manualActions') },
 
-  async getEventLogs(projectId) {
-    return (await eventsList(projectId)).map(mapEventLog)
+  async getEventLogs(projectId, request) {
+    const response = await eventsList(projectId, request)
+    return {
+      items: response.items.map(mapEventLog),
+      pagination: response.pagination,
+    }
   },
 
   async getEventLogPage(projectId, filters) {
@@ -267,22 +271,23 @@ export const apiRepository: LolaRepository = {
   },
 
   async getStats(projectId) {
-    const [project, scenarios, users, sessions, eventLogs, runs] = await Promise.all([
+    const [project, scenarios, users, sessions, eventLogs, failedEventLogs, runs] = await Promise.all([
       this.getProject(projectId),
       this.getScenarios(projectId),
       this.getUsers(projectId),
       this.getSessions(projectId),
-      this.getEventLogs(projectId),
+      this.getEventLogs(projectId, { limit: 1 }),
+      this.getEventLogs(projectId, { status: 'FAILED', limit: 1 }),
       this.getScenarioRuns(projectId),
     ])
     return {
       users: project._count?.users ?? users.length,
       online: new Set(sessions.map((item) => item.userId)).size,
-      events: project._count?.eventLogs ?? eventLogs.length,
+      events: project._count?.eventLogs ?? eventLogs.pagination.total,
       scenarios: scenarios.filter((item) => item.status === 'ACTIVE').length,
       conversations: 0,
       ctaConversion: 0,
-      integrationErrors: eventLogs.filter((item) => item.status === 'FAILED').length + runs.filter((item) => item.status === 'FAILED').length,
+      integrationErrors: failedEventLogs.pagination.total + runs.filter((item) => item.status === 'FAILED').length,
     }
   },
 }

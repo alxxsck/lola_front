@@ -112,7 +112,7 @@ describe('AI usage charts', () => {
     expect(wrapper.text()).toContain('1,3 тыс. токенов')
 
     await wrapper.setProps({ metric: 'cost' })
-    expect(wrapper.text()).toContain('0,0300 $')
+    expect(wrapper.text()).toContain('0,03 $')
   })
 
   it('keeps a Voice model visible when xAI reports duration and cost without tokens', async () => {
@@ -125,7 +125,7 @@ describe('AI usage charts', () => {
     expect(wrapper.text()).not.toContain('Ещё 1 модель')
 
     await wrapper.setProps({ metric: 'cost' })
-    expect(wrapper.text()).toContain('0,197958 $')
+    expect(wrapper.text()).toContain('0,20 $')
   })
 
   it('shows ElevenLabs credit usage by model and operation', () => {
@@ -183,7 +183,7 @@ describe('AI usage charts', () => {
     await wrapper.setProps({ metric: 'cost' })
     expect(wrapper.text()).toContain('Структура стоимости Grok')
     expect(wrapper.text()).toContain('Web search')
-    expect(wrapper.text()).toContain('0,0300 $')
+    expect(wrapper.text()).toContain('0,03 $')
     expect(wrapper.text()).toContain('Фактическая и расчётная стоимость')
   })
 
@@ -241,6 +241,6 @@ describe('AI usage charts', () => {
     })
 
     expect(wrapper.text()).toContain('Текстовые команды Voice')
-    expect(wrapper.text()).toContain('0,0560 $')
+    expect(wrapper.text()).toContain('0,06 $')
   })
 })

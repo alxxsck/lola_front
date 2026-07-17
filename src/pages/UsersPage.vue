@@ -12,13 +12,15 @@ import Message from 'primevue/message'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { repository } from '@/shared/api/repository'
 import { formatDate, relativeTime } from '@/shared/lib/format'
-import type { ActiveSession, ActivityItem, Conversation, ConversationMessage, EndUser } from '@/shared/types/domain'
+import type { ActiveSession, Conversation, ConversationMessage, EndUser, EventLog } from '@/shared/types/domain'
 import SendActionDialog from '@/features/live/SendActionDialog.vue'
 
 const auth = useAuthStore()
 const users = ref<EndUser[]>([])
 const sessions = ref<ActiveSession[]>([])
-const activity = ref<ActivityItem[]>([])
+const activity = ref<EventLog[]>([])
+const activityLoading = ref(false)
+const activityError = ref('')
 const loading = ref(true)
 const error = ref('')
 const search = ref('')
@@ -41,6 +43,7 @@ const conversationError = ref('')
 const messageError = ref('')
 let conversationRequestId = 0
 let messageRequestId = 0
+let activityRequestId = 0
 
 const segments = computed(() => [{ label: 'Все сегменты', value: 'ALL' }, ...Array.from(new Set(users.value.map((item) => item.segment).filter(Boolean))).map((value) => ({ label: value!, value: value! }))])
 const presenceOptions = computed(() => repository.capabilities.presence
@@ -56,7 +59,6 @@ const filteredUsers = computed(() => users.value.filter((user) => {
   const userPresence = presenceMap.value.get(user.id) ?? 'OFFLINE'
   return matchesQuery && matchesSegment && (presence.value === 'ALL' || presence.value === userPresence)
 }))
-const selectedActivity = computed(() => activity.value.filter((item) => item.userId === selected.value?.id))
 const conversationOptions = computed(() => conversations.value.map((item) => ({ label: `${item.title} · ${item.messageCount}`, value: item.id })))
 const activeConversation = computed(() => conversations.value.find((item) => item.id === activeConversationId.value))
 const conversationCountLabel = computed(() => `${conversations.value.length}${conversationNextCursor.value ? '+' : ''}`)
@@ -68,19 +70,20 @@ async function load() {
   if (!auth.project) return
   loading.value = true; error.value = ''
   try {
-    [users.value, sessions.value, activity.value] = await Promise.all([
+    [users.value, sessions.value] = await Promise.all([
       repository.getUsers(auth.project.id),
       repository.capabilities.presence ? repository.getSessions(auth.project.id) : Promise.resolve([]),
-      repository.capabilities.activity ? repository.getActivity() : Promise.resolve([]),
     ])
   }
   catch (cause) { error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить пользователей' }
   finally { loading.value = false }
 }
-async function openUser(user: EndUser) {
+function openUser(user: EndUser) {
   selected.value = user
   profileTab.value = 'activity'
   drawerVisible.value = true
+  activity.value = []
+  activityError.value = ''
   conversations.value = []
   messages.value = []
   activeConversationId.value = ''
@@ -94,7 +97,26 @@ async function openUser(user: EndUser) {
   loadingMoreMessages.value = false
   conversationRequestId += 1
   messageRequestId += 1
-  if (repository.capabilities.conversations) await loadConversations()
+  void loadUserActivity()
+  if (repository.capabilities.conversations) void loadConversations()
+}
+
+async function loadUserActivity() {
+  if (!auth.project || !selected.value) return
+  const userId = selected.value.id
+  const externalUserId = selected.value.externalId
+  const requestId = ++activityRequestId
+  activityLoading.value = true
+  activityError.value = ''
+  try {
+    const page = await repository.getEventLogPage(auth.project.id, { externalUserId, limit: 25 })
+    if (requestId !== activityRequestId || selected.value?.id !== userId) return
+    activity.value = page.items
+  } catch (cause) {
+    if (requestId === activityRequestId) activityError.value = cause instanceof Error ? cause.message : 'Не удалось загрузить активность'
+  } finally {
+    if (requestId === activityRequestId) activityLoading.value = false
+  }
 }
 
 async function selectConversation(id: string) {
@@ -211,7 +233,7 @@ onMounted(load)
       <Message v-else severity="secondary" size="small">Пользователь offline. Backend повторно проверит presence при отправке текста.</Message>
       <div class="grid grid-2 facts"><div><span>Язык</span><strong>{{ selected.locale?.toUpperCase() ?? '—' }}</strong></div><div><span>Страна</span><strong>{{ selected.profile.country ?? '—' }}</strong></div><div><span>Первый визит</span><strong>{{ formatDate(selected.createdAt) }}</strong></div><div><span>Последняя активность</span><strong>{{ relativeTime(selected.lastSeenAt) }}</strong></div></div>
       <div class="profile-tabs surface-soft" role="tablist" aria-label="Данные пользователя"><button type="button" role="tab" :aria-selected="profileTab === 'activity'" :class="{ active: profileTab === 'activity' }" @click="profileTab = 'activity'"><i class="pi pi-history" /> Активность</button><button type="button" role="tab" :aria-selected="profileTab === 'messages'" :class="{ active: profileTab === 'messages' }" @click="profileTab = 'messages'"><i class="pi pi-comments" /> Диалоги <span>{{ conversationsLoading ? '…' : conversationCountLabel }}</span></button></div>
-      <div v-if="profileTab === 'activity'"><div class="row-between timeline-title"><h3>История</h3><span>{{ selectedActivity.length }} записей</span></div><div v-if="!selectedActivity.length" class="empty surface-soft">История пока пуста</div><div v-else class="timeline"><div v-for="item in selectedActivity" :key="item.id" class="timeline-item"><div class="timeline-icon" :class="item.type.toLowerCase()"><i :class="item.type === 'EVENT' ? 'pi pi-bolt' : item.type === 'MESSAGE' ? 'pi pi-comment' : item.type === 'ERROR' ? 'pi pi-exclamation-triangle' : 'pi pi-send'" /></div><div><div class="row-between"><strong>{{ item.title }}</strong><small>{{ relativeTime(item.timestamp) }}</small></div><p>{{ item.description }}</p><Tag v-if="item.status" :value="item.status" severity="secondary" /></div></div></div></div>
+      <div v-if="profileTab === 'activity'"><div class="row-between timeline-title"><h3>История</h3><RouterLink :to="{ name: 'event-logs', query: { user: selected.externalId } }">Открыть журнал</RouterLink><span>{{ activityLoading ? '…' : `${activity.length} записей` }}</span></div><div v-if="activityLoading" class="timeline-loading"><Skeleton v-for="item in 3" :key="item" height="62px" /></div><div v-else-if="activityError" class="history-error"><Message severity="error" size="small" :closable="false">{{ activityError }}</Message><Button label="Повторить" severity="secondary" size="small" @click="loadUserActivity" /></div><div v-else-if="!activity.length" class="empty surface-soft">История пока пуста</div><div v-else class="timeline"><div v-for="item in activity" :key="item.id" class="timeline-item"><div class="timeline-icon" :class="item.status.toLowerCase()"><i :class="item.status === 'FAILED' ? 'pi pi-exclamation-triangle' : 'pi pi-bolt'" /></div><div><div class="row-between"><strong>{{ item.eventName }}</strong><small>{{ relativeTime(item.receivedAt) }}</small></div><p>{{ item.message || item.eventCode }}</p><Tag :value="item.status" :severity="item.status === 'FAILED' ? 'danger' : item.status === 'PROCESSED' ? 'success' : 'warn'" /></div></div></div></div>
       <div v-else class="conversation-panel">
         <div class="row-between timeline-title"><h3>История сообщений</h3><span>{{ messageCountLabel }}</span></div>
         <div v-if="conversationsLoading" class="empty surface-soft">Загружаем диалоги…</div>
@@ -237,7 +259,7 @@ onMounted(load)
 </template>
 
 <style scoped>
-.mb{margin-bottom:16px}.filters{display:grid;grid-template-columns:minmax(260px,1fr) 190px 190px auto;gap:12px;padding:14px;margin-bottom:18px;align-items:center}.search{position:relative}.search>i{position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:2;color:#92968e}.search :deep(input){padding-left:40px}.count{font-size:.78rem;color:var(--muted);white-space:nowrap}.table-card{overflow:hidden}.loading-list{display:grid;gap:10px;padding:18px}.user-cell,.profile-head{display:flex;align-items:center;gap:11px}.avatar{width:38px;height:38px;display:grid;place-items:center;position:relative;border-radius:13px;background:#eeeafb;color:#6552c4;font-weight:700}.avatar span{position:absolute;right:-2px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:#6ac674;border:2px solid white}.avatar.big{width:54px;height:54px;font-size:1.15rem}.user-cell strong,.user-cell small,.profile-head strong,.profile-head small{display:block}.user-cell small,.profile-head small{font-size:.72rem;color:var(--muted);margin-top:3px}.online{color:#3b8d45;font-weight:600;font-size:.8rem}.online i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#69c573;margin-right:6px}.table-card :deep(tbody tr){cursor:pointer}.profile-head{padding:15px}.profile-head>div:nth-child(2){flex:1}.facts>div{padding:15px;background:#f8f8f5;border-radius:13px}.facts span,.facts strong{display:block}.facts span{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.facts strong{font-size:.82rem;margin-top:5px}.timeline-title{margin:8px 0 14px}.timeline-title span{color:var(--muted);font-size:.75rem}.timeline{position:relative;display:flex;flex-direction:column;gap:18px}.timeline:before{content:'';position:absolute;left:17px;top:20px;bottom:20px;width:1px;background:var(--line)}.timeline-item{position:relative;display:grid;grid-template-columns:36px 1fr;gap:12px}.timeline-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:#f0edff;color:#705bd3;z-index:1}.timeline-icon.event{background:#fff4dc;color:#c58018}.timeline-icon.message{background:#e9f8ec;color:#479b51}.timeline-item strong{font-size:.82rem}.timeline-item small{color:var(--muted);font-size:.68rem}.timeline-item p{color:var(--muted);font-size:.77rem;margin:4px 0 6px}.profile h3{font-size:1rem;margin:0}
+.mb{margin-bottom:16px}.filters{display:grid;grid-template-columns:minmax(260px,1fr) 190px 190px auto;gap:12px;padding:14px;margin-bottom:18px;align-items:center}.search{position:relative}.search>i{position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:2;color:#92968e}.search :deep(input){padding-left:40px}.count{font-size:.78rem;color:var(--muted);white-space:nowrap}.table-card{overflow:hidden}.loading-list{display:grid;gap:10px;padding:18px}.user-cell,.profile-head{display:flex;align-items:center;gap:11px}.avatar{width:38px;height:38px;display:grid;place-items:center;position:relative;border-radius:13px;background:#eeeafb;color:#6552c4;font-weight:700}.avatar span{position:absolute;right:-2px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:#6ac674;border:2px solid white}.avatar.big{width:54px;height:54px;font-size:1.15rem}.user-cell strong,.user-cell small,.profile-head strong,.profile-head small{display:block}.user-cell small,.profile-head small{font-size:.72rem;color:var(--muted);margin-top:3px}.online{color:#3b8d45;font-weight:600;font-size:.8rem}.online i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#69c573;margin-right:6px}.table-card :deep(tbody tr){cursor:pointer}.profile-head{padding:15px}.profile-head>div:nth-child(2){flex:1}.facts>div{padding:15px;background:#f8f8f5;border-radius:13px}.facts span,.facts strong{display:block}.facts span{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.facts strong{font-size:.82rem;margin-top:5px}.timeline-title{margin:8px 0 14px;gap:12px}.timeline-title a{margin-left:auto;color:#6552c4;font-size:.72rem;font-weight:700}.timeline-title span{color:var(--muted);font-size:.75rem}.timeline-loading{display:grid;gap:10px}.timeline{position:relative;display:flex;flex-direction:column;gap:18px}.timeline:before{content:'';position:absolute;left:17px;top:20px;bottom:20px;width:1px;background:var(--line)}.timeline-item{position:relative;display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px}.timeline-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:#fff4dc;color:#c58018;z-index:1}.timeline-icon.failed{background:#fff0eb;color:#c7543a}.timeline-item>div:last-child{min-width:0}.timeline-item strong{overflow:hidden;font-size:.82rem;text-overflow:ellipsis;white-space:nowrap}.timeline-item small{color:var(--muted);font-size:.68rem;white-space:nowrap}.timeline-item p{overflow-wrap:anywhere;color:var(--muted);font-size:.77rem;margin:4px 0 6px}.profile h3{font-size:1rem;margin:0}
 @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}.search{grid-column:1/-1}.count{text-align:right}}@media(max-width:540px){.filters{grid-template-columns:1fr}.search{grid-column:auto}.count{text-align:left}.table-card{overflow:auto}.facts{grid-template-columns:1fr 1fr!important}:deep(.mobile-hide){display:none}}
 .stale{color:#b87818;font-weight:600;font-size:.8rem}.stale i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e1a542;margin-right:6px}.profile-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;gap:4px}.profile-tabs button{border:0;background:transparent;border-radius:10px;padding:9px;color:var(--muted);font-weight:600;cursor:pointer}.profile-tabs button.active{background:white;color:var(--ink);box-shadow:0 1px 5px rgba(30,34,27,.08)}.profile-tabs span{margin-left:4px;padding:1px 6px;border-radius:10px;background:#eceee7;font-size:.65rem}.conversation-panel{display:flex;flex-direction:column;gap:13px}.messages{display:flex;flex-direction:column;gap:9px;max-height:430px;overflow:auto;padding:3px}.history-error{display:grid;gap:9px}.message{max-width:88%;padding:11px 13px;border-radius:14px;background:#f3f3ef;border:1px solid #e8e9e3}.message.user{align-self:flex-end;background:#292c26;color:white;border-color:#292c26}.message.admin{background:#f0edff;border-color:#ded7ff}.message.scenario{background:#f4f9df;border-color:#e4edbd}.message-meta{display:flex;align-items:center;justify-content:space-between;gap:16px}.message-meta strong{font-size:.67rem;text-transform:uppercase;letter-spacing:.06em}.message-meta time{font-size:.62rem;opacity:.62}.message p{font-size:.78rem;margin:6px 0;line-height:1.45}.message>small{font-size:.6rem;opacity:.58;text-transform:uppercase}
 </style>

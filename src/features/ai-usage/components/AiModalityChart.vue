@@ -178,6 +178,7 @@ function percentage(itemValue: number): string {
 
 <style scoped>
 .chart-card {
+  container-type: inline-size;
   min-width: 0;
   padding: 22px;
   border: 1px solid #e7e8e2;
@@ -215,14 +216,15 @@ function percentage(itemValue: number): string {
 }
 .modality-layout {
   display: grid;
-  grid-template-columns: minmax(150px, 0.85fr) minmax(170px, 1.15fr);
+  grid-template-columns: minmax(120px, 0.85fr) minmax(0, 1.15fr);
   align-items: center;
-  gap: 20px;
+  gap: 14px;
   min-height: 225px;
 }
 .donut-wrap {
   position: relative;
-  max-width: 190px;
+  width: min(100%, 175px);
+  container-type: inline-size;
   margin: auto;
 }
 .donut-wrap svg {
@@ -251,7 +253,10 @@ function percentage(itemValue: number): string {
   text-align: center;
 }
 .donut-total strong {
-  font: 700 1.35rem Manrope;
+  max-width: 72%;
+  margin-inline: auto;
+  font: 700 clamp(0.75rem, 12cqi, 1.35rem)/1.05 Manrope;
+  overflow-wrap: anywhere;
 }
 .donut-total span {
   margin-top: 2px;
@@ -281,6 +286,7 @@ function percentage(itemValue: number): string {
 .legend-row strong,
 .legend-row small {
   display: block;
+  overflow-wrap: anywhere;
 }
 .legend-row strong {
   font-size: 0.74rem;
@@ -291,7 +297,9 @@ function percentage(itemValue: number): string {
   font-size: 0.62rem;
 }
 .legend-row b {
+  justify-self: end;
   font-size: 0.74rem;
+  white-space: nowrap;
 }
 .cache-row {
   display: flex;
@@ -339,6 +347,14 @@ function percentage(itemValue: number): string {
   }
   .chart-card {
     padding: 18px;
+  }
+}
+@container (max-width: 390px) {
+  .modality-layout {
+    grid-template-columns: 1fr;
+  }
+  .donut-wrap {
+    width: 150px;
   }
 }
 </style>

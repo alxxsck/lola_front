@@ -13,7 +13,7 @@ const requiredOperations = new Map([
   ['Platform_createScenario', { label: 'scenario creation', request: 'CreateScenarioDto', response: 'ScenarioResponseDto' }],
   ['Platform_scenarios', { label: 'scenarios', response: 'ScenarioResponseDto' }],
   ['Platform_actionDefinitions', { label: 'scenario action definitions', response: 'ScenarioActionDefinitionResponseDto' }],
-  ['Events_list', { label: 'legacy event logs', response: 'LegacyEventLogResponseDto' }],
+  ['Events_list', { label: 'paginated legacy event logs', response: 'LegacyEventLogPageResponseDto' }],
   ['AdminEventLogs_list', { label: 'cursor-paginated event logs', response: 'EventLogPageResponseDto' }],
   ['AdminEventLogs_get', { label: 'event log detail', response: 'EventLogResponseDto' }],
   ['Platform_userAttributeDefinitions', { label: 'user attribute schema', response: 'UserAttributeSchemaResponseDto' }],

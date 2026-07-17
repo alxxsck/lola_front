@@ -47,6 +47,7 @@ import type {
   EventIngestResponseDto,
   EventLogPageResponseDto,
   EventLogResponseDto,
+  EventsListParams,
   IngestClientEventDto,
   IngestEventDto,
   InteractionSessionResponseDto,
@@ -55,7 +56,7 @@ import type {
   KnowledgeDocumentMutationResponseDto,
   KnowledgeListParams,
   KnowledgeUploadFileBody,
-  LegacyEventLogResponseDto,
+  LegacyEventLogPageResponseDto,
   ListMessagesDto,
   ListThreadMessagesDto,
   LogoutDto,
@@ -1159,10 +1160,11 @@ export const eventsIngest = (
 
 export const eventsList = (
   projectId: string,
-  options?: SecondParameter<typeof request<LegacyEventLogResponseDto[]>>,
+  params?: EventsListParams,
+  options?: SecondParameter<typeof request<LegacyEventLogPageResponseDto>>,
 ) => {
-  return request<LegacyEventLogResponseDto[]>(
-    { url: `/api/v1/events/admin/${projectId}`, method: "GET" },
+  return request<LegacyEventLogPageResponseDto>(
+    { url: `/api/v1/events/admin/${projectId}`, method: "GET", params },
     options,
   );
 };

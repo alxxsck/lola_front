@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -18,9 +18,11 @@ type Section = 'events' | 'runs' | 'audit'
 const auth = useAuthStore()
 const section = ref<Section>('events')
 const eventLogs = ref<EventLog[]>([])
+const eventPagination = reactive({ page: 1, limit: 12, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false })
 const scenarioRuns = ref<ScenarioRun[]>([])
 const auditLogs = ref<AuditLog[]>([])
 const loading = ref(true)
+const eventLoading = ref(false)
 const errors = reactive<Record<Section, string>>({ events: '', runs: '', audit: '' })
 const search = ref('')
 const status = ref('ALL')
@@ -41,10 +43,6 @@ const statusOptions = computed(() => {
 const sectionError = computed(() => errors[section.value])
 
 const query = computed(() => search.value.trim().toLowerCase())
-const filteredEvents = computed(() => eventLogs.value.filter((item) =>
-  (status.value === 'ALL' || item.status === status.value)
-  && (!query.value || [item.eventCode, item.eventName, item.userExternalId, item.id].some((value) => value.toLowerCase().includes(query.value))),
-))
 const filteredRuns = computed(() => scenarioRuns.value.filter((item) =>
   (status.value === 'ALL' || item.status === status.value)
   && (!query.value || [item.scenarioCode, item.scenarioName, item.userExternalId, item.id].some((value) => value.toLowerCase().includes(query.value))),
@@ -61,10 +59,40 @@ const severity = (value: string): 'success' | 'danger' | 'warn' | 'info' | 'seco
   return 'secondary'
 }
 const json = (value: unknown) => JSON.stringify(value, null, 2)
+let eventRequestId = 0
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+
+function eventRequest(page = eventPagination.page, limit = eventPagination.limit) {
+  return {
+    page,
+    limit,
+    ...(search.value.trim() ? { search: search.value.trim() } : {}),
+    ...(status.value !== 'ALL' ? { status: status.value as EventLog['status'] } : {}),
+  }
+}
+
+async function loadEventPage(page = eventPagination.page, limit = eventPagination.limit) {
+  const projectId = auth.project?.id
+  if (!projectId) return
+  const requestId = ++eventRequestId
+  eventLoading.value = true
+  errors.events = ''
+  try {
+    const response = await repository.getEventLogs(projectId, eventRequest(page, limit))
+    if (requestId !== eventRequestId) return
+    eventLogs.value = response.items
+    Object.assign(eventPagination, response.pagination)
+  } catch (cause) {
+    if (requestId === eventRequestId) errors.events = cause instanceof Error ? cause.message : 'Не удалось загрузить события'
+  } finally {
+    if (requestId === eventRequestId) eventLoading.value = false
+  }
+}
 
 async function load() {
   const projectId = auth.project?.id
   if (!projectId) return
+  const requestId = ++eventRequestId
   loading.value = true
   errors.events = ''
   errors.runs = ''
@@ -73,17 +101,20 @@ async function load() {
   scenarioRuns.value = []
   auditLogs.value = []
   const results = await Promise.allSettled([
-    repository.getEventLogs(projectId),
+    repository.getEventLogs(projectId, eventRequest(1)),
     repository.getScenarioRuns(projectId),
     repository.getAuditLogs(projectId),
   ] as const)
   const message = (cause: unknown) => cause instanceof Error ? cause.message : 'Не удалось загрузить раздел'
-  if (results[0].status === 'fulfilled') eventLogs.value = results[0].value
-  else errors.events = message(results[0].reason)
+  if (results[0].status === 'fulfilled' && requestId === eventRequestId) {
+    eventLogs.value = results[0].value.items
+    Object.assign(eventPagination, results[0].value.pagination)
+  } else if (results[0].status === 'rejected' && requestId === eventRequestId) errors.events = message(results[0].reason)
   if (results[1].status === 'fulfilled') scenarioRuns.value = results[1].value
   else errors.runs = message(results[1].reason)
   if (results[2].status === 'fulfilled') auditLogs.value = results[2].value
   else errors.audit = message(results[2].reason)
+  if (requestId === eventRequestId) eventLoading.value = false
   loading.value = false
 }
 
@@ -92,6 +123,21 @@ function changeSection(value: Section) {
   status.value = 'ALL'
   search.value = ''
 }
+
+function changeEventPage(event: { page: number, rows: number }) {
+  void loadEventPage(event.page + 1, event.rows)
+}
+
+watch([section, search, status], ([currentSection], [previousSection]) => {
+  clearTimeout(searchTimer)
+  if (currentSection !== 'events') return
+  searchTimer = setTimeout(
+    () => void loadEventPage(1),
+    previousSection === 'events' ? 300 : 0,
+  )
+})
+
+onBeforeUnmount(() => clearTimeout(searchTimer))
 onMounted(load)
 </script>
 
@@ -99,26 +145,42 @@ onMounted(load)
   <section class="page operations-page">
     <header class="page-header">
       <div><div class="eyebrow">Наблюдаемость</div><h1>Операционный центр</h1><p class="subtitle">События, выполнение сценариев и действия администраторов в одном потоке.</p></div>
-      <Button label="Обновить" icon="pi pi-refresh" severity="secondary" outlined :loading="loading" @click="load" />
+      <Button label="Обновить" icon="pi pi-refresh" severity="secondary" outlined :loading="loading || eventLoading" @click="load" />
     </header>
     <Message v-if="sectionError" severity="error" class="mb"><span>{{ sectionError }}</span><Button label="Повторить" icon="pi pi-refresh" size="small" text @click="load" /></Message>
 
     <div class="section-tabs" role="tablist" aria-label="Операционные разделы">
       <button v-for="item in sections" :key="item.value" type="button" role="tab" :aria-selected="section === item.value" :class="{ active: section === item.value }" @click="changeSection(item.value)">
         <i :class="item.icon" /><span>{{ item.label }}</span>
-        <strong>{{ item.value === 'events' ? eventLogs.length : item.value === 'runs' ? scenarioRuns.length : auditLogs.length }}</strong>
+        <strong>{{ item.value === 'events' ? eventPagination.total : item.value === 'runs' ? scenarioRuns.length : auditLogs.length }}</strong>
       </button>
     </div>
 
     <div class="filters card">
-      <span class="search"><i class="pi pi-search" /><InputText v-model="search" :placeholder="section === 'audit' ? 'Действие, актор или ресурс' : 'Код, пользователь или ID'" /></span>
+      <span class="search"><i class="pi pi-search" /><InputText v-model="search" :placeholder="section === 'audit' ? 'Действие, актор или ресурс' : section === 'events' ? 'Код, пользователь или полный ID' : 'Код, пользователь или ID'" /></span>
       <Select v-model="status" :options="statusOptions" option-label="label" option-value="value" />
       <span class="data-source"><i class="pi pi-database" /> {{ repository.mode === 'api' ? 'Lola Backend · live data' : 'Демонстрационные данные' }}</span>
     </div>
 
     <div class="card table-card">
       <div v-if="loading" class="loading-list"><Skeleton v-for="item in 7" :key="item" height="58px" /></div>
-      <DataTable v-else-if="section === 'events'" :value="filteredEvents" paginator :rows="12" row-hover data-key="id" @row-click="selectedEvent = $event.data">
+      <DataTable
+        v-else-if="section === 'events'"
+        :value="eventLogs"
+        lazy
+        paginator
+        :first="(eventPagination.page - 1) * eventPagination.limit"
+        :rows="eventPagination.limit"
+        :rows-per-page-options="[12, 25, 50]"
+        :total-records="eventPagination.total"
+        :loading="eventLoading"
+        paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
+        current-page-report-template="Показано {first}–{last} из {totalRecords}"
+        row-hover
+        data-key="id"
+        @page="changeEventPage"
+        @row-click="selectedEvent = $event.data"
+      >
         <template #empty><div class="empty"><i class="pi pi-bolt" />Событий по выбранным фильтрам нет.</div></template>
         <Column header="Событие"><template #body="{ data }"><div class="primary-cell"><strong>{{ data.eventName }}</strong><small class="mono">{{ data.eventCode }}</small></div></template></Column>
         <Column header="Пользователь"><template #body="{ data }"><span class="mono compact">{{ data.userExternalId }}</span></template></Column>

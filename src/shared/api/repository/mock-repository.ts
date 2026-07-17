@@ -212,18 +212,37 @@ export const mockRepository: LolaRepository = {
     data.activity.unshift({ id: uid('log'), userId: session.userId, type: 'COMMAND', title: action.type, description: 'Команда отправлена администратором', timestamp: new Date().toISOString(), status: 'delivered' })
     writeDemo(data); await pause(); return { commandId: uid('cmd'), status: 'delivered' }
   },
-  async getEventLogs() {
+  async getEventLogs(_projectId, request) {
     await pause()
     const data = readDemo()
-    return data.activity.filter((item) => item.type === 'EVENT').map((item, index): EventLog => ({
+    const logs = data.activity.filter((item) => item.type === 'EVENT').map((item, index): EventLog => ({
       id: item.id, eventCode: item.title, eventName: item.title, eventDefinitionId: data.events.find((event) => event.code === item.title)?.id ?? 'evt_1', eventVersion: 1, userId: item.userId,
       userExternalId: data.users.find((user) => user.id === item.userId)?.externalId ?? item.userId,
       source: index % 2 ? 'SERVER' : 'FRONTEND', status: item.status === 'failed' ? 'FAILED' : 'PROCESSED',
       occurredAt: item.timestamp, receivedAt: item.timestamp, payload: { demo: true }, context: { locale: 'ru' },
     }))
+    const search = request?.search?.trim().toLowerCase()
+    const filtered = logs.filter((item) =>
+      (!request?.status || item.status === request.status)
+      && (!search || [item.id, item.eventCode, item.eventName, item.userExternalId].some((value) => value.toLowerCase().includes(search))),
+    )
+    const page = request?.page ?? 1
+    const limit = request?.limit ?? 12
+    const totalPages = Math.ceil(filtered.length / limit)
+    return {
+      items: filtered.slice((page - 1) * limit, page * limit),
+      pagination: {
+        page,
+        limit,
+        total: filtered.length,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1 && filtered.length > 0,
+      },
+    }
   },
   async getEventLogPage(_projectId, filters) {
-    const items = await this.getEventLogs(_projectId)
+    const { items } = await this.getEventLogs(_projectId, { limit: 100 })
     const filtered = items.filter((item) =>
       (!filters?.eventCode || filters.eventCode.includes(item.eventCode))
       && (!filters?.externalUserId || item.userExternalId === filters.externalUserId)
@@ -239,7 +258,7 @@ export const mockRepository: LolaRepository = {
     return { items: filtered.slice(offset, offset + limit), nextCursor: offset + limit < filtered.length ? String(offset + limit) : null }
   },
   async getEventLog(projectId, eventId) {
-    const item = (await this.getEventLogs(projectId)).find((event) => event.id === eventId)
+    const item = (await this.getEventLogs(projectId, { limit: 100 })).items.find((event) => event.id === eventId)
     if (!item) throw new Error('Event log not found')
     return item
   },

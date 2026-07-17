@@ -326,12 +326,14 @@ export function formatMoney(value: number, currency: string): string {
   const normalizedCurrency = /^[a-z]{3}$/i.test(currency)
     ? currency.toUpperCase()
     : 'USD'
-  return new Intl.NumberFormat('ru-RU', {
+  const formatter = new Intl.NumberFormat('ru-RU', {
     style: 'currency',
     currency: normalizedCurrency,
-    minimumFractionDigits: value >= 100 ? 2 : 4,
-    maximumFractionDigits: value >= 100 ? 2 : 6,
-  }).format(value)
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  if (value > 0 && value < 0.01) return `< ${formatter.format(0.01)}`
+  return formatter.format(value)
 }
 
 export function pluralizeRu(
