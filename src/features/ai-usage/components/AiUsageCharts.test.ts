@@ -179,11 +179,14 @@ describe('AI usage charts', () => {
 
     expect(wrapper.text()).toContain('Форматы токенов Grok')
     expect(wrapper.text()).toContain('1,3 тыс. токенов')
+    expect(wrapper.find('.chart-summary').text()).toContain('1,3 тыс.')
+    expect(wrapper.find('.donut-total').exists()).toBe(false)
 
     await wrapper.setProps({ metric: 'cost' })
     expect(wrapper.text()).toContain('Структура стоимости Grok')
     expect(wrapper.text()).toContain('Web search')
     expect(wrapper.text()).toContain('0,03 $')
+    expect(wrapper.find('.chart-summary').text()).toContain('3 операции')
     expect(wrapper.text()).toContain('Фактическая и расчётная стоимость')
   })
 

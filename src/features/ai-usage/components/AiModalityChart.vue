@@ -80,6 +80,16 @@ const chartLabel = computed(() =>
     .map((item) => `${item.label}: ${formatValue(item.value)}`)
     .join('. '),
 )
+const totalLabel = computed(() =>
+  props.metric === 'cost'
+    ? formatMoney(chartTotal.value, props.currency ?? 'USD')
+    : formatTokenCount(chartTotal.value),
+)
+const totalCaption = computed(() =>
+  props.metric === 'cost'
+    ? `${props.totals.records} ${pluralizeRu(props.totals.records, 'операция', 'операции', 'операций')}`
+    : 'токенов',
+)
 
 function formatValue(value: number, key?: string): string {
   if (props.metric === 'cost') return formatMoney(value, props.currency ?? 'USD')
@@ -122,10 +132,14 @@ function percentage(itemValue: number): string {
           {{ metric === 'cost' ? 'Структура стоимости Grok' : 'Форматы токенов Grok' }}
         </h3>
       </div>
-      <span class="direction-badge">
-        <template v-if="metric === 'cost'">{{ formatMoney(chartTotal, currency ?? 'USD') }}</template>
-        <template v-else>{{ formatTokenCount(totals.inputTokens) }} in · {{ formatTokenCount(totals.outputTokens) }} out</template>
-      </span>
+      <div class="chart-summary">
+        <strong>{{ totalLabel }}</strong>
+        <span>{{ totalCaption }}</span>
+        <small v-if="metric === 'tokens'">
+          {{ formatTokenCount(totals.inputTokens) }} in ·
+          {{ formatTokenCount(totals.outputTokens) }} out
+        </small>
+      </div>
     </header>
 
     <div v-if="chartTotal" class="modality-layout">
@@ -144,10 +158,6 @@ function percentage(itemValue: number): string {
             :stroke-dashoffset="segment.offset"
           />
         </svg>
-        <div class="donut-total">
-          <strong>{{ metric === 'cost' ? formatMoney(chartTotal, currency ?? 'USD') : formatTokenCount(chartTotal) }}</strong>
-          <span>{{ metric === 'cost' ? 'оценка' : 'токенов' }}</span>
-        </div>
       </div>
 
       <div class="modality-legend">
@@ -205,13 +215,32 @@ function percentage(itemValue: number): string {
   margin: 0;
   font-size: 1rem;
 }
-.direction-badge {
-  padding: 7px 9px;
-  border: 1px solid #e7e8e2;
-  border-radius: 9px;
+.chart-summary {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  min-width: 0;
+  padding-left: 16px;
+  text-align: right;
+}
+.chart-summary strong {
+  color: #242821;
+  font: 700 1.2rem/1.1 Manrope;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+.chart-summary span {
+  margin-top: 3px;
   color: #777c72;
-  font-size: 0.63rem;
+  font-size: 0.62rem;
   font-weight: 700;
+  white-space: nowrap;
+}
+.chart-summary small {
+  margin-top: 5px;
+  color: #92978d;
+  font-size: 0.58rem;
+  font-weight: 600;
   white-space: nowrap;
 }
 .modality-layout {
@@ -222,9 +251,7 @@ function percentage(itemValue: number): string {
   min-height: 225px;
 }
 .donut-wrap {
-  position: relative;
-  width: min(100%, 175px);
-  container-type: inline-size;
+  width: min(100%, 190px);
   margin: auto;
 }
 .donut-wrap svg {
@@ -244,24 +271,6 @@ function percentage(itemValue: number): string {
 .donut-segment {
   stroke-linecap: butt;
   transition: stroke-dasharray 0.35s ease;
-}
-.donut-total {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  text-align: center;
-}
-.donut-total strong {
-  max-width: 72%;
-  margin-inline: auto;
-  font: 700 clamp(0.75rem, 12cqi, 1.35rem)/1.05 Manrope;
-  overflow-wrap: anywhere;
-}
-.donut-total span {
-  margin-top: 2px;
-  color: #8d9288;
-  font-size: 0.62rem;
 }
 .modality-legend {
   display: flex;
@@ -286,10 +295,15 @@ function percentage(itemValue: number): string {
 .legend-row strong,
 .legend-row small {
   display: block;
-  overflow-wrap: anywhere;
+  hyphens: none;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .legend-row strong {
+  overflow: hidden;
   font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .legend-row small {
   margin-top: 2px;
@@ -336,8 +350,10 @@ function percentage(itemValue: number): string {
     align-items: stretch;
     flex-direction: column;
   }
-  .direction-badge {
-    align-self: flex-start;
+  .chart-summary {
+    justify-items: start;
+    padding-left: 0;
+    text-align: left;
   }
   .modality-layout {
     grid-template-columns: 1fr;
@@ -355,6 +371,17 @@ function percentage(itemValue: number): string {
   }
   .donut-wrap {
     width: 150px;
+  }
+}
+@container (max-width: 460px) {
+  .chart-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .chart-summary {
+    justify-items: start;
+    padding-left: 0;
+    text-align: left;
   }
 }
 </style>
