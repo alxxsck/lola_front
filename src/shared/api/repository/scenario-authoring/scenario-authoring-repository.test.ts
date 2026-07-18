@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import {
   scenarioAuthoringCatalog,
@@ -10,7 +10,6 @@ import {
 } from '@/shared/api/generated/lola-backend'
 import type {
   ConditionCatalogResponseDto,
-  PublishScenarioDto,
   PublishScenarioResponseDto,
   ScenarioRuleDto,
   ScenarioRunExplainResponseDto,
@@ -18,6 +17,7 @@ import type {
 import { ApiError } from '@/shared/api/http/api-error'
 
 import { scenarioAuthoringRepository } from './index'
+import type { ScenarioPublishInput } from './index'
 
 vi.mock('@/shared/api/generated/lola-backend', () => ({
   scenarioAuthoringCatalog: vi.fn(),
@@ -46,7 +46,7 @@ const rule: ScenarioRuleDto = {
   },
 }
 
-const publishDraft: PublishScenarioDto = {
+const publishDraft: ScenarioPublishInput = {
   catalogRevision: 'catalog-revision-1',
   deliveryPolicy: { kind: 'IMMEDIATE' },
   expectedCurrentRevisionId: null,
@@ -119,6 +119,7 @@ describe('scenario authoring repository', () => {
   })
 
   it('publishes through the atomic generated command', async () => {
+    expectTypeOf<Parameters<typeof scenarioAuthoringRepository.publishScenario>[2]>().toEqualTypeOf<ScenarioPublishInput>()
     vi.mocked(scenarioAuthoringPublishScenario).mockResolvedValue(publishResponse)
 
     await expect(scenarioAuthoringRepository.publishScenario('project-1', 'scenario-1', publishDraft)).resolves.toBe(publishResponse)

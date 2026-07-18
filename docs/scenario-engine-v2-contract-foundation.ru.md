@@ -7,6 +7,8 @@
 - Public frontend seam находится в `shared/api/repository/scenario-authoring`.
 - Repository принимает и возвращает generated DTO, формирует только wire-envelope для `validate`, `preview` и `rollback` и централизованно преобразует transport errors в `ApiError`.
 - Publish использует единственную атомарную backend-команду. Отдельного frontend activation шага нет: backend создаёт immutable revision и ставит Scenario в `ACTIVE` в одной transaction.
+- OpenAPI пока помечает `rule` и `deliveryPolicy` как optional. Public repository принимает производный от generated DTO `ScenarioPublishInput`, где все четыре publish-поля обязательны, и не позволяет будущему UI уйти в legacy publish без typed rule или delivery policy.
+- Contract gate проверяет обязательные publish concurrency fields, catalog field capabilities, Rule AST discriminator и leaves, Delivery Policy union, preview scope и `countsAsActivity`. Исчезновение этих частей schema ломает `api:check`, даже если operationId остался прежним.
 
 ## Нормализованный authoring contract
 

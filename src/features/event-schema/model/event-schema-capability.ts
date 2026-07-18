@@ -13,19 +13,35 @@ export function findCatalogEventForDefinition(
   return contract?.events.find((event) => event.definitionId === definitionId)
 }
 
+export function findCatalogFieldForDraft(
+  event: Pick<ScenarioAuthoringEvent, 'fields'> | undefined,
+  draft: { fieldKey?: string; wireKey: string },
+): ScenarioAuthoringField | undefined {
+  if (draft.fieldKey) return event?.fields.find((field) => field.fieldKey === draft.fieldKey)
+  return event?.fields.find((field) => field.path === `event.payload.${draft.wireKey}`)
+}
+
 export function summarizeEventFieldCapability(
   field: ScenarioAuthoringField | undefined,
   catalogLoaded: boolean,
 ): EventFieldCapabilitySummary {
-  if (!catalogLoaded) return { label: 'Catalog ещё не загружен', availableForScenarios: false }
-  if (!field) return { label: 'Пока нельзя использовать в сценариях: revision или поле отсутствует в текущем catalog', availableForScenarios: false }
+  if (!catalogLoaded) return { label: 'Возможности сценариев появятся после обновления', availableForScenarios: false }
+  if (!field) return { label: 'Эта версия поля пока недоступна в сценариях', availableForScenarios: false }
 
-  const filterable = field.capabilities.eventField.operators.length > 0
-    || field.capabilities.aggregateFilter.operators.length > 0
-  const aggregatable = field.capabilities.aggregateMeasure.measures.length > 0
+  const currentEvent = field.capabilities.eventField.operators.length > 0
+  const historyFilter = field.capabilities.aggregateFilter.operators.length > 0
+  const historyAggregate = field.capabilities.aggregateMeasure.measures.length > 0
+  const currentLabel = currentEvent ? 'можно сравнивать' : 'пока недоступно'
+  const historyLabel = historyFilter && historyAggregate
+    ? 'можно фильтровать и считать'
+    : historyFilter
+      ? 'можно фильтровать'
+      : historyAggregate
+        ? 'можно считать'
+        : 'пока недоступно'
 
-  if (filterable && aggregatable) return { label: 'Можно фильтровать и агрегировать', availableForScenarios: true }
-  if (filterable) return { label: 'Можно фильтровать', availableForScenarios: true }
-  if (aggregatable) return { label: 'Можно агрегировать', availableForScenarios: true }
-  return { label: 'Пока нельзя использовать в сценариях: catalog не разрешает операции', availableForScenarios: false }
+  return {
+    label: `Событие запуска: ${currentLabel} · История: ${historyLabel}`,
+    availableForScenarios: currentEvent || historyFilter || historyAggregate,
+  }
 }

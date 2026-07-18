@@ -6,7 +6,7 @@ import type { ScenarioAuthoringEvent } from '@/shared/api/repository/scenario-au
 import { parseEventSchema, serializeEventSchema } from '../model/event-schema'
 import EventPayloadStudio from './EventPayloadStudio.vue'
 
-function mountStudio(schema: Record<string, unknown>, options: { baseline?: Record<string, unknown>; event?: ScenarioAuthoringEvent } = {}) {
+function mountStudio(schema: Record<string, unknown>, options: { baseline?: Record<string, unknown>; event?: ScenarioAuthoringEvent; attach?: boolean } = {}) {
   return mount(defineComponent({
     components: { EventPayloadStudio },
     setup() {
@@ -14,7 +14,7 @@ function mountStudio(schema: Record<string, unknown>, options: { baseline?: Reco
       return { draft, options }
     },
     template: '<EventPayloadStudio v-model="draft" :baseline-schema="options.baseline" :catalog-event="options.event" />',
-  }))
+  }), options.attach ? { attachTo: document.body } : {})
 }
 
 describe('EventPayloadStudio', () => {
@@ -25,14 +25,15 @@ describe('EventPayloadStudio', () => {
     const studio = wrapper.getComponent(EventPayloadStudio)
     const initialFieldKey = studio.props('modelValue').fields[0]?.fieldKey
 
-    await wrapper.get('[aria-label="Название поля"]').setValue('Сумма')
-    await wrapper.get('[aria-label="Wire key"]').setValue('amount')
-    await wrapper.get('[aria-label="Тип поля"]').setValue('integer')
-    await wrapper.get('[aria-label="Обязательное поле"]').setValue(true)
+    await wrapper.get('[data-test="field-title"]').setValue('Сумма')
+    await wrapper.get('[data-test="field-wire-key"]').setValue('amount')
+    await wrapper.get('[data-test="field-type"]').setValue('integer')
+    await wrapper.get('input[type="checkbox"]').setValue(true)
     await wrapper.get('[data-test="field-details"]').trigger('click')
-    await wrapper.get('[aria-label="Семантический тип"]').setValue('money')
-    await wrapper.get('[aria-label="Единица измерения"]').setValue('minor')
-    await wrapper.get('[aria-label="Wire key"]').setValue('amountMinor')
+    expect(wrapper.findAll('[aria-label="Максимальное значение поля Сумма"]')).toHaveLength(1)
+    await wrapper.get('[aria-label="Смысл данных поля Сумма"]').setValue('money')
+    await wrapper.get('[aria-label="Способ хранения поля Сумма"]').setValue('minor')
+    await wrapper.get('[data-test="field-wire-key"]').setValue('amountMinor')
 
     const draft = wrapper.getComponent(EventPayloadStudio).props('modelValue')
     expect(initialFieldKey).toMatch(/^field_/)
@@ -81,7 +82,7 @@ describe('EventPayloadStudio', () => {
       properties: { currency: { type: 'string', 'x-lola-field-key': 'deposit.currency' } },
     }, { event })
 
-    expect(wrapper.text()).toContain('Можно фильтровать')
+    expect(wrapper.text()).toContain('Событие запуска: можно сравнивать')
     await wrapper.get('[data-test="advanced-schema"]').trigger('click')
     await wrapper.get('[aria-label="JSON Schema"]').setValue(JSON.stringify({
       type: 'object',
@@ -95,6 +96,8 @@ describe('EventPayloadStudio', () => {
         },
       },
     }))
+    await wrapper.get('[data-test="review-advanced-schema"]').trigger('click')
+    expect(wrapper.text()).toContain('Проверка пройдена')
     await wrapper.get('[data-test="apply-advanced-schema"]').trigger('click')
 
     expect(serializeEventSchema(wrapper.getComponent(EventPayloadStudio).props('modelValue'))).toEqual({
@@ -119,11 +122,84 @@ describe('EventPayloadStudio', () => {
       additionalProperties: false,
     })
 
-    await wrapper.get('[aria-label="Sample payload"]').setValue('{"amountMinor":0,"extra":true}')
+    await wrapper.get('summary').trigger('click')
+    await wrapper.get('[aria-label="Пример данных для проверки"]').setValue('{"amountMinor":0,"extra":true}')
     await wrapper.get('[data-test="validate-sample"]').trigger('click')
 
-    expect(wrapper.text()).toContain('must NOT have additional properties')
+    expect(wrapper.text()).toContain('Поле не описано')
     expect(wrapper.text()).toContain('/amountMinor')
-    expect(wrapper.text()).toContain('must be >= 1')
+    expect(wrapper.text()).toContain('Значение слишком маленькое')
+  })
+
+  it('edits string choices without asking the user to write JSON', async () => {
+    const wrapper = mountStudio({
+      type: 'object',
+      properties: { currency: { type: 'string', enum: ['EUR'] } },
+    })
+
+    await wrapper.get('[data-test="field-details"]').trigger('click')
+    expect(wrapper.text()).not.toContain('Enum JSON')
+    await wrapper.get('[aria-label="Допустимые варианты поля currency"]').setValue('EUR\nUSD')
+
+    expect(serializeEventSchema(wrapper.getComponent(EventPayloadStudio).props('modelValue'))).toMatchObject({
+      properties: { currency: { enum: ['EUR', 'USD'] } },
+    })
+    expect(wrapper.find('[aria-label="Stable field key"]').exists()).toBe(false)
+  })
+
+  it('keeps an invalid advanced schema open and leaves the visual draft unchanged', async () => {
+    const wrapper = mountStudio({ type: 'object', properties: { currency: { type: 'string' } } })
+
+    await wrapper.get('[data-test="advanced-schema"]').trigger('click')
+    expect(wrapper.find('[data-test="field-wire-key"]').exists()).toBe(false)
+    await wrapper.get('[aria-label="JSON Schema"]').setValue('{"type":"object","properties":"bad"}')
+    await wrapper.get('[data-test="review-advanced-schema"]').trigger('click')
+
+    expect(wrapper.text()).toContain('properties должен быть объектом')
+    expect(wrapper.find('[aria-label="JSON Schema"]').exists()).toBe(true)
+    expect(serializeEventSchema(wrapper.getComponent(EventPayloadStudio).props('modelValue'))).toEqual({
+      type: 'object',
+      properties: { currency: { type: 'string' } },
+    })
+  })
+
+  it('requires an explicit discard for unapplied advanced JSON', async () => {
+    const wrapper = mountStudio({ type: 'object', properties: { currency: { type: 'string' } } })
+
+    await wrapper.get('[data-test="advanced-schema"]').trigger('click')
+    expect(wrapper.get('[data-test="advanced-schema"]').attributes('aria-expanded')).toBe('true')
+    await wrapper.get('[aria-label="JSON Schema"]').setValue('{"type":"object","properties":{}}')
+    await wrapper.get('[data-test="advanced-schema"]').trigger('click')
+
+    expect(wrapper.find('[aria-label="JSON Schema"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('неприменённые изменения')
+    await wrapper.get('[data-test="discard-advanced-schema"]').trigger('click')
+    expect(wrapper.find('[aria-label="JSON Schema"]').exists()).toBe(false)
+  })
+
+  it('clears a successful sample result when the schema changes', async () => {
+    const wrapper = mountStudio({ type: 'object', properties: { enabled: { type: 'boolean' } } })
+
+    await wrapper.get('summary').trigger('click')
+    await wrapper.get('[aria-label="Пример данных для проверки"]').setValue('{"enabled":true}')
+    await wrapper.get('[data-test="validate-sample"]').trigger('click')
+    expect(wrapper.text()).toContain('соответствует текущей настройке')
+
+    await wrapper.get('[data-test="field-type"]').setValue('string')
+    expect(wrapper.text()).not.toContain('соответствует текущей настройке')
+  })
+
+  it('moves focus to a new field and returns it to the neighbour after delete', async () => {
+    const wrapper = mountStudio({ type: 'object', properties: {} }, { attach: true })
+
+    await wrapper.get('[data-test="add-field"]').trigger('click')
+    const firstTitle = wrapper.get('[data-test="field-title"]').element
+    expect(document.activeElement).toBe(firstTitle)
+
+    await wrapper.get('[data-test="add-field"]').trigger('click')
+    await wrapper.findAll('.icon-button')[1]!.trigger('click')
+    expect(document.activeElement).toBe(firstTitle)
+
+    wrapper.unmount()
   })
 })

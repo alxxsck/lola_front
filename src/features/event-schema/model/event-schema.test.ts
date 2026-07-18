@@ -6,6 +6,7 @@ import {
   parseEventSchema,
   serializeEventSchema,
   validateEventSchemaDraft,
+  validateEventSchemaDefinition,
   validateEventSchemaSample,
 } from './event-schema'
 
@@ -67,6 +68,19 @@ describe('event schema model', () => {
     expect(serializeEventSchema(parseEventSchema(schema))).toEqual(schema)
   })
 
+  it('keeps local row identity unique when a broken schema repeats a stable field key', () => {
+    const draft = parseEventSchema({
+      type: 'object',
+      properties: {
+        amount: { type: 'integer', 'x-lola-field-key': 'deposit.value' },
+        fee: { type: 'integer', 'x-lola-field-key': 'deposit.value' },
+      },
+    })
+
+    expect(draft.fields.map((field) => field.fieldKey)).toEqual(['deposit.value', 'deposit.value'])
+    expect(new Set(draft.fields.map((field) => field.id)).size).toBe(2)
+  })
+
   it('applies visual edits without changing stable identity or unknown annotations', () => {
     const draft = parseEventSchema({
       type: 'object',
@@ -126,6 +140,12 @@ describe('event schema model', () => {
     expect(buildEventSchemaExample(draft)).toEqual({ amountMinor: 125, currency: 'EUR' })
   })
 
+  it('uses a declared maximum when a numeric field has no minimum', () => {
+    const draft = parseEventSchema({ type: 'object', properties: { score: { type: 'integer', maximum: 10 } } })
+
+    expect(buildEventSchemaExample(draft)).toEqual({ score: 10 })
+  })
+
   it('validates pasted sample payloads with backend-compatible JSON Schema rules', () => {
     const draft = parseEventSchema({
       type: 'object',
@@ -137,11 +157,19 @@ describe('event schema model', () => {
     })
 
     expect(validateEventSchemaSample(draft, { amountMinor: 0, currency: 'GBP', extra: true })).toEqual([
-      { path: '/extra', expected: 'no additional properties', actual: 'true', explanation: 'must NOT have additional properties' },
-      { path: '/amountMinor', expected: '>= 1', actual: '0', explanation: 'must be >= 1' },
-      { path: '/currency', expected: 'one of ["EUR","USD"]', actual: '"GBP"', explanation: 'must be equal to one of the allowed values' },
+      { path: '/extra', expected: 'поле описано в настройке', actual: 'true', explanation: 'Поле не описано. Удалите его или разрешите дополнительные поля.' },
+      { path: '/amountMinor', expected: 'не меньше 1', actual: '0', explanation: 'Значение слишком маленькое. Укажите не меньше 1.' },
+      { path: '/currency', expected: 'одно из: EUR, USD', actual: '"GBP"', explanation: 'Выберите один из допустимых вариантов.' },
     ])
     expect(validateEventSchemaSample(draft, { amountMinor: 125, currency: 'EUR' })).toEqual([])
+  })
+
+  it('rejects a malformed visual schema before it replaces the current draft', () => {
+    const malformed = { type: 'object', properties: 'not-an-object' }
+
+    expect(validateEventSchemaDefinition(malformed)).toEqual([
+      { message: 'Раздел properties должен быть объектом с описанием полей.' },
+    ])
   })
 
   it('keeps draft validation and array normalization inside the schema model', () => {
@@ -155,6 +183,20 @@ describe('event schema model', () => {
     amount.wireKey = 'items'
     amount.type = 'array'
     expect(serializeEventSchema(draft)).toMatchObject({ properties: { items: { type: 'array', items: {} } } })
+  })
+
+  it('rejects constraints that cannot match the selected field type', () => {
+    const draft = parseEventSchema({
+      type: 'object',
+      properties: {
+        amount: { type: 'integer', enum: ['1', '2'], minimum: 10, maximum: 5 },
+      },
+    })
+
+    expect(validateEventSchemaDraft(draft).map((issue) => issue.message)).toEqual([
+      'Допустимые варианты должны соответствовать типу поля «amount».',
+      'Минимальное значение поля «amount» не может быть больше максимального.',
+    ])
   })
 
   it('distinguishes a wire rename from changing stable field identity', () => {
@@ -199,5 +241,30 @@ describe('event schema model', () => {
         afterFieldKey: 'payment.currency',
       },
     ])
+  })
+
+  it('reports persisted constraint, metadata and root policy changes', () => {
+    const before = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        amount: { type: 'integer', minimum: 1, title: 'Amount', 'x-lola-unit': 'minor' },
+      },
+    }
+    const after = {
+      type: 'object',
+      additionalProperties: true,
+      required: ['amount'],
+      properties: {
+        amount: { type: 'integer', minimum: 5, title: 'Deposit amount', 'x-lola-unit': 'major' },
+      },
+    }
+
+    expect(diffEventSchemas(before, after)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'required-changed', beforeValue: 'нет', afterValue: 'да' }),
+      expect.objectContaining({ kind: 'constraint-changed' }),
+      expect.objectContaining({ kind: 'metadata-changed' }),
+      expect.objectContaining({ kind: 'additional-properties-changed', beforeValue: 'нет', afterValue: 'да' }),
+    ]))
   })
 })

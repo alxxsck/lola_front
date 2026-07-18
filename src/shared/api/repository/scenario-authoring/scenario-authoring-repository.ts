@@ -11,6 +11,11 @@ import { normalizeApiError } from '@/shared/api/http/api-error'
 
 import { adaptScenarioAuthoringContract } from './scenario-authoring-contract'
 
+export type ScenarioPublishInput = Required<Pick<
+  PublishScenarioDto,
+  'catalogRevision' | 'deliveryPolicy' | 'expectedCurrentRevisionId' | 'rule'
+>>
+
 async function callApi<Response>(request: () => Promise<Response>): Promise<Response> {
   try {
     return await request()
@@ -32,7 +37,7 @@ export const scenarioAuthoringRepository = {
     return callApi(() => scenarioAuthoringPreview(projectId, { rule, scope }))
   },
 
-  publishScenario(projectId: string, scenarioId: string, draft: PublishScenarioDto) {
+  publishScenario(projectId: string, scenarioId: string, draft: ScenarioPublishInput) {
     return callApi(() => scenarioAuthoringPublishScenario(projectId, scenarioId, draft))
   },
 

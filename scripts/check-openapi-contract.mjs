@@ -51,6 +51,34 @@ function containsSchema(schema, schemaName) {
   )
 }
 
+function contractSchema(schemaName) {
+  const schema = document.components?.schemas?.[schemaName]
+  if (!schema) throw new Error(`OpenAPI snapshot is missing ${schemaName} schema`)
+  return schema
+}
+
+function requireSchemaProperties(schemaName, propertyNames) {
+  const properties = contractSchema(schemaName).properties ?? {}
+  const missing = propertyNames.filter((propertyName) => !Object.hasOwn(properties, propertyName))
+  if (missing.length) throw new Error(`${schemaName} is missing contract properties: ${missing.join(', ')}`)
+}
+
+function requireRequiredProperties(schemaName, propertyNames) {
+  const required = new Set(contractSchema(schemaName).required ?? [])
+  const missing = propertyNames.filter((propertyName) => !required.has(propertyName))
+  if (missing.length) throw new Error(`${schemaName} no longer requires: ${missing.join(', ')}`)
+}
+
+function requireDiscriminatedUnion(schemaName, propertyName, discriminator, schemaNames) {
+  const property = contractSchema(schemaName).properties?.[propertyName]
+  if (property?.discriminator?.propertyName !== discriminator) {
+    throw new Error(`${schemaName}.${propertyName} must be discriminated by ${discriminator}`)
+  }
+  const references = new Set((property.oneOf ?? []).map((item) => item.$ref?.split('/').at(-1)))
+  const missing = schemaNames.filter((candidate) => !references.has(candidate))
+  if (missing.length) throw new Error(`${schemaName}.${propertyName} is missing union members: ${missing.join(', ')}`)
+}
+
 for (const [operationId, expectation] of requiredOperations) {
   const operation = operations.find((candidate) => candidate.operationId === operationId)
 
@@ -84,6 +112,56 @@ for (const schemaName of ['CreateProjectDto', 'UpdateProjectDto']) {
   if (properties.settings?.type !== 'object' || properties.settings?.additionalProperties !== true) {
     throw new Error(`${schemaName} must expose general project settings`)
   }
+}
+
+requireSchemaProperties('ConditionCatalogResponseDto', ['version', 'revision', 'projectId', 'events'])
+requireRequiredProperties('ConditionCatalogResponseDto', ['version', 'revision', 'projectId', 'events'])
+requireSchemaProperties('ConditionCatalogEventResponseDto', ['definitionKeyId', 'definitionId', 'code', 'schemaVersion', 'fields'])
+requireSchemaProperties('ConditionCatalogFieldResponseDto', [
+  'fieldKey',
+  'path',
+  'valueType',
+  'required',
+  'operators',
+  'aggregations',
+  'control',
+  'semanticType',
+  'unit',
+  'sensitive',
+])
+
+requireSchemaProperties('ValidateScenarioRuleDto', ['rule'])
+requireRequiredProperties('ValidateScenarioRuleDto', ['rule'])
+requireSchemaProperties('PreviewScenarioRuleDto', ['rule', 'scope'])
+requireRequiredProperties('PreviewScenarioRuleDto', ['rule', 'scope'])
+requireSchemaProperties('PreviewScenarioScopeDto', ['kind', 'eventLogId'])
+requireRequiredProperties('PreviewScenarioScopeDto', ['kind', 'eventLogId'])
+if (JSON.stringify(contractSchema('PreviewScenarioScopeDto').properties?.kind?.enum) !== JSON.stringify(['eventLog'])) {
+  throw new Error('PreviewScenarioScopeDto.kind must only allow eventLog')
+}
+requireSchemaProperties('PublishScenarioDto', ['rule', 'deliveryPolicy', 'expectedCurrentRevisionId', 'catalogRevision'])
+requireRequiredProperties('PublishScenarioDto', ['expectedCurrentRevisionId', 'catalogRevision'])
+requireSchemaProperties('RollbackScenarioDto', ['expectedCurrentRevisionId'])
+
+requireSchemaProperties('ScenarioRuleDto', ['version', 'root'])
+requireRequiredProperties('ScenarioRuleDto', ['version', 'root'])
+requireDiscriminatedUnion('ScenarioRuleDto', 'root', 'kind', [
+  'AllRuleNodeDto',
+  'AnyRuleNodeDto',
+  'NotRuleNodeDto',
+  'EventFieldRuleNodeDto',
+  'EventAggregateRuleNodeDto',
+  'ActivityDayStreakRuleNodeDto',
+])
+requireDiscriminatedUnion('PublishScenarioDto', 'deliveryPolicy', 'kind', [
+  'ImmediateDeliveryPolicyDto',
+  'SkipIfOfflineDeliveryPolicyDto',
+  'FailIfOfflineDeliveryPolicyDto',
+  'WaitUntilOnlineDeliveryPolicyDto',
+])
+
+for (const schemaName of ['CreateEventDefinitionDto', 'UpdateEventDefinitionDto']) {
+  requireSchemaProperties(schemaName, ['countsAsActivity', 'payloadSchema'])
 }
 
 console.log(`OpenAPI contract check passed (${requiredOperations.size} required operations)`)

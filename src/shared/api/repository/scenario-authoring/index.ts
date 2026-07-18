@@ -7,3 +7,4 @@ export type {
   ScenarioAuthoringField,
 } from './scenario-authoring-contract'
 export { scenarioAuthoringRepository } from './scenario-authoring-repository'
+export type { ScenarioPublishInput } from './scenario-authoring-repository'

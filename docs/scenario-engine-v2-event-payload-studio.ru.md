@@ -5,8 +5,10 @@
 - `features/event-schema/model` владеет lossless parse/edit/serialize JSON Schema, sample payload и semantic diff.
 - Визуальный editor сохраняет `title`, `description`, `type`, `required`, `enum`, `minimum`, `maximum`, `additionalProperties`, неизвестные JSON Schema keywords и Lola annotations.
 - Новый field получает отдельный stable `x-lola-field-key`; изменение wire key не меняет его автоматически.
-- Advanced JSON Schema проходит parse перед применением. Неподдерживаемые визуальным editor конструкции остаются opaque и не перезаписываются fallback-схемой.
-- Generated и вставленный реальный sample payload проверяются Ajv с backend-compatible `allErrors`/non-strict JSON Schema semantics; ошибки показывают path и причину.
+- Event editor ведёт по четырём шагам: смысл, данные, пример, изменения. Обычная настройка не требует писать JSON.
+- Advanced JSON Schema проходит parse, backend-compatible normalization и Ajv compile, затем показывает semantic diff. Применение доступно только после успешной проверки. Неподдерживаемые визуальным editor конструкции остаются opaque.
+- Studio строит generated sample для понятной проверки формы данных. Реальный sample можно проверить отдельно через Ajv с backend-compatible `allErrors`/non-strict JSON Schema semantics; ошибки объясняют, что неверно и как это исправить. Проверка примера не блокирует lossless schema с opaque constraints, для которых frontend не умеет синтезировать гарантированно подходящие данные.
+- Semantic diff включает rename/type/stable identity, required, enum, min/max, semantic metadata, sensitivity и политику дополнительных полей. Финальный шаг также показывает business-настройки события.
 - Field capabilities берутся только из нормализованного Scenario Authoring contract adapter и связываются с редактируемой revision по точному `definitionId`. UI не содержит собственной operator/measure matrix и не переносит capabilities между revisions с одинаковым `code`.
 - Event Definition create больше не отправляет `version`; `countsAsActivity` поддерживается в create/update и объясняется отдельно от session/Visit.
 
@@ -21,6 +23,14 @@
 - проверочный Event выключен штатным DELETE endpoint.
 
 Backend-файлы не изменялись.
+
+## UX, accessibility и responsive
+
+- Типы, enum, semantic type и unit настраиваются обычными controls; stable field key нельзя случайно изменить.
+- Ошибки первого шага и schema fields имеют программную связь с controls и focus summary.
+- Add/delete восстанавливают focus, details button сообщает `aria-expanded`/`aria-controls`.
+- На 320×700 и 390×844 dialog занимает viewport, горизонтальный scroll отсутствует. Validation table превращается в читаемые карточки.
+- Browser smoke не обнаружил console warnings/errors.
 
 ## Точные ограничения backend
 

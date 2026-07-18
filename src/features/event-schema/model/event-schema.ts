@@ -52,12 +52,15 @@ export type EventSchemaChange =
   | EventSchemaFieldChange<'added' | 'removed' | 'renamed'>
   | EventSchemaFieldChange<'type-changed'> & { beforeType?: EventSchemaFieldType; afterType?: EventSchemaFieldType }
   | EventSchemaFieldChange<'field-key-changed'> & { beforeFieldKey?: string; afterFieldKey?: string }
+  | EventSchemaFieldChange<'required-changed' | 'constraint-changed' | 'metadata-changed' | 'additional-properties-changed'>
 
 interface EventSchemaFieldChange<Kind extends string> {
   kind: Kind
   fieldKey?: string
   beforeWireKey?: string
   afterWireKey?: string
+  beforeValue?: string
+  afterValue?: string
 }
 
 const unsupportedKeywords = ['$ref', 'allOf', 'anyOf', 'oneOf', 'not', 'if', 'then', 'else']
@@ -107,7 +110,7 @@ export function parseEventSchema(schema: Record<string, unknown>): EventSchemaDr
       const stableKey = optionalString(definition['x-lola-field-key'])
 
       return {
-        id: stableKey ?? `${wireKey}_${uid('schema').slice(-8)}`,
+        id: uid('schema_field'),
         wireKey,
         title: optionalString(definition.title),
         description: optionalString(definition.description),
@@ -182,8 +185,8 @@ export function serializeEventSchema(draft: EventSchemaDraft): Record<string, un
 function sampleValue(field: EventSchemaFieldDraft): unknown {
   if (field.enumValues?.length) return cloneValue(field.enumValues[0])
   switch (field.type) {
-    case 'number': return field.minimum ?? 123.45
-    case 'integer': return field.minimum ?? 123
+    case 'number': return field.minimum ?? field.maximum ?? 123.45
+    case 'integer': return field.minimum ?? field.maximum ?? 123
     case 'boolean': return true
     case 'object': return {}
     case 'array': return []
@@ -214,7 +217,49 @@ export function validateEventSchemaDraft(draft: EventSchemaDraft): EventSchemaDr
   if (new Set(fieldKeys).size !== fieldKeys.length) return [{ message: 'Stable field key не должны повторяться.' }]
 
   if (serializeEventSchema(draft).type !== 'object') return [{ message: 'Корневая JSON Schema события должна иметь type object.' }]
-  return []
+
+  return editable.flatMap((field) => {
+    const issues: EventSchemaDraftIssue[] = []
+    if (field.enumValues?.some((value) => !enumValueMatchesType(value, field.type))) {
+      issues.push({ fieldId: field.id, message: `Допустимые варианты должны соответствовать типу поля «${field.wireKey}».` })
+    }
+    if ((field.minimum !== undefined || field.maximum !== undefined) && field.type !== 'number' && field.type !== 'integer') {
+      issues.push({ fieldId: field.id, message: `Минимум и максимум доступны только для числового поля «${field.wireKey}».` })
+    }
+    if (field.minimum !== undefined && field.maximum !== undefined && field.minimum > field.maximum) {
+      issues.push({ fieldId: field.id, message: `Минимальное значение поля «${field.wireKey}» не может быть больше максимального.` })
+    }
+    return issues
+  })
+}
+
+function enumValueMatchesType(value: unknown, type?: EventSchemaFieldType): boolean {
+  if (type === 'string') return typeof value === 'string'
+  if (type === 'number') return typeof value === 'number' && Number.isFinite(value)
+  if (type === 'integer') return typeof value === 'number' && Number.isInteger(value)
+  if (type === 'boolean') return typeof value === 'boolean'
+  if (type === 'object') return isRecord(value)
+  if (type === 'array') return Array.isArray(value)
+  return false
+}
+
+export function validateEventSchemaDefinition(schema: Record<string, unknown>): EventSchemaDraftIssue[] {
+  if (schema.type !== 'object') return [{ message: 'Схема данных события должна описывать объект.' }]
+  if (schema.properties !== undefined && !isRecord(schema.properties)) {
+    return [{ message: 'Раздел properties должен быть объектом с описанием полей.' }]
+  }
+
+  const draftIssues = validateEventSchemaDraft(parseEventSchema(schema))
+  if (draftIssues.length) return draftIssues
+
+  try {
+    const normalized = cloneValue(schema)
+    normalizeForBackendValidation(normalized, 'payloadSchema')
+    new Ajv({ allErrors: true, strict: false }).compile(normalized)
+    return []
+  } catch (cause) {
+    return [{ message: cause instanceof Error ? `Схема не прошла проверку: ${cause.message}` : 'Схема не прошла проверку.' }]
+  }
 }
 
 export function validateEventSchemaSample(draft: EventSchemaDraft, sample: unknown): EventSchemaSampleIssue[] {
@@ -227,9 +272,9 @@ export function validateEventSchemaSample(draft: EventSchemaDraft, sample: unkno
   } catch (cause) {
     return [{
       path: '/',
-      expected: 'valid JSON Schema',
-      actual: 'schema compilation failed',
-      explanation: cause instanceof Error ? cause.message : 'JSON Schema validation failed',
+      expected: 'корректная настройка полей',
+      actual: 'проверка схемы не выполнена',
+      explanation: cause instanceof Error ? `Проверьте техническую схему: ${cause.message}` : 'Техническая схема не прошла проверку.',
     }]
   }
 }
@@ -264,19 +309,40 @@ function sampleIssue(issue: ErrorObject, sample: unknown): EventSchemaSampleIssu
   return {
     path,
     expected: expectedValue(issue),
-    actual: actual === undefined ? 'missing' : JSON.stringify(actual),
-    explanation: issue.message ?? 'does not match schema',
+    actual: actual === undefined ? 'нет значения' : JSON.stringify(actual),
+    explanation: issueExplanation(issue),
   }
 }
 
 function expectedValue(issue: ErrorObject): string {
-  if (issue.keyword === 'additionalProperties') return 'no additional properties'
-  if (issue.keyword === 'minimum') return `>= ${String(issue.params.limit)}`
-  if (issue.keyword === 'maximum') return `<= ${String(issue.params.limit)}`
-  if (issue.keyword === 'enum') return `one of ${JSON.stringify(issue.params.allowedValues)}`
-  if (issue.keyword === 'type') return String(issue.params.type)
-  if (issue.keyword === 'required') return 'required property'
+  if (issue.keyword === 'additionalProperties') return 'поле описано в настройке'
+  if (issue.keyword === 'minimum') return `не меньше ${String(issue.params.limit)}`
+  if (issue.keyword === 'maximum') return `не больше ${String(issue.params.limit)}`
+  if (issue.keyword === 'enum') return `одно из: ${(issue.params.allowedValues as unknown[]).map(String).join(', ')}`
+  if (issue.keyword === 'type') return eventSchemaTypeLabel(String(issue.params.type))
+  if (issue.keyword === 'required') return 'обязательное поле присутствует'
   return JSON.stringify(issue.params)
+}
+
+function issueExplanation(issue: ErrorObject): string {
+  if (issue.keyword === 'additionalProperties') return 'Поле не описано. Удалите его или разрешите дополнительные поля.'
+  if (issue.keyword === 'minimum') return `Значение слишком маленькое. Укажите не меньше ${String(issue.params.limit)}.`
+  if (issue.keyword === 'maximum') return `Значение слишком большое. Укажите не больше ${String(issue.params.limit)}.`
+  if (issue.keyword === 'enum') return 'Выберите один из допустимых вариантов.'
+  if (issue.keyword === 'type') return `Измените значение: ожидается тип «${eventSchemaTypeLabel(String(issue.params.type))}».`
+  if (issue.keyword === 'required') return 'Добавьте обязательное поле.'
+  return issue.message ? `Значение не соответствует настройке: ${issue.message}.` : 'Значение не соответствует настройке.'
+}
+
+function eventSchemaTypeLabel(type: string): string {
+  return ({
+    string: 'текст',
+    number: 'число',
+    integer: 'целое число',
+    boolean: 'да/нет',
+    object: 'объект',
+    array: 'список',
+  } as Record<string, string>)[type] ?? type
 }
 
 function valueAtPointer(value: unknown, pointer: string): unknown {
@@ -293,6 +359,24 @@ function matchField(before: EventSchemaFieldDraft, after: EventSchemaFieldDraft[
     ? after.find((field) => field.fieldKey === before.fieldKey && !matched.has(field.id))
     : undefined
   return byStableKey ?? after.find((field) => field.wireKey === before.wireKey && !matched.has(field.id))
+}
+
+function comparableValue(value: unknown): string {
+  return value === undefined ? 'не задано' : JSON.stringify(value)
+}
+
+function fieldConstraintValue(field: EventSchemaFieldDraft): string {
+  return comparableValue({ enum: field.enumValues, minimum: field.minimum, maximum: field.maximum })
+}
+
+function fieldMetadataValue(field: EventSchemaFieldDraft): string {
+  return comparableValue({
+    title: field.title,
+    description: field.description,
+    semanticType: field.semanticType,
+    unit: field.unit,
+    sensitive: field.sensitive,
+  })
 }
 
 export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSchema: Record<string, unknown>): EventSchemaChange[] {
@@ -337,10 +421,54 @@ export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSch
         afterFieldKey: current.fieldKey,
       })
     }
+    if (previous.required !== current.required) {
+      changes.push({
+        kind: 'required-changed',
+        fieldKey: current.fieldKey ?? previous.fieldKey,
+        beforeWireKey: previous.wireKey,
+        afterWireKey: current.wireKey,
+        beforeValue: previous.required ? 'да' : 'нет',
+        afterValue: current.required ? 'да' : 'нет',
+      })
+    }
+    const beforeConstraints = fieldConstraintValue(previous)
+    const afterConstraints = fieldConstraintValue(current)
+    if (beforeConstraints !== afterConstraints) {
+      changes.push({
+        kind: 'constraint-changed',
+        fieldKey: current.fieldKey ?? previous.fieldKey,
+        beforeWireKey: previous.wireKey,
+        afterWireKey: current.wireKey,
+        beforeValue: beforeConstraints,
+        afterValue: afterConstraints,
+      })
+    }
+    const beforeMetadata = fieldMetadataValue(previous)
+    const afterMetadata = fieldMetadataValue(current)
+    if (beforeMetadata !== afterMetadata) {
+      changes.push({
+        kind: 'metadata-changed',
+        fieldKey: current.fieldKey ?? previous.fieldKey,
+        beforeWireKey: previous.wireKey,
+        afterWireKey: current.wireKey,
+        beforeValue: beforeMetadata,
+        afterValue: afterMetadata,
+      })
+    }
   }
 
   for (const current of after) {
     if (!matched.has(current.id)) changes.push({ kind: 'added', fieldKey: current.fieldKey, afterWireKey: current.wireKey })
+  }
+
+  const beforeAdditionalProperties = parseEventSchema(beforeSchema).additionalProperties
+  const afterAdditionalProperties = parseEventSchema(afterSchema).additionalProperties
+  if (comparableValue(beforeAdditionalProperties) !== comparableValue(afterAdditionalProperties)) {
+    changes.push({
+      kind: 'additional-properties-changed',
+      beforeValue: beforeAdditionalProperties === true ? 'да' : beforeAdditionalProperties === false ? 'нет' : comparableValue(beforeAdditionalProperties),
+      afterValue: afterAdditionalProperties === true ? 'да' : afterAdditionalProperties === false ? 'нет' : comparableValue(afterAdditionalProperties),
+    })
   }
 
   return changes

@@ -61,6 +61,24 @@ p { line-height: 1.55; }
   .page-header { flex-direction: column; }
 }
 
+@media (max-width: 767px) {
+  .p-dialog.event-dialog {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  .p-dialog.event-dialog .p-dialog-content { flex: 1; padding: 0 14px 18px; }
+  .p-dialog.event-dialog .p-dialog-footer {
+    position: sticky;
+    bottom: 0;
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    background: #fff;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
