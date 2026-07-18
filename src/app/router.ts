@@ -20,6 +20,7 @@ export const router = createRouter({
         { path: 'events', name: 'events', component: () => import('@/pages/EventsPage.vue') },
         { path: 'event-logs', name: 'event-logs', component: () => import('@/pages/EventLogsPage.vue') },
         { path: 'actions', name: 'actions', component: () => import('@/pages/ActionsPage.vue') },
+        { path: 'docs', name: 'documentation', component: () => import('@/pages/DocumentationPage.vue') },
         { path: 'docs/scenarios', name: 'scenario-guide', component: () => import('@/pages/ScenarioGuidePage.vue') },
         { path: 'scenarios', name: 'scenarios', component: () => import('@/pages/ScenariosPage.vue') },
         { path: 'scenarios/new', name: 'scenario-create', component: () => import('@/pages/ScenarioEditorPage.vue') },

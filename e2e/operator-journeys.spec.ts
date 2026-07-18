@@ -180,12 +180,23 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
 test.beforeEach(async ({ page }) => login(page))
 
 test('core operator pages load without horizontal overflow or serious accessibility violations', async ({ page }) => {
-  for (const path of ['/project', '/events', '/users', '/operations', '/scenarios', '/docs/scenarios']) {
+  for (const path of ['/project', '/events', '/users', '/operations', '/scenarios', '/docs', '/docs/scenarios']) {
     await page.goto(path)
     await expect(page.locator('main').first()).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
     await expectNoSeriousAccessibilityViolations(page)
   }
+})
+
+test('documentation catalog opens the scenario guide', async ({ page }) => {
+  await page.goto('/overview')
+  await expect(page.locator('a.nav-item', { hasText: 'Документация' })).toHaveAttribute('href', '/docs')
+  await page.goto('/docs')
+  await expect(page.getByRole('heading', { name: 'Документация Lola', level: 1 })).toBeVisible()
+  await expect(page.locator('.guide-card')).toHaveCount(1)
+  await page.getByRole('link', { name: /Как работают сценарии Lola/ }).click()
+  await expect(page).toHaveURL(/\/docs\/scenarios$/)
+  await expect(page.getByRole('heading', { name: 'Как работают сценарии Lola', level: 1 })).toBeVisible()
 })
 
 test('contextual scenario documentation is discoverable from scenarios and events', async ({ page }) => {
