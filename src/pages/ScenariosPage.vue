@@ -10,6 +10,7 @@ import Tag from 'primevue/tag'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'
+import { DocumentationCallout } from '@/features/documentation/ui'
 import { useActionDefinitionsStore } from '@/features/actions/action-definitions.store'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
@@ -200,6 +201,8 @@ function errorMessage(cause: unknown) {
       </div>
       <Button label="Создать сценарий" icon="pi pi-plus" @click="openCreate" />
     </header>
+
+    <DocumentationCallout title="Как работают сценарии Lola" text="Trigger, Audience, Eligibility, действия, Goal, доставка, публикация и откат — в одном практическом руководстве." icon="pi pi-sitemap" />
 
     <section class="metric-strip card">
       <div><span class="metric-icon active"><i class="pi pi-play" /></span><div><strong>{{ activeCount }}</strong><small>активных</small></div></div>

@@ -1,0 +1,30 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import guideSource from '../../docs/cms-scenario-engine-guide.ru.md?raw'
+import { parseMarkdownDocument } from '@/features/documentation/model/markdown-document'
+import { MarkdownDocument } from '@/features/documentation/ui'
+
+const sections = computed(() => parseMarkdownDocument(guideSource)
+  .filter((block) => block.type === 'heading' && block.level === 2)
+  .map((block) => block.type === 'heading' ? ({ id: block.id, text: block.text }) : null)
+  .filter((block): block is { id: string; text: string } => Boolean(block)))
+</script>
+
+<template>
+  <div class="scenario-guide-page">
+    <header class="guide-hero">
+      <div class="hero-copy"><span class="guide-kicker"><i class="pi pi-sparkles" /> Руководство для администратора</span><h1>Как работают сценарии Lola</h1><p>От события и аудитории до публикации, ожиданий и безопасного отката — без устройства API и базы данных.</p><div class="guide-meta"><span><i class="pi pi-clock" /> 20 минут</span><span><i class="pi pi-list-check" /> Практические примеры</span><span><i class="pi pi-shield" /> Без технических деталей</span></div></div>
+      <div class="hero-visual" aria-hidden="true"><span class="visual-node trigger"><i class="pi pi-bolt" /></span><span class="visual-line" /><span class="visual-node rules"><i class="pi pi-filter" /></span><span class="visual-line" /><span class="visual-node action"><i class="pi pi-send" /></span><small>Событие → проверка → действие</small></div>
+    </header>
+
+    <div class="guide-layout">
+      <aside class="guide-nav card" aria-label="Содержание руководства"><div><span>На этой странице</span><strong>{{ sections.length }} разделов</strong></div><a class="skip-guide" href="#guide-content">Перейти к руководству <i class="pi pi-arrow-down" /></a><nav><a v-for="section in sections" :key="section.id" :href="`#${section.id}`">{{ section.text }}</a></nav></aside>
+      <section id="guide-content" class="guide-content card" aria-label="Руководство по сценариям"><MarkdownDocument :source="guideSource" /><footer><span><i class="pi pi-check-circle" /> Готовы собрать сценарий?</span><RouterLink to="/scenarios/new">Создать сценарий <i class="pi pi-arrow-right" /></RouterLink></footer></section>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.scenario-guide-page{max-width:1320px;margin:0 auto;padding:28px 34px 64px}.guide-hero{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 360px;align-items:center;gap:40px;min-height:310px;overflow:hidden;padding:46px 52px;border-radius:28px;background:#22251f;color:#f6f7f1;box-shadow:0 22px 60px rgba(32,35,30,.14)}.guide-hero:before{content:'';position:absolute;right:-80px;top:-130px;width:430px;height:430px;border-radius:50%;background:radial-gradient(circle,rgba(215,255,100,.18),transparent 68%)}.hero-copy{position:relative;z-index:1}.guide-kicker{display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em}.guide-hero h1{max-width:720px;margin-top:16px;font-size:clamp(2.3rem,5vw,4.1rem);line-height:1}.guide-hero p{max-width:680px;margin:17px 0 0;color:#bbc0b5;font-size:1rem}.guide-meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}.guide-meta span{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid #41463c;border-radius:10px;background:#2c3029;color:#d8dbd3;font-size:.67rem}.guide-meta i{color:var(--accent)}.hero-visual{position:relative;z-index:1;display:grid;grid-template-columns:58px 42px 58px 42px 58px;align-items:center;justify-content:center}.visual-node{display:grid;place-items:center;width:58px;height:58px;border-radius:19px;background:#f6f7f1;color:#282b25;font-size:1.1rem;box-shadow:0 12px 26px rgba(0,0,0,.18)}.visual-node.rules{background:#8e77f5;color:white;transform:translateY(-16px)}.visual-node.action{background:var(--accent)}.visual-line{height:2px;background:linear-gradient(90deg,#777d70,#d7ff64)}.hero-visual small{grid-column:1/-1;margin-top:23px;color:#9fa59a;text-align:center;font-size:.68rem}.guide-layout{display:grid;grid-template-columns:265px minmax(0,1fr);align-items:start;gap:22px;margin-top:22px}.guide-nav{position:sticky;top:18px;max-height:calc(100vh - 36px);overflow:auto;padding:18px}.guide-nav>div{padding:2px 3px 14px;border-bottom:1px solid var(--line)}.guide-nav span,.guide-nav strong{display:block}.guide-nav span{color:var(--muted);font-size:.62rem;text-transform:uppercase;letter-spacing:.1em}.guide-nav strong{margin-top:4px;font-size:.78rem}.guide-nav nav{display:grid;gap:2px;margin-top:11px}.guide-nav a{padding:7px 8px;border-radius:8px;color:#676c63;font-size:.68rem;line-height:1.35}.guide-nav a:hover{background:#f1efff;color:#5e4bb5}.skip-guide{display:none}.guide-content{min-width:0;padding:34px 42px 40px;scroll-margin-top:16px}.guide-content footer{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:48px;padding:20px 22px;border-radius:16px;background:#edf7e5;color:#3f5b30}.guide-content footer span,.guide-content footer a{display:flex;align-items:center;gap:8px;font-weight:700}.guide-content footer a{padding:10px 13px;border-radius:10px;background:#25281f;color:#fff;font-size:.75rem}@media(max-width:1000px){.guide-hero{grid-template-columns:1fr}.hero-visual{display:none}.guide-layout{grid-template-columns:1fr}.guide-nav{position:static;max-height:none}.guide-nav nav{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.scenario-guide-page{padding:16px 14px 44px}.guide-hero{min-height:auto;padding:30px 24px;border-radius:21px}.guide-meta{display:grid}.guide-content{padding:24px 18px 30px}.skip-guide{display:flex;align-items:center;justify-content:space-between;margin:12px 0 4px;padding:10px 11px!important;background:#eeebff;color:#5e4bb5!important;font-weight:750}.guide-nav nav{grid-template-columns:1fr;max-height:230px;overflow:auto;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:7px 0}.guide-content footer{align-items:flex-start;flex-direction:column}.guide-content footer a{width:100%;justify-content:center}}
+</style>

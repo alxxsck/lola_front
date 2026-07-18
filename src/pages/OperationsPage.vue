@@ -207,6 +207,7 @@ onMounted(load)
         :loading="eventLoading"
         paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
         current-page-report-template="Показано {first}–{last} из {totalRecords}"
+        :pt="{ tableContainer: { tabindex: 0, role: 'region', 'aria-label': 'Журнал событий' } }"
         row-hover
         data-key="id"
         @page="changeEventPage"
@@ -221,7 +222,16 @@ onMounted(load)
         <Column><template #body><i class="pi pi-chevron-right muted" /></template></Column>
       </DataTable>
 
-      <DataTable v-else-if="section === 'runs'" :value="filteredRuns" paginator :rows="12" row-hover data-key="id" @row-click="selectedRun = $event.data">
+      <DataTable
+        v-else-if="section === 'runs'"
+        :value="filteredRuns"
+        paginator
+        :rows="12"
+        :pt="{ tableContainer: { tabindex: 0, role: 'region', 'aria-label': 'Запуски сценариев' } }"
+        row-hover
+        data-key="id"
+        @row-click="selectedRun = $event.data"
+      >
         <template #empty><div class="empty"><i class="pi pi-sitemap" />Запусков по выбранным фильтрам нет.</div></template>
         <Column header="Сценарий"><template #body="{ data }"><div class="primary-cell"><strong>{{ data.scenarioName }}</strong><small class="mono">{{ data.scenarioCode }}</small></div></template></Column>
         <Column header="Пользователь"><template #body="{ data }"><span class="mono compact">{{ data.userExternalId }}</span></template></Column>
@@ -232,7 +242,14 @@ onMounted(load)
       </DataTable>
       <div v-if="section === 'runs' && runsNextCursor" class="load-more"><Button label="Загрузить ещё запусков" icon="pi pi-chevron-down" severity="secondary" outlined :loading="loadingMoreRuns" @click="loadMoreRuns" /></div>
 
-      <DataTable v-if="section === 'audit'" :value="filteredAudit" paginator :rows="12" data-key="id">
+      <DataTable
+        v-if="section === 'audit'"
+        :value="filteredAudit"
+        paginator
+        :rows="12"
+        :pt="{ tableContainer: { tabindex: 0, role: 'region', 'aria-label': 'Аудит действий' } }"
+        data-key="id"
+      >
         <template #empty><div class="empty"><i class="pi pi-shield" />Записей аудита по выбранным фильтрам нет.</div></template>
         <Column header="Действие"><template #body="{ data }"><div class="primary-cell"><strong>{{ data.action }}</strong><small class="mono">{{ data.id }}</small></div></template></Column>
         <Column header="Администратор"><template #body="{ data }"><div class="primary-cell"><strong>{{ data.actor.name || 'Система' }}</strong><small>{{ data.actor.email || 'service actor' }}</small></div></template></Column>

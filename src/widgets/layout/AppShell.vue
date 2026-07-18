@@ -25,6 +25,7 @@ const navigation = computed(() => [
   { label: 'Журнал событий', icon: 'pi pi-list', to: '/event-logs', adminOnly: true },
   { label: 'Действия', icon: 'pi pi-directions-alt', to: '/actions' },
   { label: 'Сценарии', icon: 'pi pi-sitemap', to: '/scenarios' },
+  { label: 'Документация', icon: 'pi pi-bookmark', to: '/docs/scenarios' },
   { label: 'Операции', icon: 'pi pi-chart-bar', to: '/operations' },
   { label: 'Пользователи', icon: 'pi pi-users', to: '/users' },
   { label: 'Сейчас онлайн', icon: 'pi pi-circle-fill', to: '/live', live: true },
