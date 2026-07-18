@@ -10,7 +10,10 @@ import type {
   ScenarioActionDefinition,
 } from '@/shared/types/domain'
 
-const controls = new Set<ActionControl>(['text', 'textarea', 'number', 'select', 'target', 'event', 'json', 'boolean'])
+const controls = new Set<ActionControl>([
+  'text', 'textarea', 'number', 'select', 'target', 'event', 'json', 'boolean',
+  'goal-builder', 'duration', 'node',
+])
 const entityKinds = new Set<EntityKind>(['BUTTON', 'MODAL', 'PAGE', 'ELEMENT', 'HANDLER'])
 const schemaTypes = new Set(['string', 'number', 'integer', 'boolean', 'object', 'array'])
 

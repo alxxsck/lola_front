@@ -7,6 +7,7 @@ import type {
   DashboardStats,
   EndUser,
   EventDefinition,
+  EventDefinitionRevision,
   ManualAction,
   AdminMessageRequest,
   AdminMessageResult,
@@ -22,6 +23,8 @@ import type {
   UserAttributeType,
   UserAttributeValidation,
   UiElement,
+  ActivitySettings,
+  UpdateActivitySettings,
 } from '@/shared/types/domain'
 
 export type RepositoryMode = 'mock' | 'api'
@@ -53,6 +56,7 @@ export type CreateUiElement = UiElementCreateBase & (
 export type UpdateUiElement = Partial<Pick<UiElement, 'name' | 'code' | 'kind' | 'selector' | 'route' | 'modalName' | 'config' | 'enabled'>>
 export type SaveEventDefinition = Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>
 export type SaveScenario = Partial<Scenario> & Pick<Scenario, 'name' | 'code' | 'eventDefinitionId' | 'actions'>
+export type UpdateScenarioMetadata = Partial<Pick<Scenario, 'name' | 'description' | 'eventDefinitionId' | 'status' | 'conversationPolicy' | 'priority' | 'conditions' | 'cooldownSeconds' | 'maxRunsPerUser' | 'activeFrom' | 'activeTo'>>
 export type CreateProjectMember = Pick<CmsUser, 'email' | 'role'> & { name?: string }
 
 export interface CursorPageRequest {
@@ -127,6 +131,8 @@ export interface LolaRepository {
   updateElement(projectId: string, id: string, value: UpdateUiElement): Promise<UiElement>
   deleteElement(projectId: string, id: string): Promise<void>
   getEvents(projectId: string): Promise<EventDefinition[]>
+  getEventDefinitionRevisions(projectId: string, definitionKeyId: string, request?: CursorPageRequest): Promise<CursorPage<EventDefinitionRevision>>
+  getEventDefinitionRevision(projectId: string, definitionKeyId: string, revisionId: string): Promise<EventDefinitionRevision>
   saveEvent(projectId: string, value: SaveEventDefinition): Promise<EventDefinition>
   deleteEvent(projectId: string, id: string): Promise<void>
   getUserAttributeSchema(projectId: string): Promise<UserAttributeSchema>
@@ -136,8 +142,10 @@ export interface LolaRepository {
   getScenarios(projectId: string): Promise<Scenario[]>
   getActionDefinitions(projectId: string): Promise<ScenarioActionDefinition[]>
   saveScenario(projectId: string, value: SaveScenario): Promise<Scenario>
+  updateScenarioMetadata(projectId: string, scenarioId: string, value: UpdateScenarioMetadata): Promise<Scenario>
   deleteScenario(projectId: string, id: string): Promise<void>
   getUsers(projectId: string): Promise<EndUser[]>
+  getUsersPage(projectId: string, request?: CursorPageRequest): Promise<CursorPage<EndUser>>
   getSessions(projectId: string): Promise<ActiveSession[]>
   getActivity(userId?: string): Promise<ActivityItem[]>
   getConversations(projectId: string, userId: string, request?: CursorPageRequest): Promise<CursorPage<Conversation>>
@@ -147,6 +155,9 @@ export interface LolaRepository {
   getEventLogPage(projectId: string, filters?: EventLogFilters): Promise<CursorPage<EventLog>>
   getEventLog(projectId: string, eventId: string): Promise<EventLog>
   getScenarioRuns(projectId: string): Promise<ScenarioRun[]>
+  getScenarioRunsPage(projectId: string, request?: CursorPageRequest): Promise<CursorPage<ScenarioRun>>
+  getActivitySettings(projectId: string): Promise<ActivitySettings>
+  updateActivitySettings(projectId: string, value: UpdateActivitySettings): Promise<ActivitySettings>
   getAuditLogs(projectId: string): Promise<AuditLog[]>
   sendAdminMessage(projectId: string, userId: string, message: AdminMessageRequest): Promise<AdminMessageResult>
   getStats(projectId: string): Promise<DashboardStats>

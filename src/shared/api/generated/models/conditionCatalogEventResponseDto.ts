@@ -5,9 +5,11 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ConditionCatalogEventCapabilitiesResponseDto } from "./conditionCatalogEventCapabilitiesResponseDto";
 import type { ConditionCatalogFieldResponseDto } from "./conditionCatalogFieldResponseDto";
 
 export interface ConditionCatalogEventResponseDto {
+  capabilities: ConditionCatalogEventCapabilitiesResponseDto;
   code: string;
   definitionId: string;
   definitionKeyId: string;

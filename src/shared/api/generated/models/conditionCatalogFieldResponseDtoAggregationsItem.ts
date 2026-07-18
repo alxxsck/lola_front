@@ -11,12 +11,9 @@ export type ConditionCatalogFieldResponseDtoAggregationsItem =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ConditionCatalogFieldResponseDtoAggregationsItem = {
-  exists: "exists",
-  count: "count",
   sum: "sum",
   min: "min",
   max: "max",
   first: "first",
   last: "last",
-  distinct_count: "distinct_count",
 } as const;

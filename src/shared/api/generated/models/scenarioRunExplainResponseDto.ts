@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ScenarioActionExplainResponseDto } from "./scenarioActionExplainResponseDto";
+import type { ScenarioRunAudienceResponseDto } from "./scenarioRunAudienceResponseDto";
 import type { ScenarioContinuationExplainResponseDto } from "./scenarioContinuationExplainResponseDto";
 import type { ScenarioDeliveryExplainResponseDto } from "./scenarioDeliveryExplainResponseDto";
 import type { ScenarioRunEligibilityResponseDto } from "./scenarioRunEligibilityResponseDto";
@@ -17,6 +18,7 @@ import type { ScenarioRunExplainTriggerResponseDto } from "./scenarioRunExplainT
 
 export interface ScenarioRunExplainResponseDto {
   actions: ScenarioActionExplainResponseDto[];
+  audience: ScenarioRunAudienceResponseDto;
   continuations: ScenarioContinuationExplainResponseDto[];
   delivery: ScenarioDeliveryExplainResponseDto;
   eligibility: ScenarioRunEligibilityResponseDto;

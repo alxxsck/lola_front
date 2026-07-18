@@ -1,6 +1,5 @@
 import {
   AggregateFilterDtoOperator,
-  ConditionCatalogFieldResponseDtoAggregationsItem,
   EventAggregateRuleNodeDtoMeasure,
   EventFieldRuleNodeDtoOperator,
   RuleCompareDtoOperator,
@@ -15,7 +14,7 @@ type AggregateMeasure = EventAggregateRuleNodeDtoMeasure
 type AggregateFilterOperator = AggregateFilterDtoOperator
 type EventFieldOperator = EventFieldRuleNodeDtoOperator
 type CompareOperator = RuleCompareDtoOperator
-type FieldAggregateMeasure = Extract<AggregateMeasure, 'sum' | 'min' | 'max'>
+type FieldAggregateMeasure = Extract<AggregateMeasure, 'sum' | 'min' | 'max' | 'first' | 'last'>
 export type ScenarioAggregateValueType = 'boolean' | 'integer' | 'datetime' | 'field'
 
 export interface ScenarioAggregateMeasureCapability {
@@ -26,15 +25,16 @@ export interface ScenarioAggregateMeasureCapability {
   compareOperators: CompareOperator[]
 }
 
-export type ScenarioAuthoringField = Omit<ConditionCatalogFieldResponseDto, 'aggregations' | 'operators'> & {
+export type ScenarioAuthoringField = Omit<ConditionCatalogFieldResponseDto, 'aggregations' | 'operators' | 'capabilities' | 'display'> & {
+  display?: ConditionCatalogFieldResponseDto['display']
   capabilities: {
     eventField: { operators: EventFieldOperator[] }
     aggregateFilter: { operators: AggregateFilterOperator[] }
-    aggregateMeasure: { measures: FieldAggregateMeasure[] }
+    aggregateMeasure: { measures: FieldAggregateMeasure[]; resultType?: string }
   }
 }
 
-export type ScenarioAuthoringEvent = Omit<ConditionCatalogEventResponseDto, 'fields'> & {
+export type ScenarioAuthoringEvent = Omit<ConditionCatalogEventResponseDto, 'fields' | 'capabilities'> & {
   fields: ScenarioAuthoringField[]
   aggregateMeasures: ScenarioAggregateMeasureCapability[]
 }
@@ -46,64 +46,65 @@ export type ScenarioAuthoringContract = Omit<ConditionCatalogResponseDto, 'event
 const allCompareOperators = Object.values(RuleCompareDtoOperator)
 const eventFieldOperators = new Set<string>(Object.values(EventFieldRuleNodeDtoOperator))
 const aggregateFilterOperators = new Set<string>(Object.values(AggregateFilterDtoOperator))
-const fieldAggregateMeasures = new Set<string>([
-  EventAggregateRuleNodeDtoMeasure.sum,
-  EventAggregateRuleNodeDtoMeasure.min,
-  EventAggregateRuleNodeDtoMeasure.max,
-])
-
-// BE-FE-08A: generated AST enums define general measures while catalog fields define context-specific capabilities.
-const aggregateMeasures: Array<Omit<ScenarioAggregateMeasureCapability, 'compareOperators'> & { compareOperators?: CompareOperator[] }> = [
-  { measure: EventAggregateRuleNodeDtoMeasure.exists, field: 'none', resultType: 'boolean', compareValueType: 'boolean', compareOperators: [RuleCompareDtoOperator.eq, RuleCompareDtoOperator.neq] },
-  { measure: EventAggregateRuleNodeDtoMeasure.count, field: 'none', resultType: 'integer', compareValueType: 'integer' },
-  { measure: EventAggregateRuleNodeDtoMeasure.first, field: 'none', resultType: 'datetime', compareValueType: 'datetime' },
-  { measure: EventAggregateRuleNodeDtoMeasure.last, field: 'none', resultType: 'datetime', compareValueType: 'datetime' },
-  { measure: EventAggregateRuleNodeDtoMeasure.sum, field: 'required', resultType: 'field', compareValueType: 'field' },
-  { measure: EventAggregateRuleNodeDtoMeasure.min, field: 'required', resultType: 'field', compareValueType: 'field' },
-  { measure: EventAggregateRuleNodeDtoMeasure.max, field: 'required', resultType: 'field', compareValueType: 'field' },
-]
+const fieldAggregateMeasures = new Set<string>(Object.values(EventAggregateRuleNodeDtoMeasure)
+  .filter((measure) => measure !== EventAggregateRuleNodeDtoMeasure.exists && measure !== EventAggregateRuleNodeDtoMeasure.count))
 
 function adaptField(field: ConditionCatalogFieldResponseDto): ScenarioAuthoringField {
-  const { aggregations, operators, ...definition } = field
+  const { aggregations, operators, capabilities, ...definition } = field
+  if (!Array.isArray(aggregations) || !Array.isArray(operators)) throw new Error(`Invalid catalog field ${field.fieldKey}`)
 
   return {
     ...definition,
     capabilities: {
       eventField: {
-        operators: operators.filter((operator): operator is EventFieldOperator => eventFieldOperators.has(operator)),
+        operators: capabilities.currentEvent.operators.filter((operator): operator is EventFieldOperator => eventFieldOperators.has(operator)),
       },
       aggregateFilter: {
-        operators: operators.filter((operator): operator is AggregateFilterOperator => aggregateFilterOperators.has(operator)),
+        operators: capabilities.aggregateFilter.operators.filter((operator): operator is AggregateFilterOperator => aggregateFilterOperators.has(operator)),
       },
       aggregateMeasure: {
-        measures: aggregations.filter((measure): measure is FieldAggregateMeasure => fieldAggregateMeasures.has(measure)),
+        measures: capabilities.aggregateMeasure.measures.filter((measure): measure is FieldAggregateMeasure => fieldAggregateMeasures.has(measure)),
+        resultType: capabilities.aggregateMeasure.resultType,
       },
     },
   }
 }
 
-function adaptedMeasures(): ScenarioAggregateMeasureCapability[] {
-  return aggregateMeasures.map((capability) => ({
-    ...capability,
-    compareOperators: [...(capability.compareOperators ?? allCompareOperators)],
+function adaptedMeasures(event: ConditionCatalogEventResponseDto): ScenarioAggregateMeasureCapability[] {
+  const eventMeasures: ScenarioAggregateMeasureCapability[] = event.capabilities.eventMeasures.map((capability) => ({
+    measure: capability.measure,
+    field: 'none',
+    resultType: capability.resultType,
+    compareValueType: capability.resultType,
+    compareOperators: capability.resultType === 'boolean'
+      ? [RuleCompareDtoOperator.eq, RuleCompareDtoOperator.neq]
+      : [...allCompareOperators],
   }))
+  const fieldMeasures = new Set(event.fields.flatMap((field) => field.capabilities.aggregateMeasure.measures))
+  return [
+    ...eventMeasures,
+    ...[...fieldMeasures].filter((measure): measure is FieldAggregateMeasure => fieldAggregateMeasures.has(measure)).map((measure) => ({
+      measure,
+      field: 'required' as const,
+      resultType: 'field' as const,
+      compareValueType: 'field' as const,
+      compareOperators: [...allCompareOperators],
+    })),
+  ]
 }
 
 export function adaptScenarioAuthoringContract(catalog: ConditionCatalogResponseDto): ScenarioAuthoringContract {
-  const hasDistinctCount = catalog.events.some((event) => event.fields.some((field) => (
-    field.aggregations.includes(ConditionCatalogFieldResponseDtoAggregationsItem.distinct_count)
-  )))
-
-  if (hasDistinctCount && import.meta.env.DEV) {
-    console.warn('[Scenario Authoring] BE-FE-09: distinct_count was removed from the normalized authoring contract')
-  }
-
   return {
     ...catalog,
     events: catalog.events.map((event) => ({
-      ...event,
+      code: event.code,
+      definitionId: event.definitionId,
+      definitionKeyId: event.definitionKeyId,
+      description: event.description,
+      name: event.name,
+      schemaVersion: event.schemaVersion,
       fields: event.fields.map(adaptField),
-      aggregateMeasures: adaptedMeasures(),
+      aggregateMeasures: adaptedMeasures(event),
     })),
   }
 }

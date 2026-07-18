@@ -7,7 +7,15 @@
  */
 import type { ConditionCatalogSelectControlResponseDto } from "./conditionCatalogSelectControlResponseDto";
 import type { ConditionCatalogNumberControlResponseDto } from "./conditionCatalogNumberControlResponseDto";
+import type { ConditionCatalogTextControlResponseDto } from "./conditionCatalogTextControlResponseDto";
+import type { ConditionCatalogBooleanControlResponseDto } from "./conditionCatalogBooleanControlResponseDto";
+import type { ConditionCatalogDatetimeControlResponseDto } from "./conditionCatalogDatetimeControlResponseDto";
+import type { ConditionCatalogUnsupportedControlResponseDto } from "./conditionCatalogUnsupportedControlResponseDto";
 
 export type ConditionCatalogFieldResponseDtoControl =
   | ConditionCatalogSelectControlResponseDto
-  | ConditionCatalogNumberControlResponseDto;
+  | ConditionCatalogNumberControlResponseDto
+  | ConditionCatalogTextControlResponseDto
+  | ConditionCatalogBooleanControlResponseDto
+  | ConditionCatalogDatetimeControlResponseDto
+  | ConditionCatalogUnsupportedControlResponseDto;

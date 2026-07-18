@@ -2,6 +2,8 @@
 
 Документация графового редактора сценариев: [docs/scenario-graph-editor.ru.md](docs/scenario-graph-editor.ru.md). Настройка пользовательских атрибутов и новый журнал событий описаны в [docs/user-attributes-and-event-logs.ru.md](docs/user-attributes-and-event-logs.ru.md). Реализованная часть Scenario Engine V2 и границы следующих этапов зафиксированы в [docs/scenario-engine-v2-frontend-review.ru.md](docs/scenario-engine-v2-frontend-review.ru.md).
 
+Typed Audience, versioned Segments и snapshot/recheck semantics FE-V2-12/13 описаны в [docs/scenario-engine-v2-audience-unblock.ru.md](docs/scenario-engine-v2-audience-unblock.ru.md).
+
 Административная SaaS-панель для настройки Lola AI Assistant. Это отдельное Vue 3 приложение, которое работает поверх Lola Backend и не входит в пользовательский SDK.
 
 ## Быстрый старт
@@ -28,6 +30,8 @@ CMS авторизуется через пользовательский JWT flo
 - `npm run typecheck` — TypeScript/Vue проверка;
 - `npm run lint` — ESLint;
 - `npm test` — Vitest.
+- `npm run test:e2e` — Playwright-проверки основных маршрутов в mock-режиме на desktop и mobile, включая axe;
+- `E2E_LOGIN=... E2E_PASSWORD=... npm run test:e2e:api` — тот же браузерный smoke-тест против реального backend;
 - `npm run api:update` — загрузить актуальный Swagger и пересобрать TypeScript-клиент;
 - `npm run api:check` — проверить, что OpenAPI snapshot и generated client синхронизированы.
 

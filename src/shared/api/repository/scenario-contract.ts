@@ -5,7 +5,7 @@ import type {
   UpdateScenarioDto,
 } from '@/shared/api/generated/models'
 import type { ScenarioAction } from '@/shared/types/domain'
-import type { SaveScenario } from './contracts'
+import type { SaveScenario, UpdateScenarioMetadata } from './contracts'
 
 export function serializeApiScenarioActions(actions: ScenarioAction[]): ScenarioActionDto[] {
   return [...actions]
@@ -63,6 +63,22 @@ export function toCreateScenarioDto(value: SaveScenario): CreateScenarioDto {
 
 export function toUpdateScenarioDto(value: SaveScenario): UpdateScenarioDto {
   return baseScenarioDto(value) as UpdateScenarioDto
+}
+
+export function toUpdateScenarioMetadataDto(value: UpdateScenarioMetadata): UpdateScenarioDto {
+  return compact({
+    name: value.name?.trim(),
+    description: value.description?.trim() || undefined,
+    eventDefinitionId: value.eventDefinitionId,
+    status: value.status,
+    conversationPolicy: value.conversationPolicy,
+    priority: value.priority,
+    conditions: value.conditions as ScenarioConditionDto[] | undefined,
+    cooldownSeconds: value.cooldownSeconds,
+    maxRunsPerUser: value.maxRunsPerUser,
+    activeFrom: value.activeFrom,
+    activeTo: value.activeTo,
+  })
 }
 
 function compact<T extends Record<string, unknown>>(value: T): T {

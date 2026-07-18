@@ -3,6 +3,7 @@ import type {
   CreateUiElementDto,
   EndUserResponseDto,
   EventDefinitionResponseDto,
+  EventDefinitionRevisionResponseDto,
   ProjectMemberResponseDto,
   ProjectResponseDto,
   UiElementResponseDto,
@@ -21,7 +22,7 @@ import type {
   UserAttributeSchemaResponseDto,
   UserAttributeDefinitionMutationResponseDto,
 } from '@/shared/api/generated/models'
-import type { ActiveSession, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventLog, Project, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeMutation, UserAttributeSchema, UserAttributeSchemaRevision } from '@/shared/types/domain'
+import type { ActiveSession, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventDefinitionRevision, EventLog, Project, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeMutation, UserAttributeSchema, UserAttributeSchemaRevision } from '@/shared/types/domain'
 import type { CreateUiElement, SaveEventDefinition, UpdateUiElement } from './contracts'
 import { parseActionDefinition } from '@/shared/lib/action-definition'
 
@@ -179,6 +180,11 @@ export function toUpdateUiElementDto(value: UpdateUiElement): UpdateUiElementDto
 export function mapEventDefinition(dto: EventDefinitionResponseDto): EventDefinition {
   return {
     id: dto.id,
+    definitionKeyId: dto.definitionKeyId,
+    currentRevisionId: optionalString(dto.currentRevisionId) ?? null,
+    isCurrent: dto.isCurrent,
+    origin: dto.origin,
+    readOnly: dto.readOnly,
     projectId: dto.projectId,
     code: dto.code,
     name: dto.name,
@@ -190,6 +196,19 @@ export function mapEventDefinition(dto: EventDefinitionResponseDto): EventDefini
     enabled: dto.enabled,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
+  }
+}
+
+export function mapEventDefinitionRevision(dto: EventDefinitionRevisionResponseDto): EventDefinitionRevision {
+  return {
+    ...mapEventDefinition(dto as unknown as EventDefinitionResponseDto),
+    definitionKeyId: dto.definitionKeyId,
+    currentRevisionId: optionalString(dto.currentRevisionId) ?? null,
+    isCurrent: dto.isCurrent,
+    origin: dto.origin,
+    readOnly: dto.readOnly,
+    pinnedScenarioRevisionCount: dto.pinnedScenarioRevisionCount,
+    compatibility: dto.compatibility,
   }
 }
 

@@ -15,7 +15,7 @@ import { useAuthStore } from '@/features/auth/auth.store'
 import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
 import { repository } from '@/shared/api/repository'
 import { formatDate } from '@/shared/lib/format'
-import { findActionDefinition, validateScenarioActionConfig } from '@/shared/lib/action-definition'
+import { findActionDefinition } from '@/shared/lib/action-definition'
 import type { EventDefinition, Scenario, ScenarioAction, ScenarioActionDefinition, ScenarioStatus } from '@/shared/types/domain'
 
 type ScenarioPayload = Partial<Scenario> &
@@ -91,22 +91,19 @@ function openEdit(scenario: Scenario) {
 async function toggleScenario(scenario: Scenario) {
   const projectId = auth.project?.id
   if (!projectId || pendingIds.value.has(scenario.id)) return
-  const nextStatus: ScenarioStatus = scenario.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
-  if (nextStatus === 'ACTIVE') {
-    const invalidIndex = scenario.actions.findIndex((action) => validateScenarioActionConfig(action, findActionDefinition(actionDefinitions.value, action.type)))
-    if (invalidIndex >= 0) {
-      const detail = `Шаг ${invalidIndex + 1}: ${validateScenarioActionConfig(scenario.actions[invalidIndex], findActionDefinition(actionDefinitions.value, scenario.actions[invalidIndex].type))}`
-      toast.add({ severity: 'warn', summary: 'Сценарий нельзя активировать', detail, life: 5000 })
-      return
-    }
+  if (scenario.status !== 'ACTIVE') {
+    openEdit(scenario)
+    toast.add({ severity: 'info', summary: 'Публикация выполняется в Studio', detail: 'Проверьте условия, Actions и Delivery перед запуском.', life: 4200 })
+    return
   }
+  const nextStatus: ScenarioStatus = 'PAUSED'
   pendingIds.value.add(scenario.id)
   try {
     const saved = await repository.saveScenario(projectId, toPayload(scenario, nextStatus))
     replaceScenario(saved)
     toast.add({
-      severity: nextStatus === 'ACTIVE' ? 'success' : 'secondary',
-      summary: nextStatus === 'ACTIVE' ? 'Сценарий запущен' : 'Сценарий приостановлен',
+      severity: 'secondary',
+      summary: 'Сценарий приостановлен',
       detail: scenario.name,
       life: 2600,
     })
@@ -273,7 +270,7 @@ function errorMessage(cause: unknown) {
         <Column style="width: 128px">
           <template #body="{ data }">
             <div class="row-actions" @click.stop>
-              <Button :icon="data.status === 'ACTIVE' ? 'pi pi-pause' : 'pi pi-play'" text rounded size="small" :severity="data.status === 'ACTIVE' ? 'warn' : 'success'" :loading="pendingIds.has(data.id)" :aria-label="data.status === 'ACTIVE' ? 'Поставить на паузу' : 'Запустить'" @click="toggleScenario(data)" />
+              <Button :icon="data.status === 'ACTIVE' ? 'pi pi-pause' : 'pi pi-send'" text rounded size="small" :severity="data.status === 'ACTIVE' ? 'warn' : 'success'" :loading="pendingIds.has(data.id)" :aria-label="data.status === 'ACTIVE' ? 'Поставить на паузу' : 'Настроить и опубликовать'" @click="toggleScenario(data)" />
               <Button icon="pi pi-pencil" text rounded size="small" aria-label="Редактировать" @click="openEdit(data)" />
               <Button icon="pi pi-trash" text rounded size="small" severity="danger" aria-label="Удалить" :disabled="pendingIds.has(data.id)" @click="requestDelete(data)" />
             </div>

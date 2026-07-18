@@ -5,10 +5,12 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AudienceRuleDto } from "./audienceRuleDto";
 import type { PublishScenarioDtoDeliveryPolicy } from "./publishScenarioDtoDeliveryPolicy";
 import type { ScenarioRuleDto } from "./scenarioRuleDto";
 
 export interface PublishScenarioDto {
+  audience?: AudienceRuleDto;
   /**
    * Condition catalog revision used to validate the draft.
    * @minLength 1
@@ -22,6 +24,11 @@ export interface PublishScenarioDto {
    * @nullable
    */
   expectedCurrentRevisionId: string | null;
+  /**
+   * Durable draft version to publish atomically. When present, Rule, Audience, Delivery and graph are read from that draft.
+   * @minimum 1
+   */
+  expectedDraftVersion?: number;
   /** Versioned typed rule AST to compile into the immutable Scenario Revision. */
   rule?: ScenarioRuleDto;
 }

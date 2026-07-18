@@ -5,7 +5,9 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EventDefinitionResponseDtoCurrentRevisionId } from "./eventDefinitionResponseDtoCurrentRevisionId";
 import type { EventDefinitionResponseDtoDescription } from "./eventDefinitionResponseDtoDescription";
+import type { EventDefinitionOrigin } from "./eventDefinitionOrigin";
 import type { EventDefinitionResponseDtoPayloadSchema } from "./eventDefinitionResponseDtoPayloadSchema";
 
 export interface EventDefinitionResponseDto {
@@ -14,12 +16,18 @@ export interface EventDefinitionResponseDto {
   countsAsActivity: boolean;
   createdAt: string;
   /** @nullable */
+  currentRevisionId?: EventDefinitionResponseDtoCurrentRevisionId;
+  definitionKeyId: string;
+  /** @nullable */
   description?: EventDefinitionResponseDtoDescription;
   enabled: boolean;
   id: string;
+  isCurrent: boolean;
   name: string;
+  origin: EventDefinitionOrigin;
   payloadSchema: EventDefinitionResponseDtoPayloadSchema;
   projectId: string;
+  readOnly: boolean;
   updatedAt: string;
   version: number;
 }

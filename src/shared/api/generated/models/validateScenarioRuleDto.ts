@@ -5,8 +5,11 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AudienceRuleDto } from "./audienceRuleDto";
 import type { ScenarioRuleDto } from "./scenarioRuleDto";
 
 export interface ValidateScenarioRuleDto {
+  /** Separate typed Audience state tree; never interpreted as behavioral Eligibility. */
+  audience?: AudienceRuleDto;
   rule: ScenarioRuleDto;
 }

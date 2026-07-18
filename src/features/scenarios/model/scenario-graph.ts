@@ -27,7 +27,7 @@ export interface GraphTransition {
   source: string
   target: string
   label?: string
-  kind: 'default' | 'choice' | 'timeout' | 'condition' | 'fallback'
+  kind: 'default' | 'choice' | 'timeout' | 'condition' | 'fallback' | 'goal' | 'goal-timeout'
 }
 
 export interface GraphValidationIssue {
@@ -49,11 +49,35 @@ export function normalizeScenarioActions(actions: ScenarioAction[]): ScenarioAct
     ...action,
     position,
     nodeKey: action.nodeKey || `step_${position}`,
-    nextNodeKey: legacy
-      ? ordered[position + 1]?.nodeKey || (position + 1 < ordered.length ? `step_${position + 1}` : null)
-      : action.nextNodeKey ?? null,
+    nextNodeKey: action.type === 'WAIT_FOR_GOAL'
+      ? null
+      : legacy
+        ? ordered[position + 1]?.nodeKey || (position + 1 < ordered.length ? `step_${position + 1}` : null)
+        : action.nextNodeKey ?? null,
     config: structuredClone(action.config),
   }))
+}
+
+export function renameScenarioNode(actions: ScenarioAction[], oldKey: string, newKey: string): boolean {
+  const action = actions.find((item) => item.nodeKey === oldKey)
+  if (!action || !newKey || actions.some((item) => item !== action && item.nodeKey === newKey)) return false
+  action.nodeKey = newKey
+  for (const item of actions) {
+    if (item.nextNodeKey === oldKey) item.nextNodeKey = newKey
+    if (item.type === 'ASK_CHOICE') {
+      item.config.options = choiceOptions(item).map((option) => option.nextNodeKey === oldKey ? { ...option, nextNodeKey: newKey } : option)
+      if (item.config.onTimeout === oldKey) item.config.onTimeout = newKey
+    }
+    if (item.type === 'CONDITION') {
+      item.config.branches = conditionBranches(item).map((branch) => branch.nextNodeKey === oldKey ? { ...branch, nextNodeKey: newKey } : branch)
+      if (item.config.fallbackNodeKey === oldKey) item.config.fallbackNodeKey = newKey
+    }
+    if (item.type === 'WAIT_FOR_GOAL') {
+      if (item.config.onGoal === oldKey) item.config.onGoal = newKey
+      if (item.config.onTimeout === oldKey) item.config.onTimeout = newKey
+    }
+  }
+  return true
 }
 
 export function createScenarioNode(type: string, position: number, usedKeys: Iterable<string>): ScenarioAction {
@@ -104,6 +128,16 @@ export function graphTransitions(actions: ScenarioAction[]): GraphTransition[] {
   const transitions: GraphTransition[] = []
   actions.forEach((action) => {
     const source = action.nodeKey ?? ''
+    if (action.type === 'WAIT_FOR_GOAL') {
+      const config = record(action.config)
+      if (typeof config.onGoal === 'string' && config.onGoal) {
+        transitions.push({ source, target: config.onGoal, label: 'Цель достигнута', kind: 'goal' })
+      }
+      if (typeof config.onTimeout === 'string' && config.onTimeout) {
+        transitions.push({ source, target: config.onTimeout, label: 'Срок истёк', kind: 'goal-timeout' })
+      }
+      return
+    }
     if (action.type === 'ASK_CHOICE') {
       const options = choiceOptions(action).filter((option) => option.nextNodeKey).map((option) => ({
         source, target: option.nextNodeKey, label: option.label || option.id, kind: 'choice' as const,
@@ -207,6 +241,11 @@ export function validateScenarioGraph(actions: ScenarioAction[]): GraphValidatio
       if (!branches.length) issues.push({ nodeKey: key, message: 'Добавьте минимум одну ветку условия' })
       if (branches.some((branch) => !branch.conditions.length)) issues.push({ nodeKey: key, message: 'Каждая ветка должна содержать условие' })
       if (!record(action.config).fallbackNodeKey) issues.push({ nodeKey: key, message: 'Выберите fallback-переход' })
+    }
+    if (action.type === 'WAIT_FOR_GOAL') {
+      const config = record(action.config)
+      if (typeof config.onGoal !== 'string' || !config.onGoal) issues.push({ nodeKey: key, message: 'Выберите ветку «Цель достигнута»' })
+      if (typeof config.onTimeout !== 'string' || !config.onTimeout) issues.push({ nodeKey: key, message: 'Выберите ветку «Срок истёк»' })
     }
   })
 

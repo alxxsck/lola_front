@@ -9,8 +9,8 @@ import type {
   ScenarioRuleDto,
   ScenarioRuleIssueResponseDto,
   SinceTriggerRuleWindowDto,
-} from '@/shared/api/generated/models'
-import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
+  ScenarioAuthoringContract,
+} from '@/shared/api/repository/scenario-authoring'
 
 export type RuleNodeId = string
 export type RuleLiteral = EventFieldRuleNodeDtoValue

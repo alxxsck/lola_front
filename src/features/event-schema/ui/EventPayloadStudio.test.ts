@@ -33,6 +33,8 @@ describe('EventPayloadStudio', () => {
     expect(wrapper.findAll('[aria-label="Максимальное значение поля Сумма"]')).toHaveLength(1)
     await wrapper.get('[aria-label="Смысл данных поля Сумма"]').setValue('money')
     await wrapper.get('[aria-label="Способ хранения поля Сумма"]').setValue('minor')
+    await wrapper.get('[data-test="money-display-scale"]').setValue('0.001')
+    await wrapper.get('[data-test="money-display-precision"]').setValue('3')
     await wrapper.get('[data-test="field-wire-key"]').setValue('amountMinor')
 
     const draft = wrapper.getComponent(EventPayloadStudio).props('modelValue')
@@ -46,6 +48,8 @@ describe('EventPayloadStudio', () => {
           'x-lola-field-key': initialFieldKey,
           'x-lola-semantic-type': 'money',
           'x-lola-unit': 'minor',
+          'x-lola-display-scale': 0.001,
+          'x-lola-display-precision': 3,
         },
       },
       required: ['amountMinor'],

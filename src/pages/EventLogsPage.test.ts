@@ -114,6 +114,17 @@ describe('EventLogsPage', () => {
     })
   })
 
+  it('opens a project-scoped Event Log linked from Run Explain', async () => {
+    mocks.routeQuery = { eventId: 'log-1' }
+    mocks.getEventLog.mockResolvedValue(log)
+
+    const wrapper = shallowMount(EventLogsPage)
+    await flushPromises()
+
+    expect(mocks.getEventLog).toHaveBeenCalledWith('project-1', 'log-1')
+    expect(wrapper.find('drawer-stub').attributes()).toHaveProperty('visible')
+  })
+
   it('retries a failed refresh from page one and resets cursor history only after success', async () => {
     mocks.getEventLogPage
       .mockResolvedValueOnce({ items: [log], nextCursor: 'cursor-2' })

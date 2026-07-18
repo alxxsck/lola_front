@@ -5,6 +5,8 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AudienceCostResponseDto } from "./audienceCostResponseDto";
+import type { AudienceSnapshotPolicyResponseDto } from "./audienceSnapshotPolicyResponseDto";
 import type { PublishConflictMetadataResponseDto } from "./publishConflictMetadataResponseDto";
 import type { ScenarioRuleCostResponseDto } from "./scenarioRuleCostResponseDto";
 import type { PublishScenarioResponseDtoDeliveryPolicy } from "./publishScenarioResponseDtoDeliveryPolicy";
@@ -13,6 +15,8 @@ import type { PublishedScenarioRevisionSummaryResponseDto } from "./publishedSce
 import type { ScenarioWarningResponseDto } from "./scenarioWarningResponseDto";
 
 export interface PublishScenarioResponseDto {
+  audienceCost?: AudienceCostResponseDto;
+  audiencePolicy?: AudienceSnapshotPolicyResponseDto;
   conflictMetadata: PublishConflictMetadataResponseDto;
   cost: ScenarioRuleCostResponseDto;
   deliveryPolicy: PublishScenarioResponseDtoDeliveryPolicy;

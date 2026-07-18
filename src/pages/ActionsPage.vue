@@ -88,6 +88,9 @@ function controlLabel(control: ActionControl) {
     event: 'Событие',
     json: 'JSON-объект',
     boolean: 'Да / нет',
+    'goal-builder': 'Конструктор цели',
+    duration: 'Конечный срок',
+    node: 'Ветка графа',
   }
   return labels[control]
 }

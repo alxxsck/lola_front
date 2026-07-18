@@ -10,6 +10,7 @@ import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { RunExplainInspector } from '@/features/scenario-run-explain/ui'
 import { repository } from '@/shared/api/repository'
 import { formatDate, relativeTime } from '@/shared/lib/format'
 import type { AuditLog, EventLog, ScenarioRun } from '@/shared/types/domain'
@@ -20,6 +21,8 @@ const section = ref<Section>('events')
 const eventLogs = ref<EventLog[]>([])
 const eventPagination = reactive({ page: 1, limit: 12, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false })
 const scenarioRuns = ref<ScenarioRun[]>([])
+const runsNextCursor = ref<string | null>(null)
+const loadingMoreRuns = ref(false)
 const auditLogs = ref<AuditLog[]>([])
 const loading = ref(true)
 const eventLoading = ref(false)
@@ -60,6 +63,8 @@ const severity = (value: string): 'success' | 'danger' | 'warn' | 'info' | 'seco
 }
 const json = (value: unknown) => JSON.stringify(value, null, 2)
 let eventRequestId = 0
+let loadRequestId = 0
+let runsRequestId = 0
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 function eventRequest(page = eventPagination.page, limit = eventPagination.limit) {
@@ -92,30 +97,56 @@ async function loadEventPage(page = eventPagination.page, limit = eventPaginatio
 async function load() {
   const projectId = auth.project?.id
   if (!projectId) return
-  const requestId = ++eventRequestId
+  const requestId = ++loadRequestId
+  const currentEventRequestId = ++eventRequestId
+  const currentRunsRequestId = ++runsRequestId
   loading.value = true
   errors.events = ''
   errors.runs = ''
   errors.audit = ''
   eventLogs.value = []
   scenarioRuns.value = []
+  runsNextCursor.value = null
   auditLogs.value = []
   const results = await Promise.allSettled([
     repository.getEventLogs(projectId, eventRequest(1)),
-    repository.getScenarioRuns(projectId),
+    repository.getScenarioRunsPage(projectId, { limit: 50 }),
     repository.getAuditLogs(projectId),
   ] as const)
   const message = (cause: unknown) => cause instanceof Error ? cause.message : 'Не удалось загрузить раздел'
-  if (results[0].status === 'fulfilled' && requestId === eventRequestId) {
+  if (requestId !== loadRequestId) return
+  if (results[0].status === 'fulfilled' && currentEventRequestId === eventRequestId) {
     eventLogs.value = results[0].value.items
     Object.assign(eventPagination, results[0].value.pagination)
-  } else if (results[0].status === 'rejected' && requestId === eventRequestId) errors.events = message(results[0].reason)
-  if (results[1].status === 'fulfilled') scenarioRuns.value = results[1].value
-  else errors.runs = message(results[1].reason)
+  } else if (results[0].status === 'rejected' && currentEventRequestId === eventRequestId) errors.events = message(results[0].reason)
+  if (results[1].status === 'fulfilled' && currentRunsRequestId === runsRequestId) {
+    scenarioRuns.value = results[1].value.items
+    runsNextCursor.value = results[1].value.nextCursor
+  }
+  else if (results[1].status === 'rejected' && currentRunsRequestId === runsRequestId) errors.runs = message(results[1].reason)
   if (results[2].status === 'fulfilled') auditLogs.value = results[2].value
   else errors.audit = message(results[2].reason)
-  if (requestId === eventRequestId) eventLoading.value = false
-  loading.value = false
+  if (currentEventRequestId === eventRequestId) eventLoading.value = false
+  if (requestId === loadRequestId) loading.value = false
+}
+
+async function loadMoreRuns() {
+  const projectId = auth.project?.id
+  if (!projectId || !runsNextCursor.value) return
+  const requestId = ++runsRequestId
+  loadingMoreRuns.value = true
+  errors.runs = ''
+  try {
+    const page = await repository.getScenarioRunsPage(projectId, { limit: 50, cursor: runsNextCursor.value })
+    if (requestId === runsRequestId) {
+      scenarioRuns.value.push(...page.items)
+      runsNextCursor.value = page.nextCursor
+    }
+  } catch (cause) {
+    if (requestId === runsRequestId) errors.runs = cause instanceof Error ? cause.message : 'Не удалось загрузить следующую страницу запусков'
+  } finally {
+    if (requestId === runsRequestId) loadingMoreRuns.value = false
+  }
 }
 
 function changeSection(value: Section) {
@@ -152,7 +183,7 @@ onMounted(load)
     <div class="section-tabs" role="tablist" aria-label="Операционные разделы">
       <button v-for="item in sections" :key="item.value" type="button" role="tab" :aria-selected="section === item.value" :class="{ active: section === item.value }" @click="changeSection(item.value)">
         <i :class="item.icon" /><span>{{ item.label }}</span>
-        <strong>{{ item.value === 'events' ? eventPagination.total : item.value === 'runs' ? scenarioRuns.length : auditLogs.length }}</strong>
+        <strong>{{ item.value === 'events' ? eventPagination.total : item.value === 'runs' ? `${scenarioRuns.length}${runsNextCursor ? '+' : ''}` : auditLogs.length }}</strong>
       </button>
     </div>
 
@@ -199,8 +230,9 @@ onMounted(load)
         <Column header="Старт"><template #body="{ data }"><span :title="formatDate(data.startedAt)">{{ relativeTime(data.startedAt) }}</span></template></Column>
         <Column><template #body><i class="pi pi-chevron-right muted" /></template></Column>
       </DataTable>
+      <div v-if="section === 'runs' && runsNextCursor" class="load-more"><Button label="Загрузить ещё запусков" icon="pi pi-chevron-down" severity="secondary" outlined :loading="loadingMoreRuns" @click="loadMoreRuns" /></div>
 
-      <DataTable v-else :value="filteredAudit" paginator :rows="12" data-key="id">
+      <DataTable v-if="section === 'audit'" :value="filteredAudit" paginator :rows="12" data-key="id">
         <template #empty><div class="empty"><i class="pi pi-shield" />Записей аудита по выбранным фильтрам нет.</div></template>
         <Column header="Действие"><template #body="{ data }"><div class="primary-cell"><strong>{{ data.action }}</strong><small class="mono">{{ data.id }}</small></div></template></Column>
         <Column header="Администратор"><template #body="{ data }"><div class="primary-cell"><strong>{{ data.actor.name || 'Система' }}</strong><small>{{ data.actor.email || 'service actor' }}</small></div></template></Column>
@@ -227,6 +259,7 @@ onMounted(load)
     <div v-if="selectedRun" class="detail-stack">
       <div class="detail-hero"><div><span>Статус</span><Tag :value="selectedRun.status" :severity="severity(selectedRun.status)" /></div><div><span>Пользователь</span><strong class="mono">{{ selectedRun.userExternalId }}</strong></div><div><span>Начало</span><strong>{{ formatDate(selectedRun.startedAt) }}</strong></div></div>
       <Message v-if="selectedRun.errorCode" severity="error">{{ selectedRun.errorCode }}</Message>
+      <RunExplainInspector :project-id="auth.project?.id ?? ''" :run-id="selectedRun.id" />
       <div><h3>Шаги выполнения</h3><div class="steps">
         <article v-for="step in selectedRun.steps" :key="step.id" class="step-card">
           <span class="step-index">{{ step.position + 1 }}</span>

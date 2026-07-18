@@ -10,4 +10,6 @@ export interface PublishedScenarioDependenciesResponseDto {
   actionTypes: string[];
   conditionPaths: string[];
   eventDefinitionRevisionIds: string[];
+  segmentRevisionIds?: string[];
+  userAttributeRevisionIds?: string[];
 }

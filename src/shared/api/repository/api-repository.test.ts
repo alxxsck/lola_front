@@ -20,8 +20,14 @@ import {
   eventsList,
   platformCreateUserAttributeDefinition,
   platformUserAttributeDefinitions,
+  platformEventDefinitionRevisions,
+  platformEventDefinitionRevision,
+  platformUsersPage,
+  scenarioRunsPage,
+  platformActivitySettings,
+  platformUpdateActivitySettings,
 } from '@/shared/api/generated/lola-backend'
-import type { UiElementResponseDto } from '@/shared/api/generated/models'
+import type { EventDefinitionResponseDto, UiElementResponseDto } from '@/shared/api/generated/models'
 import { apiRepository } from './api-repository'
 
 vi.mock('@/shared/api/generated/lola-backend', () => ({
@@ -38,6 +44,9 @@ vi.mock('@/shared/api/generated/lola-backend', () => ({
   adminEventLogsGet: vi.fn(), adminEventLogsList: vi.fn(),
   platformCreateUserAttributeDefinition: vi.fn(), platformDeleteUserAttributeDefinition: vi.fn(),
   platformUpdateUserAttributeDefinition: vi.fn(), platformUserAttributeDefinitions: vi.fn(),
+  platformEventDefinitionRevisions: vi.fn(), platformEventDefinitionRevision: vi.fn(),
+  platformUsersPage: vi.fn(), scenarioRunsPage: vi.fn(),
+  platformActivitySettings: vi.fn(), platformUpdateActivitySettings: vi.fn(),
 }))
 
 const uiResponse = {
@@ -47,8 +56,9 @@ const uiResponse = {
 
 const eventResponse = {
   id: 'event-1', projectId: 'project-1', code: 'signup', name: 'Signup', version: 1,
+  definitionKeyId: 'event-key-1', currentRevisionId: 'event-1', isCurrent: true, origin: 'CUSTOM' as const, readOnly: false,
   payloadSchema: { type: 'object' }, clientIngestible: false, countsAsActivity: false, enabled: true, createdAt: 'now', updatedAt: 'now',
-}
+} as unknown as EventDefinitionResponseDto
 
 describe('api repository adapter', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -73,12 +83,51 @@ describe('api repository adapter', () => {
     vi.mocked(platformUpdateEventDefinition).mockResolvedValue(eventResponse)
 
     await apiRepository.saveEvent('project-1', { code: 'signup', name: 'Signup', payloadSchema: { type: 'object' } })
-    await apiRepository.saveEvent('project-1', { ...eventResponse, name: 'Signup updated' })
+    await apiRepository.saveEvent('project-1', {
+      id: 'event-1', code: 'signup', name: 'Signup updated', payloadSchema: { type: 'object' },
+      clientIngestible: false, countsAsActivity: false, enabled: true,
+    })
 
     expect(platformCreateEventDefinition).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'signup' }))
     expect(platformUpdateEventDefinition).toHaveBeenCalledWith(
       'project-1', 'event-1', expect.not.objectContaining({ code: 'signup', version: 1 }),
     )
+  })
+
+  it('exposes revision history, cursor pages and activity settings through generated contracts', async () => {
+    vi.mocked(platformEventDefinitionRevisions).mockResolvedValue({
+      items: [{ ...eventResponse, compatibility: 'PINNED', pinnedScenarioRevisionCount: 2 } as never],
+      nextCursor: 'revision-2' as never,
+    })
+    vi.mocked(platformEventDefinitionRevision).mockResolvedValue({
+      ...eventResponse, compatibility: 'CURRENT', pinnedScenarioRevisionCount: 0,
+    } as never)
+    vi.mocked(platformUsersPage).mockResolvedValue({ items: [], nextCursor: 'user-2' as never })
+    vi.mocked(scenarioRunsPage).mockResolvedValue({ items: [], nextCursor: 'run-2' })
+    const settings = {
+      timezone: 'Europe/Madrid', visitInactivitySeconds: 1800, reconnectGraceSeconds: 30,
+      limits: { visitInactivitySeconds: { min: 60, max: 86400 }, reconnectGraceSeconds: { min: 1, max: 300 } },
+      semantics: { timezone: 'activity_day', visitInactivitySeconds: 'visit_boundary', reconnectGraceSeconds: 'reconnect' },
+    } as never
+    vi.mocked(platformActivitySettings).mockResolvedValue(settings)
+    vi.mocked(platformUpdateActivitySettings).mockResolvedValue(settings)
+
+    await expect(apiRepository.getEventDefinitionRevisions('project-1', 'event-key-1', { limit: 25 })).resolves.toEqual({
+      items: [expect.objectContaining({ compatibility: 'PINNED', pinnedScenarioRevisionCount: 2 })],
+      nextCursor: 'revision-2',
+    })
+    await expect(apiRepository.getEventDefinitionRevision('project-1', 'event-key-1', 'event-1')).resolves.toEqual(
+      expect.objectContaining({ compatibility: 'CURRENT' }),
+    )
+    await expect(apiRepository.getUsersPage('project-1', { cursor: 'user-1', limit: 50 })).resolves.toEqual({ items: [], nextCursor: 'user-2' })
+    await expect(apiRepository.getScenarioRunsPage('project-1', { cursor: 'run-1', limit: 50 })).resolves.toEqual({ items: [], nextCursor: 'run-2' })
+    await apiRepository.getActivitySettings('project-1')
+    await apiRepository.updateActivitySettings('project-1', { timezone: 'Europe/Madrid', visitInactivitySeconds: 1800, reconnectGraceSeconds: 30 })
+
+    expect(platformEventDefinitionRevisions).toHaveBeenCalledWith('project-1', 'event-key-1', { limit: 25 })
+    expect(platformUsersPage).toHaveBeenCalledWith('project-1', { cursor: 'user-1', limit: 50 })
+    expect(scenarioRunsPage).toHaveBeenCalledWith('project-1', { cursor: 'run-1', limit: 50 })
+    expect(platformUpdateActivitySettings).toHaveBeenCalledWith('project-1', expect.objectContaining({ visitInactivitySeconds: 1800 }))
   })
 
   it('sends only backend-editable project settings', async () => {
@@ -105,11 +154,13 @@ describe('api repository adapter', () => {
 
     await expect(apiRepository.saveScenario('project-1', value)).resolves.toEqual(expect.objectContaining({ conversationPolicy: 'reuse_active' }))
     await apiRepository.saveScenario('project-1', { ...value, id: 'scenario-1' })
+    await apiRepository.updateScenarioMetadata('project-1', 'scenario-1', { name: 'Updated metadata', priority: 5 })
     await apiRepository.deleteScenario('project-1', 'scenario-1')
 
     expect(platformCreateScenario).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'welcome', conversationPolicy: 'reuse_active', actions: [{ position: 0, type: 'OPEN_PAGE', config: { pageId: 'home' } }] }))
     expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', expect.objectContaining({ conversationPolicy: 'reuse_active' }))
     expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', expect.not.objectContaining({ code: 'welcome' }))
+    expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', { name: 'Updated metadata', priority: 5 })
     expect(platformDeleteScenario).toHaveBeenCalledWith('project-1', 'scenario-1')
   })
 

@@ -7,6 +7,7 @@
  */
 import type { ScenarioRunEligibilityResponseDtoDecision } from "./scenarioRunEligibilityResponseDtoDecision";
 import type { ScenarioRunEligibilityResponseDtoFidelity } from "./scenarioRunEligibilityResponseDtoFidelity";
+import type { ScenarioRunEligibilityResponseDtoLastRecheck } from "./scenarioRunEligibilityResponseDtoLastRecheck";
 import type { ScenarioRunEligibilityResponseDtoRoot } from "./scenarioRunEligibilityResponseDtoRoot";
 
 export interface ScenarioRunEligibilityResponseDto {
@@ -14,5 +15,7 @@ export interface ScenarioRunEligibilityResponseDto {
   /** @nullable */
   evaluatedAt?: string | null;
   fidelity: ScenarioRunEligibilityResponseDtoFidelity;
+  /** @nullable */
+  lastRecheck?: ScenarioRunEligibilityResponseDtoLastRecheck;
   root: ScenarioRunEligibilityResponseDtoRoot;
 }

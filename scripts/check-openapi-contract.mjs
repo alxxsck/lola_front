@@ -21,11 +21,29 @@ const requiredOperations = new Map([
   ['Platform_updateUserAttributeDefinition', { label: 'user attribute update', request: 'UpdateUserAttributeDefinitionDto', response: 'UserAttributeDefinitionMutationResponseDto' }],
   ['Platform_deleteUserAttributeDefinition', { label: 'user attribute deletion', response: 'UserAttributeDefinitionMutationResponseDto' }],
   ['ScenarioRuns_list', { label: 'scenario runs', response: 'ScenarioRunResponseDto' }],
+  ['ScenarioRuns_page', { label: 'cursor-paginated scenario runs', response: 'ScenarioRunPageResponseDto' }],
+  ['Platform_usersPage', { label: 'cursor-paginated users', response: 'EndUserPageResponseDto' }],
+  ['Platform_eventDefinitionRevisions', { label: 'event definition revision history', response: 'EventDefinitionRevisionPageResponseDto' }],
+  ['Platform_eventDefinitionRevision', { label: 'event definition revision detail', response: 'EventDefinitionRevisionResponseDto' }],
+  ['Platform_activitySettings', { label: 'activity settings', response: 'ActivitySettingsResponseDto' }],
+  ['Platform_updateActivitySettings', { label: 'activity settings update', request: 'UpdateActivitySettingsDto', response: 'ActivitySettingsResponseDto' }],
   ['ScenarioAuthoring_catalog', { label: 'scenario authoring catalog', response: 'ConditionCatalogResponseDto' }],
   ['ScenarioAuthoring_validate', { label: 'scenario rule validation', request: 'ValidateScenarioRuleDto', response: 'ValidateScenarioRuleResponseDto' }],
   ['ScenarioAuthoring_preview', { label: 'scenario rule preview', request: 'PreviewScenarioRuleDto', response: 'PreviewScenarioRuleResponseDto' }],
+  ['ScenarioAuthoring_previewGoal', { label: 'typed goal preview', request: 'PreviewScenarioGoalDto', response: 'PreviewScenarioGoalResponseDto' }],
+  ['ScenarioAuthoring_scenarioDocument', { label: 'scenario authoring read model', response: 'ScenarioAuthoringDocumentResponseDto' }],
+  ['ScenarioAuthoring_saveDraft', { label: 'durable scenario draft', request: 'SaveScenarioDraftDto', response: 'ScenarioAuthoringDraftResponseDto' }],
+  ['ScenarioAuthoring_validateScenarioDraft', { label: 'full scenario draft validation', request: 'ValidateScenarioDraftDto', response: 'ValidateScenarioDraftResponseDto' }],
+  ['ScenarioAuthoring_scenarioRevisions', { label: 'scenario revision history', response: 'ScenarioRevisionPageResponseDto' }],
+  ['ScenarioAuthoring_scenarioRevision', { label: 'scenario revision detail', response: 'ScenarioRevisionDetailResponseDto' }],
   ['ScenarioAuthoring_publishScenario', { label: 'scenario publication', request: 'PublishScenarioDto', response: 'PublishScenarioResponseDto' }],
   ['ScenarioAuthoring_rollbackScenario', { label: 'scenario rollback', request: 'RollbackScenarioDto' }],
+  ['ScenarioAudience_search', { label: 'segment search', response: 'SegmentSearchResponseDto' }],
+  ['ScenarioAudience_create', { label: 'segment creation', request: 'PublishSegmentRevisionDto', response: 'PublishedSegmentResponseDto' }],
+  ['ScenarioAudience_detail', { label: 'segment detail and history', response: 'SegmentDetailResponseDto' }],
+  ['ScenarioAudience_archive', { label: 'segment archive', response: 'ArchivedSegmentResponseDto' }],
+  ['ScenarioAudience_publishRevision', { label: 'segment successor revision', request: 'PublishSegmentRevisionDto', response: 'PublishedSegmentResponseDto' }],
+  ['ScenarioAudience_revision', { label: 'segment revision detail', response: 'SegmentRevisionDetailResponseDto' }],
   ['ScenarioRuns_explain', { label: 'scenario run explanation', response: 'ScenarioRunExplainResponseDto' }],
   ['AdminMessaging_send', { label: 'admin messaging', request: 'SendAdminMessageDto', response: 'SendAdminMessageResponseDto' }],
   ['Audit_list', { label: 'audit logs', response: 'AuditLogResponseDto' }],
@@ -114,9 +132,9 @@ for (const schemaName of ['CreateProjectDto', 'UpdateProjectDto']) {
   }
 }
 
-requireSchemaProperties('ConditionCatalogResponseDto', ['version', 'revision', 'projectId', 'events'])
+requireSchemaProperties('ConditionCatalogResponseDto', ['version', 'revision', 'projectId', 'events', 'audience'])
 requireRequiredProperties('ConditionCatalogResponseDto', ['version', 'revision', 'projectId', 'events'])
-requireSchemaProperties('ConditionCatalogEventResponseDto', ['definitionKeyId', 'definitionId', 'code', 'schemaVersion', 'fields'])
+requireSchemaProperties('ConditionCatalogEventResponseDto', ['definitionKeyId', 'definitionId', 'code', 'schemaVersion', 'fields', 'capabilities'])
 requireSchemaProperties('ConditionCatalogFieldResponseDto', [
   'fieldKey',
   'path',
@@ -128,20 +146,33 @@ requireSchemaProperties('ConditionCatalogFieldResponseDto', [
   'semanticType',
   'unit',
   'sensitive',
+  'capabilities',
+  'display',
 ])
+requireSchemaProperties('ConditionCatalogDisplayResponseDto', ['scale', 'precision', 'conversion'])
 
-requireSchemaProperties('ValidateScenarioRuleDto', ['rule'])
+requireSchemaProperties('ValidateScenarioRuleDto', ['rule', 'audience'])
 requireRequiredProperties('ValidateScenarioRuleDto', ['rule'])
-requireSchemaProperties('PreviewScenarioRuleDto', ['rule', 'scope'])
+requireSchemaProperties('PreviewScenarioRuleDto', ['rule', 'audience', 'scope'])
 requireRequiredProperties('PreviewScenarioRuleDto', ['rule', 'scope'])
 requireSchemaProperties('PreviewScenarioScopeDto', ['kind', 'eventLogId'])
 requireRequiredProperties('PreviewScenarioScopeDto', ['kind', 'eventLogId'])
 if (JSON.stringify(contractSchema('PreviewScenarioScopeDto').properties?.kind?.enum) !== JSON.stringify(['eventLog'])) {
   throw new Error('PreviewScenarioScopeDto.kind must only allow eventLog')
 }
-requireSchemaProperties('PublishScenarioDto', ['rule', 'deliveryPolicy', 'expectedCurrentRevisionId', 'catalogRevision'])
+requireSchemaProperties('PublishScenarioDto', ['rule', 'audience', 'deliveryPolicy', 'expectedCurrentRevisionId', 'expectedDraftVersion', 'catalogRevision'])
 requireRequiredProperties('PublishScenarioDto', ['expectedCurrentRevisionId', 'catalogRevision'])
 requireSchemaProperties('RollbackScenarioDto', ['expectedCurrentRevisionId'])
+requireSchemaProperties('ScenarioAuthoringDocumentResponseDto', ['currentRevisionId', 'source', 'draft', 'editable', 'unavailableReason', 'triggerEventDefinitionRevisionId'])
+requireSchemaProperties('SaveScenarioDraftDto', ['expectedDraftVersion', 'expectedCurrentRevisionId', 'catalogRevision', 'rule', 'audience', 'deliveryPolicy', 'graph'])
+requireRequiredProperties('SaveScenarioDraftDto', ['expectedDraftVersion', 'expectedCurrentRevisionId', 'catalogRevision', 'deliveryPolicy', 'graph'])
+requireSchemaProperties('ValidateScenarioDraftDto', ['catalogRevision', 'rule', 'audience', 'deliveryPolicy', 'graph'])
+requireRequiredProperties('ValidateScenarioDraftDto', ['catalogRevision', 'deliveryPolicy', 'graph'])
+requireSchemaProperties('ScenarioRevisionDetailResponseDto', ['id', 'revisionNumber', 'publishedAt', 'publishedByAdminId', 'contentHash', 'source'])
+requireSchemaProperties('PreviewScenarioGoalDto', ['goal', 'timeoutMs', 'scope'])
+requireRequiredProperties('PreviewScenarioGoalDto', ['goal', 'timeoutMs', 'scope'])
+requireSchemaProperties('PreviewScenarioGoalResponseDto', ['valid', 'matched', 'actual', 'matchedCount', 'window', 'dependency', 'issues'])
+requireSchemaProperties('ScenarioGoalActualResponseDto', ['visibility', 'value'])
 
 requireSchemaProperties('ScenarioRuleDto', ['version', 'root'])
 requireRequiredProperties('ScenarioRuleDto', ['version', 'root'])
@@ -153,6 +184,45 @@ requireDiscriminatedUnion('ScenarioRuleDto', 'root', 'kind', [
   'EventAggregateRuleNodeDto',
   'ActivityDayStreakRuleNodeDto',
 ])
+requireSchemaProperties('AudienceCatalogResponseDto', ['version', 'revision', 'locales', 'localeSource', 'languageSource', 'country', 'attributes', 'segmentSource', 'snapshotPolicy'])
+requireRequiredProperties('AudienceCatalogResponseDto', ['version', 'revision', 'locales', 'localeSource', 'languageSource', 'country', 'attributes', 'segmentSource', 'snapshotPolicy'])
+requireSchemaProperties('AudienceRuleDto', ['version', 'root'])
+requireRequiredProperties('AudienceRuleDto', ['version', 'root'])
+requireDiscriminatedUnion('AudienceRuleDto', 'root', 'kind', [
+  'AudienceAllNodeDto',
+  'AudienceAnyNodeDto',
+  'AudienceNotNodeDto',
+  'AudienceLocaleNodeDto',
+  'AudienceLanguageNodeDto',
+  'AudienceCountryNodeDto',
+  'AudienceUserAttributeNodeDto',
+  'AudienceSegmentMembershipNodeDto',
+])
+requireSchemaProperties('PublishSegmentRevisionDto', ['key', 'name', 'description', 'rule', 'catalogRevision', 'expectedCurrentRevisionId'])
+requireRequiredProperties('PublishSegmentRevisionDto', ['name', 'rule', 'catalogRevision', 'expectedCurrentRevisionId'])
+requireSchemaProperties('ValidateScenarioRuleResponseDto', ['audience'])
+requireSchemaProperties('PreviewScenarioRuleResponseDto', ['audience'])
+requireSchemaProperties('PublishScenarioResponseDto', ['audienceCost', 'audiencePolicy', 'dependencies'])
+requireSchemaProperties('PublishedScenarioDependenciesResponseDto', ['userAttributeRevisionIds', 'segmentRevisionIds'])
+requireSchemaProperties('SegmentDetailResponseDto', ['segmentId', 'key', 'name', 'status', 'currentRevision', 'revisions'])
+requireSchemaProperties('SegmentRevisionDetailResponseDto', ['segmentRevisionId', 'revision', 'catalogRevision', 'contentHash', 'publishedAt', 'rule'])
+requireRequiredProperties('SegmentRevisionDetailResponseDto', ['segmentRevisionId', 'revision', 'catalogRevision', 'contentHash', 'publishedAt', 'rule'])
+requireSchemaProperties('ScenarioRunExplainResponseDto', ['eligibility', 'audience', 'delivery'])
+requireRequiredProperties('ScenarioRunExplainResponseDto', ['eligibility', 'audience', 'delivery'])
+requireSchemaProperties('ScenarioRunAudienceResponseDto', ['decision', 'fidelity', 'evaluatedAt', 'root', 'segmentRevisionIds', 'attributeRevisionIds', 'lastRecheck'])
+requireRequiredProperties('ScenarioRunAudienceResponseDto', ['decision', 'fidelity', 'root', 'segmentRevisionIds', 'attributeRevisionIds'])
+requireSchemaProperties('ScenarioRunAudienceRecheckResponseDto', ['decision', 'evaluatedAt', 'root'])
+requireRequiredProperties('ScenarioRunAudienceRecheckResponseDto', ['decision', 'root'])
+requireSchemaProperties('ScenarioRunEligibilityResponseDto', ['decision', 'fidelity', 'evaluatedAt', 'root', 'lastRecheck'])
+requireSchemaProperties('ScenarioRunEligibilityRecheckResponseDto', ['decision', 'fidelity', 'evaluatedAt'])
+requireRequiredProperties('ScenarioRunEligibilityRecheckResponseDto', ['decision', 'fidelity'])
+requireSchemaProperties('EventDefinitionResponseDto', ['definitionKeyId', 'currentRevisionId', 'isCurrent', 'origin', 'readOnly'])
+requireSchemaProperties('EventDefinitionRevisionResponseDto', ['definitionKeyId', 'currentRevisionId', 'isCurrent', 'origin', 'readOnly', 'compatibility', 'pinnedScenarioRevisionCount'])
+requireSchemaProperties('ActivitySettingsResponseDto', ['timezone', 'visitInactivitySeconds', 'reconnectGraceSeconds', 'limits', 'semantics'])
+requireSchemaProperties('UpdateActivitySettingsDto', ['timezone', 'visitInactivitySeconds', 'reconnectGraceSeconds'])
+requireRequiredProperties('UpdateActivitySettingsDto', ['timezone', 'visitInactivitySeconds', 'reconnectGraceSeconds'])
+requireSchemaProperties('EndUserPageResponseDto', ['items', 'nextCursor'])
+requireSchemaProperties('ScenarioRunPageResponseDto', ['items', 'nextCursor'])
 requireDiscriminatedUnion('PublishScenarioDto', 'deliveryPolicy', 'kind', [
   'ImmediateDeliveryPolicyDto',
   'SkipIfOfflineDeliveryPolicyDto',

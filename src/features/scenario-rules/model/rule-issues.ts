@@ -1,4 +1,4 @@
-import type { ScenarioRuleIssueResponseDto } from '@/shared/api/generated/models'
+import type { ScenarioRuleIssueResponseDto } from '@/shared/api/repository/scenario-authoring'
 
 import type { MappedRuleIssue, RulePathIndex } from './rule-types'
 

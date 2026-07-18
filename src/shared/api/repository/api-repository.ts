@@ -8,6 +8,8 @@ import {
   platformDeleteScenario,
   platformDeleteUi,
   platformEventDefinitions,
+  platformEventDefinitionRevisions,
+  platformEventDefinitionRevision,
   platformGetProject,
   platformMembers,
   platformScenarios,
@@ -18,8 +20,10 @@ import {
   platformUpdateScenario,
   platformUpdateUi,
   platformUsers,
+  platformUsersPage,
   eventsList,
   scenarioRunsList,
+  scenarioRunsPage,
   auditList,
   adminMessagingSend,
   presenceList,
@@ -31,15 +35,18 @@ import {
   platformDeleteUserAttributeDefinition,
   platformUpdateUserAttributeDefinition,
   platformUserAttributeDefinitions,
+  platformActivitySettings,
+  platformUpdateActivitySettings,
 } from '@/shared/api/generated/lola-backend'
 import type { ScenarioResponseDto } from '@/shared/api/generated/models'
-import { toCreateScenarioDto, toUpdateScenarioDto } from './scenario-contract'
+import { toCreateScenarioDto, toUpdateScenarioDto, toUpdateScenarioMetadataDto } from './scenario-contract'
 import type { Scenario } from '@/shared/types/domain'
 import type { LolaRepository, RepositoryCapabilities } from './contracts'
 import { UnsupportedRepositoryCapabilityError } from './contracts'
 import {
   mapEndUser,
   mapEventDefinition,
+  mapEventDefinitionRevision,
   mapProject,
   mapProjectMember,
   mapUiElement,
@@ -151,6 +158,15 @@ export const apiRepository: LolaRepository = {
     return (await platformEventDefinitions(projectId)).map(mapEventDefinition)
   },
 
+  async getEventDefinitionRevisions(projectId, definitionKeyId, request) {
+    const response = await platformEventDefinitionRevisions(projectId, definitionKeyId, request)
+    return { items: response.items.map(mapEventDefinitionRevision), nextCursor: optionalString(response.nextCursor) ?? null }
+  },
+
+  async getEventDefinitionRevision(projectId, definitionKeyId, revisionId) {
+    return mapEventDefinitionRevision(await platformEventDefinitionRevision(projectId, definitionKeyId, revisionId))
+  },
+
   async saveEvent(projectId, value) {
     const dto = value.id
       ? await platformUpdateEventDefinition(projectId, value.id, toUpdateEventDefinitionDto(value))
@@ -193,12 +209,21 @@ export const apiRepository: LolaRepository = {
     return mapScenario(dto)
   },
 
+  async updateScenarioMetadata(projectId, scenarioId, value) {
+    return mapScenario(await platformUpdateScenario(projectId, scenarioId, toUpdateScenarioMetadataDto(value)))
+  },
+
   async deleteScenario(projectId, id) {
     await platformDeleteScenario(projectId, id)
   },
 
   async getUsers(projectId) {
     return (await platformUsers(projectId)).map(mapEndUser)
+  },
+
+  async getUsersPage(projectId, request) {
+    const response = await platformUsersPage(projectId, request)
+    return { items: response.items.map(mapEndUser), nextCursor: optionalString(response.nextCursor) ?? null }
   },
 
   async getSessions(projectId) {
@@ -243,6 +268,19 @@ export const apiRepository: LolaRepository = {
 
   async getScenarioRuns(projectId) {
     return (await scenarioRunsList(projectId)).map(mapScenarioRun)
+  },
+
+  async getScenarioRunsPage(projectId, request) {
+    const response = await scenarioRunsPage(projectId, request)
+    return { items: response.items.map(mapScenarioRun), nextCursor: response.nextCursor ?? null }
+  },
+
+  async getActivitySettings(projectId) {
+    return platformActivitySettings(projectId)
+  },
+
+  async updateActivitySettings(projectId, value) {
+    return platformUpdateActivitySettings(projectId, value)
   },
 
   async getAuditLogs(projectId) {

@@ -17,6 +17,8 @@ import SendActionDialog from '@/features/live/SendActionDialog.vue'
 
 const auth = useAuthStore()
 const users = ref<EndUser[]>([])
+const usersNextCursor = ref<string | null>(null)
+const loadingMoreUsers = ref(false)
 const sessions = ref<ActiveSession[]>([])
 const activity = ref<EventLog[]>([])
 const activityLoading = ref(false)
@@ -70,13 +72,31 @@ async function load() {
   if (!auth.project) return
   loading.value = true; error.value = ''
   try {
-    [users.value, sessions.value] = await Promise.all([
-      repository.getUsers(auth.project.id),
+    const [usersPage, nextSessions] = await Promise.all([
+      repository.getUsersPage(auth.project.id, { limit: 50 }),
       repository.capabilities.presence ? repository.getSessions(auth.project.id) : Promise.resolve([]),
     ])
+    users.value = usersPage.items
+    usersNextCursor.value = usersPage.nextCursor
+    sessions.value = nextSessions
   }
   catch (cause) { error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить пользователей' }
   finally { loading.value = false }
+}
+
+async function loadMoreUsers() {
+  if (!auth.project || !usersNextCursor.value) return
+  loadingMoreUsers.value = true
+  error.value = ''
+  try {
+    const page = await repository.getUsersPage(auth.project.id, { limit: 50, cursor: usersNextCursor.value })
+    users.value.push(...page.items)
+    usersNextCursor.value = page.nextCursor
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить следующую страницу пользователей'
+  } finally {
+    loadingMoreUsers.value = false
+  }
 }
 function openUser(user: EndUser) {
   selected.value = user
@@ -206,7 +226,7 @@ onMounted(load)
       <span class="search"><i class="pi pi-search" /><InputText v-model="search" placeholder="Имя, email или external ID" /></span>
       <Select v-model="segment" :options="segments" option-label="label" option-value="value" />
       <Select v-model="presence" :options="presenceOptions" option-label="label" option-value="value" :disabled="!repository.capabilities.presence" />
-      <span class="count">{{ filteredUsers.length }} пользователей</span>
+      <span class="count">{{ filteredUsers.length }}{{ usersNextCursor ? '+' : '' }} пользователей</span>
     </div>
     <div class="card table-card">
       <div v-if="loading" class="loading-list"><Skeleton v-for="i in 6" :key="i" height="58px" /></div>
@@ -221,6 +241,7 @@ onMounted(load)
         <Column header="Последняя активность" class="mobile-hide"><template #body="{ data }"><span :title="formatDate(data.lastSeenAt)">{{ relativeTime(data.lastSeenAt) }}</span></template></Column>
         <Column><template #body><i class="pi pi-chevron-right muted" /></template></Column>
       </DataTable>
+      <div v-if="!loading && usersNextCursor" class="load-more"><Button label="Загрузить ещё пользователей" icon="pi pi-chevron-down" severity="secondary" outlined :loading="loadingMoreUsers" @click="loadMoreUsers" /></div>
     </div>
   </section>
 

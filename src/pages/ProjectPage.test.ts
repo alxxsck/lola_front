@@ -168,9 +168,6 @@ describe('ProjectPage voice instructions', () => {
     const wsUrl = wrapper
       .findAllComponents(InputText)
       .find((component) => component.attributes('id') === 'ws-url')!
-    const timezone = wrapper
-      .findAllComponents(InputText)
-      .find((component) => component.attributes('id') === 'timezone')!
     const allowedOrigins = wrapper
       .findAllComponents(Textarea)
       .find((component) => component.attributes('id') === 'allowed-origins')!
@@ -188,7 +185,6 @@ describe('ProjectPage voice instructions', () => {
       description,
       apiUrl,
       wsUrl,
-      timezone,
       allowedOrigins,
       voiceEnabled,
       voice,
@@ -201,7 +197,6 @@ describe('ProjectPage voice instructions', () => {
     description.vm.$emit('update:modelValue', 'After')
     apiUrl.vm.$emit('update:modelValue', 'https://api.example.com')
     wsUrl.vm.$emit('update:modelValue', 'wss://api.example.com')
-    timezone.vm.$emit('update:modelValue', 'UTC')
     allowedOrigins.vm.$emit('update:modelValue', 'https://one.example.com\nhttps://two.example.com')
     voice.vm.$emit('update:modelValue', 'rex')
     voiceTranscriptEnabled.vm.$emit('update:modelValue', false)
@@ -217,7 +212,6 @@ describe('ProjectPage voice instructions', () => {
           description: 'After',
           apiBaseUrl: 'https://api.example.com',
           wsUrl: 'wss://api.example.com',
-          timezone: 'UTC',
           allowedOrigins: ['https://one.example.com', 'https://two.example.com'],
           voiceEnabled: false,
           voiceTranscriptEnabled: false,
@@ -226,5 +220,29 @@ describe('ProjectPage voice instructions', () => {
         }),
       }),
     )
+  })
+
+  it('preserves the latest dedicated activity timezone when the main project form is saved', async () => {
+    mocks.getProject.mockResolvedValue(project({ settings: { timezone: 'UTC' } }))
+    const wrapper = shallowMount(ProjectPage)
+    await flushPromises()
+
+    wrapper.getComponent({ name: 'ActivitySettingsSection' }).vm.$emit('change', {
+      timezone: 'Europe/Madrid',
+      visitInactivitySeconds: 1800,
+      reconnectGraceSeconds: 30,
+      limits: {
+        visitInactivitySeconds: { min: 60, max: 86400 },
+        reconnectGraceSeconds: { min: 0, max: 300 },
+      },
+    })
+    voiceInstructionsInput(wrapper).vm.$emit('update:modelValue', 'Обновлённая инструкция')
+    await wrapper.vm.$nextTick()
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(mocks.updateProject).toHaveBeenCalledWith('project-1', expect.objectContaining({
+      settings: expect.objectContaining({ timezone: 'Europe/Madrid' }),
+    }))
   })
 })

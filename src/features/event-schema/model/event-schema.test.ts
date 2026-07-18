@@ -29,6 +29,8 @@ describe('event schema model', () => {
           'x-lola-field-key': 'deposit.amount',
           'x-lola-semantic-type': 'money',
           'x-lola-unit': 'minor',
+          'x-lola-display-scale': 0.01,
+          'x-lola-display-precision': 2,
           'x-lola-sensitive': false,
         },
         currency: {
@@ -104,6 +106,8 @@ describe('event schema model', () => {
     amount.maximum = 500_000
     amount.semanticType = 'money'
     amount.unit = 'minor'
+    amount.displayScale = 0.01
+    amount.displayPrecision = 2
     amount.sensitive = true
     draft.additionalProperties = true
 
@@ -119,6 +123,8 @@ describe('event schema model', () => {
           'x-lola-field-key': 'deposit.amount',
           'x-lola-semantic-type': 'money',
           'x-lola-unit': 'minor',
+          'x-lola-display-scale': 0.01,
+          'x-lola-display-precision': 2,
           'x-lola-sensitive': true,
           'x-product-owner': 'payments',
         },
@@ -196,6 +202,32 @@ describe('event schema model', () => {
     expect(validateEventSchemaDraft(draft).map((issue) => issue.message)).toEqual([
       'Допустимые варианты должны соответствовать типу поля «amount».',
       'Минимальное значение поля «amount» не может быть больше максимального.',
+    ])
+  })
+
+  it('requires the complete money display contract and preserves it losslessly', () => {
+    const draft = parseEventSchema({
+      type: 'object',
+      properties: {
+        'amount-minor': {
+          type: 'integer',
+          'x-lola-semantic-type': 'money',
+          'x-lola-unit': 'minor',
+          'x-lola-display-scale': 0.01,
+          'x-lola-display-precision': 2,
+        },
+      },
+    })
+
+    expect(validateEventSchemaDraft(draft)).toEqual([])
+    expect(serializeEventSchema(draft)).toEqual(draft.source)
+
+    const amount = draft.fields[0]!
+    amount.displayScale = 0
+    amount.displayPrecision = 13
+    expect(validateEventSchemaDraft(draft).map((issue) => issue.message)).toEqual([
+      'Масштаб отображения поля «amount-minor» должен быть положительным числом.',
+      'Точность отображения поля «amount-minor» должна быть целым числом от 0 до 12.',
     ])
   })
 

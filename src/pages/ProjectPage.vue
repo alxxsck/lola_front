@@ -11,11 +11,12 @@ import Skeleton from 'primevue/skeleton'
 import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
 import AiUsageSection from '@/features/ai-usage/AiUsageSection.vue'
+import ActivitySettingsSection from '@/features/activity-settings/ActivitySettingsSection.vue'
 import { useAuthStore } from '@/features/auth/auth.store'
 import SpeechSynthesisSection from '@/features/speech-synthesis/SpeechSynthesisSection.vue'
 import type { RealtimeVoice } from '@/shared/api/generated/models'
 import { repository } from '@/shared/api/repository'
-import type { Project } from '@/shared/types/domain'
+import type { ActivitySettings, Project } from '@/shared/types/domain'
 
 interface ProjectForm {
   name: string
@@ -24,7 +25,6 @@ interface ProjectForm {
   supportedLocales: string[]
   assistantName: string
   systemPrompt: string
-  timezone: string
   apiBaseUrl: string
   wsUrl: string
   allowedOrigins: string
@@ -64,6 +64,7 @@ const voiceSettingsExpanded = ref(false)
 const error = ref('')
 const validationError = ref('')
 const project = ref<Project | null>(null)
+const activitySettings = ref<ActivitySettings | null>(null)
 const initialSnapshot = ref('')
 const systemPromptControl = ref<HTMLElement | null>(null)
 let systemPromptResizeState: { pointerId: number; startY: number; startHeight: number; minHeight: number } | null = null
@@ -74,7 +75,6 @@ const form = reactive<ProjectForm>({
   supportedLocales: [],
   assistantName: '',
   systemPrompt: '',
-  timezone: 'Europe/Madrid',
   apiBaseUrl: '',
   wsUrl: '',
   allowedOrigins: '',
@@ -97,7 +97,6 @@ function fillForm(nextProject: Project) {
     supportedLocales: [...nextProject.supportedLocales],
     assistantName: nextProject.assistantName,
     systemPrompt: nextProject.systemPrompt,
-    timezone: typeof nextProject.settings.timezone === 'string' ? nextProject.settings.timezone : 'Europe/Madrid',
     apiBaseUrl: typeof nextProject.settings.apiBaseUrl === 'string' ? nextProject.settings.apiBaseUrl : '',
     wsUrl: typeof nextProject.settings.wsUrl === 'string' ? nextProject.settings.wsUrl : '',
     allowedOrigins: Array.isArray(nextProject.settings.allowedOrigins) ? nextProject.settings.allowedOrigins.join('\n') : '',
@@ -156,8 +155,8 @@ async function saveProject() {
       voiceInstructions: form.voiceInstructions,
       settings: {
         ...project.value.settings,
+        ...(activitySettings.value ? { timezone: activitySettings.value.timezone } : {}),
         description: form.description.trim(),
-        timezone: form.timezone.trim(),
         apiBaseUrl: form.apiBaseUrl.trim(),
         wsUrl: form.wsUrl.trim(),
         allowedOrigins: form.allowedOrigins.split('\n').map((value) => value.trim()).filter(Boolean),
@@ -297,7 +296,6 @@ onBeforeUnmount(() => {
           <div class="form-grid columns">
             <div class="field"><label for="api-url">Public API URL</label><InputText id="api-url" v-model="form.apiBaseUrl" class="mono" placeholder="https://api.example.com/api/v1" :disabled="saving" /></div>
             <div class="field"><label for="ws-url">WebSocket URL</label><InputText id="ws-url" v-model="form.wsUrl" class="mono" placeholder="wss://api.example.com/assistant" :disabled="saving" /></div>
-            <div class="field"><label for="timezone">Часовой пояс</label><InputText id="timezone" v-model="form.timezone" placeholder="Europe/Madrid" :disabled="saving" /></div>
             <div class="field"><label for="allowed-origins">Разрешённые origins <span>по одному в строке</span></label><Textarea id="allowed-origins" v-model="form.allowedOrigins" rows="3" class="mono" placeholder="https://app.example.com" :disabled="saving" /></div>
           </div>
           <RouterLink to="/project/user-attributes" class="contract-link surface-soft">
@@ -372,6 +370,7 @@ onBeforeUnmount(() => {
         </section>
         </form>
 
+        <ActivitySettingsSection v-if="project" :project-id="project.id" :editable="auth.user?.role === 'OWNER' || auth.user?.role === 'ADMIN'" @change="activitySettings = $event" />
         <SpeechSynthesisSection
           class="settings-main-tts"
           :project-id="project.id"

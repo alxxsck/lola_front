@@ -7,4 +7,42 @@ export type {
   ScenarioAuthoringField,
 } from './scenario-authoring-contract'
 export { scenarioAuthoringRepository } from './scenario-authoring-repository'
-export type { ScenarioPublishInput } from './scenario-authoring-repository'
+export type { ScenarioDraftContent, ScenarioPublishInput } from './scenario-authoring-repository'
+// Generated wire contracts are exposed only through the repository boundary.
+export type {
+  ActivityDayStreakCompareDto,
+  ActivityDayStreakRuleNodeDto,
+  AggregateFilterDto,
+  AggregateFilterDtoOperator,
+  AllRuleNodeDto,
+  AnyRuleNodeDto,
+  AudienceAttributeResponseDto,
+  AudienceCatalogResponseDto,
+  AudienceIssueResponseDto,
+  AudienceRuleDto,
+  AudienceRuleDtoRoot,
+  EventAggregateRuleNodeDto,
+  EventAggregateRuleNodeDtoMeasure,
+  EventFieldRuleNodeDto,
+  EventFieldRuleNodeDtoOperator,
+  EventFieldRuleNodeDtoValue,
+  LastRuleWindowDto,
+  NotRuleNodeDto,
+  PreviewScenarioGoalResponseDto,
+  PreviewScenarioRuleResponseDto,
+  PublishScenarioDtoDeliveryPolicy,
+  PublishScenarioResponseDto,
+  RuleCompareDto,
+  ScenarioGoalDto,
+  ScenarioRunExplainResponseDto,
+  ScenarioRevisionDetailResponseDto,
+  ScenarioRevisionListItemResponseDto,
+  ScenarioRuleDto,
+  ScenarioRuleDtoRoot,
+  ScenarioRuleIssueResponseDto,
+  SegmentDetailResponseDto,
+  SegmentSummaryResponseDto,
+  SinceTriggerRuleWindowDto,
+  ValidateScenarioDraftResponseDto,
+  ValidateScenarioRuleResponseDto,
+} from '@/shared/api/generated/models'

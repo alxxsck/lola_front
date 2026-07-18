@@ -1,6 +1,6 @@
 import { isProxy, reactive } from 'vue'
 import { describe, expect, it } from 'vitest'
-import { availableTargets, graphTransitions, normalizeScenarioActions, sortScenarioActions, toPlainScenarioAction, validateScenarioGraph } from './scenario-graph'
+import { availableTargets, graphTransitions, normalizeScenarioActions, renameScenarioNode, sortScenarioActions, toPlainScenarioAction, validateScenarioGraph } from './scenario-graph'
 
 describe('scenario graph model', () => {
   it('upgrades legacy linear actions without losing their order', () => {
@@ -30,6 +30,39 @@ describe('scenario graph model', () => {
       { target: 'finish', label: undefined }, { target: 'finish', label: undefined },
     ])
     expect(validateScenarioGraph(actions)).toEqual([])
+  })
+
+  it('derives both durable WAIT_FOR_GOAL branches and validates their references', () => {
+    const actions = normalizeScenarioActions([
+      { position: 0, nodeKey: 'wait_for_deposit', type: 'WAIT_FOR_GOAL', config: {
+        goal: { version: 1, eventCode: 'deposit.succeeded', measure: 'count', filters: [], compare: { operator: 'gte', value: '1' } },
+        timeoutMs: 172_800_000, onGoal: 'deposit_done', onTimeout: 'deposit_missing',
+      } },
+      { position: 1, nodeKey: 'deposit_done', type: 'SAY', config: {} },
+      { position: 2, nodeKey: 'deposit_missing', type: 'SAY', config: {} },
+    ])
+
+    expect(graphTransitions(actions)).toEqual([
+      { source: 'wait_for_deposit', target: 'deposit_done', label: 'Цель достигнута', kind: 'goal' },
+      { source: 'wait_for_deposit', target: 'deposit_missing', label: 'Срок истёк', kind: 'goal-timeout' },
+    ])
+    expect(validateScenarioGraph(actions)).toEqual([])
+
+    actions[0]!.config.onTimeout = 'removed_node'
+    expect(validateScenarioGraph(actions).map((issue) => issue.message)).toContain('Переход ведёт в неизвестный узел «removed_node»')
+  })
+
+  it('removes an invisible linear transition from WAIT_FOR_GOAL during normalization', () => {
+    const [goal] = normalizeScenarioActions([{
+      position: 0,
+      nodeKey: 'wait_for_deposit',
+      nextNodeKey: 'hidden_third_branch',
+      type: 'WAIT_FOR_GOAL',
+      config: { onGoal: 'done', onTimeout: 'timeout' },
+    }])
+
+    expect(goal?.nextNodeKey).toBeNull()
+    expect(graphTransitions(goal ? [goal] : [])).toHaveLength(2)
   })
 
   it('accepts a question with one answer option', () => {
@@ -73,6 +106,20 @@ describe('scenario graph model', () => {
       { position: 1, nodeKey: 'question', nextNodeKey: null, type: 'SAY', config: {} },
     ])
     expect(availableTargets(actions, actions[1])).toEqual([])
+  })
+
+  it('renames WAIT_FOR_GOAL and ordinary graph references atomically', () => {
+    const actions = normalizeScenarioActions([
+      { position: 0, nodeKey: 'start', nextNodeKey: 'wait', type: 'SAY', config: {} },
+      { position: 1, nodeKey: 'wait', type: 'WAIT_FOR_GOAL', config: { onGoal: 'done', onTimeout: 'timeout' } },
+      { position: 2, nodeKey: 'done', type: 'SAY', config: {} },
+      { position: 3, nodeKey: 'timeout', type: 'SAY', config: {} },
+    ])
+
+    expect(renameScenarioNode(actions, 'done', 'deposit_done')).toBe(true)
+    expect(actions[2]?.nodeKey).toBe('deposit_done')
+    expect(actions[1]?.config.onGoal).toBe('deposit_done')
+    expect(graphTransitions(actions).some((transition) => transition.target === 'done')).toBe(false)
   })
 
   it('converts nested reactive action config to plain JSON data', () => {

@@ -1,5 +1,7 @@
 import { RULE_LIMITS } from './rule-contract'
 import type { RuleDomainContext, RuleDraft, RuleDraftNode, RuleLiteral, RuleSummary } from './rule-types'
+import type { ScenarioAuthoringField } from '@/shared/api/repository/scenario-authoring'
+import { formatMoneyDisplay } from './money-display'
 
 const operatorLabels: Record<string, string> = {
   eq: '=',
@@ -30,6 +32,12 @@ function displayValue(value: RuleLiteral | undefined): string {
   return String(value)
 }
 
+function displayFieldValue(value: RuleLiteral | undefined, field?: ScenarioAuthoringField): string {
+  if (!field?.semanticType?.includes('money')) return displayValue(value)
+  if (Array.isArray(value)) return value.map((item) => formatMoneyDisplay(item, field.display?.scale ?? 1, field.display?.precision)).join(', ')
+  return formatMoneyDisplay(value, field.display?.scale ?? 1, field.display?.precision)
+}
+
 function durationLabel(durationMs: number): string {
   const day = 86_400_000
   const hour = 3_600_000
@@ -45,7 +53,7 @@ function eventFieldSummary(node: Extract<RuleDraftNode, { kind: 'eventField' }>,
   const field = event?.fields.find((candidate) => candidate.fieldKey === node.fieldKey)
   const label = field?.label ?? node.fieldKey
   if (node.operator === 'exists' || node.operator === 'not_exists') return `${label} ${operatorLabels[node.operator]}`
-  return `${label} ${operatorLabels[node.operator] ?? node.operator} ${displayValue(node.value)}`
+  return `${label} ${operatorLabels[node.operator] ?? node.operator} ${displayFieldValue(node.value, field)}`
 }
 
 function aggregateSummary(node: Extract<RuleDraftNode, { kind: 'eventAggregate' }>, context: RuleDomainContext): string {
@@ -66,14 +74,14 @@ function aggregateSummary(node: Extract<RuleDraftNode, { kind: 'eventAggregate' 
   const filters = node.filters.map((filter) => {
     const filterField = event?.fields.find((candidate) => candidate.fieldKey === filter.fieldKey)
     const operator = operatorLabels[filter.operator] ?? filter.operator
-    return `${filterField?.label ?? filter.fieldKey} ${operator}${filter.value === undefined ? '' : ` ${displayValue(filter.value)}`}`
+    return `${filterField?.label ?? filter.fieldKey} ${operator}${filter.value === undefined ? '' : ` ${displayFieldValue(filter.value, filterField)}`}`
   })
   const filterText = filters.length ? `, где ${filters.join(' и ')}` : ''
   const windowText = node.window.kind === 'last'
     ? ` за последние ${durationLabel(node.window.durationMs)}`
     : ' после события запуска'
-  const unit = field?.unit ? ` ${field.unit}` : ''
-  return `${subject}${filterText}${windowText} ${operatorLabels[node.compare.operator] ?? node.compare.operator} ${displayValue(node.compare.value)}${unit}`
+  const unit = field?.unit && !field.semanticType?.includes('money') ? ` ${field.unit}` : ''
+  return `${subject}${filterText}${windowText} ${operatorLabels[node.compare.operator] ?? node.compare.operator} ${displayFieldValue(node.compare.value, field)}${unit}`
 }
 
 function summarizeNode(node: RuleDraftNode, context: RuleDomainContext, byNodeId: Record<string, string>): string {

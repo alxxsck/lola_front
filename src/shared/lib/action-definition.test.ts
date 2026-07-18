@@ -32,6 +32,28 @@ const rawDefinition = {
 }
 
 describe('action definition schema helpers', () => {
+  it('accepts the specialized controls used by WAIT_FOR_GOAL', () => {
+    expect(parseActionDefinition({
+      id: 'wait-goal', projectId: 'project-1', type: 'WAIT_FOR_GOAL', name: 'Ждать цель', description: null,
+      executor: 'SERVER', serverHandler: 'WAIT_FOR_GOAL', commandType: null, enabled: true, builtIn: true,
+      createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+      configSchema: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          goal: { type: 'object' }, timeoutMs: { type: 'integer', minimum: 1_000, maximum: 7_776_000_000 },
+          onGoal: { type: 'string' }, onTimeout: { type: 'string' },
+        },
+        required: ['goal', 'timeoutMs', 'onGoal', 'onTimeout'],
+      },
+      uiSchema: { fields: [
+        { key: 'goal', label: 'Цель', control: 'goal-builder' },
+        { key: 'timeoutMs', label: 'Срок ожидания', control: 'duration' },
+        { key: 'onGoal', label: 'Если цель достигнута', control: 'node' },
+        { key: 'onTimeout', label: 'Если срок истёк', control: 'node' },
+      ] },
+    }).uiSchema.fields.map((field) => field.control)).toEqual(['goal-builder', 'duration', 'node', 'node'])
+  })
+
   it('parses the backend JSON blobs into a strict domain definition', () => {
     const definition = parseActionDefinition(rawDefinition)
     expect(definition.uiSchema.fields[2]).toMatchObject({ control: 'target', targetKinds: ['PAGE'] })

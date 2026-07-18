@@ -22,7 +22,8 @@ const contract: ScenarioAuthoringContract = {
       fields: [
         {
           capabilities: { eventField: { operators: ['gte'] }, aggregateFilter: { operators: [] }, aggregateMeasure: { measures: ['sum'] } },
-          control: { type: 'number' }, fieldKey: 'deposit.amount', label: 'Сумма', path: 'event.payload.amount', required: true, semanticType: 'number', unit: 'EUR', valueType: 'number',
+          control: { type: 'number' }, fieldKey: 'deposit.amount', label: 'Сумма', path: 'event.payload.amount', required: true, semanticType: 'money', unit: 'minor', valueType: 'number',
+          display: { scale: 0.01, precision: 2, conversion: 'MULTIPLY' },
         },
       ],
     },
@@ -42,7 +43,7 @@ describe('Rule natural-language summary', () => {
             kind: 'not',
             child: {
               kind: 'eventAggregate', eventCode: 'deposit.succeeded', measure: 'sum', fieldKey: 'deposit.amount', filters: [],
-              window: { kind: 'last', durationMs: 30 * day }, compare: { operator: 'gte', value: 500 },
+              window: { kind: 'last', durationMs: 30 * day }, compare: { operator: 'gte', value: 50_000 },
             },
           },
           { kind: 'activityDayStreak', compare: { operator: 'gte', value: 2 } },
@@ -55,7 +56,7 @@ describe('Rule natural-language summary', () => {
     expect(summary).toMatchObject({ status: 'ready', leaves: 3, aggregateLeaves: 2, nodes: 5, maxWindowMs: 30 * day, totalWindowMs: 30 * day })
     expect(summary.text).toContain('Все:')
     expect(summary.text).toContain('Страница = promotions')
-    expect(summary.text).toContain('НЕ сумма поля «Сумма» события «Успешный депозит» за последние 30 дней ≥ 500 EUR')
+    expect(summary.text).toContain('НЕ сумма поля «Сумма» события «Успешный депозит» за последние 30 дней ≥ 500.00')
     expect(summary.text).toContain('активен не менее 2 дней подряд')
     expect(Object.keys(summary.byNodeId)).toHaveLength(5)
   })

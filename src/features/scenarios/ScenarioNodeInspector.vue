@@ -5,6 +5,8 @@ import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import ActionConfigFields from '@/features/actions/ActionConfigFields.vue'
+import { ScenarioGoalEditor, ScenarioGoalPreview } from '@/features/scenario-goals/ui'
+import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
 import ScenarioConditionRows from './ScenarioConditionRows.vue'
 import type { EventDefinition, ScenarioAction, ScenarioActionDefinition, UiElement } from '@/shared/types/domain'
 import { availableTargets, choiceOptions, choiceReminders, conditionBranches } from './model/scenario-graph'
@@ -12,6 +14,7 @@ import { createActionConfig, findActionDefinition } from '@/shared/lib/action-de
 import { slugify } from '@/shared/lib/format'
 
 const props = defineProps<{
+  projectId: string
   action: ScenarioAction
   actions: ScenarioAction[]
   actionDefinitions: ScenarioActionDefinition[]
@@ -20,6 +23,7 @@ const props = defineProps<{
   templateVariables: string[]
   conditionPaths: string[]
   issues: string[]
+  authoringContract: ScenarioAuthoringContract | null
 }>()
 const emit = defineEmits<{
   changeType: [type: string]
@@ -28,6 +32,7 @@ const emit = defineEmits<{
   validity: [valid: boolean]
   update: [action: ScenarioAction]
   rename: [oldKey: string, newKey: string]
+  close: []
 }>()
 
 const createTargetPrefix = '__create__:'
@@ -46,6 +51,7 @@ const reminderActionOptions = computed(() => props.actionDefinitions
   .filter((item) => item.enabled && (item.type === 'SAY' || item.executor === 'FRONTEND'))
   .map((item) => ({ label: item.name, value: item.type })))
 const genericDefinition = computed(() => {
+  if (props.action.type === 'WAIT_FOR_GOAL') return undefined
   if (!definition.value || !['ASK_CHOICE', 'CONDITION'].includes(props.action.type)) return definition.value
   const hidden = props.action.type === 'ASK_CHOICE' ? new Set(['options', 'onTimeout', 'reminders']) : new Set(['branches', 'fallbackNodeKey'])
   return { ...definition.value, uiSchema: { ...definition.value.uiSchema, fields: definition.value.uiSchema.fields.filter((field) => !hidden.has(field.key)) } }
@@ -110,17 +116,20 @@ function updateNodeKey(value: string | undefined) {
 
 <template>
   <aside class="inspector">
-    <div class="inspector-head"><div><small>Узел {{ action.position + 1 }}</small><h2>{{ definition?.name ?? action.type }}</h2></div><Button icon="pi pi-trash" text rounded severity="danger" aria-label="Удалить узел" @click="emit('remove')" /></div>
+    <div class="inspector-head"><div><small>Узел {{ action.position + 1 }}</small><h2>{{ definition?.name ?? action.type }}</h2></div><div class="inspector-actions"><Button icon="pi pi-times" text rounded aria-label="Закрыть инспектор узла" @click="emit('close')" /><Button icon="pi pi-trash" text rounded severity="danger" aria-label="Удалить узел" @click="emit('remove')" /></div></div>
     <div v-if="issues.length" class="issue-box"><i class="pi pi-exclamation-circle" /><div><strong>Нужно исправить</strong><span v-for="issue in issues" :key="issue">{{ issue }}</span></div></div>
     <section>
       <h3>Основное</h3>
       <div class="field"><label>Тип действия</label><Select :model-value="action.type" :options="actionOptions" option-label="label" option-value="value" @update:model-value="emit('changeType', $event)" /></div>
       <div class="field"><label>Ключ узла</label><InputText :model-value="action.nodeKey" class="mono" @update:model-value="updateNodeKey" /><small>Стабильный ID для переходов, answers и results.</small></div>
-      <div v-if="!['ASK_CHOICE', 'CONDITION'].includes(action.type)" class="field"><label>Следующее действие</label><Select :model-value="action.nextNodeKey" :options="targetOptions" option-label="label" option-value="value" show-clear placeholder="Завершить или выбрать действие" @update:model-value="selectTarget($event, 'next')" /></div>
+      <div v-if="!['ASK_CHOICE', 'CONDITION', 'WAIT_FOR_GOAL'].includes(action.type)" class="field"><label>Следующее действие</label><Select :model-value="action.nextNodeKey" :options="targetOptions" option-label="label" option-value="value" show-clear placeholder="Завершить или выбрать действие" @update:model-value="selectTarget($event, 'next')" /></div>
     </section>
     <section>
       <h3>Параметры</h3>
       <ActionConfigFields v-if="genericDefinition" :model-value="action.config" :definition="genericDefinition" :elements="elements" :events="events" :template-variables="templateVariables" @update:model-value="updateAction({ config: $event })" @validity-change="emit('validity', $event)" />
+      <ScenarioGoalEditor v-else-if="action.type === 'WAIT_FOR_GOAL' && authoringContract" :model-value="action.config" :contract="authoringContract" :targets="targets" @update:model-value="updateAction({ config: $event })" @validity-change="emit('validity', $event)" />
+      <ScenarioGoalPreview v-if="action.type === 'WAIT_FOR_GOAL' && authoringContract" :project-id="projectId" :config="action.config" :contract="authoringContract" />
+      <div v-else-if="action.type === 'WAIT_FOR_GOAL'" class="issue-box"><i class="pi pi-exclamation-circle" /><div><strong>Каталог недоступен</strong><span>Цель нельзя настроить без Scenario Authoring catalog.</span></div></div>
     </section>
 
     <section v-if="action.type === 'ASK_CHOICE'">
@@ -159,4 +168,5 @@ function updateNodeKey(value: string | undefined) {
 
 <style scoped>
 .inspector{height:100%;overflow:auto;background:#fff;border-left:1px solid var(--line)}.inspector-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.96)}.inspector-head small{color:var(--muted);font-size:.67rem;text-transform:uppercase;letter-spacing:.1em}.inspector-head h2{margin-top:4px;font-size:1.05rem}.inspector section{padding:18px 20px;border-bottom:1px solid var(--line)}h3{margin:0 0 13px;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:#62675e}.field{margin-top:12px}.field:first-of-type{margin-top:0}.field>small{color:var(--muted);font-size:.67rem}.issue-box{display:flex;gap:10px;margin:14px;padding:12px;border:1px solid #edc3bc;border-radius:12px;background:#fff7f5;color:#934b40}.issue-box strong,.issue-box span{display:block}.issue-box strong{font-size:.76rem}.issue-box span{margin-top:4px;font-size:.68rem}.section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.section-title h3{margin-bottom:2px}.section-title p{margin:0;color:var(--muted);font-size:.68rem}.choice-card,.branch-card,.reminder-card{margin-top:10px;padding:11px;border:1px solid #e6e7e1;border-radius:12px;background:#fafaf8}.choice-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:7px}.choice-target,.branch-target{display:flex;align-items:center;gap:7px;margin-top:7px}.choice-target>i{color:#8e77f5;font-size:.72rem}.choice-target .p-select,.branch-target .p-select{flex:1}.branch-head,.reminder-head{display:flex;align-items:center;justify-content:space-between}.branch-head strong{font-size:.75rem}.branch-target span{color:var(--muted);font-size:.7rem}.timeout-field{margin-top:14px}.reminder-head .field{flex:1;margin:0}.reminder-action{display:grid;grid-template-columns:1fr;gap:8px;margin:10px 0;padding:10px;background:#fff;border-radius:10px}.reminder-action>.p-button{justify-self:end}.inspector :deep(.schema-fields){grid-template-columns:1fr}.inspector :deep(.field-wide){grid-column:auto}
+.inspector-actions{display:flex;gap:4px}
 </style>

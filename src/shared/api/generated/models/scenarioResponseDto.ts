@@ -10,6 +10,7 @@ import type { ScenarioResponseDtoActiveFrom } from "./scenarioResponseDtoActiveF
 import type { ScenarioResponseDtoActiveTo } from "./scenarioResponseDtoActiveTo";
 import type { ScenarioResponseDtoConditionsItem } from "./scenarioResponseDtoConditionsItem";
 import type { ConversationPolicy } from "./conversationPolicy";
+import type { ScenarioResponseDtoCurrentRevisionId } from "./scenarioResponseDtoCurrentRevisionId";
 import type { ScenarioResponseDtoDescription } from "./scenarioResponseDtoDescription";
 import type { EventDefinitionResponseDto } from "./eventDefinitionResponseDto";
 import type { ScenarioResponseDtoMaxRunsPerUser } from "./scenarioResponseDtoMaxRunsPerUser";
@@ -22,10 +23,16 @@ export interface ScenarioResponseDto {
   /** @nullable */
   activeTo?: ScenarioResponseDtoActiveTo;
   code: string;
+  /**
+   * Legacy Scenario conditions. V2 editors must use the ScenarioAuthoring source contract.
+   * @deprecated
+   */
   conditions: ScenarioResponseDtoConditionsItem[];
   conversationPolicy: ConversationPolicy;
   cooldownSeconds: number;
   createdAt: string;
+  /** @nullable */
+  currentRevisionId?: ScenarioResponseDtoCurrentRevisionId;
   /** @nullable */
   description?: ScenarioResponseDtoDescription;
   eventDefinition?: EventDefinitionResponseDto;

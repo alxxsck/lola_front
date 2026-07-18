@@ -100,6 +100,29 @@ function updateField(id: string, patch: Partial<EventSchemaFieldDraft>) {
   })
 }
 
+function updateSemanticType(field: EventSchemaFieldDraft, event: Event) {
+  const semanticType = optionalInput(event)
+  if (semanticType !== 'money') {
+    updateField(field.id, { semanticType })
+    return
+  }
+  updateField(field.id, {
+    semanticType,
+    unit: field.unit ?? 'minor',
+    displayScale: field.displayScale ?? 0.01,
+    displayPrecision: field.displayPrecision ?? 2,
+  })
+}
+
+function updateMoneyUnit(field: EventSchemaFieldDraft, event: Event) {
+  const unit = optionalInput(event)
+  updateField(field.id, {
+    unit,
+    ...(field.semanticType === 'money' && unit === 'minor' ? { displayScale: 0.01, displayPrecision: 2 } : {}),
+    ...(field.semanticType === 'money' && unit === 'major' ? { displayScale: 1, displayPrecision: 2 } : {}),
+  })
+}
+
 function removeField(id: string) {
   const index = props.modelValue.fields.findIndex((field) => field.id === id)
   const focusId = props.modelValue.fields[index + 1]?.id ?? props.modelValue.fields[index - 1]?.id
@@ -313,8 +336,12 @@ watch(
               </div>
               <div v-if="expandedFieldId === field.id" :id="`field-details-${field.id}`" class="field-details">
                 <label class="wide">Описание<input :value="field.description ?? ''" :aria-label="`Описание поля ${fieldLabel(field)}`" @input="updateField(field.id, { description: optionalInput($event) })"></label>
-                <label>Смысл данных<select :value="field.semanticType ?? ''" :aria-label="`Смысл данных поля ${fieldLabel(field)}`" @change="updateField(field.id, { semanticType: optionalInput($event) })"><option v-for="option in optionsWithCurrent(semanticTypeOptions, field.semanticType)" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
-                <label>Способ хранения<select :value="field.unit ?? ''" :aria-label="`Способ хранения поля ${fieldLabel(field)}`" @change="updateField(field.id, { unit: optionalInput($event) })"><option v-for="option in optionsWithCurrent(unitOptions, field.unit)" :key="option.value" :value="option.value">{{ option.label }}</option></select><small>CMS сохраняет значение как есть и ничего не пересчитывает.</small></label>
+                <label>Смысл данных<select :value="field.semanticType ?? ''" :aria-label="`Смысл данных поля ${fieldLabel(field)}`" @change="updateSemanticType(field, $event)"><option v-for="option in optionsWithCurrent(semanticTypeOptions, field.semanticType)" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
+                <label>Способ хранения<select :value="field.unit ?? ''" :aria-label="`Способ хранения поля ${fieldLabel(field)}`" @change="updateMoneyUnit(field, $event)"><option v-for="option in optionsWithCurrent(unitOptions, field.unit)" :key="option.value" :value="option.value">{{ option.label }}</option></select><small>В событии сохраняется исходное значение; интерфейс применяет заданный ниже масштаб только при показе и вводе.</small></label>
+                <template v-if="field.semanticType?.includes('money')">
+                  <label>Масштаб отображения<input data-test="money-display-scale" type="number" min="0" step="any" :value="field.displayScale" :aria-label="`Масштаб отображения поля ${fieldLabel(field)}`" @input="updateField(field.id, { displayScale: optionalNumber($event) })"><small>Показываемое значение = значение события × масштаб. Для центов обычно 0,01.</small></label>
+                  <label>Знаков после запятой<input data-test="money-display-precision" type="number" min="0" max="12" step="1" :value="field.displayPrecision" :aria-label="`Точность отображения поля ${fieldLabel(field)}`" @input="updateField(field.id, { displayPrecision: optionalNumber($event) })"><small>Допустимо от 0 до 12.</small></label>
+                </template>
                 <label v-if="field.type === 'number' || field.type === 'integer'">Минимальное значение<input type="number" :value="field.minimum" :aria-label="`Минимальное значение поля ${fieldLabel(field)}`" @input="updateField(field.id, { minimum: optionalNumber($event) })"></label>
                 <label v-if="field.type === 'number' || field.type === 'integer'">Максимальное значение<input type="number" :value="field.maximum" :aria-label="`Максимальное значение поля ${fieldLabel(field)}`" @input="updateField(field.id, { maximum: optionalNumber($event) })"></label>
                 <label v-if="canEditEnum(field)" class="wide">Допустимые варианты<textarea :value="enumText(field)" :aria-label="`Допустимые варианты поля ${fieldLabel(field)}`" rows="3" placeholder="Каждый вариант с новой строки" @input="updateEnum(field, $event)" /><small>По одному варианту в строке — например EUR и USD.</small></label>

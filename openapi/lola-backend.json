@@ -171,6 +171,91 @@
         ],
         "type": "object"
       },
+      "ActivitySettingLimitResponseDto": {
+        "properties": {
+          "max": {
+            "type": "number"
+          },
+          "min": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ],
+        "type": "object"
+      },
+      "ActivitySettingsLimitsResponseDto": {
+        "properties": {
+          "reconnectGraceSeconds": {
+            "$ref": "#/components/schemas/ActivitySettingLimitResponseDto"
+          },
+          "visitInactivitySeconds": {
+            "$ref": "#/components/schemas/ActivitySettingLimitResponseDto"
+          }
+        },
+        "required": [
+          "visitInactivitySeconds",
+          "reconnectGraceSeconds"
+        ],
+        "type": "object"
+      },
+      "ActivitySettingsResponseDto": {
+        "properties": {
+          "limits": {
+            "$ref": "#/components/schemas/ActivitySettingsLimitsResponseDto"
+          },
+          "reconnectGraceSeconds": {
+            "type": "number"
+          },
+          "semantics": {
+            "$ref": "#/components/schemas/ActivitySettingsSemanticsResponseDto"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "visitInactivitySeconds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "timezone",
+          "visitInactivitySeconds",
+          "reconnectGraceSeconds",
+          "limits",
+          "semantics"
+        ],
+        "type": "object"
+      },
+      "ActivitySettingsSemanticsResponseDto": {
+        "properties": {
+          "reconnectGraceSeconds": {
+            "enum": [
+              "DEFER_OFFLINE_TRANSITION"
+            ],
+            "type": "string"
+          },
+          "timezone": {
+            "enum": [
+              "IANA_TIME_ZONE_FOR_ACTIVITY_DAY"
+            ],
+            "type": "string"
+          },
+          "visitInactivitySeconds": {
+            "enum": [
+              "START_NEW_VISIT_AFTER_GAP"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "timezone",
+          "visitInactivitySeconds",
+          "reconnectGraceSeconds"
+        ],
+        "type": "object"
+      },
       "AdminConversationMessageCountResponseDto": {
         "properties": {
           "messages": {
@@ -1240,6 +1325,1009 @@
         ],
         "type": "object"
       },
+      "ArchivedSegmentResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "segmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ARCHIVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "segmentId",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AudienceAllNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "discriminator": {
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AudienceAllNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceAnyNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceNotNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceLocaleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceLanguageNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceCountryNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceUserAttributeNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceSegmentMembershipNodeDto"
+                }
+              ]
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "all"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "children"
+        ],
+        "type": "object"
+      },
+      "AudienceAnyNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "discriminator": {
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AudienceAllNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceAnyNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceNotNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceLocaleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceLanguageNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceCountryNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceUserAttributeNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceSegmentMembershipNodeDto"
+                }
+              ]
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "any"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "children"
+        ],
+        "type": "object"
+      },
+      "AudienceAttributeResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedValues": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "authoringAvailability": {
+            "enum": [
+              "AVAILABLE"
+            ],
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "TEXT",
+              "NUMBER",
+              "BOOLEAN",
+              "DATETIME",
+              "SELECT"
+            ],
+            "type": "string"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "definitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "operators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "sensitive": {
+            "description": "Non-client-visible attributes are redacted by default.",
+            "type": "boolean"
+          },
+          "unsupportedReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "valueType": {
+            "enum": [
+              "string",
+              "number",
+              "boolean",
+              "datetime"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "definitionId",
+          "definitionRevisionId",
+          "revision",
+          "key",
+          "label",
+          "valueType",
+          "required",
+          "sensitive",
+          "operators",
+          "control",
+          "authoringAvailability"
+        ],
+        "type": "object"
+      },
+      "AudienceCatalogResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "attributes": {
+            "items": {
+              "$ref": "#/components/schemas/AudienceAttributeResponseDto"
+            },
+            "type": "array"
+          },
+          "country": {
+            "$ref": "#/components/schemas/AudienceCountrySourceResponseDto"
+          },
+          "languageSource": {
+            "$ref": "#/components/schemas/AudienceTextSourceResponseDto"
+          },
+          "locales": {
+            "items": {
+              "$ref": "#/components/schemas/AudienceLocaleResponseDto"
+            },
+            "type": "array"
+          },
+          "localeSource": {
+            "$ref": "#/components/schemas/AudienceTextSourceResponseDto"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "segmentSource": {
+            "$ref": "#/components/schemas/AudienceSegmentSourceResponseDto"
+          },
+          "snapshotPolicy": {
+            "$ref": "#/components/schemas/AudienceSnapshotPolicyResponseDto"
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "revision",
+          "locales",
+          "localeSource",
+          "languageSource",
+          "country",
+          "attributes",
+          "segmentSource",
+          "snapshotPolicy"
+        ],
+        "type": "object"
+      },
+      "AudienceCostResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "leaves": {
+            "maximum": 50,
+            "minimum": 0,
+            "type": "number"
+          },
+          "segmentLeaves": {
+            "maximum": 50,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "leaves",
+          "segmentLeaves"
+        ],
+        "type": "object"
+      },
+      "AudienceCountryNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "country"
+            ],
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "in",
+              "exists",
+              "not_exists"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "items": {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "operator"
+        ],
+        "type": "object"
+      },
+      "AudienceCountrySourceResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "authoringAvailability": {
+            "enum": [
+              "AVAILABLE"
+            ],
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "COUNTRY_CODE"
+            ],
+            "type": "string"
+          },
+          "operators": {
+            "items": {
+              "enum": [
+                "eq",
+                "neq",
+                "in",
+                "exists",
+                "not_exists"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "semantics": {
+            "enum": [
+              "ISO_3166_1_ALPHA_2_UPPERCASE"
+            ],
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "profile.country"
+            ],
+            "type": "string"
+          },
+          "unsupportedReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "valueType": {
+            "enum": [
+              "countryCode"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "valueType",
+          "semantics",
+          "operators",
+          "control",
+          "authoringAvailability"
+        ],
+        "type": "object"
+      },
+      "AudienceDependenciesResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "attributeRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "segmentRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "attributeRevisionIds",
+          "segmentRevisionIds"
+        ],
+        "type": "object"
+      },
+      "AudienceExplanationNodeResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actual": {
+            "$ref": "#/components/schemas/ExplainValueResponseDto"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/AudienceExplanationNodeResponseDto"
+            },
+            "type": "array"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/ExplainValueResponseDto"
+          },
+          "kind": {
+            "enum": [
+              "all",
+              "any",
+              "not",
+              "locale",
+              "language",
+              "country",
+              "userAttribute",
+              "segmentMembership",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "segmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "segmentRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "matched"
+        ],
+        "type": "object"
+      },
+      "AudienceIssueResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "example": "root.children.0.definitionId",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "path",
+          "message"
+        ],
+        "type": "object"
+      },
+      "AudienceLanguageNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "language"
+            ],
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "in",
+              "exists",
+              "not_exists"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "items": {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "operator"
+        ],
+        "type": "object"
+      },
+      "AudienceLocaleNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "locale"
+            ],
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "in",
+              "exists",
+              "not_exists"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "items": {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "operator"
+        ],
+        "type": "object"
+      },
+      "AudienceLocaleResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "language",
+          "label"
+        ],
+        "type": "object"
+      },
+      "AudienceNotNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "child": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AudienceAllNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceAnyNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceNotNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceLocaleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceLanguageNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceCountryNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceUserAttributeNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceSegmentMembershipNodeDto"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "not"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "child"
+        ],
+        "type": "object"
+      },
+      "AudienceRuleDto": {
+        "additionalProperties": false,
+        "properties": {
+          "root": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AudienceAllNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceAnyNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceNotNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceLocaleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceLanguageNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceCountryNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceUserAttributeNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceSegmentMembershipNodeDto"
+              }
+            ]
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "root"
+        ],
+        "type": "object"
+      },
+      "AudienceRuleNodeDto": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "any",
+              "not",
+              "locale",
+              "language",
+              "country",
+              "userAttribute",
+              "segmentMembership"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "AudienceRuleReportResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "cost": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudienceCostResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "dependencies": {
+            "$ref": "#/components/schemas/AudienceDependenciesResponseDto"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/AudienceExplanationNodeResponseDto"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/AudienceIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid",
+          "issues",
+          "dependencies",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "AudienceSegmentMembershipNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "segmentMembership"
+            ],
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "is_member",
+              "is_not_member"
+            ],
+            "type": "string"
+          },
+          "segmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "segmentRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "segmentId",
+          "segmentRevisionId",
+          "operator"
+        ],
+        "type": "object"
+      },
+      "AudienceSegmentSourceResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "authoringAvailability": {
+            "enum": [
+              "AVAILABLE"
+            ],
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "SEARCH"
+            ],
+            "type": "string"
+          },
+          "operators": {
+            "items": {
+              "enum": [
+                "is_member",
+                "is_not_member"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "searchEndpoint": {
+            "example": "/api/v1/admin/projects/{projectId}/scenario-authoring/segments",
+            "type": "string"
+          },
+          "unsupportedReason": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "operators",
+          "searchEndpoint",
+          "control",
+          "authoringAvailability"
+        ],
+        "type": "object"
+      },
+      "AudienceSnapshotPolicyResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "deletedDefinition": {
+            "enum": [
+              "PINNED_SNAPSHOT_CONTINUES"
+            ],
+            "type": "string"
+          },
+          "initialEvaluation": {
+            "enum": [
+              "RUN_START"
+            ],
+            "type": "string"
+          },
+          "missingOrNull": {
+            "enum": [
+              "NO_MATCH_EXCEPT_NOT_EXISTS"
+            ],
+            "type": "string"
+          },
+          "persistence": {
+            "enum": [
+              "SNAPSHOT_WITH_SEPARATE_LAST_RECHECK"
+            ],
+            "type": "string"
+          },
+          "recheckTrigger": {
+            "enum": [
+              "DELIVERY_RECHECK_ELIGIBILITY"
+            ],
+            "type": "string"
+          },
+          "segmentRevision": {
+            "enum": [
+              "PINNED_REVISION"
+            ],
+            "type": "string"
+          },
+          "unavailableSource": {
+            "enum": [
+              "PUBLISH_REJECTED_EXPLAIN_UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "initialEvaluation",
+          "missingOrNull",
+          "deletedDefinition",
+          "unavailableSource",
+          "segmentRevision",
+          "persistence",
+          "recheckTrigger"
+        ],
+        "type": "object"
+      },
+      "AudienceTextSourceResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "authoringAvailability": {
+            "enum": [
+              "AVAILABLE"
+            ],
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "SELECT"
+            ],
+            "type": "string"
+          },
+          "operators": {
+            "items": {
+              "enum": [
+                "eq",
+                "neq",
+                "in",
+                "exists",
+                "not_exists"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "unsupportedReason": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "operators",
+          "control",
+          "authoringAvailability"
+        ],
+        "type": "object"
+      },
+      "AudienceUserAttributeNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "userAttribute"
+            ],
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "in",
+              "exists",
+              "not_exists"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "operator",
+          "definitionId"
+        ],
+        "type": "object"
+      },
       "AuditAdminUserResponseDto": {
         "properties": {
           "displayName": {
@@ -1490,9 +2578,107 @@
         ],
         "type": "object"
       },
+      "ConditionCatalogBooleanControlResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "boolean"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogDatetimeControlResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "datetime"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogDisplayResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "conversion": {
+            "enum": [
+              "NONE",
+              "MULTIPLY"
+            ],
+            "type": "string"
+          },
+          "precision": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "scale": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "scale",
+          "conversion"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogEventCapabilitiesResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "eventMeasures": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionCatalogEventMeasureResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "eventMeasures"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogEventMeasureResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "measure": {
+            "enum": [
+              "exists",
+              "count"
+            ],
+            "type": "string"
+          },
+          "resultType": {
+            "enum": [
+              "boolean",
+              "integer"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "measure",
+          "resultType"
+        ],
+        "type": "object"
+      },
       "ConditionCatalogEventResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "capabilities": {
+            "$ref": "#/components/schemas/ConditionCatalogEventCapabilitiesResponseDto"
+          },
           "code": {
             "example": "deposit.completed",
             "type": "string"
@@ -1530,7 +2716,28 @@
           "code",
           "name",
           "schemaVersion",
+          "capabilities",
           "fields"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogFieldCapabilitiesResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregateFilter": {
+            "$ref": "#/components/schemas/ConditionCatalogOperatorCapabilityResponseDto"
+          },
+          "aggregateMeasure": {
+            "$ref": "#/components/schemas/ConditionCatalogMeasureCapabilityResponseDto"
+          },
+          "currentEvent": {
+            "$ref": "#/components/schemas/ConditionCatalogOperatorCapabilityResponseDto"
+          }
+        },
+        "required": [
+          "currentEvent",
+          "aggregateFilter",
+          "aggregateMeasure"
         ],
         "type": "object"
       },
@@ -1540,14 +2747,11 @@
           "aggregations": {
             "items": {
               "enum": [
-                "exists",
-                "count",
                 "sum",
                 "min",
                 "max",
                 "first",
-                "last",
-                "distinct_count"
+                "last"
               ],
               "type": "string"
             },
@@ -1569,6 +2773,12 @@
             },
             "type": "array"
           },
+          "authoringUnsupportedReason": {
+            "type": "string"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/ConditionCatalogFieldCapabilitiesResponseDto"
+          },
           "control": {
             "discriminator": {
               "propertyName": "type"
@@ -1579,12 +2789,27 @@
               },
               {
                 "$ref": "#/components/schemas/ConditionCatalogNumberControlResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/ConditionCatalogTextControlResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/ConditionCatalogBooleanControlResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/ConditionCatalogDatetimeControlResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/ConditionCatalogUnsupportedControlResponseDto"
               }
             ]
           },
           "description": {
             "nullable": true,
             "type": "string"
+          },
+          "display": {
+            "$ref": "#/components/schemas/ConditionCatalogDisplayResponseDto"
           },
           "fieldKey": {
             "example": "deposit.amount",
@@ -1643,7 +2868,35 @@
           "required",
           "operators",
           "aggregations",
+          "capabilities",
+          "display",
           "control"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogMeasureCapabilityResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "measures": {
+            "items": {
+              "enum": [
+                "sum",
+                "min",
+                "max",
+                "first",
+                "last"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resultType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "measures",
+          "resultType"
         ],
         "type": "object"
       },
@@ -1662,9 +2915,27 @@
         ],
         "type": "object"
       },
+      "ConditionCatalogOperatorCapabilityResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "operators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "operators"
+        ],
+        "type": "object"
+      },
       "ConditionCatalogResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/AudienceCatalogResponseDto"
+          },
           "events": {
             "items": {
               "$ref": "#/components/schemas/ConditionCatalogEventResponseDto"
@@ -1723,6 +2994,36 @@
         "required": [
           "type",
           "options"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogTextControlResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogUnsupportedControlResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "unsupported"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
         ],
         "type": "object"
       },
@@ -2274,6 +3575,25 @@
         ],
         "type": "string"
       },
+      "EndUserPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "EndUserResponseDto": {
         "properties": {
           "attributes": {
@@ -2447,6 +3767,13 @@
         ],
         "type": "object"
       },
+      "EventDefinitionOrigin": {
+        "enum": [
+          "CUSTOM",
+          "LOLA_MANAGED"
+        ],
+        "type": "string"
+      },
       "EventDefinitionResponseDto": {
         "properties": {
           "clientIngestible": {
@@ -2462,6 +3789,15 @@
             "format": "date-time",
             "type": "string"
           },
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "description": {
             "nullable": true,
             "type": "object"
@@ -2473,8 +3809,18 @@
             "format": "uuid",
             "type": "string"
           },
+          "isCurrent": {
+            "type": "boolean"
+          },
           "name": {
             "type": "string"
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventDefinitionOrigin"
+              }
+            ]
           },
           "payloadSchema": {
             "additionalProperties": true,
@@ -2483,6 +3829,9 @@
           "projectId": {
             "format": "uuid",
             "type": "string"
+          },
+          "readOnly": {
+            "type": "boolean"
           },
           "updatedAt": {
             "format": "date-time",
@@ -2502,8 +3851,131 @@
           "enabled",
           "clientIngestible",
           "countsAsActivity",
+          "definitionKeyId",
+          "isCurrent",
+          "origin",
+          "readOnly",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionRevisionPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EventDefinitionRevisionResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionRevisionResponseDto": {
+        "properties": {
+          "clientIngestible": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "compatibility": {
+            "enum": [
+              "CURRENT",
+              "PINNED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          },
+          "countsAsActivity": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventDefinitionOrigin"
+              }
+            ]
+          },
+          "payloadSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "pinnedScenarioRevisionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "readOnly": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "code",
+          "name",
+          "version",
+          "payloadSchema",
+          "enabled",
+          "clientIngestible",
+          "countsAsActivity",
+          "definitionKeyId",
+          "isCurrent",
+          "origin",
+          "readOnly",
+          "createdAt",
+          "updatedAt",
+          "pinnedScenarioRevisionCount",
+          "compatibility"
         ],
         "type": "object"
       },
@@ -3818,9 +5290,81 @@
         ],
         "type": "object"
       },
+      "PreviewScenarioGoalDto": {
+        "properties": {
+          "goal": {
+            "$ref": "#/components/schemas/ScenarioGoalDto"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/PreviewScenarioScopeDto"
+          },
+          "timeoutMs": {
+            "maximum": 7776000000,
+            "minimum": 1000,
+            "type": "number"
+          }
+        },
+        "required": [
+          "goal",
+          "timeoutMs",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "PreviewScenarioGoalResponseDto": {
+        "properties": {
+          "actual": {
+            "$ref": "#/components/schemas/ScenarioGoalActualResponseDto"
+          },
+          "dependency": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioGoalDependencyResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/ScenarioGoalExplanationResponseDto"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuleIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "matchedCount": {
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "window": {
+            "$ref": "#/components/schemas/ScenarioGoalWindowResponseDto"
+          }
+        },
+        "required": [
+          "valid",
+          "matched",
+          "issues"
+        ],
+        "type": "object"
+      },
       "PreviewScenarioRuleDto": {
         "additionalProperties": false,
         "properties": {
+          "audience": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudienceRuleDto"
+              }
+            ],
+            "description": "Separate typed Audience state tree; never interpreted as behavioral Eligibility."
+          },
           "rule": {
             "$ref": "#/components/schemas/ScenarioRuleDto"
           },
@@ -3842,6 +5386,9 @@
       "PreviewScenarioRuleResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/AudienceRuleReportResponseDto"
+          },
           "cost": {
             "allOf": [
               {
@@ -4266,6 +5813,20 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "segmentRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "userAttributeRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -4316,9 +5877,58 @@
         ],
         "type": "object"
       },
+      "PublishedSegmentResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "currentRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SegmentRevisionSummaryResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/SegmentRevisionSummaryResponseDto"
+          },
+          "segmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "segmentId",
+          "key",
+          "name",
+          "status",
+          "revision"
+        ],
+        "type": "object"
+      },
       "PublishScenarioDto": {
         "additionalProperties": false,
         "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/AudienceRuleDto"
+          },
           "catalogRevision": {
             "description": "Condition catalog revision used to validate the draft.",
             "maxLength": 128,
@@ -4351,6 +5961,11 @@
             "nullable": true,
             "type": "string"
           },
+          "expectedDraftVersion": {
+            "description": "Durable draft version to publish atomically. When present, Rule, Audience, Delivery and graph are read from that draft.",
+            "minimum": 1,
+            "type": "number"
+          },
           "rule": {
             "allOf": [
               {
@@ -4369,6 +5984,12 @@
       "PublishScenarioResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "audienceCost": {
+            "$ref": "#/components/schemas/AudienceCostResponseDto"
+          },
+          "audiencePolicy": {
+            "$ref": "#/components/schemas/AudienceSnapshotPolicyResponseDto"
+          },
           "conflictMetadata": {
             "$ref": "#/components/schemas/PublishConflictMetadataResponseDto"
           },
@@ -4414,6 +6035,45 @@
           "warnings",
           "conflictMetadata",
           "deliveryPolicy"
+        ],
+        "type": "object"
+      },
+      "PublishSegmentRevisionDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 1000,
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedCurrentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/AudienceRuleDto"
+          }
+        },
+        "required": [
+          "name",
+          "rule",
+          "catalogRevision",
+          "expectedCurrentRevisionId"
         ],
         "type": "object"
       },
@@ -4545,6 +6205,62 @@
         "required": [
           "kind",
           "matched"
+        ],
+        "type": "object"
+      },
+      "SaveScenarioDraftDto": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/AudienceRuleDto"
+          },
+          "catalogRevision": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "deliveryPolicy": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              }
+            ]
+          },
+          "expectedCurrentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedDraftVersion": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ScenarioSourceGraphDto"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/ScenarioRuleDto"
+          }
+        },
+        "required": [
+          "expectedDraftVersion",
+          "expectedCurrentRevisionId",
+          "catalogRevision",
+          "deliveryPolicy",
+          "graph"
         ],
         "type": "object"
       },
@@ -4764,6 +6480,207 @@
           "config",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioAuthoringDocumentResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "draft": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioAuthoringDraftResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioAuthoringSourceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "type": "string"
+          },
+          "triggerEventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "unavailableReason": {
+            "enum": [
+              "SOURCE_SNAPSHOT_UNAVAILABLE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scenarioId",
+          "projectId",
+          "code",
+          "name",
+          "status",
+          "triggerEventDefinitionRevisionId",
+          "editable",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioAuthoringDraftResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "nullable": true,
+            "type": "object"
+          },
+          "baseRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "catalogRevision": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deliveryPolicy": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              }
+            ]
+          },
+          "graph": {
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "rule": {
+            "nullable": true,
+            "type": "object"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedByAdminId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "deliveryPolicy",
+          "catalogRevision",
+          "id",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioAuthoringSourceResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "nullable": true,
+            "type": "object"
+          },
+          "catalogRevision": {
+            "type": "string"
+          },
+          "deliveryPolicy": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              }
+            ]
+          },
+          "graph": {
+            "nullable": true,
+            "type": "object"
+          },
+          "rule": {
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "deliveryPolicy",
+          "catalogRevision"
         ],
         "type": "object"
       },
@@ -4996,6 +6913,225 @@
         ],
         "type": "object"
       },
+      "ScenarioGoalActualResponseDto": {
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "visibility": {
+            "enum": [
+              "VISIBLE",
+              "REDACTED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "visibility"
+        ],
+        "type": "object"
+      },
+      "ScenarioGoalCompareDto": {
+        "properties": {
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "operator",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ScenarioGoalDependencyResponseDto": {
+        "properties": {
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventCode": {
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "eventCode",
+          "definitionKeyId",
+          "eventDefinitionRevisionId",
+          "schemaVersion"
+        ],
+        "type": "object"
+      },
+      "ScenarioGoalDto": {
+        "properties": {
+          "compare": {
+            "$ref": "#/components/schemas/ScenarioGoalCompareDto"
+          },
+          "eventCode": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "filters": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioGoalFilterDto"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "measure": {
+            "enum": [
+              "count",
+              "sum"
+            ],
+            "type": "string"
+          },
+          "numericFieldKey": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "eventCode",
+          "measure",
+          "filters",
+          "compare"
+        ],
+        "type": "object"
+      },
+      "ScenarioGoalExplanationResponseDto": {
+        "properties": {
+          "actual": {
+            "$ref": "#/components/schemas/ScenarioGoalActualResponseDto"
+          },
+          "compare": {
+            "type": "object"
+          },
+          "eventCode": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "goalAggregate"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "matchedCount": {
+            "type": "string"
+          },
+          "measure": {
+            "enum": [
+              "count",
+              "sum"
+            ],
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/ScenarioGoalWindowResponseDto"
+          }
+        },
+        "required": [
+          "kind",
+          "eventCode",
+          "measure",
+          "compare",
+          "matched",
+          "actual",
+          "matchedCount",
+          "window"
+        ],
+        "type": "object"
+      },
+      "ScenarioGoalFilterDto": {
+        "properties": {
+          "fieldKey": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "in",
+              "exists"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fieldKey",
+          "operator"
+        ],
+        "type": "object"
+      },
       "ScenarioGoalResolutionResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -5056,6 +7192,32 @@
         ],
         "type": "object"
       },
+      "ScenarioGoalWindowResponseDto": {
+        "properties": {
+          "deadlineAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deadlineReached": {
+            "type": "boolean"
+          },
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "deadlineAt",
+          "deadlineReached"
+        ],
+        "type": "object"
+      },
       "ScenarioResponseDto": {
         "properties": {
           "actions": {
@@ -5078,6 +7240,8 @@
             "type": "string"
           },
           "conditions": {
+            "deprecated": true,
+            "description": "Legacy Scenario conditions. V2 editors must use the ScenarioAuthoring source contract.",
             "items": {
               "additionalProperties": true,
               "type": "object"
@@ -5097,6 +7261,11 @@
           "createdAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
           },
           "description": {
             "nullable": true,
@@ -5153,6 +7322,148 @@
           "createdAt",
           "updatedAt",
           "actions"
+        ],
+        "type": "object"
+      },
+      "ScenarioRevisionDetailResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedByAdminId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "runtime": {
+            "type": "object"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ScenarioAuthoringSourceResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "scenarioId",
+          "revisionNumber",
+          "contentHash",
+          "catalogRevision",
+          "publishedAt",
+          "current",
+          "editable",
+          "source",
+          "runtime"
+        ],
+        "type": "object"
+      },
+      "ScenarioRevisionListItemResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedByAdminId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "scenarioId",
+          "revisionNumber",
+          "contentHash",
+          "catalogRevision",
+          "publishedAt",
+          "current",
+          "editable"
+        ],
+        "type": "object"
+      },
+      "ScenarioRevisionPageQueryDto": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "ScenarioRevisionPageResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRevisionListItemResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
         ],
         "type": "object"
       },
@@ -5311,6 +7622,89 @@
         ],
         "type": "object"
       },
+      "ScenarioRunAudienceRecheckResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "enum": [
+              "MATCHED",
+              "NOT_MATCHED"
+            ],
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "root": {
+            "$ref": "#/components/schemas/AudienceExplanationNodeResponseDto"
+          }
+        },
+        "required": [
+          "decision",
+          "root"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunAudienceResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "attributeRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "decision": {
+            "enum": [
+              "MATCHED",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "fidelity": {
+            "enum": [
+              "SNAPSHOT",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "lastRecheck": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRunAudienceRecheckResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "root": {
+            "$ref": "#/components/schemas/AudienceExplanationNodeResponseDto"
+          },
+          "segmentRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "decision",
+          "fidelity",
+          "root",
+          "segmentRevisionIds",
+          "attributeRevisionIds"
+        ],
+        "type": "object"
+      },
       "ScenarioRunCommandResponseDto": {
         "properties": {
           "acknowledgedAt": {
@@ -5360,6 +7754,35 @@
         ],
         "type": "object"
       },
+      "ScenarioRunEligibilityRecheckResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "enum": [
+              "MATCHED",
+              "NOT_MATCHED"
+            ],
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "fidelity": {
+            "enum": [
+              "TYPED",
+              "LEGACY"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "fidelity"
+        ],
+        "type": "object"
+      },
       "ScenarioRunEligibilityResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -5382,6 +7805,15 @@
               "UNAVAILABLE"
             ],
             "type": "string"
+          },
+          "lastRecheck": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRunEligibilityRecheckResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "root": {
             "additionalProperties": false,
@@ -5429,6 +7861,9 @@
             },
             "type": "array"
           },
+          "audience": {
+            "$ref": "#/components/schemas/ScenarioRunAudienceResponseDto"
+          },
           "continuations": {
             "items": {
               "$ref": "#/components/schemas/ScenarioContinuationExplainResponseDto"
@@ -5473,6 +7908,7 @@
           "run",
           "trigger",
           "eligibility",
+          "audience",
           "goalResolutions",
           "delivery",
           "actions",
@@ -5596,6 +8032,25 @@
           "source",
           "occurredAt",
           "receivedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRunResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
         ],
         "type": "object"
       },
@@ -5825,6 +8280,50 @@
         ],
         "type": "object"
       },
+      "ScenarioSourceActionDto": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "type": "object"
+          },
+          "nextNodeKey": {
+            "nullable": true,
+            "type": "string"
+          },
+          "nodeKey": {
+            "nullable": true,
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "type",
+          "config"
+        ],
+        "type": "object"
+      },
+      "ScenarioSourceGraphDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSourceActionDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "actions"
+        ],
+        "type": "object"
+      },
       "ScenarioStatus": {
         "enum": [
           "DRAFT",
@@ -5871,6 +8370,207 @@
         },
         "required": [
           "code"
+        ],
+        "type": "object"
+      },
+      "SegmentDetailResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "currentRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SegmentRevisionDetailResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "revisions": {
+            "items": {
+              "$ref": "#/components/schemas/SegmentRevisionSummaryResponseDto"
+            },
+            "type": "array"
+          },
+          "segmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "segmentId",
+          "key",
+          "name",
+          "status",
+          "revisions"
+        ],
+        "type": "object"
+      },
+      "SegmentRevisionDetailResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/AudienceRuleDto"
+          },
+          "segmentRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "segmentRevisionId",
+          "revision",
+          "catalogRevision",
+          "contentHash",
+          "publishedAt",
+          "rule"
+        ],
+        "type": "object"
+      },
+      "SegmentRevisionSummaryResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "segmentRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "segmentRevisionId",
+          "revision",
+          "catalogRevision",
+          "contentHash",
+          "publishedAt"
+        ],
+        "type": "object"
+      },
+      "SegmentSearchQueryDto": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "includeArchived": {
+            "default": false,
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "query": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SegmentSearchResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SegmentSummaryResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "SegmentSummaryResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "currentRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SegmentRevisionSummaryResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "segmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "segmentId",
+          "key",
+          "name",
+          "status"
         ],
         "type": "object"
       },
@@ -6305,6 +9005,30 @@
         },
         "required": [
           "kind"
+        ],
+        "type": "object"
+      },
+      "UpdateActivitySettingsDto": {
+        "properties": {
+          "reconnectGraceSeconds": {
+            "maximum": 300,
+            "minimum": 1,
+            "type": "number"
+          },
+          "timezone": {
+            "example": "Europe/Madrid",
+            "type": "string"
+          },
+          "visitInactivitySeconds": {
+            "maximum": 86400,
+            "minimum": 60,
+            "type": "number"
+          }
+        },
+        "required": [
+          "timezone",
+          "visitInactivitySeconds",
+          "reconnectGraceSeconds"
         ],
         "type": "object"
       },
@@ -6801,9 +9525,127 @@
         ],
         "type": "string"
       },
+      "ValidateScenarioDraftDto": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/AudienceRuleDto"
+          },
+          "catalogRevision": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "deliveryPolicy": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              }
+            ]
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ScenarioSourceGraphDto"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/ScenarioRuleDto"
+          }
+        },
+        "required": [
+          "catalogRevision",
+          "deliveryPolicy",
+          "graph"
+        ],
+        "type": "object"
+      },
+      "ValidateScenarioDraftResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/AudienceRuleReportResponseDto"
+          },
+          "cost": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRuleCostResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "deliveryPolicy": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              }
+            ]
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuleDependencyResponseDto"
+            },
+            "type": "array"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuleIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioWarningResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid",
+          "issues",
+          "dependencies",
+          "cost",
+          "warnings"
+        ],
+        "type": "object"
+      },
       "ValidateScenarioRuleDto": {
         "additionalProperties": false,
         "properties": {
+          "audience": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudienceRuleDto"
+              }
+            ],
+            "description": "Separate typed Audience state tree; never interpreted as behavioral Eligibility."
+          },
           "rule": {
             "$ref": "#/components/schemas/ScenarioRuleDto"
           }
@@ -6816,6 +9658,9 @@
       "ValidateScenarioRuleResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/AudienceRuleReportResponseDto"
+          },
           "cost": {
             "allOf": [
               {
@@ -7403,6 +10248,120 @@
         ],
         "tags": [
           "admin audit"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-definition-keys/{definitionKeyId}/revisions": {
+      "get": {
+        "operationId": "Platform_eventDefinitionRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionRevisionPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-definition-keys/{definitionKeyId}/revisions/{revisionId}": {
+      "get": {
+        "operationId": "Platform_eventDefinitionRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
         ]
       }
     },
@@ -8305,6 +11264,91 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/goals/preview": {
+      "post": {
+        "operationId": "ScenarioAuthoring_previewGoal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewScenarioGoalDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewScenarioGoalResponseDto"
+                }
+              }
+            },
+            "description": "A typed Goal aggregate preview anchored to one Project-owned Event, without exposing Event payloads."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/scenario-authoring/preview": {
       "post": {
         "operationId": "ScenarioAuthoring_preview",
@@ -8338,6 +11382,182 @@
               }
             },
             "description": "A redaction-safe explanation anchored to a Project-owned Event."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/scenarios/{scenarioId}": {
+      "get": {
+        "operationId": "ScenarioAuthoring_scenarioDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scenarioId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioAuthoringDocumentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/scenarios/{scenarioId}/draft": {
+      "put": {
+        "operationId": "ScenarioAuthoring_saveDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scenarioId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveScenarioDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioAuthoringDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
           },
           "400": {
             "content": {
@@ -8431,6 +11651,200 @@
               }
             },
             "description": "An immutable published Scenario Revision pinned by future Runs."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/scenarios/{scenarioId}/revisions": {
+      "get": {
+        "operationId": "ScenarioAuthoring_scenarioRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scenarioId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRevisionPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/scenarios/{scenarioId}/revisions/{revisionId}": {
+      "get": {
+        "operationId": "ScenarioAuthoring_scenarioRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scenarioId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRevisionDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
           },
           "400": {
             "content": {
@@ -8577,6 +11991,645 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/scenarios/{scenarioId}/validate": {
+      "post": {
+        "operationId": "ScenarioAuthoring_validateScenarioDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scenarioId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateScenarioDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateScenarioDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/segments": {
+      "get": {
+        "operationId": "ScenarioAudience_search",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeArchived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentSearchResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario audience"
+        ]
+      },
+      "post": {
+        "operationId": "ScenarioAudience_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishSegmentRevisionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedSegmentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario audience"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/segments/{segmentId}": {
+      "get": {
+        "operationId": "ScenarioAudience_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario audience"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/segments/{segmentId}/archive": {
+      "post": {
+        "operationId": "ScenarioAudience_archive",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchivedSegmentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario audience"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/segments/{segmentId}/revisions": {
+      "post": {
+        "operationId": "ScenarioAudience_publishRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishSegmentRevisionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedSegmentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario audience"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/segments/{segmentId}/revisions/{segmentRevisionId}": {
+      "get": {
+        "operationId": "ScenarioAudience_revision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segmentRevisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentRevisionDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario audience"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/scenario-authoring/validate": {
       "post": {
         "operationId": "ScenarioAuthoring_validate",
@@ -8662,8 +12715,87 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/scenario-engine/activity-settings": {
+      "get": {
+        "operationId": "Platform_activitySettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivitySettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "Platform_updateActivitySettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActivitySettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivitySettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/scenario-runs": {
       "get": {
+        "deprecated": true,
         "operationId": "ScenarioRuns_list",
         "parameters": [
           {
@@ -8695,6 +12827,7 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy bounded Scenario Run list",
         "tags": [
           "scenario runs"
         ]
@@ -8737,6 +12870,61 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario runs"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-runs/page": {
+      "get": {
+        "operationId": "ScenarioRuns_page",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRunPageResponseDto"
                 }
               }
             },
@@ -9806,6 +13994,61 @@
         ],
         "tags": [
           "admin presence"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/page": {
+      "get": {
+        "operationId": "Platform_usersPage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
         ]
       }
     },

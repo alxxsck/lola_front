@@ -18,7 +18,7 @@ const user: EndUser = {
 }
 
 const mocks = vi.hoisted(() => ({
-  getUsers: vi.fn(),
+  getUsersPage: vi.fn(),
   getSessions: vi.fn(),
   getEventLogPage: vi.fn(),
   getConversations: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock('@/features/auth/auth.store', () => ({
 vi.mock('@/shared/api/repository', () => ({
   repository: {
     capabilities: { presence: true, conversations: true, adminMessaging: false },
-    getUsers: mocks.getUsers,
+    getUsersPage: mocks.getUsersPage,
     getSessions: mocks.getSessions,
     getEventLogPage: mocks.getEventLogPage,
     getConversations: mocks.getConversations,
@@ -41,7 +41,7 @@ vi.mock('@/shared/api/repository', () => ({
 describe('UsersPage activity', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.getUsers.mockResolvedValue([user])
+    mocks.getUsersPage.mockResolvedValue({ items: [user], nextCursor: null })
     mocks.getSessions.mockResolvedValue([])
     mocks.getEventLogPage.mockResolvedValue({ items: [], nextCursor: null })
     mocks.getConversations.mockResolvedValue({ items: [], nextCursor: null })
@@ -61,5 +61,20 @@ describe('UsersPage activity', () => {
       externalUserId: 'customer-1',
       limit: 25,
     })
+  })
+
+  it('loads users with an opaque cursor and appends the next page', async () => {
+    mocks.getUsersPage
+      .mockResolvedValueOnce({ items: [user], nextCursor: 'opaque-user-cursor' })
+      .mockResolvedValueOnce({ items: [{ ...user, id: 'user-2', externalId: 'customer-2' }], nextCursor: null })
+    const wrapper = shallowMount(UsersPage)
+    await flushPromises()
+
+    expect(mocks.getUsersPage).toHaveBeenCalledWith('project-1', { limit: 50 })
+    await wrapper.find('button-stub[label="Загрузить ещё пользователей"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.getUsersPage).toHaveBeenLastCalledWith('project-1', { limit: 50, cursor: 'opaque-user-cursor' })
+    expect(wrapper.text()).toContain('2 пользователей')
   })
 })

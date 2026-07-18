@@ -17,6 +17,7 @@ import { buildEventSchemaExample, parseEventSchema, serializeEventSchema, valida
 import type { EventSchemaDraft, EventSchemaDraftIssue } from '@/features/event-schema/model/event-schema'
 import { findCatalogEventForDefinition } from '@/features/event-schema/model/event-schema-capability'
 import EventPayloadStudio from '@/features/event-schema/ui/EventPayloadStudio.vue'
+import EventDefinitionHistory from '@/features/events/EventDefinitionHistory.vue'
 import { ApiError } from '@/shared/api/http/api-error'
 import { repository } from '@/shared/api/repository'
 import { scenarioAuthoringRepository } from '@/shared/api/repository/scenario-authoring'
@@ -161,7 +162,7 @@ function openCreate() {
 }
 
 function openEdit(item: EventDefinition) {
-  if (!canManage.value) return
+  if (!canManage.value || item.readOnly) return
   form.value = {
     id: item.id,
     name: item.name,
@@ -358,7 +359,7 @@ async function persistEvent(projectId: string, value: EventPayload) {
 
 async function toggleEvent(item: EventDefinition, enabled: boolean) {
   const projectId = auth.project?.id
-  if (!projectId) return
+  if (!projectId || item.readOnly) return
   const value = { name: item.name, description: item.description, payloadSchema: item.payloadSchema, clientIngestible: item.clientIngestible, countsAsActivity: item.countsAsActivity, enabled } as Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>
   attachUpdateIdentity(value, item.id, item.code)
   togglingId.value = item.id
@@ -385,6 +386,7 @@ function attachUpdateIdentity(value: Partial<EventDefinition>, id: string, code:
 }
 
 function askDelete(item: EventDefinition) {
+  if (item.readOnly) return
   confirm.require({
     header: 'Удалить событие?',
     message: `Событие «${item.name}» может использоваться в сценариях.`,
@@ -484,8 +486,9 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
       <article v-for="item in filteredEvents" :key="item.id" class="event-card card" :class="{ disabled: !item.enabled }">
         <span class="event-icon"><i class="pi pi-bolt" /></span>
         <div class="event-main">
-          <div class="event-title"><h2>{{ item.name }}</h2><code>{{ item.code }}</code><Tag :value="`v${item.version}`" severity="secondary" /></div>
+          <div class="event-title"><h2>{{ item.name }}</h2><code>{{ item.code }}</code><Tag :value="`v${item.version}`" severity="secondary" /><Tag v-if="item.origin === 'LOLA_MANAGED'" value="Lola managed" severity="info" /></div>
           <p>{{ item.description || 'Описание не добавлено' }}</p>
+          <small v-if="item.readOnly" class="readonly-note"><i class="pi pi-lock" /> Системное событие: схема и stable identity управляются Lola.</small>
           <div class="field-pills">
             <span v-for="field in eventFields(item).slice(0, 5)" :key="field"><code>{{ field }}</code><i v-if="item.payloadSchema.required?.includes(field)" title="Обязательное поле">*</i></span>
             <span v-if="eventFields(item).length > 5">+{{ eventFields(item).length - 5 }}</span>
@@ -494,10 +497,11 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
         </div>
         <div class="event-stats"><strong>{{ eventFields(item).length }}</strong><span>полей</span><small>{{ requiredCount(item) }} обязательных</small></div>
         <div class="event-actions">
-          <ToggleSwitch :model-value="item.enabled" :disabled="!canManage || togglingId === item.id" :aria-label="`Включить ${item.name}`" @update:model-value="toggleEvent(item, $event)" />
+          <ToggleSwitch :model-value="item.enabled" :disabled="!canManage || item.readOnly || togglingId === item.id" :aria-label="`Включить ${item.name}`" @update:model-value="toggleEvent(item, $event)" />
           <Button v-if="canManage" icon="pi pi-list" severity="secondary" text rounded :aria-label="`Открыть журнал ${item.name}`" @click="openEventLogs(item)" />
-          <Button v-if="canManage" icon="pi pi-pencil" severity="secondary" text rounded :aria-label="`Изменить ${item.name}`" @click="openEdit(item)" />
-          <Button v-if="canManage" icon="pi pi-trash" severity="danger" text rounded :aria-label="`Удалить ${item.name}`" @click="askDelete(item)" />
+          <EventDefinitionHistory v-if="auth.project?.id && item.definitionKeyId" :project-id="auth.project.id" :event="item" />
+          <Button v-if="canManage && !item.readOnly" icon="pi pi-pencil" severity="secondary" text rounded :aria-label="`Изменить ${item.name}`" @click="openEdit(item)" />
+          <Button v-if="canManage && !item.readOnly" icon="pi pi-trash" severity="danger" text rounded :aria-label="`Удалить ${item.name}`" @click="askDelete(item)" />
         </div>
       </article>
     </div>

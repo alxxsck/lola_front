@@ -7,15 +7,20 @@
  */
 import type { ConditionCatalogFieldResponseDtoAggregationsItem } from "./conditionCatalogFieldResponseDtoAggregationsItem";
 import type { ConditionCatalogFieldResponseDtoAllowedValuesItem } from "./conditionCatalogFieldResponseDtoAllowedValuesItem";
+import type { ConditionCatalogFieldCapabilitiesResponseDto } from "./conditionCatalogFieldCapabilitiesResponseDto";
 import type { ConditionCatalogFieldResponseDtoControl } from "./conditionCatalogFieldResponseDtoControl";
+import type { ConditionCatalogDisplayResponseDto } from "./conditionCatalogDisplayResponseDto";
 import type { ConditionCatalogFieldResponseDtoOperatorsItem } from "./conditionCatalogFieldResponseDtoOperatorsItem";
 
 export interface ConditionCatalogFieldResponseDto {
   aggregations: ConditionCatalogFieldResponseDtoAggregationsItem[];
   allowedValues?: ConditionCatalogFieldResponseDtoAllowedValuesItem[];
+  authoringUnsupportedReason?: string;
+  capabilities: ConditionCatalogFieldCapabilitiesResponseDto;
   control: ConditionCatalogFieldResponseDtoControl;
   /** @nullable */
   description?: string | null;
+  display: ConditionCatalogDisplayResponseDto;
   fieldKey: string;
   label: string;
   operators: ConditionCatalogFieldResponseDtoOperatorsItem[];

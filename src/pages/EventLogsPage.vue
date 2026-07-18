@@ -92,8 +92,23 @@ onMounted(async () => {
   if (projectId) {
     const definitionsPromise = repository.getEvents(projectId).then((items) => { eventDefinitions.value = items }).catch(() => undefined)
     await Promise.all([definitionsPromise, loadPage(undefined, 0)])
+    const linkedEventId = queryValue('eventId')
+    if (linkedEventId) await openLinkedDetail(projectId, linkedEventId)
   }
 })
+
+async function openLinkedDetail(projectId: string, eventId: string) {
+  const sequence = ++detailSequence
+  detailLoading.value = true
+  try {
+    const detail = await repository.getEventLog(projectId, eventId)
+    if (sequence === detailSequence) selectedLog.value = detail
+  } catch (cause) {
+    if (sequence === detailSequence) toast.add({ severity: 'error', summary: 'Event Log не найден', detail: cause instanceof Error ? cause.message : 'Произошла ошибка', life: 3500 })
+  } finally {
+    if (sequence === detailSequence) detailLoading.value = false
+  }
+}
 
 function queryValue(key: string) {
   return typeof route.query[key] === 'string' ? route.query[key] : ''

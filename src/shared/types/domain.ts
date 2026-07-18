@@ -3,7 +3,18 @@ export type ScenarioStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
 export type ConversationPolicy = 'reuse_active' | 'create_new'
 export type ActionType = string
 export type ActionExecutor = 'SERVER' | 'FRONTEND'
-export type ActionControl = 'text' | 'textarea' | 'number' | 'select' | 'target' | 'event' | 'json' | 'boolean'
+export type ActionControl =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'select'
+  | 'target'
+  | 'event'
+  | 'json'
+  | 'boolean'
+  | 'goal-builder'
+  | 'duration'
+  | 'node'
 
 export type JsonPrimitive = string | number | boolean | null
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
@@ -119,6 +130,11 @@ export interface UiElement {
 
 export interface EventDefinition {
   id: string
+  definitionKeyId?: string
+  currentRevisionId?: string | null
+  isCurrent?: boolean
+  origin?: 'CUSTOM' | 'LOLA_MANAGED'
+  readOnly?: boolean
   projectId: string
   code: string
   name: string
@@ -131,6 +147,38 @@ export interface EventDefinition {
   createdAt?: string
   updatedAt?: string
 }
+
+export interface EventDefinitionRevision extends EventDefinition {
+  definitionKeyId: string
+  currentRevisionId: string | null
+  isCurrent: boolean
+  origin: 'CUSTOM' | 'LOLA_MANAGED'
+  readOnly: boolean
+  pinnedScenarioRevisionCount: number
+  compatibility: 'CURRENT' | 'PINNED' | 'SUPERSEDED'
+}
+
+export interface ActivitySettingLimit {
+  min: number
+  max: number
+}
+
+export interface ActivitySettings {
+  timezone: string
+  visitInactivitySeconds: number
+  reconnectGraceSeconds: number
+  limits: {
+    visitInactivitySeconds: ActivitySettingLimit
+    reconnectGraceSeconds: ActivitySettingLimit
+  }
+  semantics: {
+    timezone: 'IANA_TIME_ZONE_FOR_ACTIVITY_DAY'
+    visitInactivitySeconds: 'START_NEW_VISIT_AFTER_GAP'
+    reconnectGraceSeconds: 'DEFER_OFFLINE_TRANSITION'
+  }
+}
+
+export type UpdateActivitySettings = Pick<ActivitySettings, 'timezone' | 'visitInactivitySeconds' | 'reconnectGraceSeconds'>
 
 export type UserAttributeType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATETIME'
 export type UserAttributeAllowedValue = string | number | boolean

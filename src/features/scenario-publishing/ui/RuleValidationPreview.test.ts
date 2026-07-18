@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
 import type { RuleDomainContext, RuleDraft } from '@/features/scenario-rules/model'
+import type { AudienceDomainContext, AudienceDraft } from '@/features/scenario-audience/model'
 import RuleValidationPreview from './RuleValidationPreview.vue'
 
 const mocks = vi.hoisted(() => ({
@@ -55,6 +56,17 @@ const context: RuleDomainContext = { triggerEventDefinitionId: 'event-page', tri
 const draft: RuleDraft = {
   version: 1,
   root: { nodeId: 'node-page', kind: 'eventField', eventCode: 'page.opened', fieldKey: 'page.name', operator: 'eq', value: 'promotions' },
+}
+const audienceDraft: AudienceDraft = { version: 1, root: { nodeId: 'audience-locale', kind: 'locale', operator: 'eq', value: 'ru-RU' } }
+const audienceContext: AudienceDomainContext = {
+  segments: [],
+  catalog: {
+    version: 1, revision: 'audience-catalog-1', locales: [{ code: 'ru-RU', language: 'ru', label: 'Русский' }],
+    localeSource: { operators: ['eq'], control: 'SELECT', authoringAvailability: 'AVAILABLE' }, languageSource: { operators: ['eq'], control: 'SELECT', authoringAvailability: 'AVAILABLE' },
+    country: { source: 'profile.country', valueType: 'countryCode', semantics: 'ISO_3166_1_ALPHA_2_UPPERCASE', operators: ['eq'], control: 'COUNTRY_CODE', authoringAvailability: 'AVAILABLE' },
+    attributes: [], segmentSource: { operators: ['is_member'], searchEndpoint: '/segments', control: 'SEARCH', authoringAvailability: 'AVAILABLE' },
+    snapshotPolicy: { initialEvaluation: 'RUN_START', missingOrNull: 'NO_MATCH_EXCEPT_NOT_EXISTS', deletedDefinition: 'PINNED_SNAPSHOT_CONTINUES', unavailableSource: 'PUBLISH_REJECTED_EXPLAIN_UNAVAILABLE', segmentRevision: 'PINNED_REVISION', persistence: 'SNAPSHOT_WITH_SEPARATE_LAST_RECHECK', recheckTrigger: 'DELIVERY_RECHECK_ELIGIBILITY' },
+  },
 }
 const eventLog = {
   id: 'log-1', eventCode: 'page.opened', eventName: 'Открыта страница', eventDefinitionId: 'event-page', eventVersion: 1,
@@ -194,6 +206,43 @@ describe('RuleValidationPreview', () => {
     expect(wrapper.text()).toContain('Условие совпало')
     expect(wrapper.text()).toContain('promotions')
     expect(wrapper.text()).toContain('Скрыто из-за чувствительности данных')
+  })
+
+  it('validates and previews Audience separately with redaction-safe explanations', async () => {
+    mocks.getEventLogPage.mockResolvedValue({ items: [eventLog], nextCursor: null })
+    mocks.validateRule.mockResolvedValue({
+      valid: false, issues: [], dependencies: [], cost: null, warnings: [],
+      audience: { valid: false, issues: [{ code: 'AUDIENCE_VALUE_INVALID', path: 'root.value', message: 'Locale недоступен' }], dependencies: { attributeRevisionIds: [], segmentRevisionIds: [] }, cost: null, warnings: [] },
+    })
+    const wrapper = mountPreview({ audienceDraft, audienceContext, audienceDraftRevision: 1 })
+    await vi.advanceTimersByTimeAsync(400)
+    await flushPromises()
+
+    expect(mocks.validateRule).toHaveBeenCalledWith('project-1', expect.any(Object), { signal: expect.any(AbortSignal) }, { version: 1, root: { kind: 'locale', operator: 'eq', value: 'ru-RU' } })
+    await wrapper.get('ul[aria-label="Ошибки аудитории"] button').trigger('click')
+    expect(wrapper.emitted('focus-audience-node')).toEqual([[{ nodeId: 'audience-locale', fieldPath: 'value', message: 'Locale недоступен' }]])
+
+    mocks.previewRule.mockResolvedValue({
+      valid: true, matched: true, explanation: { kind: 'eventField', matched: true }, issues: [], dependencies: [], cost: null, warnings: [],
+      audience: {
+        valid: true, matched: true, issues: [],
+        dependencies: { attributeRevisionIds: ['attribute-revision-7'], segmentRevisionIds: ['segment-revision-4'] },
+        cost: { leaves: 1, segmentLeaves: 0 }, warnings: [{ code: 'AUDIENCE_LOOKUP_COST' }],
+        explanation: {
+          kind: 'locale', matched: true, actual: { visibility: 'REDACTED' }, expected: { visibility: 'VISIBLE', value: 'ru-RU' },
+          children: [{ kind: 'userAttribute', matched: true, definitionId: 'attribute-revision-7', actual: { visibility: 'REDACTED' } }],
+        },
+      },
+    })
+    await wrapper.get('input[type="radio"][value="log-1"]').setValue()
+    await wrapper.get('button[aria-label="Запустить preview правила"]').trigger('click')
+    await flushPromises()
+    expect(mocks.previewRule).toHaveBeenCalledWith('project-1', expect.any(Object), { kind: 'eventLog', eventLogId: 'log-1' }, { signal: expect.any(AbortSignal) }, { version: 1, root: { kind: 'locale', operator: 'eq', value: 'ru-RU' } })
+    expect(wrapper.text()).toContain('Audience совпала')
+    expect(wrapper.text()).toContain('Скрыто из-за чувствительности данных')
+    expect(wrapper.text()).toContain('attribute-revision-7')
+    expect(wrapper.text()).toContain('segment-revision-4')
+    expect(wrapper.text()).toContain('Audience · AUDIENCE_LOOKUP_COST')
   })
 
   it('resets the anchor and pagination when the trigger Event changes', async () => {

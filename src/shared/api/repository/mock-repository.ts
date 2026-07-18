@@ -138,6 +138,31 @@ export const mockRepository: LolaRepository = {
     const data = readDemo(); data.elements = data.elements.filter((item) => item.id !== id); writeDemo(data); await pause()
   },
   async getEvents() { await pause(); return readDemo().events },
+  async getEventDefinitionRevisions(_projectId, definitionKeyId, request) {
+    await pause()
+    const revisions = readDemo().events
+      .filter((item) => (item.definitionKeyId ?? item.id) === definitionKeyId)
+      .sort((left, right) => right.version - left.version)
+      .map((item, index) => ({
+        ...item,
+        definitionKeyId: item.definitionKeyId ?? item.id,
+        currentRevisionId: item.currentRevisionId ?? item.id,
+        isCurrent: item.isCurrent ?? index === 0,
+        origin: item.origin ?? 'CUSTOM' as const,
+        readOnly: item.readOnly ?? false,
+        pinnedScenarioRevisionCount: 0,
+        compatibility: (index === 0 ? 'CURRENT' : 'SUPERSEDED') as 'CURRENT' | 'SUPERSEDED',
+      }))
+    const offset = request?.cursor ? Number(request.cursor) : 0
+    const limit = request?.limit ?? 25
+    return { items: revisions.slice(offset, offset + limit), nextCursor: offset + limit < revisions.length ? String(offset + limit) : null }
+  },
+  async getEventDefinitionRevision(projectId, definitionKeyId, revisionId) {
+    const page = await this.getEventDefinitionRevisions(projectId, definitionKeyId, { limit: 100 })
+    const revision = page.items.find((item) => item.id === revisionId)
+    if (!revision) throw new Error('Event definition revision not found')
+    return revision
+  },
   async saveEvent(projectId, value) {
     const data = readDemo()
     const saved = { version: 1, enabled: true, ...value, id: value.id ?? uid('evt'), projectId } as EventDefinition
@@ -183,10 +208,25 @@ export const mockRepository: LolaRepository = {
     if (index >= 0) data.scenarios.splice(index, 1, saved); else data.scenarios.push(saved)
     writeDemo(data); await pause(); return saved
   },
+  async updateScenarioMetadata(_projectId, scenarioId, value) {
+    const data = readDemo()
+    const index = data.scenarios.findIndex((item) => item.id === scenarioId)
+    if (index < 0) throw new Error('Scenario not found')
+    const saved = { ...data.scenarios[index]!, ...value } as Scenario
+    data.scenarios.splice(index, 1, saved)
+    writeDemo(data); await pause(); return saved
+  },
   async deleteScenario(_projectId, id) {
     const data = readDemo(); data.scenarios = data.scenarios.filter((item) => item.id !== id); writeDemo(data); await pause()
   },
   async getUsers() { await pause(); return readDemo().users },
+  async getUsersPage(_projectId, request) {
+    await pause()
+    const items = readDemo().users
+    const offset = request?.cursor ? Number(request.cursor) : 0
+    const limit = request?.limit ?? 50
+    return { items: items.slice(offset, offset + limit), nextCursor: offset + limit < items.length ? String(offset + limit) : null }
+  },
   async getSessions() { await pause(); return readDemo().sessions },
   async getActivity(userId) {
     await pause(); const items = readDemo().activity; return userId ? items.filter((item) => item.userId === userId) : items
@@ -278,6 +318,28 @@ export const mockRepository: LolaRepository = {
         })),
       }
     })
+  },
+  async getScenarioRunsPage(projectId, request) {
+    const items = await this.getScenarioRuns(projectId)
+    const offset = request?.cursor ? Number(request.cursor) : 0
+    const limit = request?.limit ?? 50
+    return { items: items.slice(offset, offset + limit), nextCursor: offset + limit < items.length ? String(offset + limit) : null }
+  },
+  async getActivitySettings() {
+    await pause()
+    return {
+      timezone: 'UTC', visitInactivitySeconds: 1800, reconnectGraceSeconds: 30,
+      limits: { visitInactivitySeconds: { min: 60, max: 86400 }, reconnectGraceSeconds: { min: 1, max: 300 } },
+      semantics: { timezone: 'IANA_TIME_ZONE_FOR_ACTIVITY_DAY' as const, visitInactivitySeconds: 'START_NEW_VISIT_AFTER_GAP' as const, reconnectGraceSeconds: 'DEFER_OFFLINE_TRANSITION' as const },
+    }
+  },
+  async updateActivitySettings(_projectId, value) {
+    await pause()
+    return {
+      ...value,
+      limits: { visitInactivitySeconds: { min: 60, max: 86400 }, reconnectGraceSeconds: { min: 1, max: 300 } },
+      semantics: { timezone: 'IANA_TIME_ZONE_FOR_ACTIVITY_DAY' as const, visitInactivitySeconds: 'START_NEW_VISIT_AFTER_GAP' as const, reconnectGraceSeconds: 'DEFER_OFFLINE_TRANSITION' as const },
+    }
   },
   async getAuditLogs() {
     await pause()

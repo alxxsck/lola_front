@@ -7,7 +7,7 @@ import type {
   EventFieldRuleNodeDto,
   NotRuleNodeDto,
   ScenarioRuleDtoRoot,
-} from '@/shared/api/generated/models'
+} from '@/shared/api/repository/scenario-authoring'
 import { uid } from '@/shared/lib/format'
 
 import type {

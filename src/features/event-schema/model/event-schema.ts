@@ -20,6 +20,8 @@ export interface EventSchemaFieldDraft {
   fieldKey?: string
   semanticType?: string
   unit?: string
+  displayScale?: number
+  displayPrecision?: number
   sensitive?: boolean
   visuallyEditable: boolean
   unsupportedReason?: string
@@ -122,6 +124,8 @@ export function parseEventSchema(schema: Record<string, unknown>): EventSchemaDr
         fieldKey: stableKey,
         semanticType: optionalString(definition['x-lola-semantic-type']),
         unit: optionalString(definition['x-lola-unit']),
+        displayScale: optionalNumber(definition['x-lola-display-scale']),
+        displayPrecision: optionalNumber(definition['x-lola-display-precision']),
         sensitive: typeof definition['x-lola-sensitive'] === 'boolean' ? definition['x-lola-sensitive'] : undefined,
         visuallyEditable: !reason,
         unsupportedReason: reason,
@@ -154,6 +158,8 @@ function serializeField(field: EventSchemaFieldDraft): unknown {
   assignOptional(schema, 'x-lola-field-key', field.fieldKey)
   assignOptional(schema, 'x-lola-semantic-type', field.semanticType)
   assignOptional(schema, 'x-lola-unit', field.unit)
+  assignOptional(schema, 'x-lola-display-scale', field.displayScale)
+  assignOptional(schema, 'x-lola-display-precision', field.displayPrecision)
   assignOptional(schema, 'x-lola-sensitive', field.sensitive)
   if (field.type === 'array' && !isRecord(schema.items)) schema.items = {}
   return schema
@@ -228,6 +234,17 @@ export function validateEventSchemaDraft(draft: EventSchemaDraft): EventSchemaDr
     }
     if (field.minimum !== undefined && field.maximum !== undefined && field.minimum > field.maximum) {
       issues.push({ fieldId: field.id, message: `Минимальное значение поля «${field.wireKey}» не может быть больше максимального.` })
+    }
+    if (field.displayScale !== undefined && (!Number.isFinite(field.displayScale) || field.displayScale <= 0)) {
+      issues.push({ fieldId: field.id, message: `Масштаб отображения поля «${field.wireKey}» должен быть положительным числом.` })
+    }
+    if (field.displayPrecision !== undefined && (!Number.isInteger(field.displayPrecision) || field.displayPrecision < 0 || field.displayPrecision > 12)) {
+      issues.push({ fieldId: field.id, message: `Точность отображения поля «${field.wireKey}» должна быть целым числом от 0 до 12.` })
+    }
+    if (field.semanticType?.includes('money')) {
+      if (!field.unit?.trim()) issues.push({ fieldId: field.id, message: `Укажите единицу хранения денежного поля «${field.wireKey}».` })
+      if (field.displayScale === undefined) issues.push({ fieldId: field.id, message: `Укажите масштаб отображения денежного поля «${field.wireKey}».` })
+      if (field.displayPrecision === undefined) issues.push({ fieldId: field.id, message: `Укажите точность отображения денежного поля «${field.wireKey}».` })
     }
     return issues
   })
@@ -375,6 +392,8 @@ function fieldMetadataValue(field: EventSchemaFieldDraft): string {
     description: field.description,
     semanticType: field.semanticType,
     unit: field.unit,
+    displayScale: field.displayScale,
+    displayPrecision: field.displayPrecision,
     sensitive: field.sensitive,
   })
 }

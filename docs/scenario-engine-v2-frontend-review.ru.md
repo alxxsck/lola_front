@@ -1,6 +1,6 @@
-# Проверка frontend Scenario Engine V2 перед переносом в main
+# Проверка первых срезов frontend Scenario Engine V2
 
-Дата: 18 июля 2026 года.
+Дата: 18 июля 2026 года. Документ хранит результаты ревью FE-V2-01/02; актуальное состояние Audience и финальных срезов описано отдельно в `scenario-engine-v2-audience-unblock.ru.md`.
 
 ## Границы проверки
 
@@ -64,4 +64,4 @@ BE-FE-03 не даёт надёжную current-head identity и provenance Even
 
 BE-FE-04 не даёт revision history, compatibility и impact API. Локальный diff показывает, что изменил администратор, но не обещает совместимость внешних producers или опубликованных сценариев.
 
-Остальные gaps из backend-документа относятся к следующим tickets. В частности, Audience нельзя изображать рабочей до BE-FE-05/06, а контекстная матрица BE-FE-08A должна оставаться в единственном contract adapter.
+На момент этого ревью Audience блокировали BE-FE-05/06. Позже backend добавил нужный контракт, а frontend реализовал FE-V2-12/13. Контекстная матрица BE-FE-08A по-прежнему остаётся в единственном contract adapter.
