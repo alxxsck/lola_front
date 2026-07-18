@@ -26,6 +26,7 @@ import type {
   CompatibilityGetVoiceSessionDto,
   CompatibilitySessionDto,
   CompatibilityStartVoiceSessionDto,
+  ConditionCatalogResponseDto,
   ConnectVoiceSessionDto,
   CreateConversationDto,
   CreateCustomerDto,
@@ -60,14 +61,20 @@ import type {
   ListMessagesDto,
   ListThreadMessagesDto,
   LogoutDto,
+  PreviewScenarioRuleDto,
+  PreviewScenarioRuleResponseDto,
   ProjectMemberResponseDto,
   ProjectResponseDto,
   ProviderBillingSnapshotResponseDto,
+  PublishScenarioDto,
+  PublishScenarioResponseDto,
   RefreshTokenDto,
   RenameConversationDto,
+  RollbackScenarioDto,
   RotateServerKeyResponseDto,
   ScenarioActionDefinitionResponseDto,
   ScenarioResponseDto,
+  ScenarioRunExplainResponseDto,
   ScenarioRunResponseDto,
   SendAdminMessageDto,
   SendAdminMessageResponseDto,
@@ -88,6 +95,8 @@ import type {
   UpsertUserDto,
   UserAttributeDefinitionMutationResponseDto,
   UserAttributeSchemaResponseDto,
+  ValidateScenarioRuleDto,
+  ValidateScenarioRuleResponseDto,
 } from "./models";
 
 import { request } from "../http/orval-mutator";
@@ -512,12 +521,106 @@ export const platformRotate = (
   );
 };
 
+export const scenarioAuthoringCatalog = (
+  projectId: string,
+  options?: SecondParameter<typeof request<ConditionCatalogResponseDto>>,
+) => {
+  return request<ConditionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/catalog`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const scenarioAuthoringPreview = (
+  projectId: string,
+  previewScenarioRuleDto: BodyType<PreviewScenarioRuleDto>,
+  options?: SecondParameter<typeof request<PreviewScenarioRuleResponseDto>>,
+) => {
+  return request<PreviewScenarioRuleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: previewScenarioRuleDto,
+    },
+    options,
+  );
+};
+
+export const scenarioAuthoringPublishScenario = (
+  projectId: string,
+  scenarioId: string,
+  publishScenarioDto: BodyType<PublishScenarioDto>,
+  options?: SecondParameter<typeof request<PublishScenarioResponseDto>>,
+) => {
+  return request<PublishScenarioResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/scenarios/${scenarioId}/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishScenarioDto,
+    },
+    options,
+  );
+};
+
+export const scenarioAuthoringRollbackScenario = (
+  projectId: string,
+  scenarioId: string,
+  revisionId: string,
+  rollbackScenarioDto: BodyType<RollbackScenarioDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/scenarios/${scenarioId}/revisions/${revisionId}/rollback`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rollbackScenarioDto,
+    },
+    options,
+  );
+};
+
+export const scenarioAuthoringValidate = (
+  projectId: string,
+  validateScenarioRuleDto: BodyType<ValidateScenarioRuleDto>,
+  options?: SecondParameter<typeof request<ValidateScenarioRuleResponseDto>>,
+) => {
+  return request<ValidateScenarioRuleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/validate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: validateScenarioRuleDto,
+    },
+    options,
+  );
+};
+
 export const scenarioRunsList = (
   projectId: string,
   options?: SecondParameter<typeof request<ScenarioRunResponseDto[]>>,
 ) => {
   return request<ScenarioRunResponseDto[]>(
     { url: `/api/v1/admin/projects/${projectId}/scenario-runs`, method: "GET" },
+    options,
+  );
+};
+
+export const scenarioRunsExplain = (
+  projectId: string,
+  runId: string,
+  options?: SecondParameter<typeof request<ScenarioRunExplainResponseDto>>,
+) => {
+  return request<ScenarioRunExplainResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-runs/${runId}/explain`,
+      method: "GET",
+    },
     options,
   );
 };
@@ -1475,8 +1578,26 @@ export type PlatformDeleteMemberResult = NonNullable<
 export type PlatformRotateResult = NonNullable<
   Awaited<ReturnType<typeof platformRotate>>
 >;
+export type ScenarioAuthoringCatalogResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringCatalog>>
+>;
+export type ScenarioAuthoringPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringPreview>>
+>;
+export type ScenarioAuthoringPublishScenarioResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringPublishScenario>>
+>;
+export type ScenarioAuthoringRollbackScenarioResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringRollbackScenario>>
+>;
+export type ScenarioAuthoringValidateResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringValidate>>
+>;
 export type ScenarioRunsListResult = NonNullable<
   Awaited<ReturnType<typeof scenarioRunsList>>
+>;
+export type ScenarioRunsExplainResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioRunsExplain>>
 >;
 export type PlatformScenariosResult = NonNullable<
   Awaited<ReturnType<typeof platformScenarios>>

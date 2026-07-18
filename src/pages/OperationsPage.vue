@@ -226,13 +226,12 @@ onMounted(load)
     <template #header><div><div class="eyebrow">Scenario run</div><h2>{{ selectedRun?.scenarioName }}</h2></div></template>
     <div v-if="selectedRun" class="detail-stack">
       <div class="detail-hero"><div><span>Статус</span><Tag :value="selectedRun.status" :severity="severity(selectedRun.status)" /></div><div><span>Пользователь</span><strong class="mono">{{ selectedRun.userExternalId }}</strong></div><div><span>Начало</span><strong>{{ formatDate(selectedRun.startedAt) }}</strong></div></div>
-      <Message v-if="selectedRun.error" severity="error"><pre>{{ json(selectedRun.error) }}</pre></Message>
+      <Message v-if="selectedRun.errorCode" severity="error">{{ selectedRun.errorCode }}</Message>
       <div><h3>Шаги выполнения</h3><div class="steps">
         <article v-for="step in selectedRun.steps" :key="step.id" class="step-card">
           <span class="step-index">{{ step.position + 1 }}</span>
-          <div class="step-copy"><div><strong>{{ step.actionType }}</strong><Tag :value="step.status" :severity="severity(step.status)" /></div><small v-if="step.errorCode" class="error-code">{{ step.errorCode }}</small><pre>{{ json(step.config) }}</pre>
+          <div class="step-copy"><div><strong>{{ step.actionType }}</strong><Tag :value="step.status" :severity="severity(step.status)" /></div><small class="mono muted">{{ step.nodeKey }} · {{ step.executor }}</small><small v-if="step.errorCode" class="error-code">{{ step.errorCode }}</small>
             <div v-if="step.command" class="command"><span><i class="pi pi-send" /> Command #{{ step.command.sequence }}</span><Tag :value="step.command.status" severity="secondary" /><small class="mono">{{ step.command.id }}</small></div>
-            <Message v-if="step.error" severity="error" size="small"><pre>{{ json(step.error) }}</pre></Message>
           </div>
         </article>
       </div></div>

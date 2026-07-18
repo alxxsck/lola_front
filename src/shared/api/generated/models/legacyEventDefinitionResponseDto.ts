@@ -10,6 +10,7 @@ import type { LegacyEventDefinitionResponseDtoPayloadSchema } from "./legacyEven
 export interface LegacyEventDefinitionResponseDto {
   clientIngestible: boolean;
   code: string;
+  countsAsActivity: boolean;
   createdAt: string;
   /** @nullable */
   description?: string | null;

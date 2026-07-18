@@ -21,6 +21,12 @@ const requiredOperations = new Map([
   ['Platform_updateUserAttributeDefinition', { label: 'user attribute update', request: 'UpdateUserAttributeDefinitionDto', response: 'UserAttributeDefinitionMutationResponseDto' }],
   ['Platform_deleteUserAttributeDefinition', { label: 'user attribute deletion', response: 'UserAttributeDefinitionMutationResponseDto' }],
   ['ScenarioRuns_list', { label: 'scenario runs', response: 'ScenarioRunResponseDto' }],
+  ['ScenarioAuthoring_catalog', { label: 'scenario authoring catalog', response: 'ConditionCatalogResponseDto' }],
+  ['ScenarioAuthoring_validate', { label: 'scenario rule validation', request: 'ValidateScenarioRuleDto', response: 'ValidateScenarioRuleResponseDto' }],
+  ['ScenarioAuthoring_preview', { label: 'scenario rule preview', request: 'PreviewScenarioRuleDto', response: 'PreviewScenarioRuleResponseDto' }],
+  ['ScenarioAuthoring_publishScenario', { label: 'scenario publication', request: 'PublishScenarioDto', response: 'PublishScenarioResponseDto' }],
+  ['ScenarioAuthoring_rollbackScenario', { label: 'scenario rollback', request: 'RollbackScenarioDto' }],
+  ['ScenarioRuns_explain', { label: 'scenario run explanation', response: 'ScenarioRunExplainResponseDto' }],
   ['AdminMessaging_send', { label: 'admin messaging', request: 'SendAdminMessageDto', response: 'SendAdminMessageResponseDto' }],
   ['Audit_list', { label: 'audit logs', response: 'AuditLogResponseDto' }],
   ['Presence_list', { label: 'active sessions', response: 'ActiveUserResponseDto' }],
@@ -56,7 +62,11 @@ for (const [operationId, expectation] of requiredOperations) {
   const successResponse = Object.entries(operation.responses ?? {}).find(([status]) => /^2\d\d$/.test(status))
   const responseSchema = successResponse?.[1]?.content?.['application/json']?.schema
 
-  if (!responseSchema) {
+  if (!successResponse) {
+    throw new Error(`OpenAPI operation ${operationId} has no success response`)
+  }
+
+  if (expectation.response && !responseSchema) {
     throw new Error(`OpenAPI operation ${operationId} has no typed JSON success response`)
   }
 
@@ -64,7 +74,7 @@ for (const [operationId, expectation] of requiredOperations) {
     throw new Error(`OpenAPI operation ${operationId} does not use ${expectation.request} as its JSON request`)
   }
 
-  if (!containsSchema(responseSchema, expectation.response)) {
+  if (expectation.response && !containsSchema(responseSchema, expectation.response)) {
     throw new Error(`OpenAPI operation ${operationId} does not return ${expectation.response}`)
   }
 }

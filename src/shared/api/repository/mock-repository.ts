@@ -270,11 +270,11 @@ export const mockRepository: LolaRepository = {
       const user = data.users.find((value) => value.id === item.userId)!
       return {
         id: item.id, scenarioId: scenario.id, scenarioCode: scenario.code, scenarioName: scenario.name,
-        eventLogId: 'log_1', userId: user.id, userExternalId: user.externalId, status: 'RUNNING', context: {},
+        eventLogId: 'log_1', userId: user.id, userExternalId: user.externalId, status: 'RUNNING', conversationPolicy: scenario.conversationPolicy,
         startedAt: item.timestamp, currentStep: 1, steps: scenario.actions.slice(0, 3).map((action, index) => ({
-          id: `step_${index}`, position: index, actionType: action.type,
-          status: index === 2 ? 'WAITING_ACK' : 'SUCCEEDED', config: action.config,
-          command: index === 2 ? { id: 'cmd_demo', type: action.type, status: 'SENT', sequence: 3, payload: action.config, createdAt: item.timestamp } : undefined,
+          id: `step_${index}`, position: index, nodeKey: action.nodeKey ?? `step_${index}`, actionType: action.type, executor: 'FRONTEND',
+          status: index === 2 ? 'WAITING_ACK' : 'SUCCEEDED',
+          command: index === 2 ? { id: 'cmd_demo', type: action.type, status: 'SENT', sequence: 3, createdAt: item.timestamp } : undefined,
         })),
       }
     })

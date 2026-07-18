@@ -47,7 +47,7 @@ const uiResponse = {
 
 const eventResponse = {
   id: 'event-1', projectId: 'project-1', code: 'signup', name: 'Signup', version: 1,
-  payloadSchema: { type: 'object' }, clientIngestible: false, enabled: true, createdAt: 'now', updatedAt: 'now',
+  payloadSchema: { type: 'object' }, clientIngestible: false, countsAsActivity: false, enabled: true, createdAt: 'now', updatedAt: 'now',
 }
 
 describe('api repository adapter', () => {

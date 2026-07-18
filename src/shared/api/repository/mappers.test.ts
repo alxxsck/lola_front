@@ -26,7 +26,7 @@ describe('repository domain mappers', () => {
     } as unknown as UiElementResponseDto)
     const eventDto = {
       id: 'event-1', projectId: 'project-1', code: 'signup', name: 'Signup', description: null, version: 1,
-      payloadSchema: { type: 'object' }, clientIngestible: false, enabled: true, createdAt: 'now', updatedAt: 'now',
+      payloadSchema: { type: 'object' }, clientIngestible: false, countsAsActivity: false, enabled: true, createdAt: 'now', updatedAt: 'now',
     } as EventDefinitionResponseDto
     const user = mapEndUser({
       id: 'user-1', projectId: 'project-1', externalId: 'external', isGuest: false, locale: null, segment: null,
@@ -37,7 +37,7 @@ describe('repository domain mappers', () => {
     expect(mapEventDefinition(eventDto)).toMatchObject({ description: undefined, payloadSchema: { type: 'object' } })
     expect(user).toMatchObject({ locale: undefined, segment: undefined })
     expect(toCreateEventDefinitionDto(mapEventDefinition(eventDto))).toEqual({
-      code: 'signup', name: 'Signup', version: 1, payloadSchema: { type: 'object' }, clientIngestible: false, enabled: true,
+      code: 'signup', name: 'Signup', version: 1, payloadSchema: { type: 'object' }, clientIngestible: false, countsAsActivity: false, enabled: true,
     })
   })
 
@@ -62,9 +62,9 @@ describe('repository domain mappers', () => {
     } as unknown as EventLogResponseDto)
     const run = mapScenarioRun({
       id: 'run-1', projectId: 'project-1', scenarioId: 'scenario-1', eventLogId: 'log-1', endUserId: 'user-1',
-      status: 'RUNNING', context: {}, startedAt: 'now', currentStep: 0,
+      status: 'RUNNING', conversationPolicy: 'reuse_active', startedAt: 'now', currentStep: 0,
       scenario: { id: 'scenario-1', code: 'welcome', name: 'Welcome' }, endUser: { id: 'user-1', externalId: 'customer-42' },
-      steps: [{ id: 'step-1', position: 0, actionType: 'OPEN_PAGE', config: {}, status: 'WAITING_ACK', command: { id: 'command-1', type: 'OPEN_PAGE', payload: {}, sequence: 1, status: 'SENT', createdAt: 'now' } }],
+      steps: [{ id: 'step-1', position: 0, nodeKey: 'open-page', actionType: 'OPEN_PAGE', executor: 'FRONTEND', status: 'WAITING_ACK', command: { id: 'command-1', type: 'OPEN_PAGE', sequence: 1, status: 'SENT', createdAt: 'now' } }],
     } as ScenarioRunResponseDto)
     const audit = mapAuditLog({ id: 'audit-1', action: 'scenario.update', status: 'SUCCEEDED', metadata: {}, createdAt: 'now', adminUser: { id: 'admin-1', login: 'owner@lola.dev', displayName: null } } as AuditLogResponseDto)
 

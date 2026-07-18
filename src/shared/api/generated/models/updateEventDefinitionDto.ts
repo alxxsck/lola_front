@@ -9,6 +9,7 @@ import type { UpdateEventDefinitionDtoPayloadSchema } from "./updateEventDefinit
 
 export interface UpdateEventDefinitionDto {
   clientIngestible?: boolean;
+  countsAsActivity?: boolean;
   /** @maxLength 2000 */
   description?: string;
   enabled?: boolean;

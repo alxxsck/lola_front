@@ -6,14 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ScenarioRunStepResponseDtoCommand } from "./scenarioRunStepResponseDtoCommand";
-import type { ScenarioRunStepResponseDtoCommandType } from "./scenarioRunStepResponseDtoCommandType";
-import type { ScenarioRunStepResponseDtoConfig } from "./scenarioRunStepResponseDtoConfig";
-import type { ScenarioRunStepResponseDtoError } from "./scenarioRunStepResponseDtoError";
-import type { ScenarioRunStepResponseDtoErrorCode } from "./scenarioRunStepResponseDtoErrorCode";
 import type { ScenarioActionExecutor } from "./scenarioActionExecutor";
-import type { ScenarioRunStepResponseDtoResult } from "./scenarioRunStepResponseDtoResult";
-import type { ScenarioRunStepResponseDtoResumeAt } from "./scenarioRunStepResponseDtoResumeAt";
-import type { ScenarioRunStepResponseDtoServerHandler } from "./scenarioRunStepResponseDtoServerHandler";
 import type { ScenarioRunStepStatus } from "./scenarioRunStepStatus";
 
 export interface ScenarioRunStepResponseDto {
@@ -21,20 +14,16 @@ export interface ScenarioRunStepResponseDto {
   /** @nullable */
   command?: ScenarioRunStepResponseDtoCommand;
   /** @nullable */
-  commandType?: ScenarioRunStepResponseDtoCommandType;
-  config: ScenarioRunStepResponseDtoConfig;
-  /** @nullable */
-  error?: ScenarioRunStepResponseDtoError;
-  /** @nullable */
-  errorCode?: ScenarioRunStepResponseDtoErrorCode;
+  errorCode?: string | null;
   executor: ScenarioActionExecutor;
+  /** @nullable */
+  finishedAt?: string | null;
   id: string;
+  nodeKey: string;
   position: number;
   /** @nullable */
-  result?: ScenarioRunStepResponseDtoResult;
+  resumeAt?: string | null;
   /** @nullable */
-  resumeAt?: ScenarioRunStepResponseDtoResumeAt;
-  /** @nullable */
-  serverHandler?: ScenarioRunStepResponseDtoServerHandler;
+  startedAt?: string | null;
   status: ScenarioRunStepStatus;
 }

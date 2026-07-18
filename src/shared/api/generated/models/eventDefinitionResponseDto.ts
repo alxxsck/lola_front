@@ -11,6 +11,7 @@ import type { EventDefinitionResponseDtoPayloadSchema } from "./eventDefinitionR
 export interface EventDefinitionResponseDto {
   clientIngestible: boolean;
   code: string;
+  countsAsActivity: boolean;
   createdAt: string;
   /** @nullable */
   description?: EventDefinitionResponseDtoDescription;

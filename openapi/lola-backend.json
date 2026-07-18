@@ -96,6 +96,81 @@
         ],
         "type": "object"
       },
+      "ActivityDayStreakCompareDto": {
+        "additionalProperties": false,
+        "properties": {
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte"
+            ],
+            "example": "gte",
+            "type": "string"
+          },
+          "value": {
+            "example": 2,
+            "maximum": 365,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "operator",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ActivityDayStreakRuleExplanationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actual": {
+            "$ref": "#/components/schemas/ExplainValueResponseDto"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/ExplainValueResponseDto"
+          },
+          "kind": {
+            "enum": [
+              "activityDayStreak"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "matchedCount": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "matched"
+        ],
+        "type": "object"
+      },
+      "ActivityDayStreakRuleNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "compare": {
+            "$ref": "#/components/schemas/ActivityDayStreakCompareDto"
+          },
+          "kind": {
+            "enum": [
+              "activityDayStreak"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "compare"
+        ],
+        "type": "object"
+      },
       "AdminConversationMessageCountResponseDto": {
         "properties": {
           "messages": {
@@ -460,6 +535,64 @@
           "id",
           "login",
           "createdAt"
+        ],
+        "type": "object"
+      },
+      "AggregateFilterDto": {
+        "additionalProperties": false,
+        "properties": {
+          "fieldKey": {
+            "example": "deposit.currency",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "in",
+              "exists"
+            ],
+            "example": "eq",
+            "type": "string"
+          },
+          "value": {
+            "example": "EUR",
+            "oneOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fieldKey",
+          "operator"
         ],
         "type": "object"
       },
@@ -829,6 +962,284 @@
         ],
         "type": "object"
       },
+      "AllRuleExplanationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "discriminator": {
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AllRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AnyRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/NotRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/EventFieldRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/EventAggregateRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/ActivityDayStreakRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/LegacyRuleExplanationResponseDto"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "all"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "matched",
+          "children"
+        ],
+        "type": "object"
+      },
+      "AllRuleNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "discriminator": {
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AllRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AnyRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/NotRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/EventFieldRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/EventAggregateRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/ActivityDayStreakRuleNodeDto"
+                }
+              ]
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "all"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "children"
+        ],
+        "type": "object"
+      },
+      "AnyRuleExplanationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "discriminator": {
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AllRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AnyRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/NotRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/EventFieldRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/EventAggregateRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/ActivityDayStreakRuleExplanationResponseDto"
+                },
+                {
+                  "$ref": "#/components/schemas/LegacyRuleExplanationResponseDto"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "any"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "matched",
+          "children"
+        ],
+        "type": "object"
+      },
+      "AnyRuleNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "discriminator": {
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AllRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AnyRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/NotRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/EventFieldRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/EventAggregateRuleNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/ActivityDayStreakRuleNodeDto"
+                }
+              ]
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "any"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "children"
+        ],
+        "type": "object"
+      },
+      "ApiErrorBodyResponseDto": {
+        "properties": {
+          "code": {
+            "example": "REQUEST_VALIDATION_FAILED",
+            "type": "string"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ApiErrorDetailsResponseDto"
+          },
+          "message": {
+            "example": "Request validation failed",
+            "type": "string"
+          },
+          "requestId": {
+            "example": "019f70e8-75ef-7df1-aac4-5d424ffba37c",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ApiErrorDetailsResponseDto": {
+        "properties": {
+          "currentCatalogRevision": {
+            "type": "string"
+          },
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedCatalogRevision": {
+            "type": "string"
+          },
+          "expectedCurrentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorIssueResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "ApiErrorIssueResponseDto": {
+        "properties": {
+          "code": {
+            "example": "RULE_FIELD_INVALID",
+            "type": "string"
+          },
+          "message": {
+            "example": "Event field is unavailable",
+            "type": "string"
+          },
+          "path": {
+            "example": "rule.root.children.0.fieldKey",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "path",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ApiErrorResponseDto": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBodyResponseDto"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "AuditAdminUserResponseDto": {
         "properties": {
           "displayName": {
@@ -1079,6 +1490,242 @@
         ],
         "type": "object"
       },
+      "ConditionCatalogEventResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "example": "deposit.completed",
+            "type": "string"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionCatalogFieldResponseDto"
+            },
+            "type": "array"
+          },
+          "name": {
+            "example": "Deposit completed",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "definitionId",
+          "code",
+          "name",
+          "schemaVersion",
+          "fields"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogFieldResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregations": {
+            "items": {
+              "enum": [
+                "exists",
+                "count",
+                "sum",
+                "min",
+                "max",
+                "first",
+                "last",
+                "distinct_count"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "allowedValues": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "control": {
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ConditionCatalogSelectControlResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/ConditionCatalogNumberControlResponseDto"
+              }
+            ]
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fieldKey": {
+            "example": "deposit.amount",
+            "type": "string"
+          },
+          "label": {
+            "example": "Amount",
+            "type": "string"
+          },
+          "operators": {
+            "items": {
+              "enum": [
+                "eq",
+                "neq",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "in",
+                "exists",
+                "not_exists"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "path": {
+            "example": "event.payload.amount",
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "semanticType": {
+            "example": "money_major",
+            "nullable": true,
+            "type": "string"
+          },
+          "sensitive": {
+            "type": "boolean"
+          },
+          "unit": {
+            "example": "EUR",
+            "type": "string"
+          },
+          "valueType": {
+            "example": "number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fieldKey",
+          "path",
+          "label",
+          "valueType",
+          "required",
+          "operators",
+          "aggregations",
+          "control"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogNumberControlResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "number"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionCatalogEventResponseDto"
+            },
+            "type": "array"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revision": {
+            "example": "e871…",
+            "type": "string"
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "revision",
+          "projectId",
+          "events"
+        ],
+        "type": "object"
+      },
+      "ConditionCatalogSelectControlResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "options": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "select"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "options"
+        ],
+        "type": "object"
+      },
       "ConnectVoiceSessionDto": {
         "properties": {
           "offerSdp": {
@@ -1128,6 +1775,11 @@
           "code": {
             "pattern": "^[a-z][a-z0-9_.-]*$",
             "type": "string"
+          },
+          "countsAsActivity": {
+            "default": false,
+            "description": "Whether a valid frontend occurrence extends Visit and Activity Day.",
+            "type": "boolean"
           },
           "description": {
             "maxLength": 2000,
@@ -1699,6 +2351,102 @@
         },
         "type": "object"
       },
+      "EventAggregateRuleExplanationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actual": {
+            "$ref": "#/components/schemas/ExplainValueResponseDto"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/ExplainValueResponseDto"
+          },
+          "kind": {
+            "enum": [
+              "eventAggregate"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "matchedCount": {
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/ExplainWindowResponseDto"
+          }
+        },
+        "required": [
+          "kind",
+          "matched"
+        ],
+        "type": "object"
+      },
+      "EventAggregateRuleNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "compare": {
+            "$ref": "#/components/schemas/RuleCompareDto"
+          },
+          "eventCode": {
+            "example": "deposit.completed",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "fieldKey": {
+            "example": "deposit.amount",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "filters": {
+            "items": {
+              "$ref": "#/components/schemas/AggregateFilterDto"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "eventAggregate"
+            ],
+            "type": "string"
+          },
+          "measure": {
+            "enum": [
+              "exists",
+              "count",
+              "sum",
+              "min",
+              "max",
+              "first",
+              "last"
+            ],
+            "example": "sum",
+            "type": "string"
+          },
+          "window": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LastRuleWindowDto"
+              },
+              {
+                "$ref": "#/components/schemas/SinceTriggerRuleWindowDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "eventCode",
+          "measure",
+          "window",
+          "compare"
+        ],
+        "type": "object"
+      },
       "EventDefinitionResponseDto": {
         "properties": {
           "clientIngestible": {
@@ -1706,6 +2454,9 @@
           },
           "code": {
             "type": "string"
+          },
+          "countsAsActivity": {
+            "type": "boolean"
           },
           "createdAt": {
             "format": "date-time",
@@ -1750,8 +2501,110 @@
           "payloadSchema",
           "enabled",
           "clientIngestible",
+          "countsAsActivity",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EventFieldRuleExplanationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actual": {
+            "$ref": "#/components/schemas/ExplainValueResponseDto"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/ExplainValueResponseDto"
+          },
+          "kind": {
+            "enum": [
+              "eventField"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "matched"
+        ],
+        "type": "object"
+      },
+      "EventFieldRuleNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "eventCode": {
+            "example": "page.opened",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "fieldKey": {
+            "example": "page.name",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "eventField"
+            ],
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "in",
+              "exists",
+              "not_exists"
+            ],
+            "example": "eq",
+            "type": "string"
+          },
+          "value": {
+            "example": "promotions",
+            "oneOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "eventCode",
+          "fieldKey",
+          "operator"
         ],
         "type": "object"
       },
@@ -1984,6 +2837,102 @@
           "FAILED"
         ],
         "type": "string"
+      },
+      "ExplainValueResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "maxItems": 100,
+                "type": "array"
+              }
+            ]
+          },
+          "visibility": {
+            "enum": [
+              "VISIBLE",
+              "REDACTED",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "visibility"
+        ],
+        "type": "object"
+      },
+      "ExplainWindowResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "FailIfOfflineDeliveryPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "FAIL_IF_OFFLINE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ImmediateDeliveryPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "IMMEDIATE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
       },
       "IngestClientEventDto": {
         "properties": {
@@ -2391,6 +3340,35 @@
         ],
         "type": "string"
       },
+      "LastRuleWindowDto": {
+        "additionalProperties": false,
+        "properties": {
+          "boundary": {
+            "default": "beforeTrigger",
+            "enum": [
+              "beforeTrigger"
+            ],
+            "type": "string"
+          },
+          "durationMs": {
+            "example": 172800000,
+            "maximum": 7776000000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "kind": {
+            "enum": [
+              "last"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "durationMs"
+        ],
+        "type": "object"
+      },
       "LegacyEventDefinitionResponseDto": {
         "properties": {
           "clientIngestible": {
@@ -2398,6 +3376,9 @@
           },
           "code": {
             "type": "string"
+          },
+          "countsAsActivity": {
+            "type": "boolean"
           },
           "createdAt": {
             "format": "date-time",
@@ -2442,8 +3423,63 @@
           "payloadSchema",
           "enabled",
           "clientIngestible",
+          "countsAsActivity",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "LegacyEventLogPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LegacyEventLogResponseDto"
+            },
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/LegacyEventLogPaginationResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "LegacyEventLogPaginationResponseDto": {
+        "properties": {
+          "hasNextPage": {
+            "type": "boolean"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "page": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalPages": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "totalPages",
+          "hasNextPage",
+          "hasPreviousPage"
         ],
         "type": "object"
       },
@@ -2535,60 +3571,6 @@
         ],
         "type": "object"
       },
-      "LegacyEventLogPaginationResponseDto": {
-        "properties": {
-          "hasNextPage": {
-            "type": "boolean"
-          },
-          "hasPreviousPage": {
-            "type": "boolean"
-          },
-          "limit": {
-            "maximum": 100,
-            "minimum": 1,
-            "type": "number"
-          },
-          "page": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "total": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "totalPages": {
-            "minimum": 0,
-            "type": "number"
-          }
-        },
-        "required": [
-          "page",
-          "limit",
-          "total",
-          "totalPages",
-          "hasNextPage",
-          "hasPreviousPage"
-        ],
-        "type": "object"
-      },
-      "LegacyEventLogPageResponseDto": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyEventLogResponseDto"
-            },
-            "type": "array"
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/LegacyEventLogPaginationResponseDto"
-          }
-        },
-        "required": [
-          "items",
-          "pagination"
-        ],
-        "type": "object"
-      },
       "LegacyEventUserResponseDto": {
         "properties": {
           "attributes": {
@@ -2657,6 +3639,26 @@
         ],
         "type": "object"
       },
+      "LegacyRuleExplanationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "legacy",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "matched"
+        ],
+        "type": "object"
+      },
       "ListMessagesDto": {
         "properties": {},
         "type": "object"
@@ -2695,6 +3697,97 @@
         ],
         "type": "string"
       },
+      "NotRuleExplanationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "child": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AllRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/AnyRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventFieldRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventAggregateRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityDayStreakRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/LegacyRuleExplanationResponseDto"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "not"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "matched",
+          "child"
+        ],
+        "type": "object"
+      },
+      "NotRuleNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "child": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AllRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AnyRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventFieldRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventAggregateRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityDayStreakRuleNodeDto"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "not"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "child"
+        ],
+        "type": "object"
+      },
       "OrganizationResponseDto": {
         "properties": {
           "createdAt": {
@@ -2722,6 +3815,123 @@
           "slug",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "PreviewScenarioRuleDto": {
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "$ref": "#/components/schemas/ScenarioRuleDto"
+          },
+          "scope": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PreviewScenarioScopeDto"
+              }
+            ],
+            "description": "A Project-owned Event used as the deterministic preview anchor."
+          }
+        },
+        "required": [
+          "rule",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "PreviewScenarioRuleResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "cost": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRuleCostResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuleDependencyResponseDto"
+            },
+            "type": "array"
+          },
+          "explanation": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AllRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/AnyRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventFieldRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventAggregateRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityDayStreakRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/LegacyRuleExplanationResponseDto"
+              }
+            ]
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuleIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioWarningResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid",
+          "issues",
+          "dependencies",
+          "cost",
+          "warnings",
+          "matched"
+        ],
+        "type": "object"
+      },
+      "PreviewScenarioScopeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "eventLogId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "eventLog"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "eventLogId"
         ],
         "type": "object"
       },
@@ -3012,6 +4222,201 @@
         ],
         "type": "object"
       },
+      "PublishConflictMetadataResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "currentRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expectedCurrentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "previousCurrentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "currentRevisionId"
+        ],
+        "type": "object"
+      },
+      "PublishedScenarioDependenciesResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actionTypes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "conditionPaths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "eventDefinitionRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "eventDefinitionRevisionIds",
+          "actionTypes",
+          "conditionPaths"
+        ],
+        "type": "object"
+      },
+      "PublishedScenarioRevisionSummaryResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "triggerEventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "scenarioId",
+          "revisionNumber",
+          "contentHash",
+          "catalogRevision",
+          "triggerEventDefinitionRevisionId",
+          "publishedAt"
+        ],
+        "type": "object"
+      },
+      "PublishScenarioDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "description": "Condition catalog revision used to validate the draft.",
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "deliveryPolicy": {
+            "description": "IMMEDIATE, WAIT_UNTIL_ONLINE, SKIP_IF_OFFLINE or FAIL_IF_OFFLINE.",
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              }
+            ]
+          },
+          "expectedCurrentRevisionId": {
+            "description": "Scenario head observed by the editor; null publishes the first revision.",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "rule": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRuleDto"
+              }
+            ],
+            "description": "Versioned typed rule AST to compile into the immutable Scenario Revision."
+          }
+        },
+        "required": [
+          "expectedCurrentRevisionId",
+          "catalogRevision"
+        ],
+        "type": "object"
+      },
+      "PublishScenarioResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "conflictMetadata": {
+            "$ref": "#/components/schemas/PublishConflictMetadataResponseDto"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/ScenarioRuleCostResponseDto"
+          },
+          "deliveryPolicy": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              }
+            ]
+          },
+          "dependencies": {
+            "$ref": "#/components/schemas/PublishedScenarioDependenciesResponseDto"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/PublishedScenarioRevisionSummaryResponseDto"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioWarningResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "revision",
+          "dependencies",
+          "cost",
+          "warnings",
+          "conflictMetadata",
+          "deliveryPolicy"
+        ],
+        "type": "object"
+      },
       "RealtimeModel": {
         "enum": [
           "grok-voice-think-fast-1.0",
@@ -3054,6 +4459,21 @@
         ],
         "type": "object"
       },
+      "RollbackScenarioDto": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedCurrentRevisionId": {
+            "description": "Scenario head observed by the editor.",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedCurrentRevisionId"
+        ],
+        "type": "object"
+      },
       "RotateServerKeyResponseDto": {
         "properties": {
           "serverApiKey": {
@@ -3063,6 +4483,68 @@
         },
         "required": [
           "serverApiKey"
+        ],
+        "type": "object"
+      },
+      "RuleCompareDto": {
+        "additionalProperties": false,
+        "properties": {
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte"
+            ],
+            "example": "gte",
+            "type": "string"
+          },
+          "value": {
+            "example": "500",
+            "oneOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        "required": [
+          "operator",
+          "value"
+        ],
+        "type": "object"
+      },
+      "RuleExplanationNodeResponseDto": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "any",
+              "not",
+              "eventField",
+              "eventAggregate",
+              "activityDayStreak",
+              "legacy",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "matched"
         ],
         "type": "object"
       },
@@ -3177,6 +4659,66 @@
         ],
         "type": "string"
       },
+      "ScenarioActionExplainResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actionType": {
+            "type": "string"
+          },
+          "command": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioCommandExplainResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "executor": {
+            "enum": [
+              "SERVER",
+              "FRONTEND"
+            ],
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nodeKey": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nodeKey",
+          "position",
+          "actionType",
+          "executor",
+          "status"
+        ],
+        "type": "object"
+      },
       "ScenarioActionResponseDto": {
         "properties": {
           "config": {
@@ -3222,6 +4764,56 @@
           "config",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioCommandExplainResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledgedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "executedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sentAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "sequence": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "sequence",
+          "createdAt"
         ],
         "type": "object"
       },
@@ -3279,6 +4871,190 @@
           "contains"
         ],
         "type": "string"
+      },
+      "ScenarioContinuationExplainResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "attemptCount": {
+            "type": "number"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastErrorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "stepId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "targetNodeKey": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "stepId",
+          "outcome",
+          "status",
+          "attemptCount",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioDeliveryExplainResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "policy": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/UnavailableDeliveryPolicyResponseDto"
+              }
+            ]
+          },
+          "waits": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioDeliveryWaitExplainResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "policy",
+          "waits"
+        ],
+        "type": "object"
+      },
+      "ScenarioDeliveryWaitExplainResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "deadlineAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "WAITING",
+              "DELIVERY_READY",
+              "DELIVERY_TIMED_OUT",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "stepId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "waitId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "waitId",
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "ScenarioGoalResolutionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "deadlineAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "WAITING",
+              "GOAL_MATCHED",
+              "TIMED_OUT",
+              "CANCELLED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "selectedBranch": {
+            "nullable": true,
+            "type": "string"
+          },
+          "stepId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "targetNodeKey": {
+            "nullable": true,
+            "type": "string"
+          },
+          "waitId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "winner": {
+            "enum": [
+              "EVENT",
+              "DEADLINE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "winningEventLogId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "waitId",
+          "outcome"
+        ],
+        "type": "object"
       },
       "ScenarioResponseDto": {
         "properties": {
@@ -3380,24 +5156,190 @@
         ],
         "type": "object"
       },
+      "ScenarioRuleCostClass": {
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH"
+        ],
+        "type": "string"
+      },
+      "ScenarioRuleCostResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregateLeaves": {
+            "maximum": 10,
+            "minimum": 0,
+            "type": "number"
+          },
+          "class": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRuleCostClass"
+              }
+            ]
+          },
+          "historyWindowDays": {
+            "maximum": 365,
+            "minimum": 0,
+            "type": "number"
+          },
+          "leaves": {
+            "maximum": 50,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "class",
+          "leaves",
+          "aggregateLeaves",
+          "historyWindowDays"
+        ],
+        "type": "object"
+      },
+      "ScenarioRuleDependencyResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventCode": {
+            "example": "deposit.completed",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "eventCode",
+          "definitionKeyId",
+          "eventDefinitionRevisionId",
+          "schemaVersion"
+        ],
+        "type": "object"
+      },
+      "ScenarioRuleDto": {
+        "additionalProperties": false,
+        "properties": {
+          "root": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AllRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AnyRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventFieldRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventAggregateRuleNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityDayStreakRuleNodeDto"
+              }
+            ]
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "example": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "root"
+        ],
+        "type": "object"
+      },
+      "ScenarioRuleIssueResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "example": "RULE_FIELD_INVALID",
+            "type": "string"
+          },
+          "message": {
+            "example": "Event field or operator is unavailable",
+            "type": "string"
+          },
+          "path": {
+            "example": "root.children.0.fieldKey",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "path",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ScenarioRuleNodeDto": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "any",
+              "not",
+              "eventField",
+              "eventAggregate",
+              "activityDayStreak"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
       "ScenarioRunCommandResponseDto": {
         "properties": {
+          "acknowledgedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
+            "type": "string"
+          },
+          "executedAt": {
+            "format": "date-time",
+            "nullable": true,
             "type": "string"
           },
           "expiresAt": {
             "format": "date-time",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "id": {
             "format": "uuid",
             "type": "string"
           },
-          "payload": {
-            "additionalProperties": true,
-            "type": "object"
+          "sentAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
           },
           "sequence": {
             "type": "number"
@@ -3412,23 +5354,257 @@
         "required": [
           "id",
           "type",
-          "payload",
           "sequence",
           "status",
           "createdAt"
         ],
         "type": "object"
       },
-      "ScenarioRunResponseDto": {
+      "ScenarioRunEligibilityResponseDto": {
+        "additionalProperties": false,
         "properties": {
-          "context": {
-            "additionalProperties": true,
+          "decision": {
+            "enum": [
+              "MATCHED",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "fidelity": {
+            "enum": [
+              "SNAPSHOT",
+              "LEGACY",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "root": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AllRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/AnyRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventFieldRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/EventAggregateRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityDayStreakRuleExplanationResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/LegacyRuleExplanationResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "decision",
+          "fidelity",
+          "root"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunExplainResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioActionExplainResponseDto"
+            },
+            "type": "array"
+          },
+          "continuations": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioContinuationExplainResponseDto"
+            },
+            "type": "array"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/ScenarioDeliveryExplainResponseDto"
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/ScenarioRunEligibilityResponseDto"
+          },
+          "goalResolutions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioGoalResolutionResponseDto"
+            },
+            "type": "array"
+          },
+          "run": {
+            "$ref": "#/components/schemas/ScenarioRunExplainRunResponseDto"
+          },
+          "scenarioRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRunExplainRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
             "type": "object"
           },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioTimelineEntryResponseDto"
+            },
+            "type": "array"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/ScenarioRunExplainTriggerResponseDto"
+          }
+        },
+        "required": [
+          "run",
+          "trigger",
+          "eligibility",
+          "goalResolutions",
+          "delivery",
+          "actions",
+          "continuations",
+          "timeline"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunExplainRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scenarioId",
+          "revisionId",
+          "revisionNumber",
+          "contentHash",
+          "catalogRevision",
+          "publishedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunExplainRunResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "startedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunExplainTriggerResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "definitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventLogId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "source": {
+            "enum": [
+              "SERVER",
+              "FRONTEND",
+              "INTERNAL"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventLogId",
+          "code",
+          "definitionRevisionId",
+          "schemaVersion",
+          "source",
+          "occurredAt",
+          "receivedAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioRunResponseDto": {
+        "properties": {
           "conversationId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "conversationPolicy": {
             "allOf": [
@@ -3447,9 +5623,9 @@
             "format": "uuid",
             "type": "string"
           },
-          "error": {
+          "errorCode": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "eventLogId": {
             "format": "uuid",
@@ -3458,7 +5634,7 @@
           "finishedAt": {
             "format": "date-time",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "id": {
             "format": "uuid",
@@ -3467,7 +5643,7 @@
           "interactionSessionId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "projectId": {
             "format": "uuid",
@@ -3478,6 +5654,11 @@
           },
           "scenarioId": {
             "format": "uuid",
+            "type": "string"
+          },
+          "scenarioRevisionId": {
+            "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "startedAt": {
@@ -3506,7 +5687,6 @@
           "endUserId",
           "conversationPolicy",
           "status",
-          "context",
           "startedAt",
           "currentStep",
           "scenario",
@@ -3560,21 +5740,9 @@
             "nullable": true,
             "type": "object"
           },
-          "commandType": {
-            "nullable": true,
-            "type": "object"
-          },
-          "config": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "error": {
-            "nullable": true,
-            "type": "object"
-          },
           "errorCode": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "executor": {
             "allOf": [
@@ -3583,26 +5751,30 @@
               }
             ]
           },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
+            "type": "string"
+          },
+          "nodeKey": {
             "type": "string"
           },
           "position": {
             "type": "number"
           },
-          "result": {
-            "additionalProperties": true,
-            "nullable": true,
-            "type": "object"
-          },
           "resumeAt": {
             "format": "date-time",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
-          "serverHandler": {
+          "startedAt": {
+            "format": "date-time",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "status": {
             "allOf": [
@@ -3615,9 +5787,9 @@
         "required": [
           "id",
           "position",
+          "nodeKey",
           "actionType",
           "executor",
-          "config",
           "status"
         ],
         "type": "object"
@@ -3628,6 +5800,8 @@
           "RUNNING",
           "WAITING_TIME",
           "WAITING_ACK",
+          "WAITING_INPUT",
+          "WAITING_DELIVERY",
           "SUCCEEDED",
           "FAILED",
           "EXPIRED",
@@ -3659,6 +5833,46 @@
           "ARCHIVED"
         ],
         "type": "string"
+      },
+      "ScenarioTimelineEntryResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "stepId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "ScenarioWarningResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "example": "ELIGIBILITY_RECHECK_ENABLED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
       },
       "SendAdminMessageDto": {
         "properties": {
@@ -3726,12 +5940,50 @@
           "SAY",
           "START_VOICE_CONVERSATION",
           "WAIT_FOR",
+          "WAIT_FOR_GOAL",
           "ASK_CHOICE",
           "CONDITION",
           "TRACK",
           "COMPLETE_SCENARIO"
         ],
         "type": "string"
+      },
+      "SinceTriggerRuleWindowDto": {
+        "additionalProperties": false,
+        "properties": {
+          "boundary": {
+            "default": "beforeTrigger",
+            "enum": [
+              "beforeTrigger"
+            ],
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "sinceTrigger"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "SkipIfOfflineDeliveryPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "SKIP_IF_OFFLINE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
       },
       "SpeechIntegrationResponseDto": {
         "properties": {
@@ -4041,9 +6293,27 @@
         ],
         "type": "object"
       },
+      "UnavailableDeliveryPolicyResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
       "UpdateEventDefinitionDto": {
         "properties": {
           "clientIngestible": {
+            "type": "boolean"
+          },
+          "countsAsActivity": {
             "type": "boolean"
           },
           "description": {
@@ -4530,6 +6800,87 @@
           "DATETIME"
         ],
         "type": "string"
+      },
+      "ValidateScenarioRuleDto": {
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "$ref": "#/components/schemas/ScenarioRuleDto"
+          }
+        },
+        "required": [
+          "rule"
+        ],
+        "type": "object"
+      },
+      "ValidateScenarioRuleResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "cost": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRuleCostResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuleDependencyResponseDto"
+            },
+            "type": "array"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuleIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioWarningResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid",
+          "issues",
+          "dependencies",
+          "cost",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "WaitUntilOnlineDeliveryPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "expiryMs": {
+            "example": 120000,
+            "maximum": 604800000,
+            "minimum": 1000,
+            "type": "number"
+          },
+          "kind": {
+            "enum": [
+              "WAIT_UNTIL_ONLINE"
+            ],
+            "type": "string"
+          },
+          "recheckEligibility": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "expiryMs"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -5879,6 +8230,438 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/catalog": {
+      "get": {
+        "operationId": "ScenarioAuthoring_catalog",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionCatalogResponseDto"
+                }
+              }
+            },
+            "description": "Typed fields, operators, aggregations and CMS controls."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/preview": {
+      "post": {
+        "operationId": "ScenarioAuthoring_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewScenarioRuleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewScenarioRuleResponseDto"
+                }
+              }
+            },
+            "description": "A redaction-safe explanation anchored to a Project-owned Event."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/scenarios/{scenarioId}/publish": {
+      "post": {
+        "operationId": "ScenarioAuthoring_publishScenario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scenarioId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishScenarioDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishScenarioResponseDto"
+                }
+              }
+            },
+            "description": "An immutable published Scenario Revision pinned by future Runs."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/scenarios/{scenarioId}/revisions/{revisionId}/rollback": {
+      "post": {
+        "operationId": "ScenarioAuthoring_rollbackScenario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scenarioId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackScenarioDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A successor revision copied from a selected published revision."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/validate": {
+      "post": {
+        "operationId": "ScenarioAuthoring_validate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateScenarioRuleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateScenarioRuleResponseDto"
+                }
+              }
+            },
+            "description": "All semantic validation issues and pinned dependencies."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/scenario-runs": {
       "get": {
         "operationId": "ScenarioRuns_list",
@@ -5901,6 +8684,59 @@
                     "$ref": "#/components/schemas/ScenarioRunResponseDto"
                   },
                   "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario runs"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-runs/{runId}/explain": {
+      "get": {
+        "operationId": "ScenarioRuns_explain",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRunExplainResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
                 }
               }
             },
@@ -7697,6 +10533,14 @@
         "operationId": "Events_list",
         "parameters": [
           {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "in": "query",
             "name": "page",
             "required": false,
@@ -7732,14 +10576,6 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/EventStatus"
-            }
-          },
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
             }
           }
         ],

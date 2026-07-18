@@ -11,6 +11,8 @@ export interface CreateEventDefinitionDto {
   clientIngestible?: boolean;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   code: string;
+  /** Whether a valid frontend occurrence extends Visit and Activity Day. */
+  countsAsActivity?: boolean;
   /** @maxLength 2000 */
   description?: string;
   enabled?: boolean;

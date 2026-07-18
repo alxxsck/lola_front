@@ -103,5 +103,4 @@ npm run api:check
 - Ручные координаты не сохраняются; layout перестраивается из графа.
 - Глобальной остановки активного run в редакторе нет.
 - Ответ пользователя (`scenario.choice` / `scenario_choice`) относится к SDK клиента, а не к CMS.
-- Backend хранит `nodeKey`, `nextNodeKey`, `inputAnswer` и reminder state в `ScenarioRunStep`, но текущий `ScenarioRunStepResponseDto` их не отдаёт. Поэтому раздел «Операции» пока показывает action type и config, а не имя пройденного графового узла.
-- В runtime есть статус `WAITING_INPUT`, но в backend Swagger enum он пока пропущен. Frontend OpenAPI snapshot уже учитывает статус, чтобы UI корректно показывал ожидающий вопрос; backend DTO стоит синхронизировать при следующем изменении API.
+- `ScenarioRunStepResponseDto` отдаёт `nodeKey`, executor, timing, `errorCode`, command metadata и статусы `WAITING_INPUT`/`WAITING_DELIVERY`, но не раскрывает `nextNodeKey`, `inputAnswer`, reminder state, action config/result или command payload. Поэтому раздел «Операции» показывает безопасную operational summary; подробный V2 путь загружается через Run Explain.

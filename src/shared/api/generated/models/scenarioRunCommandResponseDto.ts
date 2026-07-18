@@ -5,15 +5,18 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioRunCommandResponseDtoExpiresAt } from "./scenarioRunCommandResponseDtoExpiresAt";
-import type { ScenarioRunCommandResponseDtoPayload } from "./scenarioRunCommandResponseDtoPayload";
 
 export interface ScenarioRunCommandResponseDto {
+  /** @nullable */
+  acknowledgedAt?: string | null;
   createdAt: string;
   /** @nullable */
-  expiresAt?: ScenarioRunCommandResponseDtoExpiresAt;
+  executedAt?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
   id: string;
-  payload: ScenarioRunCommandResponseDtoPayload;
+  /** @nullable */
+  sentAt?: string | null;
   sequence: number;
   status: string;
   type: string;

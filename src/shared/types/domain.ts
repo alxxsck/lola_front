@@ -129,6 +129,7 @@ export interface EventDefinition {
   version: number
   payloadSchema: Record<string, any>
   clientIngestible: boolean
+  countsAsActivity: boolean
   enabled: boolean
   createdAt?: string
   updatedAt?: string
@@ -317,22 +318,24 @@ export interface ScenarioRunCommand {
   type: string
   status: string
   sequence: number
-  payload: Record<string, unknown>
   createdAt: string
   expiresAt?: string
+  sentAt?: string
+  acknowledgedAt?: string
+  executedAt?: string
 }
 
 export interface ScenarioRunStep {
   id: string
   position: number
-  nodeKey?: string
-  nextNodeKey?: string
+  nodeKey: string
   actionType: string
-  status: 'PENDING' | 'RUNNING' | 'WAITING_TIME' | 'WAITING_ACK' | 'WAITING_INPUT' | 'SUCCEEDED' | 'FAILED' | 'EXPIRED' | 'SKIPPED'
-  config: Record<string, unknown>
+  executor: ActionExecutor
+  status: 'PENDING' | 'RUNNING' | 'WAITING_TIME' | 'WAITING_ACK' | 'WAITING_INPUT' | 'WAITING_DELIVERY' | 'SUCCEEDED' | 'FAILED' | 'EXPIRED' | 'SKIPPED'
   errorCode?: string
-  error?: Record<string, unknown>
-  result?: Record<string, unknown>
+  startedAt?: string
+  finishedAt?: string
+  resumeAt?: string
   command?: ScenarioRunCommand
 }
 
@@ -345,8 +348,11 @@ export interface ScenarioRun {
   userId: string
   userExternalId: string
   status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'CANCELLED' | 'EXPIRED'
-  context: Record<string, unknown>
-  error?: Record<string, unknown>
+  conversationPolicy: ConversationPolicy
+  conversationId?: string
+  interactionSessionId?: string
+  scenarioRevisionId?: string
+  errorCode?: string
   startedAt: string
   finishedAt?: string
   currentStep: number

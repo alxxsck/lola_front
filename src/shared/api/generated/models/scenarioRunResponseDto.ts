@@ -5,36 +5,32 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioRunResponseDtoContext } from "./scenarioRunResponseDtoContext";
-import type { ScenarioRunResponseDtoConversationId } from "./scenarioRunResponseDtoConversationId";
 import type { ConversationPolicy } from "./conversationPolicy";
 import type { ScenarioRunUserSummaryDto } from "./scenarioRunUserSummaryDto";
-import type { ScenarioRunResponseDtoError } from "./scenarioRunResponseDtoError";
-import type { ScenarioRunResponseDtoFinishedAt } from "./scenarioRunResponseDtoFinishedAt";
-import type { ScenarioRunResponseDtoInteractionSessionId } from "./scenarioRunResponseDtoInteractionSessionId";
 import type { ScenarioRunScenarioSummaryDto } from "./scenarioRunScenarioSummaryDto";
 import type { ScenarioRunStatus } from "./scenarioRunStatus";
 import type { ScenarioRunStepResponseDto } from "./scenarioRunStepResponseDto";
 
 export interface ScenarioRunResponseDto {
-  context: ScenarioRunResponseDtoContext;
   /** @nullable */
-  conversationId?: ScenarioRunResponseDtoConversationId;
+  conversationId?: string | null;
   conversationPolicy: ConversationPolicy;
   currentStep: number;
   endUser: ScenarioRunUserSummaryDto;
   endUserId: string;
   /** @nullable */
-  error?: ScenarioRunResponseDtoError;
+  errorCode?: string | null;
   eventLogId: string;
   /** @nullable */
-  finishedAt?: ScenarioRunResponseDtoFinishedAt;
+  finishedAt?: string | null;
   id: string;
   /** @nullable */
-  interactionSessionId?: ScenarioRunResponseDtoInteractionSessionId;
+  interactionSessionId?: string | null;
   projectId: string;
   scenario: ScenarioRunScenarioSummaryDto;
   scenarioId: string;
+  /** @nullable */
+  scenarioRevisionId?: string | null;
   startedAt: string;
   status: ScenarioRunStatus;
   steps: ScenarioRunStepResponseDto[];
