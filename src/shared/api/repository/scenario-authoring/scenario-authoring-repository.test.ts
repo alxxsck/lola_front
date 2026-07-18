@@ -107,6 +107,15 @@ describe('scenario authoring repository', () => {
     expect(scenarioAuthoringValidate).toHaveBeenCalledWith('project-1', { rule })
   })
 
+  it('forwards a cancellation signal to rule validation', async () => {
+    const controller = new AbortController()
+    const response = { valid: true, issues: [], dependencies: [], cost: null, warnings: [] }
+    vi.mocked(scenarioAuthoringValidate).mockResolvedValue(response)
+
+    await expect(scenarioAuthoringRepository.validateRule('project-1', rule, { signal: controller.signal })).resolves.toBe(response)
+    expect(scenarioAuthoringValidate).toHaveBeenCalledWith('project-1', { rule }, { signal: controller.signal })
+  })
+
   it('previews a generated rule against an Event Log scope', async () => {
     const response = { valid: true, matched: true, issues: [], dependencies: [], cost: null, warnings: [] }
     vi.mocked(scenarioAuthoringPreview).mockResolvedValue(response)
@@ -116,6 +125,23 @@ describe('scenario authoring repository', () => {
       rule,
       scope: { kind: 'eventLog', eventLogId: 'event-log-1' },
     })
+  })
+
+  it('forwards a cancellation signal to rule preview', async () => {
+    const controller = new AbortController()
+    const response = { valid: true, matched: true, issues: [], dependencies: [], cost: null, warnings: [] }
+    vi.mocked(scenarioAuthoringPreview).mockResolvedValue(response)
+
+    await expect(scenarioAuthoringRepository.previewRule(
+      'project-1',
+      rule,
+      { kind: 'eventLog', eventLogId: 'event-log-1' },
+      { signal: controller.signal },
+    )).resolves.toBe(response)
+    expect(scenarioAuthoringPreview).toHaveBeenCalledWith('project-1', {
+      rule,
+      scope: { kind: 'eventLog', eventLogId: 'event-log-1' },
+    }, { signal: controller.signal })
   })
 
   it('publishes through the atomic generated command', async () => {

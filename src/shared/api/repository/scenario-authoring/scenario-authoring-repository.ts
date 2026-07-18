@@ -16,6 +16,10 @@ export type ScenarioPublishInput = Required<Pick<
   'catalogRevision' | 'deliveryPolicy' | 'expectedCurrentRevisionId' | 'rule'
 >>
 
+export interface ScenarioAuthoringRequestOptions {
+  signal?: AbortSignal
+}
+
 async function callApi<Response>(request: () => Promise<Response>): Promise<Response> {
   try {
     return await request()
@@ -29,12 +33,16 @@ export const scenarioAuthoringRepository = {
     return adaptScenarioAuthoringContract(await callApi(() => scenarioAuthoringCatalog(projectId)))
   },
 
-  validateRule(projectId: string, rule: ScenarioRuleDto) {
-    return callApi(() => scenarioAuthoringValidate(projectId, { rule }))
+  validateRule(projectId: string, rule: ScenarioRuleDto, options?: ScenarioAuthoringRequestOptions) {
+    return callApi(() => options
+      ? scenarioAuthoringValidate(projectId, { rule }, options)
+      : scenarioAuthoringValidate(projectId, { rule }))
   },
 
-  previewRule(projectId: string, rule: ScenarioRuleDto, scope: PreviewScenarioScopeDto) {
-    return callApi(() => scenarioAuthoringPreview(projectId, { rule, scope }))
+  previewRule(projectId: string, rule: ScenarioRuleDto, scope: PreviewScenarioScopeDto, options?: ScenarioAuthoringRequestOptions) {
+    return callApi(() => options
+      ? scenarioAuthoringPreview(projectId, { rule, scope }, options)
+      : scenarioAuthoringPreview(projectId, { rule, scope }))
   },
 
   publishScenario(projectId: string, scenarioId: string, draft: ScenarioPublishInput) {
