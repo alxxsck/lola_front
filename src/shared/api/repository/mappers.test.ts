@@ -37,7 +37,7 @@ describe('repository domain mappers', () => {
     expect(mapEventDefinition(eventDto)).toMatchObject({ description: undefined, payloadSchema: { type: 'object' } })
     expect(user).toMatchObject({ locale: undefined, segment: undefined })
     expect(toCreateEventDefinitionDto(mapEventDefinition(eventDto))).toEqual({
-      code: 'signup', name: 'Signup', version: 1, payloadSchema: { type: 'object' }, clientIngestible: false, countsAsActivity: false, enabled: true,
+      code: 'signup', name: 'Signup', payloadSchema: { type: 'object' }, clientIngestible: false, countsAsActivity: false, enabled: true,
     })
   })
 

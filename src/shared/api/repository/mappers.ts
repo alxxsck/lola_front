@@ -198,7 +198,6 @@ export function toCreateEventDefinitionDto(value: SaveEventDefinition): CreateEv
     code: value.code,
     name: value.name,
     description: value.description,
-    version: value.version,
     payloadSchema: value.payloadSchema,
     clientIngestible: value.clientIngestible,
     countsAsActivity: value.countsAsActivity,

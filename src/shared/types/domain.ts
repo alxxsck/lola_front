@@ -117,9 +117,6 @@ export interface UiElement {
   updatedAt?: string
 }
 
-export type EventFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'
-export interface EventField { id: string; name: string; code: string; type: EventFieldType; required: boolean }
-
 export interface EventDefinition {
   id: string
   projectId: string
