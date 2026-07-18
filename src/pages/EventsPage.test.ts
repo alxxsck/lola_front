@@ -64,6 +64,7 @@ function mountPage() {
           props: ['visible'],
           template: '<div v-if="visible"><slot /><slot name="footer" /></div>',
         },
+        Message: { template: '<div><slot /></div>' },
       },
     },
   })
@@ -166,6 +167,46 @@ describe('EventsPage event editor journey', () => {
     expect(wrapper.find('#event-name-error').text()).toContain('понятное название')
     expect(wrapper.find('.event-steps button.active strong').text()).toBe('Смысл')
     expect(mocks.saveEvent).not.toHaveBeenCalled()
+  })
+
+  it('shows loading and empty list states', async () => {
+    mocks.getEvents.mockReturnValue(new Promise(() => {}))
+    const loadingWrapper = mountPage()
+
+    expect(loadingWrapper.findAll('.events-list .event-card')).toHaveLength(4)
+    loadingWrapper.unmount()
+
+    mocks.getEvents.mockResolvedValue([])
+    const emptyWrapper = mountPage()
+    await flushPromises()
+
+    expect(emptyWrapper.get('.empty').text()).toContain('Каталог событий пока пуст')
+  })
+
+  it('shows an empty search result', async () => {
+    const wrapper = mountPage()
+    await flushPromises()
+
+    wrapper.getComponent({ name: 'InputText' }).vm.$emit('update:modelValue', 'несуществующее событие')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('.empty').text()).toContain('События не найдены')
+  })
+
+  it('shows a load error and retries successfully', async () => {
+    mocks.getEvents.mockReset()
+      .mockRejectedValueOnce(new Error('Сбой каталога'))
+      .mockResolvedValue([])
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Сбой каталога')
+
+    await wrapper.findAll('button-stub[label="Повторить"]')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(mocks.getEvents).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).not.toContain('Сбой каталога')
   })
 
 })

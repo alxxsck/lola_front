@@ -246,4 +246,24 @@ describe('AI usage charts', () => {
     expect(wrapper.text()).toContain('Текстовые команды Voice')
     expect(wrapper.text()).toContain('0,06 $')
   })
+
+  it('assigns a distinct theme series token to every visible cost operation', () => {
+    const breakdown = Array.from({ length: 6 }, (_, index) => ({
+      ...xAiBreakdown,
+      operation: `operation_${index + 1}`,
+      billedCost: index + 1,
+      estimatedCost: 0,
+    }))
+    const wrapper = mount(AiModalityChart, {
+      props: {
+        totals: { ...emptyXAiUsage, records: 6, billedCost: 21 },
+        breakdown,
+        metric: 'cost',
+        currency: 'USD',
+      },
+    })
+
+    const colors = wrapper.findAll('.donut-segment').map((segment) => segment.attributes('stroke'))
+    expect(new Set(colors).size).toBe(6)
+  })
 })

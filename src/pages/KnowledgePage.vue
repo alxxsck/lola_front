@@ -1632,8 +1632,8 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1.2fr) minmax(440px, 0.8fr);
   gap: 30px;
   padding: 28px;
-  background: linear-gradient(135deg, #252920 0%, #2f3429 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--surface-emphasis) 0%, var(--surface-emphasis-raised) 100%);
+  color: var(--text-on-emphasis);
   overflow: hidden;
   position: relative;
 }
@@ -1644,7 +1644,7 @@ onBeforeUnmount(() => {
   height: 260px;
   right: -120px;
   top: -150px;
-  border: 48px solid rgba(215, 255, 100, 0.08);
+  border: 48px solid color-mix(in srgb, var(--brand) 8%, transparent);
   border-radius: 50%;
 }
 .hero-copy {
@@ -1662,7 +1662,7 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   border-radius: 17px;
   background: var(--accent);
-  color: #252920;
+  color: var(--on-brand);
   font-size: 1.15rem;
 }
 .hero-copy h2 {
@@ -1671,7 +1671,7 @@ onBeforeUnmount(() => {
 .hero-copy p {
   max-width: 650px;
   margin: 7px 0 0;
-  color: #b5baaf;
+  color: var(--text-on-emphasis-muted);
   font-size: 0.8rem;
 }
 .stat-grid {
@@ -1683,16 +1683,16 @@ onBeforeUnmount(() => {
 }
 .stat-grid > div {
   padding: 15px;
-  border: 1px solid #484e42;
+  border: 1px solid var(--border-on-emphasis);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.035);
+  background: color-mix(in srgb, var(--text-on-emphasis) 4%, transparent);
 }
 .stat-grid span,
 .stat-grid strong {
   display: block;
 }
 .stat-grid span {
-  color: #aeb4a9;
+  color: var(--text-on-emphasis-muted);
   font-size: 0.65rem;
 }
 .stat-grid strong {
@@ -1700,13 +1700,13 @@ onBeforeUnmount(() => {
   font: 700 1.35rem Manrope;
 }
 .stat-grid .ready strong {
-  color: #91dd94;
+  color: var(--status-success-on-emphasis);
 }
 .stat-grid .indexing strong {
-  color: #ffd57e;
+  color: var(--status-warning-on-emphasis);
 }
 .stat-grid .failed strong {
-  color: #ff987c;
+  color: var(--status-danger-on-emphasis);
 }
 .documents-card {
   margin-top: 18px;
@@ -1743,7 +1743,7 @@ onBeforeUnmount(() => {
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
-  color: #969b91;
+  color: var(--text-secondary);
   font-size: 0.78rem;
 }
 .search-control .p-inputtext {
@@ -1764,18 +1764,18 @@ onBeforeUnmount(() => {
   gap: 18px;
   min-height: 82px;
   padding: 13px 17px 13px 20px;
-  border-bottom: 1px solid #ecece7;
+  border-bottom: 1px solid var(--border-subtle);
   border-left: 3px solid transparent;
   transition: background 0.15s ease;
 }
 .document-row:hover {
-  background: #fafbf8;
+  background: var(--surface-hover);
 }
 .document-row.status-indexing {
-  border-left-color: #edbd54;
+  border-left-color: var(--status-warning);
 }
 .document-row.status-failed {
-  border-left-color: #eb795a;
+  border-left-color: var(--status-danger);
 }
 .document-main {
   display: flex;
@@ -1795,10 +1795,10 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  border: 1px solid #e5e7df;
+  border: 1px solid var(--border-default);
   border-radius: 13px;
-  background: #f5f7ef;
-  color: #768e32;
+  background: var(--brand-soft);
+  color: var(--text-brand);
   font-size: 1.05rem;
 }
 .document-icon.large {
@@ -1826,7 +1826,7 @@ onBeforeUnmount(() => {
   gap: 5px;
   overflow: hidden;
   margin-top: 6px;
-  color: #8b9086;
+  color: var(--text-secondary);
   font-size: 0.67rem;
   white-space: nowrap;
 }
@@ -1837,7 +1837,7 @@ onBeforeUnmount(() => {
 .document-error {
   overflow: hidden;
   margin-top: 5px;
-  color: #b94d34;
+  color: var(--status-danger-text);
   font-size: 0.66rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1849,10 +1849,10 @@ onBeforeUnmount(() => {
 }
 .meta-chip {
   padding: 5px 7px;
-  border: 1px solid #e1e3dc;
+  border: 1px solid var(--border-default);
   border-radius: 7px;
-  background: #f7f8f4;
-  color: #6e736a;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
   font-size: 0.62rem;
   font-weight: 700;
 }
@@ -1874,7 +1874,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 14px;
   min-height: 80px;
-  border-bottom: 1px solid #ecece7;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .document-skeleton > div {
   display: flex;
@@ -1896,12 +1896,12 @@ onBeforeUnmount(() => {
   place-items: center;
   margin: 0 auto;
   border-radius: 20px;
-  background: #eff4df;
-  color: #819d32;
+  background: var(--brand-soft);
+  color: var(--text-brand);
 }
 .empty-illustration.error {
-  background: #fff0ec;
-  color: #c65e43;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 .empty-illustration i {
   margin: 0;
@@ -1924,14 +1924,14 @@ onBeforeUnmount(() => {
   gap: 12px;
   margin-top: 16px;
   padding: 16px 18px;
-  border: 1px solid #dedfd8;
+  border: 1px solid var(--border-default);
   border-radius: 16px;
-  background: #edeee9;
-  color: #6f746b;
+  background: var(--surface-active);
+  color: var(--text-secondary);
 }
 .privacy-note > i {
   margin-top: 4px;
-  color: #687a33;
+  color: var(--text-brand);
 }
 .privacy-note p {
   margin: 0;
@@ -1949,17 +1949,17 @@ onBeforeUnmount(() => {
   gap: 6px;
   width: 100%;
   padding: 27px;
-  border: 1.5px dashed #cfd4c5;
+  border: 1.5px dashed var(--border-strong);
   border-radius: 17px;
-  background: #f8faf4;
+  background: var(--surface-subtle);
   color: inherit;
   cursor: pointer;
   transition: 0.15s ease;
 }
 .dropzone:hover,
 .dropzone.dragging {
-  border-color: #99b24f;
-  background: #f2f8df;
+  border-color: var(--text-brand);
+  background: var(--brand-soft);
 }
 .dropzone:disabled {
   cursor: not-allowed;
@@ -1972,8 +1972,8 @@ onBeforeUnmount(() => {
   place-items: center;
   margin-bottom: 4px;
   border-radius: 15px;
-  background: #e8f5c3;
-  color: #708e19;
+  background: var(--brand-soft);
+  color: var(--text-brand);
   font-size: 1.15rem;
 }
 .dropzone > span:not(.drop-icon) {
@@ -1982,7 +1982,7 @@ onBeforeUnmount(() => {
 }
 .dropzone small {
   margin-top: 6px;
-  color: #92978d;
+  color: var(--text-secondary);
   font-size: 0.65rem;
 }
 .visually-hidden {
@@ -1996,7 +1996,7 @@ onBeforeUnmount(() => {
 .upload-list {
   max-height: 300px;
   overflow: auto;
-  border: 1px solid #e7e8e2;
+  border: 1px solid var(--border-default);
   border-radius: 14px;
 }
 .upload-row {
@@ -2006,7 +2006,7 @@ onBeforeUnmount(() => {
   gap: 10px;
   min-height: 62px;
   padding: 9px 11px;
-  border-bottom: 1px solid #ecece7;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .upload-row:last-child {
   border-bottom: 0;
@@ -2017,8 +2017,8 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: #f1f3ec;
-  color: #78866a;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
 }
 .upload-copy {
   min-width: 0;
@@ -2055,10 +2055,10 @@ onBeforeUnmount(() => {
   text-align: right;
 }
 .upload-result.success {
-  color: #478650;
+  color: var(--status-success-text);
 }
 .upload-result.error {
-  color: #b94d34;
+  color: var(--status-danger-text);
 }
 .metadata-grid {
   display: grid;
@@ -2067,12 +2067,12 @@ onBeforeUnmount(() => {
 }
 .field small {
   align-self: flex-end;
-  color: #9a9e96;
+  color: var(--text-secondary);
   font-size: 0.62rem;
 }
 .format-note {
   margin: 0;
-  color: #858a80;
+  color: var(--text-secondary);
   font-size: 0.66rem;
   line-height: 1.5;
 }
@@ -2110,16 +2110,16 @@ onBeforeUnmount(() => {
   gap: 1px;
   margin: 0;
   overflow: hidden;
-  border: 1px solid #e5e7df;
+  border: 1px solid var(--border-default);
   border-radius: 14px;
-  background: #e5e7df;
+  background: var(--border-default);
 }
 .details-meta > div {
   padding: 13px;
-  background: #f8f9f6;
+  background: var(--surface-subtle);
 }
 .details-meta dt {
-  color: #8a8f85;
+  color: var(--text-secondary);
   font-size: 0.62rem;
 }
 .details-meta dd {
@@ -2132,15 +2132,15 @@ onBeforeUnmount(() => {
 }
 .text-preview {
   overflow: hidden;
-  border: 1px solid #e3e5de;
+  border: 1px solid var(--border-default);
   border-radius: 15px;
 }
 .text-preview header {
   display: flex;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid #e3e5de;
-  background: #f7f8f4;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--surface-subtle);
   font-size: 0.7rem;
 }
 .text-preview header span {
@@ -2151,7 +2151,7 @@ onBeforeUnmount(() => {
   overflow: auto;
   margin: 0;
   padding: 17px;
-  background: #fff;
+  background: var(--surface-card);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font:

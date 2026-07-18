@@ -107,7 +107,7 @@ async function save() {
 .activity-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: end; }
 .activity-form label { display: grid; gap: 7px; }
 .activity-form label > span { font-size: .76rem; font-weight: 700; }
-.activity-form small { color: var(--text-muted); font-size: .68rem; line-height: 1.4; }
+.activity-form small { color: var(--text-small-muted); font-size: .68rem; line-height: 1.4; }
 .activity-form :deep(button) { align-self: end; }
 @media (max-width: 900px) { .activity-form { grid-template-columns: 1fr; } }
 </style>

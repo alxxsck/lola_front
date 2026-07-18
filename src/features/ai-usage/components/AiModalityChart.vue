@@ -22,12 +22,24 @@ const props = defineProps<{
 
 const radius = 46
 const circumference = 2 * Math.PI * radius
-const operationColors = ['#8e77f5', '#ff8c6b', '#9fc62d', '#52a9a5', '#e3af43', '#7688db']
+const operationColors = [
+  'var(--chart-series-1)',
+  'var(--chart-series-4)',
+  'var(--chart-series-6)',
+  'var(--chart-series-5)',
+  'var(--chart-series-3)',
+  'var(--chart-series-2)',
+]
+const modalityColors: Record<'text' | 'audio' | 'image', string> = {
+  text: 'var(--chart-series-1)',
+  audio: 'var(--chart-series-4)',
+  image: 'var(--chart-series-6)',
+}
 const modalities = computed(() =>
   getModalityUsage(props.totals).map((item) => ({
     key: item.key,
     label: item.label,
-    color: item.color,
+    color: modalityColors[item.key],
     value: item.tokens,
   })),
 )
@@ -191,9 +203,9 @@ function percentage(itemValue: number): string {
   container-type: inline-size;
   min-width: 0;
   padding: 22px;
-  border: 1px solid #e7e8e2;
+  border: 1px solid var(--border-default);
   border-radius: 17px;
-  background: #fff;
+  background: var(--surface-card);
 }
 .chart-header {
   display: flex;
@@ -205,7 +217,7 @@ function percentage(itemValue: number): string {
 .chart-kicker {
   display: block;
   margin-bottom: 5px;
-  color: #8b9086;
+  color: var(--text-small-muted);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -224,21 +236,21 @@ function percentage(itemValue: number): string {
   text-align: right;
 }
 .chart-summary strong {
-  color: #242821;
+  color: var(--text-primary);
   font: 700 1.2rem/1.1 Manrope;
   letter-spacing: -0.03em;
   white-space: nowrap;
 }
 .chart-summary span {
   margin-top: 3px;
-  color: #777c72;
+  color: var(--text-small-muted);
   font-size: 0.62rem;
   font-weight: 700;
   white-space: nowrap;
 }
 .chart-summary small {
   margin-top: 5px;
-  color: #92978d;
+  color: var(--text-small-muted);
   font-size: 0.58rem;
   font-weight: 600;
   white-space: nowrap;
@@ -266,7 +278,7 @@ function percentage(itemValue: number): string {
   stroke-width: 12;
 }
 .donut-track {
-  stroke: #eff0eb;
+  stroke: var(--surface-active);
 }
 .donut-segment {
   stroke-linecap: butt;
@@ -282,7 +294,7 @@ function percentage(itemValue: number): string {
   align-items: center;
   gap: 9px;
   padding: 12px 0;
-  border-bottom: 1px solid #eeefe9;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .legend-row:last-child {
   border-bottom: 0;
@@ -307,7 +319,7 @@ function percentage(itemValue: number): string {
 }
 .legend-row small {
   margin-top: 2px;
-  color: #92978d;
+  color: var(--text-small-muted);
   font-size: 0.62rem;
 }
 .legend-row b {
@@ -322,28 +334,28 @@ function percentage(itemValue: number): string {
   gap: 12px;
   padding: 12px 13px;
   border-radius: 11px;
-  background: #f7f8f4;
-  color: #72776d;
+  background: var(--surface-subtle);
+  color: var(--text-small-muted);
   font-size: 0.66rem;
 }
 .cache-row i {
   margin-right: 5px;
-  color: #99bd2e;
+  color: var(--text-brand);
 }
 .cache-row strong {
-  color: #373b34;
+  color: var(--text-primary);
 }
 .chart-empty {
   display: grid;
   place-items: center;
   min-height: 225px;
-  color: #999e94;
+  color: var(--text-small-muted);
   font-size: 0.75rem;
 }
 .chart-empty i {
   margin-bottom: -65px;
   font-size: 1.65rem;
-  color: #c4c7bf;
+  color: var(--text-disabled);
 }
 @media (max-width: 600px) {
   .chart-header {

@@ -58,11 +58,15 @@ describe('EventLogsPage', () => {
   })
 
   it('loads the first snapshot page through the filtered CMS endpoint', async () => {
-    shallowMount(EventLogsPage)
+    const wrapper = shallowMount(EventLogsPage)
     await flushPromises()
 
     expect(mocks.getEventLogPage).toHaveBeenCalledWith('project-1', { limit: 25 })
     expect(mocks.getEvents).toHaveBeenCalledWith('project-1')
+    expect(wrapper.get('.stream-summary').attributes()).toMatchObject({
+      tabindex: '0',
+      'aria-label': 'Сводка потока событий',
+    })
   })
 
   it('does not request sensitive logs for a viewer', async () => {
@@ -170,5 +174,31 @@ describe('EventLogsPage', () => {
       ['project-1', { externalUserId: 'customer-42', limit: 25 }],
     ])
     expect(mocks.replace).toHaveBeenCalledWith({ query: { user: 'customer-42' } })
+  })
+
+  it('shows loading and empty states', async () => {
+    mocks.getEventLogPage.mockReturnValue(new Promise(() => {}))
+    const loadingWrapper = shallowMount(EventLogsPage)
+
+    expect(loadingWrapper.findAll('skeleton-stub')).toHaveLength(8)
+    loadingWrapper.unmount()
+
+    mocks.getEventLogPage.mockResolvedValue({ items: [], nextCursor: null })
+    const emptyWrapper = shallowMount(EventLogsPage)
+    await flushPromises()
+
+    expect(emptyWrapper.get('.empty').text()).toContain('События не найдены')
+  })
+
+  it('switches to the timeline and opens a detail drawer', async () => {
+    mocks.getEventLogPage.mockResolvedValue({ items: [log], nextCursor: null })
+    const wrapper = shallowMount(EventLogsPage)
+    await flushPromises()
+
+    await wrapper.findAll('.view-switch button')[1]!.trigger('click')
+    expect(wrapper.find('.timeline').exists()).toBe(true)
+
+    await wrapper.get('.timeline-item').trigger('click')
+    expect(wrapper.find('drawer-stub').attributes()).toHaveProperty('visible')
   })
 })

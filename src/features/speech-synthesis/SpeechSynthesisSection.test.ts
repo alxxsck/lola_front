@@ -119,6 +119,25 @@ describe('SpeechSynthesisSection', () => {
     })
   })
 
+  it('shows a save failure and restores the controls after the request', async () => {
+    mocks.updateSettings.mockRejectedValueOnce(new Error('TTS save failed'))
+    const wrapper = shallowMount(SpeechSynthesisSection, {
+      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+    })
+    await flushPromises()
+
+    const stability = wrapper.findAllComponents(InputNumber)
+      .find((component) => component.attributes('id') === 'tts-stability')!
+    stability.vm.$emit('update:modelValue', 0.7)
+    await wrapper.vm.$nextTick()
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.find('message-stub[severity="error"]').exists()).toBe(true)
+    expect(stability.attributes('disabled')).toBe('false')
+    expect(mocks.addToast).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }))
+  })
+
   it('starts collapsed to the header and exposes the expanded state', async () => {
     const wrapper = shallowMount(SpeechSynthesisSection, {
       props: { projectId: 'project-1', supportedLocales: ['ru'] },

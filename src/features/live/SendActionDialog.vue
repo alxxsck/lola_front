@@ -183,5 +183,5 @@ async function send() {
 </template>
 
 <style scoped>
-.recipient{display:flex;align-items:center;gap:12px;padding:13px}.recipient strong,.recipient small{display:block}.recipient strong{font-size:.82rem}.recipient small{color:var(--muted);font-size:.72rem;margin-top:3px}.offline-dot{width:8px;height:8px;border-radius:50%;background:#9da198;box-shadow:0 0 0 5px #e8eae4}
+.recipient{display:flex;align-items:center;gap:12px;padding:13px}.recipient strong,.recipient small{display:block}.recipient strong{font-size:.82rem}.recipient small{color:var(--muted);font-size:.72rem;margin-top:3px}.offline-dot{width:8px;height:8px;border-radius:50%;background:var(--text-secondary);box-shadow:0 0 0 5px var(--surface-subtle)}
 </style>

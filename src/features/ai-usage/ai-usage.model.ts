@@ -111,7 +111,6 @@ export interface AiModelUsage {
 export interface AiModalityUsage {
   key: 'text' | 'audio' | 'image'
   label: string
-  color: string
   tokens: number
 }
 
@@ -274,19 +273,16 @@ export function getModalityUsage(
     {
       key: 'text',
       label: 'Текст',
-      color: '#8e77f5',
       tokens: totals.inputTextTokens + totals.outputTextTokens,
     },
     {
       key: 'audio',
       label: 'Голос',
-      color: '#ff8c6b',
       tokens: totals.inputAudioTokens + totals.outputAudioTokens,
     },
     {
       key: 'image',
       label: 'Изображения',
-      color: '#9fc62d',
       tokens: totals.inputImageTokens + totals.outputImageTokens,
     },
   ]

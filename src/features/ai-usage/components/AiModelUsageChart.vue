@@ -103,9 +103,9 @@ function formatDuration(value: number): string {
 .chart-card {
   min-width: 0;
   padding: 22px;
-  border: 1px solid #e7e8e2;
+  border: 1px solid var(--border-default);
   border-radius: 17px;
-  background: #fff;
+  background: var(--surface-card);
 }
 .chart-header {
   display: flex;
@@ -117,7 +117,7 @@ function formatDuration(value: number): string {
 .chart-kicker {
   display: block;
   margin-bottom: 5px;
-  color: #8b9086;
+  color: var(--text-small-muted);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -154,13 +154,13 @@ function formatDuration(value: number): string {
 }
 .model-copy small {
   margin-top: 2px;
-  color: #999e94;
+  color: var(--text-small-muted);
   font-size: 0.62rem;
 }
 .model-value {
   min-width: 0;
   max-width: 62%;
-  color: #555a51;
+  color: var(--text-primary);
   font-size: 0.72rem;
   font-weight: 700;
   overflow-wrap: anywhere;
@@ -170,31 +170,31 @@ function formatDuration(value: number): string {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eff0eb;
+  background: var(--surface-active);
 }
 .bar-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #8e77f5, #b6a7fb);
+  background: linear-gradient(90deg, var(--chart-series-1), var(--status-violet-text));
   transition: width 0.35s ease;
 }
 .chart-note {
   margin: 0;
-  color: #8a8f85;
+  color: var(--text-small-muted);
   font-size: 0.65rem;
 }
 .chart-empty {
   display: grid;
   place-items: center;
   min-height: 230px;
-  color: #999e94;
+  color: var(--text-small-muted);
   font-size: 0.75rem;
 }
 .chart-empty i {
   margin-bottom: -65px;
   font-size: 1.65rem;
-  color: #c4c7bf;
+  color: var(--text-disabled);
 }
 @media (max-width: 600px) {
   .chart-header {

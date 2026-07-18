@@ -99,6 +99,50 @@ describe('AiUsageSection', () => {
     })
   })
 
+  it('shows the loading state while the first report is pending', async () => {
+    mocks.fetchReport.mockReturnValue(new Promise(() => {}))
+
+    const wrapper = shallowMount(AiUsageSection, { props: { projectId: 'project-1' } })
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[aria-label="Загрузка статистики"]').exists()).toBe(true)
+    expect(wrapper.find('.provider-stack').exists()).toBe(false)
+  })
+
+  it('shows a load error and retries the request', async () => {
+    const report = await mocks.fetchReport()
+    mocks.fetchReport
+      .mockRejectedValueOnce(new Error('AI usage недоступен'))
+      .mockResolvedValueOnce(report)
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: 'project-1' },
+      global: { stubs: { Message: { template: '<div class="message-stub"><slot /></div>' } } },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('AI usage недоступен')
+    await wrapper.find('button-stub[label="Повторить"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.fetchReport).toHaveBeenCalledTimes(3)
+    expect(wrapper.find('.provider-stack').exists()).toBe(true)
+  })
+
+  it('keeps the cost mode disabled when the report has no priced xAI operations', async () => {
+    const report = await mocks.fetchReport()
+    report.breakdown[0].billedCost = 0
+    report.breakdown[0].estimatedCost = 0
+    mocks.fetchReport.mockResolvedValueOnce(report)
+
+    const wrapper = shallowMount(AiUsageSection, { props: { projectId: 'project-1' } })
+    await flushPromises()
+
+    const costButton = wrapper.findAll('.metric-switch button')[1]!
+    expect(costButton.attributes('disabled')).toBeDefined()
+    await costButton.trigger('click')
+    expect(wrapper.getComponent(AiModalityChart).props('metric')).toBe('tokens')
+  })
+
   it('shows xAI billed cost separately from ElevenLabs credits', async () => {
     const wrapper = shallowMount(AiUsageSection, {
       props: { projectId: 'project-1' },

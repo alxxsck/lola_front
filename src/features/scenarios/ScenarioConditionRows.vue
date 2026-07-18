@@ -42,5 +42,5 @@ function remove(index: number) {
 </template>
 
 <style scoped>
-.conditions{container-type:inline-size;display:flex;flex-direction:column;gap:8px}.condition-row{display:grid;grid-template-columns:minmax(0,1.25fr) 120px minmax(0,.75fr) 36px;gap:7px;align-items:center}.condition-row :deep(.p-select),.condition-row :deep(.p-inputtext){min-width:0;font-size:.74rem}.condition-remove{justify-self:end}.exists-note{padding:9px;color:#8a8e86;font-size:.7rem}@container(max-width:420px){.condition-row{grid-template-columns:minmax(0,1fr) 120px 36px}.condition-path{grid-column:1/3}.condition-remove{grid-column:3;grid-row:1}.condition-operator{grid-column:1}.condition-value{grid-column:2/4}}
+.conditions{container-type:inline-size;display:flex;flex-direction:column;gap:8px}.condition-row{display:grid;grid-template-columns:minmax(0,1.25fr) 120px minmax(0,.75fr) 36px;gap:7px;align-items:center}.condition-row :deep(.p-select),.condition-row :deep(.p-inputtext){min-width:0;font-size:.74rem}.condition-remove{justify-self:end}.exists-note{padding:9px;color:var(--text-secondary);font-size:.7rem}@container(max-width:420px){.condition-row{grid-template-columns:minmax(0,1fr) 120px 36px}.condition-path{grid-column:1/3}.condition-remove{grid-column:3;grid-row:1}.condition-operator{grid-column:1}.condition-value{grid-column:2/4}}
 </style>

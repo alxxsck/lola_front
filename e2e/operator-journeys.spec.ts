@@ -179,8 +179,59 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
 
 test.beforeEach(async ({ page }) => login(page))
 
+test('sidebar keeps navigation reachable across desktop and mobile heights', async ({ page }) => {
+  for (const height of [844, 700, 600]) {
+    await page.setViewportSize({ width: 1440, height })
+    await page.goto('/overview')
+    const sidebarScroll = page.locator('.sidebar-scroll')
+    const sidebarFooter = page.locator('.sidebar-footer')
+    await expect(sidebarScroll).toBeVisible()
+    const scrollState = await sidebarScroll.evaluate((element) => {
+      element.scrollTop = element.scrollHeight
+      return {
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+        scrollTop: element.scrollTop,
+        overflowY: getComputedStyle(element).overflowY,
+      }
+    })
+    const footerBox = await sidebarFooter.boundingBox()
+
+    expect(scrollState.overflowY).toBe('auto')
+    if (scrollState.scrollHeight > scrollState.clientHeight) expect(scrollState.scrollTop).toBeGreaterThan(0)
+    expect((footerBox?.y ?? height + 1) + (footerBox?.height ?? 0)).toBeLessThanOrEqual(height)
+  }
+
+  await page.setViewportSize({ width: 390, height: 600 })
+  await page.goto('/overview')
+  await page.getByRole('button', { name: 'Открыть меню', exact: true }).click()
+  await expect(page.locator('.sidebar')).toHaveClass(/open/)
+  const mobileScroll = page.locator('.sidebar-scroll')
+  const mobileFooterBox = await page.locator('.sidebar-footer').boundingBox()
+  const mobileScrollTop = await mobileScroll.evaluate((element) => {
+    element.scrollTop = element.scrollHeight
+    return element.scrollTop
+  })
+
+  expect(mobileScrollTop).toBeGreaterThan(0)
+  expect((mobileFooterBox?.y ?? 601) + (mobileFooterBox?.height ?? 0)).toBeLessThanOrEqual(600)
+})
+
+test('theme choice survives a page reload', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 700 })
+  await page.goto('/overview')
+  const themeSwitch = page.locator('.theme-switch input')
+
+  await themeSwitch.check()
+  await expect(page.locator('html')).toHaveClass(/lola-dark/)
+  await page.reload()
+
+  await expect(page.locator('.theme-switch input')).toBeChecked()
+  await expect(page.locator('html')).toHaveClass(/lola-dark/)
+})
+
 test('core operator pages load without horizontal overflow or serious accessibility violations', async ({ page }) => {
-  for (const path of ['/project', '/events', '/users', '/operations', '/scenarios', '/docs', '/docs/scenarios']) {
+  for (const path of ['/overview', '/project', '/project/user-attributes', '/knowledge', '/interface', '/events', '/event-logs', '/actions', '/scenarios', '/docs', '/docs/scenarios', '/users', '/live', '/operations']) {
     await page.goto(path)
     await expect(page.locator('main').first()).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)

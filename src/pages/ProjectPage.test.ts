@@ -75,6 +75,41 @@ describe('ProjectPage voice instructions', () => {
     mocks.updateProject.mockImplementation(async (_projectId: string, patch: Partial<Project>) => project(patch))
   })
 
+  it('shows the loading skeleton while the project is requested', async () => {
+    mocks.getProject.mockReturnValue(new Promise(() => {}))
+
+    const wrapper = shallowMount(ProjectPage)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findAll('.skeleton-card')).toHaveLength(2)
+    expect(wrapper.find('#project-settings-form').exists()).toBe(false)
+  })
+
+  it('shows a recoverable error and retries loading the project', async () => {
+    mocks.getProject
+      .mockRejectedValueOnce(new Error('Сервис временно недоступен'))
+      .mockResolvedValueOnce(project())
+
+    const wrapper = shallowMount(ProjectPage, {
+      global: {
+        stubs: {
+          Message: { template: '<div class="message-stub"><slot /></div>' },
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.message-stub').exists()).toBe(true)
+    expect(wrapper.find('button-stub[label="Повторить"]').exists()).toBe(true)
+
+    await wrapper.find('button-stub[label="Повторить"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.getProject).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('#project-settings-form').exists()).toBe(true)
+    expect(wrapper.find('.message-stub').exists()).toBe(false)
+  })
+
   it('loads and saves the voice instruction without changing its whitespace', async () => {
     const wrapper = shallowMount(ProjectPage)
     await flushPromises()
