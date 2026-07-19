@@ -1655,6 +1655,8 @@ function leave() {
             </div>
             <RouterLink :to="{ name: 'segments' }"
               >Управление сегментами</RouterLink
+            ><RouterLink :to="{ name: 'segments-guide' }"
+              >Как работают сегменты</RouterLink
             ><RouterLink
               v-if="canManage"
               :to="{

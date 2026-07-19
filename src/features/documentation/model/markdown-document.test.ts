@@ -18,6 +18,12 @@ describe('markdown document parser', () => {
 Trigger -> Action
 \`\`\`
 
+| Поле | Значение |
+| --- | --- |
+| Статус | \`ACTIVE\` |
+
+> Новая версия не меняет опубликованный сценарий.
+
 ## События и версии`)
 
     expect(blocks).toEqual([
@@ -26,6 +32,8 @@ Trigger -> Action
       expect.objectContaining({ type: 'list', ordered: false, items: expect.any(Array) }),
       expect.objectContaining({ type: 'list', ordered: true, items: expect.any(Array) }),
       { type: 'code', language: 'text', value: 'Trigger -> Action' },
+      expect.objectContaining({ type: 'table', headers: expect.any(Array), rows: expect.any(Array) }),
+      expect.objectContaining({ type: 'quote', inline: expect.any(Array) }),
       expect.objectContaining({ type: 'heading', id: 'события-и-версии-2' }),
     ])
   })

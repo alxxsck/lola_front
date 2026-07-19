@@ -87,6 +87,16 @@ export const router = createRouter({
           component: () => import("@/pages/ScenarioGuidePage.vue"),
         },
         {
+          path: "docs/profile-fields",
+          name: "profile-fields-guide",
+          component: () => import("@/pages/ProfileFieldsGuidePage.vue"),
+        },
+        {
+          path: "docs/segments",
+          name: "segments-guide",
+          component: () => import("@/pages/SegmentsGuidePage.vue"),
+        },
+        {
           path: "scenarios",
           name: "scenarios",
           component: () => import("@/pages/ScenariosPage.vue"),

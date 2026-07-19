@@ -5,6 +5,7 @@ import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { DocumentationCallout } from "@/features/documentation/ui";
 import SegmentManager from "@/features/scenario-audience/ui/SegmentManager.vue";
 import { repository } from "@/shared/api/repository";
 import {
@@ -180,6 +181,12 @@ async function afterPublished(segmentId: string) {
         />
       </div>
     </header>
+    <DocumentationCallout
+      title="Как создавать и использовать сегменты"
+      text="Прочитайте перед работой: правила, свежесть данных, проверка пользователя, версии и подключение к сценарию."
+      icon="pi pi-users"
+      route-name="segments-guide"
+    />
     <Message severity="info" :closable="false"
       >Чтобы проверить условие, укажите одного пользователя. Lola покажет,
       подходит ли он сегменту и насколько свежие данные использовались.</Message

@@ -3,14 +3,16 @@ withDefaults(defineProps<{
   title?: string
   text: string
   icon?: string
+  routeName?: string
 }>(), {
   title: 'Как это работает',
   icon: 'pi pi-book',
+  routeName: 'scenario-guide',
 })
 </script>
 
 <template>
-  <RouterLink :to="{ name: 'scenario-guide' }" class="documentation-callout" aria-label="Открыть руководство «Как работают сценарии Lola»">
+  <RouterLink :to="{ name: routeName }" class="documentation-callout" :aria-label="`Открыть руководство «${title}»`">
     <span class="callout-icon"><i :class="icon" /></span>
     <span class="callout-copy"><small>Руководство</small><strong>{{ title }}</strong><span>{{ text }}</span></span>
     <span class="callout-link">Читать <i class="pi pi-arrow-right" /></span>

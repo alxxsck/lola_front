@@ -343,14 +343,10 @@ function classificationLabel(value: string) {
           пользователя, чтобы посмотреть его поля и состояние обновления.
         </p>
       </div>
-      <Button
-        label="Настроить поля профиля"
-        icon="pi pi-sliders-h"
-        severity="secondary"
-        outlined
-        as="router-link"
-        to="/profile-fields"
-      />
+      <div class="header-actions">
+        <Button label="Как устроены поля" icon="pi pi-book" severity="secondary" text as="router-link" :to="{ name: 'profile-fields-guide' }" />
+        <Button label="Настроить поля профиля" icon="pi pi-sliders-h" severity="secondary" outlined as="router-link" to="/profile-fields" />
+      </div>
     </header>
     <RouterLink to="/profile-fields" class="profile-fields-callout card">
       <span class="callout-icon"><i class="pi pi-id-card" /></span>
@@ -640,6 +636,7 @@ function classificationLabel(value: string) {
 </template>
 
 <style scoped>
+.header-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
 .profiles-page {
   max-width: 1400px;
 }

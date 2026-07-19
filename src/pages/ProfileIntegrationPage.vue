@@ -206,15 +206,10 @@ async function load() {
           пользователя.
         </p>
       </div>
-      <Button
-        class="profiles-link"
-        label="Открыть профили пользователей"
-        icon="pi pi-users"
-        severity="secondary"
-        outlined
-        as="router-link"
-        to="/users"
-      />
+      <div class="header-actions">
+        <Button label="Руководство по полям" icon="pi pi-book" severity="secondary" text as="router-link" :to="{ name: 'profile-fields-guide' }" />
+        <Button class="profiles-link" label="Открыть профили пользователей" icon="pi pi-users" severity="secondary" outlined as="router-link" to="/users" />
+      </div>
     </header>
 
     <Message v-if="error" severity="error" :closable="false">{{
@@ -454,6 +449,12 @@ async function load() {
 }
 .integration-header {
   margin-bottom: 22px;
+}
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 :deep(.profiles-link.p-button) {
   border-color: var(--border-strong);

@@ -329,8 +329,9 @@ async function save() {
           использовать.
         </p>
       </div>
-      <div class="draft-state">
-        <i class="pi pi-file-edit" /> Изменения попадут в черновик
+      <div class="editor-support">
+        <Button label="Полное руководство" icon="pi pi-book" severity="secondary" text as="router-link" :to="{ name: 'profile-fields-guide' }" />
+        <div class="draft-state"><i class="pi pi-file-edit" /> Изменения попадут в черновик</div>
       </div>
     </header>
 
@@ -735,6 +736,12 @@ async function save() {
   font-size: 0.7rem;
   font-weight: 700;
 }
+.editor-support {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .editor-loading {
   display: grid;
   gap: 16px;
@@ -1012,6 +1019,10 @@ async function save() {
   }
   .draft-state {
     width: 100%;
+  }
+  .editor-support {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 </style>

@@ -193,6 +193,46 @@ describe('EventsPage event editor journey', () => {
     expect(wrapper.get('.empty').text()).toContain('События не найдены')
   })
 
+  it('puts system events first and explains their lock without a managed badge', async () => {
+    mocks.getEvents.mockResolvedValue([
+      existingEvent,
+      {
+        ...existingEvent,
+        id: 'event-system',
+        definitionKeyId: 'definition-system',
+        name: 'Пользователь стал офлайн',
+        code: 'lola.became_offline',
+        description: 'Пользователь отключился от Lola',
+        origin: 'LOLA_MANAGED',
+        readOnly: true,
+      },
+    ])
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const cards = wrapper.findAll('.event-card')
+    expect(cards[0]?.find('h2').text()).toBe('Пользователь стал офлайн')
+    expect(cards[0]?.find('.system-description').text()).toBe('Пользователь отключился от Lola')
+    expect(cards[0]?.get('.system-lock').attributes('aria-label')).toBe('Почему событие нельзя изменить')
+    expect(cards[0]?.get('[role="tooltip"]').text()).toContain('техническое имя и схема данных задаются системой')
+    expect(cards[0]?.text()).not.toContain('Lola managed')
+    expect(cards[0]?.text()).not.toContain('stable identity')
+  })
+
+  it('labels inactive custom events without making the card or its actions look disabled', async () => {
+    mocks.getEvents.mockResolvedValue([{ ...existingEvent, enabled: false }])
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const card = wrapper.get('.event-card')
+    expect(card.classes()).toContain('inactive')
+    expect(card.classes()).not.toContain('disabled')
+    expect(card.get('.event-status').text()).toBe('Выключено')
+    expect(wrapper.getComponent({ name: 'ToggleSwitch' }).attributes('disabled')).toBe('false')
+    expect(card.find('button-stub[aria-label="Изменить Успешный депозит"]').exists()).toBe(true)
+    expect(card.find('button-stub[aria-label="Удалить Успешный депозит"]').exists()).toBe(true)
+  })
+
   it('shows a load error and retries successfully', async () => {
     mocks.getEvents.mockReset()
       .mockRejectedValueOnce(new Error('Сбой каталога'))

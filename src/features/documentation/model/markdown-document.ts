@@ -6,6 +6,8 @@ export type MarkdownBlock =
   | { type: 'heading'; level: number; id: string; text: string; inline: MarkdownInline[] }
   | { type: 'paragraph'; inline: MarkdownInline[] }
   | { type: 'list'; ordered: boolean; items: MarkdownInline[][] }
+  | { type: 'quote'; inline: MarkdownInline[] }
+  | { type: 'table'; headers: MarkdownInline[][]; rows: MarkdownInline[][][] }
   | { type: 'code'; language: string; value: string }
 
 function inline(value: string): MarkdownInline[] {
@@ -31,7 +33,21 @@ function baseSlug(value: string): string {
 }
 
 function isBlockStart(value: string): boolean {
-  return /^(#{1,6})\s+/.test(value) || /^```/.test(value) || /^[-*]\s+/.test(value) || /^\d+\.\s+/.test(value)
+  return /^(#{1,6})\s+/.test(value) || /^```/.test(value) || /^[-*]\s+/.test(value) || /^\d+\.\s+/.test(value) || /^>\s?/.test(value)
+}
+
+function tableCells(value: string): MarkdownInline[][] {
+  return value
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => inline(cell.trim()))
+}
+
+function isTableDivider(value: string): boolean {
+  const cells = value.trim().replace(/^\|/, '').replace(/\|$/, '').split('|')
+  return cells.length > 0 && cells.every((cell) => /^\s*:?-{3,}:?\s*$/.test(cell))
 }
 
 export function parseMarkdownDocument(markdown: string): MarkdownBlock[] {
@@ -77,6 +93,28 @@ export function parseMarkdownDocument(markdown: string): MarkdownBlock[] {
         inline: inline(text),
       })
       index += 1
+      continue
+    }
+
+    if (line.includes('|') && isTableDivider(lines[index + 1] ?? '')) {
+      const headers = tableCells(line)
+      const rows: MarkdownInline[][][] = []
+      index += 2
+      while (index < lines.length && (lines[index] ?? '').includes('|') && (lines[index] ?? '').trim()) {
+        rows.push(tableCells(lines[index] ?? ''))
+        index += 1
+      }
+      blocks.push({ type: 'table', headers, rows })
+      continue
+    }
+
+    if (/^>\s?/.test(line)) {
+      const quote: string[] = []
+      while (index < lines.length && /^>\s?/.test(lines[index] ?? '')) {
+        quote.push((lines[index] ?? '').replace(/^>\s?/, '').trim())
+        index += 1
+      }
+      blocks.push({ type: 'quote', inline: inline(quote.join(' ')) })
       continue
     }
 

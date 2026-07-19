@@ -1,11 +1,30 @@
 <script setup lang="ts">
-const guides = [{
-  title: 'Как работают сценарии Lola',
-  description: 'От событий, аудитории и условий до действий, ожиданий, публикации и безопасного отката.',
-  icon: 'pi pi-sitemap',
-  to: { name: 'scenario-guide' },
-  meta: ['30 разделов', '20 минут', 'С примерами'],
-}]
+const guides = [
+  {
+    category: 'Сценарии',
+    title: 'Как работают сценарии Lola',
+    description: 'От событий, аудитории и условий до действий, ожиданий, публикации и безопасного отката.',
+    icon: 'pi pi-sitemap',
+    to: { name: 'scenario-guide' },
+    meta: ['30 разделов', '20 минут', 'С примерами'],
+  },
+  {
+    category: 'Данные пользователей',
+    title: 'Поля профиля пользователей',
+    description: 'Создание полей, обязательность, версии, публикация, зависимости, архивирование и качество данных.',
+    icon: 'pi pi-id-card',
+    to: { name: 'profile-fields-guide' },
+    meta: ['20 разделов', '18 минут', 'Полный пример'],
+  },
+  {
+    category: 'Аудитории',
+    title: 'Сегменты пользователей',
+    description: 'Конструктор правил, свежесть данных, проверки, версии, сценарии и пять практических примеров.',
+    icon: 'pi pi-users',
+    to: { name: 'segments-guide' },
+    meta: ['30 разделов', '17 минут', '5 примеров'],
+  },
+]
 </script>
 
 <template>
@@ -25,13 +44,13 @@ const guides = [{
 
     <div class="documentation-heading">
       <div><span>Все материалы</span><h2>Руководства</h2></div>
-      <strong>{{ guides.length }} документ</strong>
+      <strong>{{ guides.length }} руководства</strong>
     </div>
 
     <div class="guide-grid">
       <RouterLink v-for="guide in guides" :key="guide.title" :to="guide.to" class="guide-card">
         <span class="guide-icon"><i :class="guide.icon" /></span>
-        <span class="guide-card-copy"><small>Сценарии</small><strong>{{ guide.title }}</strong><span>{{ guide.description }}</span></span>
+        <span class="guide-card-copy"><small>{{ guide.category }}</small><strong>{{ guide.title }}</strong><span>{{ guide.description }}</span></span>
         <span class="guide-meta"><span v-for="item in guide.meta" :key="item"><i class="pi pi-check" /> {{ item }}</span></span>
         <span class="guide-action">Открыть руководство <i class="pi pi-arrow-right" /></span>
       </RouterLink>
@@ -39,7 +58,7 @@ const guides = [{
 
     <aside class="documentation-note">
       <span><i class="pi pi-sparkles" /></span>
-      <div><strong>Библиотека будет пополняться</strong><p>Здесь появятся отдельные руководства по событиям, действиям, интерфейсу и другим возможностям Lola.</p></div>
+      <div><strong>Начните с руководства перед настройкой</strong><p>Каждая статья объясняет не только кнопки, но и последствия публикации, версии, ограничения и безопасный порядок работы.</p></div>
     </aside>
   </section>
 </template>

@@ -13,6 +13,7 @@ import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { DocumentationCallout } from "@/features/documentation/ui";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import CodeBlock from "@/features/end-user-attributes/ui/CodeBlock.vue";
 import {
@@ -853,6 +854,13 @@ function archiveImpactedField() {
         />
       </div>
     </header>
+
+    <DocumentationCallout
+      title="Как настроить поля профиля пользователей"
+      text="Прочитайте перед работой: типы, обязательность, версии, публикация, зависимости, архивирование и качество данных."
+      icon="pi pi-id-card"
+      route-name="profile-fields-guide"
+    />
 
     <nav class="section-nav card" aria-label="Разделы полей профиля">
       <a href="#fields" class="active"><i class="pi pi-list" />Поля</a>
