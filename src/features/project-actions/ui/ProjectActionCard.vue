@@ -1,18 +1,35 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { ProjectAction } from '../model/project-action'
+import { computed } from "vue";
+import type { ProjectAction } from "../model/project-action";
 
-const props = defineProps<{ action: ProjectAction }>()
-const emit = defineEmits<{ select: [action: ProjectAction] }>()
+const props = defineProps<{ action: ProjectAction }>();
+const emit = defineEmits<{ select: [action: ProjectAction] }>();
 
-const name = computed(() => props.action.nameOverride || props.action.actionTypeRevision.name)
-const description = computed(() => props.action.descriptionOverride || props.action.actionTypeRevision.description)
-const origin = computed(() => props.action.actionType.origin === 'SYSTEM' ? 'Системное' : 'Интеграция')
-const executor = computed(() => ({
-  FRONTEND_COMMAND: 'Frontend command',
-  SERVER_HANDLER: 'Backend handler',
-  PROPOSAL: 'Proposal',
-})[props.action.actionTypeRevision.executorAdapter])
+const name = computed(
+  () => props.action.nameOverride || props.action.actionTypeRevision.name,
+);
+const description = computed(
+  () =>
+    props.action.descriptionOverride ||
+    props.action.actionTypeRevision.description,
+);
+const origin = computed(() =>
+  props.action.actionType.origin === "SYSTEM" ? "Системное" : "Интеграция",
+);
+const supportsScenario = computed(() =>
+  props.action.actionTypeRevision.supportedSurfaces.includes("SCENARIO"),
+);
+const supportsAi = computed(() =>
+  props.action.actionTypeRevision.supportedSurfaces.includes("AI"),
+);
+const executor = computed(
+  () =>
+    ({
+      FRONTEND_COMMAND: "Frontend command",
+      SERVER_HANDLER: "Backend handler",
+      PROPOSAL: "Proposal",
+    })[props.action.actionTypeRevision.executorAdapter],
+);
 </script>
 
 <template>
@@ -26,7 +43,12 @@ const executor = computed(() => ({
     <span class="card-heading">
       <span class="action-icon"><i class="pi pi-bolt" /></span>
       <span class="identity">
-        <span class="tag-row"><span class="origin-tag">{{ origin }}</span><span class="revision-tag">Ревизия {{ action.actionTypeRevision.version }}</span></span>
+        <span class="tag-row"
+          ><span class="origin-tag">{{ origin }}</span
+          ><span class="revision-tag"
+            >Ревизия {{ action.actionTypeRevision.version }}</span
+          ></span
+        >
         <strong>{{ name }}</strong>
         <code>{{ action.code }}</code>
       </span>
@@ -35,53 +57,187 @@ const executor = computed(() => ({
 
     <span class="description">{{ description }}</span>
 
-    <span class="contract-meta">
-      <span>Поддерживает: {{ action.actionTypeRevision.supportedSurfaces.join(' · ') }}</span>
-      <span>Подтверждение: {{ action.actionTypeRevision.confirmationPolicy }}</span>
-      <span>Config: {{ Object.keys(action.configuration).length }} полей</span>
-    </span>
-
-    <span class="surface-grid">
-      <span class="surface-state">
+    <span class="surface-grid" aria-label="Состояние поверхностей">
+      <span class="surface-state" :class="{ unsupported: !supportsScenario }">
         <span><i class="pi pi-sitemap" /> Сценарии</span>
-        <strong :class="action.scenarioEnabled ? 'enabled' : 'disabled'">{{ action.scenarioEnabled ? 'Включено' : 'Выключено' }}</strong>
+        <strong :class="action.scenarioEnabled ? 'enabled' : 'disabled'">{{
+          supportsScenario
+            ? action.scenarioEnabled
+              ? "Включено"
+              : "Выключено"
+            : "Недоступно"
+        }}</strong>
       </span>
-      <span class="surface-state">
+      <span class="surface-state" :class="{ unsupported: !supportsAi }">
         <span><i class="pi pi-sparkles" /> AI</span>
-        <strong :class="action.aiEnabled ? 'enabled' : 'disabled'">{{ action.aiEnabled ? 'Включено' : 'Выключено' }}</strong>
+        <strong :class="action.aiEnabled ? 'enabled' : 'disabled'">{{
+          supportsAi
+            ? action.aiEnabled
+              ? "Включено"
+              : "Выключено"
+            : "Недоступно"
+        }}</strong>
       </span>
     </span>
 
     <span class="card-footer">
-      <span>{{ executor }}</span>
-      <span>{{ action.lifecycle === 'ARCHIVED' ? 'Архив' : action.actionTypeRevision.risk }}</span>
+      <span><i class="pi pi-cog" /> {{ executor }}</span>
+      <span>{{
+        action.lifecycle === "ARCHIVED"
+          ? "Архив"
+          : action.actionTypeRevision.risk
+      }}</span>
     </span>
   </button>
 </template>
 
 <style scoped>
-.project-action-card { display: grid; gap: 16px; padding: 20px; width: 100%; min-width: 0; color: inherit; text-align: left; background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: 18px; cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
-.project-action-card:hover { border-color: color-mix(in srgb, var(--primary-color) 45%, var(--surface-border)); box-shadow: 0 14px 34px color-mix(in srgb, var(--text-color) 8%, transparent); transform: translateY(-2px); }
-.project-action-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary-color) 35%, transparent); outline-offset: 2px; }
-.project-action-card.archived { opacity: .7; }
-.card-heading { display: grid; grid-template-columns: 44px minmax(0, 1fr) 18px; gap: 12px; align-items: start; }
-.action-icon { display: grid; place-items: center; width: 44px; height: 44px; color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 12%, var(--surface-card)); border-radius: 13px; }
-.identity { display: grid; gap: 5px; min-width: 0; }
-.identity strong { font-size: 16px; line-height: 1.25; }
-.identity code { overflow: hidden; color: var(--text-color-secondary); font-size: 11px; text-overflow: ellipsis; }
-.tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
-.origin-tag, .revision-tag { padding: 3px 7px; color: var(--text-color-secondary); font-size: 10px; font-weight: 700; background: var(--surface-100); border-radius: 999px; }
-.origin-tag { color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 10%, var(--surface-card)); }
-.open-icon { color: var(--text-color-secondary); font-size: 12px; }
-.description { min-height: 38px; color: var(--text-color-secondary); font-size: 13px; line-height: 1.45; }
-.contract-meta { display: flex; flex-wrap: wrap; gap: 6px; }
-.contract-meta span { padding: 4px 7px; color: var(--text-color-secondary); font-size: 9px; background: var(--surface-ground); border-radius: 999px; }
-.surface-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.surface-state { display: grid; gap: 6px; padding: 10px 11px; background: var(--surface-ground); border: 1px solid var(--surface-border); border-radius: 11px; }
-.surface-state > span { color: var(--text-color-secondary); font-size: 11px; }
-.surface-state strong { font-size: 12px; }
-.surface-state .enabled { color: var(--green-600); }
-.surface-state .disabled { color: var(--text-color-secondary); }
-.card-footer { display: flex; justify-content: space-between; gap: 12px; padding-top: 12px; color: var(--text-color-secondary); font-size: 11px; border-top: 1px solid var(--surface-border); }
-@media (max-width: 520px) { .surface-grid { grid-template-columns: 1fr; } }
+.project-action-card {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 16px;
+  width: 100%;
+  min-width: 0;
+  color: inherit;
+  text-align: left;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: 15px;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+.project-action-card:hover {
+  border-color: var(--action-primary);
+  box-shadow: 0 14px 34px
+    color-mix(in srgb, var(--text-primary) 8%, transparent);
+  transform: translateY(-2px);
+}
+.project-action-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 35%, transparent);
+  outline-offset: 2px;
+}
+.project-action-card.archived {
+  opacity: 0.7;
+}
+.card-heading {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 16px;
+  gap: 10px;
+  align-items: start;
+}
+.action-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--status-violet-text);
+  background: var(--status-violet-soft);
+  border-radius: 11px;
+}
+.identity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.identity strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.identity code {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.origin-tag,
+.revision-tag {
+  padding: 2px 6px;
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--surface-subtle);
+  border-radius: 999px;
+}
+.origin-tag {
+  color: var(--status-violet-text);
+  background: var(--status-violet-soft);
+}
+.open-icon {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.description {
+  display: -webkit-box;
+  overflow: hidden;
+  min-height: 34px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.surface-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.surface-state {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 9px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.surface-state > span {
+  color: var(--text-secondary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.surface-state strong {
+  font-size: 10px;
+}
+.surface-state .enabled {
+  color: var(--status-success-text);
+}
+.surface-state .disabled {
+  color: var(--text-secondary);
+}
+.surface-state.unsupported {
+  opacity: 0.55;
+}
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  border-top: 1px solid var(--border-default);
+}
+.card-footer span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .surface-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

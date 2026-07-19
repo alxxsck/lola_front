@@ -353,6 +353,45 @@ test("theme choice survives a page reload", async ({ page }) => {
   await expect(page.locator("html")).toHaveClass(/lola-dark/);
 });
 
+test("Actions catalog stays compact and keeps the editor readable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/actions");
+
+  const card = page.getByRole("button", {
+    name: "Открыть действие Задать вопрос с вариантами",
+  });
+  await expect(card).toBeVisible();
+  const cardBox = await card.boundingBox();
+  expect(cardBox?.height).toBeLessThanOrEqual(280);
+  const surfaces = await page.evaluate(() => {
+    const actionCard = document.querySelector(".project-action-card");
+    const actionGrid = document.querySelector(".action-grid");
+    if (!actionCard || !actionGrid) return null;
+    return {
+      card: getComputedStyle(actionCard).backgroundColor,
+      grid: getComputedStyle(actionGrid).backgroundColor,
+    };
+  });
+  expect(surfaces?.grid).not.toBe("rgba(0, 0, 0, 0)");
+  expect(surfaces?.card).not.toBe(surfaces?.grid);
+
+  await card.click();
+  const editor = page.locator(".project-action-dialog");
+  await expect(editor).toBeVisible();
+  const editorBox = await editor.boundingBox();
+  expect(editorBox?.width).toBeLessThanOrEqual(800);
+  expect(editorBox?.x).toBeGreaterThanOrEqual(16);
+  expect((editorBox?.x ?? 0) + (editorBox?.width ?? 1280)).toBeLessThanOrEqual(
+    1264,
+  );
+  expect(editorBox?.y).toBeGreaterThanOrEqual(16);
+  expect((editorBox?.y ?? 0) + (editorBox?.height ?? 800)).toBeLessThanOrEqual(
+    784,
+  );
+});
+
 test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", async ({
   page,
 }) => {

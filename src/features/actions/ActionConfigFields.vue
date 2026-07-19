@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from "vue";
+import { RouterLink } from "vue-router";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
@@ -82,6 +83,11 @@ const visibleFields = computed(() =>
   props.definition.uiSchema.fields.filter((field) =>
     isActionFieldVisible(field, props.modelValue),
   ),
+);
+const showsLocalizationUnavailableNotice = computed(
+  () =>
+    props.localizationCatalog?.enabled !== true &&
+    visibleFields.value.some((field) => field.control === "textarea"),
 );
 const templateVariableOptions = computed(() =>
   props.templateVariables.map((variable) =>
@@ -230,6 +236,22 @@ function fieldHint(field: ActionUiField) {
 
 <template>
   <div v-if="visibleFields.length" class="schema-fields">
+    <aside
+      v-if="showsLocalizationUnavailableNotice"
+      class="localization-unavailable"
+      data-testid="localization-unavailable"
+      role="status"
+    >
+      <i class="pi pi-language" aria-hidden="true" />
+      <div>
+        <strong>Переводы появятся после публикации языков проекта</strong>
+        <span>
+          Настройте поле профиля с ролью Locale и опубликуйте структуру. Тогда
+          здесь откроются языковые версии и AI-перевод.
+        </span>
+        <RouterLink to="/profile-fields">Открыть языки проекта</RouterLink>
+      </div>
+    </aside>
     <div
       v-for="field in visibleFields"
       :key="field.key"
@@ -392,6 +414,41 @@ function fieldHint(field: ActionUiField) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 13px;
+}
+.localization-unavailable {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px 13px;
+  border: 1px solid color-mix(in srgb, var(--status-violet) 48%, transparent);
+  border-radius: 11px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+}
+.localization-unavailable > i {
+  margin-top: 2px;
+  font-size: 1rem;
+}
+.localization-unavailable > div {
+  display: grid;
+  gap: 4px;
+}
+.localization-unavailable strong {
+  font-size: 0.78rem;
+}
+.localization-unavailable span {
+  color: var(--text-small-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+.localization-unavailable a {
+  justify-self: start;
+  color: var(--status-violet-text);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-underline-offset: 3px;
 }
 .field-wide {
   grid-column: 1/-1;

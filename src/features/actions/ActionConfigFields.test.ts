@@ -90,4 +90,63 @@ describe('ActionConfigFields', () => {
     expect(localized.props('modelValue')).toEqual({ en: 'Hello' })
     expect(localized.props('fieldPath')).toBe('graph.actions.welcome.config.text')
   })
+
+  it('explains how to enable translations when locale settings are not published', () => {
+    const textDefinition: ScenarioActionDefinition = {
+      ...definition,
+      type: 'SAY',
+      configSchema: {
+        type: 'object',
+        properties: { text: { type: 'string', maxLength: 10_000 } },
+        required: ['text'],
+      },
+      uiSchema: {
+        fields: [{ key: 'text', label: 'Сообщение от Lola', control: 'textarea' }],
+      },
+    }
+    const wrapper = shallowMount(ActionConfigFields, {
+      props: {
+        definition: textDefinition,
+        modelValue: { text: 'Привет' },
+        localizationCatalog: {
+          version: 1,
+          enabled: false,
+          attributeKey: null,
+          attributeContractRevision: null,
+          defaultLocale: '',
+          locales: [],
+          policyModes: ['ALL_PROJECT_LOCALES', 'SELECTED_LOCALES'],
+          localizedValueSchemaVersion: 1,
+          paths: [],
+        },
+      },
+    })
+
+    const notice = wrapper.get('[data-testid="localization-unavailable"]')
+    expect(notice.text()).toContain('Переводы появятся после публикации языков проекта')
+    expect(notice.get('router-link-stub').attributes('to')).toBe('/profile-fields')
+  })
+
+  it('keeps the translation setup path visible for a backward-compatible catalog without localization', () => {
+    const textDefinition: ScenarioActionDefinition = {
+      ...definition,
+      type: 'SAY',
+      configSchema: {
+        type: 'object',
+        properties: { text: { type: 'string', maxLength: 10_000 } },
+        required: ['text'],
+      },
+      uiSchema: {
+        fields: [{ key: 'text', label: 'Сообщение от Lola', control: 'textarea' }],
+      },
+    }
+    const wrapper = shallowMount(ActionConfigFields, {
+      props: {
+        definition: textDefinition,
+        modelValue: { text: 'Привет' },
+      },
+    })
+
+    expect(wrapper.get('[data-testid="localization-unavailable"]').text()).toContain('Переводы появятся после публикации языков проекта')
+  })
 })
