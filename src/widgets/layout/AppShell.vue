@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Avatar from "primevue/avatar";
@@ -7,6 +7,9 @@ import Menu from "primevue/menu";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { useActionDefinitionsStore } from "@/features/actions/action-definitions.store";
+import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
+import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
+import AIProposalBadge from "@/features/ai-proposals/ui/AIProposalBadge.vue";
 import { repository } from "@/shared/api/repository";
 import ThemeSwitch from "./ThemeSwitch.vue";
 
@@ -14,6 +17,7 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const actionDefinitions = useActionDefinitionsStore();
+const proposals = useAIProposalsStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
 
@@ -32,6 +36,13 @@ const navigation = computed(() =>
       adminOnly: true,
     },
     { label: "Действия", icon: "pi pi-directions-alt", to: "/actions" },
+    {
+      label: "Предложения Lola",
+      icon: "pi pi-inbox",
+      to: "/ai-proposals",
+      adminOnly: true,
+      proposals: true,
+    },
     { label: "Сценарии", icon: "pi pi-sitemap", to: "/scenarios" },
     { label: "Сегменты", icon: "pi pi-filter-fill", to: "/segments" },
     { label: "Документация", icon: "pi pi-bookmark", to: "/docs" },
@@ -43,12 +54,7 @@ const navigation = computed(() =>
       to: "/live",
       live: true,
     },
-  ].filter(
-    (item) =>
-      !item.adminOnly ||
-      auth.user?.role === "OWNER" ||
-      auth.user?.role === "ADMIN",
-  ),
+  ].filter((item) => !item.adminOnly || canReviewAIProposals(auth.user?.role)),
 );
 
 const profileItems = [
@@ -59,6 +65,7 @@ const profileItems = [
 ];
 
 async function logout(allDevices: boolean) {
+  proposals.deactivate();
   try {
     await auth.logout(allDevices);
   } finally {
@@ -66,6 +73,18 @@ async function logout(allDevices: boolean) {
     await router.push("/login");
   }
 }
+
+watch(
+  () => ({ projectId: auth.project?.id, role: auth.user?.role }),
+  ({ projectId, role }) => {
+    if (projectId && canReviewAIProposals(role))
+      void proposals.activateProject(projectId);
+    else proposals.deactivate();
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => proposals.deactivate());
 </script>
 
 <template>
@@ -108,6 +127,10 @@ async function logout(allDevices: boolean) {
               "
             />
             <span>{{ item.label }}</span>
+            <AIProposalBadge
+              v-if="item.proposals"
+              :count="proposals.unreadCount"
+            />
             <span v-if="item.live" class="live-pulse" />
           </RouterLink>
         </nav>

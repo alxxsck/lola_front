@@ -6,6 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  AIProposalDetailResponseDto,
+  AIProposalReadResponseDto,
+  AIProposalReceivedResponseDto,
+  AIProposalSummaryResponseDto,
+  AIProposalsListParams,
+  AIProposalsPageResponseDto,
   ActionTypeResponseDto,
   ActiveUserResponseDto,
   ActivitySettingsResponseDto,
@@ -57,6 +63,7 @@ import type {
   CreateTranslationJobDto,
   CreateUiElementDto,
   CreateUserAttributeDefinitionDto,
+  DecideAIProposalDto,
   DeleteKnowledgeDocumentResponseDto,
   EndUserPageResponseDto,
   EndUserResponseDto,
@@ -2189,6 +2196,93 @@ export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
   return request<void>({ url: `/health`, method: "GET" }, options);
 };
 
+export const aIProposalsSummary = (
+  projectId: string,
+  options?: SecondParameter<typeof request<AIProposalSummaryResponseDto>>,
+) => {
+  return request<AIProposalSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals/summary`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const aIProposalsList = (
+  projectId: string,
+  params?: AIProposalsListParams,
+  options?: SecondParameter<typeof request<AIProposalsPageResponseDto>>,
+) => {
+  return request<AIProposalsPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aIProposalsDetail = (
+  projectId: string,
+  proposalId: string,
+  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
+) => {
+  return request<AIProposalDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const aIProposalsMarkRead = (
+  projectId: string,
+  proposalId: string,
+  options?: SecondParameter<typeof request<AIProposalReadResponseDto>>,
+) => {
+  return request<AIProposalReadResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/read`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const aIProposalsDecide = (
+  projectId: string,
+  proposalId: string,
+  decideAIProposalDto: BodyType<DecideAIProposalDto>,
+  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
+) => {
+  return request<AIProposalDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/decisions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: decideAIProposalDto,
+    },
+    options,
+  );
+};
+
+export const aIProposalEventsReceived = (
+  projectId: string,
+  eventId: string,
+  options?: SecondParameter<typeof request<AIProposalReceivedResponseDto>>,
+) => {
+  return request<AIProposalReceivedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposal-events/${eventId}/received`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
 export type PlatformListProjectsResult = NonNullable<
   Awaited<ReturnType<typeof platformListProjects>>
 >;
@@ -2603,4 +2697,22 @@ export type VoiceConnectResult = NonNullable<
 >;
 export type AppHealthResult = NonNullable<
   Awaited<ReturnType<typeof appHealth>>
+>;
+export type AIProposalsSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsSummary>>
+>;
+export type AIProposalsListResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsList>>
+>;
+export type AIProposalsDetailResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsDetail>>
+>;
+export type AIProposalsMarkReadResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsMarkRead>>
+>;
+export type AIProposalsDecideResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsDecide>>
+>;
+export type AIProposalEventsReceivedResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalEventsReceived>>
 >;

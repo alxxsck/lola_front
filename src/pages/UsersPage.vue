@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Column from "primevue/column";
 import DataTable from "primevue/datatable";
@@ -9,7 +10,9 @@ import Message from "primevue/message";
 import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
+import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { useAdminConversationConsole } from "@/features/admin-conversations/model/use-admin-conversation-console";
 import CodeBlock from "@/features/end-user-attributes/ui/CodeBlock.vue";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import {
@@ -23,8 +26,11 @@ import type {
   ProfileProjectionResponseDto,
 } from "@/shared/api/generated/models";
 import { formatDate, relativeTime } from "@/shared/lib/format";
+import type { ConversationMessage } from "@/shared/types/domain";
 
 const auth = useAuthStore();
+const route = useRoute();
+const router = useRouter();
 const items = ref<CmsProfileSummaryResponseDto[]>([]);
 const nextCursor = ref<string | null>(null);
 const loading = ref(true);
@@ -45,6 +51,31 @@ const showDeveloperKeys = ref(false);
 const showArchivedFields = ref(false);
 let requestSequence = 0;
 let detailRequestSequence = 0;
+
+const {
+  conversations,
+  selectedConversation,
+  messages,
+  conversationsLoading,
+  messagesLoading,
+  conversationError,
+  onlineSession,
+  replyText,
+  sendingReply,
+  reset: resetConversationConsole,
+  loadConversations,
+  loadMessages,
+  sendReply,
+} = useAdminConversationConsole({
+  projectId: () => auth.project?.id,
+  endUserId: () => selected.value?.endUserId,
+  updateRoute: (conversationId) =>
+    router.replace({
+      name: "users",
+      params: { endUserId: selected.value?.endUserId },
+      query: { conversationId },
+    }),
+});
 
 const availableFields = computed(() => {
   const byId = new Map<string, ProfileProjectionFieldResponseDto>();
@@ -73,7 +104,44 @@ const sortOptions = [
   { value: "LAST_SEEN_ASC", label: "Сначала давно активные" },
 ];
 
-onMounted(() => void load());
+onMounted(async () => {
+  await load();
+  const endUserId = route.params.endUserId;
+  if (typeof endUserId !== "string") return;
+  const profile = items.value.find((item) => item.endUserId === endUserId);
+  if (profile) {
+    await openProfile(profile, false);
+    return;
+  }
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  try {
+    const exactProfile = await endUserProfileRepository.profile(
+      projectId,
+      endUserId,
+    );
+    const summary: CmsProfileSummaryResponseDto = {
+      endUserId: exactProfile.endUserId,
+      externalUserId: exactProfile.externalUserId,
+      profileVersion: exactProfile.profileVersion,
+      syncStatus: exactProfile.syncStatus,
+      fields: exactProfile.fields,
+      lastSeenAt:
+        exactProfile.receivedAt ??
+        exactProfile.observedAt ??
+        new Date(0).toISOString(),
+      ...(exactProfile.observedAt
+        ? { observedAt: exactProfile.observedAt }
+        : {}),
+    };
+    await openProfile(summary, false, exactProfile);
+  } catch (cause) {
+    detailError.value =
+      cause instanceof Error
+        ? cause.message
+        : "Не удалось открыть пользователя";
+  }
+});
 
 function mockField(
   definitionId: string,
@@ -195,7 +263,11 @@ function search() {
   void load();
 }
 
-async function openProfile(profile: CmsProfileSummaryResponseDto) {
+async function openProfile(
+  profile: CmsProfileSummaryResponseDto,
+  updateRoute = true,
+  prefetchedDetail?: ProfileProjectionResponseDto,
+) {
   const projectId = auth.project?.id;
   if (!projectId) return;
   const request = ++detailRequestSequence;
@@ -204,6 +276,18 @@ async function openProfile(profile: CmsProfileSummaryResponseDto) {
   detailError.value = "";
   detailLoading.value = true;
   drawerVisible.value = true;
+  resetConversationConsole();
+  if (updateRoute)
+    await router.replace({
+      name: "users",
+      params: { endUserId: profile.endUserId },
+    });
+  void loadConversations(
+    profile.endUserId,
+    typeof route.query.conversationId === "string"
+      ? route.query.conversationId
+      : undefined,
+  );
   try {
     const response: ProfileProjectionResponseDto =
       repository.mode === "mock"
@@ -228,7 +312,11 @@ async function openProfile(profile: CmsProfileSummaryResponseDto) {
             contractRevision: 1,
             provenance: "PRODUCT_PROFILE",
           } as ProfileProjectionResponseDto)
-        : await endUserProfileRepository.profile(projectId, profile.endUserId);
+        : (prefetchedDetail ??
+          (await endUserProfileRepository.profile(
+            projectId,
+            profile.endUserId,
+          )));
     if (
       request === detailRequestSequence &&
       selected.value?.endUserId === profile.endUserId
@@ -241,6 +329,26 @@ async function openProfile(profile: CmsProfileSummaryResponseDto) {
   } finally {
     if (request === detailRequestSequence) detailLoading.value = false;
   }
+}
+
+function closeProfile() {
+  drawerVisible.value = false;
+  selected.value = null;
+  detail.value = null;
+  resetConversationConsole();
+  void router.replace({ name: "users" });
+}
+
+function messageAuthorLabel(author: ConversationMessage["author"]): string {
+  return (
+    {
+      USER: "Пользователь",
+      ASSISTANT: "Lola",
+      ADMIN: "Администратор",
+      SCENARIO: "Сценарий",
+      SYSTEM: "Система",
+    }[author] ?? author
+  );
 }
 
 function displayField(field: ProfileProjectionFieldResponseDto): string {
@@ -335,8 +443,22 @@ function classificationLabel(value: string) {
         </p>
       </div>
       <div class="header-actions">
-        <Button label="Как устроены поля" icon="pi pi-book" severity="secondary" text as="router-link" :to="{ name: 'profile-fields-guide' }" />
-        <Button label="Настроить поля профиля" icon="pi pi-sliders-h" severity="secondary" outlined as="router-link" to="/profile-fields" />
+        <Button
+          label="Как устроены поля"
+          icon="pi pi-book"
+          severity="secondary"
+          text
+          as="router-link"
+          :to="{ name: 'profile-fields-guide' }"
+        />
+        <Button
+          label="Настроить поля профиля"
+          icon="pi pi-sliders-h"
+          severity="secondary"
+          outlined
+          as="router-link"
+          to="/profile-fields"
+        />
       </div>
     </header>
     <RouterLink to="/profile-fields" class="profile-fields-callout card">
@@ -493,6 +615,7 @@ function classificationLabel(value: string) {
     v-model:visible="drawerVisible"
     position="right"
     :style="{ width: 'min(680px, 100vw)' }"
+    @update:visible="!$event && closeProfile()"
   >
     <template #header
       ><div>
@@ -617,12 +740,110 @@ function classificationLabel(value: string) {
           :code="JSON.stringify(detail.provenance, null, 2)"
         />
       </details>
+
+      <section class="conversation-console">
+        <div class="conversation-heading">
+          <div>
+            <span class="eyebrow">Рабочий контекст</span>
+            <h3>Диалоги</h3>
+          </div>
+          <Tag
+            :value="
+              onlineSession ? 'Пользователь онлайн' : 'Пользователь офлайн'
+            "
+            :severity="onlineSession ? 'success' : 'secondary'"
+          />
+        </div>
+
+        <div v-if="conversationsLoading" class="loading-list">
+          <Skeleton v-for="item in 3" :key="item" height="54px" />
+        </div>
+        <Message
+          v-else-if="conversationError"
+          severity="warn"
+          :closable="false"
+        >
+          {{ conversationError }}
+        </Message>
+        <div
+          v-else-if="!conversations.length"
+          class="conversation-empty surface-soft"
+        >
+          У пользователя пока нет доступных диалогов.
+        </div>
+        <template v-else>
+          <div class="conversation-tabs" aria-label="Диалоги пользователя">
+            <button
+              v-for="conversation in conversations"
+              :key="conversation.id"
+              type="button"
+              :class="{ active: selectedConversation?.id === conversation.id }"
+              @click="loadMessages(conversation)"
+            >
+              <strong>{{ conversation.title }}</strong>
+              <span
+                >{{ conversation.messageCount }} сообщений ·
+                {{ relativeTime(conversation.lastMessageAt) }}</span
+              >
+            </button>
+          </div>
+
+          <div class="message-history" aria-label="История сообщений">
+            <div v-if="messagesLoading" class="loading-list">
+              <Skeleton v-for="item in 4" :key="item" height="58px" />
+            </div>
+            <div
+              v-for="message in messages"
+              v-else
+              :key="message.id"
+              class="conversation-message"
+              :class="message.author.toLowerCase()"
+            >
+              <div>
+                <strong>{{ messageAuthorLabel(message.author) }}</strong>
+                <time :datetime="message.createdAt">{{
+                  formatDate(message.createdAt)
+                }}</time>
+              </div>
+              <p>{{ message.text }}</p>
+            </div>
+          </div>
+
+          <Message v-if="!onlineSession" severity="info" :closable="false">
+            Пользователь сейчас офлайн. Backend пока не может доставить ответ;
+            предложение останется открытым, пока вы не обработаете запрос
+            вручную.
+          </Message>
+          <form class="reply-form" @submit.prevent="sendReply">
+            <Textarea
+              v-model="replyText"
+              rows="3"
+              maxlength="4000"
+              :disabled="!onlineSession"
+              placeholder="Ответить пользователю"
+              aria-label="Ответ пользователю"
+            />
+            <Button
+              type="submit"
+              label="Отправить"
+              icon="pi pi-send"
+              :disabled="!onlineSession || !replyText.trim()"
+              :loading="sendingReply"
+            />
+          </form>
+        </template>
+      </section>
     </div>
   </Drawer>
 </template>
 
 <style scoped>
-.header-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .profiles-page {
   max-width: 1400px;
 }
@@ -678,6 +899,112 @@ function classificationLabel(value: string) {
   align-items: center;
   gap: 5px;
   font-size: 0.72rem;
+}
+.conversation-console {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-default);
+}
+.conversation-heading,
+.conversation-message > div,
+.reply-form {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.conversation-heading {
+  margin-bottom: 12px;
+}
+.conversation-heading .eyebrow {
+  margin-bottom: 3px;
+}
+.conversation-heading h3 {
+  margin: 0;
+}
+.conversation-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.conversation-tabs button {
+  min-width: 180px;
+  padding: 11px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.conversation-tabs button.active {
+  border-color: var(--action-primary);
+  background: var(--status-violet-soft);
+}
+.conversation-tabs strong,
+.conversation-tabs span {
+  display: block;
+}
+.conversation-tabs strong {
+  font-size: 0.74rem;
+}
+.conversation-tabs span {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+}
+.message-history {
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+.conversation-message {
+  max-width: 86%;
+  align-self: flex-start;
+  padding: 10px 12px;
+  border-radius: 4px 13px 13px;
+  background: var(--surface-card);
+}
+.conversation-message.admin {
+  align-self: flex-end;
+  border-radius: 13px 4px 13px 13px;
+  background: var(--status-violet-soft);
+}
+.conversation-message > div {
+  align-items: baseline;
+}
+.conversation-message strong {
+  font-size: 0.65rem;
+}
+.conversation-message time {
+  color: var(--text-tertiary);
+  font-size: 0.58rem;
+}
+.conversation-message p {
+  margin: 5px 0 0;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+.conversation-empty {
+  padding: 20px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 0.75rem;
+}
+.reply-form {
+  align-items: flex-end;
+  margin-top: 10px;
+}
+.reply-form :deep(.p-textarea) {
+  flex: 1;
 }
 .filters {
   display: grid;

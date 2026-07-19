@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
 import AppShell from "@/widgets/layout/AppShell.vue";
 
 export const router = createRouter({
@@ -77,6 +78,18 @@ export const router = createRouter({
           component: () => import("@/pages/ActionsPage.vue"),
         },
         {
+          path: "ai-proposals",
+          name: "ai-proposals",
+          component: () => import("@/pages/AIProposalsPage.vue"),
+          meta: { proposalAccess: true },
+        },
+        {
+          path: "ai-proposals/:proposalId",
+          name: "ai-proposal-detail",
+          component: () => import("@/pages/AIProposalsPage.vue"),
+          meta: { proposalAccess: true },
+        },
+        {
           path: "docs",
           name: "documentation",
           component: () => import("@/pages/DocumentationPage.vue"),
@@ -137,7 +150,7 @@ export const router = createRouter({
           component: () => import("@/pages/SegmentsPage.vue"),
         },
         {
-          path: "users",
+          path: "users/:endUserId?",
           name: "users",
           component: () => import("@/pages/UsersPage.vue"),
         },
@@ -163,4 +176,6 @@ router.beforeEach(async (to) => {
   if (!to.meta.public && !auth.isAuthenticated)
     return { name: "login", query: { redirect: to.fullPath } };
   if (to.name === "login" && auth.isAuthenticated) return { name: "overview" };
+  if (to.meta.proposalAccess && !canReviewAIProposals(auth.user?.role))
+    return { name: "overview" };
 });

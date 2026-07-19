@@ -368,7 +368,9 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
   await targetEditor.getByRole("switch", { name: "Доступно AI" }).click();
   await targetEditor
     .getByLabel("Описание для AI 20–1000 символов")
-    .fill("Страница, где пользователь просматривает доступные бонусы и награды.");
+    .fill(
+      "Страница, где пользователь просматривает доступные бонусы и награды.",
+    );
   await targetEditor
     .getByLabel("Aliases через запятую, до 20")
     .fill("награды, rewards");
@@ -406,9 +408,13 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
   });
   await expect(confirmation).toContainText("СценарииВыключено");
   await expect(confirmation).toContainText("AIВключено");
-  await confirmation.locator('[data-test="confirm-project-action-save"]').click();
+  await confirmation
+    .locator('[data-test="confirm-project-action-save"]')
+    .click();
 
-  await expect(editor.getByText("lola_open_page", { exact: true })).toBeVisible();
+  await expect(
+    editor.getByText("lola_open_page", { exact: true }),
+  ).toBeVisible();
   await expect(editor.locator("pre")).toContainText('"bonuses_page"');
   await expect(editor.locator("pre")).not.toContainText("route");
   await expect(editor.getByLabel("Использовать в сценариях")).not.toBeChecked();
@@ -468,9 +474,7 @@ test("content locales are configured through the Locale Attribute journey", asyn
   ).toBeVisible();
   await page.getByRole("link", { name: "Настроить языки" }).click();
 
-  await expect(page).toHaveURL(
-    /\/profile-fields\/new\?semanticRole=LOCALE$/,
-  );
+  await expect(page).toHaveURL(/\/profile-fields\/new\?semanticRole=LOCALE$/);
   await expect(page.getByText("Языки контента", { exact: true })).toBeVisible();
   await page.getByLabel("Название поля *").fill("Язык контента");
   await page.getByLabel("Ключ для передачи данных *").fill("locale");
@@ -489,7 +493,9 @@ test("content locales are configured through the Locale Attribute journey", asyn
     page.getByText("бразильский португальский", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("2/20 языков", { exact: true })).toBeVisible();
-  await expect(page.getByText("Основной язык проекта *", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Основной язык проекта *", { exact: true }),
+  ).toBeVisible();
   await expectNoSeriousAccessibilityViolations(page);
   expect(
     await page.evaluate(
@@ -501,7 +507,9 @@ test("content locales are configured through the Locale Attribute journey", asyn
 
   await page.getByRole("button", { name: "Добавить в черновик" }).click();
   await expect(page).toHaveURL(/\/profile-fields$/);
-  await expect(page.getByRole("heading", { name: "Язык контента" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Язык контента" }),
+  ).toBeVisible();
 });
 
 test("EUAP workspace, Current Profiles and Segment Library expose their primary operator journeys", async ({
@@ -713,6 +721,57 @@ test("scenario authoring supports keyboard focus, narrow reflow and reduced moti
 
   await page.setViewportSize({ width: 844, height: 390 });
   await expect(page.getByRole("button", { name: /Действия/ })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+});
+
+test("AI Proposals stays durable, resolves explicitly and opens the exact conversation", async ({
+  page,
+}) => {
+  await page.goto("/ai-proposals");
+  await expect(
+    page.getByRole("heading", { name: "Предложения Lola", level: 1 }),
+  ).toBeVisible();
+  await expect(page.getByText("2 открытых · 1 непрочитанных")).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: /Непрочитанное предложение.*Клиент просит связаться/,
+    }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", {
+      name: /Непрочитанное предложение.*Клиент просит связаться/,
+    })
+    .click();
+  await expect(page).toHaveURL(/\/ai-proposals\/62c36b82-/);
+  await expect(
+    page.getByText("Безопасная выдержка из обращения"),
+  ).toBeVisible();
+  await expect(page.getByText("2 открытых · 0 непрочитанных")).toBeVisible();
+
+  await page.getByRole("button", { name: "Обработано" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Отметить запрос обработанным?" }),
+  ).toBeVisible();
+  await page
+    .getByPlaceholder("Например: ответили пользователю в диалоге")
+    .fill("Связались с пользователем");
+  await page.getByRole("button", { name: "Да, обработано" }).click();
+  await expect(
+    page.getByText("Запрос обработан", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: /Открыть диалог/ }).click();
+  await expect(page).toHaveURL(/\/users\/usr_1\?conversationId=conv_1/);
+  await expect(page.getByRole("heading", { name: "Диалоги" })).toBeVisible();
+  await expect(page.getByText("Как лучше пополнить баланс?")).toBeVisible();
+  await expectNoSeriousAccessibilityViolations(page);
   expect(
     await page.evaluate(
       () =>

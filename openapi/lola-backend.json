@@ -13144,6 +13144,390 @@
           "expiryMs"
         ],
         "type": "object"
+      },
+      "AIProposalSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "openCount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unreadCount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "highPriorityUnreadCount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "lastSequence": {
+            "type": "string",
+            "description": "JSON-safe project event sequence."
+          },
+          "calculatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "openCount",
+          "unreadCount",
+          "highPriorityUnreadCount",
+          "lastSequence",
+          "calculatedAt"
+        ]
+      },
+      "AIProposalEndUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId"
+        ]
+      },
+      "AIProposalListItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectSequence": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ADMIN_ATTENTION",
+              "INSIGHT",
+              "ACTION_RECOMMENDATION"
+            ]
+          },
+          "workflowStatus": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "ACCEPTED",
+              "REJECTED",
+              "RESOLVED",
+              "EXPIRED",
+              "CANCELLED"
+            ]
+          },
+          "decisionMode": {
+            "type": "string",
+            "enum": [
+              "ACKNOWLEDGE",
+              "APPROVE_REJECT"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "TEXT_CHAT",
+              "VOICE",
+              "BACKGROUND_AI"
+            ]
+          },
+          "endUser": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
+              }
+            ]
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "sourceMessageId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "version": {
+            "type": "number",
+            "minimum": 1
+          },
+          "isRead": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "projectSequence",
+          "kind",
+          "workflowStatus",
+          "decisionMode",
+          "priority",
+          "title",
+          "summary",
+          "sourceType",
+          "version",
+          "isRead",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AIProposalsPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AIProposalListItemResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "summary"
+        ]
+      },
+      "AIProposalDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectSequence": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ADMIN_ATTENTION",
+              "INSIGHT",
+              "ACTION_RECOMMENDATION"
+            ]
+          },
+          "workflowStatus": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "ACCEPTED",
+              "REJECTED",
+              "RESOLVED",
+              "EXPIRED",
+              "CANCELLED"
+            ]
+          },
+          "decisionMode": {
+            "type": "string",
+            "enum": [
+              "ACKNOWLEDGE",
+              "APPROVE_REJECT"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "TEXT_CHAT",
+              "VOICE",
+              "BACKGROUND_AI"
+            ]
+          },
+          "endUser": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
+              }
+            ]
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "sourceMessageId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "version": {
+            "type": "number",
+            "minimum": 1
+          },
+          "isRead": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "sourceInvocationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "decidedByAdminId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "decisionReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "projectSequence",
+          "kind",
+          "workflowStatus",
+          "decisionMode",
+          "priority",
+          "title",
+          "summary",
+          "sourceType",
+          "version",
+          "isRead",
+          "createdAt",
+          "updatedAt",
+          "content",
+          "evidence"
+        ]
+      },
+      "AIProposalReadResponseDto": {
+        "type": "object",
+        "properties": {
+          "proposal": {
+            "$ref": "#/components/schemas/AIProposalDetailResponseDto"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
+          }
+        },
+        "required": [
+          "proposal",
+          "summary"
+        ]
+      },
+      "DecideAIProposalDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "RESOLVE"
+            ]
+          },
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "action",
+          "expectedVersion"
+        ]
+      },
+      "AIProposalReceivedResponseDto": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "received"
+        ]
       }
     },
     "securitySchemes": {
@@ -20359,6 +20743,379 @@
         },
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals/summary": {
+      "get": {
+        "operationId": "AIProposals_summary",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals": {
+      "get": {
+        "operationId": "AIProposals_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "OPEN",
+                  "ACCEPTED",
+                  "REJECTED",
+                  "RESOLVED",
+                  "EXPIRED",
+                  "CANCELLED"
+                ]
+              }
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ADMIN_ATTENTION",
+                  "INSIGHT",
+                  "ACTION_RECOMMENDATION"
+                ]
+              }
+            }
+          },
+          {
+            "name": "priority",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "LOW",
+                  "NORMAL",
+                  "HIGH",
+                  "URGENT"
+                ]
+              }
+            }
+          },
+          {
+            "name": "read",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "READ",
+                "UNREAD"
+              ]
+            }
+          },
+          {
+            "name": "endUserId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "createdFrom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "createdTo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalsPageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}": {
+      "get": {
+        "operationId": "AIProposals_detail",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/read": {
+      "post": {
+        "operationId": "AIProposals_markRead",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalReadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/decisions": {
+      "post": {
+        "operationId": "AIProposals_decide",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideAIProposalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposal-events/{eventId}/received": {
+      "post": {
+        "operationId": "AIProposalEvents_received",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalReceivedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
         ]
       }
     }

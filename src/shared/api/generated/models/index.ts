@@ -6,6 +6,32 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./aIProposalDetailResponseDto";
+export * from "./aIProposalDetailResponseDtoContent";
+export * from "./aIProposalDetailResponseDtoDecisionMode";
+export * from "./aIProposalDetailResponseDtoEndUser";
+export * from "./aIProposalDetailResponseDtoEvidenceItem";
+export * from "./aIProposalDetailResponseDtoKind";
+export * from "./aIProposalDetailResponseDtoPriority";
+export * from "./aIProposalDetailResponseDtoSourceType";
+export * from "./aIProposalDetailResponseDtoWorkflowStatus";
+export * from "./aIProposalEndUserResponseDto";
+export * from "./aIProposalListItemResponseDto";
+export * from "./aIProposalListItemResponseDtoDecisionMode";
+export * from "./aIProposalListItemResponseDtoEndUser";
+export * from "./aIProposalListItemResponseDtoKind";
+export * from "./aIProposalListItemResponseDtoPriority";
+export * from "./aIProposalListItemResponseDtoSourceType";
+export * from "./aIProposalListItemResponseDtoWorkflowStatus";
+export * from "./aIProposalReadResponseDto";
+export * from "./aIProposalReceivedResponseDto";
+export * from "./aIProposalSummaryResponseDto";
+export * from "./aIProposalsListKindItem";
+export * from "./aIProposalsListParams";
+export * from "./aIProposalsListPriorityItem";
+export * from "./aIProposalsListRead";
+export * from "./aIProposalsListStatusItem";
+export * from "./aIProposalsPageResponseDto";
 export * from "./actionExecutorAdapter";
 export * from "./actionSurface";
 export * from "./actionTypeOrigin";
@@ -333,6 +359,8 @@ export * from "./createUiElementDto";
 export * from "./createUiElementDtoConfig";
 export * from "./createUserAttributeDefinitionDto";
 export * from "./createUserAttributeDefinitionDtoValidation";
+export * from "./decideAIProposalDto";
+export * from "./decideAIProposalDtoAction";
 export * from "./deleteKnowledgeDocumentResponseDto";
 export * from "./directAdminActionDto";
 export * from "./directAdminActionDtoConfig";

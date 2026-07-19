@@ -12,7 +12,17 @@ const profile = {
   observedAt: "2026-07-16T09:59:00.000Z",
   fields: [],
 };
-const mocks = vi.hoisted(() => ({ list: vi.fn(), profile: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  list: vi.fn(),
+  profile: vi.fn(),
+  getConversations: vi.fn(),
+  getMessages: vi.fn(),
+  getSessions: vi.fn(),
+  sendAdminMessage: vi.fn(),
+  replace: vi.fn(),
+  routeParams: {} as Record<string, string>,
+  routeQuery: {} as Record<string, string>,
+}));
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -25,7 +35,19 @@ function deferred<T>() {
 vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => ({ project: { id: "project-1" } }),
 }));
-vi.mock("@/shared/api/repository", () => ({ repository: { mode: "api" } }));
+vi.mock("vue-router", () => ({
+  useRoute: () => ({ params: mocks.routeParams, query: mocks.routeQuery }),
+  useRouter: () => ({ replace: mocks.replace }),
+}));
+vi.mock("@/shared/api/repository", () => ({
+  repository: {
+    mode: "api",
+    getConversations: mocks.getConversations,
+    getMessages: mocks.getMessages,
+    getSessions: mocks.getSessions,
+    sendAdminMessage: mocks.sendAdminMessage,
+  },
+}));
 vi.mock("@/features/end-user-profile/api/end-user-profile-repository", () => ({
   endUserProfileRepository: { list: mocks.list, profile: mocks.profile },
 }));
@@ -33,6 +55,12 @@ vi.mock("@/features/end-user-profile/api/end-user-profile-repository", () => ({
 describe("UsersPage Current Profile", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.keys(mocks.routeParams).forEach(
+      (key) => delete mocks.routeParams[key],
+    );
+    Object.keys(mocks.routeQuery).forEach(
+      (key) => delete mocks.routeQuery[key],
+    );
     mocks.list.mockResolvedValue({ items: [profile], nextCursor: null });
     mocks.profile.mockResolvedValue({
       ...profile,
@@ -41,6 +69,9 @@ describe("UsersPage Current Profile", () => {
       receivedAt: profile.lastSeenAt,
       provenance: "PRODUCT_PROFILE",
     });
+    mocks.getConversations.mockResolvedValue({ items: [], nextCursor: null });
+    mocks.getMessages.mockResolvedValue({ items: [], nextCursor: null });
+    mocks.getSessions.mockResolvedValue([]);
   });
 
   it("loads detail only after the operator opens a Current Profile", async () => {
@@ -148,5 +179,61 @@ describe("UsersPage Current Profile", () => {
       (wrapper.vm as unknown as { detail: { profileVersion: string } }).detail
         .profileVersion,
     ).toBe("B-VERSION");
+  });
+
+  it("opens the exact user and conversation from a proposal deep link", async () => {
+    mocks.routeParams.endUserId = "user-1";
+    mocks.routeQuery.conversationId = "conversation-1";
+    mocks.getConversations.mockResolvedValue({
+      items: [
+        {
+          id: "conversation-1",
+          userId: "user-1",
+          title: "Поддержка",
+          status: "ACTIVE",
+          lastMessageAt: "2026-07-19T18:00:00.000Z",
+          messageCount: 2,
+        },
+      ],
+      nextCursor: null,
+    });
+
+    shallowMount(UsersPage);
+    await flushPromises();
+
+    expect(mocks.profile).toHaveBeenCalledWith("project-1", "user-1");
+    expect(mocks.getConversations).toHaveBeenCalledWith("project-1", "user-1", {
+      limit: 30,
+    });
+    expect(mocks.getMessages).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      "conversation-1",
+      { limit: 50 },
+    );
+  });
+
+  it("loads an exact deep-linked user even when it is absent from the first page", async () => {
+    mocks.routeParams.endUserId = "user-off-page";
+    mocks.list.mockResolvedValue({ items: [profile], nextCursor: "next-page" });
+    mocks.profile.mockResolvedValue({
+      ...profile,
+      endUserId: "user-off-page",
+      externalUserId: "customer-off-page",
+      contractRevision: 3,
+      ageSeconds: 60,
+      receivedAt: profile.lastSeenAt,
+      provenance: "PRODUCT_PROFILE",
+    });
+
+    shallowMount(UsersPage);
+    await flushPromises();
+
+    expect(mocks.profile).toHaveBeenCalledWith("project-1", "user-off-page");
+    expect(mocks.getConversations).toHaveBeenCalledWith(
+      "project-1",
+      "user-off-page",
+      { limit: 30 },
+    );
   });
 });
