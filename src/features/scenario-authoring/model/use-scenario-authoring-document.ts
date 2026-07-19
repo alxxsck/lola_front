@@ -7,6 +7,8 @@ import { normalizeScenarioActions } from '@/features/scenarios/model/scenario-gr
 import { ApiError } from '@/shared/api/http/api-error'
 import { scenarioAuthoringRepository, type ScenarioDraftContent } from '@/shared/api/repository/scenario-authoring'
 import type { ScenarioAction } from '@/shared/types/domain'
+import { defaultLocalizationPolicy } from '@/features/scenario-localization/model'
+import type { ScenarioLocalizationPolicyDto } from '@/shared/api/generated/models'
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
@@ -37,6 +39,9 @@ export function restoreScenarioAuthoringSource(
     audience: audienceContext && source.audience ? deserializeAudience(source.audience, audienceContext).draft : createAudienceDraft(),
     delivery: source.deliveryPolicy ? deserializeDeliveryPolicy(source.deliveryPolicy) : createDeliveryPolicyDraft(),
     actions,
+    localization: source.localization && typeof source.localization === 'object'
+      ? structuredClone(source.localization) as ScenarioLocalizationPolicyDto
+      : defaultLocalizationPolicy(),
   }
 }
 

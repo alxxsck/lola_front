@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  ActionTypeResponseDto,
   ActiveUserResponseDto,
   ActivitySettingsResponseDto,
   AdminConversationMessagesPageResponseDto,
@@ -16,6 +17,7 @@ import type {
   AdminEventLogsListParams,
   AdminSpeechVoicesParams,
   AdminUserResponseDto,
+  AiCapabilityPreviewResponseDto,
   AiUsageReportParams,
   AiUsageReportResponseDto,
   ArchivedSegmentResponseDto,
@@ -39,6 +41,7 @@ import type {
   CompatibilitySessionDto,
   CompatibilityStartVoiceSessionDto,
   ConditionCatalogResponseDto,
+  ConfigureProjectActionDto,
   ConnectVoiceSessionDto,
   CreateConversationDto,
   CreateCustomerDto,
@@ -51,6 +54,7 @@ import type {
   CreateProjectResponseDto,
   CreateScenarioActionDefinitionDto,
   CreateScenarioDto,
+  CreateTranslationJobDto,
   CreateUiElementDto,
   CreateUserAttributeDefinitionDto,
   DeleteKnowledgeDocumentResponseDto,
@@ -79,6 +83,7 @@ import type {
   ListThreadMessagesDto,
   LogoutDto,
   PlatformEventDefinitionRevisionsParams,
+  PlatformTranslationUsageUsageReportParams,
   PlatformUsersPageParams,
   PreviewScenarioGoalDto,
   PreviewScenarioGoalResponseDto,
@@ -88,6 +93,7 @@ import type {
   ProfileHealthResponseDto,
   ProfileProjectionResponseDto,
   ProfileSyncResponseDto,
+  ProjectActionResponseDto,
   ProjectMemberResponseDto,
   ProjectResponseDto,
   ProviderBillingSnapshotResponseDto,
@@ -127,6 +133,10 @@ import type {
   StartVoiceSessionDto,
   SuccessResponseDto,
   SyncAttributeSnapshotDto,
+  TranslationJobAcceptedResponseDto,
+  TranslationJobResponseDto,
+  TranslationUsageReportParams,
+  TranslationUsageResponseDto,
   UiElementResponseDto,
   UpdateActivitySettingsDto,
   UpdateEventDefinitionDto,
@@ -290,6 +300,16 @@ export const platformUpdateActionDefinition = (
       headers: { "Content-Type": "application/json" },
       data: updateScenarioActionDefinitionDto,
     },
+    options,
+  );
+};
+
+export const productActionsActionTypes = (
+  projectId: string,
+  options?: SecondParameter<typeof request<ActionTypeResponseDto[]>>,
+) => {
+  return request<ActionTypeResponseDto[]>(
+    { url: `/api/v1/admin/projects/${projectId}/action-types`, method: "GET" },
     options,
   );
 };
@@ -743,6 +763,64 @@ export const platformDeleteMember = (
     {
       url: `/api/v1/admin/projects/${projectId}/members/${id}`,
       method: "DELETE",
+    },
+    options,
+  );
+};
+
+export const productActionsProjectActions = (
+  projectId: string,
+  options?: SecondParameter<typeof request<ProjectActionResponseDto[]>>,
+) => {
+  return request<ProjectActionResponseDto[]>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/project-actions`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const productActionsConfigureProjectAction = (
+  projectId: string,
+  id: string,
+  configureProjectActionDto: BodyType<ConfigureProjectActionDto>,
+  options?: SecondParameter<typeof request<ProjectActionResponseDto>>,
+) => {
+  return request<ProjectActionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/project-actions/${id}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: configureProjectActionDto,
+    },
+    options,
+  );
+};
+
+export const productActionsPreviewProjectAction = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<AiCapabilityPreviewResponseDto>>,
+) => {
+  return request<AiCapabilityPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/project-actions/${id}/ai-preview`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const productActionsArchiveProjectAction = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<ProjectActionResponseDto>>,
+) => {
+  return request<ProjectActionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/project-actions/${id}/archive`,
+      method: "POST",
     },
     options,
   );
@@ -1218,6 +1296,80 @@ export const adminSpeechVoices = (
   );
 };
 
+export const translationCreate = (
+  projectId: string,
+  createTranslationJobDto: BodyType<CreateTranslationJobDto>,
+  options?: SecondParameter<typeof request<TranslationJobAcceptedResponseDto>>,
+) => {
+  return request<TranslationJobAcceptedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/translation-jobs`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createTranslationJobDto,
+    },
+    options,
+  );
+};
+
+export const translationGet = (
+  projectId: string,
+  jobId: string,
+  options?: SecondParameter<typeof request<TranslationJobResponseDto>>,
+) => {
+  return request<TranslationJobResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/translation-jobs/${jobId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const translationCancel = (
+  projectId: string,
+  jobId: string,
+  options?: SecondParameter<typeof request<TranslationJobResponseDto>>,
+) => {
+  return request<TranslationJobResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/translation-jobs/${jobId}/cancel`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const translationRetryTarget = (
+  projectId: string,
+  jobId: string,
+  targetLocale: string,
+  options?: SecondParameter<typeof request<TranslationJobResponseDto>>,
+) => {
+  return request<TranslationJobResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/translation-jobs/${jobId}/targets/${targetLocale}/retry`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const translationUsageReport = (
+  projectId: string,
+  params: TranslationUsageReportParams,
+  options?: SecondParameter<typeof request<TranslationUsageResponseDto>>,
+) => {
+  return request<TranslationUsageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/translation-usage`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const platformUiElements = (
   projectId: string,
   options?: SecondParameter<typeof request<UiElementResponseDto[]>>,
@@ -1475,6 +1627,16 @@ export const providerBillingSync = (
 ) => {
   return request<ProviderBillingSnapshotResponseDto>(
     { url: `/api/v1/admin/provider-billing/elevenlabs/sync`, method: "POST" },
+    options,
+  );
+};
+
+export const platformTranslationUsageUsageReport = (
+  params: PlatformTranslationUsageUsageReportParams,
+  options?: SecondParameter<typeof request<TranslationUsageResponseDto>>,
+) => {
+  return request<TranslationUsageResponseDto>(
+    { url: `/api/v1/admin/translation-usage`, method: "GET", params },
     options,
   );
 };
@@ -2057,6 +2219,9 @@ export type PlatformActionDefinitionResult = NonNullable<
 export type PlatformUpdateActionDefinitionResult = NonNullable<
   Awaited<ReturnType<typeof platformUpdateActionDefinition>>
 >;
+export type ProductActionsActionTypesResult = NonNullable<
+  Awaited<ReturnType<typeof productActionsActionTypes>>
+>;
 export type AiUsageReportResult = NonNullable<
   Awaited<ReturnType<typeof aiUsageReport>>
 >;
@@ -2143,6 +2308,18 @@ export type PlatformCreateMemberResult = NonNullable<
 >;
 export type PlatformDeleteMemberResult = NonNullable<
   Awaited<ReturnType<typeof platformDeleteMember>>
+>;
+export type ProductActionsProjectActionsResult = NonNullable<
+  Awaited<ReturnType<typeof productActionsProjectActions>>
+>;
+export type ProductActionsConfigureProjectActionResult = NonNullable<
+  Awaited<ReturnType<typeof productActionsConfigureProjectAction>>
+>;
+export type ProductActionsPreviewProjectActionResult = NonNullable<
+  Awaited<ReturnType<typeof productActionsPreviewProjectAction>>
+>;
+export type ProductActionsArchiveProjectActionResult = NonNullable<
+  Awaited<ReturnType<typeof productActionsArchiveProjectAction>>
 >;
 export type PlatformRotateResult = NonNullable<
   Awaited<ReturnType<typeof platformRotate>>
@@ -2237,6 +2414,21 @@ export type AdminSpeechUpdateResult = NonNullable<
 export type AdminSpeechVoicesResult = NonNullable<
   Awaited<ReturnType<typeof adminSpeechVoices>>
 >;
+export type TranslationCreateResult = NonNullable<
+  Awaited<ReturnType<typeof translationCreate>>
+>;
+export type TranslationGetResult = NonNullable<
+  Awaited<ReturnType<typeof translationGet>>
+>;
+export type TranslationCancelResult = NonNullable<
+  Awaited<ReturnType<typeof translationCancel>>
+>;
+export type TranslationRetryTargetResult = NonNullable<
+  Awaited<ReturnType<typeof translationRetryTarget>>
+>;
+export type TranslationUsageReportResult = NonNullable<
+  Awaited<ReturnType<typeof translationUsageReport>>
+>;
 export type PlatformUiElementsResult = NonNullable<
   Awaited<ReturnType<typeof platformUiElements>>
 >;
@@ -2290,6 +2482,9 @@ export type ProviderBillingGetResult = NonNullable<
 >;
 export type ProviderBillingSyncResult = NonNullable<
   Awaited<ReturnType<typeof providerBillingSync>>
+>;
+export type PlatformTranslationUsageUsageReportResult = NonNullable<
+  Awaited<ReturnType<typeof platformTranslationUsageUsageReport>>
 >;
 export type CompatibilityVoiceEndResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityVoiceEnd>>

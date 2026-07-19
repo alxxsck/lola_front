@@ -7,12 +7,16 @@
  */
 import type { ConditionCatalogResponseDtoAudience } from "./conditionCatalogResponseDtoAudience";
 import type { ConditionCatalogEventResponseDto } from "./conditionCatalogEventResponseDto";
+import type { ScenarioLocalizationCatalogResponseDto } from "./scenarioLocalizationCatalogResponseDto";
+import type { ScenarioTranslationCatalogResponseDto } from "./scenarioTranslationCatalogResponseDto";
 import type { ConditionCatalogResponseDtoVersion } from "./conditionCatalogResponseDtoVersion";
 
 export interface ConditionCatalogResponseDto {
   audience?: ConditionCatalogResponseDtoAudience;
   events: ConditionCatalogEventResponseDto[];
+  localization: ScenarioLocalizationCatalogResponseDto;
   projectId: string;
   revision: string;
+  translation: ScenarioTranslationCatalogResponseDto;
   version: ConditionCatalogResponseDtoVersion;
 }

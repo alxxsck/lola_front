@@ -114,4 +114,33 @@ describe("ProfileFieldEditorPage", () => {
       "Необязательно для внутреннего поля, недоступного другим разделам.",
     );
   });
+
+  it("edits a Locale Attribute as canonical locale chips with a required default", async () => {
+    const wrapper = shallowMount(ProfileFieldEditorPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: {
+        semanticRole?: string | null;
+        valueType: string;
+        constraints: { allowedValues?: unknown[]; defaultLocale?: string };
+      };
+      localeInput: string;
+      addLocale: () => void;
+    };
+    vm.form.semanticRole = "LOCALE";
+    await wrapper.vm.$nextTick();
+    vm.localeInput = "pt-br";
+    vm.addLocale();
+    vm.localeInput = "en";
+    vm.addLocale();
+    await wrapper.vm.$nextTick();
+
+    expect(vm.form.valueType).toBe("STRING");
+    expect(vm.form.constraints.allowedValues).toEqual(["pt-BR", "en"]);
+    expect(vm.form.constraints.defaultLocale).toBe("pt-BR");
+    expect(wrapper.text()).toContain(
+      "Значение этого атрибута у пользователя определяет язык сообщений сценария",
+    );
+    expect(wrapper.text()).toContain("Основной язык проекта");
+  });
 });

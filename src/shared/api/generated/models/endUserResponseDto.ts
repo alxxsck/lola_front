@@ -25,6 +25,8 @@ export interface EndUserResponseDto {
   locale?: EndUserResponseDtoLocale;
   preferences: EndUserResponseDtoPreferences;
   profile: EndUserResponseDtoProfile;
+  /** @pattern ^\d+$ */
+  profileVersion: string;
   projectId: string;
   /** @nullable */
   segment?: EndUserResponseDtoSegment;

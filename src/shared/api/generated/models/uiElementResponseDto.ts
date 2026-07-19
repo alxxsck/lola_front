@@ -6,13 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UiElementResponseDtoConfig } from "./uiElementResponseDtoConfig";
-import type { UiElementResponseDtoHandler } from "./uiElementResponseDtoHandler";
 import type { UiElementKind } from "./uiElementKind";
-import type { UiElementResponseDtoModalName } from "./uiElementResponseDtoModalName";
-import type { UiElementResponseDtoRoute } from "./uiElementResponseDtoRoute";
-import type { UiElementResponseDtoSelector } from "./uiElementResponseDtoSelector";
 
 export interface UiElementResponseDto {
+  aiAliases: string[];
+  /** @nullable */
+  aiDescription?: string | null;
+  aiEnabled: boolean;
   code: string;
   config: UiElementResponseDtoConfig;
   createdAt: string;
@@ -22,22 +22,22 @@ export interface UiElementResponseDto {
    * @deprecated
    * @nullable
    */
-  handler?: UiElementResponseDtoHandler;
+  handler?: string | null;
   id: string;
   kind: UiElementKind;
   /**
    * MODAL key passed to the product modal registry.
    * @nullable
    */
-  modalName?: UiElementResponseDtoModalName;
+  modalName?: string | null;
   name: string;
   projectId: string;
   /**
    * PAGE route passed to the product router.
    * @nullable
    */
-  route?: UiElementResponseDtoRoute;
+  route?: string | null;
   /** @nullable */
-  selector?: UiElementResponseDtoSelector;
+  selector?: string | null;
   updatedAt: string;
 }

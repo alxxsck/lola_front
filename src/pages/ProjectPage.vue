@@ -5,7 +5,6 @@ import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import Textarea from "primevue/textarea";
@@ -13,16 +12,19 @@ import ToggleSwitch from "primevue/toggleswitch";
 import AiUsageSection from "@/features/ai-usage/AiUsageSection.vue";
 import ActivitySettingsSection from "@/features/activity-settings/ActivitySettingsSection.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import SpeechSynthesisSection from "@/features/speech-synthesis/SpeechSynthesisSection.vue";
-import type { RealtimeVoice } from "@/shared/api/generated/models";
+import type {
+  AttributeContractRevisionFieldResponseDto,
+  RealtimeVoice,
+} from "@/shared/api/generated/models";
 import { repository } from "@/shared/api/repository";
 import type { ActivitySettings, Project } from "@/shared/types/domain";
+import { localeDisplayName } from "@/shared/lib/locale";
 
 interface ProjectForm {
   name: string;
   description: string;
-  defaultLocale: string;
-  supportedLocales: string[];
   assistantName: string;
   systemPrompt: string;
   apiBaseUrl: string;
@@ -33,16 +35,6 @@ interface ProjectForm {
   voice: RealtimeVoice;
   voiceInstructions: string;
 }
-
-const localeOptions = [
-  { label: "Русский", value: "ru" },
-  { label: "English", value: "en" },
-  { label: "Español", value: "es" },
-  { label: "Português", value: "pt" },
-  { label: "Deutsch", value: "de" },
-  { label: "Français", value: "fr" },
-  { label: "Italiano", value: "it" },
-];
 
 const voiceOptions: { label: string; value: RealtimeVoice }[] = [
   { label: "Ara", value: "ara" },
@@ -64,6 +56,7 @@ const voiceSettingsExpanded = ref(false);
 const error = ref("");
 const validationError = ref("");
 const project = ref<Project | null>(null);
+const localeField = ref<AttributeContractRevisionFieldResponseDto | null>(null);
 const activitySettings = ref<ActivitySettings | null>(null);
 const initialSnapshot = ref("");
 const systemPromptControl = ref<HTMLElement | null>(null);
@@ -76,8 +69,6 @@ let systemPromptResizeState: {
 const form = reactive<ProjectForm>({
   name: "",
   description: "",
-  defaultLocale: "ru",
-  supportedLocales: [],
   assistantName: "",
   systemPrompt: "",
   apiBaseUrl: "",
@@ -98,14 +89,20 @@ const isDirty = computed(
 const assistantInitial = computed(
   () => form.assistantName.trim().slice(0, 1).toUpperCase() || "L",
 );
+const contentLocales = computed(() =>
+  (localeField.value?.constraints.allowedValues ?? []).filter(
+    (value): value is string => typeof value === "string",
+  ),
+);
+const contentDefaultLocale = computed(
+  () => localeField.value?.constraints.defaultLocale ?? "",
+);
 
 function fillForm(nextProject: Project) {
   project.value = nextProject;
   Object.assign(form, {
     name: nextProject.name,
     description: nextProject.settings.description ?? "",
-    defaultLocale: nextProject.defaultLocale,
-    supportedLocales: [...nextProject.supportedLocales],
     assistantName: nextProject.assistantName,
     systemPrompt: nextProject.systemPrompt,
     apiBaseUrl:
@@ -141,7 +138,16 @@ async function loadProject() {
   loading.value = true;
   error.value = "";
   try {
-    fillForm(await repository.getProject(projectId));
+    const [nextProject, workspace] = await Promise.all([
+      repository.getProject(projectId),
+      attributeContractRepository.workspace(projectId).catch(() => null),
+    ]);
+    fillForm(nextProject);
+    localeField.value =
+      workspace?.currentRevision?.fields.find(
+        (field) =>
+          field.semanticRole === "LOCALE" && field.lifecycle === "ACTIVE",
+      ) ?? null;
   } catch (cause) {
     error.value =
       cause instanceof Error
@@ -159,11 +165,6 @@ function validate() {
     validationError.value = "Укажите имя ассистента.";
   else if (!form.systemPrompt.trim())
     validationError.value = "Добавьте системную инструкцию для ассистента.";
-  else if (!form.supportedLocales.length)
-    validationError.value = "Выберите хотя бы один язык проекта.";
-  else if (!form.supportedLocales.includes(form.defaultLocale))
-    validationError.value =
-      "Основной язык должен входить в список доступных языков.";
   else if (form.apiBaseUrl && !form.apiBaseUrl.startsWith("https://"))
     validationError.value = "API URL должен использовать HTTPS.";
   else if (form.wsUrl && !form.wsUrl.startsWith("wss://"))
@@ -182,8 +183,6 @@ async function saveProject() {
   try {
     const savedProject = await repository.updateProject(project.value.id, {
       name: form.name.trim(),
-      defaultLocale: form.defaultLocale,
-      supportedLocales: [...form.supportedLocales],
       assistantName: form.assistantName.trim(),
       systemPrompt: form.systemPrompt.trim(),
       voiceInstructions: form.voiceInstructions,
@@ -419,37 +418,41 @@ onBeforeUnmount(() => {
                 ><i class="pi pi-language"
               /></span>
               <div>
-                <h2>Языки</h2>
-                <p>Основной язык используется как fallback для сообщений.</p>
+                <h2>Языки контента</h2>
+                <p>Языки настраиваются единым Locale Attribute в полях пользователя.</p>
               </div>
             </div>
-            <div class="form-grid columns">
-              <div class="field">
-                <label for="default-locale">Основной язык</label
-                ><Select
-                  id="default-locale"
-                  v-model="form.defaultLocale"
-                  :options="localeOptions"
-                  option-label="label"
-                  option-value="value"
-                  placeholder="Выберите язык"
-                  :disabled="saving"
-                />
+            <div v-if="localeField" class="content-locale-summary">
+              <div>
+                <small>Основной язык</small>
+                <strong>{{ localeDisplayName(contentDefaultLocale) }} ({{ contentDefaultLocale }})</strong>
               </div>
-              <div class="field">
-                <label for="supported-locales">Доступные языки</label
-                ><MultiSelect
-                  id="supported-locales"
-                  v-model="form.supportedLocales"
-                  :options="localeOptions"
-                  option-label="label"
-                  option-value="value"
-                  display="chip"
-                  placeholder="Выберите языки"
-                  :max-selected-labels="3"
-                  :disabled="saving"
-                />
+              <div class="content-locale-chips">
+                <span v-for="locale in contentLocales" :key="locale" :class="{ primary: locale === contentDefaultLocale }">
+                  {{ localeDisplayName(locale) }} <code>{{ locale }}</code>
+                </span>
               </div>
+              <Button
+                label="Изменить в полях пользователя"
+                icon="pi pi-arrow-right"
+                severity="secondary"
+                outlined
+                as="router-link"
+                :to="`/profile-fields/${localeField.definitionId ?? localeField.key}`"
+              />
+            </div>
+            <div v-else class="content-locale-empty">
+              <i class="pi pi-language" />
+              <div>
+                <strong>Языки контента ещё не настроены</strong>
+                <p>Создайте одно поле пользователя с назначением «Язык контента».</p>
+              </div>
+              <Button
+                label="Настроить языки"
+                icon="pi pi-plus"
+                as="router-link"
+                :to="{ name: 'profile-field-create', query: { semanticRole: 'LOCALE' } }"
+              />
             </div>
           </section>
 
@@ -759,6 +762,24 @@ onBeforeUnmount(() => {
   border: 1px solid var(--line);
   border-radius: 14px;
 }
+.content-locale-summary,
+.content-locale-empty {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+.content-locale-summary > div:first-child { display: grid; gap: 3px; }
+.content-locale-summary small { color: var(--muted); }
+.content-locale-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.content-locale-chips span { padding: 5px 8px; border-radius: 999px; background: var(--surface-card); font-size: .7rem; }
+.content-locale-chips span.primary { background: var(--status-violet-soft); color: var(--status-violet-text); }
+.content-locale-chips code { margin-left: 3px; }
+.content-locale-empty { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.content-locale-empty > i { font-size: 1.3rem; color: var(--status-violet-text); }
+.content-locale-empty p { margin: 3px 0 0; color: var(--muted); font-size: .7rem; }
 .project-status > span:last-child {
   display: flex;
   flex-direction: column;

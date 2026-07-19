@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type UiElementResponseDtoSelector = { [key: string]: unknown } | null;
+export interface ScenarioTranslationCatalogResponseDto {
+  enabled: boolean;
+  maxBatchCharacters: number;
+  supportedSourceLocales: string[];
+  supportedTargetLocales: string[];
+}

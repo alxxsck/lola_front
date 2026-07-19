@@ -1,4 +1,5 @@
 const SESSION_KEY = 'lola-cms-auth-v1'
+const TRANSLATION_JOB_PREFIX = 'lola:translation-jobs:'
 
 interface StoredAuthSession {
   refreshToken: string
@@ -65,4 +66,8 @@ export function clearAuthSession(): void {
   accessToken = null
   accessExpiresAt = 0
   sessionStorage.removeItem(SESSION_KEY)
+  for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = sessionStorage.key(index)
+    if (key?.startsWith(TRANSLATION_JOB_PREFIX)) sessionStorage.removeItem(key)
+  }
 }

@@ -9,6 +9,19 @@ import type { CreateUiElementDtoConfig } from "./createUiElementDtoConfig";
 import type { UiElementKind } from "./uiElementKind";
 
 export interface CreateUiElementDto {
+  /** @maxItems 20 */
+  aiAliases?: string[];
+  /**
+   * @minLength 20
+   * @maxLength 1000
+   */
+  aiDescription?: string;
+  aiEnabled?: boolean;
+  /**
+   * @minLength 10
+   * @maxLength 500
+   */
+  auditReason?: string;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   code: string;
   config?: CreateUiElementDtoConfig;

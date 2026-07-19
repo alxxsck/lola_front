@@ -3,6 +3,15 @@ import { readFile } from "node:fs/promises";
 const snapshotUrl = new URL("../openapi/lola-backend.json", import.meta.url);
 const document = JSON.parse(await readFile(snapshotUrl, "utf8"));
 
+const unversionedPaths = Object.keys(document.paths ?? {}).filter(
+  (path) => path !== "/health" && !path.startsWith("/api/v1/"),
+);
+if (unversionedPaths.length) {
+  throw new Error(
+    `OpenAPI paths must include the runtime /api/v1 prefix: ${unversionedPaths.slice(0, 5).join(", ")}`,
+  );
+}
+
 const requiredOperations = new Map([
   [
     "CmsAuth_login",
@@ -392,6 +401,66 @@ const requiredOperations = new Map([
     { label: "AI usage report", response: "AiUsageReportResponseDto" },
   ],
   [
+    "Translation_create",
+    {
+      label: "translation job creation",
+      request: "CreateTranslationJobDto",
+      response: "TranslationJobAcceptedResponseDto",
+    },
+  ],
+  [
+    "Translation_get",
+    { label: "translation job status", response: "TranslationJobResponseDto" },
+  ],
+  [
+    "Translation_cancel",
+    { label: "translation job cancellation", response: "TranslationJobResponseDto" },
+  ],
+  [
+    "Translation_retryTarget",
+    { label: "translation target retry", response: "TranslationJobResponseDto" },
+  ],
+  [
+    "Translation_usageReport",
+    { label: "translation usage", response: "TranslationUsageResponseDto" },
+  ],
+  [
+    "ProductActions_actionTypes",
+    {
+      label: "product action type catalog",
+      response: "ActionTypeResponseDto",
+    },
+  ],
+  [
+    "ProductActions_projectActions",
+    {
+      label: "project actions",
+      response: "ProjectActionResponseDto",
+    },
+  ],
+  [
+    "ProductActions_configureProjectAction",
+    {
+      label: "project action configuration",
+      request: "ConfigureProjectActionDto",
+      response: "ProjectActionResponseDto",
+    },
+  ],
+  [
+    "ProductActions_archiveProjectAction",
+    {
+      label: "project action archive",
+      response: "ProjectActionResponseDto",
+    },
+  ],
+  [
+    "ProductActions_previewProjectAction",
+    {
+      label: "AI capability preview",
+      response: "AiCapabilityPreviewResponseDto",
+    },
+  ],
+  [
     "ProviderBilling_get",
     {
       label: "ElevenLabs provider billing snapshot",
@@ -538,7 +607,58 @@ requireSchemaProperties("ConditionCatalogResponseDto", [
   "projectId",
   "events",
   "audience",
+  "localization",
+  "translation",
 ]);
+requireSchemaProperties("ActionTypeRevisionResponseDto", [
+  "id",
+  "version",
+  "name",
+  "description",
+  "executorAdapter",
+  "inputSchema",
+  "resultSchema",
+  "projectConfigSchema",
+  "uiSchema",
+  "supportedSurfaces",
+  "risk",
+  "confirmationPolicy",
+  "multipleInstances",
+]);
+requireSchemaProperties("ProjectActionResponseDto", [
+  "id",
+  "projectId",
+  "actionTypeId",
+  "actionTypeRevisionId",
+  "code",
+  "scenarioEnabled",
+  "aiEnabled",
+  "aiUsageDescription",
+  "configuration",
+  "lifecycle",
+  "actionType",
+  "actionTypeRevision",
+]);
+requireSchemaProperties("ConfigureProjectActionDto", [
+  "scenarioEnabled",
+  "aiEnabled",
+  "aiUsageDescription",
+  "configuration",
+  "auditReason",
+]);
+requireSchemaProperties("UiElementResponseDto", [
+  "aiEnabled",
+  "aiDescription",
+  "aiAliases",
+]);
+for (const schemaName of ["CreateUiElementDto", "UpdateUiElementDto"]) {
+  requireSchemaProperties(schemaName, [
+    "aiEnabled",
+    "aiDescription",
+    "aiAliases",
+    "auditReason",
+  ]);
+}
 requireRequiredProperties("ConditionCatalogResponseDto", [
   "version",
   "revision",
@@ -598,6 +718,7 @@ requireSchemaProperties("PublishScenarioDto", [
   "expectedCurrentRevisionId",
   "expectedDraftVersion",
   "catalogRevision",
+  "localization",
 ]);
 requireRequiredProperties("PublishScenarioDto", [
   "expectedCurrentRevisionId",
@@ -621,6 +742,7 @@ requireSchemaProperties("SaveScenarioDraftDto", [
   "profileFreshness",
   "deliveryPolicy",
   "graph",
+  "localization",
 ]);
 requireRequiredProperties("SaveScenarioDraftDto", [
   "expectedDraftVersion",
@@ -636,6 +758,7 @@ requireSchemaProperties("ValidateScenarioDraftDto", [
   "profileFreshness",
   "deliveryPolicy",
   "graph",
+  "localization",
 ]);
 requireRequiredProperties("ValidateScenarioDraftDto", [
   "catalogRevision",
@@ -748,6 +871,45 @@ requireSchemaProperties("AttributeContractDraftFieldDto", [
   "constraints",
   "replacementDefinitionId",
   "sunsetAt",
+]);
+requireSchemaProperties("AttributeConstraintsDto", [
+  "allowedValues",
+  "defaultLocale",
+]);
+requireSchemaProperties("ScenarioLocalizationCatalogResponseDto", [
+  "version",
+  "enabled",
+  "attributeKey",
+  "attributeContractRevision",
+  "defaultLocale",
+  "locales",
+  "policyModes",
+  "localizedValueSchemaVersion",
+  "paths",
+]);
+requireSchemaProperties("ScenarioTranslationCatalogResponseDto", [
+  "enabled",
+  "supportedSourceLocales",
+  "supportedTargetLocales",
+  "maxBatchCharacters",
+]);
+requireSchemaProperties("ScenarioLocalizationPolicyDto", [
+  "version",
+  "mode",
+  "locales",
+]);
+requireSchemaProperties("CreateTranslationJobDto", [
+  "sourceLocale",
+  "targetLocales",
+  "units",
+]);
+requireSchemaProperties("TranslationJobResponseDto", [
+  "jobId",
+  "status",
+  "sourceHash",
+  "createdAt",
+  "sourceLocale",
+  "targets",
 ]);
 requireSchemaProperties("ProfileProjectionResponseDto", [
   "endUserId",

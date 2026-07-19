@@ -46,4 +46,48 @@ describe('ActionConfigFields', () => {
 
     expect(wrapper.find('toggle-switch-stub').attributes('model-value')).toBe('false')
   })
+
+  it('renders catalog-marked text as a localized field and migrates a legacy scalar', () => {
+    const textDefinition: ScenarioActionDefinition = {
+      ...definition,
+      type: 'SAY',
+      configSchema: {
+        type: 'object',
+        properties: { text: { type: 'string', maxLength: 10_000 } },
+        required: ['text'],
+      },
+      uiSchema: { fields: [{ key: 'text', label: 'Текст', control: 'textarea' }] },
+    }
+    const wrapper = shallowMount(ActionConfigFields, {
+      props: {
+        definition: textDefinition,
+        modelValue: { text: 'Hello' },
+        projectId: 'project-1',
+        scenarioId: 'scenario-1',
+        fieldPathPrefix: 'graph.actions.welcome.config',
+        localizationCatalog: {
+          version: 1,
+          enabled: true,
+          attributeKey: 'language',
+          attributeContractRevision: 1,
+          defaultLocale: 'en',
+          locales: [{ code: 'en', language: 'en', default: true }, { code: 'es', language: 'es', default: false }],
+          policyModes: ['ALL_PROJECT_LOCALES', 'SELECTED_LOCALES'],
+          localizedValueSchemaVersion: 1,
+          paths: [{ actionType: 'SAY', path: 'config.text', maxLength: 10_000 }],
+        },
+        translationCatalog: {
+          enabled: true,
+          supportedSourceLocales: ['en'],
+          supportedTargetLocales: ['es'],
+          maxBatchCharacters: 50_000,
+        },
+        localizationPolicy: { version: 1, mode: 'ALL_PROJECT_LOCALES', locales: [] },
+      },
+    })
+
+    const localized = wrapper.getComponent({ name: 'LocalizedField' })
+    expect(localized.props('modelValue')).toEqual({ en: 'Hello' })
+    expect(localized.props('fieldPath')).toBe('graph.actions.welcome.config.text')
+  })
 })

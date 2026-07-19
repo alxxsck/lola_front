@@ -8,6 +8,7 @@
 import type { AudienceRuleDto } from "./audienceRuleDto";
 import type { ValidateScenarioDraftDtoDeliveryPolicy } from "./validateScenarioDraftDtoDeliveryPolicy";
 import type { ScenarioSourceGraphDto } from "./scenarioSourceGraphDto";
+import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
 import type { ValidateScenarioDraftDtoProfileFreshness } from "./validateScenarioDraftDtoProfileFreshness";
 import type { ScenarioRuleDto } from "./scenarioRuleDto";
 
@@ -20,6 +21,7 @@ export interface ValidateScenarioDraftDto {
   catalogRevision: string;
   deliveryPolicy: ValidateScenarioDraftDtoDeliveryPolicy;
   graph: ScenarioSourceGraphDto;
+  localization?: ScenarioLocalizationPolicyDto;
   profileFreshness?: ValidateScenarioDraftDtoProfileFreshness;
   rule?: ScenarioRuleDto;
 }

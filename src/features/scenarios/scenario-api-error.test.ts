@@ -14,4 +14,9 @@ describe('scenarioApiErrorMessage', () => {
 
     expect(scenarioApiErrorMessage(error)).toBe('Шаг 2: необязательное поле «event.payload.promoCode» требует значения по умолчанию. Добавьте в шаблон | default: "…".')
   })
+
+  it('uses stable safe copy for translation budget and unknown provider errors', () => {
+    expect(scenarioApiErrorMessage(new ApiError(402, 'raw provider text', undefined, 'req-1', 'TRANSLATION_BUDGET_EXCEEDED'))).toContain('Лимит AI-переводов проекта исчерпан')
+    expect(scenarioApiErrorMessage(new ApiError(500, 'raw provider text', undefined, 'req-2', 'TRANSLATION_PROVIDER_FAILURE'))).toBe('Не удалось выполнить перевод. Код обращения: req-2.')
+  })
 })

@@ -7,6 +7,7 @@
  */
 import type { ScenarioActionExplainResponseDtoCommand } from "./scenarioActionExplainResponseDtoCommand";
 import type { ScenarioActionExplainResponseDtoExecutor } from "./scenarioActionExplainResponseDtoExecutor";
+import type { ScenarioActionExplainResponseDtoLocalization } from "./scenarioActionExplainResponseDtoLocalization";
 
 export interface ScenarioActionExplainResponseDto {
   actionType: string;
@@ -18,6 +19,11 @@ export interface ScenarioActionExplainResponseDto {
   /** @nullable */
   finishedAt?: string | null;
   id: string;
+  /**
+   * Pinned locale selection and localized-value fallback evidence.
+   * @nullable
+   */
+  localization?: ScenarioActionExplainResponseDtoLocalization;
   nodeKey: string;
   position: number;
   /** @nullable */

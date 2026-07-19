@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   updateProject: vi.fn(),
   updateAuthProject: vi.fn(),
   addToast: vi.fn(),
+  attributeWorkspace: vi.fn(),
 }));
 
 vi.mock("@/shared/api/repository", () => ({
@@ -27,6 +28,9 @@ vi.mock("@/features/auth/auth.store", () => ({
     project: { id: "project-1", name: "Lola" },
     updateProject: mocks.updateAuthProject,
   }),
+}));
+vi.mock("@/features/end-user-attributes/api/attribute-contract-repository", () => ({
+  attributeContractRepository: { workspace: mocks.attributeWorkspace },
 }));
 
 vi.mock("primevue/usetoast", () => ({
@@ -76,9 +80,46 @@ describe("ProjectPage voice instructions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getProject.mockResolvedValue(project());
+    mocks.attributeWorkspace.mockResolvedValue({
+      currentRevision: null,
+      draft: { document: { fields: [] } },
+      validation: { issues: [] },
+    });
     mocks.updateProject.mockImplementation(
       async (_projectId: string, patch: Partial<Project>) => project(patch),
     );
+  });
+
+  it("shows content languages as a Locale Attribute summary and does not patch legacy locale fields", async () => {
+    mocks.attributeWorkspace.mockResolvedValue({
+      currentRevision: {
+        fields: [
+          {
+            key: "language",
+            label: "Язык",
+            semanticRole: "LOCALE",
+            lifecycle: "ACTIVE",
+            constraints: {
+              allowedValues: ["en", "pt-BR"],
+              defaultLocale: "pt-BR",
+            },
+          },
+        ],
+      },
+      draft: { document: { fields: [] } },
+      validation: { issues: [] },
+    });
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Языки контента");
+    expect(wrapper.text()).toContain("pt-BR");
+    expect(wrapper.find("#default-locale").exists()).toBe(false);
+    await wrapper.get("form#project-settings-form").trigger("submit");
+    await flushPromises();
+    const patch = mocks.updateProject.mock.calls.at(-1)?.[1];
+    expect(patch).not.toHaveProperty("defaultLocale");
+    expect(patch).not.toHaveProperty("supportedLocales");
   });
 
   it("shows the loading skeleton while the project is requested", async () => {

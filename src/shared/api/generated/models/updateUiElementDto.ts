@@ -9,6 +9,20 @@ import type { UpdateUiElementDtoConfig } from "./updateUiElementDtoConfig";
 import type { UiElementKind } from "./uiElementKind";
 
 export interface UpdateUiElementDto {
+  /** @maxItems 20 */
+  aiAliases?: string[];
+  /**
+   * @minLength 20
+   * @maxLength 1000
+   * @nullable
+   */
+  aiDescription?: string | null;
+  aiEnabled?: boolean;
+  /**
+   * @minLength 10
+   * @maxLength 500
+   */
+  auditReason?: string;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   code?: string;
   config?: UpdateUiElementDtoConfig;

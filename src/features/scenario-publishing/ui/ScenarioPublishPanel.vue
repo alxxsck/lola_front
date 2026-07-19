@@ -27,6 +27,8 @@ import {
   type ValidateScenarioDraftResponseDto,
 } from "@/shared/api/repository/scenario-authoring";
 import type { ScenarioAction } from "@/shared/types/domain";
+import type { ScenarioLocalizationPolicyDto } from "@/shared/api/generated/models";
+import { defaultLocalizationPolicy } from "@/features/scenario-localization/model";
 
 const props = defineProps<{
   projectId: string;
@@ -37,6 +39,7 @@ const props = defineProps<{
   audienceContext?: AudienceDomainContext;
   deliveryPolicy: DeliveryPolicyDraft;
   actions?: ScenarioAction[];
+  localizationPolicy?: ScenarioLocalizationPolicyDto;
   authoringSnapshot?: string;
   expectedCurrentRevisionId: string | null;
   expectedDraftVersion?: number | null;
@@ -58,8 +61,11 @@ const emit = defineEmits<{
   "head-change": [revisionId: string];
   "reload-request": [];
   "resave-required": [];
-  "focus-issue": [issue: { code: string; path: string; message: string }];
+  "focus-issue": [issue: { code: string; path: string; message: string; locale?: string }];
 }>();
+const localizationPolicy = computed(
+  () => props.localizationPolicy ?? defaultLocalizationPolicy(),
+);
 
 let submittedSnapshot: {
   ruleSnapshot: string;
@@ -195,7 +201,7 @@ function compactIdentifier(value: string): string {
   return value.length > 18 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 }
 
-function focusIssue(issue: { code: string; path: string; message: string }) {
+function focusIssue(issue: { code: string; path: string; message: string; locale?: string }) {
   emit("focus-issue", issue);
 }
 
@@ -220,6 +226,9 @@ function request(
     ...(ruleResult.value?.ok ? { rule: ruleResult.value.value } : {}),
     ...(props.expectedDraftVersion
       ? { expectedDraftVersion: props.expectedDraftVersion }
+      : {}),
+    ...(effectiveContext.value.contract.localization?.enabled
+      ? { localization: localizationPolicy.value }
       : {}),
     ...(audienceResult.value?.ok
       ? { audience: audienceResult.value.value }
@@ -309,6 +318,9 @@ async function reviewNow(): Promise<boolean> {
             }
           : {}),
         deliveryPolicy: deliveryResult.value.value,
+        ...(effectiveContext.value.contract.localization?.enabled
+          ? { localization: localizationPolicy.value }
+          : {}),
         graph: {
           actions: (props.actions ?? []).map((action, position) => {
             const plain = toPlainScenarioAction(action);
@@ -362,6 +374,7 @@ watch(
       props.audienceDraft,
       props.deliveryPolicy,
       props.actions,
+      props.localizationPolicy,
       props.expectedDraftVersion,
       props.context.contract.revision,
       props.audienceContext?.catalog.revision,

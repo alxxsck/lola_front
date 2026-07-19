@@ -12,6 +12,8 @@ import type { AttributeConstraintsDtoMinimum } from "./attributeConstraintsDtoMi
 export interface AttributeConstraintsDto {
   /** @maxItems 100 */
   allowedValues?: AttributeConstraintsDtoAllowedValuesItem[];
+  /** @maxLength 64 */
+  defaultLocale?: string;
   maximum?: AttributeConstraintsDtoMaximum;
   /**
    * @minimum 0

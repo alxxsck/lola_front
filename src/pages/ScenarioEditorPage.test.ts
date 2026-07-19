@@ -30,6 +30,9 @@ const mocks = vi.hoisted(() => ({
   saveScenarioDraft: vi.fn(),
   searchSegments: vi.fn(),
   ensureLoaded: vi.fn(),
+  ensureProjectActionsLoaded: vi.fn(),
+  actionDefinitions: [] as Array<import("@/shared/types/domain").ScenarioActionDefinition>,
+  projectActions: [] as Array<import("@/features/project-actions/model/project-action").ProjectAction>,
   guardDirty: null as { value: boolean } | null,
   routeLeaveGuards: [] as Array<() => boolean>,
   role: "OWNER" as "OWNER" | "ADMIN" | "EDITOR" | "VIEWER",
@@ -53,8 +56,15 @@ vi.mock("@/features/auth/auth.store", () => ({
 
 vi.mock("@/features/actions/action-definitions.store", () => ({
   useActionDefinitionsStore: () => ({
-    forProject: () => [],
+    forProject: () => mocks.actionDefinitions,
     ensureLoaded: mocks.ensureLoaded,
+  }),
+}));
+
+vi.mock("@/features/project-actions/model/project-actions.store", () => ({
+  useProjectActionsStore: () => ({
+    actionsForProject: () => mocks.projectActions,
+    ensureLoaded: mocks.ensureProjectActionsLoaded,
   }),
 }));
 
@@ -128,6 +138,45 @@ const scenario = {
   conditions: [],
   actions: [],
 };
+
+function projectAction(
+  code: string,
+  overrides: Partial<import("@/features/project-actions/model/project-action").ProjectAction> = {},
+): import("@/features/project-actions/model/project-action").ProjectAction {
+  return {
+    id: `action-${code}`,
+    projectId: "project-1",
+    actionTypeId: `type-${code}`,
+    actionTypeRevisionId: `revision-${code}`,
+    code,
+    nameOverride: null,
+    descriptionOverride: null,
+    scenarioEnabled: true,
+    aiEnabled: false,
+    aiUsageDescription: null,
+    configuration: {},
+    lifecycle: "ACTIVE",
+    createdAt: "now",
+    updatedAt: "now",
+    actionType: { key: code, origin: "SYSTEM", ownerProjectId: null },
+    actionTypeRevision: {
+      id: `revision-${code}`,
+      version: 1,
+      name: code,
+      description: code,
+      executorAdapter: "FRONTEND_COMMAND",
+      inputSchema: {},
+      resultSchema: {},
+      projectConfigSchema: {},
+      uiSchema: {},
+      supportedSurfaces: ["SCENARIO"],
+      risk: "UI_EFFECT",
+      confirmationPolicy: "NEVER",
+      multipleInstances: false,
+    },
+    ...overrides,
+  };
+}
 
 const contract: ScenarioAuthoringContract = {
   projectId: "project-1",
@@ -220,6 +269,9 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     mocks.getEvents.mockResolvedValue([event]);
     mocks.getElements.mockResolvedValue([]);
     mocks.ensureLoaded.mockResolvedValue([]);
+    mocks.ensureProjectActionsLoaded.mockResolvedValue([]);
+    mocks.actionDefinitions = [];
+    mocks.projectActions = [];
     mocks.getContract.mockResolvedValue(contract);
     mocks.getScenarioDocument.mockResolvedValue({
       scenarioId: scenario.id,
@@ -345,6 +397,126 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       expectedDraftVersion: 7,
     });
     expect(wrapper.text()).toContain("Черновик v7");
+  });
+
+  it("migrates localized scalar leaves to maps and saves the content locale policy", async () => {
+    mocks.actionDefinitions = [
+      {
+        id: "say",
+        projectId: "project-1",
+        type: "SAY",
+        name: "Сказать текст",
+        description: null,
+        executor: "SERVER",
+        serverHandler: "say",
+        commandType: null,
+        configSchema: {
+          type: "object",
+          properties: { text: { type: "string", maxLength: 10_000 } },
+          required: ["text"],
+        },
+        uiSchema: {
+          fields: [{ key: "text", label: "Текст", control: "textarea" }],
+        },
+        enabled: true,
+        builtIn: true,
+        createdAt: "now",
+        updatedAt: "now",
+      },
+    ];
+    mocks.getContract.mockResolvedValueOnce({
+      ...contract,
+      localization: {
+        version: 1,
+        enabled: true,
+        attributeKey: "locale",
+        attributeContractRevision: 2,
+        defaultLocale: "en",
+        localizedValueSchemaVersion: 1,
+        policyModes: ["ALL_PROJECT_LOCALES", "SELECTED_LOCALES"],
+        locales: [
+          { code: "en", language: "en", default: true },
+          { code: "es", language: "es", default: false },
+        ],
+        paths: [{ actionType: "SAY", path: "config.text", maxLength: 10_000 }],
+      },
+      translation: {
+        enabled: true,
+        supportedSourceLocales: ["en"],
+        supportedTargetLocales: ["es"],
+        maxBatchCharacters: 50_000,
+      },
+    });
+    mocks.getScenarioDocument.mockResolvedValueOnce({
+      scenarioId: scenario.id,
+      projectId: "project-1",
+      code: scenario.code,
+      name: scenario.name,
+      status: scenario.status,
+      triggerEventDefinitionRevisionId: event.id,
+      currentRevisionId: null,
+      editable: true,
+      source: undefined,
+      draft: {
+        id: "draft-localized",
+        version: 3,
+        baseRevisionId: null,
+        catalogRevision: contract.revision,
+        deliveryPolicy: { kind: "IMMEDIATE" },
+        localization: {
+          version: 1,
+          mode: "SELECTED_LOCALES",
+          locales: ["en"],
+        },
+        graph: {
+          actions: [
+            {
+              position: 0,
+              nodeKey: "say",
+              nextNodeKey: null,
+              type: "SAY",
+              config: { text: "Hello" },
+            },
+          ],
+        },
+        createdAt: "now",
+        updatedAt: "now",
+      },
+      createdAt: "now",
+      updatedAt: "now",
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+
+    await wrapper.find('button-stub[label="Сохранить"]').trigger("click");
+    await flushPromises();
+
+    expect(mocks.saveScenarioDraft).toHaveBeenCalledWith(
+      "project-1",
+      "scenario-1",
+      expect.objectContaining({
+        expectedDraftVersion: 3,
+        localization: {
+          version: 1,
+          mode: "SELECTED_LOCALES",
+          locales: ["en"],
+        },
+        graph: {
+          actions: [
+            expect.objectContaining({
+              nodeKey: "say",
+              config: { text: { en: "Hello" } },
+            }),
+          ],
+        },
+      }),
+    );
+    await stageButton(wrapper, "Доставка").trigger("click");
+    expect(wrapper.getComponent(ScenarioPublishPanel).props("localizationPolicy")).toEqual({
+      version: 1,
+      mode: "SELECTED_LOCALES",
+      locales: ["en"],
+    });
   });
 
   it("keeps Audience draft dirty and sends it to validation and atomic publish as a separate contract", async () => {
@@ -789,6 +961,76 @@ describe("ScenarioEditorPage V2 rule journey", () => {
 
     await stageButton(wrapper, "Действия").trigger("click");
     expect(wrapper.text()).toContain("Не удалось загрузить каталог действий");
+  });
+
+  it("uses active scenario-enabled Project Actions as the action picker authority", async () => {
+    const definition = (
+      type: string,
+      name: string,
+    ): import("@/shared/types/domain").ScenarioActionDefinition => ({
+      id: type,
+      projectId: "project-1",
+      type,
+      name,
+      description: null,
+      executor: "FRONTEND" as const,
+      serverHandler: null,
+      commandType: type,
+      configSchema: { type: "object", properties: {}, required: [] },
+      uiSchema: { fields: [] },
+      enabled: true,
+      builtIn: true,
+      createdAt: "now",
+      updatedAt: "now",
+    });
+    mocks.actionDefinitions = [
+      definition("OPEN_PAGE", "Открыть страницу"),
+      definition("AI_ONLY", "Только для AI"),
+      definition("DISABLED", "Выключено"),
+    ];
+    mocks.projectActions = [
+      projectAction("OPEN_PAGE"),
+      projectAction("AI_ONLY", {
+        actionTypeRevision: {
+          ...projectAction("AI_ONLY").actionTypeRevision,
+          supportedSurfaces: ["AI"],
+        },
+      }),
+      projectAction("DISABLED", { scenarioEnabled: false }),
+    ];
+
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+
+    expect(mocks.ensureProjectActionsLoaded).toHaveBeenCalledWith("project-1");
+    expect(wrapper.get(".action-library").text()).toContain("Открыть страницу");
+    expect(wrapper.get(".action-library").text()).not.toContain("Только для AI");
+    expect(wrapper.get(".action-library").text()).not.toContain("Выключено");
+  });
+
+  it("keeps an unknown existing action as an opaque node and marks the graph invalid", async () => {
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "legacy_action",
+            type: "LEGACY_UNKNOWN",
+            config: { preserved: true },
+          },
+        ],
+      },
+    ]);
+
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+
+    expect(wrapper.get(".mobile-action-outline").text()).toContain("legacy_action");
+    expect(stageButton(wrapper, "Действия").classes()).toContain("active");
+    expect(wrapper.text()).toContain("1 ошибок действий");
   });
 
   it("renders a mobile-safe action outline that can open a node without canvas gestures", async () => {

@@ -84,4 +84,30 @@ describe("Attribute Contract draft", () => {
       "true или false",
     );
   });
+
+  it("validates the Locale Attribute singleton, string type, canonical values and default", () => {
+    const locale = {
+      ...createContractField(10),
+      key: "language",
+      label: "Язык",
+      purpose: "Определяет язык сообщений сценария",
+      semanticRole: "LOCALE" as const,
+      valueType: "INTEGER" as const,
+      constraints: {
+        allowedValues: ["pt-BR", "pt-br"],
+        defaultLocale: "en",
+      },
+    };
+    const issues = validateContractDocument({
+      fields: [locale, { ...locale, key: "otherLanguage", position: 20 }],
+    });
+    expect(issues.map(({ code }) => code)).toEqual(
+      expect.arrayContaining([
+        "LOCALE_SINGLETON",
+        "LOCALE_STRING_REQUIRED",
+        "LOCALE_DUPLICATE",
+        "LOCALE_DEFAULT_INVALID",
+      ]),
+    );
+  });
 });

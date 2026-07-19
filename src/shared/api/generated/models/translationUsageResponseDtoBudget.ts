@@ -6,8 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * MODAL key passed to the product modal registry.
- * @nullable
- */
-export type UiElementResponseDtoModalName = { [key: string]: unknown } | null;
+export type TranslationUsageResponseDtoBudget = { [key: string]: unknown };

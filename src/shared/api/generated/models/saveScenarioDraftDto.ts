@@ -8,6 +8,7 @@
 import type { AudienceRuleDto } from "./audienceRuleDto";
 import type { SaveScenarioDraftDtoDeliveryPolicy } from "./saveScenarioDraftDtoDeliveryPolicy";
 import type { ScenarioSourceGraphDto } from "./scenarioSourceGraphDto";
+import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
 import type { SaveScenarioDraftDtoProfileFreshness } from "./saveScenarioDraftDtoProfileFreshness";
 import type { ScenarioRuleDto } from "./scenarioRuleDto";
 
@@ -27,6 +28,7 @@ export interface SaveScenarioDraftDto {
    */
   expectedDraftVersion: number | null;
   graph: ScenarioSourceGraphDto;
+  localization?: ScenarioLocalizationPolicyDto;
   profileFreshness?: SaveScenarioDraftDtoProfileFreshness;
   rule?: ScenarioRuleDto;
 }

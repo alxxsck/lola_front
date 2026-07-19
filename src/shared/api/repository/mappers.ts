@@ -153,6 +153,9 @@ export function mapUiElement(dto: UiElementResponseDto): UiElement {
     handler: optionalString(dto.handler),
     config: dto.config,
     enabled: dto.enabled,
+    aiEnabled: dto.aiEnabled,
+    aiDescription: dto.aiDescription ?? null,
+    aiAliases: dto.aiAliases,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   }
@@ -167,10 +170,20 @@ const uiPayload = (value: UpdateUiElement) => defined({
   modalName: value.modalName,
   config: value.config,
   enabled: value.enabled,
+  aiEnabled: value.aiEnabled,
+  aiDescription: value.aiDescription,
+  aiAliases: value.aiAliases,
+  auditReason: value.auditReason,
 })
 
 export function toCreateUiElementDto(value: CreateUiElement): CreateUiElementDto {
-  return { ...uiPayload(value), code: value.code, name: value.name, kind: value.kind }
+  return {
+    ...uiPayload(value),
+    code: value.code,
+    name: value.name,
+    kind: value.kind,
+    aiDescription: value.aiDescription ?? undefined,
+  }
 }
 
 export function toUpdateUiElementDto(value: UpdateUiElement): UpdateUiElementDto {

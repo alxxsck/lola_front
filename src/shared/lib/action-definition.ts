@@ -9,6 +9,7 @@ import type {
   ScenarioAction,
   ScenarioActionDefinition,
 } from '@/shared/types/domain'
+import type { ScenarioLocalizationCatalogResponseDto } from '@/shared/api/generated/models'
 
 const controls = new Set<ActionControl>([
   'text', 'textarea', 'number', 'select', 'target', 'event', 'json', 'boolean',
@@ -209,7 +210,16 @@ function typeError(schema: ActionConfigPropertySchema, value: unknown): string {
   return typeof value === schema.type ? '' : `должно иметь тип ${schema.type}`
 }
 
-function propertyError(schema: ActionConfigPropertySchema, value: unknown): string {
+function propertyError(schema: ActionConfigPropertySchema, value: unknown, allowLocalized = false): string {
+  if (allowLocalized && schema.type === 'string' && isRecord(value)) {
+    if (!Object.keys(value).length) return 'не содержит ни одного языкового варианта'
+    for (const text of Object.values(value)) {
+      if (typeof text !== 'string') return 'содержит перевод не строкового типа'
+      const error = propertyError(schema, text)
+      if (error) return error
+    }
+    return ''
+  }
   const invalidType = typeError(schema, value)
   if (invalidType) return invalidType
   if (schema.enum && !schema.enum.some((option) => Object.is(option, value))) return 'содержит недопустимое значение'
@@ -247,23 +257,78 @@ function propertyError(schema: ActionConfigPropertySchema, value: unknown): stri
   return ''
 }
 
-export function validateActionConfig(definition: ScenarioActionDefinition, config: Record<string, unknown>): string {
+export function validateActionConfig(
+  definition: ScenarioActionDefinition,
+  config: Record<string, unknown>,
+  localizedKeys = new Set<string>(),
+): string {
   for (const field of definition.uiSchema.fields) {
     if (!isActionFieldVisible(field, config)) continue
     const value = config[field.key]
     const required = definition.configSchema.required.includes(field.key) || field.control === 'target'
     if (required && (value === undefined || value === null || value === '')) return `${field.label}: обязательное поле`
     if (value === undefined || value === null || value === '') continue
-    const error = propertyError(definition.configSchema.properties[field.key] ?? {}, value)
+    const error = propertyError(
+      definition.configSchema.properties[field.key] ?? {},
+      value,
+      localizedKeys.has(field.key),
+    )
     if (error) return `${field.label}: ${error}`
   }
   return ''
 }
 
-export function validateScenarioActionConfig(action: ScenarioAction, definition?: ScenarioActionDefinition): string {
+export function validateScenarioActionConfig(
+  action: ScenarioAction,
+  definition?: ScenarioActionDefinition,
+  localization?: ScenarioLocalizationCatalogResponseDto,
+): string {
   if (!definition) return `Действие ${action.type} отсутствует в каталоге проекта`
   if (!definition.enabled) return `Действие ${definition.name} отключено`
-  return validateActionConfig(definition, action.config)
+  if (localization?.enabled) {
+    const scalarize = (actionType: string, config: Record<string, unknown>): Record<string, unknown> => {
+      const copy = cloneJson(config)
+      const descriptors = localization.paths.filter((descriptor) => descriptor.actionType === actionType)
+      for (const descriptor of descriptors) {
+        if (descriptor.path === 'config.options[].label' && Array.isArray(copy.options)) {
+          copy.options = copy.options.map((option) => {
+            const item = isRecord(option) ? { ...option } : {}
+            const label = isRecord(item.label) ? item.label[localization.defaultLocale] : item.label
+            return { ...item, label: typeof label === 'string' ? label : '' }
+          })
+        } else {
+          const match = descriptor.path.match(/^config\.([^.]+)$/)
+          if (!match) continue
+          const key = match[1]!
+          const value = copy[key]
+          if (isRecord(value)) copy[key] = typeof value[localization.defaultLocale] === 'string' ? value[localization.defaultLocale] : ''
+        }
+      }
+      if (Array.isArray(copy.reminders)) {
+        copy.reminders = copy.reminders.map((reminder) => {
+          const item = isRecord(reminder) ? { ...reminder } : {}
+          if (Array.isArray(item.actions)) {
+            item.actions = item.actions.map((nested) => {
+              const nestedAction = isRecord(nested) ? { ...nested } : {}
+              if (typeof nestedAction.type === 'string' && isRecord(nestedAction.config)) {
+                nestedAction.config = scalarize(nestedAction.type, nestedAction.config)
+              }
+              return nestedAction
+            })
+          }
+          return item
+        })
+      }
+      return copy
+    }
+    return validateActionConfig(definition, scalarize(action.type, action.config))
+  }
+  const localizedKeys = new Set(
+    localization?.paths
+      .filter((descriptor) => descriptor.actionType === action.type && /^config\.[^.]+$/.test(descriptor.path))
+      .map((descriptor) => descriptor.path.slice('config.'.length)) ?? [],
+  )
+  return validateActionConfig(definition, action.config, localizedKeys)
 }
 
 export function findActionDefinition(definitions: ScenarioActionDefinition[], type: string): ScenarioActionDefinition | undefined {

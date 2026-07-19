@@ -64,6 +64,23 @@ import {
 } from "@/features/scenario-authoring/model/use-scenario-authoring-document";
 import { scenarioApiErrorMessage } from "@/features/scenarios/scenario-api-error";
 import { useActionDefinitionsStore } from "@/features/actions/action-definitions.store";
+import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
+import {
+  scenarioEligibleActionDefinitions,
+  scenarioProjectActionAvailabilityIssue,
+} from "@/features/project-actions/model/scenario-project-actions";
+import {
+  applyTranslationResult,
+  createTranslationJobController,
+  defaultLocalizationPolicy,
+  localizedValue,
+  normalizeLocalizedActionContent,
+} from "@/features/scenario-localization/model";
+import {
+  ScenarioLocalePreview,
+  ScenarioLocalizationPolicyControl,
+  type TranslationUiState,
+} from "@/features/scenario-localization/ui";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import { repository } from "@/shared/api/repository";
@@ -84,6 +101,7 @@ import type {
   ScenarioStatus,
   UiElement,
 } from "@/shared/types/domain";
+import type { ScenarioLocalizationPolicyDto } from "@/shared/api/generated/models";
 import {
   createActionConfig,
   findActionDefinition,
@@ -139,6 +157,7 @@ const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const actionDefinitionsStore = useActionDefinitionsStore();
+const projectActionsStore = useProjectActionsStore();
 const loading = ref(true);
 const saving = ref(false);
 const error = ref("");
@@ -172,6 +191,10 @@ const initialRuleSnapshot = ref("");
 const initialAudienceSnapshot = ref("");
 const deliveryPolicy = ref<DeliveryPolicyDraft>(createDeliveryPolicyDraft());
 const initialDeliverySnapshot = ref("");
+const localizationPolicy = ref<ScenarioLocalizationPolicyDto>(
+  defaultLocalizationPolicy(),
+);
+const initialLocalizationSnapshot = ref("");
 const {
   currentRevisionId,
   currentDraftVersion,
@@ -203,6 +226,8 @@ const audienceBuilder = ref<{
 } | null>(null);
 const deliveryEditor = ref<{ focusIssue: (path: string) => void } | null>(null);
 const selectedNodeKey = ref<string | null>(null);
+const focusedLocalizedFieldPath = ref("");
+const focusedLocale = ref("");
 const inspectorMode = ref<"node" | "settings">("settings");
 const compactActionLayout = ref(false);
 const publishPending = ref(false);
@@ -223,9 +248,117 @@ const form = reactive<ScenarioForm>({
   maxRunsPerUser: undefined,
   actions: [],
 });
+const translationStates = reactive<
+  Record<string, Record<string, TranslationUiState>>
+>({});
+
+function localizedFieldReference(fieldPath: string) {
+  const prefix = "graph.actions.";
+  if (!fieldPath.startsWith(prefix)) return null;
+  const segments = fieldPath.slice(prefix.length).split(".");
+  const nodeKey = segments.shift();
+  const action = form.actions.find((candidate) => candidate.nodeKey === nodeKey);
+  if (!action || segments.length < 2) return null;
+  let container: unknown = action;
+  for (const segment of segments.slice(0, -1)) {
+    if (Array.isArray(container)) {
+      const index = Number(segment);
+      container = Number.isInteger(index)
+        ? container[index]
+        : container.find(
+            (candidate) =>
+              candidate &&
+              typeof candidate === "object" &&
+              (candidate as Record<string, unknown>).id === segment,
+          );
+    } else if (container && typeof container === "object") {
+      container = (container as Record<string, unknown>)[segment];
+    } else return null;
+  }
+  if (!container || typeof container !== "object") return null;
+  return {
+    container: container as Record<string, unknown>,
+    key: segments.at(-1)!,
+  };
+}
+
+const translationController = createTranslationJobController({
+  context: () => ({
+    projectId: auth.project?.id ?? "",
+    scenarioId: form.id ?? "new",
+  }),
+  getValue: (fieldPath) => {
+    const reference = localizedFieldReference(fieldPath);
+    return localizedValue(
+      reference?.container[reference.key],
+      authoringContract.value?.localization?.defaultLocale ?? "",
+    );
+  },
+  apply: (fieldPath, _locale, text, snapshot) => {
+    const reference = localizedFieldReference(fieldPath);
+    if (!reference) return "TARGET_CONFLICT";
+    const current = localizedValue(
+      reference.container[reference.key],
+      authoringContract.value?.localization?.defaultLocale ?? snapshot.sourceLocale,
+    );
+    const result = applyTranslationResult({ current, snapshot, translatedText: text });
+    if (result.outcome === "APPLIED") reference.container[reference.key] = result.value;
+    return result.outcome;
+  },
+  state: (fieldPath, locale, state) => {
+    translationStates[fieldPath] = {
+      ...(translationStates[fieldPath] ?? {}),
+      [locale]: state,
+    };
+  },
+});
+
+function requestTranslation(payload: { fieldPath: string; targets: string[] }) {
+  const sourceLocale = authoringContract.value?.localization?.defaultLocale;
+  if (!sourceLocale) return;
+  saveError.value = "";
+  void translationController
+    .start({ ...payload, sourceLocale })
+    .catch((cause: unknown) => {
+      saveError.value = scenarioApiErrorMessage(
+        cause,
+        "Не удалось запустить перевод. Заполните варианты вручную или повторите позже.",
+      );
+    });
+}
+
+function retryTranslation(payload: { fieldPath: string; locale: string }) {
+  void translationController.retry(payload.fieldPath, payload.locale).catch(
+    (cause: unknown) => {
+      saveError.value = scenarioApiErrorMessage(cause, "Не удалось повторить перевод.");
+    },
+  );
+}
+
+function cancelTranslation(fieldPath: string) {
+  void translationController.cancel(fieldPath).catch((cause: unknown) => {
+    saveError.value = scenarioApiErrorMessage(cause, "Не удалось отменить перевод.");
+  });
+}
+
+function markTranslationManual(payload: { fieldPath: string; locale: string }) {
+  translationStates[payload.fieldPath] = {
+    ...(translationStates[payload.fieldPath] ?? {}),
+    [payload.locale]: "MANUAL",
+  };
+}
 
 const actionDefinitions = computed(() =>
   actionDefinitionsStore.forProject(auth.project?.id ?? ""),
+);
+const projectActions = computed(() =>
+  projectActionsStore.actionsForProject(auth.project?.id ?? ""),
+);
+const scenarioPickerActionDefinitions = computed(() =>
+  scenarioEligibleActionDefinitions(
+    actionDefinitions.value,
+    projectActions.value,
+  ),
 );
 const selectedAction = computed(
   () =>
@@ -258,10 +391,18 @@ const goalIssues = computed(() =>
 );
 const actionConfigIssues = computed(() =>
   form.actions.flatMap((action) => {
+    const availabilityIssue = scenarioProjectActionAvailabilityIssue(
+      action.type,
+      projectActions.value,
+    );
+    if (availabilityIssue) {
+      return [{ nodeKey: action.nodeKey, message: availabilityIssue }];
+    }
     if (action.type === "WAIT_FOR_GOAL") return [];
     const message = validateScenarioActionConfig(
       action,
       findActionDefinition(actionDefinitions.value, action.type),
+      authoringContract.value?.localization,
     );
     return message ? [{ nodeKey: action.nodeKey, message }] : [];
   }),
@@ -296,12 +437,18 @@ const deliveryIsDirty = computed(
     Boolean(initialDeliverySnapshot.value) &&
     JSON.stringify(deliveryPolicy.value) !== initialDeliverySnapshot.value,
 );
+const localizationIsDirty = computed(
+  () =>
+    Boolean(initialLocalizationSnapshot.value) &&
+    JSON.stringify(localizationPolicy.value) !== initialLocalizationSnapshot.value,
+);
 const durableSourceIsDirty = computed(
   () =>
     formIsDirty.value ||
     ruleIsDirty.value ||
     audienceIsDirty.value ||
-    deliveryIsDirty.value,
+    deliveryIsDirty.value ||
+    localizationIsDirty.value,
 );
 const canManage = computed(
   () => auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
@@ -324,6 +471,7 @@ const isDirty = computed(
     ruleIsDirty.value ||
     audienceIsDirty.value ||
     deliveryIsDirty.value ||
+    localizationIsDirty.value ||
     ruleEditorDirty.value,
 );
 const publishBlockedReason = computed(() =>
@@ -529,9 +677,7 @@ const conversationPolicyOptions: {
 const flowNodeTypes = markRaw({ scenario: ScenarioFlowNode });
 
 const actionGroups = computed(() => {
-  const enabled = actionDefinitions.value.filter(
-    (definition) => definition.enabled,
-  );
+  const enabled = scenarioPickerActionDefinitions.value;
   return [
     {
       label: "Логика",
@@ -691,9 +837,10 @@ onMounted(() => {
   void load();
 });
 
-onBeforeUnmount(() =>
-  compactActionMedia?.removeEventListener("change", syncCompactActionLayout),
-);
+onBeforeUnmount(() => {
+  compactActionMedia?.removeEventListener("change", syncCompactActionLayout);
+  translationController.dispose();
+});
 
 async function load() {
   const projectId = auth.project?.id;
@@ -711,6 +858,7 @@ async function load() {
   ruleDraft.value = createRuleDraft();
   audienceDraft.value = createAudienceDraft();
   deliveryPolicy.value = createDeliveryPolicyDraft();
+  localizationPolicy.value = defaultLocalizationPolicy();
   try {
     const [scenarios] = await Promise.all([
       repository.getScenarios(projectId),
@@ -722,6 +870,12 @@ async function load() {
       }),
       actionDefinitionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
         actionsError.value = scenarioApiErrorMessage(cause);
+      }),
+      projectActionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
+        actionsError.value = scenarioApiErrorMessage(
+          cause,
+          "Не удалось загрузить настройки Project Actions",
+        );
       }),
       scenarioAuthoringRepository
         .getContract(projectId)
@@ -813,6 +967,7 @@ async function load() {
         ruleDraft.value = restored.rule;
         audienceDraft.value = restored.audience;
         deliveryPolicy.value = restored.delivery;
+        localizationPolicy.value = restored.localization;
         if (restored.actions) form.actions = restored.actions;
       }
     } else {
@@ -827,10 +982,22 @@ async function load() {
         events.value.find((event) => event.enabled)?.id ??
         "";
     }
+    if (authoringContract.value?.localization?.enabled) {
+      form.actions.splice(
+        0,
+        form.actions.length,
+        ...normalizeLocalizedActionContent(
+          form.actions,
+          authoringContract.value.localization,
+        ),
+      );
+    }
     initialSnapshot.value = JSON.stringify(form);
     initialRuleSnapshot.value = JSON.stringify(ruleDraft.value);
     initialAudienceSnapshot.value = JSON.stringify(audienceDraft.value);
     initialDeliverySnapshot.value = JSON.stringify(deliveryPolicy.value);
+    initialLocalizationSnapshot.value = JSON.stringify(localizationPolicy.value);
+    await translationController.recover();
   } catch (cause) {
     error.value =
       cause instanceof Error ? cause.message : "Не удалось открыть редактор";
@@ -946,6 +1113,7 @@ function focusDraftIssue(issue: {
   code: string;
   path: string;
   message: string;
+  locale?: string;
 }) {
   if (issue.path.startsWith("audience")) {
     const serialized = audienceContext.value
@@ -976,6 +1144,24 @@ function focusDraftIssue(issue: {
     const action = Number.isInteger(index) ? form.actions[index] : undefined;
     selectedNodeKey.value = action?.nodeKey ?? null;
     inspectorMode.value = action ? "node" : "settings";
+    if (action) {
+      const projectLocales = new Set(
+        authoringContract.value?.localization?.locales.map(({ code }) => code) ?? [],
+      );
+      const segments = issue.path.split(".");
+      const pathLocale =
+        issue.locale ??
+        [...segments].reverse().find((segment) => projectLocales.has(segment));
+      if (pathLocale && segments.at(-1) === pathLocale) segments.pop();
+      let suffix = segments.slice(3).join(".");
+      const optionMatch = suffix.match(/^config\.options\.(\d+)\.label$/);
+      if (optionMatch) {
+        const option = choiceOptions(action)[Number(optionMatch[1])];
+        if (option) suffix = `config.options.${option.id}.label`;
+      }
+      focusedLocalizedFieldPath.value = `graph.actions.${action.nodeKey}.${suffix}`;
+      focusedLocale.value = pathLocale ?? "";
+    }
     return;
   }
   const serialized = ruleContext.value
@@ -1048,10 +1234,19 @@ async function revisionHeadChanged(revisionId: string) {
 }
 
 function nodeSummary(action: ScenarioAction) {
+  const displayText = (value: unknown) => {
+    if (typeof value === "string") return value;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const map = value as Record<string, unknown>;
+      const defaultLocale = authoringContract.value?.localization?.defaultLocale;
+      const preferred = defaultLocale ? map[defaultLocale] : undefined;
+      if (typeof preferred === "string") return preferred;
+      return Object.values(map).find((item): item is string => typeof item === "string") ?? "";
+    }
+    return "";
+  };
   if (action.type === "ASK_CHOICE")
-    return String(
-      action.config.message || "Настройте вопрос и варианты ответа",
-    );
+    return displayText(action.config.message) || "Настройте вопрос и варианты ответа";
   if (action.type === "CONDITION")
     return `${Array.isArray(action.config.branches) ? action.config.branches.length : 0} runtime-веток + fallback`;
   if (action.type === "WAIT_FOR_GOAL") {
@@ -1062,10 +1257,8 @@ function nodeSummary(action: ScenarioAction) {
         )
       : "Настройте цель · конечный срок · 2 ветки";
   }
-  const first = Object.values(action.config).find(
-    (value) => typeof value === "string",
-  );
-  return typeof first === "string" && first
+  const first = Object.values(action.config).map(displayText).find(Boolean);
+  return first
     ? first
     : "Настройте параметры действия";
 }
@@ -1090,6 +1283,13 @@ function appendNode(type: string, connectPrevious: boolean) {
   )
     previous.nextNodeKey = node.nodeKey;
   form.actions.push(node);
+  if (authoringContract.value?.localization?.enabled) {
+    const [localizedNode] = normalizeLocalizedActionContent(
+      [node],
+      authoringContract.value.localization,
+    );
+    if (localizedNode) form.actions[form.actions.length - 1] = localizedNode;
+  }
   selectedNodeKey.value = node.nodeKey ?? null;
   inspectorMode.value = "node";
   studioStage.value = "actions";
@@ -1157,6 +1357,13 @@ function changeType(type: string) {
     ).config,
   };
   selectedAction.value.nextNodeKey = null;
+  if (authoringContract.value?.localization?.enabled) {
+    const [localizedAction] = normalizeLocalizedActionContent(
+      [selectedAction.value],
+      authoringContract.value.localization,
+    );
+    if (localizedAction) updateSelected(localizedAction);
+  }
 }
 
 function updateSelected(action: ScenarioAction) {
@@ -1234,6 +1441,7 @@ async function save() {
     const configError = validateScenarioActionConfig(
       action,
       findActionDefinition(actionDefinitions.value, action.type),
+      authoringContract.value?.localization,
     );
     if (configError) {
       saveError.value = `${action.nodeKey}: ${configError}`;
@@ -1313,6 +1521,9 @@ async function save() {
           }
         : {}),
       deliveryPolicy: deliveryResult.value,
+      ...(authoringContract.value?.localization?.enabled
+        ? { localization: localizationPolicy.value }
+        : {}),
       graph: {
         actions: form.actions.map((action, position) => ({
           ...toPlainScenarioAction(action),
@@ -1340,6 +1551,12 @@ async function save() {
     initialRuleSnapshot.value = JSON.stringify(ruleDraft.value);
     initialAudienceSnapshot.value = JSON.stringify(audienceDraft.value);
     initialDeliverySnapshot.value = JSON.stringify(deliveryPolicy.value);
+    initialLocalizationSnapshot.value = JSON.stringify(localizationPolicy.value);
+    for (const states of Object.values(translationStates)) {
+      for (const [locale, state] of Object.entries(states)) {
+        if (state === "MACHINE_UNSAVED") delete states[locale];
+      }
+    }
     saveNotice.value = `Черновик v${draft.version} сохранён на сервере. Публикация будет использовать именно эту версию.`;
     if (route.params.scenarioId === "new")
       await router.replace({ name: "scenario-edit", params: { scenarioId } });
@@ -1550,6 +1767,29 @@ function leave() {
         </aside>
 
         <main v-if="studioStage === 'actions'" class="graph-canvas">
+          <details
+            v-if="authoringContract?.localization"
+            class="localization-policy-card"
+          >
+            <summary>
+              Языки контента ·
+              {{
+                localizationPolicy.mode === 'ALL_PROJECT_LOCALES'
+                  ? 'все языки проекта'
+                  : `${localizationPolicy.locales.length} выбрано`
+              }}
+            </summary>
+            <ScenarioLocalizationPolicyControl
+              v-model="localizationPolicy"
+              :catalog="authoringContract.localization"
+              :readonly="!canEdit"
+            />
+            <ScenarioLocalePreview
+              :actions="form.actions"
+              :catalog="authoringContract.localization"
+              :policy="localizationPolicy"
+            />
+          </details>
           <Message
             v-if="templatePolicyError"
             severity="warn"
@@ -1879,6 +2119,7 @@ function leave() {
               :audience-context="audienceContext ?? undefined"
               :delivery-policy="deliveryPolicy"
               :actions="form.actions"
+              :localization-policy="localizationPolicy"
               :authoring-snapshot="JSON.stringify(form)"
               :expected-current-revision-id="currentRevisionId"
               :expected-draft-version="currentDraftVersion"
@@ -1905,6 +2146,7 @@ function leave() {
               :project-id="auth.project?.id ?? ''"
               :scenario-id="form.id"
               :current-revision-id="currentRevisionId"
+              :localization-catalog="authoringContract?.localization"
               :readonly="!canManage"
               @head-change="revisionHeadChanged"
             />
@@ -1963,12 +2205,22 @@ function leave() {
           :condition-paths="conditionPaths"
           :issues="selectedIssues"
           :authoring-contract="authoringContract"
+          :localization-policy="localizationPolicy"
+          :scenario-id="form.id ?? 'new'"
+          :action-path="`graph.actions.${selectedAction.nodeKey}`"
+          :translation-states="translationStates"
+          :focus-field-path="focusedLocalizedFieldPath"
+          :focus-locale="focusedLocale"
           @change-type="changeType"
           @create-target="createTarget"
           @remove="removeSelected"
           @update="updateSelected"
           @rename="renameNode"
           @close="closeNodeInspector"
+          @translation-request="requestTranslation"
+          @translation-retry="retryTranslation"
+          @translation-cancel="cancelTranslation"
+          @translation-manual-edit="markTranslationManual"
         />
         <aside
           v-else-if="
@@ -2567,6 +2819,25 @@ function leave() {
   left: 12px;
   width: min(520px, calc(100% - 24px));
 }
+.localization-policy-card {
+  position: absolute;
+  z-index: 5;
+  top: 14px;
+  right: 14px;
+  width: min(390px, calc(100% - 28px));
+  padding: 10px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+.localization-policy-card summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: .72rem;
+  font-weight: 750;
+}
+.localization-policy-card[open] summary { margin-bottom: 12px; }
 .action-empty {
   position: absolute;
   inset: 0;

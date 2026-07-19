@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Skeleton from 'primevue/skeleton'
@@ -7,11 +7,15 @@ import Skeleton from 'primevue/skeleton'
 import { scenarioAuthoringRepository, type ScenarioRevisionDetailResponseDto, type ScenarioRevisionListItemResponseDto } from '@/shared/api/repository/scenario-authoring'
 import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
 import { formatDate } from '@/shared/lib/format'
+import { ScenarioLocalePreview } from '@/features/scenario-localization/ui'
+import type { ScenarioLocalizationCatalogResponseDto } from '@/shared/api/generated/models'
+import type { ScenarioAction } from '@/shared/types/domain'
 
 const props = defineProps<{
   projectId: string
   scenarioId: string
   currentRevisionId: string | null
+  localizationCatalog?: ScenarioLocalizationCatalogResponseDto
   readonly?: boolean
 }>()
 
@@ -25,6 +29,9 @@ const loadingMore = ref(false)
 const detailLoading = ref(false)
 const rollingBack = ref(false)
 const error = ref('')
+const revisionActions = computed(() =>
+  (selected.value?.source.graph?.actions ?? []) as unknown as ScenarioAction[],
+)
 
 async function load(reset = true) {
   if (!props.projectId || !props.scenarioId || (!reset && !nextCursor.value)) return
@@ -111,7 +118,7 @@ onMounted(() => void load())
     </div>
     <aside v-if="selected || detailLoading" class="revision-detail">
       <Skeleton v-if="detailLoading" height="100px" />
-      <template v-else-if="selected"><div><strong>Версия №{{ selected.revisionNumber }}</strong><button type="button" aria-label="Закрыть сведения о версии" @click="selected = null">×</button></div><dl><dt>Хеш содержимого</dt><dd><code>{{ selected.contentHash }}</code></dd><dt>Версия каталога</dt><dd><code>{{ selected.catalogRevision }}</code></dd><dt>Автор</dt><dd>{{ selected.publishedByAdminId ?? 'система' }}</dd><dt>Исходные настройки</dt><dd>{{ selected.editable ? 'доступны для восстановления' : 'доступен только снимок выполнения' }}</dd></dl></template>
+      <template v-else-if="selected"><div><strong>Версия №{{ selected.revisionNumber }}</strong><button type="button" aria-label="Закрыть сведения о версии" @click="selected = null">×</button></div><dl><dt>Хеш содержимого</dt><dd><code>{{ selected.contentHash }}</code></dd><dt>Версия каталога</dt><dd><code>{{ selected.catalogRevision }}</code></dd><dt>Автор</dt><dd>{{ selected.publishedByAdminId ?? 'система' }}</dd><dt>Исходные настройки</dt><dd>{{ selected.editable ? 'доступны для восстановления' : 'доступен только снимок выполнения' }}</dd></dl><ScenarioLocalePreview v-if="localizationCatalog" :actions="revisionActions" :catalog="localizationCatalog" :policy="selected.source.localization" /></template>
     </aside>
   </section>
 </template>

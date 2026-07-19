@@ -4,7 +4,7 @@ export const NODE_KEY_PATTERN = /^[a-z][a-z0-9_-]{0,63}$/
 
 export interface ChoiceOption {
   id: string
-  label: string
+  label: string | Record<string, string>
   nextNodeKey: string
 }
 
@@ -37,6 +37,12 @@ export interface GraphValidationIssue {
 
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+
+function localizedText(value: unknown): string {
+  if (typeof value === 'string') return value
+  const values = Object.values(record(value))
+  return typeof values[0] === 'string' ? values[0] : ''
+}
 
 export function toPlainScenarioAction(action: ScenarioAction): ScenarioAction {
   return JSON.parse(JSON.stringify(action)) as ScenarioAction
@@ -98,7 +104,9 @@ export function choiceOptions(action: ScenarioAction): ChoiceOption[] {
   if (!Array.isArray(options)) return []
   return options.map((option) => record(option)).map((option) => ({
     id: typeof option.id === 'string' ? option.id : '',
-    label: typeof option.label === 'string' ? option.label : '',
+    label: typeof option.label === 'string'
+      ? option.label
+      : Object.fromEntries(Object.entries(record(option.label)).filter((entry): entry is [string, string] => typeof entry[1] === 'string')),
     nextNodeKey: typeof option.nextNodeKey === 'string' ? option.nextNodeKey : '',
   }))
 }
@@ -140,7 +148,7 @@ export function graphTransitions(actions: ScenarioAction[]): GraphTransition[] {
     }
     if (action.type === 'ASK_CHOICE') {
       const options = choiceOptions(action).filter((option) => option.nextNodeKey).map((option) => ({
-        source, target: option.nextNodeKey, label: option.label || option.id, kind: 'choice' as const,
+        source, target: option.nextNodeKey, label: localizedText(option.label) || option.id, kind: 'choice' as const,
       }))
       const timeout = record(action.config).onTimeout
       transitions.push(...(typeof timeout === 'string' && timeout
@@ -232,7 +240,7 @@ export function validateScenarioGraph(actions: ScenarioAction[]): GraphValidatio
       if (new Set(optionIds).size !== optionIds.length) issues.push({ nodeKey: key, message: 'ID вариантов ответа должны быть уникальны' })
       if (options.some((option) => !NODE_KEY_PATTERN.test(option.id))) issues.push({ nodeKey: key, message: 'ID варианта должен соответствовать формату ключа узла' })
       const config = record(action.config)
-      if (typeof config.message !== 'string' || !config.message.trim()) issues.push({ nodeKey: key, message: 'Заполните текст вопроса' })
+      if (!localizedText(config.message).trim()) issues.push({ nodeKey: key, message: 'Заполните текст вопроса' })
       if (typeof config.timeoutMs !== 'number' || config.timeoutMs < 1_000) issues.push({ nodeKey: key, message: 'Timeout должен быть не меньше 1000 мс' })
       if (typeof config.onTimeout !== 'string' || !config.onTimeout) issues.push({ nodeKey: key, message: 'Выберите переход по timeout' })
     }

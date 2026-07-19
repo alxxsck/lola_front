@@ -13,6 +13,13 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { buildUiActionIntegrationGuide, isUiElementInSection, type InterfaceSection } from '@/features/interface/ui-action-integration'
+import {
+  aiAliases,
+  aiTargetBound,
+  requiresUiElementAiAuditReason,
+  toUiElementAiExposureUpdate,
+  validateUiElementAiExposure,
+} from '@/features/interface/ui-element-ai-exposure'
 import { repository } from '@/shared/api/repository'
 import type { CreateUiElement, UpdateUiElement } from '@/shared/api/repository/contracts'
 import { slugify } from '@/shared/lib/format'
@@ -34,6 +41,10 @@ interface ElementForm {
   handler: string
   configText: string
   enabled: boolean
+  aiEnabled: boolean
+  aiDescription: string
+  aiAliasesText: string
+  aiAuditReason: string
 }
 
 const kindOptions: Array<{ value: InterfaceKind; label: string; icon: string; description: string }> = [
@@ -80,6 +91,12 @@ const fieldMeta = computed(() => {
   return { key: 'selector' as const, label: 'CSS-селектор', placeholder: "[data-lola='deposit']", required: false }
 })
 const isLegacyUnboundModal = computed(() => form.value.kind === 'MODAL' && form.value.legacyUnboundModal)
+const canManageAi = computed(() => auth.user?.role === 'OWNER')
+const editedElement = computed(() => form.value.id ? elements.value.find((item) => item.id === form.value.id) ?? null : null)
+const parsedAiAliases = computed(() => aiAliases(form.value.aiAliasesText))
+const requiresAiAuditReason = computed(() => requiresUiElementAiAuditReason(editedElement.value, form.value))
+const targetBound = computed(() => aiTargetBound(form.value))
+const effectLockedByAi = computed(() => Boolean(editedElement.value?.aiEnabled) && !canManageAi.value)
 
 watch(
   () => route.params.kind,
@@ -94,7 +111,10 @@ watch(
 onMounted(loadElements)
 
 function emptyForm(kind: InterfaceKind): ElementForm {
-  return { name: '', code: '', kind, legacyUnboundModal: false, selector: '', route: '', modalName: '', handler: '', configText: '{}', enabled: true }
+  return {
+    name: '', code: '', kind, legacyUnboundModal: false, selector: '', route: '', modalName: '', handler: '',
+    configText: '{}', enabled: true, aiEnabled: false, aiDescription: '', aiAliasesText: '', aiAuditReason: '',
+  }
 }
 
 function kindCount(kind: InterfaceKind) {
@@ -146,6 +166,10 @@ function openEdit(item: UiElement) {
     handler: item.handler ?? '',
     configText: JSON.stringify(item.config ?? {}, null, 2),
     enabled: item.enabled,
+    aiEnabled: item.aiEnabled,
+    aiDescription: item.aiDescription ?? '',
+    aiAliasesText: item.aiAliases.join(', '),
+    aiAuditReason: '',
   }
   codeTouched.value = true
   formError.value = ''
@@ -190,6 +214,10 @@ async function saveElement() {
   if (elements.value.some((item) => item.code === code && item.id !== form.value.id)) { formError.value = 'Элемент с таким кодом уже существует.'; return }
   if (form.value.kind === 'PAGE' && !form.value.route.trim()) { formError.value = 'Укажите путь страницы.'; return }
   if (form.value.kind === 'MODAL' && !form.value.modalName.trim() && !isLegacyUnboundModal.value) { formError.value = 'Укажите имя модального окна.'; return }
+  const aiDescription = form.value.aiDescription.trim()
+  const aiAuditReason = form.value.aiAuditReason.trim()
+  const aiIssues = validateUiElementAiExposure(editedElement.value, form.value, canManageAi.value)
+  if (aiIssues.length) { formError.value = aiIssues[0]!; return }
   const config = parseConfig()
   if (!config) return
 
@@ -197,7 +225,15 @@ async function saveElement() {
   try {
     let saved: UiElement
     if (!form.value.id) {
-      const common = { name, code, config, enabled: form.value.enabled }
+      const common = {
+        name, code, config, enabled: form.value.enabled,
+        ...(form.value.aiEnabled ? {
+          aiEnabled: true,
+          aiDescription,
+          aiAliases: parsedAiAliases.value,
+          auditReason: aiAuditReason,
+        } : {}),
+      }
       let value: CreateUiElement
       if (form.value.kind === 'PAGE') value = { ...common, kind: 'PAGE', route: form.value.route.trim() }
       else if (form.value.kind === 'MODAL') value = { ...common, kind: 'MODAL', modalName: form.value.modalName.trim() }
@@ -216,6 +252,7 @@ async function saveElement() {
       if (form.value.kind === 'ELEMENT' && form.value.selector.trim() !== (current.selector ?? '')) value.selector = form.value.selector.trim()
       if (form.value.kind === 'PAGE' && form.value.route.trim() !== (current.route ?? '')) value.route = form.value.route.trim()
       if (form.value.kind === 'MODAL' && form.value.modalName.trim() !== (current.modalName ?? '')) value.modalName = form.value.modalName.trim()
+      Object.assign(value, toUiElementAiExposureUpdate(current, form.value, canManageAi.value))
       saved = Object.keys(value).length ? await repository.updateElement(projectId, current.id, value) : current
     }
     const index = elements.value.findIndex((item) => item.id === saved.id)
@@ -244,6 +281,10 @@ async function toggleElement(item: UiElement, enabled: boolean) {
   } finally {
     togglingId.value = null
   }
+}
+
+function aiExposureToggleDisabled(item: UiElement): boolean {
+  return togglingId.value === item.id || item.aiEnabled
 }
 
 function askDelete(item: UiElement) {
@@ -324,7 +365,7 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
         <div class="element-head">
           <span class="element-icon"><i :class="currentKind.icon" /></span>
           <div class="element-title"><h2>{{ item.name }}</h2><code>{{ item.code }}</code></div>
-          <ToggleSwitch :model-value="item.enabled" :disabled="togglingId === item.id" :aria-label="`Включить ${item.name}`" @update:model-value="toggleElement(item, $event)" />
+          <ToggleSwitch :model-value="item.enabled" :disabled="aiExposureToggleDisabled(item)" :aria-label="`Включить ${item.name}`" @update:model-value="toggleElement(item, $event)" />
         </div>
         <div class="element-target surface-soft">
           <span>{{ item.kind === 'BUTTON' || item.kind === 'ELEMENT' ? 'CSS-селектор' : item.kind === 'PAGE' ? 'Путь страницы' : 'Имя модального окна' }}</span>
@@ -333,6 +374,7 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
         </div>
         <div class="element-meta">
           <Tag :value="item.kind === 'BUTTON' ? 'ELEMENT' : item.kind" severity="secondary" />
+          <Tag :value="item.aiEnabled ? 'AI доступно' : 'AI выключено'" :severity="item.aiEnabled ? 'success' : 'secondary'" />
           <span><i class="pi pi-sliders-h" /> {{ Object.keys(item.config ?? {}).length }} параметров</span>
         </div>
         <footer>
@@ -352,19 +394,32 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
       <form id="element-form" class="dialog-form" @submit.prevent="saveElement">
         <div class="form-grid">
           <div class="field"><label for="element-name">Название</label><InputText id="element-name" v-model="form.name" autofocus maxlength="100" placeholder="Блок пополнения" @input="onNameInput" /></div>
-          <div class="field"><label for="element-code">Код</label><InputText id="element-code" v-model="form.code" class="mono" maxlength="200" placeholder="deposit_element" @input="onCodeInput" /></div>
+          <div class="field"><label for="element-code">Код</label><InputText id="element-code" v-model="form.code" class="mono" maxlength="200" placeholder="deposit_element" :disabled="effectLockedByAi" @input="onCodeInput" /></div>
         </div>
         <div class="field">
           <label>Тип элемента</label>
           <div class="type-picker">
-            <button v-for="item in kindOptions" :key="item.value" type="button" :class="{ active: form.kind === item.value }" @click="form.kind = item.value"><i :class="item.icon" />{{ item.label }}</button>
+            <button v-for="item in kindOptions" :key="item.value" type="button" :class="{ active: form.kind === item.value }" :disabled="effectLockedByAi" @click="form.kind = item.value"><i :class="item.icon" />{{ item.label }}</button>
           </div>
         </div>
-        <div class="field"><label :for="`element-${fieldMeta.key}`">{{ fieldMeta.label }} <span>{{ fieldMeta.required ? 'обязательно' : 'необязательно' }}</span></label><InputText :id="`element-${fieldMeta.key}`" v-model="form[fieldMeta.key]" class="mono" :placeholder="fieldMeta.placeholder" :maxlength="form.kind === 'PAGE' ? 1000 : form.kind === 'MODAL' ? 200 : 500" /></div>
+        <div class="field"><label :for="`element-${fieldMeta.key}`">{{ fieldMeta.label }} <span>{{ fieldMeta.required ? 'обязательно' : 'необязательно' }}</span></label><InputText :id="`element-${fieldMeta.key}`" v-model="form[fieldMeta.key]" class="mono" :placeholder="fieldMeta.placeholder" :maxlength="form.kind === 'PAGE' ? 1000 : form.kind === 'MODAL' ? 200 : 500" :disabled="effectLockedByAi" /></div>
         <Message v-if="isLegacyUnboundModal" severity="warn" size="small" :closable="false">Это legacy-модалка без <code>modalName</code>. Её можно сохранить как есть во время миграции, но новые команды останутся на legacy-контракте, пока binding не будет заполнен.</Message>
         <div v-if="form.kind === 'MODAL' && form.handler" class="field legacy-field"><label for="element-handler">Старый handler <span>только для сверки</span></label><InputText id="element-handler" :model-value="form.handler" class="mono" disabled /><small>Устаревшее поле: runtime его не исполняет и CMS не переносит значение в modalName автоматически.</small></div>
         <div class="field"><label for="element-config">Конфигурация JSON</label><Textarea id="element-config" v-model="form.configText" class="config-editor mono" rows="7" spellcheck="false" /></div>
-        <div class="enabled-row surface-soft"><div><strong>Элемент активен</strong><span>Неактивные элементы остаются в реестре, но не предлагаются для новых действий.</span></div><ToggleSwitch v-model="form.enabled" /></div>
+        <div class="enabled-row surface-soft"><div><strong>Элемент активен</strong><span>Неактивные элементы остаются в реестре, но не предлагаются для новых действий.</span></div><ToggleSwitch v-model="form.enabled" :disabled="effectLockedByAi" aria-label="Элемент активен" /></div>
+        <section class="ai-exposure surface-soft">
+          <div class="enabled-row ai-exposure-toggle">
+            <div><strong><i class="pi pi-sparkles" /> Доступно AI</strong><span>Default false. Grok увидит только стабильный code и это смысловое описание; route, modalName и selector остаются server-owned.</span></div>
+            <ToggleSwitch v-model="form.aiEnabled" aria-label="Доступно AI" :disabled="!canManageAi || !form.enabled || !targetBound" />
+          </div>
+          <Message v-if="!canManageAi" severity="info" size="small" :closable="false">Только OWNER может менять доступ AI.</Message>
+          <Message v-else-if="!targetBound" severity="warn" size="small" :closable="false">Сначала привяжите и включите UI-цель.</Message>
+          <template v-if="form.aiEnabled || form.aiDescription || form.aiAliasesText">
+            <div class="field"><label for="ai-target-description">Описание для AI <span>20–1000 символов</span></label><Textarea id="ai-target-description" v-model="form.aiDescription" rows="3" minlength="20" maxlength="1000" :disabled="!canManageAi" placeholder="Страница, где пользователь просматривает доступные бонусы…" /></div>
+            <div class="field"><label for="ai-target-aliases">Aliases <span>через запятую, до 20</span></label><InputText id="ai-target-aliases" v-model="form.aiAliasesText" :disabled="!canManageAi" placeholder="награды, rewards" /><small>Только названия. URL, selectors, инструкции и внутренние identifiers запрещены backend policy.</small></div>
+            <div v-if="requiresAiAuditReason" class="field"><label for="ai-target-audit-reason">Причина изменения AI-доступа <span>обязательно</span></label><InputText id="ai-target-audit-reason" v-model="form.aiAuditReason" minlength="10" maxlength="500" :disabled="!canManageAi" placeholder="Почему эта цель нужна AI" /><small>Audit reason сохраняется backend атомарно с authority mutation.</small></div>
+          </template>
+        </section>
         <Message v-if="formError" severity="error" size="small" :closable="false">{{ formError }}</Message>
       </form>
       <template #footer><Button label="Отмена" severity="secondary" text @click="requestDialogVisibility(false)" /><Button form="element-form" type="submit" label="Сохранить" icon="pi pi-check" :loading="saving" /></template>
@@ -381,7 +436,7 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
 </template>
 
 <style scoped>
-.interface-page{--kind-color:var(--status-violet-text)}.kind-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}.kind-tabs>button{appearance:none;border:1px solid var(--line);background:var(--surface-card);border-radius:17px;padding:15px;display:flex;align-items:center;gap:12px;text-align:left;color:var(--ink);cursor:pointer;transition:.18s ease}.kind-tabs>button:hover{border-color:var(--border-default);transform:translateY(-1px)}.kind-tabs>button.active{border-color:var(--status-violet);background:linear-gradient(145deg,var(--surface-card) 20%,var(--status-violet-soft))}.tab-icon,.element-icon{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:12px;background:var(--status-violet-soft);color:var(--status-violet-text)}.kind-tabs strong,.kind-tabs small{display:block}.kind-tabs strong{font-size:.88rem}.kind-tabs small{font-size:.7rem;color:var(--muted);margin-top:3px}.kind-tabs b{margin-left:auto;background:var(--surface-subtle);border-radius:20px;padding:4px 8px;font-size:.7rem}.kind-tabs>button.active b{background:var(--status-violet-soft);color:var(--status-violet-text)}.toolbar{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.search-box{position:relative;display:block;max-width:440px;flex:1}.search-box>i{position:absolute;left:13px;top:50%;transform:translateY(-50%);z-index:1;color:var(--text-secondary)}.search-box :deep(input){padding-left:38px;border:0;background:var(--surface-subtle)}.result-count{font-size:.75rem;color:var(--muted);white-space:nowrap}.message-content{display:flex;align-items:center;justify-content:space-between;gap:16px}.elements-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.element-card{padding:18px;display:flex;flex-direction:column;gap:17px;min-height:238px;transition:.18s ease}.element-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}.element-card.disabled{opacity:.62}.element-head{display:flex;align-items:center;gap:11px}.element-title{min-width:0;flex:1}.element-title h2{font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.element-title code{display:block;color:var(--text-secondary);font-size:.7rem;margin-top:4px;overflow:hidden;text-overflow:ellipsis}.element-target{padding:12px}.element-target>span,.element-target>code{display:block}.element-target>span{text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);font-size:.62rem;font-weight:700;margin-bottom:7px}.element-target>code{font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.element-target small{display:flex;align-items:center;gap:5px;margin-top:8px;color:var(--status-warning-text);font-size:.62rem}.element-target small code{overflow:hidden;text-overflow:ellipsis}.element-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:.7rem}.element-meta i{font-size:.65rem}.element-card footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:2px;border-top:1px solid var(--surface-subtle)}.card-actions{display:flex;align-items:center;gap:2px}.empty strong{display:block;color:var(--ink)}.empty p{margin:7px 0 18px}.dialog-form{display:flex;flex-direction:column;gap:18px;padding-top:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label span{font-weight:400;color:var(--text-secondary)}.legacy-field small{display:block;margin-top:6px;color:var(--muted);font-size:.68rem}.type-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.type-picker button{border:1px solid var(--line);background:var(--surface-subtle);border-radius:11px;padding:10px;color:var(--text-secondary);cursor:pointer}.type-picker button i{margin-right:7px;font-size:.8rem}.type-picker button.active{background:var(--status-violet-soft);border-color:var(--status-violet);color:var(--status-violet-text);font-weight:600}.config-editor{font-size:.78rem;line-height:1.55;resize:vertical}.enabled-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 15px}.enabled-row strong,.enabled-row span{display:block}.enabled-row strong{font-size:.82rem}.enabled-row span{font-size:.7rem;color:var(--muted);margin-top:3px;max-width:440px}.integration-guide{display:flex;flex-direction:column;gap:14px}.integration-summary{display:flex;align-items:center;gap:11px;padding:13px}.integration-summary>i{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--status-violet-soft);color:var(--status-violet-text)}.integration-summary strong,.integration-summary span{display:block}.integration-summary strong{font-size:.8rem}.integration-summary span{margin-top:3px;color:var(--muted);font-size:.7rem}.integration-guide pre{max-height:480px;margin:0;padding:16px;overflow:auto;border-radius:13px;background:var(--surface-emphasis);color:var(--status-success);white-space:pre-wrap;font:500 .7rem/1.55 'SFMono-Regular',Consolas,monospace}
+.interface-page{--kind-color:var(--status-violet-text)}.kind-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}.kind-tabs>button{appearance:none;border:1px solid var(--line);background:var(--surface-card);border-radius:17px;padding:15px;display:flex;align-items:center;gap:12px;text-align:left;color:var(--ink);cursor:pointer;transition:.18s ease}.kind-tabs>button:hover{border-color:var(--border-default);transform:translateY(-1px)}.kind-tabs>button.active{border-color:var(--status-violet);background:linear-gradient(145deg,var(--surface-card) 20%,var(--status-violet-soft))}.tab-icon,.element-icon{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:12px;background:var(--status-violet-soft);color:var(--status-violet-text)}.kind-tabs strong,.kind-tabs small{display:block}.kind-tabs strong{font-size:.88rem}.kind-tabs small{font-size:.7rem;color:var(--muted);margin-top:3px}.kind-tabs b{margin-left:auto;background:var(--surface-subtle);border-radius:20px;padding:4px 8px;font-size:.7rem}.kind-tabs>button.active b{background:var(--status-violet-soft);color:var(--status-violet-text)}.toolbar{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.search-box{position:relative;display:block;max-width:440px;flex:1}.search-box>i{position:absolute;left:13px;top:50%;transform:translateY(-50%);z-index:1;color:var(--text-secondary)}.search-box :deep(input){padding-left:38px;border:0;background:var(--surface-subtle)}.result-count{font-size:.75rem;color:var(--muted);white-space:nowrap}.message-content{display:flex;align-items:center;justify-content:space-between;gap:16px}.elements-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.element-card{padding:18px;display:flex;flex-direction:column;gap:17px;min-height:238px;transition:.18s ease}.element-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}.element-card.disabled{opacity:.62}.element-head{display:flex;align-items:center;gap:11px}.element-title{min-width:0;flex:1}.element-title h2{font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.element-title code{display:block;color:var(--text-secondary);font-size:.7rem;margin-top:4px;overflow:hidden;text-overflow:ellipsis}.element-target{padding:12px}.element-target>span,.element-target>code{display:block}.element-target>span{text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);font-size:.62rem;font-weight:700;margin-bottom:7px}.element-target>code{font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.element-target small{display:flex;align-items:center;gap:5px;margin-top:8px;color:var(--status-warning-text);font-size:.62rem}.element-target small code{overflow:hidden;text-overflow:ellipsis}.element-meta{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px;color:var(--muted);font-size:.7rem}.element-meta>span:last-child{margin-left:auto}.element-meta i{font-size:.65rem}.element-card footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:2px;border-top:1px solid var(--surface-subtle)}.card-actions{display:flex;align-items:center;gap:2px}.empty strong{display:block;color:var(--ink)}.empty p{margin:7px 0 18px}.dialog-form{display:flex;flex-direction:column;gap:18px;padding-top:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label span{font-weight:400;color:var(--text-secondary)}.field>small{display:block;margin-top:6px;color:var(--muted);font-size:.68rem;line-height:1.45}.legacy-field small{display:block;margin-top:6px;color:var(--muted);font-size:.68rem}.type-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.type-picker button{border:1px solid var(--line);background:var(--surface-subtle);border-radius:11px;padding:10px;color:var(--text-secondary);cursor:pointer}.type-picker button:disabled{cursor:not-allowed;opacity:.55}.type-picker button i{margin-right:7px;font-size:.8rem}.type-picker button.active{background:var(--status-violet-soft);border-color:var(--status-violet);color:var(--status-violet-text);font-weight:600}.config-editor{font-size:.78rem;line-height:1.55;resize:vertical}.enabled-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 15px}.enabled-row strong,.enabled-row span{display:block}.enabled-row strong{font-size:.82rem}.enabled-row span{font-size:.7rem;color:var(--muted);margin-top:3px;max-width:440px}.ai-exposure{display:grid;gap:12px;padding:0 15px 15px;border:1px solid color-mix(in srgb,var(--status-violet) 35%,var(--line))}.ai-exposure-toggle{padding-inline:0}.ai-exposure-toggle strong i{margin-right:5px;color:var(--status-violet-text)}.ai-exposure :deep(textarea),.ai-exposure :deep(input){width:100%}.integration-guide{display:flex;flex-direction:column;gap:14px}.integration-summary{display:flex;align-items:center;gap:11px;padding:13px}.integration-summary>i{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--status-violet-soft);color:var(--status-violet-text)}.integration-summary strong,.integration-summary span{display:block}.integration-summary strong{font-size:.8rem}.integration-summary span{margin-top:3px;color:var(--muted);font-size:.7rem}.integration-guide pre{max-height:480px;margin:0;padding:16px;overflow:auto;border-radius:13px;background:var(--surface-emphasis);color:var(--status-success);white-space:pre-wrap;font:500 .7rem/1.55 'SFMono-Regular',Consolas,monospace}
 @media(max-width:1080px){.elements-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kind-tabs small{display:none}}
 @media(max-width:680px){.kind-tabs{grid-template-columns:1fr}.kind-tabs>button{padding:11px 13px}.kind-tabs small{display:block}.elements-grid{grid-template-columns:1fr}.toolbar{align-items:stretch;flex-direction:column}.search-box{max-width:none;width:100%}.result-count{align-self:flex-end}.form-grid{grid-template-columns:1fr}.type-picker{grid-template-columns:1fr}.type-picker button{text-align:left}}
 </style>

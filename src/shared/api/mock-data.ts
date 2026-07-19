@@ -173,11 +173,11 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
 ]
 
 export const demoElements: UiElement[] = [
-  { id: 'ui_1', projectId: demoProject.id, code: 'deposit_button', name: 'Кнопка пополнения', kind: 'BUTTON', selector: "[data-lola-action='deposit']", config: { actions: ['highlight', 'scroll_to'] }, enabled: true },
-  { id: 'ui_2', projectId: demoProject.id, code: 'verification_button', name: 'Пройти верификацию', kind: 'ELEMENT', selector: "[data-lola-action='verification']", config: {}, enabled: true },
-  { id: 'ui_3', projectId: demoProject.id, code: 'bonuses_page', name: 'Бонусы', kind: 'PAGE', route: '/bonuses', config: { direct: true }, enabled: true },
-  { id: 'ui_4', projectId: demoProject.id, code: 'account_page', name: 'Личный кабинет', kind: 'PAGE', route: '/account', config: { direct: true }, enabled: true },
-  { id: 'ui_5', projectId: demoProject.id, code: 'deposit_modal', name: 'Пополнение баланса', kind: 'MODAL', modalName: 'deposit', handler: 'openDepositModal', config: { fallback: '/account?lola_modal=deposit' }, enabled: true },
+  { id: 'ui_1', projectId: demoProject.id, code: 'deposit_button', name: 'Кнопка пополнения', kind: 'BUTTON', selector: "[data-lola-action='deposit']", config: { actions: ['highlight', 'scroll_to'] }, enabled: true, aiEnabled: false, aiDescription: null, aiAliases: [] },
+  { id: 'ui_2', projectId: demoProject.id, code: 'verification_button', name: 'Пройти верификацию', kind: 'ELEMENT', selector: "[data-lola-action='verification']", config: {}, enabled: true, aiEnabled: false, aiDescription: null, aiAliases: [] },
+  { id: 'ui_3', projectId: demoProject.id, code: 'bonuses_page', name: 'Бонусы', kind: 'PAGE', route: '/bonuses', config: { direct: true }, enabled: true, aiEnabled: false, aiDescription: null, aiAliases: [] },
+  { id: 'ui_4', projectId: demoProject.id, code: 'account_page', name: 'Личный кабинет', kind: 'PAGE', route: '/account', config: { direct: true }, enabled: true, aiEnabled: false, aiDescription: null, aiAliases: [] },
+  { id: 'ui_5', projectId: demoProject.id, code: 'deposit_modal', name: 'Пополнение баланса', kind: 'MODAL', modalName: 'deposit', handler: 'openDepositModal', config: { fallback: '/account?lola_modal=deposit' }, enabled: true, aiEnabled: false, aiDescription: null, aiAliases: [] },
 ]
 
 export const demoEvents: EventDefinition[] = [

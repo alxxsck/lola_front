@@ -31,11 +31,13 @@ describe('auth API logout', () => {
 
   it('clears local credentials even when refresh cannot reach the server', async () => {
     storeTokens({ accessToken: 'expired', expiresIn: -1, refreshToken: 'old-refresh', refreshExpiresIn: 120 })
+    sessionStorage.setItem('lola:translation-jobs:project-1:scenario-1', '[]')
     vi.mocked(cmsAuthRefresh).mockRejectedValue(new Error('network'))
 
     await expect(authApi.logout()).resolves.toBeUndefined()
     expect(cmsAuthLogout).not.toHaveBeenCalled()
     expect(getRefreshToken()).toBeNull()
+    expect(sessionStorage.getItem('lola:translation-jobs:project-1:scenario-1')).toBeNull()
   })
 
   it('uses the selected project membership role instead of assuming ADMIN', async () => {

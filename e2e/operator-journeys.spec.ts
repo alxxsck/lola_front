@@ -353,6 +353,77 @@ test("theme choice survives a page reload", async ({ page }) => {
   await expect(page.locator("html")).toHaveClass(/lola-dark/);
 });
 
+test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", async ({
+  page,
+}) => {
+  await page.evaluate(() =>
+    localStorage.removeItem("lola-cms-demo-product-actions-v2"),
+  );
+  await page.goto("/interface/page");
+  const bonusesTarget = page.locator("article").filter({
+    hasText: "bonuses_page",
+  });
+  await bonusesTarget.getByRole("button", { name: "Изменить" }).click();
+  const targetEditor = page.getByRole("dialog", { name: "Изменить элемент" });
+  await targetEditor.getByRole("switch", { name: "Доступно AI" }).click();
+  await targetEditor
+    .getByLabel("Описание для AI 20–1000 символов")
+    .fill("Страница, где пользователь просматривает доступные бонусы и награды.");
+  await targetEditor
+    .getByLabel("Aliases через запятую, до 20")
+    .fill("награды, rewards");
+  await targetEditor
+    .getByLabel("Причина изменения AI-доступа обязательно")
+    .fill("Разрешаем безопасную страницу бонусов для OPEN_PAGE");
+  await targetEditor.getByRole("button", { name: "Сохранить" }).click();
+  await expect(bonusesTarget).toContainText("AI доступно");
+
+  await page.goto("/actions");
+
+  const card = page.getByRole("button", {
+    name: "Открыть действие Открыть страницу",
+  });
+  await expect(card).toContainText("СценарииВключено");
+  await expect(card).toContainText("AIВыключено");
+  await card.click();
+
+  const editor = page.locator(".project-action-dialog");
+  await expect(editor.getByText("Capability сейчас недоступна")).toBeVisible();
+  await editor.getByLabel("Использовать в сценариях").click();
+  await editor.getByLabel("Разрешить AI").click();
+  await editor
+    .getByLabel("Описание для AI")
+    .fill(
+      "Используй, когда пользователь явно просит открыть страницу с бонусами.",
+    );
+  await editor
+    .getByLabel("Причина включения или расширения AI обязательно")
+    .fill("Разрешаем безопасный переход на зарегистрированную страницу");
+  await editor.locator('[data-test="save-project-action"]').click();
+
+  const confirmation = page.getByRole("dialog", {
+    name: "Подтвердите изменение AI authority",
+  });
+  await expect(confirmation).toContainText("СценарииВыключено");
+  await expect(confirmation).toContainText("AIВключено");
+  await confirmation.locator('[data-test="confirm-project-action-save"]').click();
+
+  await expect(editor.getByText("lola_open_page", { exact: true })).toBeVisible();
+  await expect(editor.locator("pre")).toContainText('"bonuses_page"');
+  await expect(editor.locator("pre")).not.toContainText("route");
+  await expect(editor.getByLabel("Использовать в сценариях")).not.toBeChecked();
+  await expect(editor.getByLabel("Разрешить AI")).toBeChecked();
+
+  await editor.getByLabel("Использовать в сценариях").click();
+  await editor.locator('[data-test="save-project-action"]').click();
+  await page
+    .getByRole("dialog", { name: "Подтвердите изменение AI authority" })
+    .locator('[data-test="confirm-project-action-save"]')
+    .click();
+  await expect(editor.getByLabel("Использовать в сценариях")).toBeChecked();
+  await expect(editor.getByLabel("Разрешить AI")).toBeChecked();
+});
+
 test("core operator pages load without horizontal overflow or serious accessibility violations", async ({
   page,
 }) => {
@@ -386,6 +457,51 @@ test("core operator pages load without horizontal overflow or serious accessibil
     ).toBe(true);
     await expectNoSeriousAccessibilityViolations(page);
   }
+});
+
+test("content locales are configured through the Locale Attribute journey", async ({
+  page,
+}) => {
+  await page.goto("/project");
+  await expect(
+    page.getByRole("heading", { name: "Языки контента", level: 2 }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Настроить языки" }).click();
+
+  await expect(page).toHaveURL(
+    /\/profile-fields\/new\?semanticRole=LOCALE$/,
+  );
+  await expect(page.getByText("Языки контента", { exact: true })).toBeVisible();
+  await page.getByLabel("Название поля *").fill("Язык контента");
+  await page.getByLabel("Ключ для передачи данных *").fill("locale");
+  await page
+    .getByLabel("Для чего нужно это поле? *")
+    .fill("Выбирать язык сообщений и сценариев для пользователя");
+
+  const localeInput = page.getByLabel("Добавить язык контента");
+  await localeInput.fill("en");
+  await page.getByRole("button", { name: "Добавить язык" }).click();
+  await localeInput.fill("pt-br");
+  await page.getByRole("button", { name: "Добавить язык" }).click();
+
+  await expect(page.getByText("английский", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("бразильский португальский", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("2/20 языков", { exact: true })).toBeVisible();
+  await expect(page.getByText("Основной язык проекта *", { exact: true })).toBeVisible();
+  await expectNoSeriousAccessibilityViolations(page);
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+
+  await page.getByRole("button", { name: "Добавить в черновик" }).click();
+  await expect(page).toHaveURL(/\/profile-fields$/);
+  await expect(page.getByRole("heading", { name: "Язык контента" })).toBeVisible();
 });
 
 test("EUAP workspace, Current Profiles and Segment Library expose their primary operator journeys", async ({
@@ -465,7 +581,7 @@ test("documentation catalog opens the scenario guide", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Документация Lola", level: 1 }),
   ).toBeVisible();
-  await expect(page.locator(".guide-card")).toHaveCount(1);
+  await expect(page.locator(".guide-card")).toHaveCount(3);
   await page.getByRole("link", { name: /Как работают сценарии Lola/ }).click();
   await expect(page).toHaveURL(/\/docs\/scenarios$/);
   await expect(
@@ -476,11 +592,14 @@ test("documentation catalog opens the scenario guide", async ({ page }) => {
 test("contextual scenario documentation is discoverable from scenarios and events", async ({
   page,
 }) => {
-  for (const path of ["/scenarios", "/events"]) {
-    await page.goto(path);
+  for (const item of [
+    { path: "/scenarios", title: "Как работают сценарии Lola" },
+    { path: "/events", title: "Как события запускают сценарии" },
+  ]) {
+    await page.goto(item.path);
     await page
       .getByRole("link", {
-        name: "Открыть руководство «Как работают сценарии Lola»",
+        name: `Открыть руководство «${item.title}»`,
       })
       .click();
     await expect(page).toHaveURL(/\/docs\/scenarios$/);
@@ -530,14 +649,18 @@ test("scenario author can save, validate, preview, publish and safely roll back 
   await page.goto("/scenarios/new");
   await page.locator("#scenario-name").fill("E2E сценарий");
   await page.getByRole("button", { name: /Действия/ }).click();
-  await page.getByRole("button", { name: /Показать Lola/ }).click();
+  await page
+    .locator(".action-empty-options button", { hasText: "Показать Lola" })
+    .click();
   await page.getByRole("button", { name: /Условия/ }).click();
   await page.getByRole("button", { name: "Активен 3 дня подряд" }).click();
 
-  await page.getByRole("button", { name: "Проверить сейчас" }).click();
+  await page.getByRole("button", { name: "Проверить условия" }).click();
   await expect(page.getByText("Правило прошло проверку.")).toBeVisible();
   await page.locator('input[name="preview-event-log"]').first().check();
-  await page.getByRole("button", { name: "Запустить preview правила" }).click();
+  await page
+    .getByRole("button", { name: "Проверить правило на событии" })
+    .click();
   await expect(page.getByText("Условие совпало")).toBeVisible();
 
   await page.getByRole("button", { name: "Сохранить" }).click();

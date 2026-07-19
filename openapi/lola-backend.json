@@ -1,6 +1,147 @@
 {
   "components": {
     "schemas": {
+      "ActionExecutorAdapter": {
+        "enum": [
+          "SERVER_HANDLER",
+          "FRONTEND_COMMAND",
+          "PROPOSAL"
+        ],
+        "type": "string"
+      },
+      "ActionSurface": {
+        "enum": [
+          "SCENARIO",
+          "AI"
+        ],
+        "type": "string"
+      },
+      "ActionTypeOrigin": {
+        "enum": [
+          "SYSTEM",
+          "INTEGRATION"
+        ],
+        "type": "string"
+      },
+      "ActionTypeResponseDto": {
+        "properties": {
+          "activeRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActionTypeRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "activeRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActionTypeOrigin"
+              }
+            ]
+          },
+          "ownerProjectId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "origin"
+        ],
+        "type": "object"
+      },
+      "ActionTypeRevisionResponseDto": {
+        "properties": {
+          "confirmationPolicy": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "executorAdapter": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActionExecutorAdapter"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inputSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "multipleInstances": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "projectConfigSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "resultSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "risk": {
+            "type": "string"
+          },
+          "supportedSurfaces": {
+            "items": {
+              "$ref": "#/components/schemas/ActionSurface"
+            },
+            "type": "array"
+          },
+          "uiSchema": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "description",
+          "executorAdapter",
+          "inputSchema",
+          "resultSchema",
+          "projectConfigSchema",
+          "uiSchema",
+          "supportedSurfaces",
+          "risk",
+          "confirmationPolicy",
+          "multipleInstances"
+        ],
+        "type": "object"
+      },
       "ActiveConnectionResponseDto": {
         "properties": {
           "connectedAt": {
@@ -678,6 +819,78 @@
         "required": [
           "fieldKey",
           "operator"
+        ],
+        "type": "object"
+      },
+      "AiCapabilityIssueResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "AiCapabilityPreviewResponseDto": {
+        "properties": {
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/AiCapabilityIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "tool": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiCapabilityToolResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "issues"
+        ],
+        "type": "object"
+      },
+      "AiCapabilityToolResponseDto": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "strict": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "type": {
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "parameters",
+          "strict"
         ],
         "type": "object"
       },
@@ -1372,6 +1585,10 @@
             },
             "maxItems": 100,
             "type": "array"
+          },
+          "defaultLocale": {
+            "maxLength": 64,
+            "type": "string"
           },
           "maximum": {
             "oneOf": [
@@ -2335,7 +2552,8 @@
           "DISPLAY_NAME",
           "EMAIL",
           "COUNTRY",
-          "CURRENCY"
+          "CURRENCY",
+          "LOCALE"
         ],
         "type": "string"
       },
@@ -4666,6 +4884,9 @@
             },
             "type": "array"
           },
+          "localization": {
+            "$ref": "#/components/schemas/ScenarioLocalizationCatalogResponseDto"
+          },
           "projectId": {
             "format": "uuid",
             "type": "string"
@@ -4673,6 +4894,9 @@
           "revision": {
             "example": "e871…",
             "type": "string"
+          },
+          "translation": {
+            "$ref": "#/components/schemas/ScenarioTranslationCatalogResponseDto"
           },
           "version": {
             "enum": [
@@ -4685,7 +4909,9 @@
           "version",
           "revision",
           "projectId",
-          "events"
+          "events",
+          "localization",
+          "translation"
         ],
         "type": "object"
       },
@@ -4749,6 +4975,33 @@
         "required": [
           "type"
         ],
+        "type": "object"
+      },
+      "ConfigureProjectActionDto": {
+        "properties": {
+          "aiEnabled": {
+            "type": "boolean"
+          },
+          "aiUsageDescription": {
+            "maxLength": 2000,
+            "minLength": 20,
+            "nullable": true,
+            "type": "string"
+          },
+          "auditReason": {
+            "description": "Required when AI authority is enabled or broadened.",
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "configuration": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "scenarioEnabled": {
+            "type": "boolean"
+          }
+        },
         "type": "object"
       },
       "ConnectVoiceSessionDto": {
@@ -5151,8 +5404,59 @@
         ],
         "type": "object"
       },
+      "CreateTranslationJobDto": {
+        "properties": {
+          "sourceLocale": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "targetLocales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationUnitDto"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "sourceLocale",
+          "targetLocales",
+          "units"
+        ],
+        "type": "object"
+      },
       "CreateUiElementDto": {
         "properties": {
+          "aiAliases": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "aiDescription": {
+            "maxLength": 1000,
+            "minLength": 20,
+            "type": "string"
+          },
+          "aiEnabled": {
+            "default": false,
+            "type": "boolean"
+          },
+          "auditReason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
           "code": {
             "pattern": "^[a-z][a-z0-9_.-]*$",
             "type": "string"
@@ -5367,6 +5671,10 @@
             "additionalProperties": true,
             "type": "object"
           },
+          "profileVersion": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
           "projectId": {
             "format": "uuid",
             "type": "string"
@@ -5387,6 +5695,7 @@
           "isGuest",
           "profile",
           "attributes",
+          "profileVersion",
           "preferences",
           "lastSeenAt",
           "createdAt",
@@ -7745,6 +8054,120 @@
         ],
         "type": "object"
       },
+      "ProjectActionLifecycle": {
+        "enum": [
+          "ACTIVE",
+          "DISABLED",
+          "ARCHIVED"
+        ],
+        "type": "string"
+      },
+      "ProjectActionResponseDto": {
+        "properties": {
+          "actionType": {
+            "$ref": "#/components/schemas/ProjectActionTypeSummaryResponseDto"
+          },
+          "actionTypeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "actionTypeRevision": {
+            "$ref": "#/components/schemas/ActionTypeRevisionResponseDto"
+          },
+          "actionTypeRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "aiEnabled": {
+            "type": "boolean"
+          },
+          "aiUsageDescription": {
+            "nullable": true,
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "configuration": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "descriptionOverride": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lifecycle": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectActionLifecycle"
+              }
+            ]
+          },
+          "nameOverride": {
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "scenarioEnabled": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "actionTypeId",
+          "actionTypeRevisionId",
+          "code",
+          "scenarioEnabled",
+          "aiEnabled",
+          "configuration",
+          "lifecycle",
+          "createdAt",
+          "updatedAt",
+          "actionType",
+          "actionTypeRevision"
+        ],
+        "type": "object"
+      },
+      "ProjectActionTypeSummaryResponseDto": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActionTypeOrigin"
+              }
+            ]
+          },
+          "ownerProjectId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "origin"
+        ],
+        "type": "object"
+      },
       "ProjectCountsResponseDto": {
         "properties": {
           "eventLogs": {
@@ -8317,6 +8740,9 @@
             "minimum": 1,
             "type": "number"
           },
+          "localization": {
+            "$ref": "#/components/schemas/ScenarioLocalizationPolicyDto"
+          },
           "profileFreshness": {
             "additionalProperties": false,
             "description": "Required when Audience or action templates read End User Attributes.",
@@ -8634,6 +9060,9 @@
           "graph": {
             "$ref": "#/components/schemas/ScenarioSourceGraphDto"
           },
+          "localization": {
+            "$ref": "#/components/schemas/ScenarioLocalizationPolicyDto"
+          },
           "profileFreshness": {
             "additionalProperties": false,
             "discriminator": {
@@ -8806,6 +9235,12 @@
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "localization": {
+            "additionalProperties": true,
+            "description": "Pinned locale selection and localized-value fallback evidence.",
+            "nullable": true,
+            "type": "object"
           },
           "nodeKey": {
             "type": "string"
@@ -9009,6 +9444,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "localization": {
+            "$ref": "#/components/schemas/ScenarioLocalizationPolicyDto"
+          },
           "profileFreshness": {
             "allOf": [
               {
@@ -9039,6 +9477,7 @@
         "required": [
           "deliveryPolicy",
           "catalogRevision",
+          "localization",
           "id",
           "version",
           "createdAt",
@@ -9079,6 +9518,9 @@
             "nullable": true,
             "type": "object"
           },
+          "localization": {
+            "$ref": "#/components/schemas/ScenarioLocalizationPolicyDto"
+          },
           "profileFreshness": {
             "allOf": [
               {
@@ -9095,7 +9537,8 @@
         },
         "required": [
           "deliveryPolicy",
-          "catalogRevision"
+          "catalogRevision",
+          "localization"
         ],
         "type": "object"
       },
@@ -9630,6 +10073,136 @@
           "to",
           "deadlineAt",
           "deadlineReached"
+        ],
+        "type": "object"
+      },
+      "ScenarioLocalizationCatalogResponseDto": {
+        "properties": {
+          "attributeContractRevision": {
+            "nullable": true,
+            "type": "number"
+          },
+          "attributeKey": {
+            "nullable": true,
+            "type": "string"
+          },
+          "defaultLocale": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "locales": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioLocalizationLocaleResponseDto"
+            },
+            "type": "array"
+          },
+          "localizedValueSchemaVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "paths": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioLocalizationPathResponseDto"
+            },
+            "type": "array"
+          },
+          "policyModes": {
+            "items": {
+              "enum": [
+                "ALL_PROJECT_LOCALES",
+                "SELECTED_LOCALES"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "enabled",
+          "defaultLocale",
+          "locales",
+          "policyModes",
+          "localizedValueSchemaVersion",
+          "paths"
+        ],
+        "type": "object"
+      },
+      "ScenarioLocalizationLocaleResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "language",
+          "default"
+        ],
+        "type": "object"
+      },
+      "ScenarioLocalizationPathResponseDto": {
+        "properties": {
+          "actionType": {
+            "type": "string"
+          },
+          "maxLength": {
+            "type": "number"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "actionType",
+          "path",
+          "maxLength"
+        ],
+        "type": "object"
+      },
+      "ScenarioLocalizationPolicyDto": {
+        "properties": {
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "ALL_PROJECT_LOCALES",
+              "SELECTED_LOCALES"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "mode",
+          "locales"
         ],
         "type": "object"
       },
@@ -10868,11 +11441,50 @@
         ],
         "type": "object"
       },
+      "ScenarioTranslationCatalogResponseDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "maxBatchCharacters": {
+            "example": 50000,
+            "type": "number"
+          },
+          "supportedSourceLocales": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "supportedTargetLocales": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "enabled",
+          "supportedSourceLocales",
+          "supportedTargetLocales",
+          "maxBatchCharacters"
+        ],
+        "type": "object"
+      },
       "ScenarioWarningResponseDto": {
         "additionalProperties": false,
         "properties": {
           "code": {
             "example": "ELIGIBILITY_RECHECK_ENABLED",
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
             "type": "string"
           }
         },
@@ -11487,6 +12099,170 @@
         ],
         "type": "string"
       },
+      "TranslationJobAcceptedResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "jobId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceHash": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId",
+          "status",
+          "sourceHash",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "TranslationJobResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "jobId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceHash": {
+            "type": "string"
+          },
+          "sourceLocale": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationTargetResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "jobId",
+          "status",
+          "sourceHash",
+          "createdAt",
+          "sourceLocale",
+          "targets"
+        ],
+        "type": "object"
+      },
+      "TranslationOutputUnitResponseDto": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "text"
+        ],
+        "type": "object"
+      },
+      "TranslationTargetResponseDto": {
+        "properties": {
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "outputUnits": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationOutputUnitResponseDto"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "SUCCESS",
+              "ERROR",
+              "PROVIDER_OUTCOME_UNKNOWN",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "targetLocale": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetLocale",
+          "status"
+        ],
+        "type": "object"
+      },
+      "TranslationUnitDto": {
+        "properties": {
+          "key": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 50000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "text"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageResponseDto": {
+        "properties": {
+          "budget": {
+            "type": "object"
+          },
+          "series": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "statuses": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "targetLocales": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "totals": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "totals",
+          "series",
+          "targetLocales",
+          "statuses"
+        ],
+        "type": "object"
+      },
       "UiElementKind": {
         "enum": [
           "BUTTON",
@@ -11499,6 +12275,19 @@
       },
       "UiElementResponseDto": {
         "properties": {
+          "aiAliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "aiDescription": {
+            "nullable": true,
+            "type": "string"
+          },
+          "aiEnabled": {
+            "type": "boolean"
+          },
           "code": {
             "type": "string"
           },
@@ -11517,7 +12306,7 @@
             "deprecated": true,
             "description": "Legacy CMS value. Runtime commands never use this field.",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "id": {
             "format": "uuid",
@@ -11533,7 +12322,7 @@
           "modalName": {
             "description": "MODAL key passed to the product modal registry.",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "name": {
             "type": "string"
@@ -11545,11 +12334,11 @@
           "route": {
             "description": "PAGE route passed to the product router.",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "selector": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "updatedAt": {
             "format": "date-time",
@@ -11564,6 +12353,8 @@
           "kind",
           "config",
           "enabled",
+          "aiEnabled",
+          "aiAliases",
           "createdAt",
           "updatedAt"
         ],
@@ -11815,6 +12606,27 @@
       },
       "UpdateUiElementDto": {
         "properties": {
+          "aiAliases": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "aiDescription": {
+            "maxLength": 1000,
+            "minLength": 20,
+            "nullable": true,
+            "type": "string"
+          },
+          "aiEnabled": {
+            "type": "boolean"
+          },
+          "auditReason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
           "code": {
             "pattern": "^[a-z][a-z0-9_.-]*$",
             "type": "string"
@@ -12146,6 +12958,9 @@
           },
           "graph": {
             "$ref": "#/components/schemas/ScenarioSourceGraphDto"
+          },
+          "localization": {
+            "$ref": "#/components/schemas/ScenarioLocalizationPolicyDto"
           },
           "profileFreshness": {
             "additionalProperties": false,
@@ -12744,6 +13559,45 @@
         ],
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/action-types": {
+      "get": {
+        "operationId": "ProductActions_actionTypes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ActionTypeResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-product-actions"
         ]
       }
     },
@@ -14595,6 +15449,190 @@
         ],
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/project-actions": {
+      "get": {
+        "operationId": "ProductActions_projectActions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectActionResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-product-actions"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/project-actions/{id}": {
+      "patch": {
+        "operationId": "ProductActions_configureProjectAction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigureProjectActionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectActionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-product-actions"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/project-actions/{id}/ai-preview": {
+      "get": {
+        "operationId": "ProductActions_previewProjectAction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiCapabilityPreviewResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-product-actions"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/project-actions/{id}/archive": {
+      "post": {
+        "operationId": "ProductActions_archiveProjectAction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectActionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-product-actions"
         ]
       }
     },
@@ -16787,6 +17825,260 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/translation-jobs": {
+      "post": {
+        "operationId": "Translation_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTranslationJobDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationJobAcceptedResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Translation"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/translation-jobs/{jobId}": {
+      "get": {
+        "operationId": "Translation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationJobResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Translation"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/translation-jobs/{jobId}/cancel": {
+      "post": {
+        "operationId": "Translation_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationJobResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Translation"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/translation-jobs/{jobId}/targets/{targetLocale}/retry": {
+      "post": {
+        "operationId": "Translation_retryTarget",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "targetLocale",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationJobResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Translation"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/translation-usage": {
+      "get": {
+        "operationId": "Translation_usageReport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "groupBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "day"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationUsageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Translation"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/ui-elements": {
       "get": {
         "operationId": "Platform_uiElements",
@@ -17630,6 +18922,62 @@
         ],
         "tags": [
           "provider billing"
+        ]
+      }
+    },
+    "/api/v1/admin/translation-usage": {
+      "get": {
+        "operationId": "PlatformTranslationUsage_usageReport",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "groupBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "day"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationUsageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Translation"
         ]
       }
     },

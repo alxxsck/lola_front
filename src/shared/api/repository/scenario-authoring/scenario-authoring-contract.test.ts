@@ -8,6 +8,8 @@ const catalog = (aggregations: ConditionCatalogResponseDto['events'][number]['fi
   projectId: 'project-1',
   revision: 'catalog-revision-1',
   version: 1,
+  localization: { version: 1, enabled: false, attributeKey: null, attributeContractRevision: null, defaultLocale: '', locales: [], policyModes: ['ALL_PROJECT_LOCALES', 'SELECTED_LOCALES'], localizedValueSchemaVersion: 1, paths: [] },
+  translation: { enabled: false, supportedSourceLocales: [], supportedTargetLocales: [], maxBatchCharacters: 50_000 },
   events: [{
     code: 'deposit.succeeded',
     definitionId: 'event-revision-1',

@@ -15,4 +15,5 @@ export const AttributeSemanticRole = {
   EMAIL: "EMAIL",
   COUNTRY: "COUNTRY",
   CURRENCY: "CURRENCY",
+  LOCALE: "LOCALE",
 } as const;

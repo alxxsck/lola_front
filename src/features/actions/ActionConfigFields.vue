@@ -5,6 +5,17 @@ import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
+import { LocalizedField, type TranslationUiState } from "@/features/scenario-localization/ui";
+import {
+  defaultLocalizationPolicy,
+  localizedPath,
+  localizedValue,
+} from "@/features/scenario-localization/model";
+import type {
+  ScenarioLocalizationCatalogResponseDto,
+  ScenarioLocalizationPolicyDto,
+  ScenarioTranslationCatalogResponseDto,
+} from "@/shared/api/generated/models";
 import {
   actionFieldOptions,
   isActionFieldVisible,
@@ -28,6 +39,15 @@ const props = withDefaults(
     templateVariables?: TemplateVariable[];
     instanceId?: string;
     readonly?: boolean;
+    projectId?: string;
+    scenarioId?: string;
+    fieldPathPrefix?: string;
+    localizationCatalog?: ScenarioLocalizationCatalogResponseDto;
+    translationCatalog?: ScenarioTranslationCatalogResponseDto;
+    localizationPolicy?: ScenarioLocalizationPolicyDto;
+    translationStates?: Record<string, Record<string, TranslationUiState>>;
+    focusFieldPath?: string;
+    focusLocale?: string;
   }>(),
   {
     events: () => [],
@@ -35,12 +55,25 @@ const props = withDefaults(
     templateVariables: () => [],
     instanceId: "",
     readonly: false,
+    projectId: "",
+    scenarioId: "",
+    fieldPathPrefix: "config",
+    localizationCatalog: undefined,
+    translationCatalog: undefined,
+    localizationPolicy: undefined,
+    translationStates: () => ({}),
+    focusFieldPath: "",
+    focusLocale: "",
   },
 );
 
 const emit = defineEmits<{
   "update:modelValue": [value: Record<string, unknown>];
   "validity-change": [valid: boolean];
+  "translation-request": [payload: { fieldPath: string; targets: string[] }];
+  "translation-retry": [payload: { fieldPath: string; locale: string }];
+  "translation-cancel": [fieldPath: string];
+  "translation-manual-edit": [payload: { fieldPath: string; locale: string }];
 }>();
 
 const jsonDrafts = reactive<Record<string, string>>({});
@@ -77,6 +110,19 @@ watch(
 
 function propertyFor(field: ActionUiField) {
   return props.definition.configSchema.properties[field.key];
+}
+
+function localizedDescriptor(field: ActionUiField) {
+  if (!props.localizationCatalog?.enabled) return undefined;
+  return localizedPath(
+    props.localizationCatalog,
+    props.definition.type,
+    field.key,
+  );
+}
+
+function fieldPath(field: ActionUiField) {
+  return `${props.fieldPathPrefix}.${field.key}`;
 }
 
 function booleanValue(field: ActionUiField) {
@@ -192,13 +238,46 @@ function fieldHint(field: ActionUiField) {
         'field-wide': field.control === 'textarea' || field.control === 'json',
       }"
     >
-      <label :for="fieldId(field)">
+      <label v-if="!localizedDescriptor(field)" :for="fieldId(field)">
         {{ field.label }}
         <span v-if="isRequired(field)" class="required">*</span>
       </label>
 
+      <LocalizedField
+        v-if="
+          localizedDescriptor(field) &&
+          localizationCatalog &&
+          translationCatalog
+        "
+        :model-value="
+          localizedValue(modelValue[field.key], localizationCatalog.defaultLocale)
+        "
+        :catalog="localizationCatalog"
+        :translation="translationCatalog"
+        :policy="localizationPolicy ?? defaultLocalizationPolicy()"
+        :source-locale="localizationCatalog.defaultLocale"
+        :field-path="fieldPath(field)"
+        :scenario-id="scenarioId"
+        :project-id="projectId"
+        :label="field.label"
+        :max-length="localizedDescriptor(field)?.maxLength"
+        :supports-templates="field.supportsTemplates"
+        :readonly="readonly"
+        :translation-states="translationStates[fieldPath(field)]"
+        :focus-locale="focusFieldPath === fieldPath(field) ? focusLocale : ''"
+        @update:model-value="updateField(field.key, $event)"
+        @translation-request="
+          emit('translation-request', {
+            fieldPath: fieldPath(field),
+            targets: $event,
+          })
+        "
+        @retry="emit('translation-retry', { fieldPath: fieldPath(field), locale: $event })"
+        @cancel="emit('translation-cancel', fieldPath(field))"
+        @manual-edit="emit('translation-manual-edit', { fieldPath: fieldPath(field), locale: $event })"
+      />
       <Textarea
-        v-if="field.control === 'textarea'"
+        v-else-if="field.control === 'textarea'"
         :id="fieldId(field)"
         :model-value="String(modelValue[field.key] ?? '')"
         rows="3"

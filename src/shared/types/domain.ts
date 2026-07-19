@@ -124,6 +124,9 @@ export interface UiElement {
   handler?: string
   config: Record<string, unknown>
   enabled: boolean
+  aiEnabled: boolean
+  aiDescription: string | null
+  aiAliases: string[]
   createdAt?: string
   updatedAt?: string
 }

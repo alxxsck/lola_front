@@ -87,6 +87,26 @@ describe('action definition schema helpers', () => {
       .toBe('Действие Показать кнопку отключено')
   })
 
+  it('accepts locale maps only for fields marked localizable by the catalog', () => {
+    const definition = parseActionDefinition(rawDefinition)
+    const localization = {
+      version: 1 as const,
+      enabled: true,
+      attributeKey: 'language',
+      attributeContractRevision: 1,
+      defaultLocale: 'en',
+      locales: [{ code: 'en', language: 'en', default: true }, { code: 'es', language: 'es', default: false }],
+      policyModes: ['ALL_PROJECT_LOCALES' as const, 'SELECTED_LOCALES' as const],
+      localizedValueSchemaVersion: 1 as const,
+      paths: [{ actionType: 'SHOW_CTA', path: 'config.label', maxLength: 200 }],
+    }
+    expect(validateScenarioActionConfig(
+      { position: 0, type: 'SHOW_CTA', config: { label: { en: 'Open', es: 'Abrir' }, action: 'none', timeoutMs: 30000 } },
+      definition,
+      localization,
+    )).toBe('')
+  })
+
   it('describes and validates the non-blocking voice conversation action', () => {
     const definition = demoActionDefinitions.find((item) => item.type === 'START_VOICE_CONVERSATION')
 

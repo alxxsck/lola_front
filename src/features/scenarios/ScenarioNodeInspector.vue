@@ -10,6 +10,10 @@ import {
   ScenarioGoalPreview,
 } from "@/features/scenario-goals/ui";
 import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
+import type { ScenarioLocalizationPolicyDto } from "@/shared/api/generated/models";
+import type { TranslationUiState } from "@/features/scenario-localization/ui";
+import { LocalizedField } from "@/features/scenario-localization/ui";
+import { localizedValue } from "@/features/scenario-localization/model";
 import ScenarioConditionRows from "./ScenarioConditionRows.vue";
 import type {
   EventDefinition,
@@ -23,6 +27,7 @@ import {
   choiceReminders,
   conditionBranches,
 } from "./model/scenario-graph";
+import type { ChoiceOption } from "./model/scenario-graph";
 import {
   createActionConfig,
   findActionDefinition,
@@ -42,6 +47,12 @@ const props = defineProps<{
   conditionPaths: string[];
   issues: string[];
   authoringContract: ScenarioAuthoringContract | null;
+  localizationPolicy: ScenarioLocalizationPolicyDto;
+  scenarioId: string;
+  actionPath: string;
+  translationStates: Record<string, Record<string, TranslationUiState>>;
+  focusFieldPath?: string;
+  focusLocale?: string;
 }>();
 const emit = defineEmits<{
   changeType: [type: string];
@@ -55,6 +66,10 @@ const emit = defineEmits<{
   update: [action: ScenarioAction];
   rename: [oldKey: string, newKey: string];
   close: [];
+  "translation-request": [payload: { fieldPath: string; targets: string[] }];
+  "translation-retry": [payload: { fieldPath: string; locale: string }];
+  "translation-cancel": [fieldPath: string];
+  "translation-manual-edit": [payload: { fieldPath: string; locale: string }];
 }>();
 
 const createTargetPrefix = "__create__:";
@@ -114,6 +129,13 @@ const genericDefinition = computed(() => {
     },
   };
 });
+const choiceLabelDescriptor = computed(() =>
+  props.authoringContract?.localization?.paths.find(
+    (descriptor) =>
+      descriptor.actionType === "ASK_CHOICE" &&
+      descriptor.path === "config.options[].label",
+  ),
+);
 
 function updateAction(patch: Partial<ScenarioAction>) {
   emit("update", { ...props.action, ...patch });
@@ -142,12 +164,15 @@ function addChoice() {
     { id: nextOptionId(), label: "", nextNodeKey: "" },
   ]);
 }
-function updateChoice(index: number, patch: Record<string, string>) {
+function updateChoice(index: number, patch: Partial<ChoiceOption>) {
   setOptions(
     choiceOptions(props.action).map((item, itemIndex) =>
       itemIndex === index ? { ...item, ...patch } : item,
     ),
   );
+}
+function choiceLabelText(option: ChoiceOption) {
+  return typeof option.label === "string" ? option.label : "";
 }
 function addBranch() {
   setBranches([
@@ -310,8 +335,21 @@ function updateNodeKey(value: string | undefined) {
         :elements="elements"
         :events="events"
         :template-variables="templateVariables"
+        :project-id="projectId"
+        :scenario-id="scenarioId"
+        :field-path-prefix="`${actionPath}.config`"
+        :localization-catalog="authoringContract?.localization"
+        :translation-catalog="authoringContract?.translation"
+        :localization-policy="localizationPolicy"
+        :translation-states="translationStates"
+        :focus-field-path="focusFieldPath"
+        :focus-locale="focusLocale"
         @update:model-value="updateAction({ config: $event })"
         @validity-change="emit('validity', $event)"
+        @translation-request="emit('translation-request', $event)"
+        @translation-retry="emit('translation-retry', $event)"
+        @translation-cancel="emit('translation-cancel', $event)"
+        @translation-manual-edit="emit('translation-manual-edit', $event)"
       />
       <ScenarioGoalEditor
         v-else-if="action.type === 'WAIT_FOR_GOAL' && authoringContract"
@@ -356,8 +394,29 @@ function updateNodeKey(value: string | undefined) {
         :key="index"
       >
         <div class="choice-grid">
+          <LocalizedField
+            v-if="choiceLabelDescriptor && authoringContract?.localization && authoringContract.translation"
+            :model-value="localizedValue(option.label, authoringContract.localization.defaultLocale)"
+            :catalog="authoringContract.localization"
+            :translation="authoringContract.translation"
+            :policy="localizationPolicy"
+            :source-locale="authoringContract.localization.defaultLocale"
+            :field-path="`${actionPath}.config.options.${option.id}.label`"
+            :scenario-id="scenarioId"
+            :project-id="projectId"
+            label="Текст кнопки"
+            :max-length="choiceLabelDescriptor.maxLength"
+            :translation-states="translationStates[`${actionPath}.config.options.${option.id}.label`]"
+            :focus-locale="focusFieldPath === `${actionPath}.config.options.${option.id}.label` ? focusLocale : ''"
+            @update:model-value="updateChoice(index, { label: $event })"
+            @translation-request="emit('translation-request', { fieldPath: `${actionPath}.config.options.${option.id}.label`, targets: $event })"
+            @retry="emit('translation-retry', { fieldPath: `${actionPath}.config.options.${option.id}.label`, locale: $event })"
+            @cancel="emit('translation-cancel', `${actionPath}.config.options.${option.id}.label`)"
+            @manual-edit="emit('translation-manual-edit', { fieldPath: `${actionPath}.config.options.${option.id}.label`, locale: $event })"
+          />
           <InputText
-            :model-value="option.label"
+            v-else
+            :model-value="choiceLabelText(option)"
             placeholder="Текст кнопки"
             @update:model-value="
               updateChoice(index, {
@@ -559,6 +618,15 @@ function updateNodeKey(value: string | undefined) {
             :elements="elements"
             :events="events"
             :template-variables="templateVariables"
+            :project-id="projectId"
+            :scenario-id="scenarioId"
+            :field-path-prefix="`${actionPath}.config.reminders.${reminderIndex}.actions.${actionIndex}.config`"
+            :localization-catalog="authoringContract?.localization"
+            :translation-catalog="authoringContract?.translation"
+            :localization-policy="localizationPolicy"
+            :translation-states="translationStates"
+            :focus-field-path="focusFieldPath"
+            :focus-locale="focusLocale"
             @update:model-value="
               setReminders(
                 choiceReminders(action).map((item, index) =>
@@ -575,6 +643,10 @@ function updateNodeKey(value: string | undefined) {
                 ),
               )
             "
+            @translation-request="emit('translation-request', $event)"
+            @translation-retry="emit('translation-retry', $event)"
+            @translation-cancel="emit('translation-cancel', $event)"
+            @translation-manual-edit="emit('translation-manual-edit', $event)"
           />
           <Button
             icon="pi pi-times"

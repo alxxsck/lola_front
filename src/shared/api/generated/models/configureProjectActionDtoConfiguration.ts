@@ -6,8 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * PAGE route passed to the product router.
- * @nullable
- */
-export type UiElementResponseDtoRoute = { [key: string]: unknown } | null;
+export type ConfigureProjectActionDtoConfiguration = { [key: string]: unknown };

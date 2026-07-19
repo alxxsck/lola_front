@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Legacy CMS value. Runtime commands never use this field.
- * @deprecated
- * @nullable
- */
-export type UiElementResponseDtoHandler = { [key: string]: unknown } | null;
+export interface AiCapabilityIssueResponseDto {
+  code: string;
+  message: string;
+}

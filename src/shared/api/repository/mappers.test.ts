@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AuditLogResponseDto, EndUserResponseDto, EventDefinitionResponseDto, EventLogResponseDto, ProjectResponseDto, ScenarioRunResponseDto, UiElementResponseDto } from '@/shared/api/generated/models'
-import { mapActiveSessions, mapAuditLog, mapConversation, mapConversationMessage, mapEndUser, mapEventDefinition, mapEventLog, mapProject, mapScenarioRun, mapUiElement, toCreateEventDefinitionDto, toCreateUiElementDto, toUpdateProjectDto } from './mappers'
+import { mapActiveSessions, mapAuditLog, mapConversation, mapConversationMessage, mapEndUser, mapEventDefinition, mapEventLog, mapProject, mapScenarioRun, mapUiElement, toCreateEventDefinitionDto, toCreateUiElementDto, toUpdateProjectDto, toUpdateUiElementDto } from './mappers'
 
 describe('repository domain mappers', () => {
   it('maps the project contract without leaking backend-only fields', () => {
@@ -52,6 +52,28 @@ describe('repository domain mappers', () => {
     expect(toCreateUiElementDto({
       code: modal.code, name: modal.name, kind: 'MODAL', modalName: modal.modalName!,
     })).toEqual({ code: 'deposit_modal', name: 'Deposit', kind: 'MODAL', modalName: 'deposit' })
+  })
+
+  it('preserves bounded AI target exposure and its audit reason in generated DTOs', () => {
+    const page = mapUiElement({
+      id: 'ui-3', projectId: 'project-1', code: 'bonuses', name: 'Bonuses', kind: 'PAGE',
+      selector: null, route: '/bonuses', modalName: null, handler: null, config: {}, enabled: true,
+      aiEnabled: true, aiDescription: 'The page where the user reviews available bonuses.', aiAliases: ['rewards'],
+      createdAt: 'now', updatedAt: 'now',
+    })
+
+    expect(page).toMatchObject({ aiEnabled: true, aiDescription: 'The page where the user reviews available bonuses.', aiAliases: ['rewards'] })
+    expect(toUpdateUiElementDto({
+      aiEnabled: true,
+      aiDescription: 'The page where the user reviews available bonuses.',
+      aiAliases: ['rewards'],
+      auditReason: 'Expose bonuses target for OPEN_PAGE',
+    })).toEqual({
+      aiEnabled: true,
+      aiDescription: 'The page where the user reviews available bonuses.',
+      aiAliases: ['rewards'],
+      auditReason: 'Expose bonuses target for OPEN_PAGE',
+    })
   })
 
   it('maps operational DTOs into page-safe domain models', () => {

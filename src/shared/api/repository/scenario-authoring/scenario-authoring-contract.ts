@@ -8,6 +8,8 @@ import type {
   ConditionCatalogEventResponseDto,
   ConditionCatalogFieldResponseDto,
   ConditionCatalogResponseDto,
+  ScenarioLocalizationCatalogResponseDto,
+  ScenarioTranslationCatalogResponseDto,
 } from '@/shared/api/generated/models'
 
 type AggregateMeasure = EventAggregateRuleNodeDtoMeasure
@@ -39,9 +41,14 @@ export type ScenarioAuthoringEvent = Omit<ConditionCatalogEventResponseDto, 'fie
   aggregateMeasures: ScenarioAggregateMeasureCapability[]
 }
 
-export type ScenarioAuthoringContract = Omit<ConditionCatalogResponseDto, 'events'> & {
+export type ScenarioAuthoringContract = Omit<ConditionCatalogResponseDto, 'events' | 'localization' | 'translation'> & {
   events: ScenarioAuthoringEvent[]
+  localization?: ScenarioLocalizationCatalogResponseDto
+  translation?: ScenarioTranslationCatalogResponseDto
 }
+
+type CompatibleCatalog = Omit<ConditionCatalogResponseDto, 'localization' | 'translation'> &
+  Partial<Pick<ConditionCatalogResponseDto, 'localization' | 'translation'>>
 
 const allCompareOperators = Object.values(RuleCompareDtoOperator)
 const eventFieldOperators = new Set<string>(Object.values(EventFieldRuleNodeDtoOperator))
@@ -93,7 +100,7 @@ function adaptedMeasures(event: ConditionCatalogEventResponseDto): ScenarioAggre
   ]
 }
 
-export function adaptScenarioAuthoringContract(catalog: ConditionCatalogResponseDto): ScenarioAuthoringContract {
+export function adaptScenarioAuthoringContract(catalog: CompatibleCatalog): ScenarioAuthoringContract {
   return {
     ...catalog,
     events: catalog.events.map((event) => ({

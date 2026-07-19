@@ -8,6 +8,7 @@ import { fetchAiUsageReport } from './ai-usage.api'
 import AiModelUsageChart from './components/AiModelUsageChart.vue'
 import AiModalityChart from './components/AiModalityChart.vue'
 import ElevenLabsCreditChart from './components/ElevenLabsCreditChart.vue'
+import { TranslationUsagePanel } from '@/features/scenario-localization/ui'
 import {
   AI_USAGE_RANGE_OPTIONS,
   aggregateCreditUsage,
@@ -392,6 +393,7 @@ onBeforeUnmount(() => {
         <span>Стоимость Grok включает данные xAI и расчёт по тарифу провайдера.</span>
       </footer>
     </template>
+    <TranslationUsagePanel :project-id="projectId" />
   </section>
 </template>
 

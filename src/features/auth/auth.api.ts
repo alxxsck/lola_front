@@ -16,12 +16,13 @@ import type { CmsUser, Project } from '@/shared/types/domain'
 
 const DEMO_SESSION_KEY = 'lola-cms-demo-auth-v1'
 const DEMO_KNOWLEDGE_PREFIX = 'lola-cms-demo-knowledge-v1:'
+const TRANSLATION_JOB_PREFIX = 'lola:translation-jobs:'
 
 function clearDemoSession() {
   sessionStorage.removeItem(DEMO_SESSION_KEY)
   for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
     const key = sessionStorage.key(index)
-    if (key?.startsWith(DEMO_KNOWLEDGE_PREFIX)) sessionStorage.removeItem(key)
+    if (key?.startsWith(DEMO_KNOWLEDGE_PREFIX) || key?.startsWith(TRANSLATION_JOB_PREFIX)) sessionStorage.removeItem(key)
   }
 }
 

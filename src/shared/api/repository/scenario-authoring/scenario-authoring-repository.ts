@@ -44,7 +44,11 @@ export type ScenarioPublishInput = Required<
 > &
   Pick<
     PublishScenarioDto,
-    "audience" | "expectedDraftVersion" | "profileFreshness" | "rule"
+    | "audience"
+    | "expectedDraftVersion"
+    | "localization"
+    | "profileFreshness"
+    | "rule"
   >;
 
 export type ScenarioDraftContent = Omit<

@@ -44,7 +44,17 @@ const readDemo = (): DemoData => {
   if (!raw) return initialData()
   try {
     const data = JSON.parse(raw) as DemoData
-    return { ...initialData(), ...data, members: data.members ?? initialData().members }
+    return {
+      ...initialData(),
+      ...data,
+      members: data.members ?? initialData().members,
+      elements: (data.elements ?? initialData().elements).map((element) => ({
+        ...element,
+        aiEnabled: element.aiEnabled ?? false,
+        aiDescription: element.aiDescription ?? null,
+        aiAliases: element.aiAliases ?? [],
+      })),
+    }
   } catch {
     return initialData()
   }
@@ -115,7 +125,7 @@ export const mockRepository: LolaRepository = {
   async getElements() { await pause(); return readDemo().elements },
   async createElement(projectId, value) {
     const data = readDemo()
-    const saved = { config: {}, enabled: true, ...value, id: uid('ui'), projectId } as UiElement
+    const saved = { config: {}, enabled: true, aiEnabled: false, aiDescription: null, aiAliases: [], ...value, id: uid('ui'), projectId } as UiElement
     data.elements.push(saved)
     writeDemo(data); await pause(); return saved
   },

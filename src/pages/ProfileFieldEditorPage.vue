@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, toRaw } from "vue";
+import { computed, nextTick, onMounted, ref, toRaw, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
@@ -27,6 +27,7 @@ import type {
   AttributeContractDraftFieldDto,
   AttributeContractWorkspaceResponseDto,
 } from "@/shared/api/generated/models";
+import { canonicalLocale, localeDisplayName } from "@/shared/lib/locale";
 
 const route = useRoute();
 const router = useRouter();
@@ -40,6 +41,7 @@ const workspace = ref<AttributeContractWorkspaceResponseDto | null>(null);
 const editingIndex = ref<number | null>(null);
 const form = ref<AttributeContractDraftFieldDto>(createContractField());
 const allowedValuesInput = ref("");
+const localeInput = ref("");
 const baseline = ref("");
 
 const isEditing = computed(() => route.name === "profile-field-edit");
@@ -91,7 +93,22 @@ const semanticRoleOptions = [
   { value: "EMAIL", label: "Электронная почта" },
   { value: "COUNTRY", label: "Страна" },
   { value: "CURRENCY", label: "Валюта" },
+  { value: "LOCALE", label: "Язык контента" },
 ];
+const isLocaleField = computed(() => form.value.semanticRole === "LOCALE");
+const localeValues = computed(() =>
+  (form.value.constraints.allowedValues ?? []).filter(
+    (value): value is string => typeof value === "string",
+  ),
+);
+const hasAnotherLocaleField = computed(() =>
+  (workspace.value?.draft.document.fields ?? []).some(
+    (field, index) =>
+      index !== editingIndex.value &&
+      field.semanticRole === "LOCALE" &&
+      field.lifecycle === "ACTIVE",
+  ),
+);
 const showsAllowedValues = computed(
   () => !["BOOLEAN", "DATETIME"].includes(form.value.valueType),
 );
@@ -115,6 +132,80 @@ const typeHelp = computed(
     })[form.value.valueType],
 );
 const purposeRequired = computed(() => fieldNeedsPurpose(form.value));
+
+watch(
+  () => form.value.semanticRole,
+  (role, previous) => {
+    if (role !== "LOCALE") return;
+    if (hasAnotherLocaleField.value) {
+      form.value.semanticRole = previous ?? null;
+      error.value = "В проекте уже есть активное поле языка контента.";
+      return;
+    }
+    if (form.value.valueType !== "STRING") {
+      const confirmed =
+        !form.value.definitionId ||
+        window.confirm(
+          "Для языка контента нужен текстовый тип. Изменить тип поля на «Текст»?",
+        );
+      if (!confirmed) {
+        form.value.semanticRole = previous ?? null;
+        return;
+      }
+      form.value.valueType = "STRING";
+    }
+  },
+);
+
+function syncLocaleInput() {
+  allowedValuesInput.value = localeValues.value.join("\n");
+}
+
+function addLocale() {
+  error.value = "";
+  const canonical = canonicalLocale(localeInput.value);
+  if (!canonical) {
+    error.value = "Введите корректный BCP 47 tag, например en или pt-BR.";
+    return;
+  }
+  if (localeValues.value.some((locale) => canonicalLocale(locale) === canonical)) {
+    error.value = `Язык ${canonical} уже добавлен.`;
+    return;
+  }
+  if (localeValues.value.length >= 20) {
+    error.value = "Можно добавить не больше 20 языков.";
+    return;
+  }
+  form.value.constraints.allowedValues = [...localeValues.value, canonical];
+  form.value.constraints.defaultLocale ??= canonical;
+  localeInput.value = "";
+  syncLocaleInput();
+}
+
+function removeLocale(locale: string) {
+  if (localeValues.value.length === 1) {
+    error.value = "Нельзя удалить последний язык проекта.";
+    return;
+  }
+  if (form.value.constraints.defaultLocale === locale) {
+    error.value = "Сначала выберите другой основной язык проекта.";
+    return;
+  }
+  form.value.constraints.allowedValues = localeValues.value.filter(
+    (candidate) => candidate !== locale,
+  );
+  syncLocaleInput();
+}
+
+function moveLocale(locale: string, offset: number) {
+  const values = [...localeValues.value];
+  const index = values.indexOf(locale);
+  const target = index + offset;
+  if (index < 0 || target < 0 || target >= values.length) return;
+  [values[index], values[target]] = [values[target]!, values[index]!];
+  form.value.constraints.allowedValues = values;
+  syncLocaleInput();
+}
 
 function userFacingError(cause: unknown, fallback: string) {
   if (
@@ -235,6 +326,10 @@ async function load() {
           ),
         ) + 10;
       form.value = createContractField(position);
+      if (route.query?.semanticRole === "LOCALE") {
+        form.value.semanticRole = "LOCALE";
+        form.value.valueType = "STRING";
+      }
     }
     baseline.value = JSON.stringify({
       form: form.value,
@@ -252,10 +347,18 @@ async function save() {
   if (!projectId || !workspace.value) return;
   error.value = "";
   try {
-    form.value.constraints.allowedValues = parseAllowedValues(
-      form.value.valueType,
-      allowedValuesInput.value,
-    );
+    if (isLocaleField.value) {
+      if (!localeValues.value.length)
+        throw new Error("Добавьте хотя бы один язык контента.");
+      if (!form.value.constraints.defaultLocale)
+        throw new Error("Выберите основной язык проекта.");
+    } else {
+      form.value.constraints.allowedValues = parseAllowedValues(
+        form.value.valueType,
+        allowedValuesInput.value,
+      );
+      delete form.value.constraints.defaultLocale;
+    }
     const document = structuredClone(toRaw(workspace.value.draft.document));
     if (editingIndex.value === null)
       document.fields.push(structuredClone(toRaw(form.value)));
@@ -462,7 +565,45 @@ async function save() {
               >
             </small>
           </label>
-          <label v-if="showsAllowedValues" class="field-control">
+          <div v-if="isLocaleField" class="locale-editor">
+            <div>
+              <strong>Языки контента</strong>
+              <p>
+                Значение этого атрибута у пользователя определяет язык сообщений сценария.
+              </p>
+            </div>
+            <div class="locale-add-row">
+              <InputText
+                v-model="localeInput"
+                placeholder="Название или tag, например pt-BR"
+                aria-label="Добавить язык контента"
+                @keydown.enter.prevent="addLocale"
+              />
+              <Button type="button" label="Добавить язык" icon="pi pi-plus" @click="addLocale" />
+            </div>
+            <div v-if="localeValues.length" class="locale-chips" aria-label="Выбранные языки">
+              <div v-for="(locale, index) in localeValues" :key="locale" class="locale-chip">
+                <span><strong>{{ localeDisplayName(locale) }}</strong><code>{{ locale }}</code></span>
+                <div>
+                  <Button type="button" icon="pi pi-arrow-up" text rounded :disabled="index === 0" :aria-label="`Поднять ${locale}`" @click="moveLocale(locale, -1)" />
+                  <Button type="button" icon="pi pi-arrow-down" text rounded :disabled="index === localeValues.length - 1" :aria-label="`Опустить ${locale}`" @click="moveLocale(locale, 1)" />
+                  <Button type="button" icon="pi pi-times" text rounded severity="danger" :aria-label="`Удалить ${locale}`" @click="removeLocale(locale)" />
+                </div>
+              </div>
+            </div>
+            <label v-if="localeValues.length" class="field-control">
+              <span>Основной язык проекта *</span>
+              <Select
+                v-model="form.constraints.defaultLocale"
+                :options="localeValues.map((locale) => ({ label: `${localeDisplayName(locale)} (${locale})`, value: locale }))"
+                option-label="label"
+                option-value="value"
+              />
+              <small>Он показывается первым в редакторе и используется как безопасный fallback.</small>
+            </label>
+            <small>{{ localeValues.length }}/20 языков</small>
+          </div>
+          <label v-if="showsAllowedValues && !isLocaleField" class="field-control">
             <span>Допустимые значения</span>
             <Textarea
               v-model="allowedValuesInput"
@@ -890,6 +1031,22 @@ async function save() {
 .purpose-example strong {
   font-weight: 700;
 }
+.locale-editor {
+  display: grid;
+  gap: 12px;
+  margin-top: 17px;
+  padding: 16px;
+  border: 1px solid var(--status-violet);
+  border-radius: 14px;
+  background: var(--status-violet-soft);
+}
+.locale-editor p { margin: 3px 0 0; color: var(--muted); font-size: .7rem; }
+.locale-add-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.locale-chips { display: grid; gap: 6px; }
+.locale-chip { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 9px; border-radius: 10px; background: var(--surface-card); }
+.locale-chip > span { display: flex; align-items: baseline; gap: 7px; }
+.locale-chip code { color: var(--muted); font-size: .68rem; }
+.locale-chip > div { display: flex; }
 .advanced-section {
   overflow: hidden;
 }
@@ -1023,6 +1180,12 @@ async function save() {
   .editor-support {
     width: 100%;
     justify-content: flex-start;
+  }
+  .locale-add-row {
+    grid-template-columns: 1fr;
+  }
+  .locale-add-row :deep(.p-button) {
+    width: 100%;
   }
 }
 </style>
