@@ -28,9 +28,28 @@ export const router = createRouter({
           component: () => import("@/pages/ProjectPage.vue"),
         },
         {
-          path: "project/user-attributes",
+          path: "profile-fields",
           name: "project-user-attributes",
           component: () => import("@/pages/ProjectUserAttributesPage.vue"),
+        },
+        {
+          path: "profile-fields/integration",
+          name: "profile-fields-integration",
+          component: () => import("@/pages/ProfileIntegrationPage.vue"),
+        },
+        {
+          path: "profile-fields/new",
+          name: "profile-field-create",
+          component: () => import("@/pages/ProfileFieldEditorPage.vue"),
+        },
+        {
+          path: "profile-fields/:definitionId",
+          name: "profile-field-edit",
+          component: () => import("@/pages/ProfileFieldEditorPage.vue"),
+        },
+        {
+          path: "project/user-attributes",
+          redirect: "/profile-fields",
         },
         {
           path: "knowledge",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { onBeforeRouteLeave } from "vue-router";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
@@ -14,11 +14,20 @@ import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
+import CodeBlock from "@/features/end-user-attributes/ui/CodeBlock.vue";
 import {
   createContractField,
   parseAllowedValues,
   validateContractDocument,
 } from "@/features/end-user-attributes/model/contract-domain";
+import {
+  type ContractIssuePresentation,
+} from "@/features/end-user-attributes/model/contract-issue-presentation";
+import { useContractIssuePresentation } from "@/features/end-user-attributes/model/use-contract-issue-presentation";
+import {
+  readDemoContractDraft,
+  writeDemoContractDraft,
+} from "@/features/end-user-attributes/model/demo-draft-storage";
 import { repository } from "@/shared/api/repository";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
@@ -33,6 +42,7 @@ import type {
 
 const auth = useAuthStore();
 const toast = useToast();
+const router = useRouter();
 const loading = ref(true);
 const loaded = ref(false);
 const saving = ref(false);
@@ -87,16 +97,14 @@ const localIssues = computed(() =>
     ? validateContractDocument(workspace.value.draft.document)
     : [],
 );
-const errors = computed(() => [
-  ...localIssues.value.filter((issue) => issue.severity === "error"),
-  ...(validation.value?.issues.filter((issue) => issue.severity === "ERROR") ??
-    []),
+const issueInputs = computed(() => [
+  ...localIssues.value,
+  ...(validation.value?.issues ?? []),
 ]);
-const warnings = computed(() => [
-  ...localIssues.value.filter((issue) => issue.severity === "warning"),
-  ...(validation.value?.issues.filter((issue) => issue.severity !== "ERROR") ??
-    []),
-]);
+const { errors, warnings } = useContractIssuePresentation(
+  issueInputs,
+  fields,
+);
 const dirty = computed(() =>
   workspace.value
     ? JSON.stringify(workspace.value.draft.document) !==
@@ -204,44 +212,58 @@ const syntheticAiPreview = computed(() => {
 });
 
 const valueTypes = [
-  "STRING",
-  "BOOLEAN",
-  "INTEGER",
-  "DECIMAL",
-  "DATETIME",
-  "DATE",
-  "COUNTRY_CODE",
-  "CURRENCY_CODE",
-].map((value) => ({ value, label: value }));
+  { value: "STRING", label: "Текст" },
+  { value: "BOOLEAN", label: "Да или нет" },
+  { value: "INTEGER", label: "Целое число" },
+  { value: "DECIMAL", label: "Десятичное число" },
+  { value: "DATETIME", label: "Дата и время" },
+  { value: "DATE", label: "Дата" },
+  { value: "COUNTRY_CODE", label: "Страна" },
+  { value: "CURRENCY_CODE", label: "Валюта" },
+];
 const lifecycleOptions = [
   { value: "ACTIVE", label: "Активно" },
-  { value: "DEPRECATED", label: "Deprecated" },
+  { value: "DEPRECATED", label: "Выводится из использования" },
 ];
 const requirementOptions = [
-  { value: "OPTIONAL", label: "Необязательно" },
-  { value: "REQUIRED_WARN", label: "Обязательно, warning" },
-  { value: "REQUIRED_ENFORCED", label: "Обязательно, reject" },
+  { value: "OPTIONAL", label: "Можно не передавать" },
+  {
+    value: "REQUIRED_WARN",
+    label: "Желательно — предупреждать, если поля нет",
+  },
+  {
+    value: "REQUIRED_ENFORCED",
+    label: "Обязательно — отклонять профиль без поля",
+  },
 ];
-const classificationOptions = ["INTERNAL", "PERSONAL", "SENSITIVE"].map(
-  (value) => ({ value, label: value }),
-);
-const indexOptions = ["NONE", "EXACT", "RANGE_SORT"].map((value) => ({
-  value,
-  label: value,
-}));
+const classificationOptions = [
+  { value: "INTERNAL", label: "Служебные данные" },
+  { value: "PERSONAL", label: "Персональные данные" },
+  { value: "SENSITIVE", label: "Чувствительные данные" },
+];
+const indexOptions = [
+  { value: "NONE", label: "Не использовать для поиска" },
+  { value: "EXACT", label: "Искать по точному значению" },
+  { value: "RANGE_SORT", label: "Фильтровать и сортировать" },
+];
 const semanticRoleOptions = [
-  "DISPLAY_NAME",
-  "EMAIL",
-  "COUNTRY",
-  "CURRENCY",
-].map((value) => ({ value, label: value }));
+  { value: "DISPLAY_NAME", label: "Имя пользователя" },
+  { value: "EMAIL", label: "Электронная почта" },
+  { value: "COUNTRY", label: "Страна" },
+  { value: "CURRENCY", label: "Валюта" },
+];
+const healthWindowOptions = [
+  { value: "24h", label: "24 часа" },
+  { value: "7d", label: "7 дней" },
+  { value: "30d", label: "30 дней" },
+];
 
 onMounted(load);
 onBeforeRouteLeave(() =>
   !hasUnsavedDraftEdits.value
     ? true
     : window.confirm(
-        "Покинуть Contract Workspace и потерять несохранённые изменения?",
+        "Покинуть страницу и потерять несохранённые изменения полей профиля?",
       ),
 );
 
@@ -275,13 +297,18 @@ function toDraftField(
 }
 
 function demoWorkspace(): AttributeContractWorkspaceResponseDto {
-  const base = createContractField(10);
+  const projectId = auth.project?.id ?? "demo";
+  const base: AttributeContractDraftFieldDto = {
+    ...createContractField(10),
+    classification: "INTERNAL",
+  };
   const demoFields: AttributeContractDraftFieldDto[] = [
     {
       ...base,
       definitionId: "attr-name",
       key: "displayName",
       label: "Отображаемое имя",
+      purpose: "Показывать имя пользователя в интерфейсе и сообщениях",
       semanticRole: "DISPLAY_NAME",
       policies: { ...base.policies, clientRead: true, templateRead: true },
     },
@@ -290,6 +317,7 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
       definitionId: "attr-tier",
       key: "loyaltyTier",
       label: "Уровень лояльности",
+      purpose: "Собирать сегменты и подставлять уровень в сообщения",
       constraints: { allowedValues: ["basic", "silver", "gold"] },
       policies: {
         ...base.policies,
@@ -311,14 +339,52 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
       position: 30,
     },
   ];
+  const publishedFields = demoFields.map((field) => ({
+    ...field,
+    classification: field.classification ?? "INTERNAL",
+    definitionRevisionId: `${field.definitionId}-revision`,
+    definitionRevisionNumber: 1,
+  }));
+  const publishedDocument = {
+    fields: publishedFields.map((field) => toDraftField(field)),
+  };
   return {
-    currentRevision: null,
+    currentRevision: {
+      id: "demo-revision",
+      projectId,
+      version: 3,
+      canonicalHash: "demo",
+      validationHash: "demo",
+      acceptances: [],
+      compatibilityReport: {
+        valid: true,
+        issues: [],
+        lifecycleImpacts: [],
+        authorization: {
+          readinessEvidenceId: null,
+          securityConfirmations: [],
+          breakingChangePlan: null,
+          compatibilityGraceDays: 7,
+        },
+      },
+      schema: {
+        $schema: "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        additionalProperties: false,
+        properties: {},
+        required: [],
+      },
+      fields: publishedFields,
+      publishedAt: new Date().toISOString(),
+      publishedById: null,
+      publishReason: "Демонстрационная версия",
+    },
     draft: {
-      projectId: auth.project?.id ?? "demo",
+      projectId,
       draftVersion: 3,
-      baseContractRevisionId: null,
+      baseContractRevisionId: "demo-revision",
       updatedById: null,
-      document: { fields: demoFields },
+      document: readDemoContractDraft(projectId, publishedDocument),
     },
     validation: {
       valid: true,
@@ -395,7 +461,7 @@ async function load() {
     error.value =
       cause instanceof Error
         ? cause.message
-        : "Не удалось загрузить Contract Workspace";
+        : "Не удалось загрузить настройки полей профиля";
   } finally {
     loading.value = false;
   }
@@ -412,28 +478,16 @@ async function loadHealth() {
     error.value =
       cause instanceof Error
         ? cause.message
-        : "Не удалось обновить метрики Current Profile";
+        : "Не удалось обновить показатели профилей пользователей";
   }
 }
 
 function openCreate() {
-  const position =
-    Math.max(0, ...fields.value.map((item) => item.position)) + 10;
-  editingIndex.value = null;
-  form.value = createContractField(position);
-  allowedValuesInput.value = "";
-  fieldFormError.value = "";
-  editorVisible.value = true;
+  void router.push("/profile-fields/new");
 }
 
 function openEdit(field: AttributeContractDraftFieldDto) {
-  editingIndex.value = fields.value.indexOf(field);
-  form.value = structuredClone(field);
-  allowedValuesInput.value = (field.constraints.allowedValues ?? [])
-    .map(String)
-    .join("\n");
-  fieldFormError.value = "";
-  editorVisible.value = true;
+  void router.push(`/profile-fields/${field.definitionId || field.key}`);
 }
 
 function saveField() {
@@ -445,7 +499,9 @@ function saveField() {
     );
   } catch (cause) {
     fieldFormError.value =
-      cause instanceof Error ? cause.message : "Проверьте allowed values.";
+      cause instanceof Error
+        ? cause.message
+        : "Проверьте список допустимых значений.";
     return;
   }
   const index = editingIndex.value;
@@ -472,6 +528,7 @@ async function saveDraft() {
   error.value = "";
   try {
     if (repository.mode === "mock") {
+      writeDemoContractDraft(projectId, workspace.value.draft.document);
       workspace.value.draft.draftVersion += 1;
     } else
       workspace.value.draft = await attributeContractRepository.saveDraft(
@@ -499,10 +556,10 @@ async function saveDraft() {
           localDocument,
         };
         error.value =
-          "Черновик изменён другим администратором. Локальная версия сохранена ниже для явного reconciliation.";
+          "Другой администратор уже изменил черновик. Скопируйте свою версию и вручную сравните изменения.";
       } catch {
         error.value =
-          "Конфликт черновика. Локальные изменения сохранены в браузере; повторите загрузку server draft позже.";
+          "Конфликт черновика. Локальные изменения сохранены в браузере; попробуйте загрузить серверную версию позже.";
       }
     } else
       error.value =
@@ -557,8 +614,8 @@ async function validateDraft() {
     if (validation.value.valid)
       toast.add({
         severity: "success",
-        summary: "Контракт валиден",
-        detail: "Artifact и validation hash готовы к публикации.",
+        summary: "Ошибок не найдено",
+        detail: "Черновик можно опубликовать.",
         life: 3000,
       });
   } catch (cause) {
@@ -581,8 +638,7 @@ async function publish() {
       toast.add({
         severity: "success",
         summary: "Ревизия опубликована",
-        detail:
-          "Pinned consumers продолжат использовать прежние immutable revisions.",
+        detail: "Новая версия полей профиля доступна для интеграций.",
         life: 3500,
       });
       return;
@@ -603,13 +659,13 @@ async function publish() {
     await load();
     toast.add({
       severity: "success",
-      summary: "Контракт опубликован",
-      detail: "Создана новая immutable revision.",
+      summary: "Поля профиля опубликованы",
+      detail: "Создана новая версия настроек.",
       life: 3500,
     });
   } catch (cause) {
     error.value =
-      cause instanceof Error ? cause.message : "Публикация отклонена backend";
+      cause instanceof Error ? cause.message : "Сервер отклонил публикацию";
   } finally {
     publishing.value = false;
   }
@@ -618,13 +674,89 @@ async function publish() {
 function typeHint(type: string) {
   return (
     {
-      DECIMAL: "Точная строка decimal; не преобразуется в JS number.",
-      DATE: "Календарная дата YYYY-MM-DD без timezone shift.",
-      DATETIME: "RFC 3339 instant.",
-      COUNTRY_CODE: "ISO 3166-1 alpha-2.",
-      CURRENCY_CODE: "ISO 4217.",
-    }[type] ?? type
+      STRING:
+        "Подходит для имён, статусов и других коротких текстовых значений.",
+      BOOLEAN: "Выберите для признака с двумя значениями: да или нет.",
+      INTEGER: "Целое число без дробной части, например количество заказов.",
+      DECIMAL:
+        "Точное число с дробной частью. Подходит для денег, балансов и рейтингов.",
+      DATE: "Календарная дата без времени, например дата рождения.",
+      DATETIME: "Точная дата и время события с часовым поясом.",
+      COUNTRY_CODE: "Страна в двухбуквенном формате, например ES или RU.",
+      CURRENCY_CODE: "Валюта в трёхбуквенном формате, например EUR или RUB.",
+    }[type] ?? "Выберите формат данных, которые будет передавать ваш продукт."
   );
+}
+
+function optionLabel(
+  options: ReadonlyArray<{ value: string; label: string }>,
+  value: string,
+) {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function valueTypeLabel(value: string) {
+  return optionLabel(valueTypes, value);
+}
+
+function lifecycleLabel(value: string) {
+  return value === "ARCHIVED"
+    ? "В архиве"
+    : optionLabel(lifecycleOptions, value);
+}
+
+function requirementLabel(value: string) {
+  return optionLabel(requirementOptions, value);
+}
+
+function classificationLabel(value: string | undefined) {
+  return value ? optionLabel(classificationOptions, value) : "Служебные данные";
+}
+
+function indexPolicyLabel(value: string) {
+  return optionLabel(indexOptions, value);
+}
+
+function contractFieldSignature(field: AttributeContractDraftFieldDto) {
+  return JSON.stringify({
+    definitionId: field.definitionId ?? null,
+    key: field.key,
+    label: field.label,
+    description: field.description ?? null,
+    purpose: field.purpose ?? null,
+    valueType: field.valueType,
+    lifecycle: field.lifecycle,
+    classification: field.classification,
+    requirement: field.requirement,
+    position: field.position,
+    constraints: field.constraints,
+    policies: field.policies,
+    replacementDefinitionId: field.replacementDefinitionId ?? null,
+    sunsetAt: field.sunsetAt ?? null,
+    semanticRole: field.semanticRole ?? null,
+  });
+}
+
+function fieldPublicationState(field: AttributeContractDraftFieldDto) {
+  const published = workspace.value?.currentRevision?.fields.find(
+    (item) => item.definitionId === field.definitionId,
+  );
+  if (!published) return "draft" as const;
+  const publishedDraft = toDraftField(
+    published as unknown as Record<string, unknown>,
+  );
+  return contractFieldSignature(field) === contractFieldSignature(publishedDraft)
+    ? ("published" as const)
+    : ("changed" as const);
+}
+
+function healthWindowLabel(value: string) {
+  return optionLabel(healthWindowOptions, value);
+}
+
+function fixIssue(issue: ContractIssuePresentation) {
+  if (issue.fieldIdentity)
+    void router.push(`/profile-fields/${issue.fieldIdentity}`);
 }
 
 async function openImpact(field: AttributeContractDraftFieldDto) {
@@ -652,7 +784,9 @@ async function openImpact(field: AttributeContractDraftFieldDto) {
           );
   } catch (cause) {
     error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить impact";
+      cause instanceof Error
+        ? cause.message
+        : "Не удалось проверить, где используется поле";
   } finally {
     impactLoading.value = false;
   }
@@ -663,7 +797,7 @@ function archiveImpactedField() {
     return;
   if (
     !window.confirm(
-      `Архивировать «${impactField.value.label}» в следующей Contract revision? Поле исчезнет из новых projections; существующие snapshots и pinned revisions сохранят историческую семантику.`,
+      `Архивировать «${impactField.value.label}» в следующей версии? Поле исчезнет из новых профилей, но сохранится в уже записанной истории.`,
     )
   )
     return;
@@ -680,7 +814,7 @@ function archiveImpactedField() {
   toast.add({
     severity: "warn",
     summary: "Архивирование добавлено в черновик",
-    detail: "Сохраните, проверьте и опубликуйте новую Contract revision.",
+    detail: "Сохраните, проверьте и опубликуйте новую версию.",
     life: 3500,
   });
 }
@@ -690,40 +824,50 @@ function archiveImpactedField() {
   <section class="page contract-page">
     <header class="page-header">
       <div>
-        <div class="eyebrow">End User Attribute Platform</div>
-        <h1>Contract Workspace</h1>
+        <div class="eyebrow">Данные пользователей</div>
+        <h1>Поля профиля пользователей</h1>
         <p class="subtitle">
-          Черновик, совместимость, политики потребителей и immutable публикации
-          Current Profile.
+          Задайте, какие данные о пользователе Lola получает от вашего продукта
+          и где их можно использовать.
         </p>
       </div>
       <div class="header-actions">
         <Button
-          label="Integration guide"
-          icon="pi pi-code"
+          label="Как передавать данные"
+          icon="pi pi-send"
           severity="secondary"
           outlined
-          @click="integrationVisible = true"
+          as="router-link"
+          to="/profile-fields/integration"
         /><Button
-          v-if="canManageAiContext"
-          label="AI Context"
-          icon="pi pi-sparkles"
-          severity="secondary"
-          outlined
-          @click="aiContextVisible = true"
-        /><Button
-          label="История"
+          label="История изменений"
           icon="pi pi-history"
           severity="secondary"
-          text
+          outlined
           @click="historyVisible = true"
+        /><Button
+          v-if="canManage && loaded && workspace"
+          label="Добавить поле"
+          icon="pi pi-plus"
+          @click="openCreate"
         />
       </div>
     </header>
 
+    <nav class="section-nav card" aria-label="Разделы полей профиля">
+      <a href="#fields" class="active"><i class="pi pi-list" />Поля</a>
+      <RouterLink to="/profile-fields/integration"
+        ><i class="pi pi-send" />Передача данных</RouterLink
+      >
+      <a href="#quality"><i class="pi pi-chart-bar" />Качество данных</a>
+      <button type="button" @click="historyVisible = true">
+        <i class="pi pi-history" />История
+      </button>
+    </nav>
+
     <Message v-if="!canManage" severity="info" :closable="false"
-      >Режим просмотра. Менять и публиковать контракт могут OWNER и
-      ADMIN.</Message
+      >Вы можете просматривать поля. Изменять и публиковать их могут владелец и
+      администратор проекта.</Message
     >
     <Message v-if="error" severity="error" :closable="false"
       ><div class="message-row">
@@ -735,18 +879,19 @@ function archiveImpactedField() {
         <div>
           <strong>Нужна ручная сверка черновиков</strong>
           <span
-            >Server draft {{ draftConflict.serverDraft.draftVersion }} и
-            локальный документ не объединяются автоматически.</span
+            >Другой администратор сохранил версию
+            {{ draftConflict.serverDraft.draftVersion }}. Сравните её со своими
+            изменениями перед продолжением.</span
           >
         </div>
         <Button
-          label="Скопировать локальный JSON"
+          label="Скопировать свои изменения"
           severity="secondary"
           text
           @click="copyLocalConflict"
         />
         <Button
-          label="Принять server draft"
+          label="Открыть сохранённую версию"
           severity="secondary"
           outlined
           @click="acceptServerDraft"
@@ -763,161 +908,276 @@ function archiveImpactedField() {
     </div>
 
     <template v-else-if="loaded && workspace">
+      <section class="setup-status card">
+        <div class="setup-copy">
+          <span class="setup-icon"><i class="pi pi-list-check" /></span>
+          <div>
+            <strong>Как настроить профиль пользователя</strong>
+            <p>
+              Добавьте поля, опубликуйте изменения и передайте тестовый профиль.
+            </p>
+          </div>
+        </div>
+        <ol>
+          <li :class="{ done: fields.length > 0 }">
+            <span>1</span>
+            <div>
+              <strong>Добавьте поля</strong
+              ><small>Что хранить о пользователе</small>
+            </div>
+          </li>
+          <li :class="{ done: Boolean(workspace.currentRevision) }">
+            <span>2</span>
+            <div>
+              <strong>Опубликуйте структуру</strong
+              ><small>Чтобы она начала действовать</small>
+            </div>
+          </li>
+          <li :class="{ done: Boolean(health?.lastSuccessfulSnapshotAt) }">
+            <span>3</span>
+            <div>
+              <strong>Передайте профиль</strong
+              ><small>И проверьте результат</small>
+            </div>
+          </li>
+        </ol>
+      </section>
+
       <section class="summary-grid">
         <article class="metric card">
-          <span>Опубликовано</span
+          <span>Опубликованная версия</span
           ><strong>{{
             workspace.currentRevision
-              ? `v${workspace.currentRevision.version}`
-              : "Ещё нет"
+              ? `Версия ${workspace.currentRevision.version}`
+              : "Ещё не опубликовано"
           }}</strong
           ><small>{{
-            workspace.currentRevision?.canonicalHash?.slice(0, 12) ??
-            "Первый publish создаст revision"
+            workspace.currentRevision
+              ? "Эта структура сейчас используется"
+              : "Сначала добавьте хотя бы одно поле"
           }}</small>
         </article>
         <article class="metric card">
-          <span>Черновик</span
-          ><strong>draft {{ workspace.draft.draftVersion }}</strong
+          <span>Текущий черновик</span
+          ><strong>{{
+            hasUnsavedDraftEdits
+              ? "Не сохранён"
+              : `Версия ${workspace.draft.draftVersion}`
+          }}</strong
           ><small>{{
-            dirty ? "Есть изменения относительно head" : "Синхронизирован"
+            dirty
+              ? "Есть изменения для публикации"
+              : "Совпадает с опубликованной версией"
           }}</small>
         </article>
         <article class="metric card">
-          <span>Profile coverage · {{ healthWindow }}</span
+          <span>Профили с данными</span
           ><strong>{{
             health ? `${Math.round(health.coverage * 100)}%` : "—"
           }}</strong
           ><small>{{
             health
-              ? `${health.usersWithSnapshot} из ${health.totalUsers} пользователей`
-              : "Health недоступен"
+              ? `${health.usersWithSnapshot} из ${health.totalUsers} · ${healthWindowLabel(healthWindow)}`
+              : "Статистика пока недоступна"
           }}</small>
-        </article>
-        <article
-          class="metric card"
-          :class="{ ready: health?.readiness.ready }"
-        >
-          <span>Readiness</span
-          ><strong>{{
-            health?.readiness.ready ? "Готово" : "Нужны действия"
-          }}</strong
-          ><small
-            >{{ health?.readiness.oldContractIntegrationCount ?? 0 }} legacy
-            integrations</small
-          >
         </article>
       </section>
 
-      <div class="toolbar card">
+      <div id="fields" class="toolbar card">
         <div>
-          <strong>{{ fields.length }} полей</strong
-          ><span>До 50 определений · порядок задаётся position</span>
+          <strong>Поля профиля</strong
+          ><span>{{
+            fields.length
+              ? `${fields.length} ${fields.length === 1 ? "поле" : "полей"} в черновике`
+              : "Добавьте первое поле, например имя, город или уровень лояльности"
+          }}</span>
         </div>
-        <Select
-          v-model="healthWindow"
-          :options="['24h', '7d', '30d']"
-          aria-label="Окно Profile Health"
-          @change="loadHealth"
-        />
         <Button
           v-if="canManage"
           label="Добавить поле"
           icon="pi pi-plus"
+          size="small"
           @click="openCreate"
         />
       </div>
 
-      <details v-if="health" class="health-evidence card">
-        <summary>Profile Health evidence · {{ healthWindow }}</summary>
-        <div class="fact-grid">
+      <Teleport defer to="#profile-quality-slot">
+        <header class="quality-area-heading">
+          <span class="quality-area-icon"><i class="pi pi-chart-line" /></span>
           <div>
-            <span>Requests</span><strong>{{ health.requestCount }}</strong>
+            <span>После настройки</span>
+            <h2>Статистика после публикации</h2>
+            <p>
+              Здесь видно, приходят ли профили и насколько хорошо заполняются
+              поля.
+            </p>
           </div>
-          <div>
-            <span>Accepted with snapshot</span
-            ><strong>{{ health.sessionRequestsWithSnapshot }}</strong>
+        </header>
+        <section v-if="health" id="quality" class="health-evidence card">
+          <header class="health-header">
+            <span class="health-icon"><i class="pi pi-chart-bar" /></span>
+            <div>
+              <h2>Качество поступающих данных</h2>
+              <p>
+                Показывает, получает ли Lola профили и какие проблемы
+                встречаются.
+              </p>
+            </div>
+            <Select
+              v-model="healthWindow"
+              :options="healthWindowOptions"
+              option-label="label"
+              option-value="value"
+              aria-label="Период статистики"
+              @change="loadHealth"
+            />
+          </header>
+          <div class="fact-grid">
+            <div>
+              <span>Получено обновлений</span
+              ><strong>{{ health.requestCount }}</strong
+              ><small>За выбранный период</small>
+            </div>
+            <div>
+              <span>Сессии с профилем</span
+              ><strong>{{ health.sessionRequestsWithSnapshot }}</strong
+              ><small>Данные были доступны</small>
+            </div>
+            <div>
+              <span>Сессии без профиля</span
+              ><strong>{{ health.sessionRequestsWithoutSnapshot }}</strong
+              ><small>Нужно проверить передачу</small>
+            </div>
+            <div>
+              <span>Конфликты повторов</span
+              ><strong>{{ health.idempotencyConflicts }}</strong
+              ><small>Одинаковые запросы</small>
+            </div>
+            <div>
+              <span>Последнее обновление</span
+              ><strong>{{
+                health.lastSuccessfulSnapshotAt
+                  ? new Date(health.lastSuccessfulSnapshotAt).toLocaleString(
+                      "ru-RU",
+                    )
+                  : "Ещё не было"
+              }}</strong
+              ><small>Успешно принято Lola</small>
+            </div>
+            <div>
+              <span>Ожидают обработки</span
+              ><strong>{{ health.readiness.pendingCleanupRequests }}</strong
+              ><small>Запросы в очереди</small>
+            </div>
           </div>
-          <div>
-            <span>Without snapshot</span
-            ><strong>{{ health.sessionRequestsWithoutSnapshot }}</strong>
+          <div class="age-grid">
+            <div>
+              <span>До 24 часов</span
+              ><strong>{{ health.profileAgeDistribution.upTo24Hours }}</strong>
+            </div>
+            <div>
+              <span>От 1 до 7 дней</span
+              ><strong>{{
+                health.profileAgeDistribution.from24HoursTo7Days
+              }}</strong>
+            </div>
+            <div>
+              <span>От 7 до 30 дней</span
+              ><strong>{{
+                health.profileAgeDistribution.from7To30Days
+              }}</strong>
+            </div>
+            <div>
+              <span>Старше 30 дней</span
+              ><strong>{{ health.profileAgeDistribution.over30Days }}</strong>
+            </div>
           </div>
-          <div>
-            <span>Idempotency conflicts</span
-            ><strong>{{ health.idempotencyConflicts }}</strong>
-          </div>
-          <div>
-            <span>Last accepted</span
-            ><strong>{{
-              health.lastSuccessfulSnapshotAt
-                ? new Date(health.lastSuccessfulSnapshotAt).toLocaleString(
-                    "ru-RU",
-                  )
-                : "—"
-            }}</strong>
-          </div>
-          <div>
-            <span>Pending cleanup</span
-            ><strong>{{ health.readiness.pendingCleanupRequests }}</strong>
-          </div>
-        </div>
-        <div class="health-columns">
-          <section>
-            <h3>Outcomes</h3>
-            <code>{{ JSON.stringify(health.outcomes, null, 2) }}</code>
+          <section v-if="health.fieldCoverage.length">
+            <h3>Заполненность полей</h3>
+            <div class="policy-list">
+              <span
+                v-for="field in health.fieldCoverage"
+                :key="field.definitionId"
+                >{{ field.key }} · {{ Math.round(field.coverage * 100) }}%</span
+              >
+            </div>
           </section>
-          <section>
-            <h3>Invalid reasons</h3>
-            <code>{{ JSON.stringify(health.invalidReasons, null, 2) }}</code>
-          </section>
-          <section>
-            <h3>Profile age</h3>
-            <code>{{
-              JSON.stringify(health.profileAgeDistribution, null, 2)
-            }}</code>
-          </section>
-        </div>
-        <section v-if="health.fieldCoverage.length">
-          <h3>Field coverage</h3>
-          <div class="policy-list">
-            <span
-              v-for="field in health.fieldCoverage"
-              :key="field.definitionId"
-              >{{ field.key }} · {{ Math.round(field.coverage * 100) }}%</span
-            >
-          </div>
-        </section>
-        <Message
-          v-if="health.oldContractIntegrations.length"
-          severity="warn"
-          :closable="false"
-          >{{ health.oldContractIntegrations.length }} integration credentials
-          всё ещё используют старую Contract revision.</Message
-        >
-      </details>
-
-      <Message v-if="errors.length" severity="error" :closable="false"
-        ><strong>{{ errors.length }} ошибок блокируют публикацию.</strong>
-        <ul>
-          <li
-            v-for="issue in errors"
-            :key="`${issue.code}:${'path' in issue ? issue.path : issue.field}`"
+          <Message
+            v-if="health.oldContractIntegrations.length"
+            severity="warn"
+            :closable="false"
+            >{{ health.oldContractIntegrations.length }} подключений всё ещё
+            используют старую версию полей. Обновите их перед
+            публикацией.</Message
           >
-            {{ issue.message }}
-          </li>
-        </ul></Message
+          <details class="raw-health">
+            <summary>Посмотреть исходные данные для разработчика</summary>
+            <div class="raw-health-grid">
+              <CodeBlock
+                title="Результаты обработки"
+                :code="JSON.stringify(health.outcomes, null, 2)"
+              />
+              <CodeBlock
+                title="Причины ошибок"
+                :code="JSON.stringify(health.invalidReasons, null, 2)"
+              />
+            </div>
+          </details>
+        </section>
+      </Teleport>
+
+      <Message
+        v-if="errors.length"
+        class="validation-notice"
+        severity="error"
+        :closable="false"
       >
-      <Message v-if="warnings.length" severity="warn" :closable="false"
-        ><strong
-          >{{ warnings.length }} предупреждений совместимости или
-          безопасности.</strong
-        >
+        <span class="notice-title">Публикация недоступна: исправьте ошибки</span>
         <ul>
-          <li v-for="issue in warnings" :key="`${issue.code}:${issue.message}`">
-            {{ issue.message }}
+          <li v-for="issue in errors" :key="issue.key">
+            <span class="notice-copy">
+              <strong>{{ issue.title }}</strong>
+              <small v-if="issue.detail">{{ issue.detail }}</small>
+            </span>
+            <Button
+              v-if="issue.fieldIdentity"
+              :label="issue.actionLabel"
+              icon="pi pi-arrow-right"
+              icon-pos="right"
+              severity="danger"
+              size="small"
+              text
+              @click="fixIssue(issue)"
+            />
           </li>
-        </ul></Message
+        </ul>
+      </Message>
+      <Message
+        v-if="warnings.length"
+        class="validation-notice"
+        severity="warn"
+        :closable="false"
       >
+        <span class="notice-title">Что проверить перед публикацией</span>
+        <ul>
+          <li v-for="issue in warnings" :key="issue.key">
+            <span class="notice-copy">
+              <strong>{{ issue.title }}</strong>
+              <small>{{ issue.detail }}</small>
+            </span>
+            <Button
+              v-if="issue.fieldIdentity"
+              :label="issue.actionLabel"
+              icon="pi pi-arrow-right"
+              icon-pos="right"
+              severity="warn"
+              size="small"
+              text
+              @click="fixIssue(issue)"
+            />
+          </li>
+        </ul>
+      </Message>
 
       <div v-if="orderedFields.length" class="field-list">
         <article
@@ -944,47 +1204,62 @@ function archiveImpactedField() {
             <div class="field-title">
               <h2>{{ field.label || "Без названия" }}</h2>
               <code>{{ field.key || "new_key" }}</code
-              ><Tag :value="field.valueType" severity="secondary" /><Tag
-                :value="field.lifecycle"
+              ><Tag
+                :value="valueTypeLabel(field.valueType)"
+                severity="secondary"
+              /><Tag
+                :value="
+                  fieldPublicationState(field) === 'draft'
+                    ? 'В черновике'
+                    : fieldPublicationState(field) === 'changed'
+                      ? 'Есть изменения'
+                      : lifecycleLabel(field.lifecycle)
+                "
                 :severity="
-                  field.lifecycle === 'ACTIVE'
-                    ? 'success'
-                    : field.lifecycle === 'DEPRECATED'
-                      ? 'warn'
-                      : 'secondary'
+                  fieldPublicationState(field) === 'draft'
+                    ? 'secondary'
+                    : fieldPublicationState(field) === 'changed'
+                        ? 'warn'
+                        : field.lifecycle === 'ACTIVE'
+                          ? 'success'
+                          : field.lifecycle === 'DEPRECATED'
+                            ? 'warn'
+                            : 'secondary'
                 "
               />
             </div>
             <p>{{ field.description || typeHint(field.valueType) }}</p>
             <div class="policy-list">
               <span v-if="field.requirement !== 'OPTIONAL'">{{
-                field.requirement
+                requirementLabel(field.requirement)
               }}</span
-              ><span v-if="field.policies.audienceRead">Audience</span
-              ><span v-if="field.policies.templateRead">Templates</span
-              ><span v-if="field.policies.aiRead"
-                >AI · {{ field.purpose || "цель не задана" }}</span
-              ><span v-if="field.policies.clientRead">Browser</span
-              ><span v-if="field.policies.exportRead">Export</span
-              ><span>{{ field.classification }}</span
-              ><span>{{ field.policies.indexPolicy }}</span>
+              ><span v-if="field.policies.adminRead">Карточка пользователя</span
+              ><span v-if="field.policies.audienceRead">Сегменты</span
+              ><span v-if="field.policies.templateRead">Шаблоны</span
+              ><span v-if="field.policies.aiRead">Функции с ИИ</span
+              ><span v-if="field.policies.clientRead">Сайт</span
+              ><span v-if="field.policies.exportRead">Экспорт</span
+              ><span>{{ classificationLabel(field.classification) }}</span
+              ><span v-if="field.policies.indexPolicy !== 'NONE'">{{
+                indexPolicyLabel(field.policies.indexPolicy)
+              }}</span>
             </div>
           </div>
           <div class="field-actions">
             <Button
               v-if="field.definitionId"
+              label="Где используется"
               icon="pi pi-share-alt"
               severity="secondary"
               text
-              rounded
-              :aria-label="`Impact ${field.label}`"
+              :aria-label="`Показать, где используется ${field.label}`"
               @click="openImpact(field)"
             /><Button
               v-if="canManage"
+              label="Изменить"
               icon="pi pi-pencil"
               severity="secondary"
               text
-              rounded
               :aria-label="`Изменить ${field.label}`"
               @click="openEdit(field)"
             /><Button
@@ -1000,53 +1275,100 @@ function archiveImpactedField() {
         </article>
       </div>
       <div v-else class="empty card">
-        <i class="pi pi-id-card" /><strong>Контракт пока пуст</strong>
+        <i class="pi pi-id-card" /><strong>Добавьте первое поле профиля</strong>
         <p>
-          Это реальное пустое состояние после успешной загрузки. Добавьте первое
-          поле Current Profile.
+          Например, имя, город или уровень программы лояльности. Затем
+          опубликуйте структуру и передайте тестовый профиль.
         </p>
         <Button v-if="canManage" label="Добавить поле" @click="openCreate" />
+        <RouterLink to="/profile-fields/integration" class="empty-help"
+          >Как это работает</RouterLink
+        >
       </div>
+
+      <Teleport defer to="#profile-tools-slot">
+        <section class="tools-grid">
+          <RouterLink to="/profile-fields/integration" class="tool-card card">
+            <span class="tool-icon"><i class="pi pi-send" /></span>
+            <span
+              ><strong>Передача данных</strong
+              ><small
+                >Пошагово подключите сервер и отправьте тестовый профиль.</small
+              ></span
+            >
+            <i class="pi pi-arrow-right" />
+          </RouterLink>
+          <button
+            v-if="canManageAiContext"
+            type="button"
+            class="tool-card card"
+            @click="aiContextVisible = true"
+          >
+            <span class="tool-icon ai"><i class="pi pi-sparkles" /></span>
+            <span
+              ><strong>Данные для ИИ</strong
+              ><small
+                >Проверьте, какие опубликованные поля доступны функциям с
+                ИИ.</small
+              ></span
+            >
+            <i class="pi pi-arrow-right" />
+          </button>
+        </section>
+      </Teleport>
 
       <footer v-if="canManage" class="workspace-footer card">
         <div>
           <strong>{{
-            validation?.valid && !hasUnsavedDraftEdits
-              ? "Проверка пройдена"
-              : "Сначала сохраните и проверьте черновик"
+            !dirty
+              ? "Все изменения опубликованы"
+              : errors.length
+                ? "Исправьте ошибки, чтобы опубликовать"
+                : validation?.valid && !hasUnsavedDraftEdits
+                ? "Черновик проверен — можно публиковать"
+                : hasUnsavedDraftEdits
+                  ? "Сохраните изменения, чтобы продолжить"
+                  : "Проверьте черновик перед публикацией"
           }}</strong
-          ><small
-            >Publish принимает только validation hash текущей
-            draftVersion.</small
-          >
+          ><small>{{
+            dirty
+              ? "Новая структура начнёт действовать только после публикации."
+              : "Текущая структура уже используется Lola."
+          }}</small>
         </div>
         <Button
-          label="Сохранить черновик"
+          label="1. Сохранить"
           severity="secondary"
           outlined
+          :disabled="!hasUnsavedDraftEdits"
           :loading="saving"
           @click="saveDraft"
         /><Button
-          label="Проверить"
+          label="2. Проверить"
           icon="pi pi-check-circle"
           severity="secondary"
-          :disabled="hasUnsavedDraftEdits"
+          :disabled="hasUnsavedDraftEdits || (!dirty && validation?.valid)"
           :loading="validating"
           @click="validateDraft"
         /><Button
-          label="Опубликовать"
+          label="3. Опубликовать"
           icon="pi pi-send"
           :disabled="
             hasUnsavedDraftEdits ||
+            errors.length > 0 ||
+            !dirty ||
             !validation?.valid ||
             validation.draftVersion !== workspace.draft.draftVersion
           "
           @click="publishingVisible = true"
         />
       </footer>
+      <div id="profile-quality-slot" class="content-slot" />
+      <div id="profile-tools-slot" class="content-slot" />
     </template>
 
     <Dialog
+      v-if="false"
       v-model:visible="editorVisible"
       modal
       :header="
@@ -1264,13 +1586,13 @@ function archiveImpactedField() {
     <Dialog
       v-model:visible="publishingVisible"
       modal
-      header="Опубликовать immutable revision"
+      header="Опубликовать изменения"
       :style="{ width: 'min(650px, calc(100vw - 24px))' }"
     >
       <div class="publish-form">
         <Message severity="warn" :closable="false"
-          >Публикация не переписывает snapshots и pinned consumers. Breaking
-          changes требуют плана и readiness evidence.</Message
+          >После публикации новая структура начнёт действовать. Уже сохранённые
+          профили и старые версии останутся без изменений.</Message
         ><label
           ><span>Причина изменения *</span
           ><Textarea
@@ -1278,19 +1600,19 @@ function archiveImpactedField() {
             rows="3"
             maxlength="1000" /></label
         ><label
-          ><span>Compatibility grace, дней</span
+          ><span>Переходный период, дней</span
           ><InputNumber
             v-model="publishForm.graceDays"
             :min="0"
             :max="30" /></label
         ><label
-          ><span>План breaking change</span
+          ><span>План перехода для несовместимых изменений</span
           ><Textarea
             v-model="publishForm.breakingChangePlan"
             rows="3"
             maxlength="2000" /></label
         ><label
-          ><span>Readiness evidence ID</span
+          ><span>ID подтверждения готовности интеграции</span
           ><InputText
             v-model="publishForm.readinessEvidenceId"
             class="mono"
@@ -1299,12 +1621,10 @@ function archiveImpactedField() {
           ></label
         ><label class="security-confirm"
           ><ToggleSwitch v-model="publishForm.confirmSecurity" /><span
-            >Я проверил доступы sensitive/client/template/audience/export/AI и
-            последствия публикации.<template
-              v-if="requiresSecurityConfirmation"
-            >
-              Подтверждение обязательно для изменения exposure или
-              classification.</template
+            >Я проверил, где будут доступны персональные и чувствительные
+            данные.<template v-if="requiresSecurityConfirmation">
+              Подтверждение обязательно, потому что меняется доступ к
+              данным.</template
             ></span
           ></label
         >
@@ -1312,8 +1632,8 @@ function archiveImpactedField() {
           v-if="requiresSecurityConfirmation && !canManageAiContext"
           severity="error"
           :closable="false"
-          >Новый sensitive exposure может подтвердить и опубликовать только
-          OWNER.</Message
+          >Изменение доступа к чувствительным данным может подтвердить только
+          владелец проекта.</Message
         >
       </div>
       <template #footer
@@ -1333,13 +1653,14 @@ function archiveImpactedField() {
     <Dialog
       v-model:visible="aiContextVisible"
       modal
-      header="AI Context · bounded projection"
+      header="Какие данные доступны функциям с ИИ"
       :style="{ width: 'min(780px, calc(100vw - 24px))' }"
     >
       <div class="guide">
         <Message severity="warn" :closable="false"
-          >Preview полностью синтетический. Значения Current Profile считаются
-          untrusted data и не становятся инструкциями для модели.</Message
+          >В примере используются вымышленные значения. Данные профиля всегда
+          считаются пользовательскими данными, а не инструкциями для
+          ИИ.</Message
         >
         <div class="form-grid">
           <label
@@ -1347,8 +1668,8 @@ function archiveImpactedField() {
             ><Select
               v-model="aiFormat"
               :options="[
-                { value: 'STRUCTURED_JSON', label: 'Structured JSON' },
-                { value: 'COMPACT_TEXT', label: 'Compact text' },
+                { value: 'STRUCTURED_JSON', label: 'Структурированный JSON' },
+                { value: 'COMPACT_TEXT', label: 'Краткий текст' },
               ]"
               option-label="label"
               option-value="value" /></label
@@ -1358,9 +1679,9 @@ function archiveImpactedField() {
           /></label>
         </div>
         <p>
-          Используется только опубликованная Contract revision и поля с
-          <code>aiRead=true</code>. Изменение policy проходит обычную
-          validation, security review и immutable publish.
+          Здесь показаны только опубликованные поля, для которых разрешено
+          использование функциями с ИИ. Изменение доступа начнёт действовать
+          после проверки и публикации.
         </p>
         <div v-if="publishedAiFields.length" class="policy-list">
           <span
@@ -1370,9 +1691,13 @@ function archiveImpactedField() {
           >
         </div>
         <div v-else class="empty">
-          В опубликованном контракте AI Context выключен.
+          В опубликованной версии нет полей, доступных функциям с ИИ.
         </div>
-        <pre><code>{{ syntheticAiPreview || "{}" }}</code></pre>
+        <CodeBlock
+          title="Пример данных для ИИ"
+          :language="aiFormat === 'STRUCTURED_JSON' ? 'JSON' : 'Текст'"
+          :code="syntheticAiPreview || '{}'"
+        />
       </div>
     </Dialog>
 
@@ -1428,7 +1753,7 @@ await fetch("/api/v1/interaction-sessions", {
     <Dialog
       v-model:visible="historyVisible"
       modal
-      header="История Contract revisions"
+      header="История изменений полей"
       :style="{ width: 'min(760px, calc(100vw - 24px))' }"
     >
       <ol v-if="revisions.length" class="history">
@@ -1449,7 +1774,8 @@ await fetch("/api/v1/interaction-sessions", {
     <Dialog
       v-model:visible="impactVisible"
       modal
-      header="Impact / used by"
+      header="Где используется поле"
+      class="impact-dialog"
       :style="{ width: 'min(680px, calc(100vw - 24px))' }"
     >
       <div v-if="impactLoading" class="loading-grid">
@@ -1461,7 +1787,7 @@ await fetch("/api/v1/interaction-sessions", {
           :closable="false"
           >{{
             impact.canArchive
-              ? "Backend разрешает архивирование после review зависимостей."
+              ? "Поле можно архивировать после проверки связанных разделов."
               : "Архивирование заблокировано активными зависимостями."
           }}</Message
         >
@@ -1477,13 +1803,19 @@ await fetch("/api/v1/interaction-sessions", {
             <Tag :value="dependency.status" severity="secondary" />
           </article>
         </div>
-        <div v-else class="empty">
-          Backend не нашёл потребителей этого definition.
+        <div v-else class="impact-empty">
+          <i class="pi pi-check-circle" />
+          <div>
+            <strong>Связанных разделов нет</strong>
+            <p>
+              Поле не используется в активных сегментах, шаблонах или других
+              настройках Lola.
+            </p>
+          </div>
         </div>
         <Message severity="warn" :closable="false"
-          >Архивирование не удаляет старые snapshots или immutable revisions.
-          Для новых projections поле станет недоступно после публикации Contract
-          revision.</Message
+          >Архивирование не удаляет старые данные. Поле перестанет появляться в
+          новых профилях после публикации изменений.</Message
         ><Button
           v-if="canManage && impactField?.lifecycle !== 'ARCHIVED'"
           label="Добавить архивирование в черновик"
@@ -1498,12 +1830,132 @@ await fetch("/api/v1/interaction-sessions", {
 
 <style scoped>
 .contract-page {
-  max-width: 1320px;
+  display: flex;
+  flex-direction: column;
+  max-width: 1280px;
+}
+.content-slot {
+  display: contents;
 }
 .header-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+.header-actions :deep(.p-button-secondary.p-button-outlined) {
+  border-color: var(--border-strong);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+.section-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  margin: -10px 0 20px;
+  padding: 5px;
+  border-radius: 14px;
+}
+.section-nav a,
+.section-nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.section-nav a.active {
+  background: var(--surface-emphasis);
+  color: var(--text-on-emphasis);
+}
+.setup-status {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(520px, 1.15fr);
+  align-items: center;
+  gap: 24px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.setup-copy {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.setup-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+}
+.setup-copy strong,
+.setup-copy p {
+  display: block;
+}
+.setup-copy strong {
+  font-size: 0.82rem;
+}
+.setup-copy p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.setup-status ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 1px;
+  overflow: hidden;
+  border-radius: 13px;
+  background: var(--border-default);
+  list-style: none;
+}
+.setup-status li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 11px;
+  background: var(--surface-subtle);
+}
+.setup-status li > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface-card);
+  color: var(--muted);
+  font: 700 0.66rem Manrope;
+}
+.setup-status li.done > span {
+  background: var(--status-success-text);
+  color: var(--status-success-soft);
+}
+.setup-status li strong,
+.setup-status li small {
+  display: block;
+}
+.setup-status li strong {
+  font-size: 0.67rem;
+}
+.setup-status li small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.58rem;
 }
 .conflict-recovery {
   display: flex;
@@ -1516,11 +1968,146 @@ await fetch("/api/v1/interaction-sessions", {
   flex: 1 1 320px;
 }
 .health-evidence {
-  margin-bottom: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  scroll-margin-top: 24px;
 }
-.health-evidence summary {
+.quality-area-heading {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+  margin-top: 38px;
+  padding-top: 28px;
+  margin-bottom: 13px;
+  border-top: 1px solid var(--border-strong);
+}
+.quality-area-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.quality-area-heading span,
+.quality-area-heading h2,
+.quality-area-heading p {
+  display: block;
+}
+.quality-area-heading > div > span {
+  color: var(--muted);
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.quality-area-heading h2 {
+  margin-top: 2px;
+  font-size: 0.95rem;
+}
+.quality-area-heading p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.health-header {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 13px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.health-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.health-header h2 {
+  font-size: 1rem;
+}
+.health-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 15px;
+}
+.fact-grid > div {
+  padding: 13px;
+  border: 1px solid var(--border-default);
+  border-radius: 13px;
+  background: var(--surface-subtle);
+}
+.fact-grid span,
+.fact-grid strong,
+.fact-grid small {
+  display: block;
+}
+.fact-grid span {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+.fact-grid strong {
+  margin-top: 5px;
+  font: 700 1rem Manrope;
+}
+.fact-grid small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.58rem;
+}
+.age-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 14px;
+  padding: 1px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--border-default);
+}
+.age-grid > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px;
+  background: var(--surface-card);
+}
+.age-grid span {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+.age-grid strong {
+  font-size: 0.72rem;
+}
+.raw-health {
+  margin-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+.raw-health summary {
+  padding: 14px 0 0;
   cursor: pointer;
+  color: var(--status-violet-text);
+  font-size: 0.68rem;
   font-weight: 800;
+}
+.raw-health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
 }
 .health-columns {
   display: grid;
@@ -1547,7 +2134,7 @@ await fetch("/api/v1/interaction-sessions", {
 }
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -1601,12 +2188,69 @@ await fetch("/api/v1/interaction-sessions", {
   gap: 10px;
   margin-top: 14px;
 }
+.validation-notice {
+  margin: 12px 0;
+}
+.notice-title {
+  display: block;
+  font-size: 0.71rem;
+  font-weight: 600;
+}
+.validation-notice ul {
+  display: grid;
+  gap: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.validation-notice li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+.notice-copy {
+  min-width: 0;
+}
+.notice-copy strong,
+.notice-copy small {
+  display: block;
+}
+.notice-copy strong {
+  font-size: 0.71rem;
+  font-weight: 600;
+}
+.notice-copy small {
+  max-width: 760px;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.validation-notice :deep(.p-button) {
+  flex: 0 0 auto;
+  padding-block: 5px;
+}
 .field-card {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr) auto;
   gap: 14px;
   align-items: start;
-  padding: 16px;
+  padding: 17px;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.field-card:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--status-violet) 26%,
+    var(--border-default)
+  );
+  box-shadow: var(--shadow-raised);
 }
 .field-card.deprecated {
   border-color: var(--status-warning);
@@ -1630,17 +2274,26 @@ await fetch("/api/v1/interaction-sessions", {
   flex-wrap: wrap;
 }
 .field-title h2 {
-  font-size: 0.9rem;
+  font-size: 0.84rem;
+  font-weight: 700;
   margin: 0;
 }
 .field-title code {
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+.field-title :deep(.p-tag) {
+  padding: 3px 7px;
+  font-size: 0.61rem;
+  font-weight: 600;
 }
 .field-main p {
   margin: 7px 0;
   color: var(--muted);
-  font-size: 0.73rem;
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.45;
 }
 .policy-list {
   display: flex;
@@ -1651,16 +2304,19 @@ await fetch("/api/v1/interaction-sessions", {
   padding: 3px 7px;
   border-radius: 999px;
   background: var(--surface-subtle);
-  font-size: 0.57rem;
-  font-weight: 700;
+  font-size: 0.61rem;
+  font-weight: 600;
 }
 .field-actions {
   display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.field-actions :deep(.p-button-label) {
+  font-size: 0.66rem;
 }
 .workspace-footer {
-  position: sticky;
-  bottom: 12px;
-  z-index: 5;
+  position: static;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -1798,25 +2454,116 @@ await fetch("/api/v1/interaction-sessions", {
   font-size: 0.75rem;
 }
 @media (max-width: 960px) {
+  .setup-status {
+    grid-template-columns: 1fr;
+  }
   .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .fact-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   .toggle-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+.empty-help {
+  color: var(--status-violet-text);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.tool-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.tool-card {
+  font: inherit;
+}
+.tool-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.tool-icon.ai {
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+}
+.tool-card strong,
+.tool-card small {
+  display: block;
+}
+.tool-card strong {
+  font-size: 0.76rem;
+}
+.tool-card small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.64rem;
+}
+.tool-card > i {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
 @media (max-width: 620px) {
+  .header-actions,
+  .header-actions :deep(.p-button) {
+    width: 100%;
+  }
+  .section-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .section-nav a,
+  .section-nav button {
+    justify-content: center;
+    min-width: 0;
+  }
+  .setup-status ol {
+    grid-template-columns: 1fr;
+  }
   .summary-grid,
   .loading-grid,
   .form-grid,
-  .form-grid.triple {
+  .form-grid.triple,
+  .fact-grid,
+  .age-grid,
+  .raw-health-grid,
+  .tools-grid {
     grid-template-columns: 1fr;
+  }
+  .summary-grid .metric:last-child {
+    grid-column: auto;
+  }
+  .health-header {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+  .health-header .p-select {
+    grid-column: 1/-1;
   }
   .field-card {
     grid-template-columns: 42px minmax(0, 1fr);
   }
   .field-actions {
     grid-column: 2;
+    flex-wrap: wrap;
   }
   .toolbar,
   .workspace-footer {
@@ -1856,5 +2603,41 @@ await fetch("/api/v1/interaction-sessions", {
   margin-top: 4px;
   color: var(--muted);
   font-size: 0.62rem;
+}
+.impact-empty {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 11px;
+  align-items: start;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 13px;
+  background: var(--surface-subtle);
+}
+.impact-empty > i {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.impact-empty strong {
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+.impact-empty p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+:global(.impact-dialog .p-message) {
+  margin: 0 0 12px;
+}
+:global(.impact-dialog .p-button) {
+  margin-top: 2px;
 }
 </style>

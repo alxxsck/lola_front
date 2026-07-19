@@ -111,14 +111,14 @@ async function load() {
         : (await scenarioAuthoringRepository.getContract(projectId)).audience;
     if (!nextCatalog)
       throw new Error(
-        "Backend не опубликовал Audience catalog для этого проекта.",
+        "Для проекта ещё не опубликован каталог условий сегментации.",
       );
     catalog.value = nextCatalog;
   } catch (cause) {
     error.value =
       cause instanceof Error
         ? cause.message
-        : "Не удалось загрузить Audience V2 catalog";
+        : "Не удалось загрузить условия сегментации";
   } finally {
     loading.value = false;
   }
@@ -129,7 +129,7 @@ async function refreshCatalog() {
   if (!projectId) throw new Error("Проект не выбран");
   const next = (await scenarioAuthoringRepository.getContract(projectId))
     .audience;
-  if (!next) throw new Error("Audience catalog не опубликован");
+  if (!next) throw new Error("Каталог условий сегментации не опубликован");
   catalog.value = next;
   return next;
 }
@@ -151,11 +151,11 @@ async function afterPublished(segmentId: string) {
   <section class="page segments-page">
     <header class="page-header">
       <div>
-        <div class="eyebrow">Audience V2</div>
-        <h1>Segment Library</h1>
+        <div class="eyebrow">Аудитории пользователей</div>
+        <h1>Библиотека сегментов</h1>
         <p class="subtitle">
-          Гибридный каталог: отдельное управление определениями и точное
-          закрепление immutable revisions в сценариях.
+          Создавайте переиспользуемые группы пользователей и закрепляйте нужную
+          версию сегмента в сценарии.
         </p>
       </div>
       <div class="header-actions">
@@ -181,9 +181,8 @@ async function afterPublished(segmentId: string) {
       </div>
     </header>
     <Message severity="info" :closable="false"
-      >Размер сегмента и список участников не вычисляются этим API. Для проверки
-      используйте одного End User: результат показывает tri-state и freshness
-      без выдуманных population counts.</Message
+      >Чтобы проверить условие, укажите одного пользователя. Lola покажет,
+      подходит ли он сегменту и насколько свежие данные использовались.</Message
     >
     <Message v-if="error" severity="error" :closable="false"
       ><div class="error-row">

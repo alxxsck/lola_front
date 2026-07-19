@@ -359,7 +359,9 @@ test("core operator pages load without horizontal overflow or serious accessibil
   for (const path of [
     "/overview",
     "/project",
-    "/project/user-attributes",
+    "/profile-fields",
+    "/profile-fields/new",
+    "/profile-fields/integration",
     "/knowledge",
     "/interface",
     "/events",
@@ -389,27 +391,62 @@ test("core operator pages load without horizontal overflow or serious accessibil
 test("EUAP workspace, Current Profiles and Segment Library expose their primary operator journeys", async ({
   page,
 }) => {
-  await page.goto("/project/user-attributes");
+  await page.goto("/profile-fields");
   await expect(
-    page.getByRole("heading", { name: "Contract Workspace", level: 1 }),
+    page.getByRole("heading", {
+      name: "Поля профиля пользователей",
+      level: 1,
+    }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Добавить поле" }).first().click();
+  await expect(page).toHaveURL(/\/profile-fields\/new$/);
   await expect(
-    page.getByRole("dialog").getByText("Новое поле Current Profile"),
+    page.getByRole("heading", { name: "Новое поле профиля", level: 1 }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Отмена" }).last().click();
+  await expect(
+    page.getByText("Обязательно ли передавать поле?", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/Пример для ИИ/)).toBeVisible();
+  await expect(page.getByText(/Поле придёт во фронтенд/)).toBeVisible();
+  const usageOptionsKeepTheirToggles = await page
+    .locator(".usage-option")
+    .evaluateAll((options) =>
+      options.every((option) => {
+        const toggle = option.querySelector(".p-toggleswitch");
+        if (!toggle) return false;
+        const optionBox = option.getBoundingClientRect();
+        const toggleBox = toggle.getBoundingClientRect();
+        return (
+          toggleBox.left >= optionBox.left && toggleBox.right <= optionBox.right
+        );
+      }),
+    );
+  expect(usageOptionsKeepTheirToggles).toBe(true);
+  await page.getByLabel("Название поля *").fill("Город");
+  await page.getByLabel("Ключ для передачи данных *").fill("city");
+  await page
+    .getByLabel("Для чего нужно это поле? *")
+    .fill("Показывать город в карточке пользователя");
+  await page.getByRole("button", { name: "Добавить в черновик" }).click();
+  await expect(page).toHaveURL(/\/profile-fields$/);
+  await expect(page.getByRole("heading", { name: "Город" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Статистика после публикации" }),
+  ).toBeVisible();
 
   await page.goto("/users");
   await expect(
-    page.getByRole("heading", { name: "Current Profiles", level: 1 }),
+    page.getByRole("heading", { name: "Профили пользователей", level: 1 }),
   ).toBeVisible();
   await expect(page.locator("tbody tr").first()).toBeVisible();
   await page.locator("tbody tr").first().click();
-  await expect(page.getByText("Profile version")).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByText("Версия профиля"),
+  ).toBeVisible();
 
   await page.goto("/segments");
   await expect(
-    page.getByRole("heading", { name: "Segment Library", level: 1 }),
+    page.getByRole("heading", { name: "Библиотека сегментов", level: 1 }),
   ).toBeVisible();
   await expect(page.getByText("Gold customers")).toBeVisible();
   await page.getByRole("link", { name: "Новый сегмент" }).click();

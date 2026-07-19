@@ -40,6 +40,41 @@ describe("Attribute Contract draft", () => {
     );
   });
 
+  it("requires a clear purpose for personal, sensitive, or exposed fields", () => {
+    const personal = {
+      ...createContractField(10),
+      key: "email",
+      label: "Электронная почта",
+      classification: "PERSONAL" as const,
+      policies: {
+        ...createContractField(10).policies,
+        adminRead: false,
+      },
+    };
+    const exposed = {
+      ...createContractField(20),
+      key: "loyaltyLevel",
+      label: "Уровень лояльности",
+      policies: {
+        ...createContractField(20).policies,
+        audienceRead: true,
+      },
+    };
+
+    const issues = validateContractDocument({ fields: [personal, exposed] });
+
+    expect(issues.filter((issue) => issue.code === "PURPOSE_REQUIRED")).toEqual([
+      expect.objectContaining({
+        path: "fields.0.purpose",
+        message: expect.stringContaining("Электронная почта"),
+      }),
+      expect.objectContaining({
+        path: "fields.1.purpose",
+        message: expect.stringContaining("Уровень лояльности"),
+      }),
+    ]);
+  });
+
   it("keeps DECIMAL enum precision and parses scalar constraints by declared type", () => {
     expect(
       parseAllowedValues("DECIMAL", "9007199254740993.1200\n0.10"),

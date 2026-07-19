@@ -10,6 +10,7 @@ import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
+import CodeBlock from "@/features/end-user-attributes/ui/CodeBlock.vue";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import {
   formatProfileValue,
@@ -130,7 +131,7 @@ async function load(append = false) {
             mockField(
               "attr-email",
               "email",
-              "Email",
+              "Электронная почта",
               "STRING",
               user.profile.email,
             ),
@@ -179,7 +180,7 @@ async function load(append = false) {
       error.value =
         cause instanceof Error
           ? cause.message
-          : "Не удалось загрузить Current Profiles";
+          : "Не удалось загрузить профили пользователей";
   } finally {
     if (request === requestSequence) {
       loading.value = false;
@@ -259,28 +260,108 @@ function syncSeverity(status: string) {
       ? "warn"
       : "danger";
 }
+
+function syncStatusLabel(status: string) {
+  return (
+    {
+      VALID: "Данные приняты",
+      VALID_WITH_WARNINGS: "Принято с предупреждением",
+      INVALID: "Обновление отклонено",
+    }[status] ?? status
+  );
+}
+
+function localeLabel(locale: string | null | undefined) {
+  if (!locale) return "—";
+  const language = locale.toLowerCase().split("-")[0];
+  return (
+    {
+      ru: "Русский",
+      en: "Английский",
+      es: "Испанский",
+    }[language ?? ""] ?? locale
+  );
+}
+
+function valueTypeLabel(type: string) {
+  return (
+    {
+      STRING: "Текст",
+      BOOLEAN: "Да или нет",
+      INTEGER: "Целое число",
+      DECIMAL: "Десятичное число",
+      DATE: "Дата",
+      DATETIME: "Дата и время",
+      COUNTRY_CODE: "Страна",
+      CURRENCY_CODE: "Валюта",
+    }[type] ?? type
+  );
+}
+
+function availabilityLabel(value: string) {
+  return (
+    {
+      AVAILABLE: "Есть значение",
+      MISSING: "Не передано",
+      NULL: "Пустое значение",
+      INVALID: "Некорректное значение",
+      STALE: "Данные устарели",
+      DENIED: "Нет доступа",
+    }[value] ?? value
+  );
+}
+
+function lifecycleLabel(value: string) {
+  return (
+    {
+      ACTIVE: "Активно",
+      DEPRECATED: "Выводится из использования",
+      ARCHIVED: "В архиве",
+    }[value] ?? value
+  );
+}
+
+function classificationLabel(value: string) {
+  return (
+    {
+      INTERNAL: "Служебные данные",
+      PERSONAL: "Персональные данные",
+      SENSITIVE: "Чувствительные данные",
+    }[value] ?? value
+  );
+}
 </script>
 
 <template>
   <section class="page profiles-page">
     <header class="page-header">
       <div>
-        <div class="eyebrow">End User Attribute Platform</div>
-        <h1>Current Profiles</h1>
+        <div class="eyebrow">Данные пользователей</div>
+        <h1>Профили пользователей</h1>
         <p class="subtitle">
-          Типизированная проекция последнего принятого snapshot. Поиск,
-          фильтрация и сортировка выполняются backend.
+          Последние данные, которые ваш продукт передал в Lola. Откройте
+          пользователя, чтобы посмотреть его поля и состояние обновления.
         </p>
       </div>
       <Button
-        label="Настроить контракт"
+        label="Настроить поля профиля"
         icon="pi pi-sliders-h"
         severity="secondary"
         outlined
         as="router-link"
-        to="/project/user-attributes"
+        to="/profile-fields"
       />
     </header>
+    <RouterLink to="/profile-fields" class="profile-fields-callout card">
+      <span class="callout-icon"><i class="pi pi-id-card" /></span>
+      <span>
+        <strong>Нужно добавить или изменить данные профиля?</strong>
+        <small>Настройте названия, типы и доступность полей.</small>
+      </span>
+      <span class="callout-action"
+        >Настроить поля <i class="pi pi-arrow-right"
+      /></span>
+    </RouterLink>
     <Message v-if="error" severity="error" :closable="false"
       ><div class="error-row">
         <span>{{ error }}</span
@@ -289,7 +370,7 @@ function syncSeverity(status: string) {
 
     <form class="filters card" @submit.prevent="search">
       <label class="search"
-        ><span>External user ID</span>
+        ><span>ID пользователя в вашем продукте</span>
         <div>
           <i class="pi pi-search" /><InputText
             v-model="query"
@@ -344,10 +425,7 @@ function syncSeverity(status: string) {
         <template #empty
           ><div class="empty">
             <i class="pi pi-users" /><strong>Профили не найдены</strong
-            ><span
-              >Backend успешно ответил, но по заданным условиям данных
-              нет.</span
-            >
+            ><span>По заданным условиям нет пользователей.</span>
           </div></template
         >
         <Column header="Пользователь"
@@ -363,7 +441,7 @@ function syncSeverity(status: string) {
             </div></template
           ></Column
         >
-        <Column header="Current Profile"
+        <Column header="Данные профиля"
           ><template #body="{ data }"
             ><div class="preview-fields">
               <span
@@ -377,30 +455,30 @@ function syncSeverity(status: string) {
             </div></template
           ></Column
         >
-        <Column header="Sync"
+        <Column header="Состояние"
           ><template #body="{ data }"
             ><Tag
-              :value="data.syncStatus"
+              :value="syncStatusLabel(data.syncStatus)"
               :severity="syncSeverity(data.syncStatus)" /></template
         ></Column>
-        <Column header="Locale" class="mobile-hide"
+        <Column header="Язык" class="mobile-hide"
           ><template #body="{ data }">{{
-            data.locale ?? "—"
+            localeLabel(data.locale)
           }}</template></Column
         >
-        <Column header="Profile v" class="mobile-hide"
+        <Column header="Версия профиля" class="mobile-hide"
           ><template #body="{ data }">{{
             data.profileVersion
           }}</template></Column
         >
-        <Column header="Profile observed" class="mobile-hide"
+        <Column header="Данные получены" class="mobile-hide"
           ><template #body="{ data }"
             ><span :title="formatDate(data.observedAt)">{{
-              data.observedAt ? relativeTime(data.observedAt) : "Нет snapshot"
+              data.observedAt ? relativeTime(data.observedAt) : "Данных ещё нет"
             }}</span></template
           ></Column
         >
-        <Column header="Last seen" class="mobile-hide"
+        <Column header="Последняя активность" class="mobile-hide"
           ><template #body="{ data }">{{
             relativeTime(data.lastSeenAt)
           }}</template></Column
@@ -412,7 +490,7 @@ function syncSeverity(status: string) {
               severity="secondary"
               text
               rounded
-              :aria-label="`Открыть Current Profile ${data.externalUserId}`"
+              :aria-label="`Открыть профиль ${data.externalUserId}`"
               @click.stop="openProfile(data)" /></template
         ></Column>
       </DataTable>
@@ -436,7 +514,7 @@ function syncSeverity(status: string) {
   >
     <template #header
       ><div>
-        <div class="eyebrow">Current Profile</div>
+        <div class="eyebrow">Профиль пользователя</div>
         <h2>{{ selected?.externalUserId }}</h2>
       </div></template
     >
@@ -449,19 +527,17 @@ function syncSeverity(status: string) {
     <div v-else-if="detail" class="profile-detail">
       <section class="profile-meta surface-soft">
         <div>
-          <span>Profile version</span
+          <span>Версия профиля</span
           ><strong>{{ detail.profileVersion }}</strong>
         </div>
         <div>
-          <span>Contract revision</span
-          ><strong>{{ detail.contractRevision ?? "Legacy / нет" }}</strong>
+          <span>Версия полей</span
+          ><strong>{{ detail.contractRevision ?? "Не указана" }}</strong>
         </div>
         <div>
-          <span>Observed at</span
+          <span>Данные актуальны на</span
           ><strong>{{
-            detail.observedAt
-              ? formatDate(detail.observedAt)
-              : "Нет принятого snapshot"
+            detail.observedAt ? formatDate(detail.observedAt) : "Данных ещё нет"
           }}</strong>
         </div>
         <div>
@@ -473,22 +549,22 @@ function syncSeverity(status: string) {
           }}</strong>
         </div>
         <div>
-          <span>Received at</span
+          <span>Получено Lola</span
           ><strong>{{
             detail.receivedAt ? formatDate(detail.receivedAt) : "—"
           }}</strong>
         </div>
         <div>
-          <span>Sync status</span
+          <span>Состояние обновления</span
           ><Tag
-            :value="detail.syncStatus"
+            :value="syncStatusLabel(detail.syncStatus)"
             :severity="syncSeverity(detail.syncStatus)"
           />
         </div>
       </section>
       <Message v-if="detail.lastRejectedSync" severity="warn" :closable="false"
-        ><strong>Последний sync отклонён.</strong> Current Profile ниже остаётся
-        последним валидным snapshot; отклонённые данные его не заменили.<span
+        ><strong>Последнее обновление отклонено.</strong> Ниже показаны
+        последние корректные данные; отклонённое обновление их не заменило.<span
           v-if="detail.lastRejectedSync.at"
         >
           {{ formatDate(detail.lastRejectedSync.at) }}.</span
@@ -503,12 +579,14 @@ function syncSeverity(status: string) {
       >
       <div class="detail-nav">
         <strong
-          >{{ visibleDetailFields.length }} полей опубликованного
-          контракта</strong
+          >{{ visibleDetailFields.length }} полей в опубликованной
+          версии</strong
         ><label class="detail-toggle"
           ><input v-model="showArchivedFields" type="checkbox" />Архивные</label
         ><label class="detail-toggle"
           ><input v-model="showDeveloperKeys" type="checkbox" />Ключи</label
+        ><RouterLink to="/profile-fields"
+          >Настроить поля профиля <i class="pi pi-arrow-up-right" /></RouterLink
         ><RouterLink
           :to="{ name: 'event-logs', query: { user: detail.externalUserId } }"
           >История событий отдельно <i class="pi pi-arrow-up-right"
@@ -523,13 +601,13 @@ function syncSeverity(status: string) {
         >
           <div>
             <span>{{ field.label }}</span
-            ><code>{{ field.valueType }}</code
+            ><code>{{ valueTypeLabel(field.valueType) }}</code
             ><code v-if="showDeveloperKeys">{{ field.key }}</code>
           </div>
           <strong>{{ displayField(field) }}</strong>
           <div class="field-meta">
             <Tag
-              :value="field.availability"
+              :value="availabilityLabel(field.availability)"
               :severity="
                 field.availability === 'AVAILABLE'
                   ? 'success'
@@ -537,18 +615,25 @@ function syncSeverity(status: string) {
                     ? 'warn'
                     : 'secondary'
               "
-            /><Tag :value="field.lifecycle" severity="secondary" /><Tag
+            /><Tag
+              :value="lifecycleLabel(field.lifecycle)"
+              severity="secondary"
+            /><Tag
               v-if="field.classification !== 'INTERNAL'"
-              :value="field.classification"
+              :value="classificationLabel(field.classification)"
               severity="warn"
-            /><span v-if="field.untrustedData">untrusted</span>
+            /><span v-if="field.untrustedData">Получено из продукта</span>
           </div>
           <p v-if="field.description">{{ field.description }}</p>
         </article>
       </div>
       <details class="technical">
-        <summary>Техническая provenance</summary>
-        <pre>{{ JSON.stringify(detail.provenance, null, 2) }}</pre>
+        <summary>Источник данных для разработчика</summary>
+        <CodeBlock
+          title="Источник данных профиля"
+          language="JSON"
+          :code="JSON.stringify(detail.provenance, null, 2)"
+        />
       </details>
     </div>
   </Drawer>
@@ -557,6 +642,53 @@ function syncSeverity(status: string) {
 <style scoped>
 .profiles-page {
   max-width: 1400px;
+}
+.profile-fields-callout {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: -8px 0 18px;
+  padding: 15px 17px;
+  border-color: color-mix(
+    in srgb,
+    var(--status-violet) 25%,
+    var(--border-default)
+  );
+  background: linear-gradient(
+    120deg,
+    var(--surface-card),
+    var(--status-violet-soft)
+  );
+}
+.callout-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--surface-emphasis);
+  color: var(--accent);
+}
+.profile-fields-callout strong,
+.profile-fields-callout small {
+  display: block;
+}
+.profile-fields-callout strong {
+  font-size: 0.82rem;
+}
+.profile-fields-callout small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.callout-action {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--status-violet-text);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 .detail-toggle {
   display: inline-flex;
@@ -771,6 +903,12 @@ function syncSeverity(status: string) {
   }
 }
 @media (max-width: 620px) {
+  .profile-fields-callout {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+  .callout-action {
+    grid-column: 2;
+  }
   .filters {
     grid-template-columns: 1fr;
   }

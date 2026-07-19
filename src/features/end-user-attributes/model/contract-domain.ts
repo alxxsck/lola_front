@@ -10,6 +10,22 @@ export interface ContractDraftIssue {
   severity: "error" | "warning";
 }
 
+export function fieldNeedsPurpose(
+  field: AttributeContractDraftFieldDto,
+): boolean {
+  return (
+    field.classification === "PERSONAL" ||
+    field.classification === "SENSITIVE" ||
+    field.policies.adminRead ||
+    field.policies.aiRead ||
+    field.policies.audienceRead ||
+    field.policies.clientRead ||
+    field.policies.exportRead ||
+    field.policies.templateRead ||
+    field.policies.indexPolicy !== "NONE"
+  );
+}
+
 export function createContractField(
   position = 0,
 ): AttributeContractDraftFieldDto {
@@ -50,13 +66,13 @@ export function parseAllowedValues(
   if (!values.length) return undefined;
   if (valueType === "BOOLEAN") {
     if (values.some((value) => value !== "true" && value !== "false"))
-      throw new Error("BOOLEAN enum принимает только true или false.");
+      throw new Error("Для поля «Да или нет» введите true или false.");
     return values.map((value) => value === "true");
   }
   if (valueType === "INTEGER") {
     const integers = values.map(Number);
     if (integers.some((value) => !Number.isSafeInteger(value)))
-      throw new Error("INTEGER enum принимает только безопасные целые числа.");
+      throw new Error("Укажите целые числа без дробной части.");
     return integers;
   }
   return values;
@@ -97,14 +113,14 @@ export function validateContractDocument(
         code: "SENSITIVE_CLIENT_READ",
         path: `${path}.policies.clientRead`,
         message:
-          "Sensitive-поле нельзя отдавать browser-клиенту без отдельного security review.",
+          "Чувствительное поле нельзя передавать в браузер без отдельной проверки доступа.",
         severity: "warning",
       });
-    if (field.policies.aiRead && !field.purpose?.trim())
+    if (fieldNeedsPurpose(field) && !field.purpose?.trim())
       issues.push({
-        code: "AI_PURPOSE_REQUIRED",
+        code: "PURPOSE_REQUIRED",
         path: `${path}.purpose`,
-        message: "Для AI-доступа зафиксируйте цель использования.",
+        message: `Укажите назначение поля «${field.label || field.key || "Без названия"}»: где и зачем оно используется.`,
         severity: "error",
       });
     if (
@@ -115,7 +131,7 @@ export function validateContractDocument(
       issues.push({
         code: "DEPRECATION_PLAN_REQUIRED",
         path: `${path}.lifecycle`,
-        message: "Укажите replacement или дату sunset.",
+        message: "Укажите поле-замену или дату завершения использования.",
         severity: "warning",
       });
   });

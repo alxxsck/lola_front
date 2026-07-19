@@ -21,6 +21,7 @@ const navigation = computed(() =>
   [
     { label: "Обзор", icon: "pi pi-sparkles", to: "/overview" },
     { label: "Проект", icon: "pi pi-sliders-h", to: "/project" },
+    { label: "Поля профиля", icon: "pi pi-id-card", to: "/profile-fields" },
     { label: "База знаний", icon: "pi pi-book", to: "/knowledge" },
     { label: "Интерфейс", icon: "pi pi-th-large", to: "/interface" },
     { label: "События", icon: "pi pi-bolt", to: "/events" },
@@ -73,7 +74,7 @@ async function logout(allDevices: boolean) {
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-mark"><span>Lo</span></div>
-          <div><strong>Lola</strong><small>Control room</small></div>
+          <div><strong>Lola</strong><small>Центр управления</small></div>
         </div>
 
         <div class="project-pill">
@@ -118,12 +119,14 @@ async function logout(allDevices: boolean) {
           <i class="pi pi-code" />
           <div>
             <strong>{{
-              repository.mode === "mock" ? "Demo mode" : "API connected"
+              repository.mode === "mock"
+                ? "Демонстрационный режим"
+                : "Подключение к API"
             }}</strong
             ><span>{{
               repository.mode === "mock"
                 ? "Изменения сохраняются локально"
-                : "Данные Lola Backend"
+                : "Данные с сервера Lola"
             }}</span>
           </div>
         </div>
@@ -161,7 +164,7 @@ async function logout(allDevices: boolean) {
         />
         <strong>Lola CMS</strong>
         <Tag
-          :value="repository.mode === 'mock' ? 'DEMO' : 'API'"
+          :value="repository.mode === 'mock' ? 'ДЕМО' : 'API'"
           severity="secondary"
         />
       </header>

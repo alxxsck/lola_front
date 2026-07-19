@@ -1,6 +1,10 @@
 import { flushPromises, shallowMount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AttributeContractIssueResponseDto } from "@/shared/api/generated/models";
+import type {
+  AttributeContractIssueResponseDto,
+  AttributeContractWorkspaceResponseDto,
+} from "@/shared/api/generated/models";
+import { createContractField } from "@/features/end-user-attributes/model/contract-domain";
 import ProjectUserAttributesPage from "./ProjectUserAttributesPage.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -10,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   saveDraft: vi.fn(),
   validate: vi.fn(),
   publish: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("@/features/auth/auth.store", () => ({
@@ -18,7 +23,10 @@ vi.mock("@/features/auth/auth.store", () => ({
     user: { role: "OWNER" },
   }),
 }));
-vi.mock("vue-router", () => ({ onBeforeRouteLeave: vi.fn() }));
+vi.mock("vue-router", () => ({
+  onBeforeRouteLeave: vi.fn(),
+  useRouter: () => ({ push: mocks.routerPush }),
+}));
 vi.mock("@/shared/api/repository", () => ({ repository: { mode: "api" } }));
 vi.mock(
   "@/features/end-user-attributes/api/attribute-contract-repository",
@@ -76,6 +84,32 @@ describe("ProjectUserAttributesPage", () => {
     expect(wrapper.find('button-stub[label="Добавить поле"]').exists()).toBe(
       true,
     );
+  });
+
+  it("explains profile fields in Russian without exposing internal platform terms", async () => {
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Поля профиля");
+    expect(wrapper.text()).toContain(
+      "какие данные о пользователе Lola получает от вашего продукта",
+    );
+    expect(
+      wrapper.find('button-stub[label="Как передавать данные"]').exists(),
+    ).toBe(true);
+    expect(wrapper.text()).not.toContain("Contract Workspace");
+    expect(wrapper.text()).not.toContain("Integration guide");
+    expect(wrapper.text()).not.toContain("AI Context");
+    expect(wrapper.text()).not.toContain("Profile Health evidence");
+  });
+
+  it("opens the dedicated field page instead of a long technical dialog", async () => {
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+    (wrapper.vm as unknown as { openCreate: () => void }).openCreate();
+
+    expect(mocks.routerPush).toHaveBeenCalledWith("/profile-fields/new");
+    expect(wrapper.find(".p-dialog").exists()).toBe(false);
   });
 
   it("does not present a failed load as a real empty contract", async () => {
@@ -185,5 +219,147 @@ describe("ProjectUserAttributesPage", () => {
     await vm.validateDraft();
     expect(mocks.validate).not.toHaveBeenCalled();
     expect(vm.error).toContain("Сначала сохраните изменения черновика");
+  });
+
+  it("turns a purpose validation error into one concrete Russian action", async () => {
+    const invalidWorkspace = structuredClone(
+      workspace,
+    ) as AttributeContractWorkspaceResponseDto;
+    invalidWorkspace.draft.document.fields = [
+      {
+        ...createContractField(10),
+        definitionId: "definition-loyalty",
+        key: "loyaltyLevel",
+        label: "Уровень лояльности",
+        policies: {
+          ...createContractField(10).policies,
+          audienceRead: true,
+        },
+      },
+    ];
+    invalidWorkspace.validation = {
+      ...invalidWorkspace.validation,
+      valid: false,
+      issues: [
+        {
+          code: "ATTRIBUTE_PURPOSE_REQUIRED",
+          severity: "ERROR",
+          definitionId: "definition-loyalty",
+          message:
+            "A purpose is required for PERSONAL/SENSITIVE or exposed Attributes",
+          compatibility: "SECURITY",
+        },
+      ],
+    };
+    mocks.workspace.mockResolvedValue(invalidWorkspace);
+
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      errors: Array<{
+        title: string;
+        detail?: string;
+        fieldIdentity?: string;
+      }>;
+      fixIssue: (issue: unknown) => void;
+    };
+
+    expect(vm.errors).toEqual([
+      expect.objectContaining({
+        title: "Укажите назначение поля «Уровень лояльности».",
+        detail: expect.stringContaining("Для чего нужно это поле?"),
+        fieldIdentity: "definition-loyalty",
+      }),
+    ]);
+    expect(JSON.stringify(vm.errors)).not.toContain("A purpose is required");
+    expect(wrapper.text()).toContain("Исправьте ошибки, чтобы опубликовать");
+    expect(
+      wrapper.find('button-stub[label="3. Опубликовать"]').attributes(
+        "disabled",
+      ),
+    ).toBeDefined();
+    vm.fixIssue(vm.errors[0]);
+    expect(mocks.routerPush).toHaveBeenCalledWith(
+      "/profile-fields/definition-loyalty",
+    );
+  });
+
+  it("does not repeat the same warning from local and server validation", async () => {
+    const warningWorkspace = structuredClone(
+      workspace,
+    ) as AttributeContractWorkspaceResponseDto;
+    warningWorkspace.validation = {
+      ...warningWorkspace.validation,
+      issues: [
+        {
+          code: "ATTRIBUTE_EXPOSURE_BROADENED",
+          severity: "WARNING",
+          definitionId: "definition-loyalty",
+          message: "Exposure broadened",
+          compatibility: "SECURITY",
+        },
+        {
+          code: "ATTRIBUTE_EXPOSURE_BROADENED",
+          severity: "WARNING",
+          definitionId: "definition-loyalty",
+          message: "Exposure broadened again",
+          compatibility: "SECURITY",
+        },
+      ],
+    };
+    mocks.workspace.mockResolvedValue(warningWorkspace);
+
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      warnings: Array<{ title: string }>;
+    };
+
+    expect(vm.warnings).toEqual([
+      expect.objectContaining({
+        title: expect.stringContaining("Поле стало доступно в новых разделах"),
+      }),
+    ]);
+  });
+
+  it("does not label a new or changed draft field as active", async () => {
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+    const published = {
+      ...createContractField(10),
+      definitionId: "definition-city",
+      key: "city",
+      label: "Город",
+      purpose: "Показывать город в карточке пользователя",
+    };
+    const vm = wrapper.vm as unknown as {
+      workspace: {
+        currentRevision: { fields: Array<Record<string, unknown>> } | null;
+      };
+      fieldPublicationState: (
+        field: ReturnType<typeof createContractField>,
+      ) => "draft" | "changed" | "published";
+    };
+    vm.workspace.currentRevision = {
+      fields: [
+        {
+          ...published,
+          definitionRevisionId: "definition-city-r1",
+          definitionRevisionNumber: 1,
+        },
+      ],
+    };
+
+    expect(vm.fieldPublicationState(published)).toBe("published");
+    expect(vm.fieldPublicationState({ ...published, label: "Новый город" })).toBe(
+      "changed",
+    );
+    expect(
+      vm.fieldPublicationState({
+        ...createContractField(20),
+        key: "country",
+        label: "Страна",
+      }),
+    ).toBe("draft");
   });
 });

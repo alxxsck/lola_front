@@ -27,13 +27,18 @@ describe("AppShell", () => {
 
     expect({
       navigationLinks: wrapper.findAll(".sidebar-scroll nav a").length,
+      profileFieldsLink: wrapper
+        .findAll(".sidebar-scroll nav a")
+        .find((link) => link.text().includes("Поля профиля"))
+        ?.attributes("href"),
       themeSwitchVisible: wrapper.find(".theme-switch").exists(),
       profileInFooter: wrapper
         .find(".sidebar-footer .sidebar-profile")
         .exists(),
       modeInFooter: wrapper.find(".sidebar-footer .sidebar-note").exists(),
     }).toEqual({
-      navigationLinks: 12,
+      navigationLinks: 13,
+      profileFieldsLink: "/profile-fields",
       themeSwitchVisible: true,
       profileInFooter: true,
       modeInFooter: true,

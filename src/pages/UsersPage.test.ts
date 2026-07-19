@@ -52,6 +52,17 @@ describe("UsersPage Current Profile", () => {
     expect(mocks.profile).toHaveBeenCalledWith("project-1", "user-1");
   });
 
+  it("links to the dedicated profile field page with Russian product copy", async () => {
+    const wrapper = shallowMount(UsersPage);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Профили пользователей");
+    expect(wrapper.find('button-stub[to="/profile-fields"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.text()).not.toContain("Current Profiles");
+  });
+
   it("keeps backend cursor pagination and sort parameters", async () => {
     mocks.list
       .mockResolvedValueOnce({

@@ -180,15 +180,15 @@ function message(cause: unknown, fallback: string) {
     return cause instanceof Error ? cause.message : fallback;
   const messages: Record<string, string> = {
     AUDIENCE_CATALOG_REVISION_STALE:
-      "Каталог Audience обновился. Подтяните его ниже: редактор сохранит ваш черновик для повторной проверки.",
+      "Каталог условий обновился. Загрузите новую версию ниже: черновик останется в редакторе для повторной проверки.",
     SEGMENT_REVISION_CONFLICT:
-      "Другой администратор уже опубликовал новую версию. Подтяните новый head ниже — ваш черновик останется в редакторе.",
+      "Другой администратор уже опубликовал новую версию. Загрузите её ниже — ваш черновик останется в редакторе.",
     SEGMENT_KEY_CONFLICT:
       "Такой ключ сегмента уже используется в проекте. Выберите другой ключ.",
     SEGMENT_ARCHIVED:
-      "Сегмент уже архивирован. Его immutable-версии доступны только для истории и pinned сценариев.",
+      "Сегмент уже архивирован. Его опубликованные версии доступны в истории и в использующих их сценариях.",
     SEGMENT_RULE_INVALID:
-      "Backend отклонил правило сегмента. Перейдите к отмеченному условию и исправьте его.",
+      "Сервер отклонил правило сегмента. Перейдите к отмеченному условию и исправьте его.",
     PROJECT_RESOURCE_NOT_FOUND:
       "Сегмент недоступен в текущем проекте или у вас нет доступа.",
   };
@@ -432,7 +432,8 @@ async function evaluateOneUser() {
   evaluationResult.value = "";
   try {
     if (props.demo)
-      evaluationResult.value = "MATCH · Current Profile v1 · USE_LAST_KNOWN";
+      evaluationResult.value =
+        "Подходит · профиль версии 1 · использованы последние известные данные";
     else {
       const response =
         await scenarioAuthoringRepository.evaluateAudienceForUser(
@@ -442,8 +443,8 @@ async function evaluateOneUser() {
           serialization.value.value,
         );
       evaluationResult.value = response.valid
-        ? `${response.truth ?? (response.matched ? "MATCH" : "NO_MATCH")} · Profile v${response.profileVersion ?? "—"} · ${response.freshness?.mode ?? "freshness unavailable"}`
-        : `INVALID · ${response.issues.map((issue) => issue.message).join("; ")}`;
+        ? `${truthLabel(response.truth ?? (response.matched ? "MATCH" : "NO_MATCH"))} · профиль версии ${response.profileVersion ?? "—"} · ${freshnessLabel(response.freshness?.mode)}`
+        : `Правило нужно исправить · ${response.issues.map((issue) => issue.message).join("; ")}`;
     }
   } catch (cause) {
     evaluationResult.value = message(
@@ -476,7 +477,7 @@ async function recoverEditor() {
       pendingHeadRevisionId.value =
         latest.currentRevision?.segmentRevisionId ?? null;
       pendingHeadDetail.value = latest;
-      notice.value = `Backend head: ${pendingHeadRevisionId.value ?? "пустой"}. Черновик не перепривязан автоматически: сравните изменения и явно примите новый head.`;
+      notice.value = `Последняя версия на сервере: ${pendingHeadRevisionId.value ?? "пустая"}. Черновик не заменён автоматически: сравните изменения и явно примите новую версию.`;
       return;
     }
     recoveryKind.value = null;
@@ -535,6 +536,26 @@ function date(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function truthLabel(value: string) {
+  return (
+    {
+      MATCH: "Подходит",
+      NO_MATCH: "Не подходит",
+      UNKNOWN: "Недостаточно данных",
+    }[value] ?? value
+  );
+}
+
+function freshnessLabel(value: string | undefined) {
+  return (
+    {
+      USE_LAST_KNOWN: "последние известные данные",
+      REQUIRE_FRESH: "только свежие данные",
+      DISABLED: "без проверки свежести",
+    }[value ?? ""] ?? "свежесть данных не указана"
+  );
 }
 
 function closeDetail() {
@@ -623,7 +644,9 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
         }}
       </button>
       <div v-if="pendingHeadDetail" class="head-comparison">
-        <strong>Server head · {{ pendingHeadDetail.name }}</strong>
+        <strong
+          >Последняя версия на сервере · {{ pendingHeadDetail.name }}</strong
+        >
         <span>{{ pendingHeadSummary?.text }}</span>
         <small>{{ pendingHeadDetail.description || "Без описания" }}</small>
       </div>
@@ -728,16 +751,16 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
               type="button"
               class="secondary"
               disabled
-              title="Backend не предоставляет dependency preflight и unarchive"
+              title="Сервер пока не умеет безопасно проверить зависимости и восстановить сегмент"
             >
-              <i class="pi pi-box" /> Архивация недоступна без impact preflight
+              <i class="pi pi-box" /> Архивация пока недоступна
             </button>
           </div>
           <section>
             <h4>
               {{
                 initialAction === "exact"
-                  ? "Выбранная immutable-версия"
+                  ? "Выбранная опубликованная версия"
                   : "Текущая версия"
               }}
             </h4>
@@ -753,25 +776,24 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
               <strong>{{ detailRevisionView.summary.text }}</strong>
               <span
                 >{{
-                  detailRevisionView.version === 2 ? "Audience V2" : "Legacy V1"
+                  detailRevisionView.version === 2
+                    ? "Новые условия"
+                    : "Старая версия условий"
                 }}
                 ·
-                {{
-                  detailRevisionView.freshness?.mode ?? "legacy freshness"
-                }}</span
+                {{ freshnessLabel(detailRevisionView.freshness?.mode) }}</span
               ><span
-                >Catalog {{ detail.currentRevision?.catalogRevision }}</span
+                >Каталог {{ detail.currentRevision?.catalogRevision }}</span
               >
               <span v-if="detailRevisionView.definitions.length"
-                >Attributes:
-                {{ detailRevisionView.definitions.join(", ") }}</span
+                >Поля: {{ detailRevisionView.definitions.join(", ") }}</span
               ><span v-if="detailRevisionView.issues.length" class="danger-copy"
-                >{{ detailRevisionView.issues.length }} unresolved
-                dependencies</span
+                >{{ detailRevisionView.issues.length }} проблем с
+                зависимостями</span
               >
             </div>
             <details v-if="detail.currentRevision" class="rule-source">
-              <summary>Правило этой версии · read-only</summary>
+              <summary>Правило этой версии · только чтение</summary>
               <pre><code>{{ JSON.stringify(detail.currentRevision.rule, null, 2) }}</code></pre>
             </details>
             <p v-else>Опубликованных версий нет.</p>
@@ -877,14 +899,14 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
           <div>
             <strong>Проверить одного пользователя</strong
             ><small
-              >Backend вернёт tri-state, freshness и profile version. Это не
-              подсчёт аудитории.</small
+              >Lola покажет, подходит ли пользователь и насколько свежие данные
+              использовались. Это не подсчёт всей аудитории.</small
             >
           </div>
           <input
             v-model="evaluationUserId"
-            aria-label="End User ID для проверки сегмента"
-            placeholder="End User ID"
+            aria-label="ID пользователя для проверки сегмента"
+            placeholder="ID пользователя"
           /><button
             type="button"
             class="secondary"

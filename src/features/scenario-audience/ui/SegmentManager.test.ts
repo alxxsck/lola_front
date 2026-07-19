@@ -193,7 +193,7 @@ describe("SegmentManager", () => {
       .trigger("click");
     await flushPromises();
 
-    const archive = wrapper.get('button[title*="dependency preflight"]');
+    const archive = wrapper.get('button[title*="проверить зависимости"]');
     expect((archive.element as HTMLButtonElement).disabled).toBe(true);
     expect(scenarioAuthoringRepository.archiveSegment).not.toHaveBeenCalled();
     wrapper.unmount();
