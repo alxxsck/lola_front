@@ -5,10 +5,12 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AudienceRuleDtoFreshness } from "./audienceRuleDtoFreshness";
 import type { AudienceRuleDtoRoot } from "./audienceRuleDtoRoot";
 import type { AudienceRuleDtoVersion } from "./audienceRuleDtoVersion";
 
 export interface AudienceRuleDto {
+  freshness?: AudienceRuleDtoFreshness;
   root: AudienceRuleDtoRoot;
   version: AudienceRuleDtoVersion;
 }

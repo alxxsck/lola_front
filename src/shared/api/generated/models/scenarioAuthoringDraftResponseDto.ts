@@ -8,6 +8,7 @@
 import type { ScenarioAuthoringDraftResponseDtoAudience } from "./scenarioAuthoringDraftResponseDtoAudience";
 import type { ScenarioAuthoringDraftResponseDtoDeliveryPolicy } from "./scenarioAuthoringDraftResponseDtoDeliveryPolicy";
 import type { ScenarioAuthoringDraftResponseDtoGraph } from "./scenarioAuthoringDraftResponseDtoGraph";
+import type { ScenarioAuthoringDraftResponseDtoProfileFreshness } from "./scenarioAuthoringDraftResponseDtoProfileFreshness";
 import type { ScenarioAuthoringDraftResponseDtoRule } from "./scenarioAuthoringDraftResponseDtoRule";
 
 export interface ScenarioAuthoringDraftResponseDto {
@@ -21,6 +22,8 @@ export interface ScenarioAuthoringDraftResponseDto {
   /** @nullable */
   graph?: ScenarioAuthoringDraftResponseDtoGraph;
   id: string;
+  /** @nullable */
+  profileFreshness?: ScenarioAuthoringDraftResponseDtoProfileFreshness;
   /** @nullable */
   rule?: ScenarioAuthoringDraftResponseDtoRule;
   updatedAt: string;

@@ -1,286 +1,790 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
-import Tag from 'primevue/tag'
-import Drawer from 'primevue/drawer'
-import Button from 'primevue/button'
-import Skeleton from 'primevue/skeleton'
-import Message from 'primevue/message'
-import { useAuthStore } from '@/features/auth/auth.store'
-import { repository } from '@/shared/api/repository'
-import { formatDate, relativeTime } from '@/shared/lib/format'
-import type { ActiveSession, Conversation, ConversationMessage, EndUser, EventLog } from '@/shared/types/domain'
-import SendActionDialog from '@/features/live/SendActionDialog.vue'
+import { computed, onMounted, ref } from "vue";
+import Button from "primevue/button";
+import Column from "primevue/column";
+import DataTable from "primevue/datatable";
+import Drawer from "primevue/drawer";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import Select from "primevue/select";
+import Skeleton from "primevue/skeleton";
+import Tag from "primevue/tag";
+import { useAuthStore } from "@/features/auth/auth.store";
+import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
+import {
+  formatProfileValue,
+  profileValueStateLabel,
+} from "@/features/end-user-profile/model/profile-value";
+import { repository } from "@/shared/api/repository";
+import type {
+  CmsProfileSummaryResponseDto,
+  ProfileProjectionFieldResponseDto,
+  ProfileProjectionResponseDto,
+} from "@/shared/api/generated/models";
+import { formatDate, relativeTime } from "@/shared/lib/format";
 
-const auth = useAuthStore()
-const users = ref<EndUser[]>([])
-const usersNextCursor = ref<string | null>(null)
-const loadingMoreUsers = ref(false)
-const sessions = ref<ActiveSession[]>([])
-const activity = ref<EventLog[]>([])
-const activityLoading = ref(false)
-const activityError = ref('')
-const loading = ref(true)
-const error = ref('')
-const search = ref('')
-const segment = ref('ALL')
-const presence = ref('ALL')
-const selected = ref<EndUser | null>(null)
-const drawerVisible = ref(false)
-const actionVisible = ref(false)
-const profileTab = ref<'activity' | 'messages'>('activity')
-const conversations = ref<Conversation[]>([])
-const messages = ref<ConversationMessage[]>([])
-const activeConversationId = ref('')
-const conversationNextCursor = ref<string | null>(null)
-const messageNextCursor = ref<string | null>(null)
-const conversationsLoading = ref(false)
-const messagesLoading = ref(false)
-const loadingMoreConversations = ref(false)
-const loadingMoreMessages = ref(false)
-const conversationError = ref('')
-const messageError = ref('')
-let conversationRequestId = 0
-let messageRequestId = 0
-let activityRequestId = 0
+const auth = useAuthStore();
+const items = ref<CmsProfileSummaryResponseDto[]>([]);
+const nextCursor = ref<string | null>(null);
+const loading = ref(true);
+const loadingMore = ref(false);
+const detailLoading = ref(false);
+const error = ref("");
+const detailError = ref("");
+const query = ref("");
+const appliedQuery = ref("");
+const filterDefinitionId = ref("");
+const filterOperator = ref<"EQ" | "LT" | "LTE" | "GT" | "GTE">("EQ");
+const filterValue = ref("");
+const sort = ref<"LAST_SEEN_DESC" | "LAST_SEEN_ASC">("LAST_SEEN_DESC");
+const selected = ref<CmsProfileSummaryResponseDto | null>(null);
+const detail = ref<ProfileProjectionResponseDto | null>(null);
+const drawerVisible = ref(false);
+const showDeveloperKeys = ref(false);
+const showArchivedFields = ref(false);
+let requestSequence = 0;
+let detailRequestSequence = 0;
 
-const segments = computed(() => [{ label: 'Все сегменты', value: 'ALL' }, ...Array.from(new Set(users.value.map((item) => item.segment).filter(Boolean))).map((value) => ({ label: value!, value: value! }))])
-const presenceOptions = computed(() => repository.capabilities.presence
-  ? [{ label: 'Любая активность', value: 'ALL' }, { label: 'Сейчас онлайн', value: 'ONLINE' }, { label: 'Stale', value: 'STALE' }, { label: 'Офлайн', value: 'OFFLINE' }]
-  : [{ label: 'Presence недоступен', value: 'ALL' }])
-const onlineIds = computed(() => new Set(sessions.value.filter((item) => item.status === 'ONLINE').map((item) => item.userId)))
-const presenceMap = computed(() => new Map(sessions.value.map((item) => [item.userId, item.status])))
-const selectedSession = computed(() => sessions.value.find((item) => item.userId === selected.value?.id && item.status === 'ONLINE') ?? null)
-const filteredUsers = computed(() => users.value.filter((user) => {
-  const query = search.value.toLowerCase()
-  const matchesQuery = !query || [user.externalId, user.profile.name, user.profile.email].some((value) => String(value ?? '').toLowerCase().includes(query))
-  const matchesSegment = segment.value === 'ALL' || user.segment === segment.value
-  const userPresence = presenceMap.value.get(user.id) ?? 'OFFLINE'
-  return matchesQuery && matchesSegment && (presence.value === 'ALL' || presence.value === userPresence)
-}))
-const conversationOptions = computed(() => conversations.value.map((item) => ({ label: `${item.title} · ${item.messageCount}`, value: item.id })))
-const activeConversation = computed(() => conversations.value.find((item) => item.id === activeConversationId.value))
-const conversationCountLabel = computed(() => `${conversations.value.length}${conversationNextCursor.value ? '+' : ''}`)
-const messageCountLabel = computed(() => activeConversation.value
-  ? `${messages.value.length} из ${activeConversation.value.messageCount}`
-  : '0 сообщений')
+const availableFields = computed(() => {
+  const byId = new Map<string, ProfileProjectionFieldResponseDto>();
+  items.value
+    .flatMap((item) => item.fields)
+    .forEach((field) => byId.set(field.definitionId, field));
+  return [...byId.values()].map((field) => ({
+    value: field.definitionId,
+    label: `${field.label} · ${field.key}`,
+  }));
+});
+const visibleDetailFields = computed(() =>
+  (detail.value?.fields ?? []).filter(
+    (field) => showArchivedFields.value || field.lifecycle !== "ARCHIVED",
+  ),
+);
+const operatorOptions = [
+  { value: "EQ", label: "Равно" },
+  { value: "LT", label: "Меньше" },
+  { value: "LTE", label: "Не больше" },
+  { value: "GT", label: "Больше" },
+  { value: "GTE", label: "Не меньше" },
+];
+const sortOptions = [
+  { value: "LAST_SEEN_DESC", label: "Сначала недавно активные" },
+  { value: "LAST_SEEN_ASC", label: "Сначала давно активные" },
+];
 
-async function load() {
-  if (!auth.project) return
-  loading.value = true; error.value = ''
-  try {
-    const [usersPage, nextSessions] = await Promise.all([
-      repository.getUsersPage(auth.project.id, { limit: 50 }),
-      repository.capabilities.presence ? repository.getSessions(auth.project.id) : Promise.resolve([]),
-    ])
-    users.value = usersPage.items
-    usersNextCursor.value = usersPage.nextCursor
-    sessions.value = nextSessions
-  }
-  catch (cause) { error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить пользователей' }
-  finally { loading.value = false }
+onMounted(() => void load());
+
+function mockField(
+  definitionId: string,
+  key: string,
+  label: string,
+  valueType: string,
+  value: string | number | boolean | undefined,
+): ProfileProjectionFieldResponseDto {
+  return {
+    definitionId,
+    definitionRevisionId: `${definitionId}-r1`,
+    key,
+    label,
+    valueType,
+    lifecycle: "ACTIVE",
+    classification: "INTERNAL",
+    access: "ALLOWED",
+    availability: value === undefined ? "MISSING" : "AVAILABLE",
+    ...(value === undefined ? {} : { value: { type: valueType, value } }),
+  };
 }
 
-async function loadMoreUsers() {
-  if (!auth.project || !usersNextCursor.value) return
-  loadingMoreUsers.value = true
-  error.value = ''
+async function load(append = false) {
+  const projectId = auth.project?.id;
+  if (!projectId || (append && !nextCursor.value)) return;
+  const request = ++requestSequence;
+  if (append) loadingMore.value = true;
+  else loading.value = true;
+  error.value = "";
   try {
-    const page = await repository.getUsersPage(auth.project.id, { limit: 50, cursor: usersNextCursor.value })
-    users.value.push(...page.items)
-    usersNextCursor.value = page.nextCursor
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить следующую страницу пользователей'
-  } finally {
-    loadingMoreUsers.value = false
-  }
-}
-function openUser(user: EndUser) {
-  selected.value = user
-  profileTab.value = 'activity'
-  drawerVisible.value = true
-  activity.value = []
-  activityError.value = ''
-  conversations.value = []
-  messages.value = []
-  activeConversationId.value = ''
-  conversationNextCursor.value = null
-  messageNextCursor.value = null
-  conversationError.value = ''
-  messageError.value = ''
-  conversationsLoading.value = false
-  messagesLoading.value = false
-  loadingMoreConversations.value = false
-  loadingMoreMessages.value = false
-  conversationRequestId += 1
-  messageRequestId += 1
-  void loadUserActivity()
-  if (repository.capabilities.conversations) void loadConversations()
-}
-
-async function loadUserActivity() {
-  if (!auth.project || !selected.value) return
-  const userId = selected.value.id
-  const externalUserId = selected.value.externalId
-  const requestId = ++activityRequestId
-  activityLoading.value = true
-  activityError.value = ''
-  try {
-    const page = await repository.getEventLogPage(auth.project.id, { externalUserId, limit: 25 })
-    if (requestId !== activityRequestId || selected.value?.id !== userId) return
-    activity.value = page.items
-  } catch (cause) {
-    if (requestId === activityRequestId) activityError.value = cause instanceof Error ? cause.message : 'Не удалось загрузить активность'
-  } finally {
-    if (requestId === activityRequestId) activityLoading.value = false
-  }
-}
-
-async function selectConversation(id: string) {
-  if (!auth.project || !selected.value) return
-  activeConversationId.value = id
-  messages.value = []
-  messageNextCursor.value = null
-  messageError.value = ''
-  loadingMoreMessages.value = false
-  const requestId = ++messageRequestId
-  messagesLoading.value = true
-  try {
-    const page = await repository.getMessages(auth.project.id, selected.value.id, id, { limit: 50 })
-    if (requestId !== messageRequestId || activeConversationId.value !== id) return
-    messages.value = [...page.items].reverse()
-    messageNextCursor.value = page.nextCursor
-  } catch (cause) {
-    if (requestId === messageRequestId) messageError.value = cause instanceof Error ? cause.message : 'Не удалось загрузить сообщения'
-  } finally {
-    if (requestId === messageRequestId) messagesLoading.value = false
-  }
-}
-
-async function loadConversations(append = false) {
-  if (!auth.project || !selected.value || (append && !conversationNextCursor.value)) return
-  const userId = selected.value.id
-  const requestId = ++conversationRequestId
-  conversationError.value = ''
-  if (append) loadingMoreConversations.value = true
-  else conversationsLoading.value = true
-  try {
-    const page = await repository.getConversations(auth.project.id, userId, {
-      limit: 30,
-      ...(append && conversationNextCursor.value ? { cursor: conversationNextCursor.value } : {}),
-    })
-    if (requestId !== conversationRequestId || selected.value?.id !== userId) return
-    conversations.value = append ? [...conversations.value, ...page.items] : page.items
-    conversationNextCursor.value = page.nextCursor
-    if (!append) {
-      conversationsLoading.value = false
-      const firstConversationId = page.items[0]?.id ?? ''
-      activeConversationId.value = firstConversationId
-      if (firstConversationId) await selectConversation(firstConversationId)
+    let response: {
+      items: CmsProfileSummaryResponseDto[];
+      nextCursor?: string | null;
+    };
+    if (repository.mode === "mock") {
+      const legacy = await repository.getUsersPage(projectId, { limit: 50 });
+      const normalizedQuery = appliedQuery.value.toLowerCase();
+      const profiles = legacy.items
+        .map((user) => ({
+          endUserId: user.id,
+          externalUserId: user.externalId,
+          locale: user.locale,
+          lastSeenAt: user.lastSeenAt,
+          observedAt: user.lastSeenAt,
+          profileVersion: "1",
+          syncStatus: "VALID" as const,
+          fields: [
+            mockField(
+              "attr-name",
+              "displayName",
+              "Отображаемое имя",
+              "STRING",
+              user.profile.name,
+            ),
+            mockField(
+              "attr-email",
+              "email",
+              "Email",
+              "STRING",
+              user.profile.email,
+            ),
+            mockField(
+              "attr-country",
+              "country",
+              "Страна",
+              "COUNTRY_CODE",
+              user.profile.country,
+            ),
+            mockField(
+              "attr-tier",
+              "loyaltyTier",
+              "Уровень лояльности",
+              "STRING",
+              user.segment,
+            ),
+          ],
+        }))
+        .filter(
+          (profile) =>
+            !normalizedQuery ||
+            profile.externalUserId.toLowerCase().includes(normalizedQuery),
+        );
+      response = { items: profiles, nextCursor: null };
+    } else {
+      response = await endUserProfileRepository.list(projectId, {
+        limit: 50,
+        ...(append && nextCursor.value ? { cursor: nextCursor.value } : {}),
+        ...(appliedQuery.value ? { externalUserId: appliedQuery.value } : {}),
+        ...(filterDefinitionId.value && filterValue.value
+          ? {
+              filterDefinitionId: filterDefinitionId.value,
+              filterOperator: filterOperator.value,
+              ...(filterValue.value ? { filterValue: filterValue.value } : {}),
+            }
+          : {}),
+        sort: sort.value,
+      });
     }
+    if (request !== requestSequence) return;
+    items.value = append ? [...items.value, ...response.items] : response.items;
+    nextCursor.value = response.nextCursor ?? null;
   } catch (cause) {
-    if (requestId === conversationRequestId) conversationError.value = cause instanceof Error ? cause.message : 'Не удалось загрузить диалоги'
+    if (request === requestSequence)
+      error.value =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось загрузить Current Profiles";
   } finally {
-    if (requestId === conversationRequestId) {
-      conversationsLoading.value = false
-      loadingMoreConversations.value = false
+    if (request === requestSequence) {
+      loading.value = false;
+      loadingMore.value = false;
     }
   }
 }
 
-async function loadMoreMessages() {
-  if (!auth.project || !selected.value || !activeConversationId.value || !messageNextCursor.value) return
-  const conversationId = activeConversationId.value
-  const requestId = ++messageRequestId
-  messageError.value = ''
-  loadingMoreMessages.value = true
+function search() {
+  appliedQuery.value = query.value.trim();
+  nextCursor.value = null;
+  void load();
+}
+
+async function openProfile(profile: CmsProfileSummaryResponseDto) {
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  const request = ++detailRequestSequence;
+  selected.value = profile;
+  detail.value = null;
+  detailError.value = "";
+  detailLoading.value = true;
+  drawerVisible.value = true;
   try {
-    const page = await repository.getMessages(auth.project.id, selected.value.id, conversationId, {
-      cursor: messageNextCursor.value,
-      limit: 50,
-    })
-    if (requestId !== messageRequestId || activeConversationId.value !== conversationId) return
-    messages.value = [...page.items].reverse().concat(messages.value)
-    messageNextCursor.value = page.nextCursor
+    const response: ProfileProjectionResponseDto =
+      repository.mode === "mock"
+        ? ({
+            endUserId: profile.endUserId,
+            externalUserId: profile.externalUserId,
+            profileVersion: profile.profileVersion,
+            syncStatus: profile.syncStatus,
+            fields: profile.fields,
+            observedAt: profile.observedAt,
+            receivedAt: profile.lastSeenAt,
+            ageSeconds: Math.max(
+              0,
+              Math.round(
+                (Date.now() -
+                  new Date(
+                    profile.observedAt ?? profile.lastSeenAt,
+                  ).valueOf()) /
+                  1000,
+              ),
+            ),
+            contractRevision: 1,
+            provenance: "PRODUCT_PROFILE",
+          } as ProfileProjectionResponseDto)
+        : await endUserProfileRepository.profile(projectId, profile.endUserId);
+    if (
+      request === detailRequestSequence &&
+      selected.value?.endUserId === profile.endUserId
+    )
+      detail.value = response;
   } catch (cause) {
-    if (requestId === messageRequestId) messageError.value = cause instanceof Error ? cause.message : 'Не удалось загрузить сообщения'
+    if (request === detailRequestSequence)
+      detailError.value =
+        cause instanceof Error ? cause.message : "Не удалось загрузить профиль";
   } finally {
-    if (requestId === messageRequestId) loadingMoreMessages.value = false
+    if (request === detailRequestSequence) detailLoading.value = false;
   }
 }
 
-function presenceLabel(userId: string) {
-  return presenceMap.value.get(userId) ?? 'OFFLINE'
+function displayField(field: ProfileProjectionFieldResponseDto): string {
+  return field.availability === "AVAILABLE" &&
+    field.access === "ALLOWED" &&
+    field.value
+    ? formatProfileValue(field.value)
+    : profileValueStateLabel(
+        field.access === "ALLOWED" ? field.availability : "DENIED",
+      );
 }
-onMounted(load)
+
+function syncSeverity(status: string) {
+  return status === "VALID"
+    ? "success"
+    : status === "VALID_WITH_WARNINGS"
+      ? "warn"
+      : "danger";
+}
 </script>
 
 <template>
-  <section class="page">
-    <header class="page-header"><div><div class="eyebrow">Аудитория</div><h1>Пользователи</h1><p class="subtitle">Профили, последние действия и история взаимодействий с Lola.</p></div><Button label="Экспорт CSV" icon="pi pi-download" severity="secondary" outlined disabled /></header>
-    <Message v-if="error" severity="error" class="mb">{{ error }}</Message>
-    <div class="filters card">
-      <span class="search"><i class="pi pi-search" /><InputText v-model="search" placeholder="Имя, email или external ID" /></span>
-      <Select v-model="segment" :options="segments" option-label="label" option-value="value" />
-      <Select v-model="presence" :options="presenceOptions" option-label="label" option-value="value" :disabled="!repository.capabilities.presence" />
-      <span class="count">{{ filteredUsers.length }}{{ usersNextCursor ? '+' : '' }} пользователей</span>
-    </div>
+  <section class="page profiles-page">
+    <header class="page-header">
+      <div>
+        <div class="eyebrow">End User Attribute Platform</div>
+        <h1>Current Profiles</h1>
+        <p class="subtitle">
+          Типизированная проекция последнего принятого snapshot. Поиск,
+          фильтрация и сортировка выполняются backend.
+        </p>
+      </div>
+      <Button
+        label="Настроить контракт"
+        icon="pi pi-sliders-h"
+        severity="secondary"
+        outlined
+        as="router-link"
+        to="/project/user-attributes"
+      />
+    </header>
+    <Message v-if="error" severity="error" :closable="false"
+      ><div class="error-row">
+        <span>{{ error }}</span
+        ><Button label="Повторить" size="small" text @click="load()" /></div
+    ></Message>
+
+    <form class="filters card" @submit.prevent="search">
+      <label class="search"
+        ><span>External user ID</span>
+        <div>
+          <i class="pi pi-search" /><InputText
+            v-model="query"
+            placeholder="user-123"
+          /><Button type="submit" label="Найти" /></div
+      ></label>
+      <label
+        ><span>Поле профиля</span
+        ><Select
+          v-model="filterDefinitionId"
+          :options="availableFields"
+          option-label="label"
+          option-value="value"
+          show-clear
+          placeholder="Без фильтра"
+      /></label>
+      <label
+        ><span>Оператор</span
+        ><Select
+          v-model="filterOperator"
+          :options="operatorOptions"
+          option-label="label"
+          option-value="value"
+          :disabled="!filterDefinitionId"
+      /></label>
+      <label
+        ><span>Значение</span
+        ><InputText v-model="filterValue" :disabled="!filterDefinitionId"
+      /></label>
+      <label
+        ><span>Сортировка</span
+        ><Select
+          v-model="sort"
+          :options="sortOptions"
+          option-label="label"
+          option-value="value"
+          @change="load()"
+      /></label>
+    </form>
+
     <div class="card table-card">
-      <div v-if="loading" class="loading-list"><Skeleton v-for="i in 6" :key="i" height="58px" /></div>
-      <DataTable v-else :value="filteredUsers" paginator :rows="10" row-hover data-key="id" @row-click="openUser($event.data)">
-        <template #empty><div class="empty"><i class="pi pi-users" />По выбранным фильтрам никого нет.</div></template>
-        <Column header="Пользователь">
-          <template #body="{ data }"><div class="user-cell"><div class="avatar">{{ String(data.profile.name ?? data.externalId).slice(0, 1).toUpperCase() }}<span v-if="onlineIds.has(data.id)" /></div><div><strong>{{ data.profile.name ?? data.externalId }}</strong><small>{{ data.profile.email ?? data.externalId }}</small></div></div></template>
-        </Column>
-        <Column field="segment" header="Сегмент" class="mobile-hide"><template #body="{ data }"><Tag :value="data.segment ?? '—'" severity="secondary" /></template></Column>
-        <Column field="locale" header="Язык" class="mobile-hide"><template #body="{ data }">{{ (data.locale ?? '—').toUpperCase() }}</template></Column>
-        <Column header="Статус"><template #body="{ data }"><span v-if="!repository.capabilities.presence" class="muted">Не опубликован</span><span v-else-if="presenceLabel(data.id) === 'ONLINE'" class="online"><i /> Онлайн</span><span v-else-if="presenceLabel(data.id) === 'STALE'" class="stale"><i /> Stale</span><span v-else class="muted">Офлайн</span></template></Column>
-        <Column header="Последняя активность" class="mobile-hide"><template #body="{ data }"><span :title="formatDate(data.lastSeenAt)">{{ relativeTime(data.lastSeenAt) }}</span></template></Column>
-        <Column><template #body><i class="pi pi-chevron-right muted" /></template></Column>
+      <div v-if="loading" class="loading-list">
+        <Skeleton v-for="item in 7" :key="item" height="58px" />
+      </div>
+      <DataTable
+        v-else
+        :value="items"
+        row-hover
+        data-key="endUserId"
+        @row-click="openProfile($event.data)"
+      >
+        <template #empty
+          ><div class="empty">
+            <i class="pi pi-users" /><strong>Профили не найдены</strong
+            ><span
+              >Backend успешно ответил, но по заданным условиям данных
+              нет.</span
+            >
+          </div></template
+        >
+        <Column header="Пользователь"
+          ><template #body="{ data }"
+            ><div class="user-cell">
+              <span class="avatar">{{
+                data.externalUserId.slice(0, 1).toUpperCase()
+              }}</span>
+              <div>
+                <strong>{{ data.externalUserId }}</strong
+                ><small>ID {{ data.endUserId }}</small>
+              </div>
+            </div></template
+          ></Column
+        >
+        <Column header="Current Profile"
+          ><template #body="{ data }"
+            ><div class="preview-fields">
+              <span
+                v-for="field in data.fields.slice(0, 2)"
+                :key="field.definitionId"
+                ><b>{{ field.label }}</b
+                >{{ displayField(field) }}</span
+              ><small v-if="data.fields.length > 2"
+                >+{{ data.fields.length - 2 }} полей</small
+              >
+            </div></template
+          ></Column
+        >
+        <Column header="Sync"
+          ><template #body="{ data }"
+            ><Tag
+              :value="data.syncStatus"
+              :severity="syncSeverity(data.syncStatus)" /></template
+        ></Column>
+        <Column header="Locale" class="mobile-hide"
+          ><template #body="{ data }">{{
+            data.locale ?? "—"
+          }}</template></Column
+        >
+        <Column header="Profile v" class="mobile-hide"
+          ><template #body="{ data }">{{
+            data.profileVersion
+          }}</template></Column
+        >
+        <Column header="Profile observed" class="mobile-hide"
+          ><template #body="{ data }"
+            ><span :title="formatDate(data.observedAt)">{{
+              data.observedAt ? relativeTime(data.observedAt) : "Нет snapshot"
+            }}</span></template
+          ></Column
+        >
+        <Column header="Last seen" class="mobile-hide"
+          ><template #body="{ data }">{{
+            relativeTime(data.lastSeenAt)
+          }}</template></Column
+        >
+        <Column
+          ><template #body="{ data }"
+            ><Button
+              icon="pi pi-chevron-right"
+              severity="secondary"
+              text
+              rounded
+              :aria-label="`Открыть Current Profile ${data.externalUserId}`"
+              @click.stop="openProfile(data)" /></template
+        ></Column>
       </DataTable>
-      <div v-if="!loading && usersNextCursor" class="load-more"><Button label="Загрузить ещё пользователей" icon="pi pi-chevron-down" severity="secondary" outlined :loading="loadingMoreUsers" @click="loadMoreUsers" /></div>
+      <div v-if="!loading && nextCursor" class="load-more">
+        <Button
+          label="Загрузить ещё"
+          icon="pi pi-chevron-down"
+          severity="secondary"
+          outlined
+          :loading="loadingMore"
+          @click="load(true)"
+        />
+      </div>
     </div>
   </section>
 
-  <Drawer v-model:visible="drawerVisible" position="right" :style="{ width: 'min(560px, 100vw)' }">
-    <template #header><div><div class="eyebrow">Карточка пользователя</div><h2>{{ selected?.profile.name ?? selected?.externalId }}</h2></div></template>
-    <div v-if="selected" class="stack profile">
-      <div class="profile-head surface-soft"><div class="avatar big">{{ String(selected.profile.name ?? selected.externalId).slice(0, 1).toUpperCase() }}<span v-if="selectedSession" /></div><div><strong>{{ selected.profile.email ?? selected.externalId }}</strong><small class="mono">{{ selected.externalId }}</small></div><Tag :value="selected.segment ?? 'без сегмента'" severity="secondary" /></div>
-      <Button v-if="repository.capabilities.adminMessaging" label="Написать от имени Lola" icon="pi pi-send" fluid @click="actionVisible = true" />
-      <Message v-if="selectedSession" severity="success" size="small">Пользователь онлайн · {{ sessions.filter((item) => item.userId === selected?.id).length }} активных сессий</Message>
-      <Message v-else severity="secondary" size="small">Пользователь offline. Backend повторно проверит presence при отправке текста.</Message>
-      <div class="grid grid-2 facts"><div><span>Язык</span><strong>{{ selected.locale?.toUpperCase() ?? '—' }}</strong></div><div><span>Страна</span><strong>{{ selected.profile.country ?? '—' }}</strong></div><div><span>Первый визит</span><strong>{{ formatDate(selected.createdAt) }}</strong></div><div><span>Последняя активность</span><strong>{{ relativeTime(selected.lastSeenAt) }}</strong></div></div>
-      <div class="profile-tabs surface-soft" role="tablist" aria-label="Данные пользователя"><button type="button" role="tab" :aria-selected="profileTab === 'activity'" :class="{ active: profileTab === 'activity' }" @click="profileTab = 'activity'"><i class="pi pi-history" /> Активность</button><button type="button" role="tab" :aria-selected="profileTab === 'messages'" :class="{ active: profileTab === 'messages' }" @click="profileTab = 'messages'"><i class="pi pi-comments" /> Диалоги <span>{{ conversationsLoading ? '…' : conversationCountLabel }}</span></button></div>
-      <div v-if="profileTab === 'activity'"><div class="row-between timeline-title"><h3>История</h3><RouterLink :to="{ name: 'event-logs', query: { user: selected.externalId } }">Открыть журнал</RouterLink><span>{{ activityLoading ? '…' : `${activity.length} записей` }}</span></div><div v-if="activityLoading" class="timeline-loading"><Skeleton v-for="item in 3" :key="item" height="62px" /></div><div v-else-if="activityError" class="history-error"><Message severity="error" size="small" :closable="false">{{ activityError }}</Message><Button label="Повторить" severity="secondary" size="small" @click="loadUserActivity" /></div><div v-else-if="!activity.length" class="empty surface-soft">История пока пуста</div><div v-else class="timeline"><div v-for="item in activity" :key="item.id" class="timeline-item"><div class="timeline-icon" :class="item.status.toLowerCase()"><i :class="item.status === 'FAILED' ? 'pi pi-exclamation-triangle' : 'pi pi-bolt'" /></div><div><div class="row-between"><strong>{{ item.eventName }}</strong><small>{{ relativeTime(item.receivedAt) }}</small></div><p>{{ item.message || item.eventCode }}</p><Tag :value="item.status" :severity="item.status === 'FAILED' ? 'danger' : item.status === 'PROCESSED' ? 'success' : 'warn'" /></div></div></div></div>
-      <div v-else class="conversation-panel">
-        <div class="row-between timeline-title"><h3>История сообщений</h3><span>{{ messageCountLabel }}</span></div>
-        <div v-if="conversationsLoading" class="empty surface-soft">Загружаем диалоги…</div>
-        <template v-else-if="conversations.length">
-          <Select :model-value="activeConversationId" :options="conversationOptions" option-label="label" option-value="value" fluid @update:model-value="selectConversation" />
-          <Button v-if="conversationNextCursor" label="Загрузить ещё диалоги" icon="pi pi-chevron-down" severity="secondary" text :loading="loadingMoreConversations" @click="loadConversations(true)" />
-          <Message v-if="conversationError" severity="error" size="small" :closable="false">{{ conversationError }}</Message>
-          <Message v-if="messageError" severity="error" size="small" :closable="false">{{ messageError }}</Message>
-          <div v-if="messagesLoading" class="empty surface-soft">Загружаем сообщения…</div>
-          <div v-else-if="messages.length || messageNextCursor" class="messages">
-            <Button v-if="messageNextCursor" label="Загрузить предыдущие сообщения" icon="pi pi-history" severity="secondary" text size="small" :loading="loadingMoreMessages" @click="loadMoreMessages" />
-            <article v-for="message in messages" :key="message.id" class="message" :class="message.author.toLowerCase()"><div class="message-meta"><strong>{{ { USER: 'Пользователь', ASSISTANT: 'Lola', ADMIN: 'Администратор', SCENARIO: 'Сценарий', SYSTEM: 'Система' }[message.author] }}</strong><time>{{ relativeTime(message.createdAt) }}</time></div><p>{{ message.text }}</p><small>{{ message.status.toLowerCase() }}</small></article>
-          </div>
-          <div v-else-if="messageError" class="history-error"><Button label="Повторить" severity="secondary" size="small" @click="selectConversation(activeConversationId)" /></div>
-          <div v-else class="empty surface-soft"><i class="pi pi-comments" />В диалоге пока нет сообщений.</div>
-        </template>
-        <div v-else-if="conversationError" class="history-error"><Message severity="error" size="small" :closable="false">{{ conversationError }}</Message><Button label="Повторить" severity="secondary" size="small" @click="loadConversations()" /></div>
-        <div v-else class="empty surface-soft"><i class="pi pi-comments" />Диалогов пока нет.</div>
+  <Drawer
+    v-model:visible="drawerVisible"
+    position="right"
+    :style="{ width: 'min(680px, 100vw)' }"
+  >
+    <template #header
+      ><div>
+        <div class="eyebrow">Current Profile</div>
+        <h2>{{ selected?.externalUserId }}</h2>
+      </div></template
+    >
+    <div v-if="detailLoading" class="loading-list">
+      <Skeleton v-for="item in 6" :key="item" height="72px" />
+    </div>
+    <Message v-else-if="detailError" severity="error" :closable="false">{{
+      detailError
+    }}</Message>
+    <div v-else-if="detail" class="profile-detail">
+      <section class="profile-meta surface-soft">
+        <div>
+          <span>Profile version</span
+          ><strong>{{ detail.profileVersion }}</strong>
+        </div>
+        <div>
+          <span>Contract revision</span
+          ><strong>{{ detail.contractRevision ?? "Legacy / нет" }}</strong>
+        </div>
+        <div>
+          <span>Observed at</span
+          ><strong>{{
+            detail.observedAt
+              ? formatDate(detail.observedAt)
+              : "Нет принятого snapshot"
+          }}</strong>
+        </div>
+        <div>
+          <span>Возраст</span
+          ><strong>{{
+            detail.ageSeconds === null || detail.ageSeconds === undefined
+              ? "—"
+              : `${detail.ageSeconds} сек.`
+          }}</strong>
+        </div>
+        <div>
+          <span>Received at</span
+          ><strong>{{
+            detail.receivedAt ? formatDate(detail.receivedAt) : "—"
+          }}</strong>
+        </div>
+        <div>
+          <span>Sync status</span
+          ><Tag
+            :value="detail.syncStatus"
+            :severity="syncSeverity(detail.syncStatus)"
+          />
+        </div>
+      </section>
+      <Message v-if="detail.lastRejectedSync" severity="warn" :closable="false"
+        ><strong>Последний sync отклонён.</strong> Current Profile ниже остаётся
+        последним валидным snapshot; отклонённые данные его не заменили.<span
+          v-if="detail.lastRejectedSync.at"
+        >
+          {{ formatDate(detail.lastRejectedSync.at) }}.</span
+        ><span v-if="detail.lastRejectedSync.issues?.length">
+          Причины:
+          {{
+            detail.lastRejectedSync.issues
+              .map((issue) => issue.code)
+              .join(", ")
+          }}.</span
+        ></Message
+      >
+      <div class="detail-nav">
+        <strong
+          >{{ visibleDetailFields.length }} полей опубликованного
+          контракта</strong
+        ><label class="detail-toggle"
+          ><input v-model="showArchivedFields" type="checkbox" />Архивные</label
+        ><label class="detail-toggle"
+          ><input v-model="showDeveloperKeys" type="checkbox" />Ключи</label
+        ><RouterLink
+          :to="{ name: 'event-logs', query: { user: detail.externalUserId } }"
+          >История событий отдельно <i class="pi pi-arrow-up-right"
+        /></RouterLink>
       </div>
+      <div class="profile-fields">
+        <article
+          v-for="field in visibleDetailFields"
+          :key="field.definitionId"
+          class="profile-field card"
+          :class="field.availability.toLowerCase()"
+        >
+          <div>
+            <span>{{ field.label }}</span
+            ><code>{{ field.valueType }}</code
+            ><code v-if="showDeveloperKeys">{{ field.key }}</code>
+          </div>
+          <strong>{{ displayField(field) }}</strong>
+          <div class="field-meta">
+            <Tag
+              :value="field.availability"
+              :severity="
+                field.availability === 'AVAILABLE'
+                  ? 'success'
+                  : field.availability === 'STALE'
+                    ? 'warn'
+                    : 'secondary'
+              "
+            /><Tag :value="field.lifecycle" severity="secondary" /><Tag
+              v-if="field.classification !== 'INTERNAL'"
+              :value="field.classification"
+              severity="warn"
+            /><span v-if="field.untrustedData">untrusted</span>
+          </div>
+          <p v-if="field.description">{{ field.description }}</p>
+        </article>
+      </div>
+      <details class="technical">
+        <summary>Техническая provenance</summary>
+        <pre>{{ JSON.stringify(detail.provenance, null, 2) }}</pre>
+      </details>
     </div>
   </Drawer>
-  <SendActionDialog v-model:visible="actionVisible" :project-id="auth.project?.id" :user-id="selected?.id" :recipient-name="String(selected?.profile.name ?? selected?.externalId ?? '')" :session="selectedSession" :sessions="sessions.filter((item) => item.userId === selected?.id)" @sent="load" />
 </template>
 
 <style scoped>
-.mb{margin-bottom:16px}.filters{display:grid;grid-template-columns:minmax(260px,1fr) 190px 190px auto;gap:12px;padding:14px;margin-bottom:18px;align-items:center}.search{position:relative}.search>i{position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:2;color:var(--text-secondary)}.search :deep(input){padding-left:40px}.count{font-size:.78rem;color:var(--muted);white-space:nowrap}.table-card{overflow:hidden}.loading-list{display:grid;gap:10px;padding:18px}.user-cell,.profile-head{display:flex;align-items:center;gap:11px}.avatar{width:38px;height:38px;display:grid;place-items:center;position:relative;border-radius:13px;background:var(--status-violet-soft);color:var(--status-violet-text);font-weight:700}.avatar span{position:absolute;right:-2px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:var(--status-success-text);border:2px solid var(--surface-card)}.avatar.big{width:54px;height:54px;font-size:1.15rem}.user-cell strong,.user-cell small,.profile-head strong,.profile-head small{display:block}.user-cell small,.profile-head small{font-size:.72rem;color:var(--muted);margin-top:3px}.online{color:var(--status-success-text);font-weight:600;font-size:.8rem}.online i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--status-success-text);margin-right:6px}.table-card :deep(tbody tr){cursor:pointer}.profile-head{padding:15px}.profile-head>div:nth-child(2){flex:1}.facts>div{padding:15px;background:var(--surface-subtle);border-radius:13px}.facts span,.facts strong{display:block}.facts span{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.facts strong{font-size:.82rem;margin-top:5px}.timeline-title{margin:8px 0 14px;gap:12px}.timeline-title a{margin-left:auto;color:var(--status-violet-text);font-size:.72rem;font-weight:700}.timeline-title span{color:var(--muted);font-size:.75rem}.timeline-loading{display:grid;gap:10px}.timeline{position:relative;display:flex;flex-direction:column;gap:18px}.timeline:before{content:'';position:absolute;left:17px;top:20px;bottom:20px;width:1px;background:var(--line)}.timeline-item{position:relative;display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px}.timeline-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:var(--status-warning-soft);color:var(--status-warning-text);z-index:1}.timeline-icon.failed{background:var(--status-danger-soft);color:var(--status-danger-text)}.timeline-item>div:last-child{min-width:0}.timeline-item strong{overflow:hidden;font-size:.82rem;text-overflow:ellipsis;white-space:nowrap}.timeline-item small{color:var(--muted);font-size:.68rem;white-space:nowrap}.timeline-item p{overflow-wrap:anywhere;color:var(--muted);font-size:.77rem;margin:4px 0 6px}.profile h3{font-size:1rem;margin:0}
-@media(max-width:900px){.filters{grid-template-columns:1fr 1fr}.search{grid-column:1/-1}.count{text-align:right}}@media(max-width:540px){.filters{grid-template-columns:1fr}.search{grid-column:auto}.count{text-align:left}.table-card{overflow:auto}.facts{grid-template-columns:1fr 1fr!important}:deep(.mobile-hide){display:none}}
-.stale{color:var(--status-warning-text);font-weight:600;font-size:.8rem}.stale i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--status-warning-text);margin-right:6px}.profile-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;gap:4px}.profile-tabs button{border:0;background:transparent;border-radius:10px;padding:9px;color:var(--muted);font-weight:600;cursor:pointer}.profile-tabs button.active{background:var(--surface-card);color:var(--ink);box-shadow:var(--shadow-raised)}.profile-tabs span{margin-left:4px;padding:1px 6px;border-radius:10px;background:var(--surface-subtle);font-size:.65rem}.conversation-panel{display:flex;flex-direction:column;gap:13px}.messages{display:flex;flex-direction:column;gap:9px;max-height:430px;overflow:auto;padding:3px}.history-error{display:grid;gap:9px}.message{max-width:88%;padding:11px 13px;border-radius:14px;background:var(--surface-subtle);border:1px solid var(--surface-subtle)}.message.user{align-self:flex-end;background:var(--surface-emphasis-raised);color:var(--text-on-emphasis);border-color:var(--surface-emphasis-raised)}.message.admin{background:var(--status-violet-soft);border-color:var(--status-violet-soft)}.message.scenario{background:var(--status-success-soft);border-color:var(--status-success)}.message-meta{display:flex;align-items:center;justify-content:space-between;gap:16px}.message-meta strong{font-size:.67rem;text-transform:uppercase;letter-spacing:.06em}.message-meta time{font-size:.62rem;opacity:.62}.message p{font-size:.78rem;margin:6px 0;line-height:1.45}.message>small{font-size:.6rem;opacity:.58;text-transform:uppercase}
+.profiles-page {
+  max-width: 1400px;
+}
+.detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+}
+.filters {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.8fr 1fr 1fr;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 18px;
+  align-items: end;
+}
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filters label > span {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.search > div {
+  display: flex;
+  position: relative;
+}
+.search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+.search :deep(input) {
+  min-width: 0;
+  padding-left: 34px;
+}
+.table-card {
+  overflow: hidden;
+}
+.loading-list {
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+}
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+  font-weight: 800;
+}
+.user-cell strong,
+.user-cell small {
+  display: block;
+}
+.user-cell small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.63rem;
+}
+.preview-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.preview-fields span {
+  font-size: 0.67rem;
+}
+.preview-fields b {
+  display: inline-block;
+  min-width: 110px;
+  margin-right: 6px;
+  color: var(--muted);
+}
+.preview-fields small {
+  color: var(--muted);
+}
+.table-card :deep(tbody tr) {
+  cursor: pointer;
+}
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 30px;
+  color: var(--muted);
+}
+.error-row,
+.detail-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.profile-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.profile-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  padding: 1px;
+  overflow: hidden;
+}
+.profile-meta > div {
+  padding: 13px;
+  background: var(--surface-card);
+}
+.profile-meta span,
+.profile-meta strong {
+  display: block;
+}
+.profile-meta span {
+  color: var(--muted);
+  font-size: 0.59rem;
+  text-transform: uppercase;
+}
+.profile-meta strong {
+  margin-top: 5px;
+  font-size: 0.73rem;
+}
+.detail-nav a {
+  color: var(--status-violet-text);
+  font-size: 0.68rem;
+}
+.profile-fields {
+  display: grid;
+  gap: 8px;
+}
+.profile-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 13px;
+}
+.profile-field > div:first-child span,
+.profile-field > div:first-child code {
+  display: block;
+}
+.profile-field > div:first-child span {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.profile-field code {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.59rem;
+}
+.profile-field > strong {
+  align-self: center;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.field-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.profile-field p {
+  grid-column: 1/3;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+.profile-field.missing,
+.profile-field.denied,
+.profile-field.invalid {
+  opacity: 0.75;
+}
+.technical {
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+}
+.technical summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+.technical pre {
+  overflow: auto;
+  font-size: 0.65rem;
+}
+@media (max-width: 1100px) {
+  .filters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .search {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 620px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+  .search {
+    grid-column: auto;
+  }
+  .mobile-hide {
+    display: none;
+  }
+  .profile-meta {
+    grid-template-columns: 1fr;
+  }
+  .preview-fields {
+    display: none;
+  }
+}
 </style>

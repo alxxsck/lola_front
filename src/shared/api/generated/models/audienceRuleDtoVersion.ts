@@ -12,4 +12,5 @@ export type AudienceRuleDtoVersion =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AudienceRuleDtoVersion = {
   NUMBER_1: 1,
+  NUMBER_2: 2,
 } as const;

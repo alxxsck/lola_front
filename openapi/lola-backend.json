@@ -1345,6 +1345,1013 @@
         ],
         "type": "object"
       },
+      "AttributeClassification": {
+        "enum": [
+          "INTERNAL",
+          "PERSONAL",
+          "SENSITIVE"
+        ],
+        "type": "string"
+      },
+      "AttributeConstraintsDto": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedValues": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "maximum": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxLength": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "minimum": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "minLength": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "precision": {
+            "maximum": 38,
+            "minimum": 1,
+            "type": "number"
+          },
+          "scale": {
+            "maximum": 38,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "AttributeConsumerPoliciesDto": {
+        "additionalProperties": false,
+        "properties": {
+          "adminRead": {
+            "type": "boolean"
+          },
+          "aiRead": {
+            "type": "boolean"
+          },
+          "audienceRead": {
+            "type": "boolean"
+          },
+          "clientRead": {
+            "type": "boolean"
+          },
+          "exportRead": {
+            "type": "boolean"
+          },
+          "indexPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttributeIndexPolicy"
+              }
+            ]
+          },
+          "templateRead": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "adminRead",
+          "clientRead",
+          "audienceRead",
+          "templateRead",
+          "aiRead",
+          "exportRead",
+          "indexPolicy"
+        ],
+        "type": "object"
+      },
+      "AttributeContractAcceptanceResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptedFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "acceptedUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "sourcePublishRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "acceptedFrom",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "AttributeContractAdmissionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptedRevisions": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractAdmissionRevisionResponseDto"
+            },
+            "type": "array"
+          },
+          "currentRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "outdatedRevisions": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractAdmissionRevisionResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "currentRevisionId",
+          "acceptedRevisions",
+          "outdatedRevisions"
+        ],
+        "type": "object"
+      },
+      "AttributeContractAdmissionRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptedFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "acceptedUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "revisionId",
+          "version",
+          "acceptedFrom"
+        ],
+        "type": "object"
+      },
+      "AttributeContractArtifactFieldResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedValues": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "constraints": {
+            "$ref": "#/components/schemas/AttributeConstraintsDto"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "type": "string"
+          },
+          "policies": {
+            "$ref": "#/components/schemas/AttributeConsumerPoliciesDto"
+          },
+          "purpose": {
+            "nullable": true,
+            "type": "string"
+          },
+          "replacementDefinitionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "requirement": {
+            "type": "string"
+          },
+          "semanticRole": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sunsetAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "valueType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "valueType",
+          "constraints",
+          "classification",
+          "policies",
+          "requirement",
+          "lifecycle"
+        ],
+        "type": "object"
+      },
+      "AttributeContractArtifactResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractArtifactFieldResponseDto"
+            },
+            "type": "array"
+          },
+          "schema": {
+            "$ref": "#/components/schemas/AttributeJsonSchemaResponseDto"
+          }
+        },
+        "required": [
+          "schema",
+          "fields"
+        ],
+        "type": "object"
+      },
+      "AttributeContractAuthorizationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "breakingChangePlan": {
+            "nullable": true,
+            "type": "string"
+          },
+          "compatibilityGraceDays": {
+            "type": "number"
+          },
+          "readinessEvidenceId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "securityConfirmations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "securityConfirmations",
+          "compatibilityGraceDays"
+        ],
+        "type": "object"
+      },
+      "AttributeContractCompatibilityReportResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "authorization": {
+            "$ref": "#/components/schemas/AttributeContractAuthorizationResponseDto"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "lifecycleImpacts": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeDefinitionImpactResponseDto"
+            },
+            "type": "array"
+          },
+          "requiredMode": {
+            "enum": [
+              "REQUIRED_WARN"
+            ],
+            "type": "string"
+          },
+          "schemaRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "LEGACY_V1"
+            ],
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid",
+          "issues",
+          "lifecycleImpacts",
+          "authorization"
+        ],
+        "type": "object"
+      },
+      "AttributeContractDocumentDto": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractDraftFieldDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "fields"
+        ],
+        "type": "object"
+      },
+      "AttributeContractDraftFieldDto": {
+        "additionalProperties": false,
+        "properties": {
+          "classification": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttributeClassification"
+              }
+            ],
+            "default": "INTERNAL"
+          },
+          "constraints": {
+            "$ref": "#/components/schemas/AttributeConstraintsDto"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-zA-Z0-9_]{0,63}$",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "lifecycle": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttributeDefinitionLifecycle"
+              }
+            ]
+          },
+          "policies": {
+            "$ref": "#/components/schemas/AttributeConsumerPoliciesDto"
+          },
+          "position": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "purpose": {
+            "maxLength": 500,
+            "nullable": true,
+            "type": "string"
+          },
+          "replacementDefinitionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "requirement": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttributeRequirementMode"
+              }
+            ]
+          },
+          "semanticRole": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttributeSemanticRole"
+              }
+            ],
+            "nullable": true
+          },
+          "sunsetAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "valueType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttributeValueType"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "valueType",
+          "constraints",
+          "policies",
+          "requirement",
+          "lifecycle",
+          "position"
+        ],
+        "type": "object"
+      },
+      "AttributeContractDraftResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "baseContractRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/AttributeContractDocumentDto"
+          },
+          "draftVersion": {
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedById": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "draftVersion",
+          "document"
+        ],
+        "type": "object"
+      },
+      "AttributeContractIssueResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "compatibility": {
+            "enum": [
+              "SAFE",
+              "CONDITIONAL",
+              "BREAKING",
+              "SECURITY",
+              "LIFECYCLE",
+              "FORBIDDEN"
+            ],
+            "type": "string"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "ERROR",
+              "WARNING"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message",
+          "compatibility"
+        ],
+        "type": "object"
+      },
+      "AttributeContractRevisionFieldResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedValues": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "constraints": {
+            "$ref": "#/components/schemas/AttributeConstraintsDto"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "definitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "definitionRevisionNumber": {
+            "type": "number"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "type": "string"
+          },
+          "policies": {
+            "$ref": "#/components/schemas/AttributeConsumerPoliciesDto"
+          },
+          "position": {
+            "type": "number"
+          },
+          "purpose": {
+            "nullable": true,
+            "type": "string"
+          },
+          "replacementDefinitionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "requirement": {
+            "type": "string"
+          },
+          "semanticRole": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sunsetAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "valueType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "valueType",
+          "constraints",
+          "classification",
+          "policies",
+          "requirement",
+          "lifecycle",
+          "definitionRevisionId",
+          "definitionRevisionNumber",
+          "position"
+        ],
+        "type": "object"
+      },
+      "AttributeContractRevisionPageResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractRevisionSummaryResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "AttributeContractRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptances": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractAcceptanceResponseDto"
+            },
+            "type": "array"
+          },
+          "canonicalHash": {
+            "type": "string"
+          },
+          "compatibilityReport": {
+            "$ref": "#/components/schemas/AttributeContractCompatibilityReportResponseDto"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractRevisionFieldResponseDto"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedById": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "publishReason": {
+            "type": "string"
+          },
+          "schema": {
+            "$ref": "#/components/schemas/AttributeJsonSchemaResponseDto"
+          },
+          "validationHash": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "canonicalHash",
+          "validationHash",
+          "schema",
+          "compatibilityReport",
+          "publishReason",
+          "publishedAt",
+          "fields",
+          "acceptances"
+        ],
+        "type": "object"
+      },
+      "AttributeContractRevisionSummaryResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "canonicalHash": {
+            "type": "string"
+          },
+          "compatibilityReport": {
+            "$ref": "#/components/schemas/AttributeContractCompatibilityReportResponseDto"
+          },
+          "fieldCount": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedById": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "publishReason": {
+            "type": "string"
+          },
+          "validationHash": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "canonicalHash",
+          "validationHash",
+          "compatibilityReport",
+          "publishReason",
+          "publishedAt",
+          "fieldCount"
+        ],
+        "type": "object"
+      },
+      "AttributeContractValidationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/AttributeContractArtifactResponseDto"
+          },
+          "draftVersion": {
+            "type": "number"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "validationHash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "valid",
+          "draftVersion",
+          "validationHash",
+          "issues",
+          "artifact"
+        ],
+        "type": "object"
+      },
+      "AttributeContractWorkspaceResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "currentRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttributeContractRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/AttributeContractDraftResponseDto"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/AttributeContractValidationResponseDto"
+          }
+        },
+        "required": [
+          "draft",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "AttributeDefinitionImpactDependencyResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AttributeDefinitionImpactIdentityResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AttributeDefinitionImpactResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "canArchive": {
+            "type": "boolean"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/AttributeDefinitionImpactIdentityResponseDto"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeDefinitionImpactDependencyResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "definition",
+          "canArchive",
+          "dependencies"
+        ],
+        "type": "object"
+      },
+      "AttributeDefinitionLifecycle": {
+        "enum": [
+          "ACTIVE",
+          "DEPRECATED",
+          "ARCHIVED"
+        ],
+        "type": "string"
+      },
+      "AttributeIndexPolicy": {
+        "enum": [
+          "NONE",
+          "EXACT",
+          "RANGE_SORT"
+        ],
+        "type": "string"
+      },
+      "AttributeJsonSchemaResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "properties": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object"
+          },
+          "required": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "object"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "$schema",
+          "type",
+          "properties",
+          "required",
+          "additionalProperties"
+        ],
+        "type": "object"
+      },
+      "AttributeRequirementMode": {
+        "enum": [
+          "OPTIONAL",
+          "REQUIRED_WARN",
+          "REQUIRED_ENFORCED"
+        ],
+        "type": "string"
+      },
+      "AttributeSemanticRole": {
+        "enum": [
+          "DISPLAY_NAME",
+          "EMAIL",
+          "COUNTRY",
+          "CURRENCY"
+        ],
+        "type": "string"
+      },
+      "AttributeValueType": {
+        "enum": [
+          "STRING",
+          "BOOLEAN",
+          "INTEGER",
+          "DECIMAL",
+          "DATETIME",
+          "DATE",
+          "COUNTRY_CODE",
+          "CURRENCY_CODE"
+        ],
+        "type": "string"
+      },
       "AudienceAllNodeDto": {
         "additionalProperties": false,
         "properties": {
@@ -1377,6 +2384,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/AudienceSegmentMembershipNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceProfileAttributeNodeDto"
                 }
               ]
             },
@@ -1429,6 +2439,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/AudienceSegmentMembershipNodeDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AudienceProfileAttributeNodeDto"
                 }
               ]
             },
@@ -1447,6 +2460,64 @@
           "kind",
           "children"
         ],
+        "type": "object"
+      },
+      "AudienceAttributeConstraintsV2ResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedValues": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "maximum": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxLength": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "minimum": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "minLength": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "precision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "scale": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
         "type": "object"
       },
       "AudienceAttributeResponseDto": {
@@ -1548,6 +2619,154 @@
         ],
         "type": "object"
       },
+      "AudienceAttributeV2ResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedValues": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "audienceRead": {
+            "type": "boolean"
+          },
+          "authoringAvailability": {
+            "enum": [
+              "AVAILABLE",
+              "EXISTING_DRAFT_ONLY"
+            ],
+            "type": "string"
+          },
+          "classification": {
+            "enum": [
+              "INTERNAL",
+              "PERSONAL",
+              "SENSITIVE"
+            ],
+            "type": "string"
+          },
+          "constraints": {
+            "$ref": "#/components/schemas/AudienceAttributeConstraintsV2ResponseDto"
+          },
+          "control": {
+            "enum": [
+              "TEXT",
+              "NUMBER",
+              "BOOLEAN",
+              "DATETIME",
+              "DATE",
+              "COUNTRY_CODE",
+              "CURRENCY_CODE",
+              "SELECT"
+            ],
+            "type": "string"
+          },
+          "defaultFreshnessHint": {
+            "$ref": "#/components/schemas/AudienceFreshnessSelectionV2ResponseDto"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "definitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "ACTIVE",
+              "DEPRECATED"
+            ],
+            "type": "string"
+          },
+          "operators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "replacement": {
+            "nullable": true,
+            "properties": {
+              "definitionId": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "key": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "semanticRole": {
+            "nullable": true,
+            "type": "string"
+          },
+          "unsupportedReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "valueType": {
+            "enum": [
+              "STRING",
+              "BOOLEAN",
+              "INTEGER",
+              "DECIMAL",
+              "DATETIME",
+              "DATE",
+              "COUNTRY_CODE",
+              "CURRENCY_CODE",
+              "LEGACY_NUMBER"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "definitionId",
+          "definitionRevisionId",
+          "revision",
+          "key",
+          "label",
+          "valueType",
+          "constraints",
+          "classification",
+          "lifecycle",
+          "audienceRead",
+          "defaultFreshnessHint",
+          "operators",
+          "control",
+          "authoringAvailability"
+        ],
+        "type": "object"
+      },
       "AudienceCatalogResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -1597,6 +2816,54 @@
           "country",
           "attributes",
           "segmentSource",
+          "snapshotPolicy"
+        ],
+        "type": "object"
+      },
+      "AudienceCatalogV2ResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "attributes": {
+            "items": {
+              "$ref": "#/components/schemas/AudienceAttributeV2ResponseDto"
+            },
+            "type": "array"
+          },
+          "freshnessPolicies": {
+            "items": {
+              "$ref": "#/components/schemas/AudienceFreshnessPolicyV2ResponseDto"
+            },
+            "type": "array"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "segmentSource": {
+            "$ref": "#/components/schemas/AudienceSegmentSourceResponseDto"
+          },
+          "snapshotPolicy": {
+            "$ref": "#/components/schemas/AudienceSnapshotPolicyV2ResponseDto"
+          },
+          "source": {
+            "enum": [
+              "END_USER_ATTRIBUTE"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "enum": [
+              2
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "revision",
+          "source",
+          "attributes",
+          "segmentSource",
+          "freshnessPolicies",
           "snapshotPolicy"
         ],
         "type": "object"
@@ -1749,6 +3016,83 @@
         ],
         "type": "object"
       },
+      "AudienceEvaluationResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "ageSeconds": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "contractRevision": {
+            "nullable": true,
+            "type": "number"
+          },
+          "cost": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudienceCostResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "dependencies": {
+            "$ref": "#/components/schemas/AudienceDependenciesResponseDto"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/AudienceExplanationNodeResponseDto"
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/AudienceFreshnessSelectionV2ResponseDto"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/AudienceIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "profileVersion": {
+            "type": "string"
+          },
+          "truth": {
+            "enum": [
+              "TRUE",
+              "FALSE",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid",
+          "issues",
+          "dependencies",
+          "warnings"
+        ],
+        "type": "object"
+      },
       "AudienceExplanationNodeResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -1765,6 +3109,10 @@
             "format": "uuid",
             "type": "string"
           },
+          "definitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "expected": {
             "$ref": "#/components/schemas/ExplainValueResponseDto"
           },
@@ -1778,6 +3126,7 @@
               "country",
               "userAttribute",
               "segmentMembership",
+              "profileAttribute",
               "unavailable"
             ],
             "type": "string"
@@ -1792,11 +3141,89 @@
           "segmentRevisionId": {
             "format": "uuid",
             "type": "string"
+          },
+          "truth": {
+            "enum": [
+              "TRUE",
+              "FALSE",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "unknownReason": {
+            "enum": [
+              "MISSING",
+              "STALE",
+              "INVALID",
+              "DENIED",
+              "SYNC_REJECTED",
+              "REVISION_INCOMPATIBLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
           }
         },
         "required": [
           "kind",
           "matched"
+        ],
+        "type": "object"
+      },
+      "AudienceFreshnessAgeLimitV2ResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "maximum": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "minimum": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "minimum",
+          "maximum"
+        ],
+        "type": "object"
+      },
+      "AudienceFreshnessPolicyV2ResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "maxAgeSeconds": {
+            "$ref": "#/components/schemas/AudienceFreshnessAgeLimitV2ResponseDto"
+          },
+          "mode": {
+            "enum": [
+              "USE_LAST_KNOWN",
+              "REQUIRE_FRESH"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "type": "object"
+      },
+      "AudienceFreshnessSelectionV2ResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "maxAgeSeconds": {
+            "maximum": 31536000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "mode": {
+            "enum": [
+              "USE_LAST_KNOWN",
+              "REQUIRE_FRESH"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
         ],
         "type": "object"
       },
@@ -1959,6 +3386,9 @@
               },
               {
                 "$ref": "#/components/schemas/AudienceSegmentMembershipNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceProfileAttributeNodeDto"
               }
             ]
           },
@@ -1975,9 +3405,111 @@
         ],
         "type": "object"
       },
+      "AudienceProfileAttributeNodeDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "profileAttribute"
+            ],
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "in",
+              "not_in",
+              "is_missing",
+              "is_stale"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "definitionId",
+          "operator"
+        ],
+        "type": "object"
+      },
+      "AudienceRequireFreshFreshnessDto": {
+        "additionalProperties": false,
+        "properties": {
+          "maxAgeSeconds": {
+            "maximum": 31536000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "mode": {
+            "enum": [
+              "REQUIRE_FRESH"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "maxAgeSeconds"
+        ],
+        "type": "object"
+      },
       "AudienceRuleDto": {
         "additionalProperties": false,
         "properties": {
+          "freshness": {
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AudienceUseLastKnownFreshnessDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceRequireFreshFreshnessDto"
+              }
+            ]
+          },
           "root": {
             "additionalProperties": false,
             "discriminator": {
@@ -2007,12 +3539,16 @@
               },
               {
                 "$ref": "#/components/schemas/AudienceSegmentMembershipNodeDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceProfileAttributeNodeDto"
               }
             ]
           },
           "version": {
             "enum": [
-              1
+              1,
+              2
             ],
             "type": "number"
           }
@@ -2047,6 +3583,15 @@
       "AudienceRuleReportResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "ageSeconds": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "contractRevision": {
+            "nullable": true,
+            "type": "number"
+          },
           "cost": {
             "allOf": [
               {
@@ -2059,8 +3604,15 @@
           "dependencies": {
             "$ref": "#/components/schemas/AudienceDependenciesResponseDto"
           },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "explanation": {
             "$ref": "#/components/schemas/AudienceExplanationNodeResponseDto"
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/AudienceFreshnessSelectionV2ResponseDto"
           },
           "issues": {
             "items": {
@@ -2070,6 +3622,22 @@
           },
           "matched": {
             "type": "boolean"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "profileVersion": {
+            "type": "string"
+          },
+          "truth": {
+            "enum": [
+              "TRUE",
+              "FALSE",
+              "UNKNOWN"
+            ],
+            "type": "string"
           },
           "valid": {
             "type": "boolean"
@@ -2221,6 +3789,63 @@
         ],
         "type": "object"
       },
+      "AudienceSnapshotPolicyV2ResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "initialEvaluation": {
+            "enum": [
+              "RUN_START"
+            ],
+            "type": "string"
+          },
+          "missing": {
+            "enum": [
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "persistence": {
+            "enum": [
+              "INITIAL_AND_SEPARATE_RECHECK"
+            ],
+            "type": "string"
+          },
+          "recheckTrigger": {
+            "enum": [
+              "DELIVERY_RECHECK_ELIGIBILITY"
+            ],
+            "type": "string"
+          },
+          "revision": {
+            "enum": [
+              "PINNED_DEFINITION_REVISION"
+            ],
+            "type": "string"
+          },
+          "stale": {
+            "enum": [
+              "UNKNOWN_WHEN_REQUIRED"
+            ],
+            "type": "string"
+          },
+          "truth": {
+            "enum": [
+              "THREE_VALUED_FAIL_CLOSED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "initialEvaluation",
+          "truth",
+          "missing",
+          "stale",
+          "revision",
+          "persistence",
+          "recheckTrigger"
+        ],
+        "type": "object"
+      },
       "AudienceTextSourceResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -2258,6 +3883,21 @@
           "operators",
           "control",
           "authoringAvailability"
+        ],
+        "type": "object"
+      },
+      "AudienceUseLastKnownFreshnessDto": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "enum": [
+              "USE_LAST_KNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
         ],
         "type": "object"
       },
@@ -2480,6 +4120,80 @@
         "required": [
           "login",
           "password"
+        ],
+        "type": "object"
+      },
+      "CmsProfileListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CmsProfileSummaryResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "CmsProfileSummaryResponseDto": {
+        "properties": {
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "externalUserId": {
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileProjectionFieldResponseDto"
+            },
+            "type": "array"
+          },
+          "lastRejectedSync": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "locale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "profileVersion": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "syncStatus": {
+            "enum": [
+              "VALID",
+              "VALID_WITH_WARNINGS",
+              "NO_VALID_SNAPSHOT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "endUserId",
+          "externalUserId",
+          "lastSeenAt",
+          "profileVersion",
+          "syncStatus",
+          "fields"
         ],
         "type": "object"
       },
@@ -2934,7 +4648,17 @@
         "additionalProperties": false,
         "properties": {
           "audience": {
-            "$ref": "#/components/schemas/AudienceCatalogResponseDto"
+            "discriminator": {
+              "propertyName": "version"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AudienceCatalogResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceCatalogV2ResponseDto"
+              }
+            ]
           },
           "events": {
             "items": {
@@ -3149,6 +4873,14 @@
           "profile": {
             "additionalProperties": true,
             "type": "object"
+          },
+          "profileSnapshot": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionAttributeSnapshotEnvelopeDto"
+              }
+            ],
+            "description": "Atomic End User Attribute Snapshot. Validation failure never blocks Session creation."
           },
           "ttlSeconds": {
             "maximum": 604800,
@@ -3669,6 +5401,29 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "EvaluateAudienceUserDto": {
+        "additionalProperties": false,
+        "properties": {
+          "catalogRevision": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/AudienceRuleDto"
+          }
+        },
+        "required": [
+          "rule",
+          "endUserId",
+          "catalogRevision"
+        ],
         "type": "object"
       },
       "EventAggregateRuleExplanationResponseDto": {
@@ -4469,6 +6224,12 @@
             "maxLength": 5000,
             "type": "string"
           },
+          "minimumProfileVersion": {
+            "description": "Reject before EventLog write unless the End User has at least this profileVersion.",
+            "maxLength": 19,
+            "pattern": "^(?:0|[1-9]\\d*)$",
+            "type": "string"
+          },
           "occurredAt": {
             "format": "date-time",
             "type": "string"
@@ -4496,6 +6257,68 @@
         "required": [
           "eventCode",
           "payload"
+        ],
+        "type": "object"
+      },
+      "IntegrationAttributeContractResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "admission": {
+            "$ref": "#/components/schemas/AttributeContractAdmissionResponseDto"
+          },
+          "canonicalHash": {
+            "type": "string"
+          },
+          "etag": {
+            "type": "string"
+          },
+          "examples": {
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractArtifactFieldResponseDto"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "schema": {
+            "$ref": "#/components/schemas/AttributeJsonSchemaResponseDto"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "etag",
+          "canonicalHash",
+          "publishedAt",
+          "schema",
+          "fields",
+          "examples",
+          "admission"
         ],
         "type": "object"
       },
@@ -4555,6 +6378,9 @@
           "expiresAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "profileSync": {
+            "$ref": "#/components/schemas/ProfileSyncResponseDto"
           },
           "project": {
             "$ref": "#/components/schemas/InteractionSessionProjectResponseDto"
@@ -5260,6 +7086,35 @@
         ],
         "type": "object"
       },
+      "OldContractIntegrationResponseDto": {
+        "properties": {
+          "acceptedUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "activeContractRevision": {
+            "type": "number"
+          },
+          "contractRevision": {
+            "type": "number"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "credentialId",
+          "contractRevision",
+          "activeContractRevision"
+        ],
+        "type": "object"
+      },
       "OrganizationResponseDto": {
         "properties": {
           "createdAt": {
@@ -5479,6 +7334,414 @@
         "required": [
           "kind",
           "eventLogId"
+        ],
+        "type": "object"
+      },
+      "ProfileAgeDistributionResponseDto": {
+        "properties": {
+          "from24HoursTo7Days": {
+            "type": "number"
+          },
+          "from7To30Days": {
+            "type": "number"
+          },
+          "over30Days": {
+            "type": "number"
+          },
+          "upTo24Hours": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "upTo24Hours",
+          "from24HoursTo7Days",
+          "from7To30Days",
+          "over30Days"
+        ],
+        "type": "object"
+      },
+      "ProfileFieldCoverageResponseDto": {
+        "properties": {
+          "coverage": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "usersWithSnapshot": {
+            "type": "number"
+          },
+          "usersWithValue": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "definitionId",
+          "key",
+          "usersWithValue",
+          "usersWithSnapshot",
+          "coverage"
+        ],
+        "type": "object"
+      },
+      "ProfileFieldValueResponseDto": {
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ProfileHealthResponseDto": {
+        "properties": {
+          "coverage": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "fieldCoverage": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileFieldCoverageResponseDto"
+            },
+            "type": "array"
+          },
+          "idempotencyConflicts": {
+            "type": "number"
+          },
+          "invalidReasons": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object"
+          },
+          "lastSuccessfulSnapshotAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "oldContractIntegrations": {
+            "items": {
+              "$ref": "#/components/schemas/OldContractIntegrationResponseDto"
+            },
+            "type": "array"
+          },
+          "outcomes": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object"
+          },
+          "profileAgeDistribution": {
+            "$ref": "#/components/schemas/ProfileAgeDistributionResponseDto"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/ProfileReadinessResponseDto"
+          },
+          "requestCount": {
+            "type": "number"
+          },
+          "sessionRequestsWithoutSnapshot": {
+            "type": "number"
+          },
+          "sessionRequestsWithSnapshot": {
+            "type": "number"
+          },
+          "since": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "totalUsers": {
+            "type": "number"
+          },
+          "usersWithSnapshot": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "since",
+          "requestCount",
+          "outcomes",
+          "usersWithSnapshot",
+          "totalUsers",
+          "coverage",
+          "sessionRequestsWithSnapshot",
+          "sessionRequestsWithoutSnapshot",
+          "invalidReasons",
+          "idempotencyConflicts",
+          "fieldCoverage",
+          "profileAgeDistribution",
+          "oldContractIntegrations",
+          "readiness"
+        ],
+        "type": "object"
+      },
+      "ProfileProjectionFieldResponseDto": {
+        "properties": {
+          "access": {
+            "enum": [
+              "ALLOWED",
+              "REDACTED",
+              "FORBIDDEN"
+            ],
+            "type": "string"
+          },
+          "availability": {
+            "enum": [
+              "AVAILABLE",
+              "MISSING",
+              "STALE",
+              "DENIED",
+              "INVALID"
+            ],
+            "type": "string"
+          },
+          "classification": {
+            "enum": [
+              "INTERNAL",
+              "PERSONAL",
+              "SENSITIVE"
+            ],
+            "type": "string"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "definitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "ACTIVE",
+              "DEPRECATED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "semanticRole": {
+            "nullable": true,
+            "type": "string"
+          },
+          "untrustedData": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "value": {
+            "$ref": "#/components/schemas/ProfileFieldValueResponseDto"
+          },
+          "valueType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "definitionId",
+          "definitionRevisionId",
+          "key",
+          "label",
+          "valueType",
+          "lifecycle",
+          "classification",
+          "access",
+          "availability"
+        ],
+        "type": "object"
+      },
+      "ProfileProjectionResponseDto": {
+        "properties": {
+          "ageSeconds": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "contractRevision": {
+            "nullable": true,
+            "type": "number"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "externalUserId": {
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileProjectionFieldResponseDto"
+            },
+            "type": "array"
+          },
+          "lastRejectedSync": {
+            "properties": {
+              "at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "issues": {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileSyncIssueResponseDto"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "profileVersion": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "provenance": {
+            "enum": [
+              "PRODUCT_PROFILE"
+            ],
+            "type": "string"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "syncStatus": {
+            "enum": [
+              "VALID",
+              "VALID_WITH_WARNINGS",
+              "NO_VALID_SNAPSHOT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "endUserId",
+          "externalUserId",
+          "profileVersion",
+          "provenance",
+          "syncStatus",
+          "fields"
+        ],
+        "type": "object"
+      },
+      "ProfileReadinessResponseDto": {
+        "properties": {
+          "coverage": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "oldContractIntegrationCount": {
+            "type": "number"
+          },
+          "pendingCleanupRequests": {
+            "type": "number"
+          },
+          "ready": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "coverage",
+          "oldContractIntegrationCount",
+          "pendingCleanupRequests",
+          "ready"
+        ],
+        "type": "object"
+      },
+      "ProfileSyncIssueResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "ProfileSyncResponseDto": {
+        "properties": {
+          "activeContractRevision": {
+            "nullable": true,
+            "type": "number"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileSyncIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "profileVersion": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "APPLIED",
+              "NOOP",
+              "DUPLICATE",
+              "REJECTED_INVALID",
+              "CONTRACT_OUTDATED",
+              "STALE_IGNORED",
+              "IDEMPOTENCY_CONFLICT",
+              "SOURCE_SEQUENCE_CONFLICT",
+              "OBSERVATION_CONFLICT",
+              "RATE_LIMITED"
+            ],
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileSyncIssueResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "profileVersion",
+          "warnings"
         ],
         "type": "object"
       },
@@ -5769,6 +8032,80 @@
         ],
         "type": "object"
       },
+      "PublishAttributeContractDto": {
+        "additionalProperties": false,
+        "properties": {
+          "breakingChangePlan": {
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
+          "compatibilityGraceDays": {
+            "default": 7,
+            "maximum": 30,
+            "minimum": 0,
+            "type": "number"
+          },
+          "expectedCurrentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedDraftVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "readinessEvidenceId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "securityConfirmations": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "validationHash": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedDraftVersion",
+          "expectedCurrentRevisionId",
+          "validationHash",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "PublishAttributeContractResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "compatibility": {
+            "items": {
+              "$ref": "#/components/schemas/AttributeContractIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/AttributeContractRevisionResponseDto"
+          }
+        },
+        "required": [
+          "revision",
+          "compatibility"
+        ],
+        "type": "object"
+      },
       "PublishConflictMetadataResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -5808,6 +8145,20 @@
             "type": "array"
           },
           "eventDefinitionRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "profileTemplateDefinitionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "profileTemplateDefinitionRevisionIds": {
             "items": {
               "format": "uuid",
               "type": "string"
@@ -5965,6 +8316,21 @@
             "description": "Durable draft version to publish atomically. When present, Rule, Audience, Delivery and graph are read from that draft.",
             "minimum": 1,
             "type": "number"
+          },
+          "profileFreshness": {
+            "additionalProperties": false,
+            "description": "Required when Audience or action templates read End User Attributes.",
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AudienceUseLastKnownFreshnessDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceRequireFreshFreshnessDto"
+              }
+            ]
           },
           "rule": {
             "allOf": [
@@ -6208,6 +8574,23 @@
         ],
         "type": "object"
       },
+      "SaveAttributeContractDraftDto": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/AttributeContractDocumentDto"
+          },
+          "expectedDraftVersion": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedDraftVersion",
+          "document"
+        ],
+        "type": "object"
+      },
       "SaveScenarioDraftDto": {
         "additionalProperties": false,
         "properties": {
@@ -6250,6 +8633,20 @@
           },
           "graph": {
             "$ref": "#/components/schemas/ScenarioSourceGraphDto"
+          },
+          "profileFreshness": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AudienceUseLastKnownFreshnessDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceRequireFreshFreshnessDto"
+              }
+            ]
           },
           "rule": {
             "$ref": "#/components/schemas/ScenarioRuleDto"
@@ -6612,6 +9009,15 @@
             "format": "uuid",
             "type": "string"
           },
+          "profileFreshness": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudienceFreshnessSelectionV2ResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "rule": {
             "nullable": true,
             "type": "object"
@@ -6670,6 +9076,15 @@
             ]
           },
           "graph": {
+            "nullable": true,
+            "type": "object"
+          },
+          "profileFreshness": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudienceFreshnessSelectionV2ResponseDto"
+              }
+            ],
             "nullable": true,
             "type": "object"
           },
@@ -7625,6 +10040,15 @@
       "ScenarioRunAudienceRecheckResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "ageSeconds": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "contractRevision": {
+            "nullable": true,
+            "type": "number"
+          },
           "decision": {
             "enum": [
               "MATCHED",
@@ -7637,12 +10061,53 @@
             "nullable": true,
             "type": "string"
           },
+          "fidelity": {
+            "enum": [
+              "V2",
+              "LEGACY_V1"
+            ],
+            "type": "string"
+          },
+          "freshness": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudienceFreshnessSelectionV2ResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "profileVersion": {
+            "nullable": true,
+            "type": "string"
+          },
           "root": {
             "$ref": "#/components/schemas/AudienceExplanationNodeResponseDto"
+          },
+          "source": {
+            "enum": [
+              "PRODUCT_PROFILE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "truth": {
+            "enum": [
+              "TRUE",
+              "FALSE",
+              "UNKNOWN"
+            ],
+            "type": "string"
           }
         },
         "required": [
           "decision",
+          "fidelity",
           "root"
         ],
         "type": "object"
@@ -7650,12 +10115,21 @@
       "ScenarioRunAudienceResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "ageSeconds": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
           "attributeRevisionIds": {
             "items": {
               "format": "uuid",
               "type": "string"
             },
             "type": "array"
+          },
+          "contractRevision": {
+            "nullable": true,
+            "type": "number"
           },
           "decision": {
             "enum": [
@@ -7671,10 +10145,20 @@
           },
           "fidelity": {
             "enum": [
-              "SNAPSHOT",
+              "V2",
+              "LEGACY_V1",
               "UNAVAILABLE"
             ],
             "type": "string"
+          },
+          "freshness": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudienceFreshnessSelectionV2ResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "lastRecheck": {
             "allOf": [
@@ -7685,6 +10169,15 @@
             "nullable": true,
             "type": "object"
           },
+          "observedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "profileVersion": {
+            "nullable": true,
+            "type": "string"
+          },
           "root": {
             "$ref": "#/components/schemas/AudienceExplanationNodeResponseDto"
           },
@@ -7694,6 +10187,21 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "source": {
+            "enum": [
+              "PRODUCT_PROFILE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "truth": {
+            "enum": [
+              "TRUE",
+              "FALSE",
+              "UNKNOWN"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -8648,6 +11156,40 @@
         ],
         "type": "string"
       },
+      "SessionAttributeSnapshotEnvelopeDto": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "maxProperties": 50,
+            "type": "object"
+          },
+          "contractRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sourceSequence": {
+            "maxLength": 19,
+            "pattern": "^(?:0|[1-9]\\d*)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractRevision",
+          "observedAt",
+          "attributes",
+          "idempotencyKey"
+        ],
+        "type": "object"
+      },
       "SinceTriggerRuleWindowDto": {
         "additionalProperties": false,
         "properties": {
@@ -8901,6 +11443,40 @@
         },
         "required": [
           "success"
+        ],
+        "type": "object"
+      },
+      "SyncAttributeSnapshotDto": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "maxProperties": 50,
+            "type": "object"
+          },
+          "contractRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "externalUserId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sourceSequence": {
+            "maxLength": 19,
+            "pattern": "^(?:0|[1-9]\\d*)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractRevision",
+          "observedAt",
+          "attributes",
+          "externalUserId"
         ],
         "type": "object"
       },
@@ -9525,6 +12101,19 @@
         ],
         "type": "string"
       },
+      "ValidateAttributeContractDto": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedDraftVersion": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedDraftVersion"
+        ],
+        "type": "object"
+      },
       "ValidateScenarioDraftDto": {
         "additionalProperties": false,
         "properties": {
@@ -9557,6 +12146,20 @@
           },
           "graph": {
             "$ref": "#/components/schemas/ScenarioSourceGraphDto"
+          },
+          "profileFreshness": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AudienceUseLastKnownFreshnessDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceRequireFreshFreshnessDto"
+              }
+            ]
           },
           "rule": {
             "$ref": "#/components/schemas/ScenarioRuleDto"
@@ -9738,6 +12341,11 @@
         "in": "header",
         "name": "x-project-key",
         "type": "apiKey"
+      },
+      "server-key": {
+        "bearerFormat": "lola_srv_*",
+        "scheme": "bearer",
+        "type": "http"
       }
     }
   },
@@ -10212,6 +12820,652 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/draft": {
+      "put": {
+        "operationId": "AttributeContract_saveDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAttributeContractDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeContractDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/health": {
+      "get": {
+        "operationId": "ProfileHealth_health",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "window",
+            "required": false,
+            "schema": {
+              "default": "24h",
+              "enum": [
+                "24h",
+                "7d",
+                "30d"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "credentialId",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SESSION",
+                "PROFILE_SYNC"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "contractRevision",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "enum": [
+                "APPLIED",
+                "NOOP",
+                "REJECTED_INVALID",
+                "STALE_IGNORED",
+                "DUPLICATE"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileHealthResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract health"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/publish": {
+      "post": {
+        "operationId": "AttributeContract_publish",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishAttributeContractDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishAttributeContractResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/revisions": {
+      "get": {
+        "operationId": "AttributeContract_revisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeContractRevisionPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/revisions/{revisionId}": {
+      "get": {
+        "operationId": "AttributeContract_revision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeContractRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/validate": {
+      "post": {
+        "operationId": "AttributeContract_validate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateAttributeContractDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeContractValidationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/workspace": {
+      "get": {
+        "operationId": "AttributeContract_workspace",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeContractWorkspaceResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-definitions/{definitionId}/impact": {
+      "get": {
+        "operationId": "AttributeDefinition_impact",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeDefinitionImpactResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/audit-logs": {
       "get": {
         "operationId": "Audit_list",
@@ -10248,6 +13502,196 @@
         ],
         "tags": [
           "admin audit"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users": {
+      "get": {
+        "operationId": "AdminEndUserProfiles_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "externalUserId",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comma-separated allowlist of up to 10 Attribute definition IDs.",
+            "in": "query",
+            "name": "selectedDefinitionIds",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "filterDefinitionId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "filterValue",
+            "required": false,
+            "schema": {
+              "maxLength": 1000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "filterOperator",
+            "required": false,
+            "schema": {
+              "default": "EQ",
+              "enum": [
+                "EQ",
+                "LT",
+                "LTE",
+                "GT",
+                "GTE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "LAST_SEEN_DESC",
+              "enum": [
+                "LAST_SEEN_DESC",
+                "LAST_SEEN_ASC"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "RANGE_SORT Attribute definition ID. Overrides last-seen sorting.",
+            "in": "query",
+            "name": "sortDefinitionId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortDirection",
+            "required": false,
+            "schema": {
+              "default": "DESC",
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsProfileListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin end user profiles"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/profile": {
+      "get": {
+        "operationId": "AdminEndUserProfiles_profile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileProjectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin end user profiles"
         ]
       }
     },
@@ -11186,6 +14630,91 @@
         ],
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/audience/evaluate-user": {
+      "post": {
+        "operationId": "ScenarioAudienceEvaluation_evaluateUser",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateAudienceUserDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudienceEvaluationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario audience"
         ]
       }
     },
@@ -14725,6 +18254,72 @@
         ]
       }
     },
+    "/api/v1/end-user-profile-snapshots": {
+      "put": {
+        "operationId": "ProfileSnapshot_sync",
+        "parameters": [
+          {
+            "description": "Snapshot retry key, up to 200 characters.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncAttributeSnapshotDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSyncResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "server-key": []
+          }
+        ],
+        "tags": [
+          "end user profile integration"
+        ]
+      }
+    },
     "/api/v1/events": {
       "post": {
         "operationId": "Events_ingest",
@@ -15041,6 +18636,44 @@
         },
         "tags": [
           "CompatibilityMessenger"
+        ]
+      }
+    },
+    "/api/v1/profile-contract": {
+      "get": {
+        "operationId": "ProfileContract_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationAttributeContractResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "304": {
+            "description": "The published Attribute Contract is unchanged."
+          }
+        },
+        "security": [
+          {
+            "server-key": []
+          }
+        ],
+        "tags": [
+          "integration attribute contract"
         ]
       }
     },

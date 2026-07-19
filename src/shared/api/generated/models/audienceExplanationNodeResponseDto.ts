@@ -7,14 +7,19 @@
  */
 import type { ExplainValueResponseDto } from "./explainValueResponseDto";
 import type { AudienceExplanationNodeResponseDtoKind } from "./audienceExplanationNodeResponseDtoKind";
+import type { AudienceExplanationNodeResponseDtoTruth } from "./audienceExplanationNodeResponseDtoTruth";
+import type { AudienceExplanationNodeResponseDtoUnknownReason } from "./audienceExplanationNodeResponseDtoUnknownReason";
 
 export interface AudienceExplanationNodeResponseDto {
   actual?: ExplainValueResponseDto;
   children?: AudienceExplanationNodeResponseDto[];
   definitionId?: string;
+  definitionRevisionId?: string;
   expected?: ExplainValueResponseDto;
   kind: AudienceExplanationNodeResponseDtoKind;
   matched: boolean;
   segmentId?: string;
   segmentRevisionId?: string;
+  truth?: AudienceExplanationNodeResponseDtoTruth;
+  unknownReason?: AudienceExplanationNodeResponseDtoUnknownReason;
 }

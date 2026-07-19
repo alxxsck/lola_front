@@ -8,6 +8,7 @@
 import type { CreateInteractionSessionDtoAttributes } from "./createInteractionSessionDtoAttributes";
 import type { CreateInteractionSessionDtoContext } from "./createInteractionSessionDtoContext";
 import type { CreateInteractionSessionDtoProfile } from "./createInteractionSessionDtoProfile";
+import type { SessionAttributeSnapshotEnvelopeDto } from "./sessionAttributeSnapshotEnvelopeDto";
 
 export interface CreateInteractionSessionDto {
   /** Complete user attribute snapshot validated against the current project schema. Omit to preserve stored attributes. */
@@ -20,6 +21,8 @@ export interface CreateInteractionSessionDto {
   externalUserId: string;
   locale?: string;
   profile?: CreateInteractionSessionDtoProfile;
+  /** Atomic End User Attribute Snapshot. Validation failure never blocks Session creation. */
+  profileSnapshot?: SessionAttributeSnapshotEnvelopeDto;
   /**
    * @minimum 300
    * @maximum 604800

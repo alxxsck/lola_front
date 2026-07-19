@@ -7,17 +7,36 @@
  */
 import type { ScenarioRunAudienceResponseDtoDecision } from "./scenarioRunAudienceResponseDtoDecision";
 import type { ScenarioRunAudienceResponseDtoFidelity } from "./scenarioRunAudienceResponseDtoFidelity";
+import type { ScenarioRunAudienceResponseDtoFreshness } from "./scenarioRunAudienceResponseDtoFreshness";
 import type { ScenarioRunAudienceResponseDtoLastRecheck } from "./scenarioRunAudienceResponseDtoLastRecheck";
 import type { AudienceExplanationNodeResponseDto } from "./audienceExplanationNodeResponseDto";
+import type { ScenarioRunAudienceResponseDtoSource } from "./scenarioRunAudienceResponseDtoSource";
+import type { ScenarioRunAudienceResponseDtoTruth } from "./scenarioRunAudienceResponseDtoTruth";
 
 export interface ScenarioRunAudienceResponseDto {
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  ageSeconds?: number | null;
   attributeRevisionIds: string[];
+  /** @nullable */
+  contractRevision?: number | null;
   decision: ScenarioRunAudienceResponseDtoDecision;
   /** @nullable */
   evaluatedAt?: string | null;
   fidelity: ScenarioRunAudienceResponseDtoFidelity;
   /** @nullable */
+  freshness?: ScenarioRunAudienceResponseDtoFreshness;
+  /** @nullable */
   lastRecheck?: ScenarioRunAudienceResponseDtoLastRecheck;
+  /** @nullable */
+  observedAt?: string | null;
+  /** @nullable */
+  profileVersion?: string | null;
   root: AudienceExplanationNodeResponseDto;
   segmentRevisionIds: string[];
+  /** @nullable */
+  source?: ScenarioRunAudienceResponseDtoSource;
+  truth?: ScenarioRunAudienceResponseDtoTruth;
 }

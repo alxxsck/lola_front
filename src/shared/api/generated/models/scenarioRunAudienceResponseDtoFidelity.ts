@@ -11,6 +11,7 @@ export type ScenarioRunAudienceResponseDtoFidelity =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ScenarioRunAudienceResponseDtoFidelity = {
-  SNAPSHOT: "SNAPSHOT",
+  V2: "V2",
+  LEGACY_V1: "LEGACY_V1",
   UNAVAILABLE: "UNAVAILABLE",
 } as const;

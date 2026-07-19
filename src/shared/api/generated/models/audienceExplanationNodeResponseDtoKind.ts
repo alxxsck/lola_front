@@ -19,5 +19,6 @@ export const AudienceExplanationNodeResponseDtoKind = {
   country: "country",
   userAttribute: "userAttribute",
   segmentMembership: "segmentMembership",
+  profileAttribute: "profileAttribute",
   unavailable: "unavailable",
 } as const;

@@ -6,11 +6,32 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ScenarioRunAudienceRecheckResponseDtoDecision } from "./scenarioRunAudienceRecheckResponseDtoDecision";
+import type { ScenarioRunAudienceRecheckResponseDtoFidelity } from "./scenarioRunAudienceRecheckResponseDtoFidelity";
+import type { ScenarioRunAudienceRecheckResponseDtoFreshness } from "./scenarioRunAudienceRecheckResponseDtoFreshness";
 import type { AudienceExplanationNodeResponseDto } from "./audienceExplanationNodeResponseDto";
+import type { ScenarioRunAudienceRecheckResponseDtoSource } from "./scenarioRunAudienceRecheckResponseDtoSource";
+import type { ScenarioRunAudienceRecheckResponseDtoTruth } from "./scenarioRunAudienceRecheckResponseDtoTruth";
 
 export interface ScenarioRunAudienceRecheckResponseDto {
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  ageSeconds?: number | null;
+  /** @nullable */
+  contractRevision?: number | null;
   decision: ScenarioRunAudienceRecheckResponseDtoDecision;
   /** @nullable */
   evaluatedAt?: string | null;
+  fidelity: ScenarioRunAudienceRecheckResponseDtoFidelity;
+  /** @nullable */
+  freshness?: ScenarioRunAudienceRecheckResponseDtoFreshness;
+  /** @nullable */
+  observedAt?: string | null;
+  /** @nullable */
+  profileVersion?: string | null;
   root: AudienceExplanationNodeResponseDto;
+  /** @nullable */
+  source?: ScenarioRunAudienceRecheckResponseDtoSource;
+  truth?: ScenarioRunAudienceRecheckResponseDtoTruth;
 }

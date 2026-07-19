@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ProfileSyncResponseDto } from "./profileSyncResponseDto";
 import type { InteractionSessionProjectResponseDto } from "./interactionSessionProjectResponseDto";
 import type { InteractionSessionRealtimeResponseDto } from "./interactionSessionRealtimeResponseDto";
 import type { UpgradedGuestResponseDto } from "./upgradedGuestResponseDto";
@@ -14,6 +15,7 @@ export interface InteractionSessionResponseDto {
   accessToken: string;
   chatId: string;
   expiresAt: string;
+  profileSync?: ProfileSyncResponseDto;
   project: InteractionSessionProjectResponseDto;
   realtime: InteractionSessionRealtimeResponseDto;
   sessionId: string;

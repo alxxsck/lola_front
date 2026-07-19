@@ -7,6 +7,7 @@
  */
 import type { AudienceRuleDto } from "./audienceRuleDto";
 import type { PublishScenarioDtoDeliveryPolicy } from "./publishScenarioDtoDeliveryPolicy";
+import type { PublishScenarioDtoProfileFreshness } from "./publishScenarioDtoProfileFreshness";
 import type { ScenarioRuleDto } from "./scenarioRuleDto";
 
 export interface PublishScenarioDto {
@@ -29,6 +30,8 @@ export interface PublishScenarioDto {
    * @minimum 1
    */
   expectedDraftVersion?: number;
+  /** Required when Audience or action templates read End User Attributes. */
+  profileFreshness?: PublishScenarioDtoProfileFreshness;
   /** Versioned typed rule AST to compile into the immutable Scenario Revision. */
   rule?: ScenarioRuleDto;
 }

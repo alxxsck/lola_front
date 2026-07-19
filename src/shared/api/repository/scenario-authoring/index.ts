@@ -1,13 +1,16 @@
-export { adaptScenarioAuthoringContract } from './scenario-authoring-contract'
+export { adaptScenarioAuthoringContract } from "./scenario-authoring-contract";
 export type {
   ScenarioAggregateMeasureCapability,
   ScenarioAggregateValueType,
   ScenarioAuthoringContract,
   ScenarioAuthoringEvent,
   ScenarioAuthoringField,
-} from './scenario-authoring-contract'
-export { scenarioAuthoringRepository } from './scenario-authoring-repository'
-export type { ScenarioDraftContent, ScenarioPublishInput } from './scenario-authoring-repository'
+} from "./scenario-authoring-contract";
+export { scenarioAuthoringRepository } from "./scenario-authoring-repository";
+export type {
+  ScenarioDraftContent,
+  ScenarioPublishInput,
+} from "./scenario-authoring-repository";
 // Generated wire contracts are exposed only through the repository boundary.
 export type {
   ActivityDayStreakCompareDto,
@@ -17,7 +20,10 @@ export type {
   AllRuleNodeDto,
   AnyRuleNodeDto,
   AudienceAttributeResponseDto,
+  AudienceAttributeV2ResponseDto,
   AudienceCatalogResponseDto,
+  AudienceCatalogV2ResponseDto,
+  ConditionCatalogResponseDtoAudience,
   AudienceIssueResponseDto,
   AudienceRuleDto,
   AudienceRuleDtoRoot,
@@ -45,4 +51,4 @@ export type {
   SinceTriggerRuleWindowDto,
   ValidateScenarioDraftResponseDto,
   ValidateScenarioRuleResponseDto,
-} from '@/shared/api/generated/models'
+} from "@/shared/api/generated/models";

@@ -8,16 +8,31 @@
 import type { AudienceRuleReportResponseDtoCost } from "./audienceRuleReportResponseDtoCost";
 import type { AudienceDependenciesResponseDto } from "./audienceDependenciesResponseDto";
 import type { AudienceExplanationNodeResponseDto } from "./audienceExplanationNodeResponseDto";
+import type { AudienceFreshnessSelectionV2ResponseDto } from "./audienceFreshnessSelectionV2ResponseDto";
 import type { AudienceIssueResponseDto } from "./audienceIssueResponseDto";
+import type { AudienceRuleReportResponseDtoTruth } from "./audienceRuleReportResponseDtoTruth";
 import type { AudienceRuleReportResponseDtoWarningsItem } from "./audienceRuleReportResponseDtoWarningsItem";
 
 export interface AudienceRuleReportResponseDto {
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  ageSeconds?: number | null;
+  /** @nullable */
+  contractRevision?: number | null;
   /** @nullable */
   cost?: AudienceRuleReportResponseDtoCost;
   dependencies: AudienceDependenciesResponseDto;
+  evaluatedAt?: string;
   explanation?: AudienceExplanationNodeResponseDto;
+  freshness?: AudienceFreshnessSelectionV2ResponseDto;
   issues: AudienceIssueResponseDto[];
   matched?: boolean;
+  /** @nullable */
+  observedAt?: string | null;
+  profileVersion?: string;
+  truth?: AudienceRuleReportResponseDtoTruth;
   valid: boolean;
   warnings: AudienceRuleReportResponseDtoWarningsItem[];
 }

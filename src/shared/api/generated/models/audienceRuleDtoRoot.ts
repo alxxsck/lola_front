@@ -13,6 +13,7 @@ import type { AudienceLanguageNodeDto } from "./audienceLanguageNodeDto";
 import type { AudienceCountryNodeDto } from "./audienceCountryNodeDto";
 import type { AudienceUserAttributeNodeDto } from "./audienceUserAttributeNodeDto";
 import type { AudienceSegmentMembershipNodeDto } from "./audienceSegmentMembershipNodeDto";
+import type { AudienceProfileAttributeNodeDto } from "./audienceProfileAttributeNodeDto";
 
 export type AudienceRuleDtoRoot =
   | AudienceAllNodeDto
@@ -22,4 +23,5 @@ export type AudienceRuleDtoRoot =
   | AudienceLanguageNodeDto
   | AudienceCountryNodeDto
   | AudienceUserAttributeNodeDto
-  | AudienceSegmentMembershipNodeDto;
+  | AudienceSegmentMembershipNodeDto
+  | AudienceProfileAttributeNodeDto;

@@ -12,17 +12,27 @@ import type {
   AdminConversationsListMessagesParams,
   AdminConversationsListParams,
   AdminConversationsPageResponseDto,
+  AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
   AdminSpeechVoicesParams,
   AdminUserResponseDto,
   AiUsageReportParams,
   AiUsageReportResponseDto,
   ArchivedSegmentResponseDto,
+  AttributeContractDraftResponseDto,
+  AttributeContractRevisionPageResponseDto,
+  AttributeContractRevisionResponseDto,
+  AttributeContractRevisionsParams,
+  AttributeContractValidationResponseDto,
+  AttributeContractWorkspaceResponseDto,
+  AttributeDefinitionImpactResponseDto,
+  AudienceEvaluationResponseDto,
   AuditLogResponseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   CmsAuthResponseDto,
   CmsLoginDto,
+  CmsProfileListResponseDto,
   CompatibilityCreateMessageDto,
   CompatibilityEndVoiceSessionDto,
   CompatibilityGetVoiceSessionDto,
@@ -47,6 +57,7 @@ import type {
   EndUserPageResponseDto,
   EndUserResponseDto,
   EndVoiceSessionDto,
+  EvaluateAudienceUserDto,
   EventDefinitionResponseDto,
   EventDefinitionRevisionPageResponseDto,
   EventDefinitionRevisionResponseDto,
@@ -56,6 +67,7 @@ import type {
   EventsListParams,
   IngestClientEventDto,
   IngestEventDto,
+  IntegrationAttributeContractResponseDto,
   InteractionSessionResponseDto,
   KnowledgeDocumentDetailResponseDto,
   KnowledgeDocumentListResponseDto,
@@ -72,9 +84,15 @@ import type {
   PreviewScenarioGoalResponseDto,
   PreviewScenarioRuleDto,
   PreviewScenarioRuleResponseDto,
+  ProfileHealthHealthParams,
+  ProfileHealthResponseDto,
+  ProfileProjectionResponseDto,
+  ProfileSyncResponseDto,
   ProjectMemberResponseDto,
   ProjectResponseDto,
   ProviderBillingSnapshotResponseDto,
+  PublishAttributeContractDto,
+  PublishAttributeContractResponseDto,
   PublishScenarioDto,
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
@@ -83,6 +101,7 @@ import type {
   RenameConversationDto,
   RollbackScenarioDto,
   RotateServerKeyResponseDto,
+  SaveAttributeContractDraftDto,
   SaveScenarioDraftDto,
   ScenarioActionDefinitionResponseDto,
   ScenarioAudienceSearchParams,
@@ -107,6 +126,7 @@ import type {
   StartAdminVoiceConversationDto,
   StartVoiceSessionDto,
   SuccessResponseDto,
+  SyncAttributeSnapshotDto,
   UiElementResponseDto,
   UpdateActivitySettingsDto,
   UpdateEventDefinitionDto,
@@ -119,6 +139,7 @@ import type {
   UpsertUserDto,
   UserAttributeDefinitionMutationResponseDto,
   UserAttributeSchemaResponseDto,
+  ValidateAttributeContractDto,
   ValidateScenarioDraftDto,
   ValidateScenarioDraftResponseDto,
   ValidateScenarioRuleDto,
@@ -288,12 +309,172 @@ export const aiUsageReport = (
   );
 };
 
+export const attributeContractSaveDraft = (
+  projectId: string,
+  saveAttributeContractDraftDto: BodyType<SaveAttributeContractDraftDto>,
+  options?: SecondParameter<typeof request<AttributeContractDraftResponseDto>>,
+) => {
+  return request<AttributeContractDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveAttributeContractDraftDto,
+    },
+    options,
+  );
+};
+
+export const profileHealthHealth = (
+  projectId: string,
+  params?: ProfileHealthHealthParams,
+  options?: SecondParameter<typeof request<ProfileHealthResponseDto>>,
+) => {
+  return request<ProfileHealthResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/health`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const attributeContractPublish = (
+  projectId: string,
+  publishAttributeContractDto: BodyType<PublishAttributeContractDto>,
+  options?: SecondParameter<
+    typeof request<PublishAttributeContractResponseDto>
+  >,
+) => {
+  return request<PublishAttributeContractResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishAttributeContractDto,
+    },
+    options,
+  );
+};
+
+export const attributeContractRevisions = (
+  projectId: string,
+  params?: AttributeContractRevisionsParams,
+  options?: SecondParameter<
+    typeof request<AttributeContractRevisionPageResponseDto>
+  >,
+) => {
+  return request<AttributeContractRevisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const attributeContractRevision = (
+  projectId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<AttributeContractRevisionResponseDto>
+  >,
+) => {
+  return request<AttributeContractRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/revisions/${revisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const attributeContractValidate = (
+  projectId: string,
+  validateAttributeContractDto: BodyType<ValidateAttributeContractDto>,
+  options?: SecondParameter<
+    typeof request<AttributeContractValidationResponseDto>
+  >,
+) => {
+  return request<AttributeContractValidationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/validate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: validateAttributeContractDto,
+    },
+    options,
+  );
+};
+
+export const attributeContractWorkspace = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<AttributeContractWorkspaceResponseDto>
+  >,
+) => {
+  return request<AttributeContractWorkspaceResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/workspace`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const attributeDefinitionImpact = (
+  projectId: string,
+  definitionId: string,
+  options?: SecondParameter<
+    typeof request<AttributeDefinitionImpactResponseDto>
+  >,
+) => {
+  return request<AttributeDefinitionImpactResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-definitions/${definitionId}/impact`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const auditList = (
   projectId: string,
   options?: SecondParameter<typeof request<AuditLogResponseDto[]>>,
 ) => {
   return request<AuditLogResponseDto[]>(
     { url: `/api/v1/admin/projects/${projectId}/audit-logs`, method: "GET" },
+    options,
+  );
+};
+
+export const adminEndUserProfilesList = (
+  projectId: string,
+  params?: AdminEndUserProfilesListParams,
+  options?: SecondParameter<typeof request<CmsProfileListResponseDto>>,
+) => {
+  return request<CmsProfileListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const adminEndUserProfilesProfile = (
+  projectId: string,
+  endUserId: string,
+  options?: SecondParameter<typeof request<ProfileProjectionResponseDto>>,
+) => {
+  return request<ProfileProjectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/profile`,
+      method: "GET",
+    },
     options,
   );
 };
@@ -575,6 +756,22 @@ export const platformRotate = (
     {
       url: `/api/v1/admin/projects/${projectId}/rotate-server-key`,
       method: "POST",
+    },
+    options,
+  );
+};
+
+export const scenarioAudienceEvaluationEvaluateUser = (
+  projectId: string,
+  evaluateAudienceUserDto: BodyType<EvaluateAudienceUserDto>,
+  options?: SecondParameter<typeof request<AudienceEvaluationResponseDto>>,
+) => {
+  return request<AudienceEvaluationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/audience/evaluate-user`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: evaluateAudienceUserDto,
     },
     options,
   );
@@ -1556,6 +1753,21 @@ export const compatibilityCrmCreateSession = (
   );
 };
 
+export const profileSnapshotSync = (
+  syncAttributeSnapshotDto: BodyType<SyncAttributeSnapshotDto>,
+  options?: SecondParameter<typeof request<ProfileSyncResponseDto>>,
+) => {
+  return request<ProfileSyncResponseDto>(
+    {
+      url: `/api/v1/end-user-profile-snapshots`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: syncAttributeSnapshotDto,
+    },
+    options,
+  );
+};
+
 export const eventsIngest = (
   ingestEventDto: BodyType<IngestEventDto>,
   options?: SecondParameter<typeof request<EventIngestResponseDto>>,
@@ -1668,6 +1880,17 @@ export const compatibilityMessengerListThreads = (
       headers: { "Content-Type": "application/json" },
       data: listThreadMessagesDto,
     },
+    options,
+  );
+};
+
+export const profileContractGet = (
+  options?: SecondParameter<
+    typeof request<IntegrationAttributeContractResponseDto>
+  >,
+) => {
+  return request<IntegrationAttributeContractResponseDto>(
+    { url: `/api/v1/profile-contract`, method: "GET" },
     options,
   );
 };
@@ -1837,8 +2060,38 @@ export type PlatformUpdateActionDefinitionResult = NonNullable<
 export type AiUsageReportResult = NonNullable<
   Awaited<ReturnType<typeof aiUsageReport>>
 >;
+export type AttributeContractSaveDraftResult = NonNullable<
+  Awaited<ReturnType<typeof attributeContractSaveDraft>>
+>;
+export type ProfileHealthHealthResult = NonNullable<
+  Awaited<ReturnType<typeof profileHealthHealth>>
+>;
+export type AttributeContractPublishResult = NonNullable<
+  Awaited<ReturnType<typeof attributeContractPublish>>
+>;
+export type AttributeContractRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof attributeContractRevisions>>
+>;
+export type AttributeContractRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof attributeContractRevision>>
+>;
+export type AttributeContractValidateResult = NonNullable<
+  Awaited<ReturnType<typeof attributeContractValidate>>
+>;
+export type AttributeContractWorkspaceResult = NonNullable<
+  Awaited<ReturnType<typeof attributeContractWorkspace>>
+>;
+export type AttributeDefinitionImpactResult = NonNullable<
+  Awaited<ReturnType<typeof attributeDefinitionImpact>>
+>;
 export type AuditListResult = NonNullable<
   Awaited<ReturnType<typeof auditList>>
+>;
+export type AdminEndUserProfilesListResult = NonNullable<
+  Awaited<ReturnType<typeof adminEndUserProfilesList>>
+>;
+export type AdminEndUserProfilesProfileResult = NonNullable<
+  Awaited<ReturnType<typeof adminEndUserProfilesProfile>>
 >;
 export type PlatformEventDefinitionRevisionsResult = NonNullable<
   Awaited<ReturnType<typeof platformEventDefinitionRevisions>>
@@ -1893,6 +2146,9 @@ export type PlatformDeleteMemberResult = NonNullable<
 >;
 export type PlatformRotateResult = NonNullable<
   Awaited<ReturnType<typeof platformRotate>>
+>;
+export type ScenarioAudienceEvaluationEvaluateUserResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAudienceEvaluationEvaluateUser>>
 >;
 export type ScenarioAuthoringCatalogResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringCatalog>>
@@ -2094,6 +2350,9 @@ export type CompatibilityCrmCreateCustomerResult = NonNullable<
 export type CompatibilityCrmCreateSessionResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityCrmCreateSession>>
 >;
+export type ProfileSnapshotSyncResult = NonNullable<
+  Awaited<ReturnType<typeof profileSnapshotSync>>
+>;
 export type EventsIngestResult = NonNullable<
   Awaited<ReturnType<typeof eventsIngest>>
 >;
@@ -2117,6 +2376,9 @@ export type CompatibilityMessengerListResult = NonNullable<
 >;
 export type CompatibilityMessengerListThreadsResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityMessengerListThreads>>
+>;
+export type ProfileContractGetResult = NonNullable<
+  Awaited<ReturnType<typeof profileContractGet>>
 >;
 export type SessionsCreateResult = NonNullable<
   Awaited<ReturnType<typeof sessionsCreate>>

@@ -24,6 +24,12 @@ export interface IngestEventDto {
   externalUserId?: string;
   /** @maxLength 5000 */
   message?: string;
+  /**
+   * Reject before EventLog write unless the End User has at least this profileVersion.
+   * @maxLength 19
+   * @pattern ^(?:0|[1-9]\d*)$
+   */
+  minimumProfileVersion?: string;
   occurredAt?: string;
   payload: IngestEventDtoPayload;
   projectId?: string;
