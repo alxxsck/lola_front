@@ -281,7 +281,7 @@ function updateNodeKey(value: string | undefined) {
           :model-value="action.nodeKey"
           class="mono"
           @update:model-value="updateNodeKey"
-        /><small>Стабильный ID для переходов, answers и results.</small>
+        /><small>Неизменяемый код шага. По нему сценарий связывает переходы, ответы и результаты.</small>
       </div>
       <div
         v-if="

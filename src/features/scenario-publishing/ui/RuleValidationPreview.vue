@@ -438,8 +438,8 @@ function flattenAudienceEvidence(explanation: unknown, depth: number, key: strin
   if (!record(explanation)) return []
   const kind = typeof explanation.kind === 'string' ? explanation.kind : 'unknown'
   const identity = typeof explanation.definitionId === 'string'
-    ? ` · definition ${explanation.definitionId}`
-    : typeof explanation.segmentRevisionId === 'string' ? ` · segment revision ${explanation.segmentRevisionId}` : ''
+    ? ` · поле ${explanation.definitionId}`
+    : typeof explanation.segmentRevisionId === 'string' ? ` · версия сегмента ${explanation.segmentRevisionId}` : ''
   const row: ExplanationRow = {
     key, depth, summary: `${kind}${identity}`, matched: Boolean(explanation.matched),
     ...(explainValue(explanation.actual) ? { actual: explainValue(explanation.actual) } : {}),
@@ -452,8 +452,8 @@ const summaryResponse = computed(() => previewState.value.status === 'valid' || 
   ? previewState.value.response
   : validationResponse.value)
 const summaryWarnings = computed(() => summaryResponse.value ? [
-  ...summaryResponse.value.warnings.map((warning) => ({ scope: 'Eligibility', code: warning.code })),
-  ...(summaryResponse.value.audience?.warnings ?? []).map((warning) => ({ scope: 'Audience', code: warning.code })),
+  ...summaryResponse.value.warnings.map((warning) => ({ scope: 'Условия', code: warning.code })),
+  ...(summaryResponse.value.audience?.warnings ?? []).map((warning) => ({ scope: 'Аудитория', code: warning.code })),
 ] : [])
 
 onMounted(() => {
@@ -485,7 +485,7 @@ onBeforeUnmount(() => {
       <span v-else-if="validationState.status === 'pending'">Проверяем правило…</span>
       <span v-else-if="validationState.status === 'valid'">Правило прошло проверку.</span>
       <span v-else-if="validationState.status === 'local-invalid'">Сначала заполните обязательные поля правила.</span>
-      <span v-else-if="validationState.status === 'semantic-invalid'">Backend нашёл ошибки в условии.</span>
+      <span v-else-if="validationState.status === 'semantic-invalid'">Сервер нашёл ошибки в условии.</span>
       <span v-else-if="validationState.status === 'network-error'">Не удалось связаться с сервером.</span>
       <span v-else>Ответ сервера имеет неподдерживаемый формат.</span>
     </div>
@@ -493,33 +493,33 @@ onBeforeUnmount(() => {
     <ul v-if="validationIssues.length" class="issue-list" aria-label="Ошибки правила">
       <li v-for="issue in validationIssues" :key="`${issue.code}:${issue.nodeId}:${issue.fieldPath}`">
         <span>{{ issue.message }}</span>
-        <button type="button" @click="focusIssue(issue)">Перейти</button>
+        <button type="button" @click="focusIssue(issue)">Открыть условие</button>
       </li>
     </ul>
     <ul v-if="validationAudienceIssues.length" class="issue-list audience-issues" aria-label="Ошибки аудитории">
       <li v-for="issue in validationAudienceIssues" :key="`${issue.code}:${issue.nodeId}:${issue.fieldPath}`">
         <span><strong>Аудитория:</strong> {{ issue.message }}</span>
-        <button type="button" @click="focusAudienceIssue(issue)">Перейти</button>
+        <button type="button" @click="focusAudienceIssue(issue)">Открыть аудиторию</button>
       </li>
     </ul>
     <button v-if="validationState.status === 'network-error'" type="button" @click="validateNow">Повторить проверку</button>
 
     <section class="anchor-section" aria-labelledby="anchor-title">
       <div class="section-header compact">
-        <div><p class="eyebrow">Preview anchor</p><h3 id="anchor-title">Выберите реальное событие</h3></div>
+        <div><p class="eyebrow">Событие для проверки</p><h3 id="anchor-title">Выберите реальное событие</h3></div>
         <button type="button" :disabled="logsLoading" @click="refreshLogs">Обновить события</button>
       </div>
       <p>Показываем только события <code>{{ context.triggerEventCode }}</code> этого проекта.</p>
       <details class="log-filters">
         <summary>Фильтры событий</summary>
         <form @submit.prevent="applyLogFilters">
-          <label>External user ID<input v-model="logFilters.externalUserId" aria-label="External user ID для preview" placeholder="customer-42"></label>
-          <label>Источник<select v-model="logFilters.source" aria-label="Источник события для preview"><option value="">Все</option><option value="SERVER">Backend</option><option value="FRONTEND">Frontend</option><option value="INTERNAL">Внутренние</option></select></label>
-          <label>Статус<select v-model="logFilters.status" aria-label="Статус события для preview"><option value="">Все</option><option value="PROCESSED">Обработано</option><option value="FAILED">Ошибка</option><option value="RECEIVED">Получено</option></select></label>
-          <label>Получено с<input v-model="logFilters.receivedFrom" type="datetime-local" aria-label="Получено с для preview"></label>
-          <label>Получено по<input v-model="logFilters.receivedTo" type="datetime-local" aria-label="Получено по для preview"></label>
-          <label>Событие с<input v-model="logFilters.occurredFrom" type="datetime-local" aria-label="Событие с для preview"></label>
-          <label>Событие по<input v-model="logFilters.occurredTo" type="datetime-local" aria-label="Событие по для preview"></label>
+          <label>ID пользователя в вашем продукте<input v-model="logFilters.externalUserId" aria-label="ID пользователя для проверки" placeholder="customer-42"></label>
+          <label>Источник<select v-model="logFilters.source" aria-label="Источник события для проверки"><option value="">Все</option><option value="SERVER">Сервер продукта</option><option value="FRONTEND">Интерфейс продукта</option><option value="INTERNAL">Внутренние</option></select></label>
+          <label>Статус<select v-model="logFilters.status" aria-label="Статус события для проверки"><option value="">Все</option><option value="PROCESSED">Обработано</option><option value="FAILED">Ошибка</option><option value="RECEIVED">Получено</option></select></label>
+          <label>Получено с<input v-model="logFilters.receivedFrom" type="datetime-local" aria-label="Получено с для проверки"></label>
+          <label>Получено по<input v-model="logFilters.receivedTo" type="datetime-local" aria-label="Получено по для проверки"></label>
+          <label>Событие с<input v-model="logFilters.occurredFrom" type="datetime-local" aria-label="Событие с для проверки"></label>
+          <label>Событие по<input v-model="logFilters.occurredTo" type="datetime-local" aria-label="Событие по для проверки"></label>
           <label>На странице<select v-model.number="logFilters.limit" aria-label="Размер страницы событий"><option :value="25">25</option><option :value="50">50</option><option :value="100">100</option></select></label>
           <button type="button" aria-label="Применить фильтры событий" @click="applyLogFilters">Применить фильтры</button>
         </form>
@@ -540,19 +540,19 @@ onBeforeUnmount(() => {
         <span>Страница {{ pageIndex + 1 }}</span>
         <button type="button" :disabled="!nextCursor || logsLoading" @click="nextLogsPage">Дальше</button>
       </nav>
-      <button type="button" class="primary-button preview-button" aria-label="Запустить preview правила" :disabled="!selectedEventLogId || previewState.status === 'pending'" @click="previewNow">Проверить на выбранном событии</button>
+      <button type="button" class="primary-button preview-button" aria-label="Проверить правило на событии" :disabled="!selectedEventLogId || previewState.status === 'pending'" @click="previewNow">Проверить на выбранном событии</button>
       <div class="preview-status" aria-live="polite">
         <p v-if="previewState.status === 'pending'" role="status">Строим объяснение…</p>
         <p v-else-if="previewState.status === 'valid'" :class="previewState.response.matched ? 'matched' : 'not-matched'">
           {{ previewState.response.matched ? 'Условие совпало' : 'Условие не совпало' }}
         </p>
         <p v-if="previewState.status === 'valid' && previewState.response.audience" :class="previewState.response.audience.matched ? 'matched' : 'not-matched'">
-          {{ previewState.response.audience.matched ? 'Audience совпала' : 'Audience не совпала' }}
+          {{ previewState.response.audience.matched ? 'Аудитория подходит' : 'Аудитория не подходит' }}
         </p>
-        <p v-else-if="previewState.status === 'semantic-invalid'">Preview недоступен: исправьте ошибки правила.</p>
+        <p v-else-if="previewState.status === 'semantic-invalid'">Предварительная проверка недоступна: исправьте ошибки правила.</p>
         <p v-else-if="previewState.status === 'local-invalid'">Сначала заполните обязательные поля правила.</p>
         <p v-else-if="previewState.status === 'network-error'" role="alert">Не удалось выполнить preview. <button type="button" @click="previewNow">Повторить preview</button></p>
-        <p v-else-if="previewState.status === 'contract-error'" role="alert">Backend вернул неподдерживаемое объяснение.</p>
+        <p v-else-if="previewState.status === 'contract-error'" role="alert">Сервер вернул ответ, который пока нельзя показать.</p>
       </div>
       <ol v-if="explanationRows.length" class="explanation-tree" aria-label="Объяснение результата">
         <li v-for="row in explanationRows" :key="row.key" :style="{ '--depth': row.depth }">
@@ -565,14 +565,14 @@ onBeforeUnmount(() => {
           </dl>
         </li>
       </ol>
-      <section v-if="audienceExplanationRows.length" class="audience-explanation" aria-labelledby="audience-explanation-title"><h4 id="audience-explanation-title">Объяснение Audience</h4><p>Факты пользователя отделены от Eligibility и redacted на backend.</p><ol class="explanation-tree" aria-label="Объяснение аудитории"><li v-for="row in audienceExplanationRows" :key="row.key" :style="{ '--depth': row.depth }"><div><strong>{{ row.matched ? 'Совпало' : 'Не совпало' }}</strong><span>{{ row.summary }}</span></div><dl><template v-if="row.actual"><dt>Фактически</dt><dd>{{ row.actual }}</dd></template><template v-if="row.expected"><dt>Ожидалось</dt><dd>{{ row.expected }}</dd></template></dl></li></ol></section>
+      <section v-if="audienceExplanationRows.length" class="audience-explanation" aria-labelledby="audience-explanation-title"><h4 id="audience-explanation-title">Почему пользователь подходит аудитории</h4><p>Здесь показаны только разрешённые данные профиля. Чувствительные значения скрывает сервер.</p><ol class="explanation-tree" aria-label="Объяснение аудитории"><li v-for="row in audienceExplanationRows" :key="row.key" :style="{ '--depth': row.depth }"><div><strong>{{ row.matched ? 'Совпало' : 'Не совпало' }}</strong><span>{{ row.summary }}</span></div><dl><template v-if="row.actual"><dt>Фактически</dt><dd>{{ row.actual }}</dd></template><template v-if="row.expected"><dt>Ожидалось</dt><dd>{{ row.expected }}</dd></template></dl></li></ol></section>
     </section>
 
     <section v-if="summaryResponse" class="summary-grid" aria-label="Стоимость и зависимости">
-      <article><h3>Стоимость</h3><template v-if="summaryResponse.cost"><strong>{{ summaryResponse.cost.class }}</strong><p>{{ summaryResponse.cost.leaves }} условий · {{ summaryResponse.cost.aggregateLeaves }} агрегатов · {{ summaryResponse.cost.historyWindowDays }} дней истории</p></template><p v-else>Backend не рассчитал стоимость.</p></article>
+      <article><h3>Сложность проверки</h3><template v-if="summaryResponse.cost"><strong>{{ summaryResponse.cost.class }}</strong><p>{{ summaryResponse.cost.leaves }} условий · {{ summaryResponse.cost.aggregateLeaves }} вычислений · {{ summaryResponse.cost.historyWindowDays }} дней истории</p></template><p v-else>Сервер не рассчитал сложность.</p></article>
       <article><h3>Зависимости</h3><ul v-if="summaryResponse.dependencies.length"><li v-for="dependency in summaryResponse.dependencies" :key="dependency.eventDefinitionRevisionId">{{ dependency.eventCode }} · schema v{{ dependency.schemaVersion }}</li></ul><p v-else>Нет внешних зависимостей.</p></article>
       <article><h3>Предупреждения</h3><ul v-if="summaryWarnings.length"><li v-for="warning in summaryWarnings" :key="`${warning.scope}:${warning.code}`">{{ warning.scope }} · {{ warning.code }}</li></ul><p v-else>Нет предупреждений.</p></article>
-      <article v-if="summaryResponse.audience"><h3>Audience</h3><template v-if="summaryResponse.audience.cost"><strong>{{ summaryResponse.audience.cost.leaves }} условий</strong><p>{{ summaryResponse.audience.cost.segmentLeaves }} проверок сегментов</p></template><p>{{ summaryResponse.audience.dependencies.attributeRevisionIds.length }} attribute revisions · {{ summaryResponse.audience.dependencies.segmentRevisionIds.length }} segment revisions</p><code v-for="id in summaryResponse.audience.dependencies.attributeRevisionIds" :key="id">{{ id }}</code><code v-for="id in summaryResponse.audience.dependencies.segmentRevisionIds" :key="id">{{ id }}</code></article>
+      <article v-if="summaryResponse.audience"><h3>Аудитория</h3><template v-if="summaryResponse.audience.cost"><strong>{{ summaryResponse.audience.cost.leaves }} условий</strong><p>{{ summaryResponse.audience.cost.segmentLeaves }} проверок сегментов</p></template><p>{{ summaryResponse.audience.dependencies.attributeRevisionIds.length }} версий полей · {{ summaryResponse.audience.dependencies.segmentRevisionIds.length }} версий сегментов</p><code v-for="id in summaryResponse.audience.dependencies.attributeRevisionIds" :key="id">{{ id }}</code><code v-for="id in summaryResponse.audience.dependencies.segmentRevisionIds" :key="id">{{ id }}</code></article>
     </section>
   </section>
 </template>

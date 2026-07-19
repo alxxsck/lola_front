@@ -194,7 +194,7 @@ describe('RuleValidationPreview', () => {
 
     expect(mocks.getEventLogPage).toHaveBeenCalledWith('project-1', { eventCode: ['page.opened'], limit: 25 })
     await wrapper.get('input[type="radio"][value="log-1"]').setValue()
-    await wrapper.get('button[aria-label="Запустить preview правила"]').trigger('click')
+    await wrapper.get('button[aria-label="Проверить правило на событии"]').trigger('click')
     await flushPromises()
 
     expect(mocks.previewRule).toHaveBeenCalledWith(
@@ -235,14 +235,14 @@ describe('RuleValidationPreview', () => {
       },
     })
     await wrapper.get('input[type="radio"][value="log-1"]').setValue()
-    await wrapper.get('button[aria-label="Запустить preview правила"]').trigger('click')
+    await wrapper.get('button[aria-label="Проверить правило на событии"]').trigger('click')
     await flushPromises()
     expect(mocks.previewRule).toHaveBeenCalledWith('project-1', expect.any(Object), { kind: 'eventLog', eventLogId: 'log-1' }, { signal: expect.any(AbortSignal) }, { version: 1, root: { kind: 'locale', operator: 'eq', value: 'ru-RU' } })
-    expect(wrapper.text()).toContain('Audience совпала')
+    expect(wrapper.text()).toContain('Аудитория подходит')
     expect(wrapper.text()).toContain('Скрыто из-за чувствительности данных')
     expect(wrapper.text()).toContain('attribute-revision-7')
     expect(wrapper.text()).toContain('segment-revision-4')
-    expect(wrapper.text()).toContain('Audience · AUDIENCE_LOOKUP_COST')
+    expect(wrapper.text()).toContain('Аудитория · AUDIENCE_LOOKUP_COST')
   })
 
   it('resets the anchor and pagination when the trigger Event changes', async () => {
@@ -258,7 +258,7 @@ describe('RuleValidationPreview', () => {
 
     expect(mocks.getEventLogPage).toHaveBeenLastCalledWith('project-1', { eventCode: ['purchase.completed'], limit: 25 })
     expect(wrapper.find('input[type="radio"][value="log-1"]').exists()).toBe(false)
-    expect(wrapper.get('button[aria-label="Запустить preview правила"]').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Проверить правило на событии"]').attributes()).toHaveProperty('disabled')
     expect(wrapper.text()).toContain('Страница 1')
   })
 
@@ -293,10 +293,10 @@ describe('RuleValidationPreview', () => {
     const wrapper = mountPreview()
     await flushPromises()
 
-    await wrapper.get('input[aria-label="External user ID для preview"]').setValue(' customer-42 ')
-    await wrapper.get('select[aria-label="Источник события для preview"]').setValue('FRONTEND')
-    await wrapper.get('select[aria-label="Статус события для preview"]').setValue('FAILED')
-    await wrapper.get('input[aria-label="Получено с для preview"]').setValue('2026-07-18T10:00')
+    await wrapper.get('input[aria-label="ID пользователя для проверки"]').setValue(' customer-42 ')
+    await wrapper.get('select[aria-label="Источник события для проверки"]').setValue('FRONTEND')
+    await wrapper.get('select[aria-label="Статус события для проверки"]').setValue('FAILED')
+    await wrapper.get('input[aria-label="Получено с для проверки"]').setValue('2026-07-18T10:00')
     await wrapper.get('select[aria-label="Размер страницы событий"]').setValue('50')
     await wrapper.get('button[aria-label="Применить фильтры событий"]').trigger('click')
     await flushPromises()
@@ -344,7 +344,7 @@ describe('RuleValidationPreview', () => {
     const wrapper = mountPreview({ draft: aggregateDraft, context: aggregateContext })
     await flushPromises()
     await wrapper.get('input[type="radio"][value="log-1"]').setValue()
-    await wrapper.get('button[aria-label="Запустить preview правила"]').trigger('click')
+    await wrapper.get('button[aria-label="Проверить правило на событии"]').trigger('click')
     await flushPromises()
 
     const explanation = wrapper.get('ol[aria-label="Объяснение результата"]')
@@ -366,10 +366,10 @@ describe('RuleValidationPreview', () => {
     const wrapper = mountPreview()
     await flushPromises()
     await wrapper.get('input[type="radio"][value="log-1"]').setValue()
-    await wrapper.get('button[aria-label="Запустить preview правила"]').trigger('click')
+    await wrapper.get('button[aria-label="Проверить правило на событии"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Backend вернул неподдерживаемое объяснение')
+    expect(wrapper.text()).toContain('Сервер вернул ответ, который пока нельзя показать')
     expect(wrapper.find('ol[aria-label="Объяснение результата"]').exists()).toBe(false)
   })
 
@@ -384,7 +384,7 @@ describe('RuleValidationPreview', () => {
     const wrapper = mountPreview()
     await flushPromises()
     await wrapper.get('input[type="radio"][value="log-1"]').setValue()
-    await wrapper.get('button[aria-label="Запустить preview правила"]').trigger('click')
+    await wrapper.get('button[aria-label="Проверить правило на событии"]').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('Условие совпало')
 
@@ -401,11 +401,11 @@ describe('RuleValidationPreview', () => {
     const wrapper = mountPreview()
     await flushPromises()
     await wrapper.get('input[type="radio"][value="log-1"]').setValue()
-    expect(wrapper.get('button[aria-label="Запустить preview правила"]').attributes()).not.toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Проверить правило на событии"]').attributes()).not.toHaveProperty('disabled')
 
     await wrapper.get('.anchor-section .section-header button').trigger('click')
     await flushPromises()
 
-    expect(wrapper.get('button[aria-label="Запустить preview правила"]').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Проверить правило на событии"]').attributes()).toHaveProperty('disabled')
   })
 })

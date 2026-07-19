@@ -124,6 +124,17 @@ interface ScenarioForm {
 type StudioStage =
   "trigger" | "audience" | "eligibility" | "actions" | "delivery";
 
+const systemEventNames: Record<string, string> = {
+  "lola.activity_day_started": "Начался день активности",
+  "lola.became_offline": "Пользователь вышел из сети",
+  "lola.became_online": "Пользователь появился в сети",
+  "lola.visit_started": "Начался визит",
+};
+
+function eventDisplayName(code: string, fallback: string) {
+  return systemEventNames[code] ?? fallback;
+}
+
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -172,6 +183,10 @@ const {
   save: saveAuthoringDraft,
 } = useScenarioAuthoringDocument();
 const studioStage = ref<StudioStage>("trigger");
+const validationOpen = ref(false);
+watch(studioStage, (stage) => {
+  if (stage !== "eligibility") validationOpen.value = false;
+});
 const ruleBuilder = ref<{
   focusIssue: (target: {
     nodeId?: string;
@@ -292,6 +307,16 @@ const canManage = computed(
   () => auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
 );
 const canEdit = computed(() => canManage.value && authoringEditable.value);
+const sourceSnapshotUnavailable = computed(
+  () =>
+    !authoringEditable.value &&
+    authoringUnavailableReason.value === "SOURCE_SNAPSHOT_UNAVAILABLE",
+);
+const readonlyExplanation = computed(() =>
+  sourceSnapshotUnavailable.value
+    ? "Сценарий продолжает работать как раньше. Но исходные настройки этой версии не сохранились, поэтому открыть её в редакторе без потерь нельзя. Чтобы изменить логику, восстановите исходник на сервере или создайте новый сценарий вручную."
+    : "Сценарий продолжает работать как раньше. Сейчас его настройки можно только просматривать.",
+);
 const isDirty = computed(
   () =>
     publishPending.value ||
@@ -373,10 +398,14 @@ const stages = computed<
   {
     key: "audience",
     label: "Аудитория",
-    detail: audienceContext.value
+    detail: sourceSnapshotUnavailable.value
+      ? "Исходные настройки недоступны"
+      : audienceContext.value
       ? (audienceSummary.value?.text ?? "Без ограничений")
       : "Пока недоступна",
-    status: !audienceContext.value
+    status: sourceSnapshotUnavailable.value
+      ? "unavailable"
+      : !audienceContext.value
       ? "unavailable"
       : audienceSummary.value?.status === "ready"
         ? "valid"
@@ -387,9 +416,12 @@ const stages = computed<
   {
     key: "eligibility",
     label: "Условия",
-    detail: ruleSummary.value?.text ?? "Выберите событие",
-    status:
-      ruleSummary.value?.status === "ready"
+    detail: sourceSnapshotUnavailable.value
+      ? "Исходные условия недоступны"
+      : (ruleSummary.value?.text ?? "Выберите событие"),
+    status: sourceSnapshotUnavailable.value
+      ? "unavailable"
+      : ruleSummary.value?.status === "ready"
         ? "valid"
         : ruleSummary.value?.status === "empty"
           ? "empty"
@@ -408,8 +440,12 @@ const stages = computed<
   {
     key: "delivery",
     label: "Доставка",
-    detail: deliveryPolicySummary(deliveryPolicy.value),
-    status: serializeDeliveryPolicy(deliveryPolicy.value).ok
+    detail: sourceSnapshotUnavailable.value
+      ? "Исходные настройки недоступны"
+      : deliveryPolicySummary(deliveryPolicy.value),
+    status: sourceSnapshotUnavailable.value
+      ? "unavailable"
+      : serializeDeliveryPolicy(deliveryPolicy.value).ok
       ? "valid"
       : "invalid",
   },
@@ -417,7 +453,11 @@ const stages = computed<
 const eventOptions = computed(() =>
   events.value
     .filter((event) => event.enabled || event.id === form.eventDefinitionId)
-    .map((event) => ({ label: event.name, value: event.id, code: event.code })),
+    .map((event) => ({
+      label: eventDisplayName(event.code, event.name),
+      value: event.id,
+      code: event.code,
+    })),
 );
 const conditionPaths = computed(() => {
   const eventFields = Object.keys(
@@ -468,10 +508,10 @@ const templateVariables = computed(() => {
         ? {
             value,
             label: attribute.label,
-            meta: `${attribute.valueType}${attribute.lifecycle === "DEPRECATED" ? ` · deprecated${attribute.replacementDefinitionId ? ` · replacement ${attribute.replacementDefinitionId}` : ""}` : ""}`,
+            meta: `${attribute.valueType}${attribute.lifecycle === "DEPRECATED" ? ` · устарело${attribute.replacementDefinitionId ? ` · замена: ${attribute.replacementDefinitionId}` : ""}` : ""}`,
             disabled: attribute.lifecycle === "DEPRECATED",
           }
-        : { value, label: path, meta: "runtime context" };
+        : { value, label: path, meta: "Данные текущего запуска" };
     });
 });
 const statusOptions = [
@@ -547,7 +587,11 @@ const flowNodes = computed<Node[]>(() => {
       sourcePosition: Position.Bottom,
       selectable: false,
       draggable: false,
-      data: { label: selectedEvent.value?.name ?? "Выберите событие" },
+      data: {
+        label: selectedEvent.value
+          ? eventDisplayName(selectedEvent.value.code, selectedEvent.value.name)
+          : "Выберите событие",
+      },
     },
   ];
   for (const [level, actions] of levels) {
@@ -721,7 +765,7 @@ async function load() {
                 )
                 .map(
                   (field) =>
-                    `${field.label} (${field.key}) deprecated${field.replacementDefinitionId ? `; replacement ${field.replacementDefinitionId}` : ""}.`,
+                    `${field.label} (${field.key}) устарело${field.replacementDefinitionId ? `; используйте вместо него ${field.replacementDefinitionId}` : ""}.`,
                 );
             })
             .catch((cause: unknown) => {
@@ -883,6 +927,7 @@ function focusRuleIssue(target: {
   message?: string;
 }) {
   studioStage.value = "eligibility";
+  validationOpen.value = false;
   void nextTick(() => {
     ruleBuilder.value?.focusIssue(target);
   });
@@ -1368,6 +1413,7 @@ function leave() {
           :disabled="publishPending"
           @click="leave"
         /><Button
+          v-if="authoringEditable"
           label="Сохранить"
           icon="pi pi-check"
           :loading="saving"
@@ -1406,17 +1452,36 @@ function leave() {
         @close="saveNotice = ''"
         >{{ saveNotice }}</Message
       >
-      <Message
+      <section
         v-if="!authoringEditable"
-        severity="warn"
-        class="save-error"
-        :closable="false"
-        >Эта версия доступна только для просмотра:
-        {{
-          authoringUnavailableReason ?? "исходные настройки недоступны"
-        }}.</Message
+        class="readonly-notice"
+        role="status"
+        aria-label="Сценарий открыт для просмотра"
       >
-      <div class="studio-grid">
+        <i class="pi pi-eye" />
+        <div>
+          <strong>Сценарий открыт для просмотра</strong>
+          <p>{{ readonlyExplanation }}</p>
+        </div>
+        <Button
+          v-if="canManage"
+          label="Создать новый сценарий"
+          size="small"
+          severity="secondary"
+          outlined
+          @click="router.push({ name: 'scenario-create' })"
+        />
+      </section>
+      <div
+        class="studio-grid"
+        :class="[
+          `stage-${studioStage}`,
+          {
+            'has-action-inspector':
+              studioStage === 'actions' && Boolean(selectedAction),
+          },
+        ]"
+      >
         <aside class="studio-sidebar">
           <nav class="studio-stages" aria-label="Этапы настройки сценария">
             <button
@@ -1473,7 +1538,9 @@ function leave() {
                 <div>
                   <strong>{{ definition.name }}</strong
                   ><small>{{
-                    definition.executor === "FRONTEND" ? "Frontend" : "Server"
+                    definition.executor === "FRONTEND"
+                      ? "В интерфейсе"
+                      : "На сервере"
                   }}</small>
                 </div>
                 <i class="pi pi-plus" />
@@ -1488,7 +1555,7 @@ function leave() {
             severity="warn"
             :closable="false"
             class="actions-warning"
-            >Template bindings Current Profile недоступны:
+            >Поля профиля для сообщений недоступны:
             {{ templatePolicyError }}</Message
           >
           <Message
@@ -1496,7 +1563,7 @@ function leave() {
             severity="warn"
             :closable="false"
             class="actions-warning"
-            ><strong>Deprecated template bindings</strong
+            ><strong>В сообщениях используются устаревшие поля</strong
             ><span v-for="warning in templatePolicyWarnings" :key="warning">{{
               warning
             }}</span></Message
@@ -1579,7 +1646,7 @@ function leave() {
             </details>
           </section>
           <VueFlow
-            v-if="!compactActionLayout"
+            v-if="!compactActionLayout && form.actions.length"
             :nodes="flowNodes"
             :edges="flowEdges"
             :node-types="flowNodeTypes"
@@ -1593,16 +1660,52 @@ function leave() {
             <Background pattern-color="var(--graph-edge)" :gap="22" />
             <Controls :show-interactive="false" />
           </VueFlow>
-          <div
+          <section
             v-if="!compactActionLayout && !form.actions.length"
-            class="canvas-empty"
+            class="action-empty"
           >
-            <i class="pi pi-sitemap" /><strong>Начните с первого узла</strong
-            ><span>Выберите действие или логику в библиотеке слева.</span>
-          </div>
+            <span class="action-empty-icon"><i class="pi pi-bolt" /></span>
+            <div>
+              <h1>Добавьте первое действие</h1>
+              <p>
+                Например, отправьте сообщение или дождитесь события. После
+                добавления откроется схема сценария.
+              </p>
+            </div>
+            <div v-if="canEdit && actionGroups.length" class="action-empty-options">
+              <template v-for="group in actionGroups" :key="group.label">
+                <button
+                  v-for="definition in group.items"
+                  :key="definition.type"
+                  type="button"
+                  @click="addNode(definition.type)"
+                >
+                  <i class="pi pi-plus" />{{ definition.name }}
+                </button>
+              </template>
+            </div>
+          </section>
         </main>
 
         <main v-else-if="studioStage === 'eligibility'" class="rule-canvas">
+          <header class="stage-section-header">
+            <div>
+              <span>Условия запуска</span>
+              <h1>Что должно произойти перед запуском</h1>
+              <p>
+                Добавьте проверки текущего события или недавних действий
+                пользователя.
+              </p>
+            </div>
+            <Button
+              v-if="ruleContext && canEdit"
+              label="Проверить условия"
+              icon="pi pi-check-circle"
+              severity="secondary"
+              outlined
+              @click="validationOpen = true"
+            />
+          </header>
           <Message v-if="authoringError" severity="error" :closable="false"
             >Не удалось загрузить каталог условий. {{ authoringError }}</Message
           >
@@ -1617,7 +1720,15 @@ function leave() {
           <div v-else-if="ruleContext" class="stage-empty">
             <i class="pi pi-lock" />
             <h2>Условия только для просмотра</h2>
-            <p>{{ summarizeRule(ruleDraft, ruleContext).text }}</p>
+            <template v-if="sourceSnapshotUnavailable">
+              <p><strong>Исходные условия недоступны</strong></p>
+              <p>
+                Сценарий продолжает использовать условия опубликованной
+                версии, но показать их без сохранённого исходника редактора
+                нельзя.
+              </p>
+            </template>
+            <p v-else>{{ summarizeRule(ruleDraft, ruleContext).text }}</p>
           </div>
           <div v-else class="stage-empty">
             <i class="pi pi-link" />
@@ -1626,7 +1737,7 @@ function leave() {
               Конструктор использует точную ревизию Event из каталога. Мы не
               связываем ревизии только по одинаковому коду.
             </p>
-            <Button label="Перейти к запуску" @click="selectStage('trigger')" />
+            <Button label="Открыть настройки запуска" @click="selectStage('trigger')" />
           </div>
         </main>
 
@@ -1642,8 +1753,8 @@ function leave() {
             v-if="audienceSegmentsError"
             severity="warn"
             :closable="false"
-            >{{ audienceSegmentsError }}. Условия по locale, language, country и
-            атрибутам остаются доступны.</Message
+            >{{ audienceSegmentsError }}. Условия по языку, стране и полям
+            профиля остаются доступны.</Message
           >
           <nav class="segment-library-link" aria-label="Управление сегментами">
             <div>
@@ -1675,6 +1786,20 @@ function leave() {
             @update:model-value="updateAudienceDraft"
             @editing-dirty="ruleEditorDirty = $event"
           />
+          <div v-else class="readonly-stage-card">
+            <i class="pi pi-eye" />
+            <div>
+              <h2>Аудитория только для просмотра</h2>
+              <template v-if="sourceSnapshotUnavailable">
+                <p><strong>Исходные настройки аудитории недоступны</strong></p>
+                <p>
+                  Опубликованная версия продолжает работать, но её аудиторию
+                  нельзя достоверно восстановить по данным выполнения.
+                </p>
+              </template>
+              <p v-else>{{ audienceSummary?.text ?? "Аудитория не ограничена" }}</p>
+            </div>
+          </div>
         </main>
 
         <main v-else class="stage-overview">
@@ -1688,7 +1813,12 @@ function leave() {
             <div v-if="selectedAuthoringEvent" class="selected-trigger">
               <i class="pi pi-bolt" />
               <div>
-                <strong>{{ selectedAuthoringEvent.name }}</strong
+                <strong>{{
+                  eventDisplayName(
+                    selectedAuthoringEvent.code,
+                    selectedAuthoringEvent.name,
+                  )
+                }}</strong
                 ><code>{{ selectedAuthoringEvent.code }}</code>
               </div>
               <span>Схема v{{ selectedAuthoringEvent.schemaVersion }}</span>
@@ -1720,12 +1850,27 @@ function leave() {
               v-if="canManage && authoringEditable"
               ref="deliveryEditor"
               v-model="deliveryPolicy"
-            /><Message severity="info" :closable="false"
+            /><div v-else-if="!authoringEditable" class="readonly-stage-card">
+              <i class="pi pi-eye" />
+              <div>
+                <h2>Настройки доставки только для просмотра</h2>
+                <template v-if="sourceSnapshotUnavailable">
+                  <p><strong>Исходные настройки доставки недоступны</strong></p>
+                  <p>
+                    Сценарий продолжает доставлять сообщения по опубликованной
+                    версии. Пустые значения редактора здесь не показываются,
+                    чтобы не исказить фактическое поведение.
+                  </p>
+                </template>
+                <p v-else>{{ deliveryPolicySummary(deliveryPolicy) }}</p>
+              </div>
+            </div>
+            <Message severity="info" :closable="false"
               >Ожидание пользователя в сети не продлевает срок цели. При
               публикации условия и аудитория фиксируются по версии; перед
               доставкой обе проверки выполняются независимо.</Message
             ><ScenarioPublishPanel
-              v-if="ruleContext && canManage"
+              v-if="ruleContext && canEdit"
               :project-id="auth.project?.id ?? ''"
               :scenario-id="form.id ?? ''"
               :draft="ruleDraft"
@@ -1747,6 +1892,12 @@ function leave() {
               @resave-required="requireDraftResave"
             /><Message v-else-if="!canManage" severity="info" :closable="false"
               >Публикация доступна только владельцам и администраторам.</Message
+            ><Message
+              v-else-if="!authoringEditable"
+              severity="info"
+              :closable="false"
+              >Чтобы изменить настройки и выпустить новую версию, восстановите
+              исходник редактора или создайте новый сценарий.</Message
             ><Message v-else severity="warn" :closable="false"
               >Сначала выберите событие запуска из каталога сценариев.</Message
             ><ScenarioRevisionHistory
@@ -1760,18 +1911,41 @@ function leave() {
           </div>
         </main>
 
-        <RuleValidationPreview
-          v-if="studioStage === 'eligibility' && ruleContext && canManage"
-          :project-id="auth.project?.id ?? ''"
-          :draft="ruleDraft"
-          :context="ruleContext"
-          :draft-revision="ruleDraftRevision"
-          :audience-draft="audienceDraft"
-          :audience-context="audienceContext ?? undefined"
-          :audience-draft-revision="audienceDraftRevision"
-          @focus-node="focusRuleIssue"
-          @focus-audience-node="focusAudienceIssue"
-        />
+        <aside
+          v-if="
+            studioStage === 'eligibility' &&
+            ruleContext &&
+            canEdit &&
+            validationOpen
+          "
+          class="validation-drawer"
+          aria-label="Проверка условий"
+        >
+          <header>
+            <div>
+              <small>Проверка</small>
+              <strong>Работают ли условия</strong>
+            </div>
+            <Button
+              icon="pi pi-times"
+              text
+              rounded
+              aria-label="Закрыть проверку условий"
+              @click="validationOpen = false"
+            />
+          </header>
+          <RuleValidationPreview
+            :project-id="auth.project?.id ?? ''"
+            :draft="ruleDraft"
+            :context="ruleContext"
+            :draft-revision="ruleDraftRevision"
+            :audience-draft="audienceDraft"
+            :audience-context="audienceContext ?? undefined"
+            :audience-draft-revision="audienceDraftRevision"
+            @focus-node="focusRuleIssue"
+            @focus-audience-node="focusAudienceIssue"
+          />
+        </aside>
         <ScenarioNodeInspector
           v-else-if="
             studioStage === 'actions' &&
@@ -1797,10 +1971,81 @@ function leave() {
           @close="closeNodeInspector"
         />
         <aside
-          v-else-if="studioStage === 'trigger' || studioStage === 'actions'"
-          class="settings-panel"
-          :inert="!canEdit"
+          v-else-if="
+            studioStage === 'actions' &&
+            inspectorMode === 'node' &&
+            selectedAction
+          "
+          class="readonly-panel readonly-action-panel"
+          aria-label="Действие только для просмотра"
         >
+          <div class="settings-head readonly-action-head">
+            <div>
+              <small>Режим просмотра</small>
+              <h2>{{
+                findActionDefinition(actionDefinitions, selectedAction.type)
+                  ?.name ?? selectedAction.type
+              }}</h2>
+            </div>
+            <Button
+              icon="pi pi-times"
+              text
+              rounded
+              aria-label="Закрыть просмотр действия"
+              @click="closeNodeInspector"
+            />
+          </div>
+          <dl>
+            <div>
+              <dt>Код шага</dt>
+              <dd><code>{{ selectedAction.nodeKey }}</code></dd>
+            </div>
+            <div>
+              <dt>Что делает</dt>
+              <dd>{{ nodeSummary(selectedAction) }}</dd>
+            </div>
+            <div>
+              <dt>Следующий шаг</dt>
+              <dd>{{ selectedAction.nextNodeKey || "Завершает сценарий" }}</dd>
+            </div>
+          </dl>
+          <p class="readonly-action-note">
+            Изменить этот шаг нельзя: исходные настройки опубликованной версии
+            не сохранились в формате редактора.
+          </p>
+        </aside>
+        <aside
+          v-else-if="studioStage === 'trigger' && !canEdit"
+          class="readonly-panel"
+          aria-label="Сводка сценария"
+        >
+          <div class="settings-head">
+            <small>Режим просмотра</small>
+            <h2>Настройки запуска</h2>
+            <p>Здесь показаны настройки опубликованной версии.</p>
+          </div>
+          <dl>
+            <div><dt>Название</dt><dd>{{ form.name }}</dd></div>
+            <div><dt>Системный код</dt><dd><code>{{ form.code }}</code></dd></div>
+            <div>
+              <dt>Событие запуска</dt>
+              <dd>
+                {{
+                  selectedAuthoringEvent
+                    ? eventDisplayName(
+                        selectedAuthoringEvent.code,
+                        selectedAuthoringEvent.name,
+                      )
+                    : selectedEvent
+                      ? eventDisplayName(selectedEvent.code, selectedEvent.name)
+                      : "Не выбрано"
+                }}
+              </dd>
+            </div>
+            <div><dt>Статус</dt><dd>{{ form.status === "ACTIVE" ? "Активен" : "Черновик" }}</dd></div>
+          </dl>
+        </aside>
+        <aside v-else-if="studioStage === 'trigger'" class="settings-panel">
           <div class="settings-head">
             <small>Сценарий</small>
             <h2>Настройки запуска</h2>
@@ -1927,11 +2172,10 @@ function leave() {
           </section>
           <section v-if="form.conditions.length">
             <div class="section-copy">
-              <h3>Legacy conditions</h3>
+              <h3>Условия старого формата</h3>
               <p>
-                Эти raw-path условия сохранены только для старого runtime. Новые
-                behavioral conditions создаются на отдельном этапе и не
-                смешиваются с узлом «Условие».
+                Эти условия нужны для совместимости со старыми версиями
+                сценария. Новые условия настраиваются в разделе «Условия».
               </p>
             </div>
             <ScenarioConditionRows
@@ -1940,16 +2184,19 @@ function leave() {
             />
           </section>
         </aside>
-        <aside v-else class="stage-aside">
+        <aside
+          v-else-if="studioStage === 'audience' || studioStage === 'delivery'"
+          class="stage-aside"
+        >
           <i class="pi pi-info-circle" /><strong>{{
             studioStage === "audience"
-              ? "Audience фиксируется по версиям"
+              ? "Аудитория закрепляется по версии"
               : "Отдельная политика доставки"
           }}</strong>
           <p>
             {{
               studioStage === "audience"
-                ? "Сегменты публикуются отдельно. Сценарий хранит точный segment revision, а Run Explain показывает первоначальный снимок и отдельный delivery recheck."
+                ? "Сегменты публикуются отдельно. Сценарий хранит выбранную версию сегмента и повторно проверяет аудиторию перед отправкой."
                 : deliveryPolicySummary(deliveryPolicy)
             }}
           </p>
@@ -1962,7 +2209,9 @@ function leave() {
 <style scoped>
 .scenario-studio {
   container: scenario-studio / inline-size;
-  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--surface-canvas);
@@ -2019,10 +2268,31 @@ function leave() {
   justify-content: flex-end;
 }
 .studio-grid {
+  position: relative;
   min-height: 0;
   flex: 1;
   display: grid;
+  grid-template-columns: 188px minmax(0, 1fr);
+  overflow: hidden;
+}
+.studio-grid.stage-actions.has-action-inspector {
   grid-template-columns: 188px minmax(0, 1fr) 360px;
+}
+.studio-grid.stage-trigger > .stage-overview,
+.studio-grid.stage-audience > .stage-aside,
+.studio-grid.stage-delivery > .stage-aside {
+  display: none;
+}
+.studio-grid.stage-trigger > .settings-panel,
+.studio-grid.stage-trigger > .readonly-panel {
+  grid-column: 2;
+}
+.studio-grid.stage-trigger > .settings-panel .settings-head,
+.studio-grid.stage-trigger > .settings-panel section,
+.studio-grid.stage-trigger > .readonly-panel .settings-head,
+.studio-grid.stage-trigger > .readonly-panel dl {
+  width: min(860px, 100%);
+  margin-inline: auto;
 }
 .studio-sidebar {
   overflow: auto;
@@ -2186,8 +2456,69 @@ function leave() {
   height: 100%;
   overflow: auto;
   padding: 20px;
+  background: var(--surface-card);
+}
+.stage-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-card);
+}
+.stage-section-header > div {
+  min-width: 0;
+}
+.stage-section-header span {
+  color: var(--text-small-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.stage-section-header h1 {
+  margin: 4px 0 0;
+  font-size: 1.15rem;
+}
+.stage-section-header p {
+  margin: 5px 0 0;
+  color: var(--text-small-muted);
+  font-size: var(--font-size-body-small);
+}
+.validation-drawer {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(460px, 100%);
   border-left: 1px solid var(--line);
   background: var(--surface-card);
+  box-shadow: var(--shadow-raised);
+}
+.validation-drawer > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.validation-drawer > header small,
+.validation-drawer > header strong {
+  display: block;
+}
+.validation-drawer > header small {
+  color: var(--text-small-muted);
+  font-size: var(--font-size-caption);
+  text-transform: uppercase;
+}
+.validation-drawer > header strong {
+  margin-top: 3px;
+  font-size: var(--font-size-body);
 }
 .graph-canvas :deep(.vue-flow) {
   height: 100%;
@@ -2236,29 +2567,59 @@ function leave() {
   left: 12px;
   width: min(520px, calc(100% - 24px));
 }
-.canvas-empty {
+.action-empty {
   position: absolute;
-  left: 50%;
-  top: 68%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  flex-direction: column;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  padding: 32px;
+  background: var(--surface-canvas);
+  text-align: center;
+}
+.action-empty-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  border-radius: 17px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+  place-items: center;
+}
+.action-empty h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+.action-empty p {
+  max-width: 520px;
+  margin: 8px 0 0;
   color: var(--text-small-muted);
-  pointer-events: none;
+  font-size: var(--font-size-body);
 }
-.canvas-empty i {
-  font-size: 2rem;
-  color: var(--text-disabled);
+.action-empty-options {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 640px;
 }
-.canvas-empty strong {
-  margin-top: 12px;
+.action-empty-options button {
+  min-height: var(--control-height);
+  padding: 9px 13px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--surface-card);
   color: var(--text-primary);
-  font: 700 0.9rem Manrope;
+  font: 700 var(--font-size-button) Manrope;
+  cursor: pointer;
 }
-.canvas-empty span {
-  margin-top: 5px;
-  font-size: 0.72rem;
+.action-empty-options button:hover {
+  border-color: var(--status-violet);
+  background: var(--status-violet-soft);
+}
+.action-empty-options i {
+  margin-right: 7px;
 }
 .stage-overview {
   display: grid;
@@ -2328,11 +2689,73 @@ function leave() {
 .stage-empty p {
   max-width: 520px;
 }
+.readonly-stage-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  background: var(--surface-subtle);
+}
+.readonly-stage-card > i {
+  margin-top: 3px;
+  color: var(--status-violet-text);
+  font-size: 1.1rem;
+}
+.readonly-stage-card h2,
+.readonly-stage-card p {
+  margin: 0;
+}
+.readonly-stage-card h2 {
+  font-size: 0.92rem;
+}
+.readonly-stage-card p {
+  margin-top: 6px;
+  color: var(--text-small-muted);
+}
 .settings-panel {
   height: 100%;
   overflow: auto;
   border-left: 1px solid var(--line);
   background: var(--surface-card);
+}
+.readonly-panel {
+  height: 100%;
+  overflow: auto;
+  border-left: 1px solid var(--line);
+  background: var(--surface-card);
+}
+.readonly-panel dl {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+.readonly-panel dl > div {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.readonly-panel dt {
+  color: var(--text-small-muted);
+  font-size: var(--font-size-caption);
+}
+.readonly-panel dd {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.readonly-action-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.readonly-action-note {
+  margin: 18px 20px;
+  color: var(--text-small-muted);
+  font-size: var(--font-size-body-small);
 }
 .settings-head {
   padding: 21px 20px 17px;
@@ -2423,6 +2846,39 @@ function leave() {
   transform: translateX(-50%);
   width: min(520px, calc(100vw - 24px));
   box-shadow: var(--shadow);
+}
+.readonly-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 12px 20px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--status-warning);
+  border-radius: 14px;
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.readonly-notice > i {
+  margin-top: 2px;
+  font-size: 1rem;
+}
+.readonly-notice > div {
+  min-width: 0;
+  flex: 1;
+}
+.readonly-notice > .p-button {
+  flex: 0 0 auto;
+}
+.readonly-notice strong,
+.readonly-notice p {
+  display: block;
+  margin: 0;
+}
+.readonly-notice p {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-small);
+  line-height: 1.45;
 }
 .audience-canvas {
   position: relative;
@@ -2612,8 +3068,8 @@ function leave() {
 }
 @container scenario-studio (max-width:1024px) {
   .scenario-studio {
-    height: auto;
-    min-height: 100vh;
+    height: 100dvh;
+    min-height: 0;
   }
   .studio-header {
     grid-template-columns: 1fr 1fr;
@@ -2622,10 +3078,21 @@ function leave() {
     display: none;
   }
   .studio-grid {
-    flex: none;
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+  .studio-grid.stage-actions.has-action-inspector {
     grid-template-columns: minmax(0, 1fr);
   }
+  .studio-grid.stage-trigger > .settings-panel,
+  .studio-grid.stage-trigger > .readonly-panel {
+    grid-column: 1;
+  }
   .studio-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 4;
     overflow-x: auto;
     padding: 9px;
     border-right: 0;
@@ -2666,16 +3133,14 @@ function leave() {
     border-left: 0;
   }
   .scenario-studio :deep(.rule-validation-preview) {
-    height: auto;
-    min-height: 520px;
-    overflow: visible;
-    border-left: 0;
-    border-top: 1px solid var(--line);
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
   }
 }
 @container scenario-studio (max-width:767px) {
   .scenario-studio {
-    min-height: calc(100vh - 60px);
+    min-height: 0;
   }
   .studio-header {
     min-height: 70px;
@@ -2704,6 +3169,13 @@ function leave() {
   .overview-card {
     padding: 20px;
   }
+  .readonly-notice {
+    flex-wrap: wrap;
+    margin: 10px 12px 0;
+  }
+  .readonly-notice > .p-button {
+    width: 100%;
+  }
   .settings-row {
     grid-template-columns: 1fr;
   }
@@ -2729,6 +3201,14 @@ function leave() {
     gap: 10px;
   }
   .scenario-studio :deep(.inspector) {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    width: auto;
+    height: 100dvh;
+    border: 0;
+  }
+  .readonly-action-panel {
     position: fixed;
     z-index: 1000;
     inset: 0;
@@ -2782,6 +3262,11 @@ function leave() {
 @container scenario-studio (max-width:1024px) {
   .audience-canvas {
     min-height: 55vh;
+  }
+}
+@media (max-width: 900px) {
+  .scenario-studio {
+    height: calc(100dvh - 60px);
   }
 }
 </style>

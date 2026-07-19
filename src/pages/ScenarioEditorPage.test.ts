@@ -204,6 +204,12 @@ function stageButton(wrapper: ReturnType<typeof mountPage>, label: string) {
     .find((button) => button.find("strong").text() === label)!;
 }
 
+async function openValidation(wrapper: ReturnType<typeof mountPage>) {
+  await wrapper
+    .find('button-stub[label="Проверить условия"]')
+    .trigger("click");
+}
+
 describe("ScenarioEditorPage V2 rule journey", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -361,6 +367,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(mocks.guardDirty?.value).toBe(true);
 
     await stageButton(wrapper, "Условия").trigger("click");
+    await openValidation(wrapper);
     expect(wrapper.getComponent(RuleValidationPreview).props()).toMatchObject({
       audienceDraft,
       audienceDraftRevision: 1,
@@ -437,22 +444,60 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     vi.unstubAllGlobals();
   });
 
+  it("shows the action canvas only after the first action exists", async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+
+    expect(wrapper.find('[data-test="vue-flow"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain("Добавьте первое действие");
+
+    mocks.getScenarios.mockResolvedValueOnce([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "welcome_message",
+            type: "SAY",
+            config: { text: "Добро пожаловать" },
+          },
+        ],
+      },
+    ]);
+    const configuredWrapper = mountPage();
+    await flushPromises();
+    await stageButton(configuredWrapper, "Действия").trigger("click");
+
+    expect(configuredWrapper.find('[data-test="vue-flow"]').exists()).toBe(true);
+  });
+
   it("opens the Rule Builder only for the exact catalog Event revision", async () => {
     const wrapper = mountPage();
     await flushPromises();
     await stageButton(wrapper, "Условия").trigger("click");
 
     const builder = wrapper.getComponent(ScenarioRuleBuilder);
-    const preview = wrapper.getComponent(RuleValidationPreview);
     expect(builder.props("context")).toMatchObject({
       triggerEventDefinitionId: "event-revision-1",
       triggerEventCode: "page.opened",
       contract: { revision: "catalog-1" },
     });
+    expect(wrapper.findComponent(RuleValidationPreview).exists()).toBe(false);
+
+    await wrapper
+      .find('button-stub[label="Проверить условия"]')
+      .trigger("click");
+    const preview = wrapper.getComponent(RuleValidationPreview);
     expect(preview.props()).toMatchObject({
       projectId: "project-1",
       draftRevision: 0,
     });
+
+    await wrapper
+      .find('button-stub[aria-label="Закрыть проверку условий"]')
+      .trigger("click");
+    expect(wrapper.findComponent(RuleValidationPreview).exists()).toBe(false);
   });
 
   it("saves the durable document before legacy metadata and never sends actions through the legacy PATCH", async () => {
@@ -479,6 +524,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     await wrapper.vm.$nextTick();
 
     expect(mocks.guardDirty?.value).toBe(true);
+    await openValidation(wrapper);
     expect(
       wrapper.getComponent(RuleValidationPreview).props("draftRevision"),
     ).toBe(1);
@@ -796,5 +842,126 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.text()).toContain(
       "Публикация доступна только владельцам и администраторам",
     );
+  });
+
+  it("explains an unavailable source snapshot without exposing the backend code", async () => {
+    mocks.getScenarioDocument.mockResolvedValueOnce({
+      scenarioId: scenario.id,
+      projectId: "project-1",
+      code: scenario.code,
+      name: scenario.name,
+      status: "ACTIVE",
+      triggerEventDefinitionRevisionId: event.id,
+      currentRevisionId: "revision-1",
+      editable: false,
+      unavailableReason: "SOURCE_SNAPSHOT_UNAVAILABLE",
+      createdAt: "now",
+      updatedAt: "now",
+    });
+
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Сценарий продолжает работать как раньше");
+    expect(wrapper.text()).toContain("исходные настройки этой версии не сохранились");
+    expect(wrapper.text()).not.toContain("SOURCE_SNAPSHOT_UNAVAILABLE");
+    expect(wrapper.find('button-stub[label="Сохранить"]').exists()).toBe(false);
+    await wrapper
+      .get('button-stub[label="Создать новый сценарий"]')
+      .trigger("click");
+    expect(mocks.push).toHaveBeenCalledWith({ name: "scenario-create" });
+  });
+
+  it("keeps stage navigation usable while the scenario is read-only", async () => {
+    mocks.getScenarios.mockResolvedValueOnce([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "welcome_message",
+            type: "SAY",
+            config: { text: "Добро пожаловать" },
+          },
+        ],
+      },
+    ]);
+    mocks.getScenarioDocument.mockResolvedValueOnce({
+      scenarioId: scenario.id,
+      projectId: "project-1",
+      code: scenario.code,
+      name: scenario.name,
+      status: "ACTIVE",
+      triggerEventDefinitionRevisionId: event.id,
+      currentRevisionId: "revision-1",
+      editable: false,
+      unavailableReason: "SOURCE_SNAPSHOT_UNAVAILABLE",
+      createdAt: "now",
+      updatedAt: "now",
+    });
+
+    const wrapper = mountPage();
+    await flushPromises();
+
+    await stageButton(wrapper, "Условия").trigger("click");
+    expect(stageButton(wrapper, "Условия").classes()).toContain("active");
+    expect(wrapper.findComponent(RuleValidationPreview).exists()).toBe(false);
+    expect(wrapper.text()).toContain("Исходные условия недоступны");
+    expect(wrapper.text()).not.toContain("Условия ещё не добавлены");
+
+    await stageButton(wrapper, "Аудитория").trigger("click");
+    expect(wrapper.text()).toContain("Аудитория только для просмотра");
+    expect(wrapper.text()).toContain("Исходные настройки аудитории недоступны");
+    expect(wrapper.text()).not.toContain("Аудитория не ограничена");
+    expect(wrapper.findComponent(AudienceRuleBuilder).exists()).toBe(false);
+
+    await stageButton(wrapper, "Действия").trigger("click");
+    await wrapper
+      .get('button[aria-label="Открыть узел welcome_message"]')
+      .trigger("click");
+    expect(wrapper.get(".readonly-action-panel").text()).toContain(
+      "Добро пожаловать",
+    );
+
+    await stageButton(wrapper, "Доставка").trigger("click");
+    expect(wrapper.text()).toContain("Настройки доставки только для просмотра");
+    expect(wrapper.text()).toContain("Исходные настройки доставки недоступны");
+    expect(wrapper.findComponent(ScenarioPublishPanel).exists()).toBe(false);
+
+    await stageButton(wrapper, "Запуск").trigger("click");
+    expect(stageButton(wrapper, "Запуск").classes()).toContain("active");
+    expect(wrapper.find(".readonly-panel").exists()).toBe(true);
+    expect(wrapper.find("[inert]").exists()).toBe(false);
+  });
+
+  it("shows system event names in Russian while preserving their codes", async () => {
+    const systemEvent = {
+      ...event,
+      id: "system-event-revision",
+      code: "lola.became_online",
+      name: "User became online",
+    };
+    mocks.getScenarios.mockResolvedValue([
+      { ...scenario, eventDefinitionId: systemEvent.id },
+    ]);
+    mocks.getEvents.mockResolvedValue([systemEvent]);
+    mocks.getContract.mockResolvedValue({
+      ...contract,
+      events: [
+        {
+          ...contract.events[0]!,
+          code: systemEvent.code,
+          definitionId: systemEvent.id,
+          name: systemEvent.name,
+        },
+      ],
+    });
+
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Пользователь появился в сети");
+    expect(wrapper.text()).toContain("lola.became_online");
+    expect(wrapper.text()).not.toContain("User became online");
   });
 });

@@ -78,6 +78,16 @@ const publishForm = ref({
   readinessEvidenceId: "",
   confirmSecurity: false,
 });
+const publishHelp = {
+  reason:
+    "Коротко опишите, что изменилось и зачем. Этот текст будет виден администраторам в истории публикаций.",
+  graceDays:
+    "Переходный период позволяет временно принимать предыдущую версию полей. Укажите количество дней, пока разработчики обновляют интеграцию, или 0, если все источники уже готовы.",
+  breakingChangePlan:
+    "Заполните, если старые запросы перестанут подходить новой структуре. Укажите, какие системы и в каком порядке обновит команда.",
+  readinessEvidence:
+    "Укажите номер задачи или проверки, где разработчики подтвердили, что готовы передавать новые обязательные поля.",
+} as const;
 const healthWindow = ref<"24h" | "7d" | "30d">("7d");
 const aiFormat = ref<"STRUCTURED_JSON" | "COMPACT_TEXT">("STRUCTURED_JSON");
 const aiBudget = ref(2000);
@@ -1380,7 +1390,7 @@ function archiveImpactedField() {
       v-model:visible="editorVisible"
       modal
       :header="
-        editingIndex === null ? 'Новое поле Current Profile' : 'Изменить поле'
+        editingIndex === null ? 'Новое поле профиля пользователя' : 'Изменить поле'
       "
       :style="{ width: 'min(920px, calc(100vw - 24px))' }"
     >
@@ -1443,7 +1453,7 @@ function archiveImpactedField() {
               option-label="label"
               option-value="value" /></label
           ><label
-            ><span>Semantic role</span
+            ><span>Назначение данных</span
             ><Select
               v-model="form.semanticRole"
               :options="semanticRoleOptions"
@@ -1462,37 +1472,37 @@ function archiveImpactedField() {
             maxlength="2000"
         /></label>
         <label
-          ><span>Purpose / legal use</span
+          ><span>Цель и правовое основание</span
           ><Textarea
             v-model="form.purpose"
             rows="2"
             auto-resize
             maxlength="500"
-            placeholder="Обязательно при AI read"
+            placeholder="Обязательно, если поле используют функции с ИИ"
         /></label>
         <section class="policy-editor surface-soft">
           <h3>Политики потребителей</h3>
           <div class="toggle-grid">
             <label
-              ><span>Admin read</span
+              ><span>Просмотр администраторами</span
               ><ToggleSwitch v-model="form.policies.adminRead" /></label
             ><label
-              ><span>Audience</span
+              ><span>Условия аудитории</span
               ><ToggleSwitch v-model="form.policies.audienceRead" /></label
             ><label
-              ><span>Templates</span
+              ><span>Шаблоны сообщений</span
               ><ToggleSwitch v-model="form.policies.templateRead" /></label
             ><label
-              ><span>AI read</span
+              ><span>Функции с ИИ</span
               ><ToggleSwitch v-model="form.policies.aiRead" /></label
             ><label
-              ><span>Browser</span
+              ><span>Интерфейс продукта</span
               ><ToggleSwitch v-model="form.policies.clientRead" /></label
             ><label
-              ><span>Export</span
+              ><span>Выгрузка</span
               ><ToggleSwitch v-model="form.policies.exportRead" /></label
             ><label
-              ><span>Index</span
+              ><span>Индексирование</span
               ><Select
                 v-model="form.policies.indexPolicy"
                 :options="indexOptions"
@@ -1501,7 +1511,7 @@ function archiveImpactedField() {
             /></label>
           </div>
           <label class="allowed-values"
-            ><span>Allowed values · по одному в строке</span
+            ><span>Допустимые значения · по одному в строке</span
             ><Textarea
               v-model="allowedValuesInput"
               rows="3"
@@ -1514,8 +1524,8 @@ function archiveImpactedField() {
                     : 'basic\npremium'
               "
             /><small
-              >DECIMAL сохраняется точной строкой; INTEGER и BOOLEAN проверяются
-              до отправки на backend.</small
+              >Десятичные числа сохраняются без округления; целые числа и
+              значения «да/нет» проверяются до отправки на сервер.</small
             ></label
           >
         </section>
@@ -1523,36 +1533,36 @@ function archiveImpactedField() {
           <h3>Ограничения</h3>
           <div class="form-grid triple">
             <label
-              ><span>Min length</span
+              ><span>Минимальная длина</span
               ><InputNumber
                 v-model="form.constraints.minLength"
                 :min="0" /></label
             ><label
-              ><span>Max length</span
+              ><span>Максимальная длина</span
               ><InputNumber
                 v-model="form.constraints.maxLength"
                 :min="0" /></label
             ><label
-              ><span>Precision</span
+              ><span>Всего цифр в числе</span
               ><InputNumber
                 v-model="form.constraints.precision"
                 :min="1"
                 :max="38" /></label
             ><label
-              ><span>Scale</span
+              ><span>Цифр после запятой</span
               ><InputNumber
                 v-model="form.constraints.scale"
                 :min="0"
                 :max="38" /></label
             ><label
-              ><span>Minimum</span
+              ><span>Минимальное значение</span
               ><InputText
                 :model-value="String(form.constraints.minimum ?? '')"
                 @update:model-value="
                   form.constraints.minimum = $event || undefined
                 " /></label
             ><label
-              ><span>Maximum</span
+              ><span>Максимальное значение</span
               ><InputText
                 :model-value="String(form.constraints.maximum ?? '')"
                 @update:model-value="
@@ -1563,16 +1573,19 @@ function archiveImpactedField() {
         </section>
         <div v-if="form.lifecycle === 'DEPRECATED'" class="form-grid">
           <label
-            ><span>Replacement definition ID</span
+            ><span>ID поля, которое используется вместо этого</span
             ><InputText
               v-model="form.replacementDefinitionId"
               class="mono" /></label
           ><label
-            ><span>Sunset RFC 3339</span
+            ><span>Когда перестать принимать поле</span
             ><InputText
               v-model="form.sunsetAt"
               placeholder="2026-12-31T00:00:00Z"
-          /></label>
+            /><small
+              >Укажите дату и время по UTC, например
+              2026-12-31T00:00:00Z.</small
+          ></label>
         </div>
         <Message v-if="fieldFormError" severity="error" :closable="false">{{
           fieldFormError
@@ -1602,25 +1615,49 @@ function archiveImpactedField() {
           >После публикации новая структура начнёт действовать. Уже сохранённые
           профили и старые версии останутся без изменений.</Message
         ><label
-          ><span>Причина изменения *</span
+          ><span class="label-with-help">Причина изменения *
+            <button
+              type="button"
+              class="help-button"
+              :aria-label="`Подсказка: ${publishHelp.reason}`"
+              :data-tooltip="publishHelp.reason"
+            ><i class="pi pi-question-circle" /></button></span
           ><Textarea
             v-model="publishForm.reason"
             rows="3"
             maxlength="1000" /></label
         ><label
-          ><span>Переходный период, дней</span
+          ><span class="label-with-help">Переходный период, дней
+            <button
+              type="button"
+              class="help-button"
+              :aria-label="`Подсказка: ${publishHelp.graceDays}`"
+              :data-tooltip="publishHelp.graceDays"
+            ><i class="pi pi-question-circle" /></button></span
           ><InputNumber
             v-model="publishForm.graceDays"
             :min="0"
             :max="30" /></label
         ><label
-          ><span>План перехода для несовместимых изменений</span
+          ><span class="label-with-help">План перехода для несовместимых изменений
+            <button
+              type="button"
+              class="help-button"
+              :aria-label="`Подсказка: ${publishHelp.breakingChangePlan}`"
+              :data-tooltip="publishHelp.breakingChangePlan"
+            ><i class="pi pi-question-circle" /></button></span
           ><Textarea
             v-model="publishForm.breakingChangePlan"
             rows="3"
             maxlength="2000" /></label
         ><label
-          ><span>ID подтверждения готовности интеграции</span
+          ><span class="label-with-help">Номер задачи о готовности интеграции
+            <button
+              type="button"
+              class="help-button"
+              :aria-label="`Подсказка: ${publishHelp.readinessEvidence}`"
+              :data-tooltip="publishHelp.readinessEvidence"
+            ><i class="pi pi-question-circle" /></button></span
           ><InputText
             v-model="publishForm.readinessEvidenceId"
             class="mono"
@@ -1712,16 +1749,17 @@ function archiveImpactedField() {
     <Dialog
       v-model:visible="integrationVisible"
       modal
-      header="Integration guide"
+      header="Как передавать профиль"
       :style="{ width: 'min(820px, calc(100vw - 24px))' }"
     >
       <div class="guide">
         <p>
-          Product backend передаёт полный snapshot. Integration scope:
-          <code>profile:snapshot:write</code>. Более высокий sourceSequence не
-          может быть перезаписан старым; повтор той же операции идемпотентен.
+          Сервер вашего продукта передаёт полный профиль. Токену нужен доступ
+          <code>profile:snapshot:write</code>. Обновление с большим порядковым
+          номером нельзя перезаписать более старым; один и тот же запрос можно
+          безопасно повторить.
         </p>
-        <h3>Прямой sync · PUT /api/v1/end-user-profile-snapshots</h3>
+        <h3>Обновление профиля · PUT /api/v1/end-user-profile-snapshots</h3>
         <pre><code>curl -X PUT "$LOLA_URL/api/v1/end-user-profile-snapshots" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   --data '{
@@ -1731,7 +1769,7 @@ function archiveImpactedField() {
   "sourceSequence": "42",
   "attributes": { "displayName": "Ada", "loyaltyTier": "gold" }
 }'</code></pre>
-        <h3>Atomic session snapshot · POST /api/v1/interaction-sessions</h3>
+        <h3>Профиль при создании сессии · POST /api/v1/interaction-sessions</h3>
         <pre><code>const body = {
   externalUserId: "user-123",
   profileSnapshot: {
@@ -1747,13 +1785,13 @@ await fetch("/api/v1/interaction-sessions", {
   headers: { "Content-Type": "application/json", Authorization: "Bearer &lt;token&gt;" },
   body: JSON.stringify(body)
 });</code></pre>
-        <h3>Сгенерированный JSON Schema</h3>
+        <h3>Сгенерированная схема JSON</h3>
         <pre><code>{{ schemaJson }}</code></pre>
         <Message severity="info" :closable="false"
           >DECIMAL передавайте строкой, DATE — YYYY-MM-DD, DATETIME — RFC 3339.
-          Полный snapshot заменяет предыдущее состояние. Backend проверяет
-          additionalProperties=false, contract revision, порядок sourceSequence
-          и защищает от downgrade.</Message
+          Полный профиль заменяет предыдущее состояние. Сервер проверяет
+          список разрешённых полей, версию структуры и порядок обновлений
+          и не даёт перезаписать данные более старой версией.</Message
         >
       </div>
     </Dialog>
@@ -1860,7 +1898,7 @@ await fetch("/api/v1/interaction-sessions", {
   align-items: center;
   gap: 4px;
   width: fit-content;
-  margin: -10px 0 20px;
+  margin: 14px 0 20px;
   padding: 5px;
   border-radius: 14px;
 }
@@ -1998,6 +2036,9 @@ await fetch("/api/v1/interaction-sessions", {
   border-radius: 13px;
   background: var(--status-success-soft);
   color: var(--status-success-text);
+}
+.quality-area-heading .quality-area-icon {
+  display: grid;
 }
 .quality-area-heading span,
 .quality-area-heading h2,
@@ -2199,6 +2240,13 @@ await fetch("/api/v1/interaction-sessions", {
 .validation-notice {
   margin: 12px 0;
 }
+.validation-notice :deep(.p-message-content),
+.validation-notice :deep(.p-message-text) {
+  width: 100%;
+}
+.validation-notice :deep(.p-message-text) {
+  flex: 1 1 auto;
+}
 .notice-title {
   display: block;
   font-size: 0.71rem;
@@ -2206,6 +2254,7 @@ await fetch("/api/v1/interaction-sessions", {
 }
 .validation-notice ul {
   display: grid;
+  width: 100%;
   gap: 0;
   margin: 8px 0 0;
   padding: 0;
@@ -2220,6 +2269,7 @@ await fetch("/api/v1/interaction-sessions", {
   border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
 }
 .notice-copy {
+  flex: 1 1 auto;
   min-width: 0;
 }
 .notice-copy strong,
@@ -2231,7 +2281,6 @@ await fetch("/api/v1/interaction-sessions", {
   font-weight: 600;
 }
 .notice-copy small {
-  max-width: 760px;
   margin-top: 3px;
   color: var(--muted);
   font-size: 0.68rem;
@@ -2371,6 +2420,54 @@ await fetch("/api/v1/interaction-sessions", {
 .publish-form label > span {
   font-size: 0.68rem;
   font-weight: 700;
+}
+.label-with-help {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+}
+.help-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--status-violet-text);
+  cursor: help;
+}
+.help-button::after {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 48px));
+  padding: 9px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+  color: var(--text-primary);
+  content: attr(data-tooltip);
+  font-size: var(--font-size-body-small);
+  font-weight: 500;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  text-transform: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.help-button:hover::after,
+.help-button:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 .form-grid {
   display: grid;

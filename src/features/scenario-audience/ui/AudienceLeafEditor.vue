@@ -831,6 +831,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   border: 1px solid var(--border-default);
   border-radius: 10px;
   background: var(--surface-card);
+  color: var(--text-primary);
   font-size: var(--font-size-control);
 }
 .field [aria-invalid="true"] {

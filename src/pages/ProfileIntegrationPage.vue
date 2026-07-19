@@ -17,45 +17,114 @@ const loading = ref(true);
 const error = ref("");
 const workspace = ref<AttributeContractWorkspaceResponseDto | null>(null);
 const health = ref<ProfileHealthResponseDto | null>(null);
-const method = ref<"direct" | "session">("direct");
+const method = ref<"direct" | "session">("session");
 
 const revision = computed(() => workspace.value?.currentRevision?.version ?? 1);
 const published = computed(() => Boolean(workspace.value?.currentRevision));
+type ExampleValue = string | number | boolean;
+
+function exampleValue(
+  key: string,
+  valueType: string,
+  allowedValues?: ExampleValue[] | null,
+): ExampleValue {
+  if (allowedValues?.length) return allowedValues[0]!;
+  const normalizedKey = key.toLowerCase();
+  if (normalizedKey.includes("email")) return "anna@example.com";
+  if (normalizedKey.includes("name")) return "Анна";
+  if (valueType === "BOOLEAN" || valueType === "boolean") return true;
+  if (valueType === "INTEGER" || valueType === "integer") return 1;
+  if (valueType === "DECIMAL" || valueType === "number") return "1.00";
+  if (valueType === "DATE") return "2026-07-19";
+  if (valueType === "DATETIME") return "2026-07-19T08:30:00Z";
+  if (valueType === "COUNTRY_CODE") return "ES";
+  if (valueType === "CURRENCY_CODE") return "EUR";
+  return "пример значения";
+}
+
+const exampleProfile = computed<{
+  attributes: Record<string, ExampleValue>;
+  usesPublishedFields: boolean;
+}>(() => {
+  const fields = (workspace.value?.currentRevision?.fields ?? []).filter(
+    (field) => field.lifecycle !== "ARCHIVED",
+  );
+  if (fields.length) {
+    return {
+      attributes: Object.fromEntries(
+        fields.map((field) => [
+          field.key,
+          exampleValue(field.key, field.valueType, field.allowedValues),
+        ]),
+      ),
+      usesPublishedFields: true,
+    };
+  }
+  const properties = workspace.value?.currentRevision?.schema.properties ?? {};
+  const fromSchema = Object.entries(properties).map(([key, property]) => [
+    key,
+    exampleValue(
+      key,
+      typeof property.type === "string" ? property.type : "string",
+      Array.isArray(property.enum)
+        ? (property.enum.filter(
+            (value): value is ExampleValue =>
+              ["string", "number", "boolean"].includes(typeof value),
+          ) as ExampleValue[])
+        : undefined,
+    ),
+  ]);
+  return fromSchema.length
+    ? { attributes: Object.fromEntries(fromSchema), usesPublishedFields: true }
+    : {
+        attributes: { displayName: "Анна", loyaltyTier: "gold" },
+        usesPublishedFields: false,
+      };
+});
+const exampleAttributes = computed(() => exampleProfile.value.attributes);
+const exampleUsesPublishedFields = computed(
+  () => exampleProfile.value.usesPublishedFields,
+);
 const directExample = computed(
   () => `curl -X PUT "$LOLA_URL/api/v1/end-user-profile-snapshots" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
-  --data '{
-    "externalUserId": "user-123",
-    "contractRevision": ${revision.value},
-    "observedAt": "2026-07-19T08:30:00Z",
-    "sourceSequence": "42",
-    "attributes": {
-      "displayName": "Ада",
-      "loyaltyTier": "gold"
-    }
-  }'`,
+  --data '${JSON.stringify(
+    {
+      externalUserId: "user-123",
+      contractRevision: revision.value,
+      observedAt: "2026-07-19T08:30:00Z",
+      sourceSequence: "42",
+      attributes: exampleAttributes.value,
+    },
+    null,
+    2,
+  )}'`,
 );
 const sessionExample = computed(
-  () => `const body = {
-  externalUserId: "user-123",
-  profileSnapshot: {
-    contractRevision: ${revision.value},
-    idempotencyKey: "session:user-123:42",
-    observedAt: "2026-07-19T08:30:00Z",
-    sourceSequence: "42",
-    attributes: {
-      displayName: "Ада",
-      loyaltyTier: "gold"
-    }
-  }
-};
+  () => `const lolaUrl = "https://your-lola.example.com";
+const token = "YOUR_SERVER_TOKEN";
 
-await fetch("/api/v1/interaction-sessions", {
+const body = ${JSON.stringify(
+    {
+      externalUserId: "user-123",
+      profileSnapshot: {
+        contractRevision: revision.value,
+        idempotencyKey: "session:user-123:42",
+        observedAt: "2026-07-19T08:30:00Z",
+        sourceSequence: "42",
+        attributes: exampleAttributes.value,
+      },
+    },
+    null,
+    2,
+  )};
+
+await fetch(\`${"${lolaUrl}"}/api/v1/interaction-sessions\`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    Authorization: "Bearer <token>"
+    Authorization: \`Bearer ${"${token}"}\`
   },
   body: JSON.stringify(body)
 });`,
@@ -276,25 +345,6 @@ async function load() {
             <div class="method-grid">
               <button
                 type="button"
-                :class="{ selected: method === 'direct' }"
-                @click="method = 'direct'"
-              >
-                <span class="method-icon"><i class="pi pi-sync" /></span>
-                <span
-                  ><strong>Обновлять профиль при изменении</strong
-                  ><small
-                    >Рекомендуем для синхронизации из CRM или сервера вашего
-                    продукта.</small
-                  ></span
-                >
-                <i
-                  :class="
-                    method === 'direct' ? 'pi pi-check-circle' : 'pi pi-circle'
-                  "
-                />
-              </button>
-              <button
-                type="button"
                 :class="{ selected: method === 'session' }"
                 @click="method = 'session'"
               >
@@ -309,6 +359,25 @@ async function load() {
                 <i
                   :class="
                     method === 'session' ? 'pi pi-check-circle' : 'pi pi-circle'
+                  "
+                />
+              </button>
+              <button
+                type="button"
+                :class="{ selected: method === 'direct' }"
+                @click="method = 'direct'"
+              >
+                <span class="method-icon"><i class="pi pi-sync" /></span>
+                <span
+                  ><strong>Обновлять профиль при изменении</strong
+                  ><small
+                    >Подходит для синхронизации из CRM или сервера вашего
+                    продукта.</small
+                  ></span
+                >
+                <i
+                  :class="
+                    method === 'direct' ? 'pi pi-check-circle' : 'pi pi-circle'
                   "
                 />
               </button>
@@ -328,6 +397,12 @@ async function load() {
               Добавьте объект <code>profileSnapshot</code> при создании сессии
               на сервере вашего продукта.
             </p>
+            <aside class="example-note" aria-label="О примере запроса">
+              <strong>В примере нет реальных данных пользователя.</strong>
+              {{ exampleUsesPublishedFields
+                ? "Ключи взяты из опубликованной структуры вашего проекта — замените только значения."
+                : "Опубликованных полей пока нет, поэтому показаны демонстрационные ключи и значения." }}
+            </aside>
             <CodeBlock
               v-if="method === 'direct'"
               title="Пример обновления профиля"
@@ -342,10 +417,11 @@ async function load() {
             />
             <div class="replace-list">
               <div>
-                <code>$LOLA_URL</code><span>Адрес API вашего проекта Lola</span>
+                <code>{{ method === "session" ? "lolaUrl" : "$LOLA_URL" }}</code
+                ><span>Адрес API вашего проекта Lola</span>
               </div>
               <div>
-                <code>$TOKEN</code
+                <code>{{ method === "session" ? "token" : "$TOKEN" }}</code
                 ><span>Серверный токен с доступом к записи профилей</span>
               </div>
               <div>
@@ -353,6 +429,17 @@ async function load() {
                 ><span>ID пользователя в вашем продукте</span>
               </div>
             </div>
+            <section class="parameter-guide" aria-labelledby="parameter-guide-title">
+              <h3 id="parameter-guide-title">Что передать в запросе</h3>
+              <dl>
+                <div><dt><code>externalUserId</code> · обязательно</dt><dd>Постоянный ID пользователя в вашем продукте. Не создавайте новый ID при каждом запросе.</dd></div>
+                <div><dt><code>contractRevision</code> · обязательно</dt><dd>Версия опубликованной структуры полей. На этой странице уже подставлена версия {{ revision }}.</dd></div>
+                <div v-if="method === 'session'"><dt><code>idempotencyKey</code> · обязательно</dt><dd>Уникальный ключ запроса. При повторной отправке того же запроса используйте тот же ключ.</dd></div>
+                <div><dt><code>observedAt</code> · обязательно</dt><dd>Время, на которое данные были актуальны в вашем продукте, в формате UTC.</dd></div>
+                <div><dt><code>sourceSequence</code> · рекомендуется</dt><dd>Порядковый номер обновления для этого пользователя. Каждый следующий номер должен быть больше предыдущего.</dd></div>
+                <div><dt><code>attributes</code> · обязательно</dt><dd>Все актуальные опубликованные поля профиля. Новый запрос заменяет предыдущий профиль целиком.</dd></div>
+              </dl>
+            </section>
             <details class="technical-details">
               <summary>Технические параметры</summary>
               <dl>
@@ -624,6 +711,20 @@ async function load() {
   font-size: 0.63rem;
   line-height: 1.35;
 }
+.example-note {
+  margin-bottom: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--status-info);
+  border-radius: 11px;
+  background: var(--status-info-soft);
+  color: var(--status-info-text);
+  font-size: var(--font-size-body-small);
+  line-height: 1.45;
+}
+.example-note strong {
+  display: block;
+  margin-bottom: 3px;
+}
 .replace-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -648,6 +749,36 @@ async function load() {
   margin-top: 4px;
   color: var(--muted);
   font-size: 0.62rem;
+}
+.parameter-guide {
+  margin-top: 14px;
+}
+.parameter-guide h3 {
+  margin: 0 0 9px;
+  font-size: 0.82rem;
+}
+.parameter-guide dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.parameter-guide dl > div {
+  padding: 11px;
+  border: 1px solid var(--border-default);
+  border-radius: 11px;
+  background: var(--surface-subtle);
+}
+.parameter-guide dt {
+  color: var(--text-primary);
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+.parameter-guide dd {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.64rem;
+  line-height: 1.45;
 }
 .technical-details {
   margin-top: 14px;
@@ -753,6 +884,7 @@ async function load() {
     height: 36px;
   }
   .replace-list,
+  .parameter-guide dl,
   .technical-details dl {
     grid-template-columns: 1fr;
   }

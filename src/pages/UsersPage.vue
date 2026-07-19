@@ -258,7 +258,9 @@ function syncSeverity(status: string) {
     ? "success"
     : status === "VALID_WITH_WARNINGS"
       ? "warn"
-      : "danger";
+      : status === "NO_VALID_SNAPSHOT"
+        ? "secondary"
+        : "danger";
 }
 
 function syncStatusLabel(status: string) {
@@ -266,20 +268,9 @@ function syncStatusLabel(status: string) {
     {
       VALID: "Данные приняты",
       VALID_WITH_WARNINGS: "Принято с предупреждением",
+      NO_VALID_SNAPSHOT: "Профиль ещё не передан",
       INVALID: "Обновление отклонено",
     }[status] ?? status
-  );
-}
-
-function localeLabel(locale: string | null | undefined) {
-  if (!locale) return "—";
-  const language = locale.toLowerCase().split("-")[0];
-  return (
-    {
-      ru: "Русский",
-      en: "Английский",
-      es: "Испанский",
-    }[language ?? ""] ?? locale
   );
 }
 
@@ -457,11 +448,6 @@ function classificationLabel(value: string) {
               :value="syncStatusLabel(data.syncStatus)"
               :severity="syncSeverity(data.syncStatus)" /></template
         ></Column>
-        <Column header="Язык" class="mobile-hide"
-          ><template #body="{ data }">{{
-            localeLabel(data.locale)
-          }}</template></Column
-        >
         <Column header="Версия профиля" class="mobile-hide"
           ><template #body="{ data }">{{
             data.profileVersion
@@ -695,8 +681,13 @@ function classificationLabel(value: string) {
 }
 .filters {
   display: grid;
-  grid-template-columns: 1.4fr 1.2fr 0.8fr 1fr 1fr;
-  gap: 10px;
+  grid-template-columns:
+    minmax(0, 1.35fr)
+    minmax(0, 1.1fr)
+    minmax(0, 0.75fr)
+    minmax(0, 0.85fr)
+    minmax(0, 1.25fr);
+  gap: 12px;
   padding: 14px;
   margin-bottom: 18px;
   align-items: end;
@@ -705,6 +696,11 @@ function classificationLabel(value: string) {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+.filters :deep(.p-select),
+.filters :deep(.p-inputtext) {
+  min-width: 0;
 }
 .filters label > span {
   font-size: 0.62rem;
@@ -713,7 +709,9 @@ function classificationLabel(value: string) {
   text-transform: uppercase;
 }
 .search > div {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
   position: relative;
 }
 .search i {
@@ -891,7 +889,7 @@ function classificationLabel(value: string) {
   overflow: auto;
   font-size: 0.65rem;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1350px) {
   .filters {
     grid-template-columns: repeat(2, 1fr);
   }

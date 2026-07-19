@@ -66,7 +66,7 @@ function mountBuilder() {
 }
 
 async function addSource(wrapper: ReturnType<typeof mountBuilder>, source: string) {
-  await wrapper.get('button[aria-label="Добавить условие в группу Все условия"]').trigger('click')
+  await wrapper.get('button[aria-label="Добавить условие в группу Должны выполняться все условия"]').trigger('click')
   await wrapper.get(`[data-source="${source}"]`).trigger('click')
 }
 
@@ -76,8 +76,8 @@ describe('ScenarioRuleBuilder', () => {
   it('names group logic as a clear outcome', () => {
     const wrapper = mountBuilder()
 
-    expect(wrapper.get('button[aria-label="Все условия"]').text()).toBe('Все условия')
-    expect(wrapper.get('button[aria-label="Любое условие"]').text()).toBe('Любое условие')
+    expect(wrapper.get('button[aria-label="Должны выполняться все условия"]').text()).toBe('Должны выполняться все условия')
+    expect(wrapper.get('button[aria-label="Достаточно одного условия"]').text()).toBe('Достаточно одного условия')
     expect(wrapper.text()).toContain('Как работают группы условий?')
   })
 
@@ -149,7 +149,7 @@ describe('ScenarioRuleBuilder', () => {
 
   it('discards a local leaf buffer and restores focus to its opener', async () => {
     const wrapper = mountBuilder()
-    const opener = wrapper.get('button[aria-label="Добавить условие в группу Все условия"]')
+    const opener = wrapper.get('button[aria-label="Добавить условие в группу Должны выполняться все условия"]')
     await opener.trigger('click')
     await wrapper.get('[data-source="activityDayStreak"]').trigger('click')
     await wrapper.get('input[aria-label="Количество активных дней подряд"]').setValue('4')
@@ -171,11 +171,11 @@ describe('ScenarioRuleBuilder', () => {
 
   it('supports group logic, negation and keyboard-safe removal with focus recovery', async () => {
     const wrapper = mountBuilder()
-    await wrapper.get('button[aria-label="Добавить группу в Все условия"]').trigger('click')
-    await wrapper.get('button[aria-label="Любое условие"]').trigger('click')
-    expect(wrapper.get('button[aria-label="Любое условие"]').attributes('aria-pressed')).toBe('true')
+    await wrapper.get('button[aria-label="Добавить группу в Должны выполняться все условия"]').trigger('click')
+    await wrapper.get('button[aria-label="Достаточно одного условия"]').trigger('click')
+    expect(wrapper.get('button[aria-label="Достаточно одного условия"]').attributes('aria-pressed')).toBe('true')
 
-    const nestedAdd = wrapper.findAll('button[aria-label="Добавить условие в группу Любое условие"]')[0]!
+    const nestedAdd = wrapper.findAll('button[aria-label="Добавить условие в группу Достаточно одного условия"]')[0]!
     await nestedAdd.trigger('click')
     await wrapper.get('[data-source="activityDayStreak"]').trigger('click')
     await wrapper.get('input[aria-label="Количество активных дней подряд"]').setValue('2')

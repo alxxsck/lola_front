@@ -193,8 +193,10 @@ describe("SegmentManager", () => {
       .trigger("click");
     await flushPromises();
 
-    const archive = wrapper.get('button[title*="используется ли этот сегмент"]');
-    expect((archive.element as HTMLButtonElement).disabled).toBe(true);
+    expect(wrapper.get(".archive-note").text()).toContain(
+      "пока нельзя архивировать",
+    );
+    expect(wrapper.find('button[title*="используется ли этот сегмент"]').exists()).toBe(false);
     expect(scenarioAuthoringRepository.archiveSegment).not.toHaveBeenCalled();
     wrapper.unmount();
   });

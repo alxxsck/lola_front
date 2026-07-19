@@ -27,7 +27,7 @@ const emit = defineEmits<{
   command: [command: RuleCommand]
 }>()
 
-const groupLabel = computed(() => props.node.kind === 'all' ? 'Все условия' : props.node.kind === 'any' ? 'Любое условие' : '')
+const groupLabel = computed(() => props.node.kind === 'all' ? 'Должны выполняться все условия' : props.node.kind === 'any' ? 'Достаточно одного условия' : '')
 const summary = computed(() => props.summaryByNodeId[props.node.nodeId] || fallbackSummary(props.node))
 const descendantIds = computed(() => collectIds(props.node))
 const moveTargets = computed(() => props.groupTargets.filter((target) => !descendantIds.value.has(target.nodeId) && target.nodeId !== props.parentNodeId))
@@ -52,8 +52,8 @@ function fallbackSummary(node: RuleDraftNode) {
   if (node.kind === 'empty') return 'Условие ещё не настроено'
   if (node.kind === 'incomplete') return 'Заполните условие'
   if (node.kind === 'opaque') return `Неподдерживаемое условие${node.reportedKind ? ` ${node.reportedKind}` : ''}`
-  if (node.kind === 'all') return 'Все условия'
-  if (node.kind === 'any') return 'Любое условие'
+  if (node.kind === 'all') return 'Должны выполняться все условия'
+  if (node.kind === 'any') return 'Достаточно одного условия'
   if (node.kind === 'not') return `Исключить, если: ${props.summaryByNodeId[node.child.nodeId] || 'условие'}`
   return node.kind
 }
@@ -80,8 +80,8 @@ function moveToGroup(event: Event) {
     <section v-if="node.kind === 'all' || node.kind === 'any'" class="group-card" role="group" :aria-label="groupLabel" tabindex="-1">
       <header class="group-header">
         <div class="logic-switch" role="group" :aria-label="`Логика группы ${groupLabel}`">
-          <button type="button" aria-label="Все условия" :aria-pressed="node.kind === 'all'" @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: 'all' })">Все условия</button>
-          <button type="button" aria-label="Любое условие" :aria-pressed="node.kind === 'any'" @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: 'any' })">Любое условие</button>
+          <button type="button" aria-label="Должны выполняться все условия" :aria-pressed="node.kind === 'all'" @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: 'all' })">Должны выполняться все условия</button>
+          <button type="button" aria-label="Достаточно одного условия" :aria-pressed="node.kind === 'any'" @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: 'any' })">Достаточно одного условия</button>
         </div>
         <span class="group-count">{{ node.children.length }} {{ node.children.length === 1 ? 'условие' : 'условий' }}</span>
         <div v-if="!root && parentNodeId && !lockedByNot" class="group-tools">

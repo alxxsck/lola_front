@@ -63,6 +63,23 @@ describe("UsersPage Current Profile", () => {
     expect(wrapper.text()).not.toContain("Current Profiles");
   });
 
+  it("translates an absent profile status and omits the redundant language column", async () => {
+    mocks.list.mockResolvedValue({
+      items: [{ ...profile, syncStatus: "NO_VALID_SNAPSHOT" }],
+      nextCursor: null,
+    });
+    const wrapper = shallowMount(UsersPage);
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      syncStatusLabel: (status: string) => string;
+    };
+    expect(vm.syncStatusLabel("NO_VALID_SNAPSHOT")).toBe(
+      "Профиль ещё не передан",
+    );
+    expect(wrapper.find('column-stub[header="Язык"]').exists()).toBe(false);
+  });
+
   it("keeps backend cursor pagination and sort parameters", async () => {
     mocks.list
       .mockResolvedValueOnce({

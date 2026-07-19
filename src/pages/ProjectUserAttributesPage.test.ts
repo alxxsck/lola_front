@@ -112,6 +112,18 @@ describe("ProjectUserAttributesPage", () => {
     expect(wrapper.find(".p-dialog").exists()).toBe(false);
   });
 
+  it("explains every publication field next to its label", async () => {
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+    const { publishHelp } = wrapper.vm as unknown as {
+      publishHelp: Record<string, string>;
+    };
+
+    expect(Object.keys(publishHelp)).toHaveLength(4);
+    expect(publishHelp.graceDays).toContain("Переходный период");
+    expect(publishHelp.graceDays).toContain("предыдущую версию полей");
+  });
+
   it("does not present a failed load as a real empty contract", async () => {
     mocks.workspace.mockRejectedValue(new Error("Backend unavailable"));
     const wrapper = shallowMount(ProjectUserAttributesPage);

@@ -55,7 +55,7 @@ const recipeLimitReached = computed(() => summary.value.nodes >= RULE_LIMITS.max
 
 function collectGroups(node: RuleDraftNode, result: Array<{ nodeId: string; label: string; childCount: number }> = []) {
   if (node.kind === 'all' || node.kind === 'any') {
-    result.push({ nodeId: node.nodeId, label: `${node.kind === 'all' ? 'Все условия' : 'Любое условие'} · ${summary.value.byNodeId[node.nodeId] ?? ''}`, childCount: node.children.length })
+    result.push({ nodeId: node.nodeId, label: `${node.kind === 'all' ? 'Должны выполняться все условия' : 'Достаточно одного условия'} · ${summary.value.byNodeId[node.nodeId] ?? ''}`, childCount: node.children.length })
     node.children.forEach((child) => collectGroups(child, result))
   }
   if (node.kind === 'not') collectGroups(node.child, result)
@@ -240,7 +240,7 @@ defineExpose({ focusIssue })
       </div>
     </section>
 
-    <details class="glossary"><summary>Как работают группы условий?</summary><dl><div><dt>Все условия</dt><dd>Пользователь подходит, только если выполнено каждое условие группы.</dd></div><div><dt>Любое условие</dt><dd>Пользователь подходит, если выполнено хотя бы одно условие группы.</dd></div><div><dt>Исключение</dt><dd>Пользователь подходит, если выбранное условие не выполнено.</dd></div></dl></details>
+    <details class="glossary"><summary>Как работают группы условий?</summary><dl><div><dt>Должны выполняться все условия</dt><dd>Пользователь подходит, только если выполнено каждое условие группы.</dd></div><div><dt>Достаточно одного условия</dt><dd>Пользователь подходит, если выполнено хотя бы одно условие группы.</dd></div><div><dt>Исключение</dt><dd>Пользователь подходит, если выбранное условие не выполнено.</dd></div></dl></details>
 
     <ol class="rule-tree" aria-label="Дерево условий запуска">
       <RuleNodeCard :node="modelValue.root" :summary-by-node-id="summary.byNodeId" :group-targets="groupTargets" :total-nodes="summary.nodes" :total-leaves="summary.leaves" root @edit="editLeaf" @add-condition="openSources" @command="runCommand" />
@@ -251,7 +251,7 @@ defineExpose({ focusIssue })
     <aside class="builder-summary" aria-label="Итог условий">
       <div><span>Результат</span><strong>{{ summary.text }}</strong></div>
       <dl><div><dt>Условия</dt><dd>{{ summary.leaves }}</dd></div><div><dt>История</dt><dd>{{ summary.aggregateLeaves }}</dd></div><div><dt>Макс. период</dt><dd>{{ summary.maxWindowMs ? `${Math.ceil(summary.maxWindowMs / 86_400_000)} дн.` : '—' }}</dd></div></dl>
-      <details><summary>Технические детали и лимиты</summary><p>Catalog revision <code>{{ context.contract.revision }}</code>. Стабильные ключи используются автоматически.</p><p>{{ summary.nodes }}/{{ RULE_LIMITS.maxNodes }} узлов · {{ summary.leaves }}/{{ RULE_LIMITS.maxLeaves }} условий · {{ summary.aggregateLeaves }}/{{ RULE_LIMITS.maxAggregateLeaves }} условий истории и активности · {{ Math.ceil(summary.totalWindowMs / 86_400_000) }}/{{ RULE_LIMITS.maxTotalWindowMs / 86_400_000 }} дней суммарной истории.</p></details>
+      <details><summary>Технические детали и лимиты</summary><p>Версия каталога <code>{{ context.contract.revision }}</code>. Неизменяемые коды создаются автоматически.</p><p>{{ summary.nodes }}/{{ RULE_LIMITS.maxNodes }} узлов · {{ summary.leaves }}/{{ RULE_LIMITS.maxLeaves }} условий · {{ summary.aggregateLeaves }}/{{ RULE_LIMITS.maxAggregateLeaves }} условий истории и активности · {{ Math.ceil(summary.totalWindowMs / 86_400_000) }}/{{ RULE_LIMITS.maxTotalWindowMs / 86_400_000 }} дней суммарной истории.</p></details>
     </aside>
 
     <RuleLeafEditor v-if="editorSession" visible :kind="editorSession.kind" :node="editedNode" :context="context" :active-issue="activeIssue ?? undefined" @apply="applyLeaf" @close="closeEditor" @dirty-change="emit('editing-dirty', $event)" />

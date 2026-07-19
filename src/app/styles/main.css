@@ -11,6 +11,18 @@
 html, body, #app { min-height: 100%; margin: 0; }
 body { min-width: 0; background: var(--canvas); font-size: var(--font-size-body); }
 button, input, select, textarea { font: inherit; }
+select:not([multiple]) {
+  appearance: none;
+  padding-right: 2.5rem !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--input-placeholder) 50%),
+    linear-gradient(135deg, var(--input-placeholder) 50%, transparent 50%) !important;
+  background-repeat: no-repeat !important;
+  background-position:
+    calc(100% - 1.125rem) calc(50% - 0.1rem),
+    calc(100% - 0.825rem) calc(50% - 0.1rem) !important;
+  background-size: 0.35rem 0.35rem !important;
+}
 a { color: inherit; text-decoration: none; }
 :focus-visible:not(.p-component) { outline: 2px solid color-mix(in srgb, var(--focus-ring) 48%, transparent); outline-offset: 1px; }
 
@@ -41,6 +53,8 @@ p { line-height: 1.55; }
 .surface-soft { background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; }
 .p-button { min-height: var(--control-height); border-radius: 12px; font-size: var(--font-size-control); }
 .p-inputtext, .p-select, .p-textarea, .p-inputnumber { width: 100%; border-radius: 12px; }
+.p-select .p-select-label { padding-inline: 0.875rem; }
+.p-select .p-select-dropdown { width: 2.75rem; flex: 0 0 2.75rem; }
 .p-toggleswitch { flex: 0 0 auto; }
 label:has(> .p-toggleswitch) { min-width: 0; }
 label:has(> .p-toggleswitch) > :not(.p-toggleswitch) { min-width: 0; }

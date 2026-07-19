@@ -248,7 +248,7 @@ export function applyRuleCommand(draft: RuleDraft, command: RuleCommand, context
 
   if (command.type === 'changeGroup') {
     if (location.node.kind !== 'all' && location.node.kind !== 'any') {
-      return commandFailure(draft, { code: 'not-group', nodeId: command.nodeId, message: 'Режим «Все / Хотя бы одно» доступен только группе.' })
+      return commandFailure(draft, { code: 'not-group', nodeId: command.nodeId, message: 'Способ объединения условий можно выбрать только для группы.' })
     }
     location.node.kind = command.kind
     return { ok: true, draft: next, focusNodeId: location.node.nodeId }

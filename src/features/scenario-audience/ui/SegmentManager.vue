@@ -737,15 +737,13 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
             >
               <i class="pi pi-plus" /> Новая версия
             </button>
-            <button
+            <p
               v-if="detail.status === 'ACTIVE' && !readonly"
-              type="button"
-              class="secondary"
-              disabled
-              title="Архивация недоступна: Lola пока не может проверить, используется ли этот сегмент"
+              class="archive-note"
             >
-              <i class="pi pi-box" /> Архивация пока недоступна
-            </button>
+              <i class="pi pi-info-circle" /> Сегмент пока нельзя архивировать:
+              Lola ещё не умеет проверять, используется ли он в сценариях.
+            </p>
           </div>
           <section>
             <h4>
@@ -1017,7 +1015,12 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   min-width: 0;
   border: 0;
   outline: 0;
+  background: transparent;
+  color: var(--text-primary);
   font: inherit;
+}
+.search input::placeholder {
+  color: var(--input-placeholder);
 }
 .search button {
   display: inline-flex;
@@ -1131,13 +1134,14 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   right: 0;
   width: min(520px, 100%);
   height: 100%;
-  padding: 22px;
+  padding: 28px 30px 36px;
   background: var(--surface-card);
   overflow: auto;
 }
 .detail > header,
 .editor > header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
@@ -1152,6 +1156,10 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 .editor > header h3 {
   margin: 4px 0;
 }
+.detail > header h3 {
+  font-size: var(--font-size-heading-small);
+  line-height: 1.2;
+}
 .detail > header button,
 .editor > header button {
   display: grid;
@@ -1164,13 +1172,40 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   place-items: center;
 }
 .detail > p {
+  margin: 18px 0 0;
   color: var(--text-small-muted);
   font-size: var(--font-size-body);
+  line-height: 1.5;
+}
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+.archive-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--text-small-muted);
+  font-size: var(--font-size-body-small);
+  line-height: 1.45;
+}
+.archive-note i {
+  margin-top: 2px;
+  color: var(--status-violet-text);
 }
 .detail section {
-  margin-top: 18px;
+  margin-top: 0;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
 }
 .detail h4 {
+  margin: 0 0 12px;
   font-size: var(--font-size-body);
 }
 .detail ol {
@@ -1201,8 +1236,11 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   background: var(--status-success-soft);
 }
 .detail section > small {
+  display: block;
+  margin-top: 12px;
   color: var(--text-small-muted);
   font-size: var(--font-size-body-small);
+  line-height: 1.45;
 }
 .editor-backdrop {
   z-index: 1300;
@@ -1289,6 +1327,9 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
     min-height: 100%;
     border-radius: 0;
     padding: 14px;
+  }
+  .detail {
+    padding: 20px 18px 28px;
   }
   .fields {
     grid-template-columns: 1fr;
