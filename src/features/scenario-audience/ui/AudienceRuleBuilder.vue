@@ -84,6 +84,20 @@ function updateFreshness(mode: string, seconds = freshnessSeconds.value) {
   });
 }
 
+function conditionCount(count: number) {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  const word =
+    lastTwo >= 11 && lastTwo <= 14
+      ? "условий"
+      : last === 1
+        ? "условие"
+        : last >= 2 && last <= 4
+          ? "условия"
+          : "условий";
+  return `${count} ${word}`;
+}
+
 function findNode(
   node: AudienceDraftNode,
   nodeId: string,
@@ -248,12 +262,12 @@ function focusIssue(issue: {
   void nextTick(() => {
     const selector =
       issue.fieldPath === "definitionId"
-        ? '[aria-label="Атрибут пользователя"]'
+        ? '[aria-label="Поле профиля пользователя"]'
         : issue.fieldPath === "segmentId"
           ? '[aria-label="Сегмент аудитории"]'
           : issue.fieldPath === "operator"
             ? '.leaf-editor select[aria-label^="Оператор"], .leaf-editor select[aria-label^="Проверка"]'
-            : '.leaf-editor [aria-label^="Значение"], .leaf-editor [aria-label="ISO-код страны"]';
+            : '.leaf-editor [aria-label^="Значение"], .leaf-editor [aria-label="Код страны"]';
     document.querySelector<HTMLElement>(selector)?.focus();
   });
 }
@@ -270,13 +284,13 @@ defineExpose({ focusIssue });
         <p>
           {{
             isV2
-              ? "Ограничьте аудиторию по типизированным полям Current Profile или опубликованным сегментам."
-              : "Ограничьте аудиторию по locale, языку, стране, типизированным атрибутам или опубликованным сегментам."
+              ? "Выберите, какие данные профиля пользователя подходят для запуска сценария."
+              : "Выберите подходящий язык, страну, данные профиля или готовый сегмент."
           }}
         </p>
       </div>
       <div class="health" :class="summary.status">
-        <strong>{{ summary.leaves }} условий</strong
+        <strong>{{ conditionCount(summary.leaves) }}</strong
         ><span>{{
           summary.status === "empty"
             ? "Без ограничений"
@@ -292,15 +306,15 @@ defineExpose({ focusIssue });
     <div class="semantics-note">
       <i class="pi pi-shield" />
       <div>
-        <strong>Отдельно от поведения</strong
+        <strong>Здесь проверяются данные пользователя</strong
         ><span
-          >Audience читает текущее состояние End User. История Events и поля
-          Trigger остаются на этапе «Условия».</span
+          >События и действия пользователя настраиваются отдельно, в разделе
+          «Условия».</span
         >
       </div>
     </div>
     <fieldset v-if="isV2" class="freshness">
-      <legend>Какие данные считать подходящими?</legend>
+      <legend>Насколько свежими должны быть данные?</legend>
       <label
         ><input
           type="radio"
@@ -309,10 +323,10 @@ defineExpose({ focusIssue });
           :checked="freshnessMode === 'USE_LAST_KNOWN'"
           @change="updateFreshness('USE_LAST_KNOWN')"
         /><span
-          ><strong>Последние известные</strong
+          ><strong>Использовать текущие данные</strong
           ><small
-            >Использовать последний принятый профиль независимо от
-            возраста.</small
+            >Подойдут последние сохранённые данные независимо от времени
+            обновления.</small
           ></span
         ></label
       ><label
@@ -323,14 +337,14 @@ defineExpose({ focusIssue });
           :checked="freshnessMode === 'REQUIRE_FRESH'"
           @change="updateFreshness('REQUIRE_FRESH')"
         /><span
-          ><strong>Только свежие</strong
+          ><strong>Учитывать только недавние данные</strong
           ><small
-            >Если профиль старше лимита, результат станет «неизвестно» и
-            сценарий не запустится.</small
+            >Использовать данные, только если они обновлены не раньше
+            указанного срока.</small
           ></span
         ></label
       ><label v-if="freshnessMode === 'REQUIRE_FRESH'" class="age"
-        ><span>Максимальный возраст, секунд</span
+        ><span>Данные не старше, секунд</span
         ><input
           type="number"
           min="1"
@@ -346,15 +360,15 @@ defineExpose({ focusIssue });
       /></label>
     </fieldset>
     <details class="policy">
-      <summary>Когда и как проверяется аудитория?</summary>
+      <summary>Когда проверяется пользователь?</summary>
       <p>
-        Первое решение сохраняется в Run при старте. При включённой повторной
-        проверке доставки backend применяет тот же pinned contract к текущему
-        состоянию и хранит результат отдельно.
+        Первый раз — при запуске сценария. Если включена повторная проверка
+        перед отправкой, Lola проверит новые данные по тем же правилам и
+        сохранит результат отдельно.
       </p>
       <p v-if="isV2">
-        Отсутствующее, устаревшее или недоступное значение даёт результат
-        «неизвестно». Даже внутри НЕ этот результат не становится совпадением.
+        Если нужного значения нет или данные слишком старые, пользователь не
+        считается подходящим. Это правило действует и для исключений.
       </p>
       <p v-else>
         Отсутствующее или null-значение совпадает только с проверкой «не
@@ -390,8 +404,8 @@ defineExpose({ focusIssue });
         </div>
       </dl>
       <small
-        >Audience catalog <code>{{ effectiveContext.catalog.revision }}</code> ·
-        {{ summary.nodes }}/{{ AUDIENCE_LIMITS.maxNodes }} узлов</small
+        >Версия правил <code>{{ effectiveContext.catalog.revision }}</code> ·
+        {{ summary.nodes }}/{{ AUDIENCE_LIMITS.maxNodes }} элементов</small
       >
     </aside>
     <div
@@ -418,6 +432,7 @@ defineExpose({ focusIssue });
           <button
             type="button"
             aria-label="Закрыть выбор признака"
+            title="Закрыть"
             @click="closeSources"
           >
             <i class="pi pi-times" />
@@ -431,8 +446,8 @@ defineExpose({ focusIssue });
             @click="chooseSource('locale')"
           >
             <i class="pi pi-globe" /><span
-              ><strong>Locale</strong
-              ><small>Точный locale проекта, например ru-RU.</small></span
+              ><strong>Регион и язык</strong
+              ><small>Например, русский язык для России.</small></span
             ></button
           ><button
             v-if="!isV2"
@@ -442,7 +457,7 @@ defineExpose({ focusIssue });
           >
             <i class="pi pi-language" /><span
               ><strong>Язык</strong
-              ><small>Основной язык locale: ru, en и другие.</small></span
+              ><small>Основной язык пользователя.</small></span
             ></button
           ><button
             v-if="!isV2"
@@ -452,7 +467,7 @@ defineExpose({ focusIssue });
           >
             <i class="pi pi-map-marker" /><span
               ><strong>Страна</strong
-              ><small>ISO-код из профиля End User.</small></span
+              ><small>Страна из профиля пользователя.</small></span
             ></button
           ><button
             type="button"
@@ -460,9 +475,9 @@ defineExpose({ focusIssue });
             @click="chooseSource('userAttribute')"
           >
             <i class="pi pi-id-card" /><span
-              ><strong>{{ isV2 ? "Поле Current Profile" : "Атрибут" }}</strong
+              ><strong>Поле профиля пользователя</strong
               ><small
-                >Типизированное поле, разрешённое backend-каталогом.</small
+                >Данные пользователя, доступные для выбора в проекте.</small
               ></span
             ></button
           ><button
@@ -473,7 +488,7 @@ defineExpose({ focusIssue });
           >
             <i class="pi pi-users" /><span
               ><strong>Сегмент</strong
-              ><small>Точная immutable версия сегмента.</small></span
+              ><small>Пользователи из выбранной версии сегмента.</small></span
             >
           </button>
         </div>
@@ -512,12 +527,12 @@ defineExpose({ focusIssue });
   gap: 18px;
 }
 .builder-header h2 {
-  font-size: 1.1rem;
+  font-size: var(--font-size-heading-small);
 }
 .builder-header p {
   margin: 5px 0 0;
   color: var(--text-small-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-body);
 }
 .health {
   flex: 0 0 auto;
@@ -532,12 +547,12 @@ defineExpose({ focusIssue });
   display: block;
 }
 .health strong {
-  font-size: 0.71rem;
+  font-size: var(--font-size-body-small);
 }
 .health span {
   margin-top: 3px;
   color: var(--text-small-muted);
-  font-size: 0.62rem;
+  font-size: var(--font-size-caption);
 }
 .health.ready {
   border-color: var(--status-success);
@@ -562,17 +577,17 @@ defineExpose({ focusIssue });
   display: block;
 }
 .semantics-note strong {
-  font-size: 0.7rem;
+  font-size: var(--font-size-body);
 }
 .semantics-note span {
   margin-top: 3px;
-  font-size: 0.64rem;
+  font-size: var(--font-size-body-small);
   line-height: 1.4;
 }
 .policy {
   padding: 0 3px;
   color: var(--text-secondary);
-  font-size: 0.67rem;
+  font-size: var(--font-size-body-small);
 }
 .policy summary {
   cursor: pointer;
@@ -598,13 +613,13 @@ defineExpose({ focusIssue });
 .summary span {
   display: block;
   color: var(--text-on-emphasis-muted);
-  font-size: 0.58rem;
+  font-size: var(--font-size-caption);
   text-transform: uppercase;
 }
 .summary strong {
   display: block;
   margin-top: 4px;
-  font-size: 0.7rem;
+  font-size: var(--font-size-body);
   line-height: 1.45;
 }
 .summary dl {
@@ -617,17 +632,17 @@ defineExpose({ focusIssue });
 }
 .summary dt {
   color: var(--text-on-emphasis-muted);
-  font-size: 0.57rem;
+  font-size: var(--font-size-caption);
 }
 .summary dd {
   margin: 3px 0 0;
-  font-size: 0.7rem;
+  font-size: var(--font-size-body);
   font-weight: 800;
 }
 .summary small {
   grid-column: 1/3;
   color: var(--text-on-emphasis-muted);
-  font-size: 0.6rem;
+  font-size: var(--font-size-caption);
 }
 .summary code {
   color: var(--brand);
@@ -654,7 +669,7 @@ defineExpose({ focusIssue });
 }
 .source-picker header span {
   color: var(--status-violet-text);
-  font-size: 0.58rem;
+  font-size: var(--font-size-caption);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -664,14 +679,17 @@ defineExpose({ focusIssue });
 .source-picker p {
   margin: 3px 0 0;
   color: var(--text-small-muted);
-  font-size: 0.64rem;
+  font-size: var(--font-size-body-small);
 }
 .source-picker header button {
+  display: grid;
   width: 32px;
   height: 32px;
   border: 0;
   border-radius: 50%;
   background: var(--surface-subtle);
+  cursor: pointer;
+  place-items: center;
 }
 .source-grid {
   display: grid;
@@ -702,12 +720,12 @@ defineExpose({ focusIssue });
   display: block;
 }
 .source-grid strong {
-  font-size: 0.7rem;
+  font-size: var(--font-size-body);
 }
 .source-grid small {
   margin-top: 3px;
   color: var(--text-small-muted);
-  font-size: 0.6rem;
+  font-size: var(--font-size-body-small);
   line-height: 1.35;
 }
 @container audience-builder (max-width:520px) {
@@ -742,7 +760,7 @@ defineExpose({ focusIssue });
 }
 .freshness legend {
   padding: 0 5px;
-  font-size: 0.7rem;
+  font-size: var(--font-size-body);
   font-weight: 800;
 }
 .freshness label {
@@ -758,12 +776,12 @@ defineExpose({ focusIssue });
   display: block;
 }
 .freshness strong {
-  font-size: 0.68rem;
+  font-size: var(--font-size-body);
 }
 .freshness small {
   margin-top: 3px;
   color: var(--text-small-muted);
-  font-size: 0.61rem;
+  font-size: var(--font-size-body-small);
   line-height: 1.4;
 }
 .freshness .age {
@@ -771,11 +789,12 @@ defineExpose({ focusIssue });
   align-items: center;
 }
 .freshness .age span {
-  font-size: 0.65rem;
+  font-size: var(--font-size-body-small);
   font-weight: 700;
 }
 .freshness .age input {
   width: 150px;
+  min-height: var(--control-height);
   margin-left: auto;
   padding: 7px;
   border: 1px solid var(--border-default);

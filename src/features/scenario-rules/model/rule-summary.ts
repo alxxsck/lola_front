@@ -91,8 +91,8 @@ function summarizeNode(node: RuleDraftNode, context: RuleDomainContext, byNodeId
   else if (node.kind === 'opaque') text = `неподдерживаемое условие${node.reportedKind ? ` «${node.reportedKind}»` : ''}`
   else if (node.kind === 'all' || node.kind === 'any') {
     const children = node.children.map((child) => summarizeNode(child, context, byNodeId))
-    text = children.length ? `${node.kind === 'all' ? 'Все' : 'Хотя бы одно'}: ${children.join('; ')}` : 'Условия ещё не добавлены'
-  } else if (node.kind === 'not') text = `НЕ ${summarizeNode(node.child, context, byNodeId)}`
+    text = children.length ? `${node.kind === 'all' ? 'Должны выполняться все условия' : 'Достаточно одного условия'}: ${children.join('; ')}` : 'Условия ещё не добавлены'
+  } else if (node.kind === 'not') text = `Исключить, если: ${summarizeNode(node.child, context, byNodeId)}`
   else if (node.kind === 'eventField') text = eventFieldSummary(node, context)
   else if (node.kind === 'eventAggregate') text = aggregateSummary(node, context)
   else text = `активен ${streakOperatorLabels[node.compare.operator] ?? node.compare.operator} ${node.compare.value} дней подряд`

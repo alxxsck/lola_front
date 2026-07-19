@@ -153,10 +153,10 @@ describe("SegmentManager", () => {
       .get('button[aria-label^="Добавить условие аудитории в"]')
       .trigger("click");
     await wrapper.get('button[data-audience-source="locale"]').trigger("click");
-    await wrapper.get('select[aria-label="Оператор locale"]').setValue("eq");
-    await wrapper.get('select[aria-label="Значение locale"]').setValue("ru-RU");
+    await wrapper.get('select[aria-label="Проверка региона и языка"]').setValue("eq");
+    await wrapper.get('select[aria-label="Значение региона и языка"]').setValue("ru-RU");
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
     await wrapper
       .get('button[aria-label="Опубликовать сегмент"]')
@@ -193,7 +193,7 @@ describe("SegmentManager", () => {
       .trigger("click");
     await flushPromises();
 
-    const archive = wrapper.get('button[title*="проверить зависимости"]');
+    const archive = wrapper.get('button[title*="используется ли этот сегмент"]');
     expect((archive.element as HTMLButtonElement).disabled).toBe(true);
     expect(scenarioAuthoringRepository.archiveSegment).not.toHaveBeenCalled();
     wrapper.unmount();
@@ -246,7 +246,7 @@ describe("SegmentManager", () => {
     expect(
       wrapper.get('input[aria-label="Название сегмента"]').element,
     ).toHaveProperty("value", "Мой сохранённый черновик");
-    expect(wrapper.text()).toContain("segment-revision-3");
+    expect(wrapper.text()).toContain("Последняя опубликованная версия");
     expect(
       (
         wrapper.vm as unknown as {
@@ -378,16 +378,16 @@ describe("SegmentManager", () => {
     await wrapper
       .get('button[data-audience-source="country"]')
       .trigger("click");
-    await wrapper.get('input[aria-label="ISO-код страны"]').setValue("ES");
+    await wrapper.get('input[aria-label="Код страны"]').setValue("ES");
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
     await wrapper
       .get('button[aria-label="Опубликовать сегмент"]')
       .trigger("click");
     await flushPromises();
 
-    const input = wrapper.get('input[aria-label="ISO-код страны"]');
+    const input = wrapper.get('input[aria-label="Код страны"]');
     expect(wrapper.text()).toContain("Страна больше недоступна");
     expect(input.attributes("aria-invalid")).toBe("true");
     expect(document.activeElement).toBe(input.element);

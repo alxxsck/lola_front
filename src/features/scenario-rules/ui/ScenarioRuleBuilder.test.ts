@@ -73,6 +73,14 @@ async function addSource(wrapper: ReturnType<typeof mountBuilder>, source: strin
 describe('ScenarioRuleBuilder', () => {
   beforeEach(() => vi.restoreAllMocks())
 
+  it('names group logic as a clear outcome', () => {
+    const wrapper = mountBuilder()
+
+    expect(wrapper.get('button[aria-label="Все условия"]').text()).toBe('Все условия')
+    expect(wrapper.get('button[aria-label="Любое условие"]').text()).toBe('Любое условие')
+    expect(wrapper.text()).toContain('Как работают группы условий?')
+  })
+
   it('creates a current Event condition from catalog controls without exposing raw paths', async () => {
     const wrapper = mountBuilder()
     await addSource(wrapper, 'eventField')
@@ -93,7 +101,7 @@ describe('ScenarioRuleBuilder', () => {
   it('offers editable recipes, plain-language glossary and visible limit counters', async () => {
     const wrapper = mountBuilder()
 
-    expect(wrapper.text()).toContain('Что означают «Все», «Хотя бы одно» и «НЕ»?')
+    expect(wrapper.text()).toContain('Как работают группы условий?')
     expect(wrapper.text()).toContain('1/100 узлов')
     await wrapper.get('[data-recipe="streak"]').trigger('click')
     await flushPromises()
@@ -164,10 +172,10 @@ describe('ScenarioRuleBuilder', () => {
   it('supports group logic, negation and keyboard-safe removal with focus recovery', async () => {
     const wrapper = mountBuilder()
     await wrapper.get('button[aria-label="Добавить группу в Все условия"]').trigger('click')
-    await wrapper.get('button[aria-label="Хотя бы одно условие"]').trigger('click')
-    expect(wrapper.get('button[aria-label="Хотя бы одно условие"]').attributes('aria-pressed')).toBe('true')
+    await wrapper.get('button[aria-label="Любое условие"]').trigger('click')
+    expect(wrapper.get('button[aria-label="Любое условие"]').attributes('aria-pressed')).toBe('true')
 
-    const nestedAdd = wrapper.findAll('button[aria-label="Добавить условие в группу Хотя бы одно условие"]')[0]!
+    const nestedAdd = wrapper.findAll('button[aria-label="Добавить условие в группу Любое условие"]')[0]!
     await nestedAdd.trigger('click')
     await wrapper.get('[data-source="activityDayStreak"]').trigger('click')
     await wrapper.get('input[aria-label="Количество активных дней подряд"]').setValue('2')
@@ -179,8 +187,8 @@ describe('ScenarioRuleBuilder', () => {
     await moveUp.trigger('click')
     await flushPromises()
 
-    await wrapper.get('button[aria-label^="Условие НЕ выполняется:"]').trigger('click')
-    expect(wrapper.text()).toContain('НЕ')
+    await wrapper.get('button[aria-label^="Исключить пользователей по условию:"]').trigger('click')
+    expect(wrapper.text()).toContain('Исключение')
     const remove = wrapper.get('button[aria-label^="Удалить условие:"]')
     await remove.trigger('click')
     await flushPromises()

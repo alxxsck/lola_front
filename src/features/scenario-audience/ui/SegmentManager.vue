@@ -101,21 +101,9 @@ const detailRevisionView = computed(() => {
   const revision = detail.value?.currentRevision;
   if (!revision) return null;
   const parsed = deserializeAudience(revision.rule, segmentContext.value);
-  const definitions = new Set<string>();
-  const visit = (value: unknown) => {
-    if (!value || typeof value !== "object") return;
-    if (Array.isArray(value)) return value.forEach(visit);
-    const record = value as Record<string, unknown>;
-    if (typeof record.definitionId === "string")
-      definitions.add(record.definitionId);
-    Object.values(record).forEach(visit);
-  };
-  visit(revision.rule.root);
   return {
     summary: summarizeAudience(parsed.draft, segmentContext.value),
     freshness: parsed.draft.freshness,
-    version: revision.rule.version,
-    definitions: [...definitions],
     issues: parsed.issues,
   };
 });
@@ -180,7 +168,7 @@ function message(cause: unknown, fallback: string) {
     return cause instanceof Error ? cause.message : fallback;
   const messages: Record<string, string> = {
     AUDIENCE_CATALOG_REVISION_STALE:
-      "Каталог условий обновился. Загрузите новую версию ниже: черновик останется в редакторе для повторной проверки.",
+      "Доступные поля изменились. Обновите их список ниже: черновик останется в редакторе.",
     SEGMENT_REVISION_CONFLICT:
       "Другой администратор уже опубликовал новую версию. Загрузите её ниже — ваш черновик останется в редакторе.",
     SEGMENT_KEY_CONFLICT:
@@ -350,8 +338,8 @@ async function publish() {
     if (props.demo) {
       const segmentId = form.segmentId ?? `segment-${form.key}`;
       notice.value = form.segmentId
-        ? "Новая immutable-версия сегмента опубликована."
-        : "Сегмент создан и первая immutable-версия опубликована.";
+        ? "Новая версия сегмента опубликована."
+        : "Сегмент создан и опубликован.";
       editorOpen.value = false;
       editorDirty.value = false;
       emit("published", segmentId);
@@ -368,8 +356,8 @@ async function publish() {
           payload,
         );
     notice.value = form.segmentId
-      ? "Новая immutable-версия сегмента опубликована."
-      : "Сегмент создан и первая immutable-версия опубликована.";
+      ? "Новая версия сегмента опубликована."
+      : "Сегмент создан и опубликован.";
     editorOpen.value = false;
     detail.value = null;
     editorDirty.value = false;
@@ -465,10 +453,11 @@ async function recoverEditor() {
     if (recovery === "catalog") {
       if (!props.refreshCatalog)
         throw new Error(
-          "Обновление каталога аудитории недоступно без перезагрузки страницы.",
+          "Обновить список полей можно только после перезагрузки страницы.",
         );
-      const catalog = await props.refreshCatalog();
-      notice.value = `Каталог обновлён до ${catalog.revision}. Черновик сохранён — проверьте отмеченные условия и повторите публикацию.`;
+      await props.refreshCatalog();
+      notice.value =
+        "Список доступных полей обновлён. Черновик сохранён — проверьте отмеченные условия и повторите публикацию.";
     } else if (form.segmentId) {
       const latest = await scenarioAuthoringRepository.getSegment(
         props.projectId,
@@ -477,7 +466,8 @@ async function recoverEditor() {
       pendingHeadRevisionId.value =
         latest.currentRevision?.segmentRevisionId ?? null;
       pendingHeadDetail.value = latest;
-      notice.value = `Последняя версия на сервере: ${pendingHeadRevisionId.value ?? "пустая"}. Черновик не заменён автоматически: сравните изменения и явно примите новую версию.`;
+      notice.value =
+        "Другой администратор опубликовал новую версию. Сравните изменения и решите, загружать ли её в редактор.";
       return;
     }
     recoveryKind.value = null;
@@ -496,7 +486,7 @@ function acceptHeadRecovery() {
   if (!pendingHeadRevisionId.value || !latest?.currentRevision) return;
   if (!localConflictCopied.value) {
     error.value =
-      "Сначала скопируйте локальный черновик: принятие server head заменит условия в редакторе.";
+      "Сначала скопируйте черновик: загрузка последней версии заменит условия в редакторе.";
     return;
   }
   if (
@@ -520,7 +510,7 @@ function acceptHeadRecovery() {
   localConflictCopied.value = false;
   recoveryKind.value = null;
   notice.value =
-    "Новый head принят явно. Проверьте черновик и повторите публикацию.";
+    "Последняя версия загружена. Проверьте черновик и повторите публикацию.";
 }
 
 async function copySegmentConflictDraft() {
@@ -528,7 +518,7 @@ async function copySegmentConflictDraft() {
   await navigator.clipboard.writeText(localConflictSnapshot.value);
   localConflictCopied.value = true;
   notice.value =
-    "Локальный черновик скопирован. Теперь можно безопасно принять server head и перенести нужные изменения вручную.";
+    "Черновик скопирован. Теперь можно загрузить последнюю версию и перенести нужные изменения вручную.";
 }
 
 function date(value: string) {
@@ -591,8 +581,8 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
         <span class="eyebrow">Переиспользуемые аудитории</span>
         <h3 id="segment-title">Сегменты проекта</h3>
         <p>
-          Сегмент имеет постоянный идентификатор и неизменяемые версии. Сценарий
-          всегда закрепляет точную опубликованную версию.
+          Сегмент — сохранённая группа пользователей. После публикации изменения
+          создают новую версию, а сценарии продолжают использовать выбранную.
         </p>
       </div>
       <button
@@ -620,7 +610,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
       ><button type="button" :disabled="saving" @click="recoverEditor">
         {{
           recoveryKind === "catalog"
-            ? "Обновить каталог"
+            ? "Обновить список полей"
             : "Загрузить новую версию"
         }}
       </button>
@@ -630,7 +620,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
         :disabled="saving || !localConflictCopied"
         @click="acceptHeadRecovery"
       >
-        Принять {{ pendingHeadRevisionId }}
+        Загрузить последнюю версию
       </button>
       <button
         v-if="recoveryKind === 'head' && pendingHeadDetail"
@@ -645,7 +635,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
       </button>
       <div v-if="pendingHeadDetail" class="head-comparison">
         <strong
-          >Последняя версия на сервере · {{ pendingHeadDetail.name }}</strong
+          >Последняя опубликованная версия · {{ pendingHeadDetail.name }}</strong
         >
         <span>{{ pendingHeadSummary?.text }}</span>
         <small>{{ pendingHeadDetail.description || "Без описания" }}</small>
@@ -723,13 +713,14 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
       >
         <header>
           <div>
-            <span>Определение сегмента</span>
+            <span>Сегмент</span>
             <h3 id="segment-detail-title">{{ detail?.name ?? "Загрузка…" }}</h3>
             <code v-if="detail">{{ detail.key }}</code>
           </div>
           <button
             type="button"
             aria-label="Закрыть карточку сегмента"
+            title="Закрыть"
             @click="closeDetail"
           >
             <i class="pi pi-times" />
@@ -751,7 +742,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
               type="button"
               class="secondary"
               disabled
-              title="Сервер пока не умеет безопасно проверить зависимости и восстановить сегмент"
+              title="Архивация недоступна: Lola пока не может проверить, используется ли этот сегмент"
             >
               <i class="pi pi-box" /> Архивация пока недоступна
             </button>
@@ -766,8 +757,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
             </h4>
             <div v-if="detail.currentRevision" class="revision current">
               <strong>Версия {{ detail.currentRevision.revision }}</strong
-              ><span>{{ date(detail.currentRevision.publishedAt) }}</span
-              ><code>{{ detail.currentRevision.contentHash }}</code>
+              ><span>{{ date(detail.currentRevision.publishedAt) }}</span>
             </div>
             <div
               v-if="detailRevisionView"
@@ -775,25 +765,13 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
             >
               <strong>{{ detailRevisionView.summary.text }}</strong>
               <span
-                >{{
-                  detailRevisionView.version === 2
-                    ? "Новые условия"
-                    : "Старая версия условий"
-                }}
-                ·
-                {{ freshnessLabel(detailRevisionView.freshness?.mode) }}</span
-              ><span
-                >Каталог {{ detail.currentRevision?.catalogRevision }}</span
-              >
-              <span v-if="detailRevisionView.definitions.length"
-                >Поля: {{ detailRevisionView.definitions.join(", ") }}</span
+                >{{ freshnessLabel(detailRevisionView.freshness?.mode) }}</span
               ><span v-if="detailRevisionView.issues.length" class="danger-copy"
-                >{{ detailRevisionView.issues.length }} проблем с
-                зависимостями</span
+                >Некоторые условия нужно проверить</span
               >
             </div>
             <details v-if="detail.currentRevision" class="rule-source">
-              <summary>Правило этой версии · только чтение</summary>
+              <summary>Служебная информация · для поддержки</summary>
               <pre><code>{{ JSON.stringify(detail.currentRevision.rule, null, 2) }}</code></pre>
             </details>
             <p v-else>Опубликованных версий нет.</p>
@@ -815,8 +793,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
                     },
                   }"
                   ><strong>Версия {{ revision.revision }}</strong></RouterLink
-                ><span>{{ date(revision.publishedAt) }}</span
-                ><code>{{ revision.contentHash }}</code>
+                ><span>{{ date(revision.publishedAt) }}</span>
               </li>
             </ol>
             <small
@@ -840,21 +817,22 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
       >
         <header>
           <div>
-            <span>Неизменяемая версия сегмента</span>
+            <span>Версия сегмента</span>
             <h3 id="segment-editor-title">
               {{ form.segmentId ? "Новая версия сегмента" : "Новый сегмент" }}
             </h3>
             <p>
               {{
                 form.segmentId
-                  ? `Текущая опубликованная версия ${form.expectedCurrentRevisionId}`
-                  : "Постоянный идентификатор и первая версия будут созданы атомарно."
+                  ? "Вы создаёте новую версию. Опубликованная останется без изменений."
+                  : "Ключ сегмента и первая версия будут созданы после публикации."
               }}
             </p>
           </div>
           <button
             type="button"
             aria-label="Закрыть редактор сегмента"
+            title="Закрыть"
             @click="closeEditor"
           >
             <i class="pi pi-times" />
@@ -869,15 +847,16 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
               maxlength="128"
               placeholder="Например, Русскоязычные VIP" /></label
           ><label v-if="!form.segmentId"
-            ><span>Стабильный ключ *</span
+            ><span>Ключ сегмента *</span
             ><input
               v-model="form.key"
               aria-label="Ключ сегмента"
               maxlength="64"
               placeholder="russian_vip"
             /><small
-              >Начинается с латинской буквы; допустимы a-z, 0-9, _ и -. После
-              создания постоянный ключ не меняется.</small
+              >Начните с латинской буквы. Можно использовать латинские буквы,
+              цифры, дефис и нижнее подчёркивание. После создания ключ нельзя
+              изменить.</small
             ></label
           ><label class="wide"
             ><span>Описание</span
@@ -905,8 +884,8 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
           </div>
           <input
             v-model="evaluationUserId"
-            aria-label="ID пользователя для проверки сегмента"
-            placeholder="ID пользователя"
+            aria-label="Идентификатор пользователя для проверки сегмента"
+            placeholder="Идентификатор пользователя"
           /><button
             type="button"
             class="secondary"
@@ -920,8 +899,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
         </section>
         <footer>
           <div>
-            <strong>{{ summary.text }}</strong
-            ><small>Каталог {{ catalog.revision }}</small>
+            <strong>{{ summary.text }}</strong>
           </div>
           <button type="button" class="secondary" @click="closeEditor">
             Отмена</button
@@ -932,7 +910,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
             :disabled="!canPublish"
             @click="publish"
           >
-            {{ saving ? "Публикуем…" : "Опубликовать версию" }}
+            {{ saving ? "Публикуем…" : "Опубликовать" }}
           </button>
         </footer>
       </section>
@@ -949,6 +927,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   border: 1px solid var(--status-violet);
   border-radius: 16px;
   background: var(--status-violet-soft);
+  font-size: var(--font-size-body);
 }
 .segment-manager > header {
   display: flex;
@@ -958,21 +937,28 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .segment-manager h3 {
   margin: 3px 0 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-heading-small);
 }
 .segment-manager header p {
   max-width: 680px;
   margin: 4px 0 0;
   color: var(--text-small-muted);
-  font-size: 0.65rem;
+  font-size: var(--font-size-body);
   line-height: 1.45;
 }
 .primary,
 .secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: var(--control-height);
   padding: 9px 12px;
   border-radius: 9px;
-  font-size: 0.65rem;
-  font-weight: 800;
+  font-size: var(--font-size-control);
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
 }
 .archive-toggle {
@@ -981,7 +967,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   gap: 8px;
   width: fit-content;
   color: var(--text-small-muted);
-  font-size: 0.65rem;
+  font-size: var(--font-size-body-small);
   font-weight: 700;
 }
 .rule-source {
@@ -1020,6 +1006,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: var(--control-height);
   padding: 5px 5px 5px 11px;
   border: 1px solid var(--border-default);
   border-radius: 11px;
@@ -1033,12 +1020,17 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   font: inherit;
 }
 .search button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
   padding: 7px 10px;
   border: 0;
   border-radius: 7px;
   background: var(--status-violet-soft);
   color: var(--status-violet-text);
-  font-weight: 800;
+  font-size: var(--font-size-control);
+  font-weight: 700;
 }
 .segments {
   display: grid;
@@ -1067,25 +1059,25 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .segment-main strong {
   margin-top: 5px;
-  font-size: 0.72rem;
+  font-size: var(--font-size-body);
 }
 .segment-main code {
   margin-top: 2px;
   color: var(--text-small-muted);
-  font-size: 0.6rem;
+  font-size: var(--font-size-caption);
 }
 .segment-main small {
   margin-top: 7px;
   color: var(--text-small-muted);
-  font-size: 0.58rem;
+  font-size: var(--font-size-body-small);
 }
 .status {
   padding: 3px 6px;
   border-radius: 999px;
   background: var(--status-success-soft);
   color: var(--status-success-text);
-  font-size: 0.53rem;
-  font-weight: 900;
+  font-size: var(--font-size-caption);
+  font-weight: 800;
   text-transform: uppercase;
 }
 .status.archived {
@@ -1102,6 +1094,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .more {
   align-self: center;
+  min-height: var(--control-height);
   padding: 7px 12px;
   border: 1px solid var(--border-default);
   border-radius: 9px;
@@ -1116,7 +1109,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   border-radius: 12px;
   color: var(--text-small-muted);
   text-align: center;
-  font-size: 0.64rem;
+  font-size: var(--font-size-body-small);
 }
 .empty strong {
   margin-top: 6px;
@@ -1151,7 +1144,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 .detail > header span,
 .editor > header span {
   color: var(--status-violet-text);
-  font-size: 0.58rem;
+  font-size: var(--font-size-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -1161,21 +1154,24 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .detail > header button,
 .editor > header button {
+  display: grid;
   width: 34px;
   height: 34px;
   border: 0;
   border-radius: 50%;
   background: var(--surface-subtle);
+  cursor: pointer;
+  place-items: center;
 }
 .detail > p {
   color: var(--text-small-muted);
-  font-size: 0.68rem;
+  font-size: var(--font-size-body);
 }
 .detail section {
   margin-top: 18px;
 }
 .detail h4 {
-  font-size: 0.7rem;
+  font-size: var(--font-size-body);
 }
 .detail ol {
   display: flex;
@@ -1193,12 +1189,12 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .revision strong,
 .revision span {
-  font-size: 0.63rem;
+  font-size: var(--font-size-body-small);
 }
 .revision code {
   grid-column: 1/3;
   color: var(--text-small-muted);
-  font-size: 0.56rem;
+  font-size: var(--font-size-caption);
 }
 .revision.current {
   border-color: var(--status-success);
@@ -1206,7 +1202,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .detail section > small {
   color: var(--text-small-muted);
-  font-size: 0.6rem;
+  font-size: var(--font-size-body-small);
 }
 .editor-backdrop {
   z-index: 1300;
@@ -1232,19 +1228,20 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   gap: 5px;
 }
 .fields span {
-  font-size: 0.65rem;
+  font-size: var(--font-size-body);
   font-weight: 800;
 }
 .fields input,
 .fields textarea {
+  min-height: var(--control-height);
   padding: 9px 10px;
   border: 1px solid var(--border-default);
   border-radius: 9px;
-  font: inherit;
+  font-size: var(--font-size-control);
 }
 .fields small {
   color: var(--text-small-muted);
-  font-size: 0.58rem;
+  font-size: var(--font-size-body-small);
 }
 .fields .wide {
   grid-column: 1/3;
@@ -1264,12 +1261,12 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   display: block;
 }
 .editor > footer strong {
-  font-size: 0.65rem;
+  font-size: var(--font-size-body);
 }
 .editor > footer small {
   margin-top: 3px;
   color: var(--text-small-muted);
-  font-size: 0.58rem;
+  font-size: var(--font-size-caption);
 }
 .sr-only {
   position: absolute;
@@ -1316,15 +1313,17 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   border: 1px solid var(--status-warning);
   border-radius: 10px;
   background: var(--status-warning-soft);
-  font-size: 0.64rem;
+  font-size: var(--font-size-body-small);
 }
 .recovery button {
+  min-height: var(--control-height);
   padding: 7px 10px;
   border: 1px solid var(--status-warning-text);
   border-radius: 8px;
   background: var(--surface-card);
   color: var(--status-warning-text);
-  font-weight: 800;
+  font-size: var(--font-size-control);
+  font-weight: 700;
   cursor: pointer;
 }
 .evaluate-one {
@@ -1340,14 +1339,15 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   display: block;
 }
 .evaluate-one strong {
-  font-size: 0.68rem;
+  font-size: var(--font-size-body);
 }
 .evaluate-one small {
   margin-top: 3px;
   color: var(--text-small-muted);
-  font-size: 0.57rem;
+  font-size: var(--font-size-body-small);
 }
 .evaluate-one input {
+  min-height: var(--control-height);
   padding: 8px 9px;
   border: 1px solid var(--border-default);
   border-radius: 8px;
@@ -1355,7 +1355,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 .evaluate-one > span {
   grid-column: 1/-1;
   color: var(--status-violet-text);
-  font-size: 0.62rem;
+  font-size: var(--font-size-body-small);
   font-weight: 700;
 }
 @media (max-width: 720px) {

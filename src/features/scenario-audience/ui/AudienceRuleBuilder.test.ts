@@ -118,13 +118,86 @@ async function openSource(wrapper: VueWrapper, source: string) {
 }
 
 describe("AudienceRuleBuilder", () => {
+  it("explains profile data and group actions in plain language", async () => {
+    const v2Context = {
+      catalog: {
+        version: 2,
+        source: "CURRENT_PROFILE",
+        revision: "audience-v2",
+        attributes: [
+          {
+            definitionId: "attribute-tier",
+            definitionRevisionId: "attribute-tier-r1",
+            revision: 1,
+            key: "tier",
+            label: "Уровень лояльности",
+            valueType: "STRING",
+            lifecycle: "ACTIVE",
+            classification: "INTERNAL",
+            audienceRead: true,
+            authoringAvailability: "AVAILABLE",
+            operators: ["eq", "exists", "is_missing", "is_stale"],
+            control: "TEXT",
+            constraints: {},
+            defaultFreshnessHint: { mode: "USE_LAST_KNOWN" },
+          },
+        ],
+        freshnessPolicies: [],
+        segmentSource: {
+          operators: ["is_member", "is_not_member"],
+          searchEndpoint: "/segments",
+          control: "SEARCH",
+          authoringAvailability: "AVAILABLE",
+        },
+        snapshotPolicy: {
+          initialEvaluation: "RUN_START",
+          missing: "NO_MATCH",
+          stale: "TRI_STATE",
+          truth: "KLEENE",
+          persistence: "SNAPSHOT_WITH_SEPARATE_LAST_RECHECK",
+          recheckTrigger: "DELIVERY_RECHECK_ELIGIBILITY",
+          revision: "PINNED",
+        },
+      },
+      segments: [],
+    } as unknown as AudienceDomainContext;
+    const wrapper = mountBuilder(v2Context);
+
+    expect(wrapper.text()).toContain("Насколько свежими должны быть данные?");
+    expect(wrapper.text()).toContain("Использовать текущие данные");
+    expect(wrapper.text()).toContain("Учитывать только недавние данные");
+    expect(wrapper.text()).toContain("Должны выполняться все условия");
+    expect(wrapper.text()).not.toMatch(
+      /Current Profile|End User|backend|pinned contract|\bRun\b/,
+    );
+    expect(
+      wrapper
+        .get('button[aria-label^="Исключить пользователей по условиям группы"]')
+        .attributes("title"),
+    ).toBe("Исключить пользователей, которые подходят под условия группы");
+
+    await wrapper
+      .get('button[aria-label^="Добавить условие аудитории в"]')
+      .trigger("click");
+    expect(wrapper.text()).toContain("Поле профиля пользователя");
+    await wrapper
+      .get('button[data-audience-source="userAttribute"]')
+      .trigger("click");
+    expect(wrapper.get(".leaf-editor").text()).toContain("Данные пользователя");
+    expect(wrapper.get(".leaf-editor").text()).toContain("Поле профиля");
+    expect(wrapper.get(".leaf-editor").text()).not.toMatch(
+      /Current Profile|End User|backend|raw paths|\bRun\b/,
+    );
+    wrapper.unmount();
+  });
+
   it("creates a locale condition without raw paths or JSON", async () => {
     const wrapper = mountBuilder();
     await openSource(wrapper, "locale");
-    await wrapper.get('select[aria-label="Оператор locale"]').setValue("eq");
-    await wrapper.get('select[aria-label="Значение locale"]').setValue("ru-RU");
+    await wrapper.get('select[aria-label="Проверка региона и языка"]').setValue("eq");
+    await wrapper.get('select[aria-label="Значение региона и языка"]').setValue("ru-RU");
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
     await flushPromises();
 
@@ -139,7 +212,8 @@ describe("AudienceRuleBuilder", () => {
         },
       },
     });
-    expect(wrapper.text()).toContain("locale — равно ru-RU");
+    expect(wrapper.text()).toContain("регион и язык — равно ru-RU");
+    expect(wrapper.text()).toContain("1 условие");
     expect(wrapper.text()).not.toContain("user.locale");
     wrapper.unmount();
   });
@@ -147,12 +221,12 @@ describe("AudienceRuleBuilder", () => {
   it("uses a multi-select value for the in operator", async () => {
     const wrapper = mountBuilder();
     await openSource(wrapper, "locale");
-    await wrapper.get('select[aria-label="Оператор locale"]').setValue("in");
+    await wrapper.get('select[aria-label="Проверка региона и языка"]').setValue("in");
     await wrapper
-      .get('select[aria-label="Значения locale"]')
+      .get('select[aria-label="Значения региона и языка"]')
       .setValue(["ru-RU", "en-US"]);
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
 
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
@@ -173,18 +247,18 @@ describe("AudienceRuleBuilder", () => {
     const wrapper = mountBuilder();
     await openSource(wrapper, "userAttribute");
     await wrapper
-      .get('select[aria-label="Атрибут пользователя"]')
+      .get('select[aria-label="Поле профиля пользователя"]')
       .setValue("attribute-1");
     await wrapper
-      .get('select[aria-label="Оператор атрибута VIP-уровень"]')
+      .get('select[aria-label="Проверка поля VIP-уровень"]')
       .setValue("gte");
     expect(wrapper.text()).toContain("Чувствительное значение");
-    expect(wrapper.text()).toContain("backend скроет фактическое значение");
+    expect(wrapper.text()).toContain("значение будет скрыто");
     await wrapper
-      .get('input[aria-label="Значение атрибута VIP-уровень"]')
+      .get('input[aria-label="Значение поля VIP-уровень"]')
       .setValue("3");
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
 
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
@@ -210,16 +284,16 @@ describe("AudienceRuleBuilder", () => {
     const wrapper = mountBuilder();
     await openSource(wrapper, "userAttribute");
     await wrapper
-      .get('select[aria-label="Атрибут пользователя"]')
+      .get('select[aria-label="Поле профиля пользователя"]')
       .setValue("attribute-1");
     await wrapper
-      .get('select[aria-label="Оператор атрибута VIP-уровень"]')
+      .get('select[aria-label="Проверка поля VIP-уровень"]')
       .setValue("not_in");
     await wrapper
-      .get('input[aria-label="Значения атрибута VIP-уровень"]')
+      .get('input[aria-label="Значения поля VIP-уровень"]')
       .setValue("2, 3");
     const apply = wrapper.get(
-      'button[aria-label="Применить условие аудитории"]',
+      'button[aria-label="Сохранить условие аудитории"]',
     );
     expect((apply.element as HTMLButtonElement).disabled).toBe(false);
     await apply.trigger("click");
@@ -238,9 +312,9 @@ describe("AudienceRuleBuilder", () => {
     await wrapper
       .get('select[aria-label="Сегмент аудитории"]')
       .setValue("segment-1");
-    expect(wrapper.text()).toContain("Версия 2 будет закреплена");
+    expect(wrapper.text()).toContain("Сценарий сохранит версию 2");
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
 
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
@@ -290,7 +364,7 @@ describe("AudienceRuleBuilder", () => {
       .get('select[aria-label="Сегмент аудитории"]')
       .setValue("segment-101");
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
 
     expect(search).toHaveBeenCalledWith("whale");
@@ -328,15 +402,15 @@ describe("AudienceRuleBuilder", () => {
     await wrapper
       .get('button[data-audience-source="country"]')
       .trigger("click");
-    await wrapper.get('input[aria-label="ISO-код страны"]').setValue("ES");
+    await wrapper.get('input[aria-label="Код страны"]').setValue("ES");
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
     await wrapper
-      .get('button[aria-label^="Инвертировать условие аудитории:"]')
+      .get('button[aria-label^="Исключить пользователей по условию:"]')
       .trigger("click");
 
-    expect(wrapper.text()).toContain("НЕ");
+    expect(wrapper.text()).toContain("Исключение");
     expect(
       wrapper.find('button[aria-label^="Удалить условие аудитории:"]').exists(),
     ).toBe(true);
@@ -353,21 +427,21 @@ describe("AudienceRuleBuilder", () => {
     );
 
     await nestedGroup
-      .get('button[aria-label^="Инвертировать группу аудитории:"]')
+      .get('button[aria-label^="Исключить пользователей по условиям группы:"]')
       .trigger("click");
 
     expect(
       wrapper.get(".audience-node .audience-node .not-card").text(),
-    ).toContain("Результат меняется на противоположный");
+    ).toContain("Подходящие пользователи будут исключены");
     wrapper.unmount();
   });
 
   it("focuses the exact editor control requested by a backend issue", async () => {
     const wrapper = mountBuilder();
     await openSource(wrapper, "country");
-    await wrapper.get('input[aria-label="ISO-код страны"]').setValue("ES");
+    await wrapper.get('input[aria-label="Код страны"]').setValue("ES");
     await wrapper
-      .get('button[aria-label="Применить условие аудитории"]')
+      .get('button[aria-label="Сохранить условие аудитории"]')
       .trigger("click");
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
     const nodeId =
@@ -380,7 +454,7 @@ describe("AudienceRuleBuilder", () => {
     ).focusIssue({ nodeId, fieldPath: "value", message: "Страна недоступна" });
     await flushPromises();
 
-    const input = wrapper.get('input[aria-label="ISO-код страны"]');
+    const input = wrapper.get('input[aria-label="Код страны"]');
     expect(document.activeElement).toBe(input.element);
     expect(input.attributes("aria-invalid")).toBe("true");
     expect(wrapper.text()).toContain("Страна недоступна");

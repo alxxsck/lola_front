@@ -54,9 +54,9 @@ describe('Rule natural-language summary', () => {
     const summary = summarizeRule(draft, context)
 
     expect(summary).toMatchObject({ status: 'ready', leaves: 3, aggregateLeaves: 2, nodes: 5, maxWindowMs: 30 * day, totalWindowMs: 30 * day })
-    expect(summary.text).toContain('Все:')
+    expect(summary.text).toContain('Должны выполняться все условия:')
     expect(summary.text).toContain('Страница = promotions')
-    expect(summary.text).toContain('НЕ сумма поля «Сумма» события «Успешный депозит» за последние 30 дней ≥ 500.00')
+    expect(summary.text).toContain('Исключить, если: сумма поля «Сумма» события «Успешный депозит» за последние 30 дней ≥ 500.00')
     expect(summary.text).toContain('активен не менее 2 дней подряд')
     expect(Object.keys(summary.byNodeId)).toHaveLength(5)
   })

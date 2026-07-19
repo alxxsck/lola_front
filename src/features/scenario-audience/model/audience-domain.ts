@@ -391,7 +391,7 @@ function parseNode(
   issues.push({
     code: "unsupported-node",
     nodeId: node.nodeId,
-    message: `Условие «${node.kind === "opaque" ? (node.reportedKind ?? "неизвестное") : "неизвестное"}» нельзя изменить в этой версии CMS.`,
+    message: `Условие «${node.kind === "opaque" ? (node.reportedKind ?? "неизвестное") : "неизвестное"}» пока нельзя изменить в интерфейсе.`,
   });
   return node;
 }
@@ -413,7 +413,7 @@ export function deserializeAudience(
         {
           code: "unsupported-rule",
           nodeId: root.nodeId,
-          message: "Версия Audience Rule не поддерживается.",
+          message: "Эта версия условий больше не поддерживается.",
         },
       ],
     };
@@ -584,13 +584,13 @@ function typedAttributeLiteralIssue(
       ) ||
       !Number.isFinite(Date.parse(value))
     )
-      return "Введите полный RFC 3339 DATETIME с часовым поясом.";
+      return "Укажите дату, время и часовой пояс, например 2026-07-19T10:00:00Z.";
   } else if (valueType === "COUNTRY_CODE") {
     if (typeof value !== "string" || !/^[A-Z]{2}$/.test(value))
-      return "Введите двухбуквенный ISO country code.";
+      return "Введите двухбуквенный код страны, например ES.";
   } else if (valueType === "CURRENCY_CODE") {
     if (typeof value !== "string" || !/^[A-Z]{3}$/.test(value))
-      return "Введите трёхбуквенный ISO currency code.";
+      return "Введите трёхбуквенный код валюты, например EUR.";
   } else if (valueType === "BOOLEAN" || valueType === "boolean") {
     if (typeof value !== "boolean") return "Выберите Да или Нет.";
   } else if (valueType === "number" || valueType === "LEGACY_NUMBER") {
@@ -710,8 +710,7 @@ function validateLeaf(
         code: "locale-unavailable",
         nodeId: node.nodeId,
         fieldPath: "value",
-        message:
-          "Locale недоступен в Audience V2. Используйте опубликованный Attribute.",
+        message: "Выберите доступное поле профиля пользователя.",
       };
     if (
       !values.every(
@@ -724,7 +723,7 @@ function validateLeaf(
         code: "locale-unavailable",
         nodeId: node.nodeId,
         fieldPath: "value",
-        message: "Выберите locale из каталога проекта.",
+        message: "Выберите регион и язык из списка проекта.",
       };
   }
   if (node.kind === "language") {
@@ -734,8 +733,7 @@ function validateLeaf(
         code: "language-unavailable",
         nodeId: node.nodeId,
         fieldPath: "value",
-        message:
-          "Язык недоступен в Audience V2. Используйте опубликованный Attribute.",
+        message: "Отдельный выбор языка здесь недоступен. Выберите поле профиля пользователя.",
       };
     if (
       !values.every(
@@ -758,7 +756,7 @@ function validateLeaf(
         code: "country-invalid",
         nodeId: node.nodeId,
         fieldPath: "value",
-        message: "Страна задаётся двухбуквенным ISO-кодом, например ES.",
+        message: "Введите двухбуквенный код страны, например ES.",
       };
   }
   if (node.kind === "userAttribute") {
@@ -925,15 +923,15 @@ function leafSummary(
     const segment = context.segments.find(
       (candidate) => candidate.segmentId === node.segmentId,
     );
-    const revision =
+    const revisionLabel =
       segment?.currentRevision?.segmentRevisionId === node.segmentRevisionId
-        ? segment.currentRevision.revision
-        : `historical · ${node.segmentRevisionId}`;
-    return `${node.operator === "is_member" ? "входит" : "не входит"} в сегмент «${segment?.name ?? node.segmentId}» (версия ${revision})`;
+        ? `версия ${segment.currentRevision.revision}`
+        : "предыдущая опубликованная версия";
+    return `${node.operator === "is_member" ? "входит" : "не входит"} в сегмент «${segment?.name ?? node.segmentId}» (${revisionLabel})`;
   }
   const label =
     node.kind === "locale"
-      ? "locale"
+      ? "регион и язык"
       : node.kind === "language"
         ? "язык"
         : node.kind === "country"
@@ -962,9 +960,9 @@ export function summarizeAudience(
     if (node.kind === "all" || node.kind === "any") {
       const children = node.children.map(render);
       text = children.length
-        ? `${node.kind === "all" ? "Все" : "Хотя бы одно"}: ${children.join("; ")}`
+        ? `${node.kind === "all" ? "Должны выполняться все условия" : "Достаточно одного условия"}: ${children.join("; ")}`
         : "Аудитория не ограничена";
-    } else if (node.kind === "not") text = `НЕ ${render(node.child)}`;
+    } else if (node.kind === "not") text = `Исключить, если: ${render(node.child)}`;
     else if (node.kind === "opaque") {
       hasOpaque = true;
       leaves += 1;

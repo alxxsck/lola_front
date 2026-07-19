@@ -55,7 +55,7 @@ const recipeLimitReached = computed(() => summary.value.nodes >= RULE_LIMITS.max
 
 function collectGroups(node: RuleDraftNode, result: Array<{ nodeId: string; label: string; childCount: number }> = []) {
   if (node.kind === 'all' || node.kind === 'any') {
-    result.push({ nodeId: node.nodeId, label: `${node.kind === 'all' ? 'Все' : 'Хотя бы одно'} · ${summary.value.byNodeId[node.nodeId] ?? ''}`, childCount: node.children.length })
+    result.push({ nodeId: node.nodeId, label: `${node.kind === 'all' ? 'Все условия' : 'Любое условие'} · ${summary.value.byNodeId[node.nodeId] ?? ''}`, childCount: node.children.length })
     node.children.forEach((child) => collectGroups(child, result))
   }
   if (node.kind === 'not') collectGroups(node.child, result)
@@ -240,7 +240,7 @@ defineExpose({ focusIssue })
       </div>
     </section>
 
-    <details class="glossary"><summary>Что означают «Все», «Хотя бы одно» и «НЕ»?</summary><dl><div><dt>Все</dt><dd>Пользователь подходит, только если выполнено каждое условие группы.</dd></div><div><dt>Хотя бы одно</dt><dd>Достаточно выполнения любого одного условия группы.</dd></div><div><dt>НЕ</dt><dd>Результат условия меняется на противоположный.</dd></div></dl></details>
+    <details class="glossary"><summary>Как работают группы условий?</summary><dl><div><dt>Все условия</dt><dd>Пользователь подходит, только если выполнено каждое условие группы.</dd></div><div><dt>Любое условие</dt><dd>Пользователь подходит, если выполнено хотя бы одно условие группы.</dd></div><div><dt>Исключение</dt><dd>Пользователь подходит, если выбранное условие не выполнено.</dd></div></dl></details>
 
     <ol class="rule-tree" aria-label="Дерево условий запуска">
       <RuleNodeCard :node="modelValue.root" :summary-by-node-id="summary.byNodeId" :group-targets="groupTargets" :total-nodes="summary.nodes" :total-leaves="summary.leaves" root @edit="editLeaf" @add-condition="openSources" @command="runCommand" />

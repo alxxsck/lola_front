@@ -112,7 +112,7 @@ async function load() {
         : (await scenarioAuthoringRepository.getContract(projectId)).audience;
     if (!nextCatalog)
       throw new Error(
-        "Для проекта ещё не опубликован каталог условий сегментации.",
+        "Для проекта ещё не опубликованы поля для сегментов.",
       );
     catalog.value = nextCatalog;
   } catch (cause) {
@@ -130,7 +130,7 @@ async function refreshCatalog() {
   if (!projectId) throw new Error("Проект не выбран");
   const next = (await scenarioAuthoringRepository.getContract(projectId))
     .audience;
-  if (!next) throw new Error("Каталог условий сегментации не опубликован");
+  if (!next) throw new Error("Поля для сегментов ещё не опубликованы");
   catalog.value = next;
   return next;
 }

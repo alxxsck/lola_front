@@ -1,6 +1,13 @@
 :root {
   color-scheme: light;
 
+  --font-size-caption: 0.75rem;
+  --font-size-body-small: 0.8125rem;
+  --font-size-body: 0.875rem;
+  --font-size-control: 0.875rem;
+  --font-size-heading-small: 1.125rem;
+  --control-height: 2.625rem;
+
   --palette-surface-0: #ffffff;
   --palette-surface-50: #fafaf8;
   --palette-surface-100: #f5f5f1;

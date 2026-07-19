@@ -9,10 +9,10 @@
 
 * { box-sizing: border-box; }
 html, body, #app { min-height: 100%; margin: 0; }
-body { min-width: 0; background: var(--canvas); }
-button, input, textarea { font: inherit; }
+body { min-width: 0; background: var(--canvas); font-size: var(--font-size-body); }
+button, input, select, textarea { font: inherit; }
 a { color: inherit; text-decoration: none; }
-:focus-visible { outline: 3px solid color-mix(in srgb, var(--focus-ring) 42%, transparent); outline-offset: 3px; }
+:focus-visible:not(.p-component) { outline: 2px solid color-mix(in srgb, var(--focus-ring) 48%, transparent); outline-offset: 1px; }
 
 h1, h2, h3, .display { font-family: 'Manrope', sans-serif; letter-spacing: -0.035em; }
 h1 { font-size: clamp(1.75rem, 3vw, 2.6rem); margin: 0; line-height: 1.1; }
@@ -39,7 +39,7 @@ p { line-height: 1.55; }
 .empty i { font-size: 2rem; display: block; margin-bottom: 12px; color: var(--text-disabled); }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-success); box-shadow: 0 0 0 4px var(--status-success-soft); flex: 0 0 auto; }
 .surface-soft { background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; }
-.p-button { border-radius: 12px; }
+.p-button { min-height: var(--control-height); border-radius: 12px; font-size: var(--font-size-control); }
 .p-inputtext, .p-select, .p-textarea, .p-inputnumber { width: 100%; border-radius: 12px; }
 .p-toggleswitch { flex: 0 0 auto; }
 label:has(> .p-toggleswitch) { min-width: 0; }

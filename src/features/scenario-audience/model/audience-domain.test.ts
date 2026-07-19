@@ -212,7 +212,7 @@ describe("Audience domain", () => {
         root: { segmentRevisionId: "segment-revision-1" },
       },
     });
-    expect(summarizeAudience(draft, context).text).toContain("historical");
+    expect(summarizeAudience(draft, context).text).toContain("предыдущая опубликованная версия");
   });
 
   it("builds nested groups through commands and serializes stable typed identities", () => {
@@ -310,7 +310,7 @@ describe("Audience domain", () => {
       status: "ready",
       leaves: 2,
       segmentLeaves: 1,
-      text: "Хотя бы одно: страна — одна из ES, PT; входит в сегмент «VIP-пользователи» (версия 2)",
+      text: "Достаточно одного условия: страна — одна из ES, PT; входит в сегмент «VIP-пользователи» (версия 2)",
     });
   });
 

@@ -203,13 +203,13 @@ onMounted(
     void nextTick(() => {
       const selector =
         props.activeIssue?.fieldPath === "definitionId"
-          ? '[aria-label="Атрибут пользователя"]'
+          ? '[aria-label="Поле профиля пользователя"]'
           : props.activeIssue?.fieldPath === "segmentId"
             ? '[aria-label="Сегмент аудитории"]'
             : props.activeIssue?.fieldPath === "operator"
               ? 'select[aria-label^="Оператор"], select[aria-label^="Проверка"]'
               : props.activeIssue?.fieldPath === "value"
-                ? '[aria-label^="Значение"], [aria-label^="ISO-код"]'
+                ? '[aria-label^="Значение"], [aria-label^="Код страны"]'
                 : "select, input, button";
       dialog.value?.querySelector<HTMLElement>(selector)?.focus();
     }),
@@ -367,14 +367,14 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
     >
       <header>
         <div>
-          <span>Условие аудитории</span>
+          <span>Условие для аудитории</span>
           <h3 id="audience-leaf-title">
             {{
               {
-                locale: "Locale",
+                locale: "Регион и язык",
                 language: "Язык",
                 country: "Страна",
-                userAttribute: "Атрибут пользователя",
+                userAttribute: "Данные пользователя",
                 segmentMembership: "Сегмент",
               }[kind]
             }}
@@ -383,14 +383,20 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
         <button
           type="button"
           aria-label="Закрыть редактор условия аудитории"
+          title="Закрыть"
           @click="emit('close')"
         >
           <i class="pi pi-times" />
         </button>
       </header>
       <p class="intro">
-        Условие проверяется backend по текущему состоянию End User при старте
-        Run. JSON и raw paths не используются.
+        {{
+          kind === "userAttribute"
+            ? "При запуске сценария Lola проверит последнее сохранённое значение выбранного поля."
+            : kind === "segmentMembership"
+              ? "При запуске сценария Lola проверит, входит ли пользователь в выбранный сегмент."
+              : "При запуске сценария Lola проверит выбранные данные пользователя."
+        }}
       </p>
       <div
         v-if="activeIssue"
@@ -402,23 +408,23 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
       </div>
 
       <label v-if="kind === 'userAttribute'" class="field"
-        ><span>Атрибут</span
+        ><span>Поле профиля</span
         ><select
           v-model="buffer.definitionId"
-          aria-label="Атрибут пользователя"
+          aria-label="Поле профиля пользователя"
           :aria-invalid="activeIssue?.fieldPath === 'definitionId'"
         >
-          <option value="">Выберите атрибут</option>
+          <option value="">Выберите поле</option>
           <option
             v-for="attribute in context.catalog.attributes"
             :key="attribute.definitionId"
             :value="attribute.definitionId"
             :disabled="attribute.authoringAvailability !== 'AVAILABLE'"
           >
-            {{ attribute.label }} · v{{ attribute.revision
+            {{ attribute.label
             }}{{
               attribute.authoringAvailability !== "AVAILABLE"
-                ? " · только для миграции"
+                ? " · нельзя использовать в новых условиях"
                 : ""
             }}
           </option></select
@@ -432,9 +438,8 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             selectedAttribute.lifecycle === 'DEPRECATED'
           "
           class="field-error"
-          >Поле устарело. Существующее правило сохранено для миграции, но новую
-          публикацию нужно перевести на
-          {{ selectedAttribute.replacement?.label ?? "поле-замену" }}.</small
+          >Это поле больше не поддерживается. Выберите
+          {{ selectedAttribute.replacement?.label ?? "другое поле" }}.</small
         ></label
       >
       <div v-if="kind === 'segmentMembership'" class="field">
@@ -472,9 +477,9 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             {{ segmentLabel(segment) }}
           </option></select
         ><small v-if="selectedSegment?.currentRevision"
-          >Версия {{ selectedSegment.currentRevision.revision }} будет
-          закреплена в опубликованном сценарии. Новая версия сегмента не изменит
-          уже опубликованный contract.</small
+          >Сценарий сохранит версию
+          {{ selectedSegment.currentRevision.revision }}. Новые версии сегмента
+          не изменят уже опубликованный сценарий.</small
         >
       </div>
 
@@ -484,10 +489,12 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           v-model="buffer.operator"
           :aria-label="
             kind === 'userAttribute'
-              ? `Оператор атрибута ${selectedAttribute?.label ?? ''}`
+              ? `Проверка поля ${selectedAttribute?.label ?? ''}`
               : kind === 'segmentMembership'
                 ? 'Проверка членства в сегменте'
-                : `Оператор ${kind === 'language' ? 'языка' : kind}`
+                : kind === 'locale'
+                  ? 'Проверка региона и языка'
+                  : `Проверка ${kind === 'language' ? 'языка' : 'страны'}`
           "
           :aria-invalid="activeIssue?.fieldPath === 'operator'"
         >
@@ -525,7 +532,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
         ><select
           v-if="buffer.operator === 'in'"
           multiple
-          :aria-label="`Значения ${kind === 'language' ? 'языка' : 'locale'}`"
+          :aria-label="`Значения ${kind === 'language' ? 'языка' : 'региона и языка'}`"
           :aria-invalid="activeIssue?.fieldPath === 'value'"
           @change="selectedValues"
         >
@@ -542,7 +549,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
         ><select
           v-else
           v-model="buffer.value"
-          :aria-label="`Значение ${kind === 'language' ? 'языка' : 'locale'}`"
+          :aria-label="`Значение ${kind === 'language' ? 'языка' : 'региона и языка'}`"
           :aria-invalid="activeIssue?.fieldPath === 'value'"
           :aria-describedby="
             activeIssue?.fieldPath === 'value'
@@ -570,7 +577,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           "
           :maxlength="buffer.operator === 'in' ? 256 : 2"
           :aria-label="
-            buffer.operator === 'in' ? 'ISO-коды стран' : 'ISO-код страны'
+            buffer.operator === 'in' ? 'Коды стран' : 'Код страны'
           "
           :placeholder="buffer.operator === 'in' ? 'ES, PT' : 'ES'"
           :aria-invalid="activeIssue?.fieldPath === 'value'"
@@ -581,7 +588,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           "
           @input="countryValue(($event.target as HTMLInputElement).value)"
         /><small id="country-help"
-          >Двухбуквенные ISO 3166-1 alpha-2 коды в верхнем регистре<span
+          >Введите двухбуквенный код страны латинскими заглавными буквами<span
             v-if="buffer.operator === 'in'"
           >
             через запятую</span
@@ -602,7 +609,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             (buffer.operator === 'in' || buffer.operator === 'not_in')
           "
           multiple
-          :aria-label="`Значения атрибута ${selectedAttribute.label}`"
+          :aria-label="`Значения поля ${selectedAttribute.label}`"
           @change="selectedValues($event, selectedAttribute)"
         >
           <option
@@ -618,7 +625,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
         ><select
           v-else-if="selectedAttribute.allowedValues?.length"
           :value="buffer.value"
-          :aria-label="`Значение атрибута ${selectedAttribute.label}`"
+          :aria-label="`Значение поля ${selectedAttribute.label}`"
           @change="
             attributeValue(
               ($event.target as HTMLSelectElement).value,
@@ -641,7 +648,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             (buffer.operator === 'in' || buffer.operator === 'not_in')
           "
           multiple
-          :aria-label="`Значения атрибута ${selectedAttribute.label}`"
+          :aria-label="`Значения поля ${selectedAttribute.label}`"
           @change="selectedValues($event, selectedAttribute)"
         >
           <option
@@ -666,7 +673,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             selectedAttribute.valueType === 'BOOLEAN'
           "
           :value="buffer.value === undefined ? '' : String(buffer.value)"
-          :aria-label="`Значение атрибута ${selectedAttribute.label}`"
+          :aria-label="`Значение поля ${selectedAttribute.label}`"
           @change="
             attributeValue(
               ($event.target as HTMLSelectElement).value,
@@ -698,7 +705,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           :value="
             Array.isArray(buffer.value) ? buffer.value.join(', ') : buffer.value
           "
-          :aria-label="`${buffer.operator === 'in' || buffer.operator === 'not_in' ? 'Значения' : 'Значение'} атрибута ${selectedAttribute.label}`"
+          :aria-label="`${buffer.operator === 'in' || buffer.operator === 'not_in' ? 'Значения' : 'Значение'} поля ${selectedAttribute.label}`"
           :placeholder="
             buffer.operator === 'in' || buffer.operator === 'not_in'
               ? 'Введите значения через запятую'
@@ -719,10 +726,9 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             )
           "
         /><small v-if="selectedAttribute.valueType === 'DECIMAL'"
-          >Точное десятичное значение хранится строкой; 1 и 1.00 сравниваются по
-          смыслу.</small
+          >Введите точное число, например 1.00.</small
         ><small v-else-if="selectedAttribute.valueType === 'DATETIME'"
-          >Введите полный RFC 3339 с часовым поясом, например
+          >Укажите дату, время и часовой пояс, например
           2026-07-19T10:00:00Z.</small
         ></label
       >
@@ -732,8 +738,8 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
         <div>
           <strong>Чувствительное значение</strong
           ><span
-            >В preview и Run Explain backend скроет фактическое значение. CMS не
-            сможет его восстановить.</span
+            >При проверке и в истории запусков значение будет скрыто. В
+            интерфейсе его нельзя будет посмотреть.</span
           >
         </div>
       </div>
@@ -743,11 +749,11 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
         ><button
           type="button"
           class="primary"
-          aria-label="Применить условие аудитории"
+          aria-label="Сохранить условие аудитории"
           :disabled="!canApply"
           @click="apply"
         >
-          Применить
+          Сохранить
         </button>
       </footer>
     </aside>
@@ -783,7 +789,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
 }
 .leaf-editor header span {
   color: var(--status-violet-text);
-  font-size: 0.62rem;
+  font-size: var(--font-size-caption);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -793,17 +799,19 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   font-size: 1.25rem;
 }
 .leaf-editor header button {
+  display: grid;
   width: 34px;
   height: 34px;
   border: 0;
   border-radius: 50%;
   background: var(--surface-subtle);
   cursor: pointer;
+  place-items: center;
 }
 .intro {
   margin: 0;
   color: var(--text-small-muted);
-  font-size: 0.75rem;
+  font-size: var(--font-size-body);
   line-height: 1.55;
 }
 .field {
@@ -812,18 +820,18 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   gap: 7px;
 }
 .field > span {
-  font-size: 0.7rem;
+  font-size: var(--font-size-body);
   font-weight: 800;
 }
 .field select,
 .field input {
   width: 100%;
-  min-height: 42px;
+  min-height: var(--control-height);
   padding: 9px 11px;
   border: 1px solid var(--border-default);
   border-radius: 10px;
   background: var(--surface-card);
-  font: inherit;
+  font-size: var(--font-size-control);
 }
 .field [aria-invalid="true"] {
   border-color: var(--status-danger-text);
@@ -831,7 +839,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
 }
 .field small {
   color: var(--text-small-muted);
-  font-size: 0.64rem;
+  font-size: var(--font-size-body-small);
   line-height: 1.45;
 }
 .active-issue {
@@ -840,7 +848,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   border-radius: 10px;
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
-  font-size: 0.7rem;
+  font-size: var(--font-size-body-small);
 }
 .privacy-note {
   display: flex;
@@ -856,11 +864,11 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   display: block;
 }
 .privacy-note strong {
-  font-size: 0.7rem;
+  font-size: var(--font-size-body);
 }
 .privacy-note span {
   margin-top: 3px;
-  font-size: 0.64rem;
+  font-size: var(--font-size-body-small);
   line-height: 1.4;
 }
 .leaf-editor footer {
@@ -871,8 +879,13 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   padding-top: 10px;
 }
 .leaf-editor footer button {
-  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 9px 16px;
   border-radius: 10px;
+  font-size: var(--font-size-control);
   font-weight: 800;
   cursor: pointer;
 }

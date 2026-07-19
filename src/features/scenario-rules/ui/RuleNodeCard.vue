@@ -27,7 +27,7 @@ const emit = defineEmits<{
   command: [command: RuleCommand]
 }>()
 
-const groupLabel = computed(() => props.node.kind === 'all' ? 'Все условия' : props.node.kind === 'any' ? 'Хотя бы одно условие' : '')
+const groupLabel = computed(() => props.node.kind === 'all' ? 'Все условия' : props.node.kind === 'any' ? 'Любое условие' : '')
 const summary = computed(() => props.summaryByNodeId[props.node.nodeId] || fallbackSummary(props.node))
 const descendantIds = computed(() => collectIds(props.node))
 const moveTargets = computed(() => props.groupTargets.filter((target) => !descendantIds.value.has(target.nodeId) && target.nodeId !== props.parentNodeId))
@@ -52,9 +52,9 @@ function fallbackSummary(node: RuleDraftNode) {
   if (node.kind === 'empty') return 'Условие ещё не настроено'
   if (node.kind === 'incomplete') return 'Заполните условие'
   if (node.kind === 'opaque') return `Неподдерживаемое условие${node.reportedKind ? ` ${node.reportedKind}` : ''}`
-  if (node.kind === 'all') return 'Все вложенные условия'
-  if (node.kind === 'any') return 'Хотя бы одно вложенное условие'
-  if (node.kind === 'not') return `НЕ: ${props.summaryByNodeId[node.child.nodeId] || 'условие'}`
+  if (node.kind === 'all') return 'Все условия'
+  if (node.kind === 'any') return 'Любое условие'
+  if (node.kind === 'not') return `Исключить, если: ${props.summaryByNodeId[node.child.nodeId] || 'условие'}`
   return node.kind
 }
 
@@ -80,8 +80,8 @@ function moveToGroup(event: Event) {
     <section v-if="node.kind === 'all' || node.kind === 'any'" class="group-card" role="group" :aria-label="groupLabel" tabindex="-1">
       <header class="group-header">
         <div class="logic-switch" role="group" :aria-label="`Логика группы ${groupLabel}`">
-          <button type="button" aria-label="Все условия" :aria-pressed="node.kind === 'all'" @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: 'all' })">Все</button>
-          <button type="button" aria-label="Хотя бы одно условие" :aria-pressed="node.kind === 'any'" @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: 'any' })">Хотя бы одно</button>
+          <button type="button" aria-label="Все условия" :aria-pressed="node.kind === 'all'" @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: 'all' })">Все условия</button>
+          <button type="button" aria-label="Любое условие" :aria-pressed="node.kind === 'any'" @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: 'any' })">Любое условие</button>
         </div>
         <span class="group-count">{{ node.children.length }} {{ node.children.length === 1 ? 'условие' : 'условий' }}</span>
         <div v-if="!root && parentNodeId && !lockedByNot" class="group-tools">
@@ -89,7 +89,7 @@ function moveToGroup(event: Event) {
           <button type="button" :disabled="index === (siblingCount ?? 1) - 1" :aria-label="`Переместить группу вниз: ${groupLabel}`" @click="emit('command', { type: 'move', nodeId: node.nodeId, toParentNodeId: parentNodeId, toIndex: (index ?? 0) + 1 })"><i class="pi pi-arrow-down" /></button>
           <select v-if="moveTargets.length" :aria-label="`Переместить группу ${groupLabel} в группу`" @change="moveToGroup"><option value="">В группу…</option><option v-for="target in moveTargets" :key="target.nodeId" :value="target.nodeId">{{ target.label }}</option></select>
           <button v-if="parentAncestor?.parentNodeId" type="button" :aria-label="`Переместить группу из группы: ${groupLabel}`" @click="emit('command', { type: 'move', nodeId: node.nodeId, toParentNodeId: parentAncestor.parentNodeId!, toIndex: parentAncestor.index + 1 })">Из группы</button>
-          <button type="button" :aria-label="`Группа НЕ выполняется: ${groupLabel}`" @click="emit('command', { type: 'wrap', nodeId: node.nodeId, wrapper: 'not' })"><i class="pi pi-ban" /></button>
+          <button type="button" :aria-label="`Исключить пользователей по условиям группы: ${groupLabel}`" title="Исключить пользователей, которые подходят под условия группы" @click="emit('command', { type: 'wrap', nodeId: node.nodeId, wrapper: 'not' })"><i class="pi pi-ban" /></button>
           <button type="button" class="danger" :aria-label="`Удалить группу: ${groupLabel}`" @click="emit('command', { type: 'remove', nodeId: node.nodeId })"><i class="pi pi-trash" /></button>
         </div>
       </header>
@@ -106,11 +106,11 @@ function moveToGroup(event: Event) {
 
     <article v-else class="leaf-card" :class="{ negative: node.kind === 'not', broken: node.kind === 'empty' || node.kind === 'incomplete' || node.kind === 'opaque' }" tabindex="-1">
       <div class="leaf-icon"><i :class="node.kind === 'not' ? 'pi pi-ban' : node.kind === 'eventAggregate' ? 'pi pi-history' : node.kind === 'activityDayStreak' ? 'pi pi-calendar' : 'pi pi-bolt'" /></div>
-      <div class="leaf-copy"><span v-if="node.kind === 'not'" class="negative-label">НЕ</span><strong>{{ summary }}</strong><small v-if="node.kind === 'opaque'">Данные сохранены, но публикация недоступна.</small></div>
+      <div class="leaf-copy"><span v-if="node.kind === 'not'" class="negative-label">Исключение</span><strong>{{ summary }}</strong><small v-if="node.kind === 'opaque'">Данные сохранены, но публикация недоступна.</small></div>
       <div class="leaf-actions">
         <button v-if="!['not', 'empty', 'opaque'].includes(node.kind)" type="button" class="icon-button" :aria-label="`Изменить условие: ${summary}`" @click="emit('edit', node.nodeId, element($event))"><i class="pi pi-pencil" /></button>
-        <button v-if="node.kind !== 'not'" type="button" class="icon-button" :aria-label="`Условие НЕ выполняется: ${summary}`" @click="emit('command', { type: 'wrap', nodeId: node.nodeId, wrapper: 'not' })"><i class="pi pi-ban" /></button>
-        <button v-else type="button" class="icon-button" :aria-label="`Убрать отрицание: ${summary}`" @click="emit('command', { type: 'unwrap', nodeId: node.nodeId })"><i class="pi pi-undo" /></button>
+        <button v-if="node.kind !== 'not'" type="button" class="icon-button" :aria-label="`Исключить пользователей по условию: ${summary}`" title="Исключить пользователей, которые подходят под это условие" @click="emit('command', { type: 'wrap', nodeId: node.nodeId, wrapper: 'not' })"><i class="pi pi-ban" /></button>
+        <button v-else type="button" class="icon-button" :aria-label="`Отменить исключение: ${summary}`" title="Отменить исключение" @click="emit('command', { type: 'unwrap', nodeId: node.nodeId })"><i class="pi pi-undo" /></button>
         <button v-if="parentNodeId && !lockedByNot" type="button" class="icon-button danger" :aria-label="`Удалить условие: ${summary}`" @click="emit('command', { type: 'remove', nodeId: node.nodeId })"><i class="pi pi-trash" /></button>
       </div>
       <div v-if="parentNodeId && !lockedByNot" class="move-actions" aria-label="Перемещение условия">
