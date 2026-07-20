@@ -626,36 +626,46 @@ async function save() {
 
     <Dialog
       :visible="Boolean(pendingPreset)"
+      class="preset-switch-dialog"
       modal
       header="Сменить заготовку поля?"
-      :style="{ width: 'min(520px, calc(100vw - 28px))' }"
+      :closable="false"
+      :draggable="false"
+      :style="{ width: 'min(480px, calc(100vw - 28px))' }"
       @update:visible="!$event && cancelPresetChange()"
     >
       <div class="preset-dialog-copy">
         <p>
-          Вы переходите к заготовке
+          Вы выбрали заготовку
           <strong>«{{ profileFieldPreset(pendingPreset).label }}»</strong>.
-          Текущие значения не пропадут: Lola сохранит их в черновике этой
-          заготовки и восстановит, если вы вернётесь.
         </p>
+        <div class="preset-dialog-notice">
+          <i class="pi pi-history" />
+          <span>
+            Заполненные данные сохранятся в черновике текущей заготовки и
+            восстановятся, если вы вернётесь.
+          </span>
+        </div>
         <ul>
           <li v-for="item in presetChangeSummary" :key="item">{{ item }}</li>
         </ul>
       </div>
       <template #footer>
-        <Button
-          type="button"
-          label="Остаться с текущей"
-          severity="secondary"
-          text
-          @click="cancelPresetChange"
-        />
-        <Button
-          type="button"
-          label="Сменить заготовку"
-          icon="pi pi-check"
-          @click="confirmPresetChange"
-        />
+        <div class="preset-dialog-actions">
+          <Button
+            type="button"
+            label="Не менять"
+            severity="secondary"
+            outlined
+            @click="cancelPresetChange"
+          />
+          <Button
+            type="button"
+            label="Сменить"
+            icon="pi pi-check"
+            @click="confirmPresetChange"
+          />
+        </div>
       </template>
     </Dialog>
 
@@ -681,8 +691,17 @@ async function save() {
         >{{ error }}</Message
       >
       <main class="editor-main">
-        <fieldset class="editor-section preset-section card">
-          <legend class="section-heading preset-heading">
+        <fieldset
+          class="editor-section preset-section card"
+          aria-describedby="profile-field-kind-description"
+        >
+          <legend class="visually-hidden">
+            Как Lola должна понимать это поле?
+          </legend>
+          <div
+            id="profile-field-kind-description"
+            class="section-heading preset-heading"
+          >
             <span class="section-number"><i class="pi pi-sparkles" /></span>
             <span>
               <span class="preset-title"
@@ -694,7 +713,7 @@ async function save() {
               </small>
               <small class="preset-required">Выберите один вариант.</small>
             </span>
-          </legend>
+          </div>
           <div class="preset-grid">
             <div
               v-for="preset in profileFieldPresets"
@@ -1269,10 +1288,6 @@ async function save() {
   margin: 0;
   border: 1px solid var(--border-default);
 }
-.preset-heading {
-  box-sizing: border-box;
-  width: 100%;
-}
 .preset-heading > span:last-child {
   display: block;
   min-width: 0;
@@ -1300,16 +1315,13 @@ async function save() {
 }
 .preset-option {
   position: relative;
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
-  align-items: start;
-  gap: 11px;
+  display: flex;
+  flex-direction: column;
   min-height: 112px;
-  padding: 14px;
+  overflow: hidden;
   border: 1px solid var(--border-default);
   border-radius: 14px;
   background: var(--surface-subtle);
-  cursor: pointer;
   transition:
     border-color 0.16s ease,
     box-shadow 0.16s ease,
@@ -1325,7 +1337,6 @@ async function save() {
   box-shadow: inset 0 0 0 1px var(--status-violet);
 }
 .preset-option.unavailable {
-  cursor: not-allowed;
   opacity: 0.58;
 }
 .preset-option input {
@@ -1338,8 +1349,17 @@ async function save() {
   white-space: nowrap;
 }
 .preset-choice {
-  display: contents;
-  cursor: inherit;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+  flex: 1;
+  width: 100%;
+  padding: 14px;
+  cursor: pointer;
+}
+.preset-option.unavailable .preset-choice {
+  cursor: not-allowed;
 }
 .preset-option:has(input:focus-visible) {
   outline: 3px solid color-mix(in srgb, var(--status-violet) 45%, transparent);
@@ -1377,7 +1397,8 @@ async function save() {
   font-weight: 800;
 }
 .preset-existing-link {
-  grid-column: 2;
+  align-self: flex-start;
+  margin: -5px 14px 14px 63px;
   color: var(--text-link);
   font-size: 0.64rem;
   font-weight: 800;
@@ -1397,6 +1418,23 @@ async function save() {
   margin: 0;
   line-height: 1.55;
 }
+.preset-dialog-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  margin-top: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.preset-dialog-notice i {
+  margin-top: 2px;
+  color: var(--status-violet-text);
+}
 .preset-dialog-copy ul {
   display: grid;
   gap: 7px;
@@ -1405,6 +1443,44 @@ async function save() {
   color: var(--text-secondary);
   font-size: 0.76rem;
   line-height: 1.45;
+}
+.preset-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+:global(.preset-switch-dialog) {
+  overflow: hidden;
+  border-radius: 18px;
+}
+:global(.preset-switch-dialog .p-dialog-header) {
+  padding: 22px 24px 14px;
+  border-bottom: 0;
+}
+:global(.preset-switch-dialog .p-dialog-title) {
+  color: var(--text-primary);
+  font: 800 1.05rem/1.3 Manrope;
+}
+:global(.preset-switch-dialog .p-dialog-content) {
+  padding: 0 24px 6px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+:global(.preset-switch-dialog .p-dialog-footer) {
+  padding: 18px 24px 24px;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
 }
 .section-heading {
   display: flex;
@@ -1741,6 +1817,13 @@ async function save() {
   }
   .preset-option {
     min-height: auto;
+  }
+  .preset-dialog-actions {
+    flex-direction: column-reverse;
+  }
+  .preset-dialog-actions :deep(.p-button) {
+    justify-content: center;
+    width: 100%;
   }
   .advanced-section summary {
     padding: 15px;

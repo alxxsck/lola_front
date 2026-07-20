@@ -51,6 +51,9 @@ describe("ProfileFieldEditorPage", () => {
     expect(text).toContain("Язык контента");
     expect(text).not.toContain("Что хранится в поле");
     expect(wrapper.find("fieldset.preset-section legend").exists()).toBe(true);
+    expect(
+      wrapper.find("fieldset.preset-section > .preset-heading").exists(),
+    ).toBe(true);
     const presets = wrapper.findAll('input[name="profile-field-kind"]');
     expect(presets).toHaveLength(6);
     expect(
@@ -61,6 +64,37 @@ describe("ProfileFieldEditorPage", () => {
     expect(wrapper.find(".advanced-content").text()).not.toContain(
       "Системное назначение",
     );
+  });
+
+  it("makes the complete preset content a label for its radio control", async () => {
+    const wrapper = shallowMount(ProfileFieldEditorPage);
+    await flushPromises();
+
+    const option = wrapper
+      .findAll(".preset-option")
+      .find((item) => item.text().includes("Электронная почта"));
+    const input = option?.find('input[value="EMAIL"]');
+    const choice = option?.find("label.preset-choice");
+
+    expect(input?.exists()).toBe(true);
+    expect(choice?.attributes("for")).toBe(input?.attributes("id"));
+    expect(choice?.text()).toContain("Электронная почта");
+    expect(option?.find("label.preset-choice > .preset-icon").exists()).toBe(
+      true,
+    );
+    expect(option?.find("label.preset-choice > .preset-copy").exists()).toBe(
+      true,
+    );
+  });
+
+  it("uses a compact preset confirmation without a separate close icon", async () => {
+    const wrapper = shallowMount(ProfileFieldEditorPage);
+    await flushPromises();
+
+    const dialog = wrapper.findComponent({ name: "Dialog" });
+    expect(dialog.attributes("closable")).toBe("false");
+    expect(dialog.attributes("draggable")).toBe("false");
+    expect(dialog.classes()).toContain("preset-switch-dialog");
   });
 
   it("applies a system preset before manual field setup", async () => {
