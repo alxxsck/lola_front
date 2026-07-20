@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, toRaw, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
+import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
@@ -18,6 +19,13 @@ import {
   parseAllowedValues,
   validateContractDocument,
 } from "@/features/end-user-attributes/model/contract-domain";
+import {
+  applyProfileFieldPreset,
+  profileFieldPreset,
+  profileFieldPresets,
+  type PresetSuggestedIdentity,
+  type ProfileFieldKind,
+} from "@/features/end-user-attributes/model/profile-field-presets";
 import {
   readDemoContractDraft,
   writeDemoContractDraft,
@@ -42,7 +50,21 @@ const editingIndex = ref<number | null>(null);
 const form = ref<AttributeContractDraftFieldDto>(createContractField());
 const allowedValuesInput = ref("");
 const localeInput = ref("");
+const selectedFieldKind = ref<ProfileFieldKind | null>(null);
+const suggestedIdentity = ref<PresetSuggestedIdentity | null>(null);
+const pendingPreset = ref<ProfileFieldKind | null>(null);
+const presetChangeSummary = ref<string[]>([]);
 const baseline = ref("");
+
+interface PresetSessionDraft {
+  valueType: AttributeContractDraftFieldDto["valueType"];
+  constraints: AttributeContractDraftFieldDto["constraints"];
+  semanticRole: AttributeContractDraftFieldDto["semanticRole"];
+  allowedValuesInput: string;
+  suggestedIdentity: PresetSuggestedIdentity | null;
+}
+
+const presetDrafts = new Map<ProfileFieldKind, PresetSessionDraft>();
 
 const isEditing = computed(() => route.name === "profile-field-edit");
 const dirty = computed(
@@ -51,6 +73,7 @@ const dirty = computed(
     JSON.stringify({
       form: form.value,
       allowedValuesInput: allowedValuesInput.value,
+      selectedFieldKind: selectedFieldKind.value,
     }) !== baseline.value,
 );
 const valueTypes = [
@@ -88,35 +111,41 @@ const indexOptions = [
   { value: "EXACT", label: "Искать по точному значению" },
   { value: "RANGE_SORT", label: "Фильтровать и сортировать" },
 ];
-const semanticRoleOptions = [
-  { value: "DISPLAY_NAME", label: "Имя пользователя" },
-  { value: "EMAIL", label: "Электронная почта" },
-  { value: "COUNTRY", label: "Страна" },
-  { value: "CURRENCY", label: "Валюта" },
-  { value: "LOCALE", label: "Язык контента" },
-];
 const identityLocked = computed(() => {
   const definitionId = form.value.definitionId;
   return Boolean(
     definitionId &&
-      workspace.value?.currentRevision?.fields.some(
-        (field) => field.definitionId === definitionId,
-      ),
+    workspace.value?.currentRevision?.fields.some(
+      (field) => field.definitionId === definitionId,
+    ),
   );
 });
+const publishedSystemPurpose = computed(
+  () =>
+    workspace.value?.currentRevision?.fields.find(
+      (field) => field.definitionId === form.value.definitionId,
+    )?.semanticRole ?? null,
+);
 const isLocaleField = computed(() => form.value.semanticRole === "LOCALE");
+const fieldKind = computed(() => selectedFieldKind.value);
 const localeValues = computed(() =>
   (form.value.constraints.allowedValues ?? []).filter(
     (value): value is string => typeof value === "string",
   ),
 );
-const hasAnotherLocaleField = computed(() =>
-  (workspace.value?.draft.document.fields ?? []).some(
+const usedSystemPurposeFields = computed(() => {
+  const entries = (workspace.value?.draft.document.fields ?? []).flatMap(
     (field, index) =>
       index !== editingIndex.value &&
-      field.semanticRole === "LOCALE" &&
-      field.lifecycle === "ACTIVE",
-  ),
+      field.lifecycle === "ACTIVE" &&
+      field.semanticRole
+        ? ([[field.semanticRole, field]] as const)
+        : [],
+  );
+  return new Map(entries);
+});
+const usedSystemPurposes = computed(
+  () => new Set(usedSystemPurposeFields.value.keys()),
 );
 const showsAllowedValues = computed(
   () => !["BOOLEAN", "DATETIME"].includes(form.value.valueType),
@@ -145,32 +174,159 @@ const purposeRequired = computed(() => fieldNeedsPurpose(form.value));
 watch(
   () => form.value.semanticRole,
   (role, previous) => {
-    if (role !== "LOCALE") return;
-    if (hasAnotherLocaleField.value) {
+    if (!role) return;
+    const preset = profileFieldPreset(role);
+    if (usedSystemPurposes.value.has(role)) {
       form.value.semanticRole = previous ?? null;
-      error.value = "В проекте уже есть активное поле языка контента.";
+      error.value = `Системное назначение «${preset.label}» уже используется другим активным полем.`;
       return;
     }
-    if (form.value.valueType !== "STRING") {
+    if (preset.valueType && form.value.valueType !== preset.valueType) {
       if (identityLocked.value) {
         form.value.semanticRole = previous ?? null;
-        error.value =
-          "Для языка контента нужен текстовый тип, а тип опубликованного поля изменить нельзя.";
+        error.value = `Для назначения «${preset.label}» нужен другой тип данных, а тип опубликованного поля изменить нельзя.`;
         return;
       }
       const confirmed =
         !form.value.definitionId ||
         window.confirm(
-          "Для языка контента нужен текстовый тип. Изменить тип поля на «Текст»?",
+          `Для назначения «${preset.label}» нужен совместимый тип данных. Изменить тип поля?`,
         );
       if (!confirmed) {
         form.value.semanticRole = previous ?? null;
         return;
       }
-      form.value.valueType = "STRING";
+      form.value.valueType = preset.valueType;
     }
+    selectedFieldKind.value ??= role;
   },
 );
+
+function presetUnavailable(kind: ProfileFieldKind) {
+  if (kind === fieldKind.value) return false;
+  if (publishedSystemPurpose.value) return true;
+  if (kind === "CUSTOM") return false;
+  if (identityLocked.value) return true;
+  const preset = profileFieldPreset(kind);
+  return (
+    usedSystemPurposes.value.has(kind) ||
+    Boolean(
+      identityLocked.value &&
+      preset.valueType &&
+      preset.valueType !== form.value.valueType,
+    )
+  );
+}
+
+function presetUnavailableReason(kind: ProfileFieldKind) {
+  if (kind !== fieldKind.value && publishedSystemPurpose.value)
+    return "Назначение опубликованного поля зафиксировано";
+  if (kind !== "CUSTOM" && usedSystemPurposes.value.has(kind))
+    return "Уже используется";
+  if (kind !== fieldKind.value && identityLocked.value)
+    return "Для опубликованного поля создайте поле-замену";
+  if (presetUnavailable(kind)) return "Несовместимо с опубликованным типом";
+  return "";
+}
+
+function occupiedSystemField(kind: ProfileFieldKind) {
+  return kind === "CUSTOM" ? null : usedSystemPurposeFields.value.get(kind);
+}
+
+function presetSwitchSummary(kind: ProfileFieldKind) {
+  const summary: string[] = [];
+  const next = profileFieldPreset(kind);
+  if (next.valueType && next.valueType !== form.value.valueType)
+    summary.push(
+      `Тип данных изменится на «${valueTypeLabel(next.valueType)}».`,
+    );
+  if (
+    Object.values(form.value.constraints).some((value) => value !== undefined)
+  )
+    summary.push(
+      "Ограничения текущей заготовки будут сохранены в её черновике.",
+    );
+  if (allowedValuesInput.value.trim() && !isLocaleField.value)
+    summary.push(
+      "Допустимые значения останутся в черновике текущей заготовки.",
+    );
+  return summary;
+}
+
+function valueTypeLabel(value: AttributeContractDraftFieldDto["valueType"]) {
+  return valueTypes.find((option) => option.value === value)?.label ?? value;
+}
+
+function requestFieldKind(kind: ProfileFieldKind) {
+  if (kind === fieldKind.value || presetUnavailable(kind)) return;
+  const summary = fieldKind.value ? presetSwitchSummary(kind) : [];
+  if (summary.length) {
+    pendingPreset.value = kind;
+    presetChangeSummary.value = summary;
+    return;
+  }
+  applyFieldKind(kind);
+}
+
+function snapshotCurrentPreset() {
+  if (!fieldKind.value) return;
+  presetDrafts.set(fieldKind.value, {
+    valueType: form.value.valueType,
+    constraints: structuredClone(toRaw(form.value.constraints)),
+    semanticRole: form.value.semanticRole,
+    allowedValuesInput: allowedValuesInput.value,
+    suggestedIdentity: structuredClone(toRaw(suggestedIdentity.value)),
+  });
+}
+
+function applyFieldKind(kind: ProfileFieldKind) {
+  error.value = "";
+  snapshotCurrentPreset();
+  const cached = presetDrafts.get(kind);
+  if (cached) {
+    const next = structuredClone(toRaw(form.value));
+    if (
+      !next.label.trim() ||
+      (suggestedIdentity.value?.label &&
+        next.label === suggestedIdentity.value.label)
+    )
+      next.label = cached.suggestedIdentity?.label ?? next.label;
+    if (
+      !next.key.trim() ||
+      (suggestedIdentity.value?.key && next.key === suggestedIdentity.value.key)
+    )
+      next.key = cached.suggestedIdentity?.key ?? next.key;
+    next.valueType = cached.valueType;
+    next.constraints = structuredClone(cached.constraints);
+    next.semanticRole = cached.semanticRole;
+    form.value = next;
+    allowedValuesInput.value = cached.allowedValuesInput;
+    suggestedIdentity.value = structuredClone(cached.suggestedIdentity);
+  } else {
+    const next = structuredClone(toRaw(form.value));
+    next.constraints = {};
+    suggestedIdentity.value = applyProfileFieldPreset(
+      next,
+      kind,
+      suggestedIdentity.value,
+    );
+    form.value = next;
+    allowedValuesInput.value = "";
+  }
+  selectedFieldKind.value = kind;
+  localeInput.value = "";
+  pendingPreset.value = null;
+  presetChangeSummary.value = [];
+}
+
+function cancelPresetChange() {
+  pendingPreset.value = null;
+  presetChangeSummary.value = [];
+}
+
+function confirmPresetChange() {
+  if (pendingPreset.value) applyFieldKind(pendingPreset.value);
+}
 
 function syncLocaleInput() {
   allowedValuesInput.value = localeValues.value.join("\n");
@@ -183,7 +339,9 @@ function addLocale() {
     error.value = "Введите корректный BCP 47 tag, например en или pt-BR.";
     return;
   }
-  if (localeValues.value.some((locale) => canonicalLocale(locale) === canonical)) {
+  if (
+    localeValues.value.some((locale) => canonicalLocale(locale) === canonical)
+  ) {
     error.value = `Язык ${canonical} уже добавлен.`;
     return;
   }
@@ -223,10 +381,7 @@ function moveLocale(locale: string, offset: number) {
 }
 
 function userFacingError(cause: unknown, fallback: string) {
-  if (
-    cause instanceof Error &&
-    /[А-Яа-яЁё]/.test(cause.message)
-  )
+  if (cause instanceof Error && /[А-Яа-яЁё]/.test(cause.message))
     return cause.message;
   return fallback;
 }
@@ -329,6 +484,7 @@ async function load() {
       form.value = structuredClone(
         toRaw(workspace.value.draft.document.fields[index]!),
       );
+      selectedFieldKind.value = form.value.semanticRole ?? "CUSTOM";
       allowedValuesInput.value = (form.value.constraints.allowedValues ?? [])
         .map(String)
         .join("\n");
@@ -341,14 +497,19 @@ async function load() {
           ),
         ) + 10;
       form.value = createContractField(position);
-      if (route.query?.semanticRole === "LOCALE") {
-        form.value.semanticRole = "LOCALE";
-        form.value.valueType = "STRING";
+      const requestedPreset = profileFieldPresets.find(
+        (preset) => preset.value === route.query?.semanticRole,
+      );
+      if (requestedPreset) {
+        if (presetUnavailable(requestedPreset.value))
+          error.value = `Нельзя выбрать «${requestedPreset.label}»: ${presetUnavailableReason(requestedPreset.value).toLowerCase()}.`;
+        else applyFieldKind(requestedPreset.value);
       }
     }
     baseline.value = JSON.stringify({
       form: form.value,
       allowedValuesInput: allowedValuesInput.value,
+      selectedFieldKind: selectedFieldKind.value,
     });
   } catch (cause) {
     error.value = userFacingError(cause, "Не удалось открыть поле.");
@@ -414,6 +575,7 @@ async function save() {
     baseline.value = JSON.stringify({
       form: form.value,
       allowedValuesInput: allowedValuesInput.value,
+      selectedFieldKind: selectedFieldKind.value,
     });
     toast.add({
       severity: "success",
@@ -448,10 +610,54 @@ async function save() {
         </p>
       </div>
       <div class="editor-support">
-        <Button label="Полное руководство" icon="pi pi-book" severity="secondary" text as="router-link" :to="{ name: 'profile-fields-guide' }" />
-        <div class="draft-state"><i class="pi pi-file-edit" /> Изменения попадут в черновик</div>
+        <Button
+          label="Полное руководство"
+          icon="pi pi-book"
+          severity="secondary"
+          text
+          as="router-link"
+          :to="{ name: 'profile-fields-guide' }"
+        />
+        <div class="draft-state">
+          <i class="pi pi-file-edit" /> Изменения попадут в черновик
+        </div>
       </div>
     </header>
+
+    <Dialog
+      :visible="Boolean(pendingPreset)"
+      modal
+      header="Сменить заготовку поля?"
+      :style="{ width: 'min(520px, calc(100vw - 28px))' }"
+      @update:visible="!$event && cancelPresetChange()"
+    >
+      <div class="preset-dialog-copy">
+        <p>
+          Вы переходите к заготовке
+          <strong>«{{ profileFieldPreset(pendingPreset).label }}»</strong>.
+          Текущие значения не пропадут: Lola сохранит их в черновике этой
+          заготовки и восстановит, если вы вернётесь.
+        </p>
+        <ul>
+          <li v-for="item in presetChangeSummary" :key="item">{{ item }}</li>
+        </ul>
+      </div>
+      <template #footer>
+        <Button
+          type="button"
+          label="Остаться с текущей"
+          severity="secondary"
+          text
+          @click="cancelPresetChange"
+        />
+        <Button
+          type="button"
+          label="Сменить заготовку"
+          icon="pi pi-check"
+          @click="confirmPresetChange"
+        />
+      </template>
+    </Dialog>
 
     <div v-if="loading" class="editor-loading">
       <Skeleton height="180px" border-radius="18px" />
@@ -460,7 +666,12 @@ async function save() {
     <Message v-else-if="error && !workspace" severity="error" :closable="false">
       {{ error }}
     </Message>
-    <form v-else class="editor-layout" @submit.prevent="save">
+    <form
+      v-else
+      class="editor-layout"
+      :class="{ 'preset-only': !fieldKind }"
+      @submit.prevent="save"
+    >
       <Message
         v-if="error"
         class="form-error"
@@ -470,252 +681,321 @@ async function save() {
         >{{ error }}</Message
       >
       <main class="editor-main">
-        <section class="editor-section card">
-          <div class="section-heading">
-            <span class="section-number">1</span>
-            <div>
-              <h2>Что хранится в поле</h2>
-              <p>
-                Название увидит администратор, а ключ будет использовать ваш
-                сервер.
-              </p>
+        <fieldset class="editor-section preset-section card">
+          <legend class="section-heading preset-heading">
+            <span class="section-number"><i class="pi pi-sparkles" /></span>
+            <span>
+              <span class="preset-title"
+                >Как Lola должна понимать это поле?</span
+              >
+              <small>
+                Сначала выберите назначение. Для системного поля Lola подставит
+                безопасную заготовку и сразу покажет нужные настройки.
+              </small>
+              <small class="preset-required">Выберите один вариант.</small>
+            </span>
+          </legend>
+          <div class="preset-grid">
+            <div
+              v-for="preset in profileFieldPresets"
+              :key="preset.value"
+              class="preset-option"
+              :class="{
+                selected: fieldKind === preset.value,
+                unavailable: presetUnavailable(preset.value),
+              }"
+            >
+              <input
+                :id="`profile-field-kind-${preset.value}`"
+                type="radio"
+                name="profile-field-kind"
+                :value="preset.value"
+                :checked="fieldKind === preset.value"
+                :disabled="presetUnavailable(preset.value)"
+                @click.prevent="requestFieldKind(preset.value)"
+              />
+              <label
+                class="preset-choice"
+                :for="`profile-field-kind-${preset.value}`"
+              >
+                <span class="preset-icon"
+                  ><i :class="['pi', preset.icon]"
+                /></span>
+                <span class="preset-copy">
+                  <strong>{{ preset.label }}</strong>
+                  <small>{{ preset.hint }}</small>
+                  <small
+                    v-if="presetUnavailableReason(preset.value)"
+                    class="preset-unavailable"
+                    >{{ presetUnavailableReason(preset.value) }}</small
+                  >
+                  <small
+                    v-else-if="fieldKind === preset.value"
+                    class="preset-selected"
+                  >
+                    <i class="pi pi-check" /> Выбрано
+                  </small>
+                </span>
+              </label>
+              <RouterLink
+                v-if="occupiedSystemField(preset.value)"
+                class="preset-existing-link"
+                :to="`/profile-fields/${occupiedSystemField(preset.value)?.definitionId ?? occupiedSystemField(preset.value)?.key}`"
+              >
+                Открыть «{{ occupiedSystemField(preset.value)?.label }}»
+                <i class="pi pi-arrow-right" />
+              </RouterLink>
             </div>
           </div>
-          <div class="form-grid two-columns">
-            <label class="field-control">
-              <span>Название поля *</span>
-              <InputText
-                id="profile-field-label"
-                v-model="form.label"
-                :aria-invalid="Boolean(fieldErrors.label)"
-                autofocus
-                maxlength="120"
-                placeholder="Например, уровень лояльности"
-              />
-              <small v-if="fieldErrors.label" class="control-error">{{
-                fieldErrors.label
-              }}</small>
-              <small>Так поле будет называться в Lola.</small>
-            </label>
-            <label class="field-control">
-              <span>Ключ для передачи данных *</span>
-              <InputText
-                id="profile-field-key"
-                v-model="form.key"
-                class="mono"
-                :aria-invalid="Boolean(fieldErrors.key)"
-                :disabled="identityLocked"
-                placeholder="loyaltyTier"
-              />
-              <small v-if="fieldErrors.key" class="control-error">{{
-                fieldErrors.key
-              }}</small>
-              <small
-                >Латинские буквы без пробелов. После первой публикации ключ и
-                тип данных изменить нельзя.</small
-              >
-            </label>
-            <label class="field-control">
-              <span>Тип данных</span>
-              <Select
-                v-model="form.valueType"
-                :options="valueTypes"
-                option-label="label"
-                option-value="value"
-                :disabled="identityLocked"
-              />
-              <small>{{ typeHelp }}</small>
-            </label>
-            <label class="field-control">
-              <span>Обязательно ли передавать поле?</span>
-              <Select
-                v-model="form.requirement"
-                :options="requirementOptions"
-                option-label="label"
-                option-value="value"
-              />
-              <small>Обязательность начнёт действовать после публикации.</small>
-            </label>
-          </div>
-          <label class="field-control">
-            <span>Описание</span>
-            <Textarea
-              v-model="form.description"
-              rows="3"
-              auto-resize
-              maxlength="2000"
-              placeholder="Что означает это поле и откуда берётся значение?"
-            />
-          </label>
-          <label class="field-control purpose-control">
-            <span
-              >Для чего нужно это поле?{{ purposeRequired ? " *" : "" }}</span
-            >
-            <Textarea
-              id="profile-field-purpose"
-              v-model="form.purpose"
-              :aria-invalid="Boolean(fieldErrors.purpose)"
-              rows="2"
-              auto-resize
-              maxlength="500"
-              placeholder="Например, уровень программы лояльности клиента. Используется для сегментов и ответов о доступных привилегиях."
-            />
-            <small v-if="fieldErrors.purpose" class="control-error">{{
-              fieldErrors.purpose
-            }}</small>
-            <small v-if="purposeRequired"
-              >Обязательно для персональных и чувствительных данных, а также
-              если поле доступно хотя бы в одном разделе.</small
-            >
-            <small v-else
-              >Необязательно для внутреннего поля, недоступного другим
-              разделам.</small
-            >
-            <small class="purpose-example">
-              <i class="pi pi-sparkles" />
-              <span
-                ><strong>Пример для ИИ.</strong> «Уровень программы лояльности
-                клиента. Учитывай его, когда объясняешь доступные
-                привилегии».</span
-              >
-            </small>
-          </label>
-          <div v-if="isLocaleField" class="locale-editor">
-            <div>
-              <strong>Языки контента</strong>
-              <p>
-                Значение этого атрибута у пользователя определяет язык сообщений сценария.
-              </p>
-            </div>
-            <div class="locale-add-row">
-              <InputText
-                v-model="localeInput"
-                placeholder="Название или tag, например pt-BR"
-                aria-label="Добавить язык контента"
-                @keydown.enter.prevent="addLocale"
-              />
-              <Button type="button" label="Добавить язык" icon="pi pi-plus" @click="addLocale" />
-            </div>
-            <div v-if="localeValues.length" class="locale-chips" aria-label="Выбранные языки">
-              <div v-for="(locale, index) in localeValues" :key="locale" class="locale-chip">
-                <span><strong>{{ localeDisplayName(locale) }}</strong><code>{{ locale }}</code></span>
-                <div>
-                  <Button type="button" icon="pi pi-arrow-up" text rounded :disabled="index === 0" :aria-label="`Поднять ${locale}`" @click="moveLocale(locale, -1)" />
-                  <Button type="button" icon="pi pi-arrow-down" text rounded :disabled="index === localeValues.length - 1" :aria-label="`Опустить ${locale}`" @click="moveLocale(locale, 1)" />
-                  <Button type="button" icon="pi pi-times" text rounded severity="danger" :aria-label="`Удалить ${locale}`" @click="removeLocale(locale)" />
-                </div>
+          <p class="preset-note">
+            Системное назначение бывает только у одного активного поля в
+            проекте. Обычные поля можно добавлять без ограничений.
+          </p>
+        </fieldset>
+
+        <template v-if="fieldKind">
+          <section class="editor-section card">
+            <div class="section-heading">
+              <span class="section-number">1</span>
+              <div>
+                <h2>Что хранится в поле</h2>
+                <p>
+                  Название увидит администратор, а ключ будет использовать ваш
+                  сервер.
+                </p>
               </div>
             </div>
-            <label v-if="localeValues.length" class="field-control">
-              <span>Основной язык проекта *</span>
-              <Select
-                v-model="form.constraints.defaultLocale"
-                :options="localeValues.map((locale) => ({ label: `${localeDisplayName(locale)} (${locale})`, value: locale }))"
-                option-label="label"
-                option-value="value"
-              />
-              <small>Он показывается первым в редакторе и используется как безопасный fallback.</small>
-            </label>
-            <small>{{ localeValues.length }}/20 языков</small>
-          </div>
-          <label v-if="showsAllowedValues && !isLocaleField" class="field-control">
-            <span>Допустимые значения</span>
-            <Textarea
-              v-model="allowedValuesInput"
-              rows="3"
-              auto-resize
-              :placeholder="
-                form.valueType === 'DECIMAL' ? '10.00\n99.95' : 'basic\npremium'
-              "
-            />
-            <small
-              >Необязательно. Укажите по одному значению на строку, если список
-              должен быть ограничен.</small
-            >
-          </label>
-        </section>
-
-        <section class="editor-section card">
-          <div class="section-heading">
-            <span class="section-number">2</span>
-            <div>
-              <h2>Где можно использовать поле</h2>
-              <p>
-                Включайте только те разделы, которым действительно нужны эти
-                данные.
-              </p>
-            </div>
-          </div>
-          <div class="usage-grid">
-            <label class="usage-option">
-              <span
-                ><i class="pi pi-user-edit" /><strong
-                  >Показывать администраторам</strong
-                ><small>Поле видно в карточке пользователя.</small></span
-              >
-              <ToggleSwitch v-model="form.policies.adminRead" />
-            </label>
-            <label class="usage-option">
-              <span
-                ><i class="pi pi-filter" /><strong
-                  >Использовать в сегментах</strong
-                ><small>По значению можно собирать аудитории.</small></span
-              >
-              <ToggleSwitch v-model="form.policies.audienceRead" />
-            </label>
-            <label class="usage-option">
-              <span
-                ><i class="pi pi-comment" /><strong
-                  >Использовать в шаблонах</strong
-                ><small>Значение можно подставлять в сообщения.</small></span
-              >
-              <ToggleSwitch v-model="form.policies.templateRead" />
-            </label>
-            <label class="usage-option">
-              <span
-                ><i class="pi pi-sparkles" /><strong
-                  >Разрешить ИИ использовать значение</strong
-                ><small
-                  >ИИ получит значение и описание поля, чтобы понимать, что оно
-                  означает. Не включайте для паролей и токенов.</small
-                ></span
-              >
-              <ToggleSwitch v-model="form.policies.aiRead" />
-            </label>
-            <label class="usage-option">
-              <span
-                ><i class="pi pi-desktop" /><strong>Показывать на сайте</strong
-                ><small
-                  >Поле придёт во фронтенд, и его можно будет увидеть в браузере
-                  пользователя. Не включайте для секретов.</small
-                ></span
-              >
-              <ToggleSwitch v-model="form.policies.clientRead" />
-            </label>
-            <label class="usage-option">
-              <span
-                ><i class="pi pi-download" /><strong>Разрешить экспорт</strong
-                ><small>Значение попадёт в выгрузки.</small></span
-              >
-              <ToggleSwitch v-model="form.policies.exportRead" />
-            </label>
-          </div>
-        </section>
-
-        <details class="advanced-section card">
-          <summary>
-            <span class="advanced-icon"><i class="pi pi-sliders-h" /></span>
-            <span
-              ><strong>Расширенные настройки</strong
-              ><small
-                >Ограничения значений, поиск и вывод поля из
-                использования.</small
-              ></span
-            >
-            <i class="pi pi-chevron-down" />
-          </summary>
-          <div class="advanced-content">
             <div class="form-grid two-columns">
+              <label class="field-control">
+                <span>Название поля *</span>
+                <InputText
+                  id="profile-field-label"
+                  v-model="form.label"
+                  :aria-invalid="Boolean(fieldErrors.label)"
+                  maxlength="120"
+                  placeholder="Например, уровень лояльности"
+                />
+                <small v-if="fieldErrors.label" class="control-error">{{
+                  fieldErrors.label
+                }}</small>
+                <small>Так поле будет называться в Lola.</small>
+              </label>
+              <label class="field-control">
+                <span>Ключ для передачи данных *</span>
+                <InputText
+                  id="profile-field-key"
+                  v-model="form.key"
+                  class="mono"
+                  :aria-invalid="Boolean(fieldErrors.key)"
+                  :disabled="identityLocked"
+                  placeholder="loyaltyTier"
+                />
+                <small v-if="fieldErrors.key" class="control-error">{{
+                  fieldErrors.key
+                }}</small>
+                <small
+                  >Латинские буквы без пробелов. После первой публикации ключ и
+                  тип данных изменить нельзя.</small
+                >
+              </label>
+              <label class="field-control">
+                <span>Тип данных</span>
+                <Select
+                  v-model="form.valueType"
+                  :options="valueTypes"
+                  option-label="label"
+                  option-value="value"
+                  :disabled="identityLocked || fieldKind === 'LOCALE'"
+                />
+                <small v-if="fieldKind === 'LOCALE'"
+                  >Тип задан системным назначением языка. {{ typeHelp }}</small
+                >
+                <small v-else-if="fieldKind !== 'CUSTOM'"
+                  >Заготовка рекомендует этот тип, но до публикации его можно
+                  изменить. {{ typeHelp }}</small
+                >
+                <small v-else>{{ typeHelp }}</small>
+              </label>
+              <label class="field-control">
+                <span>Обязательно ли передавать поле?</span>
+                <Select
+                  v-model="form.requirement"
+                  :options="requirementOptions"
+                  option-label="label"
+                  option-value="value"
+                />
+                <small
+                  >Обязательность начнёт действовать после публикации.</small
+                >
+              </label>
+            </div>
+            <label class="field-control">
+              <span>Описание</span>
+              <Textarea
+                v-model="form.description"
+                rows="3"
+                auto-resize
+                maxlength="2000"
+                placeholder="Что означает это поле и откуда берётся значение?"
+              />
+            </label>
+            <label class="field-control purpose-control">
+              <span
+                >Для чего нужно это поле?{{ purposeRequired ? " *" : "" }}</span
+              >
+              <Textarea
+                id="profile-field-purpose"
+                v-model="form.purpose"
+                :aria-invalid="Boolean(fieldErrors.purpose)"
+                rows="2"
+                auto-resize
+                maxlength="500"
+                placeholder="Например, уровень программы лояльности клиента. Используется для сегментов и ответов о доступных привилегиях."
+              />
+              <small v-if="fieldErrors.purpose" class="control-error">{{
+                fieldErrors.purpose
+              }}</small>
+              <small v-if="purposeRequired"
+                >Обязательно для персональных и чувствительных данных, а также
+                если поле доступно хотя бы в одном разделе.</small
+              >
+              <small v-else
+                >Необязательно для внутреннего поля, недоступного другим
+                разделам.</small
+              >
+              <small class="purpose-example">
+                <i class="pi pi-sparkles" />
+                <span
+                  ><strong>Пример для ИИ.</strong> «Уровень программы лояльности
+                  клиента. Учитывай его, когда объясняешь доступные
+                  привилегии».</span
+                >
+              </small>
+            </label>
+            <div v-if="isLocaleField" class="locale-editor">
+              <div>
+                <strong>Языки контента</strong>
+                <p>
+                  Значение этого атрибута у пользователя определяет язык
+                  сообщений сценария.
+                </p>
+              </div>
+              <div class="locale-add-row">
+                <InputText
+                  v-model="localeInput"
+                  placeholder="Название или tag, например pt-BR"
+                  aria-label="Добавить язык контента"
+                  @keydown.enter.prevent="addLocale"
+                />
+                <Button
+                  type="button"
+                  label="Добавить язык"
+                  icon="pi pi-plus"
+                  @click="addLocale"
+                />
+              </div>
+              <div
+                v-if="localeValues.length"
+                class="locale-chips"
+                aria-label="Выбранные языки"
+              >
+                <div
+                  v-for="(locale, index) in localeValues"
+                  :key="locale"
+                  class="locale-chip"
+                >
+                  <span
+                    ><strong>{{ localeDisplayName(locale) }}</strong
+                    ><code>{{ locale }}</code></span
+                  >
+                  <div>
+                    <Button
+                      type="button"
+                      icon="pi pi-arrow-up"
+                      text
+                      rounded
+                      :disabled="index === 0"
+                      :aria-label="`Поднять ${locale}`"
+                      @click="moveLocale(locale, -1)"
+                    />
+                    <Button
+                      type="button"
+                      icon="pi pi-arrow-down"
+                      text
+                      rounded
+                      :disabled="index === localeValues.length - 1"
+                      :aria-label="`Опустить ${locale}`"
+                      @click="moveLocale(locale, 1)"
+                    />
+                    <Button
+                      type="button"
+                      icon="pi pi-times"
+                      text
+                      rounded
+                      severity="danger"
+                      :aria-label="`Удалить ${locale}`"
+                      @click="removeLocale(locale)"
+                    />
+                  </div>
+                </div>
+              </div>
+              <label v-if="localeValues.length" class="field-control">
+                <span>Основной язык проекта *</span>
+                <Select
+                  v-model="form.constraints.defaultLocale"
+                  :options="
+                    localeValues.map((locale) => ({
+                      label: `${localeDisplayName(locale)} (${locale})`,
+                      value: locale,
+                    }))
+                  "
+                  option-label="label"
+                  option-value="value"
+                />
+                <small
+                  >Он показывается первым в редакторе и используется как
+                  безопасный fallback.</small
+                >
+              </label>
+              <small>{{ localeValues.length }}/20 языков</small>
+            </div>
+            <label
+              v-if="showsAllowedValues && !isLocaleField"
+              class="field-control"
+            >
+              <span>Допустимые значения</span>
+              <Textarea
+                v-model="allowedValuesInput"
+                rows="3"
+                auto-resize
+                :placeholder="
+                  form.valueType === 'DECIMAL'
+                    ? '10.00\n99.95'
+                    : 'basic\npremium'
+                "
+              />
+              <small
+                >Необязательно. Укажите по одному значению на строку, если
+                список должен быть ограничен.</small
+              >
+            </label>
+          </section>
+
+          <section class="editor-section card">
+            <div class="section-heading">
+              <span class="section-number">2</span>
+              <div>
+                <h2>Где можно использовать поле</h2>
+                <p>
+                  Включайте только те разделы, которым действительно нужны эти
+                  данные.
+                </p>
+              </div>
+            </div>
+            <div class="classification-panel">
+              <span class="classification-icon"
+                ><i class="pi pi-shield"
+              /></span>
               <label class="field-control">
                 <span>Категория данных</span>
                 <Select
@@ -725,110 +1005,172 @@ async function save() {
                   option-value="value"
                 />
                 <small
-                  >Чувствительные данные требуют дополнительной проверки
-                  доступа.</small
+                  >Сначала оцените чувствительность данных, затем включайте
+                  доступ для ИИ, сайта и экспорта.</small
                 >
-              </label>
-              <label class="field-control">
-                <span>Поиск и фильтрация</span>
-                <Select
-                  v-model="form.policies.indexPolicy"
-                  :options="indexOptions"
-                  option-label="label"
-                  option-value="value"
-                />
-              </label>
-              <label class="field-control">
-                <span>Системное назначение</span>
-                <Select
-                  v-model="form.semanticRole"
-                  :options="semanticRoleOptions"
-                  option-label="label"
-                  option-value="value"
-                  show-clear
-                  placeholder="Не задано"
-                />
-              </label>
-              <label class="field-control">
-                <span>Состояние поля</span>
-                <Select
-                  v-model="form.lifecycle"
-                  :options="lifecycleOptions"
-                  option-label="label"
-                  option-value="value"
-                />
               </label>
             </div>
-            <div
-              v-if="showsTextLimits || showsNumberLimits"
-              class="limits-panel"
-            >
-              <h3>Ограничения значения</h3>
+            <div class="usage-grid">
+              <label class="usage-option">
+                <span
+                  ><i class="pi pi-user-edit" /><strong
+                    >Показывать администраторам</strong
+                  ><small>Поле видно в карточке пользователя.</small></span
+                >
+                <ToggleSwitch v-model="form.policies.adminRead" />
+              </label>
+              <label class="usage-option">
+                <span
+                  ><i class="pi pi-filter" /><strong
+                    >Использовать в сегментах</strong
+                  ><small>По значению можно собирать аудитории.</small></span
+                >
+                <ToggleSwitch v-model="form.policies.audienceRead" />
+              </label>
+              <label class="usage-option">
+                <span
+                  ><i class="pi pi-comment" /><strong
+                    >Использовать в шаблонах</strong
+                  ><small>Значение можно подставлять в сообщения.</small></span
+                >
+                <ToggleSwitch v-model="form.policies.templateRead" />
+              </label>
+              <label class="usage-option">
+                <span
+                  ><i class="pi pi-sparkles" /><strong
+                    >Разрешить ИИ использовать значение</strong
+                  ><small
+                    >ИИ получит значение и описание поля, чтобы понимать, что
+                    оно означает. Не включайте для паролей и токенов.</small
+                  ></span
+                >
+                <ToggleSwitch v-model="form.policies.aiRead" />
+              </label>
+              <label class="usage-option">
+                <span
+                  ><i class="pi pi-desktop" /><strong
+                    >Показывать на сайте</strong
+                  ><small
+                    >Поле придёт во фронтенд, и его можно будет увидеть в
+                    браузере пользователя. Не включайте для секретов.</small
+                  ></span
+                >
+                <ToggleSwitch v-model="form.policies.clientRead" />
+              </label>
+              <label class="usage-option">
+                <span
+                  ><i class="pi pi-download" /><strong>Разрешить экспорт</strong
+                  ><small>Значение попадёт в выгрузки.</small></span
+                >
+                <ToggleSwitch v-model="form.policies.exportRead" />
+              </label>
+            </div>
+          </section>
+
+          <details class="advanced-section card">
+            <summary>
+              <span class="advanced-icon"><i class="pi pi-sliders-h" /></span>
+              <span
+                ><strong>Расширенные настройки</strong
+                ><small
+                  >Ограничения значений, поиск и вывод поля из
+                  использования.</small
+                ></span
+              >
+              <i class="pi pi-chevron-down" />
+            </summary>
+            <div class="advanced-content">
               <div class="form-grid two-columns">
-                <label v-if="showsTextLimits" class="field-control"
-                  ><span>Минимальная длина</span
-                  ><InputNumber v-model="form.constraints.minLength" :min="0"
-                /></label>
-                <label v-if="showsTextLimits" class="field-control"
-                  ><span>Максимальная длина</span
-                  ><InputNumber v-model="form.constraints.maxLength" :min="0"
-                /></label>
-                <label v-if="showsNumberLimits" class="field-control"
-                  ><span>Минимальное значение</span
-                  ><InputText
-                    :model-value="String(form.constraints.minimum ?? '')"
-                    @update:model-value="
-                      form.constraints.minimum = $event || undefined
-                    "
-                /></label>
-                <label v-if="showsNumberLimits" class="field-control"
-                  ><span>Максимальное значение</span
-                  ><InputText
-                    :model-value="String(form.constraints.maximum ?? '')"
-                    @update:model-value="
-                      form.constraints.maximum = $event || undefined
-                    "
-                /></label>
-                <label v-if="showsDecimalSettings" class="field-control"
-                  ><span>Всего цифр</span
-                  ><InputNumber
-                    v-model="form.constraints.precision"
-                    :min="1"
-                    :max="38"
-                  /><small>Например, 6 для числа 1250.50.</small></label
-                >
-                <label v-if="showsDecimalSettings" class="field-control"
-                  ><span>Знаков после запятой</span
-                  ><InputNumber
-                    v-model="form.constraints.scale"
-                    :min="0"
-                    :max="38"
-                  /><small>Например, 2 для числа 1250.50.</small></label
-                >
+                <label class="field-control">
+                  <span>Поиск и фильтрация</span>
+                  <Select
+                    v-model="form.policies.indexPolicy"
+                    :options="indexOptions"
+                    option-label="label"
+                    option-value="value"
+                  />
+                </label>
+                <label class="field-control">
+                  <span>Состояние поля</span>
+                  <Select
+                    v-model="form.lifecycle"
+                    :options="lifecycleOptions"
+                    option-label="label"
+                    option-value="value"
+                  />
+                </label>
+              </div>
+              <div
+                v-if="showsTextLimits || showsNumberLimits"
+                class="limits-panel"
+              >
+                <h3>Ограничения значения</h3>
+                <div class="form-grid two-columns">
+                  <label v-if="showsTextLimits" class="field-control"
+                    ><span>Минимальная длина</span
+                    ><InputNumber v-model="form.constraints.minLength" :min="0"
+                  /></label>
+                  <label v-if="showsTextLimits" class="field-control"
+                    ><span>Максимальная длина</span
+                    ><InputNumber v-model="form.constraints.maxLength" :min="0"
+                  /></label>
+                  <label v-if="showsNumberLimits" class="field-control"
+                    ><span>Минимальное значение</span
+                    ><InputText
+                      :model-value="String(form.constraints.minimum ?? '')"
+                      @update:model-value="
+                        form.constraints.minimum = $event || undefined
+                      "
+                  /></label>
+                  <label v-if="showsNumberLimits" class="field-control"
+                    ><span>Максимальное значение</span
+                    ><InputText
+                      :model-value="String(form.constraints.maximum ?? '')"
+                      @update:model-value="
+                        form.constraints.maximum = $event || undefined
+                      "
+                  /></label>
+                  <label v-if="showsDecimalSettings" class="field-control"
+                    ><span>Всего цифр</span
+                    ><InputNumber
+                      v-model="form.constraints.precision"
+                      :min="1"
+                      :max="38"
+                    /><small>Например, 6 для числа 1250.50.</small></label
+                  >
+                  <label v-if="showsDecimalSettings" class="field-control"
+                    ><span>Знаков после запятой</span
+                    ><InputNumber
+                      v-model="form.constraints.scale"
+                      :min="0"
+                      :max="38"
+                    /><small>Например, 2 для числа 1250.50.</small></label
+                  >
+                </div>
+              </div>
+              <div v-if="form.lifecycle === 'DEPRECATED'" class="limits-panel">
+                <h3>Как вывести поле из использования</h3>
+                <div class="form-grid two-columns">
+                  <label class="field-control"
+                    ><span>ID поля-замены</span
+                    ><InputText
+                      v-model="form.replacementDefinitionId"
+                      class="mono"
+                  /></label>
+                  <label class="field-control"
+                    ><span>Не использовать после</span
+                    ><InputText
+                      v-model="form.sunsetAt"
+                      placeholder="2026-12-31T00:00:00Z"
+                  /></label>
+                </div>
               </div>
             </div>
-            <div v-if="form.lifecycle === 'DEPRECATED'" class="limits-panel">
-              <h3>Как вывести поле из использования</h3>
-              <div class="form-grid two-columns">
-                <label class="field-control"
-                  ><span>ID поля-замены</span
-                  ><InputText
-                    v-model="form.replacementDefinitionId"
-                    class="mono"
-                /></label>
-                <label class="field-control"
-                  ><span>Не использовать после</span
-                  ><InputText
-                    v-model="form.sunsetAt"
-                    placeholder="2026-12-31T00:00:00Z"
-                /></label>
-              </div>
-            </div>
-          </div>
-        </details>
+          </details>
+        </template>
       </main>
 
-      <aside class="editor-aside">
+      <aside v-if="fieldKind" class="editor-aside">
         <div class="save-card">
           <span class="save-icon"><i class="pi pi-file-edit" /></span>
           <div>
@@ -908,15 +1250,161 @@ async function save() {
   gap: 18px;
   align-items: start;
 }
+.editor-layout.preset-only {
+  grid-template-columns: 1fr;
+}
 .form-error {
   grid-column: 1 / -1;
 }
 .editor-main {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 .editor-section {
   padding: 24px;
+}
+.preset-section {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--border-default);
+}
+.preset-heading {
+  box-sizing: border-box;
+  width: 100%;
+}
+.preset-heading > span:last-child {
+  display: block;
+  min-width: 0;
+}
+.preset-title {
+  display: block;
+  color: var(--text-primary);
+  font: 750 1.05rem Manrope;
+}
+.preset-heading small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+.preset-heading .preset-required {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.preset-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+  min-height: 112px;
+  padding: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+.preset-option:hover:not(.unavailable) {
+  transform: translateY(-1px);
+  border-color: var(--status-violet);
+}
+.preset-option.selected {
+  border-color: var(--status-violet);
+  background: var(--status-violet-soft);
+  box-shadow: inset 0 0 0 1px var(--status-violet);
+}
+.preset-option.unavailable {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+.preset-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.preset-choice {
+  display: contents;
+  cursor: inherit;
+}
+.preset-option:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--status-violet) 45%, transparent);
+  outline-offset: 2px;
+}
+.preset-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--surface-card);
+  color: var(--status-violet-text);
+}
+.preset-copy strong,
+.preset-copy small {
+  display: block;
+}
+.preset-copy strong {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.preset-copy small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+.preset-copy .preset-selected {
+  color: var(--status-success-text);
+  font-weight: 800;
+}
+.preset-copy .preset-unavailable {
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+.preset-existing-link {
+  grid-column: 2;
+  color: var(--text-link);
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.preset-existing-link i {
+  margin-left: 3px;
+  font-size: 0.58rem;
+}
+.preset-note {
+  margin: 13px 0 0;
+  color: var(--muted);
+  font-size: 0.67rem;
+  line-height: 1.45;
+}
+.preset-dialog-copy p {
+  margin: 0;
+  line-height: 1.55;
+}
+.preset-dialog-copy ul {
+  display: grid;
+  gap: 7px;
+  padding-left: 20px;
+  margin: 14px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
 }
 .section-heading {
   display: flex;
@@ -947,6 +1435,7 @@ async function save() {
 .form-grid {
   display: grid;
   gap: 17px;
+  min-width: 0;
 }
 .two-columns {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -955,7 +1444,15 @@ async function save() {
   display: flex;
   flex-direction: column;
   gap: 7px;
+  min-width: 0;
   margin-top: 17px;
+}
+.field-control :deep(.p-inputtext),
+.field-control :deep(.p-inputnumber),
+.field-control :deep(.p-select),
+.field-control :deep(textarea) {
+  width: 100%;
+  min-width: 0;
 }
 .form-grid .field-control {
   margin-top: 0;
@@ -977,6 +1474,29 @@ async function save() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+.classification-panel {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: start;
+  gap: 13px;
+  padding: 15px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+.classification-panel .field-control {
+  margin-top: 0;
+}
+.classification-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
 }
 .usage-option {
   display: grid;
@@ -1055,13 +1575,41 @@ async function save() {
   border-radius: 14px;
   background: var(--status-violet-soft);
 }
-.locale-editor p { margin: 3px 0 0; color: var(--muted); font-size: .7rem; }
-.locale-add-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-.locale-chips { display: grid; gap: 6px; }
-.locale-chip { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 9px; border-radius: 10px; background: var(--surface-card); }
-.locale-chip > span { display: flex; align-items: baseline; gap: 7px; }
-.locale-chip code { color: var(--muted); font-size: .68rem; }
-.locale-chip > div { display: flex; }
+.locale-editor p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.locale-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.locale-chips {
+  display: grid;
+  gap: 6px;
+}
+.locale-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: var(--surface-card);
+}
+.locale-chip > span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.locale-chip code {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.locale-chip > div {
+  display: flex;
+}
 .advanced-section {
   overflow: hidden;
 }
@@ -1102,6 +1650,8 @@ async function save() {
   transform: rotate(180deg);
 }
 .advanced-content {
+  box-sizing: border-box;
+  min-width: 0;
   padding: 0 20px 22px;
   border-top: 1px solid var(--border-subtle);
 }
@@ -1174,6 +1724,9 @@ async function save() {
   .usage-grid {
     grid-template-columns: 1fr;
   }
+  .preset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 620px) {
   .field-editor-page {
@@ -1182,6 +1735,12 @@ async function save() {
   }
   .editor-section {
     padding: 18px;
+  }
+  .preset-grid {
+    grid-template-columns: 1fr;
+  }
+  .preset-option {
+    min-height: auto;
   }
   .advanced-section summary {
     padding: 15px;
@@ -1201,6 +1760,17 @@ async function save() {
   }
   .locale-add-row :deep(.p-button) {
     width: 100%;
+  }
+  .locale-chip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .locale-chip > span {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .locale-chip > div {
+    justify-content: flex-end;
   }
 }
 </style>
