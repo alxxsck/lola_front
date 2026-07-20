@@ -147,6 +147,53 @@ const requiredOperations = new Map([
     },
   ],
   [
+    "EventCatalog_updateMetadata",
+    {
+      label: "event definition metadata update",
+      request: "UpdateEventDefinitionMetadataDto",
+      response: "EventDefinitionMetadataMutationResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_updatePolicy",
+    {
+      label: "event ingestion policy update",
+      request: "UpdateEventIngestionPolicyDto",
+      response: "EventIngestionPolicyMutationResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_saveSchemaDraft",
+    {
+      label: "event schema draft save",
+      request: "SaveEventSchemaDraftDto",
+      response: "EventSchemaDraftResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_analyzeSchemaDraft",
+    {
+      label: "event schema draft impact",
+      request: "AnalyzeEventSchemaDraftDto",
+      response: "EventSchemaImpactResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_publishSchemaDraft",
+    {
+      label: "event schema draft publication",
+      request: "PublishEventSchemaDraftDto",
+      response: "EventSchemaPublishResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_projectHealth",
+    {
+      label: "event catalog consumer health",
+      response: "EventCatalogHealthResponseDto",
+    },
+  ],
+  [
     "Platform_activitySettings",
     { label: "activity settings", response: "ActivitySettingsResponseDto" },
   ],
@@ -414,11 +461,17 @@ const requiredOperations = new Map([
   ],
   [
     "Translation_cancel",
-    { label: "translation job cancellation", response: "TranslationJobResponseDto" },
+    {
+      label: "translation job cancellation",
+      response: "TranslationJobResponseDto",
+    },
   ],
   [
     "Translation_retryTarget",
-    { label: "translation target retry", response: "TranslationJobResponseDto" },
+    {
+      label: "translation target retry",
+      response: "TranslationJobResponseDto",
+    },
   ],
   [
     "Translation_usageReport",

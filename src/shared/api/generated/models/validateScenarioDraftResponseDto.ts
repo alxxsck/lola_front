@@ -14,6 +14,7 @@ import type { ScenarioWarningResponseDto } from "./scenarioWarningResponseDto";
 
 export interface ValidateScenarioDraftResponseDto {
   audience?: AudienceRuleReportResponseDto;
+  catalogRevision: string;
   /** @nullable */
   cost: ValidateScenarioDraftResponseDtoCost;
   /** @nullable */

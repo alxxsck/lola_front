@@ -59,8 +59,23 @@ const catalog: ConditionCatalogResponseDto = {
   projectId: "project-1",
   revision: "catalog-revision-1",
   version: 1,
-  localization: { version: 1, enabled: false, attributeKey: null, attributeContractRevision: null, defaultLocale: '', locales: [], policyModes: ['ALL_PROJECT_LOCALES', 'SELECTED_LOCALES'], localizedValueSchemaVersion: 1, paths: [] },
-  translation: { enabled: false, supportedSourceLocales: [], supportedTargetLocales: [], maxBatchCharacters: 50_000 },
+  localization: {
+    version: 1,
+    enabled: false,
+    attributeKey: null,
+    attributeContractRevision: null,
+    defaultLocale: "",
+    locales: [],
+    policyModes: ["ALL_PROJECT_LOCALES", "SELECTED_LOCALES"],
+    localizedValueSchemaVersion: 1,
+    paths: [],
+  },
+  translation: {
+    enabled: false,
+    supportedSourceLocales: [],
+    supportedTargetLocales: [],
+    maxBatchCharacters: 50_000,
+  },
   events: [],
 };
 
@@ -137,9 +152,13 @@ const explainResponse: ScenarioRunExplainResponseDto = {
   },
   timeline: [],
   trigger: {
+    acceptedRevisionIds: ["event-revision-1"],
     code: "deposit.succeeded",
+    compiledRevisionId: "event-revision-1",
     definitionRevisionId: "event-revision-1",
     eventLogId: "event-log-1",
+    matchDecision: "COMPILED_REVISION",
+    matchingMode: "STABLE_TYPE",
     occurredAt: "2026-07-18T00:00:00.000Z",
     receivedAt: "2026-07-18T00:00:00.000Z",
     schemaVersion: 1,
@@ -543,6 +562,7 @@ describe("scenario authoring repository", () => {
       rule,
     };
     const validation = {
+      catalogRevision: "catalog-revision-1",
       valid: true,
       issues: [],
       dependencies: [],

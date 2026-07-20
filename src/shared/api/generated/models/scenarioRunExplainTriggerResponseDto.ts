@@ -5,14 +5,23 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ScenarioRunExplainTriggerResponseDtoCompatibilityEvidence } from "./scenarioRunExplainTriggerResponseDtoCompatibilityEvidence";
+import type { ScenarioRunExplainTriggerResponseDtoMatchDecision } from "./scenarioRunExplainTriggerResponseDtoMatchDecision";
+import type { ScenarioRunExplainTriggerResponseDtoMatchingMode } from "./scenarioRunExplainTriggerResponseDtoMatchingMode";
 import type { ScenarioRunExplainTriggerResponseDtoSource } from "./scenarioRunExplainTriggerResponseDtoSource";
 
 export interface ScenarioRunExplainTriggerResponseDto {
+  acceptedRevisionIds: string[];
   code: string;
+  /** @nullable */
+  compatibilityEvidence?: ScenarioRunExplainTriggerResponseDtoCompatibilityEvidence;
+  compiledRevisionId: string;
   /** @nullable */
   definitionKeyId?: string | null;
   definitionRevisionId: string;
   eventLogId: string;
+  matchDecision: ScenarioRunExplainTriggerResponseDtoMatchDecision;
+  matchingMode: ScenarioRunExplainTriggerResponseDtoMatchingMode;
   occurredAt: string;
   receivedAt: string;
   /** @minimum 1 */

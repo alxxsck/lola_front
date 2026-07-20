@@ -5,12 +5,16 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ScenarioGoalResolutionResponseDtoMatchEvidence } from "./scenarioGoalResolutionResponseDtoMatchEvidence";
 import type { ScenarioGoalResolutionResponseDtoOutcome } from "./scenarioGoalResolutionResponseDtoOutcome";
+import type { ScenarioGoalSubscriptionExplainResponseDto } from "./scenarioGoalSubscriptionExplainResponseDto";
 import type { ScenarioGoalResolutionResponseDtoWinner } from "./scenarioGoalResolutionResponseDtoWinner";
 
 export interface ScenarioGoalResolutionResponseDto {
   /** @nullable */
   deadlineAt?: string | null;
+  /** @nullable */
+  matchEvidence?: ScenarioGoalResolutionResponseDtoMatchEvidence;
   outcome: ScenarioGoalResolutionResponseDtoOutcome;
   /** @nullable */
   resolvedAt?: string | null;
@@ -18,11 +22,16 @@ export interface ScenarioGoalResolutionResponseDto {
   selectedBranch?: string | null;
   /** @nullable */
   stepId?: string | null;
+  subscriptions: ScenarioGoalSubscriptionExplainResponseDto[];
   /** @nullable */
   targetNodeKey?: string | null;
   waitId: string;
   /** @nullable */
   winner?: ScenarioGoalResolutionResponseDtoWinner;
+  /** @nullable */
+  winningDefinitionKeyId?: string | null;
+  /** @nullable */
+  winningDefinitionRevisionId?: string | null;
   /** @nullable */
   winningEventLogId?: string | null;
 }

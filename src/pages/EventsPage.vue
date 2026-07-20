@@ -165,26 +165,10 @@ function openCreate() {
 }
 
 function openEdit(item: EventDefinition) {
-  if (!canManage.value || item.readOnly) return
-  form.value = {
-    id: item.id,
-    name: item.name,
-    code: item.code,
-    description: item.description ?? '',
-    enabled: item.enabled,
-    clientIngestible: item.clientIngestible,
-    countsAsActivity: item.countsAsActivity,
-    schema: parseEventSchema(item.payloadSchema),
-  }
-  codeTouched.value = true
-  formError.value = null
-  resetLocalValidation()
-  eventFormStep.value = 0
-  hasTechnicalDraft.value = false
-  initialFormSnapshot.value = JSON.stringify(form.value)
-  initialSchemaSnapshot.value = canonicalJson(item.payloadSchema)
-  baselineSchema.value = item.payloadSchema
-  dialogVisible.value = true
+  return router.push({
+    name: 'event-definition-workspace',
+    params: { definitionKeyId: item.definitionKeyId ?? item.id },
+  })
 }
 
 function requestDialogVisibility(value: boolean) {
@@ -525,7 +509,7 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
           <ToggleSwitch :model-value="item.enabled" :disabled="!canManage || item.readOnly || togglingId === item.id" :aria-label="`Включить ${item.name}`" @update:model-value="toggleEvent(item, $event)" />
           <Button v-if="canManage" icon="pi pi-list" severity="secondary" text rounded :aria-label="`Открыть журнал ${item.name}`" @click="openEventLogs(item)" />
           <EventDefinitionHistory v-if="auth.project?.id && item.definitionKeyId" :project-id="auth.project.id" :event="item" />
-          <Button v-if="canManage && !item.readOnly" icon="pi pi-pencil" severity="secondary" text rounded :aria-label="`Изменить ${item.name}`" @click="openEdit(item)" />
+          <Button icon="pi pi-arrow-right" severity="secondary" text rounded :aria-label="`Открыть ${item.name}`" @click="openEdit(item)" />
           <Button v-if="canManage && !item.readOnly" icon="pi pi-trash" severity="danger" text rounded :aria-label="`Удалить ${item.name}`" @click="askDelete(item)" />
         </div>
       </article>

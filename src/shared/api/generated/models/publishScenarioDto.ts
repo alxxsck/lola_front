@@ -10,6 +10,7 @@ import type { PublishScenarioDtoDeliveryPolicy } from "./publishScenarioDtoDeliv
 import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
 import type { PublishScenarioDtoProfileFreshness } from "./publishScenarioDtoProfileFreshness";
 import type { ScenarioRuleDto } from "./scenarioRuleDto";
+import type { PublishScenarioDtoTriggerMatchingMode } from "./publishScenarioDtoTriggerMatchingMode";
 
 export interface PublishScenarioDto {
   audience?: AudienceRuleDto;
@@ -36,4 +37,6 @@ export interface PublishScenarioDto {
   profileFreshness?: PublishScenarioDtoProfileFreshness;
   /** Versioned typed rule AST to compile into the immutable Scenario Revision. */
   rule?: ScenarioRuleDto;
+  /** AUTO follows stable compatible Event revisions; EXACT intentionally pins this Scenario revision. */
+  triggerMatchingMode?: PublishScenarioDtoTriggerMatchingMode;
 }

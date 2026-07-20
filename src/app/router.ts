@@ -68,6 +68,11 @@ export const router = createRouter({
           component: () => import("@/pages/EventsPage.vue"),
         },
         {
+          path: "events/:definitionKeyId",
+          name: "event-definition-workspace",
+          component: () => import("@/pages/EventDefinitionWorkspacePage.vue"),
+        },
+        {
           path: "event-logs",
           name: "event-logs",
           component: () => import("@/pages/EventLogsPage.vue"),

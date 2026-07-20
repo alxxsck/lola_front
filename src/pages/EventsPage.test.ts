@@ -1,7 +1,6 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { parseEventSchema } from '@/features/event-schema/model/event-schema'
 import EventsPage from './EventsPage.vue'
 
 const mocks = vi.hoisted(() => ({
@@ -10,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getContract: vi.fn(),
   toast: vi.fn(),
   confirm: vi.fn(),
+  routerPush: vi.fn(),
   guardDirty: null as { value: boolean } | null,
 }))
 
@@ -32,7 +32,7 @@ vi.mock('@/shared/api/repository/scenario-authoring', () => ({
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: mocks.routerPush }),
 }))
 
 vi.mock('primevue/useconfirm', () => ({ useConfirm: () => ({ require: (options: unknown) => mocks.confirm(options) }) }))
@@ -46,6 +46,8 @@ vi.mock('@/shared/lib/use-unsaved-changes-guard', () => ({
 
 const existingEvent = {
   id: 'event-1',
+  definitionKeyId: 'event-key-1',
+  currentRevisionId: 'event-1',
   name: 'Успешный депозит',
   code: 'deposit.succeeded',
   description: 'Деньги зачислены',
@@ -94,39 +96,24 @@ describe('EventsPage event editor journey', () => {
     expect(wrapper.find('button-stub[label="Создать событие"]').exists()).toBe(false)
   })
 
-  it('publishes an edited successor only after confirmation and keeps activity semantics', async () => {
+  it('opens the Event Definition workspace by stable identity instead of editing mixed lifecycle concerns', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    await wrapper.find('button-stub[aria-label="Изменить Успешный депозит"]').trigger('click')
-    await wrapper.findAll('.event-steps button')[3]!.trigger('click')
-    wrapper.getComponent({ name: 'EventPayloadStudio' }).vm.$emit('update:modelValue', parseEventSchema({
-      type: 'object',
-      properties: { amount: { type: 'integer', minimum: 1 } },
-    }))
-    await wrapper.vm.$nextTick()
+    await wrapper.find('button-stub[aria-label="Открыть Успешный депозит"]').trigger('click')
 
-    expect(wrapper.find('button-stub[label="Создать новую версию"]').exists()).toBe(true)
-    await wrapper.get('#event-form').trigger('submit')
-    await flushPromises()
-
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: 'event-definition-workspace',
+      params: { definitionKeyId: 'event-key-1' },
+    })
     expect(mocks.saveEvent).not.toHaveBeenCalled()
-    const confirmation = mocks.confirm.mock.calls[0]?.[0] as { header: string; accept: () => void }
-    expect(confirmation.header).toBe('Опубликовать новую версию события?')
-    confirmation.accept()
-    await flushPromises()
-
-    expect(mocks.saveEvent).toHaveBeenCalledWith('project-1', expect.objectContaining({
-      countsAsActivity: true,
-      payloadSchema: { type: 'object', properties: { amount: { type: 'integer', minimum: 1 } } },
-    }))
   })
 
   it('asks before leaving unapplied technical JSON changes', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    await wrapper.find('button-stub[aria-label="Изменить Успешный депозит"]').trigger('click')
+    await wrapper.find('button-stub[label="Новое событие"]').trigger('click')
     await wrapper.findAll('.event-steps button')[1]!.trigger('click')
     wrapper.getComponent({ name: 'EventPayloadStudio' }).vm.$emit('technical-draft-change', true)
     await wrapper.vm.$nextTick()
@@ -139,22 +126,6 @@ describe('EventsPage event editor journey', () => {
     confirmation.accept()
     await wrapper.vm.$nextTick()
     expect(wrapper.find('.event-steps button.active strong').text()).toBe('Пример')
-  })
-
-  it('allows editing the current revision when older revisions share its immutable code', async () => {
-    mocks.getEvents.mockResolvedValue([
-      existingEvent,
-      { ...existingEvent, id: 'event-older', version: 1 },
-    ])
-    const wrapper = mountPage()
-    await flushPromises()
-
-    await wrapper.findAll('button-stub[aria-label="Изменить Успешный депозит"]')[0]!.trigger('click')
-    await wrapper.findAll('.event-steps button')[3]!.trigger('click')
-    await wrapper.get('#event-form').trigger('submit')
-    await flushPromises()
-
-    expect(mocks.saveEvent).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'deposit.succeeded' }))
   })
 
   it('keeps the user on the meaning step until required business fields are complete', async () => {
@@ -217,6 +188,11 @@ describe('EventsPage event editor journey', () => {
     expect(cards[0]?.get('[role="tooltip"]').text()).toContain('техническое имя и схема данных задаются системой')
     expect(cards[0]?.text()).not.toContain('Lola managed')
     expect(cards[0]?.text()).not.toContain('stable identity')
+    await cards[0]?.get('button-stub[aria-label="Открыть Пользователь стал офлайн"]').trigger('click')
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: 'event-definition-workspace',
+      params: { definitionKeyId: 'definition-system' },
+    })
   })
 
   it('labels inactive custom events without making the card or its actions look disabled', async () => {
@@ -229,7 +205,7 @@ describe('EventsPage event editor journey', () => {
     expect(card.classes()).not.toContain('disabled')
     expect(card.get('.event-status').text()).toBe('Выключено')
     expect(wrapper.getComponent({ name: 'ToggleSwitch' }).attributes('disabled')).toBe('false')
-    expect(card.find('button-stub[aria-label="Изменить Успешный депозит"]').exists()).toBe(true)
+    expect(card.find('button-stub[aria-label="Открыть Успешный депозит"]').exists()).toBe(true)
     expect(card.find('button-stub[aria-label="Удалить Успешный депозит"]').exists()).toBe(true)
   })
 

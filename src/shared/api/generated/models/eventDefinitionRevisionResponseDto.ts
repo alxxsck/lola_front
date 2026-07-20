@@ -25,11 +25,15 @@ export interface EventDefinitionRevisionResponseDto {
   enabled: boolean;
   id: string;
   isCurrent: boolean;
+  metadataUpdatedAt: string;
   name: string;
   origin: EventDefinitionOrigin;
   payloadSchema: EventDefinitionRevisionResponseDtoPayloadSchema;
   /** @minimum 0 */
   pinnedScenarioRevisionCount: number;
+  policyUpdatedAt: string;
+  /** @minimum 1 */
+  policyVersion: number;
   projectId: string;
   readOnly: boolean;
   updatedAt: string;

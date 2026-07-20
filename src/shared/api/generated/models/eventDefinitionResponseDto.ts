@@ -23,9 +23,13 @@ export interface EventDefinitionResponseDto {
   enabled: boolean;
   id: string;
   isCurrent: boolean;
+  metadataUpdatedAt: string;
   name: string;
   origin: EventDefinitionOrigin;
   payloadSchema: EventDefinitionResponseDtoPayloadSchema;
+  policyUpdatedAt: string;
+  /** @minimum 1 */
+  policyVersion: number;
   projectId: string;
   readOnly: boolean;
   updatedAt: string;

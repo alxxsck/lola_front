@@ -27,6 +27,7 @@ import type {
   AiCapabilityPreviewResponseDto,
   AiUsageReportParams,
   AiUsageReportResponseDto,
+  AnalyzeEventSchemaDraftDto,
   ArchivedSegmentResponseDto,
   AttributeContractDraftResponseDto,
   AttributeContractRevisionPageResponseDto,
@@ -75,12 +76,18 @@ import type {
   EndUserResponseDto,
   EndVoiceSessionDto,
   EvaluateAudienceUserDto,
+  EventCatalogHealthResponseDto,
+  EventDefinitionMetadataMutationResponseDto,
   EventDefinitionResponseDto,
   EventDefinitionRevisionPageResponseDto,
   EventDefinitionRevisionResponseDto,
   EventIngestResponseDto,
+  EventIngestionPolicyMutationResponseDto,
   EventLogPageResponseDto,
   EventLogResponseDto,
+  EventSchemaDraftResponseDto,
+  EventSchemaImpactResponseDto,
+  EventSchemaPublishResponseDto,
   EventsListParams,
   ExtendConversationAISuspensionDto,
   IngestClientEventDto,
@@ -113,6 +120,7 @@ import type {
   ProviderBillingSnapshotResponseDto,
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
+  PublishEventSchemaDraftDto,
   PublishScenarioDto,
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
@@ -123,6 +131,7 @@ import type {
   RollbackScenarioDto,
   RotateServerKeyResponseDto,
   SaveAttributeContractDraftDto,
+  SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
   ScenarioActionDefinitionResponseDto,
   ScenarioAudienceSearchParams,
@@ -156,6 +165,8 @@ import type {
   UiElementResponseDto,
   UpdateActivitySettingsDto,
   UpdateEventDefinitionDto,
+  UpdateEventDefinitionMetadataDto,
+  UpdateEventIngestionPolicyDto,
   UpdateProjectDto,
   UpdateScenarioActionDefinitionDto,
   UpdateScenarioDto,
@@ -596,6 +607,108 @@ export const adminEndUserProfilesProfile = (
   return request<ProfileProjectionResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/profile`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const eventCatalogUpdateMetadata = (
+  projectId: string,
+  definitionKeyId: string,
+  updateEventDefinitionMetadataDto: BodyType<UpdateEventDefinitionMetadataDto>,
+  options?: SecondParameter<
+    typeof request<EventDefinitionMetadataMutationResponseDto>
+  >,
+) => {
+  return request<EventDefinitionMetadataMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/metadata`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateEventDefinitionMetadataDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogUpdatePolicy = (
+  projectId: string,
+  definitionKeyId: string,
+  updateEventIngestionPolicyDto: BodyType<UpdateEventIngestionPolicyDto>,
+  options?: SecondParameter<
+    typeof request<EventIngestionPolicyMutationResponseDto>
+  >,
+) => {
+  return request<EventIngestionPolicyMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/policy`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateEventIngestionPolicyDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogSaveSchemaDraft = (
+  projectId: string,
+  definitionKeyId: string,
+  saveEventSchemaDraftDto: BodyType<SaveEventSchemaDraftDto>,
+  options?: SecondParameter<typeof request<EventSchemaDraftResponseDto>>,
+) => {
+  return request<EventSchemaDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/schema-draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveEventSchemaDraftDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogAnalyzeSchemaDraft = (
+  projectId: string,
+  definitionKeyId: string,
+  analyzeEventSchemaDraftDto: BodyType<AnalyzeEventSchemaDraftDto>,
+  options?: SecondParameter<typeof request<EventSchemaImpactResponseDto>>,
+) => {
+  return request<EventSchemaImpactResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/schema-draft/impact`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: analyzeEventSchemaDraftDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogPublishSchemaDraft = (
+  projectId: string,
+  definitionKeyId: string,
+  publishEventSchemaDraftDto: BodyType<PublishEventSchemaDraftDto>,
+  options?: SecondParameter<typeof request<EventSchemaPublishResponseDto>>,
+) => {
+  return request<EventSchemaPublishResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/schema-draft/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishEventSchemaDraftDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogProjectHealth = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EventCatalogHealthResponseDto>>,
+) => {
+  return request<EventCatalogHealthResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/health`,
       method: "GET",
     },
     options,
@@ -2489,6 +2602,24 @@ export type AdminEndUserProfilesListResult = NonNullable<
 >;
 export type AdminEndUserProfilesProfileResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesProfile>>
+>;
+export type EventCatalogUpdateMetadataResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogUpdateMetadata>>
+>;
+export type EventCatalogUpdatePolicyResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogUpdatePolicy>>
+>;
+export type EventCatalogSaveSchemaDraftResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogSaveSchemaDraft>>
+>;
+export type EventCatalogAnalyzeSchemaDraftResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogAnalyzeSchemaDraft>>
+>;
+export type EventCatalogPublishSchemaDraftResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogPublishSchemaDraft>>
+>;
+export type EventCatalogProjectHealthResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogProjectHealth>>
 >;
 export type PlatformEventDefinitionRevisionsResult = NonNullable<
   Awaited<ReturnType<typeof platformEventDefinitionRevisions>>

@@ -1795,6 +1795,15 @@
         ],
         "type": "object"
       },
+      "AnalyzeEventSchemaDraftDto": {
+        "properties": {
+          "expectedDraftVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
       "AnyRuleExplanationResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -6604,6 +6613,163 @@
         ],
         "type": "object"
       },
+      "EventCatalogHealthResponseDto": {
+        "properties": {
+          "activeWaits": {
+            "items": {
+              "$ref": "#/components/schemas/EventConsumerHealthResponseDto"
+            },
+            "type": "array"
+          },
+          "consumers": {
+            "items": {
+              "$ref": "#/components/schemas/EventConsumerHealthResponseDto"
+            },
+            "type": "array"
+          },
+          "drafts": {
+            "items": {
+              "$ref": "#/components/schemas/EventSchemaDraftHealthResponseDto"
+            },
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EventCatalogHealthSummaryResponseDto"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "summary",
+          "consumers",
+          "activeWaits",
+          "drafts",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "EventCatalogHealthSummaryResponseDto": {
+        "properties": {
+          "blockedConsumerCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "blockedDraftCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "exactConsumerCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "healthyConsumerCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "needsReviewDraftCount": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "healthyConsumerCount",
+          "exactConsumerCount",
+          "blockedConsumerCount",
+          "needsReviewDraftCount",
+          "blockedDraftCount"
+        ],
+        "type": "object"
+      },
+      "EventConsumerHealthResponseDto": {
+        "properties": {
+          "acceptsCurrentRevision": {
+            "type": "boolean"
+          },
+          "consumerId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "consumerType": {
+            "type": "string"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "health": {
+            "enum": [
+              "HEALTHY",
+              "EXACT",
+              "BLOCKED"
+            ],
+            "type": "string"
+          },
+          "matchingMode": {
+            "enum": [
+              "STABLE_TYPE",
+              "COMPATIBLE_RANGE",
+              "EXACT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "consumerType",
+          "consumerId",
+          "definitionKeyId",
+          "matchingMode",
+          "acceptsCurrentRevision",
+          "health"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionMetadataMutationResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "metadataChanged": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "schemaRevisionUnchanged": {
+            "description": "Metadata never creates a schema revision.",
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "code",
+          "name",
+          "updatedAt",
+          "metadataChanged",
+          "schemaRevisionUnchanged"
+        ],
+        "type": "object"
+      },
       "EventDefinitionOrigin": {
         "enum": [
           "CUSTOM",
@@ -6649,6 +6815,10 @@
           "isCurrent": {
             "type": "boolean"
           },
+          "metadataUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -6662,6 +6832,14 @@
           "payloadSchema": {
             "additionalProperties": true,
             "type": "object"
+          },
+          "policyUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "policyVersion": {
+            "minimum": 1,
+            "type": "number"
           },
           "projectId": {
             "format": "uuid",
@@ -6688,6 +6866,9 @@
           "enabled",
           "clientIngestible",
           "countsAsActivity",
+          "policyVersion",
+          "policyUpdatedAt",
+          "metadataUpdatedAt",
           "definitionKeyId",
           "isCurrent",
           "origin",
@@ -6762,6 +6943,10 @@
           "isCurrent": {
             "type": "boolean"
           },
+          "metadataUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -6778,6 +6963,14 @@
           },
           "pinnedScenarioRevisionCount": {
             "minimum": 0,
+            "type": "number"
+          },
+          "policyUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "policyVersion": {
+            "minimum": 1,
             "type": "number"
           },
           "projectId": {
@@ -6805,6 +6998,9 @@
           "enabled",
           "clientIngestible",
           "countsAsActivity",
+          "policyVersion",
+          "policyUpdatedAt",
+          "metadataUpdatedAt",
           "definitionKeyId",
           "isCurrent",
           "origin",
@@ -6914,6 +7110,68 @@
           "eventCode",
           "fieldKey",
           "operator"
+        ],
+        "type": "object"
+      },
+      "EventIngestionPolicyMutationResponseDto": {
+        "properties": {
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/EventIngestionPolicyResponseDto"
+          },
+          "policyChanged": {
+            "type": "boolean"
+          },
+          "schemaRevisionUnchanged": {
+            "description": "Policy never creates a schema revision.",
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "policyChanged",
+          "schemaRevisionUnchanged",
+          "policy"
+        ],
+        "type": "object"
+      },
+      "EventIngestionPolicyResponseDto": {
+        "properties": {
+          "clientIngestible": {
+            "type": "boolean"
+          },
+          "countsAsActivity": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "enabled",
+          "clientIngestible",
+          "countsAsActivity",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -7128,6 +7386,532 @@
         "required": [
           "id",
           "externalId"
+        ],
+        "type": "object"
+      },
+      "EventSchemaActiveWaitImpactResponseDto": {
+        "properties": {
+          "acceptsCurrentRevision": {
+            "type": "boolean"
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "compiledRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "matchingMode": {
+            "enum": [
+              "STABLE_TYPE",
+              "COMPATIBLE_RANGE",
+              "EXACT"
+            ],
+            "type": "string"
+          },
+          "resolutionActions": {
+            "items": {
+              "enum": [
+                "DRAIN",
+                "CANCEL"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "ACTIVE_WAIT"
+            ],
+            "type": "string"
+          },
+          "waitId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "waitId",
+          "matchingMode",
+          "compiledRevisionId",
+          "acceptsCurrentRevision",
+          "blocking",
+          "resolutionActions"
+        ],
+        "type": "object"
+      },
+      "EventSchemaAffectedConsumerResponseDto": {
+        "properties": {
+          "consumerId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "consumerType": {
+            "type": "string"
+          },
+          "fieldKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reasonCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "consumerType",
+          "consumerId",
+          "reasonCodes",
+          "fieldKeys"
+        ],
+        "type": "object"
+      },
+      "EventSchemaChangeReasonResponseDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "OPTIONAL_FIELD_ADDED",
+              "REQUIRED_FIELD_ADDED",
+              "FIELD_REMOVED",
+              "FIELD_PATH_RENAMED",
+              "FIELD_KEY_CHANGED",
+              "FIELD_TYPE_CHANGED",
+              "SEMANTIC_TYPE_CHANGED",
+              "UNIT_CHANGED",
+              "SENSITIVITY_CHANGED",
+              "CONSTRAINT_TIGHTENED",
+              "CONSTRAINT_RELAXED",
+              "ENUM_VALUE_ADDED",
+              "ENUM_VALUE_REMOVED",
+              "ADDITIONAL_PROPERTIES_CLOSED",
+              "ADDITIONAL_PROPERTIES_OPENED",
+              "UNSUPPORTED_VALIDATION_CHANGED",
+              "EVENT_MEANING_CHANGED"
+            ],
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          },
+          "fieldKey": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "INFO",
+              "REVIEW",
+              "BREAKING"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "path",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "EventSchemaCompatibilityResponseDto": {
+        "properties": {
+          "affectedConsumers": {
+            "items": {
+              "$ref": "#/components/schemas/EventSchemaAffectedConsumerResponseDto"
+            },
+            "type": "array"
+          },
+          "classification": {
+            "enum": [
+              "FULL_TRANSITIVE_SAFE",
+              "REVIEW_REQUIRED",
+              "PRODUCER_BREAKING",
+              "CONSUMER_BREAKING",
+              "SEMANTIC_BREAKING"
+            ],
+            "type": "string"
+          },
+          "consumerCompatibility": {
+            "enum": [
+              "SAFE",
+              "REVIEW_REQUIRED",
+              "BREAKING"
+            ],
+            "type": "string"
+          },
+          "producerCompatibility": {
+            "enum": [
+              "SAFE",
+              "BREAKING"
+            ],
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/EventSchemaChangeReasonResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "classification",
+          "producerCompatibility",
+          "consumerCompatibility",
+          "reasons"
+        ],
+        "type": "object"
+      },
+      "EventSchemaConsumerImpactResponseDto": {
+        "properties": {
+          "acceptsCurrentRevision": {
+            "type": "boolean"
+          },
+          "bindingId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "exposure": {
+            "enum": [
+              "CURRENT_REVISION",
+              "RUNNING_HISTORICAL_REVISION"
+            ],
+            "type": "string"
+          },
+          "exposures": {
+            "items": {
+              "enum": [
+                "CURRENT_REVISION",
+                "RUNNING_RUNTIME"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "fieldDependencies": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "matchingMode": {
+            "enum": [
+              "STABLE_TYPE",
+              "COMPATIBLE_RANGE",
+              "EXACT"
+            ],
+            "type": "string"
+          },
+          "resolutionActions": {
+            "items": {
+              "enum": [
+                "MIGRATE",
+                "REPUBLISH",
+                "DRAIN",
+                "CANCEL"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "scenarioRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "bindingId",
+          "scenarioId",
+          "scenarioRevisionId",
+          "exposure",
+          "exposures",
+          "state",
+          "matchingMode",
+          "acceptsCurrentRevision",
+          "fieldDependencies",
+          "blocking",
+          "resolutionActions"
+        ],
+        "type": "object"
+      },
+      "EventSchemaDraftHealthResponseDto": {
+        "properties": {
+          "blockingCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "draftId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "draftVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "health": {
+            "enum": [
+              "HEALTHY",
+              "NEEDS_REVIEW",
+              "BLOCKED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "draftId",
+          "definitionKeyId",
+          "draftVersion",
+          "classification",
+          "blockingCount",
+          "health"
+        ],
+        "type": "object"
+      },
+      "EventSchemaDraftResponseDto": {
+        "properties": {
+          "baseRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "changed": {
+            "type": "boolean"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "draftVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "payloadSchema": {
+            "type": "object"
+          },
+          "schemaHash": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "validation": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "definitionKeyId",
+          "baseRevisionId",
+          "draftVersion",
+          "payloadSchema",
+          "schemaHash",
+          "validation",
+          "updatedAt",
+          "changed"
+        ],
+        "type": "object"
+      },
+      "EventSchemaImpactDetailResponseDto": {
+        "properties": {
+          "activeWaits": {
+            "items": {
+              "$ref": "#/components/schemas/EventSchemaActiveWaitImpactResponseDto"
+            },
+            "type": "array"
+          },
+          "consumers": {
+            "items": {
+              "$ref": "#/components/schemas/EventSchemaConsumerImpactResponseDto"
+            },
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EventSchemaImpactSummaryResponseDto"
+          }
+        },
+        "required": [
+          "consumers",
+          "activeWaits",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "EventSchemaImpactResponseDto": {
+        "properties": {
+          "baseRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "compatibility": {
+            "$ref": "#/components/schemas/EventSchemaCompatibilityResponseDto"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "draftVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "impact": {
+            "$ref": "#/components/schemas/EventSchemaImpactDetailResponseDto"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/EventSchemaValidationResponseDto"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "draftVersion",
+          "baseRevisionId",
+          "validation",
+          "compatibility",
+          "impact"
+        ],
+        "type": "object"
+      },
+      "EventSchemaImpactSummaryResponseDto": {
+        "properties": {
+          "activeWaitCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "blockingActiveWaitCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "blockingConsumerCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "consumerCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "legacyExactCount": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "consumerCount",
+          "activeWaitCount",
+          "blockingConsumerCount",
+          "blockingActiveWaitCount",
+          "legacyExactCount"
+        ],
+        "type": "object"
+      },
+      "EventSchemaPublishResponseDto": {
+        "properties": {
+          "automaticallyExtendedBindings": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "automaticallyExtendedWaits": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "compatibility": {
+            "$ref": "#/components/schemas/EventSchemaCompatibilityResponseDto"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "impact": {
+            "$ref": "#/components/schemas/EventSchemaImpactDetailResponseDto"
+          },
+          "previousRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 2,
+            "type": "number"
+          },
+          "schemaHash": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "SAFELY_PUBLISHED",
+              "BREAKING_PUBLISHED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "definitionKeyId",
+          "previousRevisionId",
+          "revisionId",
+          "revisionNumber",
+          "schemaHash",
+          "compatibility",
+          "impact",
+          "automaticallyExtendedBindings",
+          "automaticallyExtendedWaits"
+        ],
+        "type": "object"
+      },
+      "EventSchemaValidationResponseDto": {
+        "properties": {
+          "valid": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "validatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "valid",
+          "validatedAt"
         ],
         "type": "object"
       },
@@ -9490,6 +10274,37 @@
         ],
         "type": "object"
       },
+      "PublishEventSchemaDraftDto": {
+        "properties": {
+          "confirmBreakingChange": {
+            "description": "Required after every blocking consumer has been migrated, republished, drained, or cancelled.",
+            "type": "boolean"
+          },
+          "expectedBaseRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expectedDraftVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "producerMigrationConfirmed": {
+            "description": "Required for producer-breaking changes after the producer rollout is complete.",
+            "type": "boolean"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedDraftVersion",
+          "expectedBaseRevisionId",
+          "reason"
+        ],
+        "type": "object"
+      },
       "PublishScenarioDto": {
         "additionalProperties": false,
         "properties": {
@@ -9558,6 +10373,14 @@
               }
             ],
             "description": "Versioned typed rule AST to compile into the immutable Scenario Revision."
+          },
+          "triggerMatchingMode": {
+            "description": "AUTO follows stable compatible Event revisions; EXACT intentionally pins this Scenario revision.",
+            "enum": [
+              "AUTO",
+              "EXACT"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -9823,6 +10646,27 @@
         "required": [
           "expectedDraftVersion",
           "document"
+        ],
+        "type": "object"
+      },
+      "SaveEventSchemaDraftDto": {
+        "properties": {
+          "expectedDraftVersion": {
+            "description": "Required when replacing an existing draft.",
+            "minimum": 1,
+            "type": "number"
+          },
+          "payloadSchema": {
+            "description": "JSON Schema for the event payload.",
+            "type": "object"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "payloadSchema"
         ],
         "type": "object"
       },
@@ -10799,6 +11643,44 @@
         ],
         "type": "object"
       },
+      "ScenarioGoalMatchEvidenceResponseDto": {
+        "properties": {
+          "acceptedRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "compiledRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "COMPILED_REVISION",
+              "STABLE_IDENTITY",
+              "COMPATIBILITY_EVIDENCE"
+            ],
+            "type": "string"
+          },
+          "matchingMode": {
+            "enum": [
+              "STABLE_TYPE",
+              "COMPATIBLE_RANGE",
+              "EXACT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "matchingMode",
+          "compiledRevisionId",
+          "acceptedRevisionIds",
+          "decision"
+        ],
+        "type": "object"
+      },
       "ScenarioGoalResolutionResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -10806,6 +11688,15 @@
             "format": "date-time",
             "nullable": true,
             "type": "string"
+          },
+          "matchEvidence": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioGoalMatchEvidenceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "outcome": {
             "enum": [
@@ -10831,6 +11722,12 @@
             "nullable": true,
             "type": "string"
           },
+          "subscriptions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioGoalSubscriptionExplainResponseDto"
+            },
+            "type": "array"
+          },
           "targetNodeKey": {
             "nullable": true,
             "type": "string"
@@ -10847,6 +11744,16 @@
             "nullable": true,
             "type": "string"
           },
+          "winningDefinitionKeyId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "winningDefinitionRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "winningEventLogId": {
             "format": "uuid",
             "nullable": true,
@@ -10855,7 +11762,42 @@
         },
         "required": [
           "waitId",
-          "outcome"
+          "outcome",
+          "subscriptions"
+        ],
+        "type": "object"
+      },
+      "ScenarioGoalSubscriptionExplainResponseDto": {
+        "properties": {
+          "acceptedRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "compiledRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "matchingMode": {
+            "enum": [
+              "STABLE_TYPE",
+              "COMPATIBLE_RANGE",
+              "EXACT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "compiledRevisionId",
+          "matchingMode",
+          "acceptedRevisionIds"
         ],
         "type": "object"
       },
@@ -11877,7 +12819,22 @@
       "ScenarioRunExplainTriggerResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "acceptedRevisionIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
           "code": {
+            "type": "string"
+          },
+          "compatibilityEvidence": {
+            "nullable": true,
+            "type": "object"
+          },
+          "compiledRevisionId": {
+            "format": "uuid",
             "type": "string"
           },
           "definitionKeyId": {
@@ -11891,6 +12848,23 @@
           },
           "eventLogId": {
             "format": "uuid",
+            "type": "string"
+          },
+          "matchDecision": {
+            "enum": [
+              "COMPILED_REVISION",
+              "STABLE_IDENTITY",
+              "COMPATIBILITY_EVIDENCE",
+              "LEGACY_FALLBACK"
+            ],
+            "type": "string"
+          },
+          "matchingMode": {
+            "enum": [
+              "STABLE_TYPE",
+              "COMPATIBLE_RANGE",
+              "EXACT"
+            ],
             "type": "string"
           },
           "occurredAt": {
@@ -11919,6 +12893,10 @@
           "code",
           "definitionRevisionId",
           "schemaVersion",
+          "matchingMode",
+          "compiledRevisionId",
+          "acceptedRevisionIds",
+          "matchDecision",
           "source",
           "occurredAt",
           "receivedAt"
@@ -13280,6 +14258,63 @@
         },
         "type": "object"
       },
+      "UpdateEventDefinitionMetadataDto": {
+        "properties": {
+          "description": {
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedUpdatedAt": {
+            "description": "Optimistic concurrency token.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "expectedUpdatedAt"
+        ],
+        "type": "object"
+      },
+      "UpdateEventIngestionPolicyDto": {
+        "properties": {
+          "clientIngestible": {
+            "type": "boolean"
+          },
+          "countsAsActivity": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "clientIngestible",
+          "countsAsActivity",
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
       "UpdateProjectDto": {
         "properties": {
           "assistantName": {
@@ -13848,6 +14883,9 @@
           "audience": {
             "$ref": "#/components/schemas/AudienceRuleReportResponseDto"
           },
+          "catalogRevision": {
+            "type": "string"
+          },
           "cost": {
             "allOf": [
               {
@@ -13904,7 +14942,8 @@
           "issues",
           "dependencies",
           "cost",
-          "warnings"
+          "warnings",
+          "catalogRevision"
         ],
         "type": "object"
       },
@@ -15782,6 +16821,486 @@
         ],
         "tags": [
           "admin end user profiles"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/metadata": {
+      "patch": {
+        "operationId": "EventCatalog_updateMetadata",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventDefinitionMetadataDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionMetadataMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/policy": {
+      "patch": {
+        "operationId": "EventCatalog_updatePolicy",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventIngestionPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventIngestionPolicyMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/schema-draft": {
+      "put": {
+        "operationId": "EventCatalog_saveSchemaDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveEventSchemaDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSchemaDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/schema-draft/impact": {
+      "post": {
+        "operationId": "EventCatalog_analyzeSchemaDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeEventSchemaDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSchemaImpactResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/schema-draft/publish": {
+      "post": {
+        "operationId": "EventCatalog_publishSchemaDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishEventSchemaDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSchemaPublishResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/health": {
+      "get": {
+        "operationId": "EventCatalog_projectHealth",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventCatalogHealthResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
         ]
       }
     },
@@ -18855,7 +20374,7 @@
                 }
               }
             },
-            "description": ""
+            "description": "Archives the Scenario while preserving its revisions and Run history."
           }
         },
         "security": [
