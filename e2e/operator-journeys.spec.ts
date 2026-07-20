@@ -365,6 +365,48 @@ test("Actions catalog stays compact and keeps the editor readable", async ({
   await expect(card).toBeVisible();
   const cardBox = await card.boundingBox();
   expect(cardBox?.height).toBeLessThanOrEqual(280);
+  const cardLayout = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>(".project-action-card")].map(
+      (actionCard) => {
+        const cardBounds = actionCard.getBoundingClientRect();
+        const surfaceStates = [
+          ...actionCard.querySelectorAll<HTMLElement>(".surface-state"),
+        ];
+        const footerIcon =
+          actionCard.querySelector<HTMLElement>(".card-footer i");
+        const footerItem = footerIcon?.closest<HTMLElement>("span") ?? null;
+        const iconBounds = footerIcon?.getBoundingClientRect();
+        const footerBounds = footerItem?.getBoundingClientRect();
+
+        return {
+          cardFits: actionCard.scrollWidth <= actionCard.clientWidth,
+          surfacesFit: surfaceStates.every((surface) => {
+            const bounds = surface.getBoundingClientRect();
+            return (
+              surface.scrollWidth <= surface.clientWidth &&
+              bounds.right <= cardBounds.right
+            );
+          }),
+          surfacesEqualHeight:
+            new Set(surfaceStates.map((surface) => surface.clientHeight))
+              .size <= 1,
+          footerIconCentered:
+            !iconBounds ||
+            !footerBounds ||
+            Math.abs(
+              iconBounds.top +
+                iconBounds.height / 2 -
+                (footerBounds.top + footerBounds.height / 2),
+            ) <= 1,
+        };
+      },
+    ),
+  );
+  expect(cardLayout.length).toBeGreaterThan(0);
+  expect(cardLayout.every((item) => item.cardFits)).toBe(true);
+  expect(cardLayout.every((item) => item.surfacesFit)).toBe(true);
+  expect(cardLayout.every((item) => item.surfacesEqualHeight)).toBe(true);
+  expect(cardLayout.every((item) => item.footerIconCentered)).toBe(true);
   const surfaces = await page.evaluate(() => {
     const actionCard = document.querySelector(".project-action-card");
     const actionGrid = document.querySelector(".action-grid");
@@ -825,4 +867,53 @@ test("AI Proposals stays durable, resolves explicitly and opens the exact conver
         document.documentElement.clientWidth,
     ),
   ).toBe(true);
+});
+
+test("приостановка AI остаётся понятной в обеих темах и на разных устройствах", async ({
+  page,
+}, testInfo) => {
+  test.skip(process.env.VITE_DATA_MODE === "api", "Сценарий изменяет демонстрационные данные");
+  await page.goto("/users/usr_1?conversationId=conv_1");
+  await expect(page.getByRole("heading", { name: "Диалоги" })).toBeVisible();
+  await expect(page.getByText("Как лучше пополнить баланс?")).toBeVisible();
+
+  await page.getByRole("button", { name: "Приостановить AI", exact: true }).click();
+  const startDialog = page.getByRole("dialog", { name: "Приостановить AI в этом диалоге" });
+  await expect(startDialog.getByText(/Первый депозит.*conv_1/)).toBeVisible();
+  await startDialog.getByRole("combobox", { name: "Причина" }).selectOption("OPERATOR_TAKEOVER");
+  await startDialog.getByRole("button", { name: /Приостановить до/ }).click();
+  await expect(startDialog).toBeHidden();
+  await expect(page.locator(".p-dialog-mask")).toHaveCount(0);
+
+  const banner = page.getByText("AI приостановлен в этом диалоге", { exact: true });
+  await expect(banner).toBeVisible();
+  await expect(page.getByRole("button", { name: /Первый депозит/ })).toContainText("AI приостановлен");
+  await expect(page.getByRole("button", { name: /Знакомство с Lola/ })).not.toContainText("AI приостановлен");
+
+  for (const theme of ["light", "dark"] as const) {
+    await page.evaluate((value) => {
+      localStorage.setItem("lola-theme", value);
+      document.documentElement.classList.toggle("lola-dark", value === "dark");
+      document.documentElement.style.colorScheme = value;
+    }, theme);
+    await expect(page.locator("html")).toHaveClass(theme === "dark" ? /lola-dark/ : /^(?!.*lola-dark)/);
+    await expect(page.locator(".p-drawer-content")).toBeVisible();
+    expect(await page.locator(".p-drawer-content").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`conversation-ai-suspension-${theme}.png`) });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await expectNoSeriousAccessibilityViolations(page);
+  }
+
+  await page.getByRole("button", { name: "Продлить" }).click();
+  const extendDialog = page.getByRole("dialog", { name: "Продлить приостановку AI" });
+  await extendDialog.getByText("+15 минут", { exact: true }).click();
+  await extendDialog.getByRole("button", { name: "Продлить", exact: true }).click();
+  await expect(banner).toBeVisible();
+
+  await page.getByRole("button", { name: "Возобновить AI" }).click();
+  const resumeDialog = page.getByRole("dialog", { name: "Возобновить ответы AI в этом диалоге?" });
+  await expect(resumeDialog.getByText("Следующее сообщение пользователя снова сможет получить автоматический ответ.")).toBeVisible();
+  await resumeDialog.getByRole("button", { name: "Возобновить AI" }).click();
+  await expect(banner).toBeHidden();
+  await expect(page.getByRole("button", { name: "Приостановить AI", exact: true })).toBeVisible();
 });

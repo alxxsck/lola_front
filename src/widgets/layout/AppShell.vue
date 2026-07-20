@@ -8,9 +8,12 @@ import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { useActionDefinitionsStore } from "@/features/actions/action-definitions.store";
 import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
+import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
 import AIProposalBadge from "@/features/ai-proposals/ui/AIProposalBadge.vue";
 import { repository } from "@/shared/api/repository";
+import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
+import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import ThemeSwitch from "./ThemeSwitch.vue";
 
 const route = useRoute();
@@ -18,6 +21,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const actionDefinitions = useActionDefinitionsStore();
 const proposals = useAIProposalsStore();
+const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
 
@@ -66,6 +70,8 @@ const profileItems = [
 
 async function logout(allDevices: boolean) {
   proposals.deactivate();
+  suspensions.deactivate();
+  cmsRealtimeClient.deactivateProject();
   try {
     await auth.logout(allDevices);
   } finally {
@@ -77,14 +83,26 @@ async function logout(allDevices: boolean) {
 watch(
   () => ({ projectId: auth.project?.id, role: auth.user?.role }),
   ({ projectId, role }) => {
-    if (projectId && canReviewAIProposals(role))
-      void proposals.activateProject(projectId);
-    else proposals.deactivate();
+    if (projectId) {
+      if (conversationAISuspensionEnabled)
+        void suspensions.activateProject(projectId);
+      else suspensions.deactivate();
+      if (canReviewAIProposals(role)) void proposals.activateProject(projectId);
+      else proposals.deactivate();
+    } else {
+      proposals.deactivate();
+      suspensions.deactivate();
+      cmsRealtimeClient.deactivateProject();
+    }
   },
   { immediate: true },
 );
 
-onBeforeUnmount(() => proposals.deactivate());
+onBeforeUnmount(() => {
+  proposals.deactivate();
+  suspensions.deactivate();
+  cmsRealtimeClient.deactivateProject();
+});
 </script>
 
 <template>

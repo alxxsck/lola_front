@@ -7,13 +7,13 @@
  */
 
 export interface AIProposalSummaryResponseDto {
-  /** @minimum 0 */
-  openCount: number;
-  /** @minimum 0 */
-  unreadCount: number;
+  calculatedAt: string;
   /** @minimum 0 */
   highPriorityUnreadCount: number;
   /** JSON-safe project event sequence. */
   lastSequence: string;
-  calculatedAt: string;
+  /** @minimum 0 */
+  openCount: number;
+  /** @minimum 0 */
+  unreadCount: number;
 }

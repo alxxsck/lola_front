@@ -16,6 +16,7 @@ import type {
   ActiveUserResponseDto,
   ActivitySettingsResponseDto,
   AdminConversationMessagesPageResponseDto,
+  AdminConversationResponseDto,
   AdminConversationsListMessagesParams,
   AdminConversationsListParams,
   AdminConversationsPageResponseDto,
@@ -38,6 +39,7 @@ import type {
   AuditLogResponseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
+  ChatSend200,
   CmsAuthResponseDto,
   CmsLoginDto,
   CmsProfileListResponseDto,
@@ -49,6 +51,10 @@ import type {
   ConditionCatalogResponseDto,
   ConfigureProjectActionDto,
   ConnectVoiceSessionDto,
+  ConversationAISuspensionHistoryPageResponseDto,
+  ConversationAISuspensionMutationResponseDto,
+  ConversationAISuspensionResponseDto,
+  ConversationAISuspensionsHistoryParams,
   CreateConversationDto,
   CreateCustomerDto,
   CreateEventDefinitionDto,
@@ -76,6 +82,7 @@ import type {
   EventLogPageResponseDto,
   EventLogResponseDto,
   EventsListParams,
+  ExtendConversationAISuspensionDto,
   IngestClientEventDto,
   IngestEventDto,
   IntegrationAttributeContractResponseDto,
@@ -112,6 +119,7 @@ import type {
   PublishedSegmentResponseDto,
   RefreshTokenDto,
   RenameConversationDto,
+  ResumeConversationAIDto,
   RollbackScenarioDto,
   RotateServerKeyResponseDto,
   SaveAttributeContractDraftDto,
@@ -137,6 +145,7 @@ import type {
   SpeechSettingsResponseDto,
   SpeechVoicePageResponseDto,
   StartAdminVoiceConversationDto,
+  StartConversationAISuspensionDto,
   StartVoiceSessionDto,
   SuccessResponseDto,
   SyncAttributeSnapshotDto,
@@ -317,6 +326,93 @@ export const productActionsActionTypes = (
 ) => {
   return request<ActionTypeResponseDto[]>(
     { url: `/api/v1/admin/projects/${projectId}/action-types`, method: "GET" },
+    options,
+  );
+};
+
+export const aIProposalEventsReceived = (
+  projectId: string,
+  eventId: string,
+  options?: SecondParameter<typeof request<AIProposalReceivedResponseDto>>,
+) => {
+  return request<AIProposalReceivedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposal-events/${eventId}/received`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const aIProposalsList = (
+  projectId: string,
+  params?: AIProposalsListParams,
+  options?: SecondParameter<typeof request<AIProposalsPageResponseDto>>,
+) => {
+  return request<AIProposalsPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aIProposalsDetail = (
+  projectId: string,
+  proposalId: string,
+  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
+) => {
+  return request<AIProposalDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const aIProposalsDecide = (
+  projectId: string,
+  proposalId: string,
+  decideAIProposalDto: BodyType<DecideAIProposalDto>,
+  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
+) => {
+  return request<AIProposalDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/decisions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: decideAIProposalDto,
+    },
+    options,
+  );
+};
+
+export const aIProposalsMarkRead = (
+  projectId: string,
+  proposalId: string,
+  options?: SecondParameter<typeof request<AIProposalReadResponseDto>>,
+) => {
+  return request<AIProposalReadResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/read`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const aIProposalsSummary = (
+  projectId: string,
+  options?: SecondParameter<typeof request<AIProposalSummaryResponseDto>>,
+) => {
+  return request<AIProposalSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-proposals/summary`,
+      method: "GET",
+    },
     options,
   );
 };
@@ -1526,6 +1622,102 @@ export const platformUpsertUser = (
   );
 };
 
+export const conversationAISuspensionsGet = (
+  projectId: string,
+  endUserId: string,
+  conversationId: string,
+  options?: SecondParameter<
+    typeof request<ConversationAISuspensionResponseDto>
+  >,
+) => {
+  return request<ConversationAISuspensionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${endUserId}/conversations/${conversationId}/ai-suspension`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const conversationAISuspensionsExtend = (
+  projectId: string,
+  endUserId: string,
+  conversationId: string,
+  extendConversationAISuspensionDto: BodyType<ExtendConversationAISuspensionDto>,
+  options?: SecondParameter<
+    typeof request<ConversationAISuspensionMutationResponseDto>
+  >,
+) => {
+  return request<ConversationAISuspensionMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${endUserId}/conversations/${conversationId}/ai-suspension/extend`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: extendConversationAISuspensionDto,
+    },
+    options,
+  );
+};
+
+export const conversationAISuspensionsHistory = (
+  projectId: string,
+  endUserId: string,
+  conversationId: string,
+  params?: ConversationAISuspensionsHistoryParams,
+  options?: SecondParameter<
+    typeof request<ConversationAISuspensionHistoryPageResponseDto>
+  >,
+) => {
+  return request<ConversationAISuspensionHistoryPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${endUserId}/conversations/${conversationId}/ai-suspension/history`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const conversationAISuspensionsResume = (
+  projectId: string,
+  endUserId: string,
+  conversationId: string,
+  resumeConversationAIDto: BodyType<ResumeConversationAIDto>,
+  options?: SecondParameter<
+    typeof request<ConversationAISuspensionMutationResponseDto>
+  >,
+) => {
+  return request<ConversationAISuspensionMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${endUserId}/conversations/${conversationId}/ai-suspension/resume`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: resumeConversationAIDto,
+    },
+    options,
+  );
+};
+
+export const conversationAISuspensionsStart = (
+  projectId: string,
+  endUserId: string,
+  conversationId: string,
+  startConversationAISuspensionDto: BodyType<StartConversationAISuspensionDto>,
+  options?: SecondParameter<
+    typeof request<ConversationAISuspensionMutationResponseDto>
+  >,
+) => {
+  return request<ConversationAISuspensionMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${endUserId}/conversations/${conversationId}/ai-suspension/start`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: startConversationAISuspensionDto,
+    },
+    options,
+  );
+};
+
 export const adminConversationsList = (
   projectId: string,
   userId: string,
@@ -1537,6 +1729,21 @@ export const adminConversationsList = (
       url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations`,
       method: "GET",
       params,
+    },
+    options,
+  );
+};
+
+export const adminConversationsGet = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  options?: SecondParameter<typeof request<AdminConversationResponseDto>>,
+) => {
+  return request<AdminConversationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}`,
+      method: "GET",
     },
     options,
   );
@@ -1879,9 +2086,9 @@ export const chatList = (options?: SecondParameter<typeof request<void>>) => {
 
 export const chatSend = (
   sendChatMessageDto: BodyType<SendChatMessageDto>,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<typeof request<ChatSend200>>,
 ) => {
-  return request<void>(
+  return request<ChatSend200>(
     {
       url: `/api/v1/chat/messages`,
       method: "POST",
@@ -2196,93 +2403,6 @@ export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
   return request<void>({ url: `/health`, method: "GET" }, options);
 };
 
-export const aIProposalsSummary = (
-  projectId: string,
-  options?: SecondParameter<typeof request<AIProposalSummaryResponseDto>>,
-) => {
-  return request<AIProposalSummaryResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/summary`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const aIProposalsList = (
-  projectId: string,
-  params?: AIProposalsListParams,
-  options?: SecondParameter<typeof request<AIProposalsPageResponseDto>>,
-) => {
-  return request<AIProposalsPageResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
-export const aIProposalsDetail = (
-  projectId: string,
-  proposalId: string,
-  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
-) => {
-  return request<AIProposalDetailResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const aIProposalsMarkRead = (
-  projectId: string,
-  proposalId: string,
-  options?: SecondParameter<typeof request<AIProposalReadResponseDto>>,
-) => {
-  return request<AIProposalReadResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/read`,
-      method: "POST",
-    },
-    options,
-  );
-};
-
-export const aIProposalsDecide = (
-  projectId: string,
-  proposalId: string,
-  decideAIProposalDto: BodyType<DecideAIProposalDto>,
-  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
-) => {
-  return request<AIProposalDetailResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/decisions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: decideAIProposalDto,
-    },
-    options,
-  );
-};
-
-export const aIProposalEventsReceived = (
-  projectId: string,
-  eventId: string,
-  options?: SecondParameter<typeof request<AIProposalReceivedResponseDto>>,
-) => {
-  return request<AIProposalReceivedResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposal-events/${eventId}/received`,
-      method: "POST",
-    },
-    options,
-  );
-};
-
 export type PlatformListProjectsResult = NonNullable<
   Awaited<ReturnType<typeof platformListProjects>>
 >;
@@ -2315,6 +2435,24 @@ export type PlatformUpdateActionDefinitionResult = NonNullable<
 >;
 export type ProductActionsActionTypesResult = NonNullable<
   Awaited<ReturnType<typeof productActionsActionTypes>>
+>;
+export type AIProposalEventsReceivedResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalEventsReceived>>
+>;
+export type AIProposalsListResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsList>>
+>;
+export type AIProposalsDetailResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsDetail>>
+>;
+export type AIProposalsDecideResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsDecide>>
+>;
+export type AIProposalsMarkReadResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsMarkRead>>
+>;
+export type AIProposalsSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof aIProposalsSummary>>
 >;
 export type AiUsageReportResult = NonNullable<
   Awaited<ReturnType<typeof aiUsageReport>>
@@ -2553,8 +2691,26 @@ export type PlatformUsersResult = NonNullable<
 export type PlatformUpsertUserResult = NonNullable<
   Awaited<ReturnType<typeof platformUpsertUser>>
 >;
+export type ConversationAISuspensionsGetResult = NonNullable<
+  Awaited<ReturnType<typeof conversationAISuspensionsGet>>
+>;
+export type ConversationAISuspensionsExtendResult = NonNullable<
+  Awaited<ReturnType<typeof conversationAISuspensionsExtend>>
+>;
+export type ConversationAISuspensionsHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof conversationAISuspensionsHistory>>
+>;
+export type ConversationAISuspensionsResumeResult = NonNullable<
+  Awaited<ReturnType<typeof conversationAISuspensionsResume>>
+>;
+export type ConversationAISuspensionsStartResult = NonNullable<
+  Awaited<ReturnType<typeof conversationAISuspensionsStart>>
+>;
 export type AdminConversationsListResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationsList>>
+>;
+export type AdminConversationsGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminConversationsGet>>
 >;
 export type AdminConversationsListMessagesResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationsListMessages>>
@@ -2697,22 +2853,4 @@ export type VoiceConnectResult = NonNullable<
 >;
 export type AppHealthResult = NonNullable<
   Awaited<ReturnType<typeof appHealth>>
->;
-export type AIProposalsSummaryResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsSummary>>
->;
-export type AIProposalsListResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsList>>
->;
-export type AIProposalsDetailResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsDetail>>
->;
-export type AIProposalsMarkReadResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsMarkRead>>
->;
-export type AIProposalsDecideResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsDecide>>
->;
-export type AIProposalEventsReceivedResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalEventsReceived>>
 >;

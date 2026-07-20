@@ -97,7 +97,7 @@ export const useAIProposalsStore = defineStore("ai-proposals", () => {
 
   async function activateProject(nextProjectId: string): Promise<void> {
     if (projectId.value === nextProjectId && summary.value) return;
-    cmsRealtimeClient.disconnect();
+    cmsRealtimeClient.releaseLegacyCallbacks();
     clearProjectState();
     projectId.value = nextProjectId;
     await Promise.all([loadPage({ replace: true }), refreshSummary()]);
@@ -123,7 +123,7 @@ export const useAIProposalsStore = defineStore("ai-proposals", () => {
   }
 
   function deactivate(): void {
-    cmsRealtimeClient.disconnect();
+    cmsRealtimeClient.releaseLegacyCallbacks();
     projectId.value = null;
     realtimeState.value = "DISCONNECTED";
     clearProjectState();

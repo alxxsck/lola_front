@@ -13,14 +13,16 @@ export class ApiError extends Error {
   readonly code?: string
   readonly requestId?: string
   readonly details?: unknown
+  readonly retryAfterSeconds?: number
 
-  constructor(status: number, message: string, details?: unknown, requestId?: string, code?: string) {
+  constructor(status: number, message: string, details?: unknown, requestId?: string, code?: string, retryAfterSeconds?: number) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code ?? detailCode(details)
     this.details = details
     this.requestId = requestId
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
@@ -53,6 +55,10 @@ export function normalizeApiError(cause: unknown): ApiError {
     ?? requestHeaders?.get?.('x-request-id')
     ?? requestHeaders?.['x-request-id']
   const fallback = status ? `API error ${status}` : 'Не удалось связаться с сервером'
+  const retryAfterHeader = cause.response?.headers?.['retry-after']
+  const retryAfterSeconds = typeof retryAfterHeader === 'string' && /^\d+$/.test(retryAfterHeader)
+    ? Number(retryAfterHeader)
+    : undefined
 
   return new ApiError(
     status,
@@ -60,5 +66,6 @@ export function normalizeApiError(cause: unknown): ApiError {
     hasErrorEnvelope ? payload?.details : body,
     requestId,
     payload?.code,
+    retryAfterSeconds,
   )
 }

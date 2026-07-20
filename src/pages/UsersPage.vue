@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Column from "primevue/column";
@@ -13,6 +13,15 @@ import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { useAdminConversationConsole } from "@/features/admin-conversations/model/use-admin-conversation-console";
+import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
+import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
+import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
+import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
+import UserAISuspensionIndicator from "@/features/conversation-ai-suspension/ui/UserAISuspensionIndicator.vue";
+import {
+  reportSuspensionEvent,
+  suspensionDurationBucket,
+} from "@/features/conversation-ai-suspension/model/suspension-analytics";
 import CodeBlock from "@/features/end-user-attributes/ui/CodeBlock.vue";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import {
@@ -22,14 +31,20 @@ import {
 import { repository } from "@/shared/api/repository";
 import type {
   CmsProfileSummaryResponseDto,
+  ExtendConversationAISuspensionDto,
   ProfileProjectionFieldResponseDto,
   ProfileProjectionResponseDto,
+  ResumeConversationAIDto,
+  StartConversationAISuspensionDto,
 } from "@/shared/api/generated/models";
 import { formatDate, relativeTime } from "@/shared/lib/format";
 import { russianCount } from "@/shared/lib/russian-count";
 import type { ConversationMessage } from "@/shared/types/domain";
+import { conversationAISuspensionEnabled } from "@/shared/config/features";
+import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 
 const auth = useAuthStore();
+const suspensionStore = useConversationAISuspensionStore();
 const route = useRoute();
 const router = useRouter();
 const items = ref<CmsProfileSummaryResponseDto[]>([]);
@@ -45,6 +60,7 @@ const filterDefinitionId = ref("");
 const filterOperator = ref<"EQ" | "LT" | "LTE" | "GT" | "GTE">("EQ");
 const filterValue = ref("");
 const sort = ref<"LAST_SEEN_DESC" | "LAST_SEEN_ASC">("LAST_SEEN_DESC");
+const aiFilter = ref<"ALL" | "SUSPENDED">("ALL");
 const selected = ref<CmsProfileSummaryResponseDto | null>(null);
 const detail = ref<ProfileProjectionResponseDto | null>(null);
 const drawerVisible = ref(false);
@@ -52,21 +68,32 @@ const showDeveloperKeys = ref(false);
 const showArchivedFields = ref(false);
 let requestSequence = 0;
 let detailRequestSequence = 0;
+let realtimeReloadTimer: ReturnType<typeof setTimeout> | undefined;
+let unsubscribeSummaryReconcile: (() => void) | undefined;
+const suspensionDialogVisible = ref(false);
+const suspensionHistoryVisible = ref(false);
+const suspensionDialogMode = ref<"START" | "EXTEND" | "RESUME">("START");
+const combinedSend = ref(false);
 
 const {
   conversations,
   selectedConversation,
   messages,
   conversationsLoading,
+  conversationsLoadingMore,
+  nextConversationCursor,
   messagesLoading,
   conversationError,
   onlineSession,
   replyText,
   sendingReply,
+  combinedSuspensionError,
   reset: resetConversationConsole,
   loadConversations,
+  loadMoreConversations,
   loadMessages,
   sendReply,
+  suspendAndSendReply,
 } = useAdminConversationConsole({
   projectId: () => auth.project?.id,
   endUserId: () => selected.value?.endUserId,
@@ -104,8 +131,64 @@ const sortOptions = [
   { value: "LAST_SEEN_DESC", label: "Сначала недавно активные" },
   { value: "LAST_SEEN_ASC", label: "Сначала давно активные" },
 ];
+const aiFilterOptions = [
+  { value: "ALL", label: "Все" },
+  { value: "SUSPENDED", label: "Приостановлен" },
+];
+const canManageSuspension = computed(() =>
+  auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
+);
+const selectedSuspensionEntry = computed(() =>
+  selectedConversation.value
+    ? suspensionStore.getEntry(selectedConversation.value.id)
+    : undefined,
+);
+const selectedActiveConversationCount = computed(() => {
+  // Повторный расчёт нужен при локальном истечении срока и после события канала.
+  void suspensionStore.changeRevision;
+  const summary = selected.value?.conversationAiSuspensionSummary;
+  if (!summary || summary.activeConversationCount <= 0) return 0;
+  if (!summary.nearestSuspendedUntil) return summary.activeConversationCount;
+  const deadline = Date.parse(summary.nearestSuspendedUntil);
+  const serverTime = Date.parse(summary.serverTime);
+  if (!Number.isFinite(deadline) || !Number.isFinite(serverTime)) return 0;
+  const knownOffset = conversations.value
+    .map((conversation) => suspensionStore.getEntry(conversation.id)?.serverOffsetMs)
+    .find((offset): offset is number => offset !== undefined);
+  const clientNow = Date.now();
+  const estimatedServerNow = clientNow + (knownOffset ?? serverTime - clientNow);
+  return deadline > estimatedServerNow ? summary.activeConversationCount : 0;
+});
+
+watch(
+  conversations,
+  (value) => suspensionStore.ingestConversations(value),
+  { flush: "sync" },
+);
+watch(
+  () => selectedConversation.value?.id,
+  (conversationId) => {
+    const endUserId = selected.value?.endUserId;
+    if (conversationId && endUserId)
+      void suspensionStore.loadDetail(endUserId, conversationId);
+  },
+);
+watch(
+  () => suspensionStore.changeRevision,
+  scheduleSuspensionSummaryReload,
+);
+onBeforeUnmount(() => {
+  if (realtimeReloadTimer) clearTimeout(realtimeReloadTimer);
+  unsubscribeSummaryReconcile?.();
+});
 
 onMounted(async () => {
+  if (conversationAISuspensionEnabled) {
+    unsubscribeSummaryReconcile = cmsRealtimeClient.reconcile(() => {
+      const endUserId = selected.value?.endUserId;
+      return endUserId ? refreshSelectedSummary(endUserId) : load();
+    });
+  }
   await load();
   const endUserId = route.params.endUserId;
   if (typeof endUserId !== "string") return;
@@ -121,20 +204,12 @@ onMounted(async () => {
       projectId,
       endUserId,
     );
-    const summary: CmsProfileSummaryResponseDto = {
-      endUserId: exactProfile.endUserId,
-      externalUserId: exactProfile.externalUserId,
-      profileVersion: exactProfile.profileVersion,
-      syncStatus: exactProfile.syncStatus,
-      fields: exactProfile.fields,
-      lastSeenAt:
-        exactProfile.receivedAt ??
-        exactProfile.observedAt ??
-        new Date(0).toISOString(),
-      ...(exactProfile.observedAt
-        ? { observedAt: exactProfile.observedAt }
-        : {}),
-    };
+    const summary = await loadExactProfileSummary(
+      projectId,
+      exactProfile.endUserId,
+      exactProfile.externalUserId,
+    );
+    if (!summary) throw new Error("Сводка пользователя не найдена");
     await openProfile(summary, false, exactProfile);
   } catch {
     detailError.value = "Не удалось открыть пользователя";
@@ -177,8 +252,14 @@ async function load(append = false) {
     if (repository.mode === "mock") {
       const legacy = await repository.getUsersPage(projectId, { limit: 50 });
       const normalizedQuery = appliedQuery.value.toLowerCase();
-      const profiles = legacy.items
-        .map((user) => ({
+      const profiles = (await Promise.all(legacy.items.map(async (user) => {
+        const conversationPage = await repository.getConversations(projectId, user.id, { limit: 30 });
+        const activeConversations = conversationPage.items.filter((conversation) => {
+          const state = conversation.aiSuspension;
+          return state.mode === "SUSPENDED" && state.lifecycle === "ACTIVE" && Boolean(state.suspendedUntil) && Date.parse(state.suspendedUntil!) > Date.parse(state.serverTime);
+        });
+        const deadlines = activeConversations.flatMap((conversation) => conversation.aiSuspension.suspendedUntil ? [conversation.aiSuspension.suspendedUntil] : []);
+        return ({
           endUserId: user.id,
           externalUserId: user.externalId,
           locale: user.locale,
@@ -186,6 +267,12 @@ async function load(append = false) {
           observedAt: user.lastSeenAt,
           profileVersion: "1",
           syncStatus: "VALID" as const,
+          conversationAiSuspensionSummary: {
+            activeConversationCount: activeConversations.length,
+            nearestSuspendedUntil: deadlines.sort()[0] ?? null,
+            mostRecentlyStartedConversationId: activeConversations[0]?.id ?? null,
+            serverTime: new Date().toISOString(),
+          },
           fields: [
             mockField(
               "attr-name",
@@ -216,18 +303,23 @@ async function load(append = false) {
               user.segment,
             ),
           ],
-        }))
+        });
+      })))
         .filter(
           (profile) =>
             !normalizedQuery ||
             profile.externalUserId.toLowerCase().includes(normalizedQuery),
-        );
+        )
+        .filter((profile) => aiFilter.value !== "SUSPENDED" || profile.conversationAiSuspensionSummary.activeConversationCount > 0);
       response = { items: profiles, nextCursor: null };
     } else {
       response = await endUserProfileRepository.list(projectId, {
         limit: 50,
         ...(append && nextCursor.value ? { cursor: nextCursor.value } : {}),
         ...(appliedQuery.value ? { externalUserId: appliedQuery.value } : {}),
+        ...(aiFilter.value === "SUSPENDED"
+          ? { hasActiveConversationAiSuspension: true }
+          : {}),
         ...(filterDefinitionId.value && filterValue.value
           ? {
               filterDefinitionId: filterDefinitionId.value,
@@ -258,6 +350,186 @@ function search() {
   void load();
 }
 
+function changeAIFilter() {
+  nextCursor.value = null;
+  void load();
+}
+
+function scheduleSuspensionSummaryReload() {
+  if (realtimeReloadTimer) clearTimeout(realtimeReloadTimer);
+  const endUserId = selected.value?.endUserId;
+  realtimeReloadTimer = setTimeout(
+    () => void (endUserId ? refreshSelectedSummary(endUserId) : load()),
+    250,
+  );
+}
+
+function conversationIsSuspended(conversationId: string): boolean {
+  const entry = suspensionStore.getEntry(conversationId);
+  if (!entry || entry.locallyExpired) return false;
+  const deadline = entry.summary.suspendedUntil
+    ? Date.parse(entry.summary.suspendedUntil)
+    : Number.NaN;
+  return (
+    entry.summary.mode === "SUSPENDED" &&
+    entry.summary.lifecycle === "ACTIVE" &&
+    Number.isFinite(deadline) &&
+    deadline > Date.now() + entry.serverOffsetMs
+  );
+}
+
+function suspensionTime(conversationId: string): string {
+  const value = suspensionStore.getEntry(conversationId)?.summary.suspendedUntil;
+  return value
+    ? new Intl.DateTimeFormat("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value))
+    : "";
+}
+
+function openSuspensionDialog(mode: "START" | "EXTEND" | "RESUME") {
+  combinedSend.value = false;
+  suspensionDialogMode.value = mode;
+  suspensionDialogVisible.value = true;
+  reportSuspensionEvent("conversation_ai_suspension_dialog_opened", {
+    source: "conversation_banner",
+  });
+}
+
+function openCombinedSend() {
+  combinedSend.value = true;
+  suspensionDialogMode.value = "START";
+  suspensionDialogVisible.value = true;
+  reportSuspensionEvent("conversation_ai_suspension_dialog_opened", {
+    source: "combined_send",
+  });
+}
+
+async function refreshSelectedSummary(endUserId: string) {
+  const projectId = auth.project?.id;
+  const externalUserId = selected.value?.externalUserId;
+  if (!projectId || !externalUserId) return;
+  await load();
+  if (
+    auth.project?.id !== projectId ||
+    selected.value?.endUserId !== endUserId
+  ) return;
+  let refreshed = items.value.find((item) => item.endUserId === endUserId) ?? null;
+  if (!refreshed) {
+    try {
+      refreshed = await loadExactProfileSummary(projectId, endUserId, externalUserId);
+    } catch {
+      return;
+    }
+  }
+  if (refreshed && selected.value?.endUserId === endUserId)
+    selected.value = refreshed;
+}
+
+async function loadExactProfileSummary(
+  projectId: string,
+  endUserId: string,
+  externalUserId: string,
+): Promise<CmsProfileSummaryResponseDto | null> {
+  const page = await endUserProfileRepository.list(projectId, {
+    limit: 50,
+    externalUserId,
+  });
+  return page.items.find((item) => item.endUserId === endUserId) ?? null;
+}
+
+async function submitSuspension(value: {
+  key: string;
+  command:
+    | StartConversationAISuspensionDto
+    | ExtendConversationAISuspensionDto
+    | ResumeConversationAIDto;
+}) {
+  const conversation = selectedConversation.value;
+  const endUserId = selected.value?.endUserId;
+  const projectId = auth.project?.id;
+  if (!conversation || !endUserId || !projectId) return;
+  if (combinedSend.value && suspensionDialogMode.value === "START") {
+    const command = value.command as StartConversationAISuspensionDto;
+    const result = await suspendAndSendReply(
+      command,
+      value.key,
+    );
+    if (
+      auth.project?.id !== projectId ||
+      selected.value?.endUserId !== endUserId ||
+      selectedConversation.value?.id !== conversation.id
+    ) return;
+    const combinedErrorKind = combinedSuspensionError.value?.kind;
+    if (result?.aiSuspension) {
+      suspensionStore.applyConfirmedState(
+        endUserId,
+        conversation.id,
+        result.aiSuspension.state,
+        result.aiSuspension.inFlightCancellation?.status,
+      );
+      const confirmedEntry = suspensionStore.getEntry(conversation.id);
+      if (confirmedEntry) conversation.aiSuspension = confirmedEntry.summary;
+    }
+    await suspensionStore.loadDetail(endUserId, conversation.id);
+    if (!result) {
+      if (
+        combinedErrorKind === "CONVERSATION_CLOSED" ||
+        combinedErrorKind === "NOT_FOUND"
+      ) {
+        await loadConversations(endUserId);
+      }
+      reportSuspensionEvent("conversation_ai_suspension_command_failed", {
+        command: "start_and_send",
+        error_kind: combinedErrorKind ?? "unknown_result",
+      });
+      return;
+    }
+    reportSuspensionEvent("conversation_ai_suspension_started", {
+      duration_bucket: suspensionDurationBucket(command.durationSeconds),
+      reason: command.reason,
+      source: "combined_send",
+    });
+    suspensionDialogVisible.value = false;
+    combinedSend.value = false;
+    await refreshSelectedSummary(endUserId);
+    return;
+  }
+  const succeeded =
+    suspensionDialogMode.value === "START"
+      ? await suspensionStore.start(
+          endUserId,
+          conversation.id,
+          value.command as StartConversationAISuspensionDto,
+          value.key,
+        )
+      : suspensionDialogMode.value === "EXTEND"
+        ? await suspensionStore.extend(
+            endUserId,
+            conversation.id,
+            value.command as ExtendConversationAISuspensionDto,
+            value.key,
+          )
+        : await suspensionStore.resume(
+            endUserId,
+            conversation.id,
+            value.command as ResumeConversationAIDto,
+            value.key,
+          );
+  if (!succeeded) {
+    const errorKind = suspensionStore.getEntry(conversation.id)?.error?.kind;
+    if (errorKind === "CONVERSATION_CLOSED" || errorKind === "NOT_FOUND") {
+      await loadConversations(endUserId);
+    }
+    return;
+  }
+  suspensionDialogVisible.value = false;
+  const entry = suspensionStore.getEntry(conversation.id);
+  if (entry) conversation.aiSuspension = entry.summary;
+  await refreshSelectedSummary(endUserId);
+}
+
 async function openProfile(
   profile: CmsProfileSummaryResponseDto,
   updateRoute = true,
@@ -265,6 +537,11 @@ async function openProfile(
 ) {
   const projectId = auth.project?.id;
   if (!projectId) return;
+  if (profile.conversationAiSuspensionSummary.activeConversationCount > 0) {
+    reportSuspensionEvent("conversation_ai_suspension_indicator_opened", {
+      surface: updateRoute ? "users_table" : "direct_link",
+    });
+  }
   const request = ++detailRequestSequence;
   selected.value = profile;
   detail.value = null;
@@ -281,7 +558,8 @@ async function openProfile(
     profile.endUserId,
     typeof route.query.conversationId === "string"
       ? route.query.conversationId
-      : undefined,
+      : (profile.conversationAiSuspensionSummary
+          .mostRecentlyStartedConversationId ?? undefined),
   );
   try {
     const response: ProfileProjectionResponseDto =
@@ -512,6 +790,16 @@ function classificationLabel(value: string) {
           option-value="value"
           @change="load()"
       /></label>
+      <label v-if="conversationAISuspensionEnabled"
+        ><span>AI</span
+        ><Select
+          v-model="aiFilter"
+          :options="aiFilterOptions"
+          option-label="label"
+          option-value="value"
+          aria-label="Состояние AI"
+          @change="changeAIFilter"
+      /></label>
     </form>
 
     <div class="card table-card">
@@ -541,6 +829,11 @@ function classificationLabel(value: string) {
                 <strong>{{ data.externalUserId }}</strong
                 ><small>ID {{ data.endUserId }}</small>
               </div>
+              <UserAISuspensionIndicator
+                v-if="conversationAISuspensionEnabled"
+                :summary="data.conversationAiSuspensionSummary"
+                @expired="scheduleSuspensionSummaryReload"
+              />
             </div></template
           ></Column
         >
@@ -607,6 +900,7 @@ function classificationLabel(value: string) {
 
   <Drawer
     v-model:visible="drawerVisible"
+    class="user-profile-drawer"
     position="right"
     :style="{ width: 'min(680px, 100vw)' }"
     @update:visible="!$event && closeProfile()"
@@ -766,6 +1060,19 @@ function classificationLabel(value: string) {
           У пользователя пока нет доступных диалогов.
         </div>
         <template v-else>
+          <p
+            v-if="selectedActiveConversationCount"
+            class="conversation-suspension-summary"
+          >
+            <i class="pi pi-pause-circle" aria-hidden="true" />
+            AI приостановлен в
+            {{
+              russianCount(
+              selectedActiveConversationCount,
+                ["диалоге", "диалогах", "диалогах"],
+              )
+            }}
+          </p>
           <div class="conversation-tabs" aria-label="Диалоги пользователя">
             <button
               v-for="conversation in conversations"
@@ -785,8 +1092,44 @@ function classificationLabel(value: string) {
                 }}
                 · {{ relativeTime(conversation.lastMessageAt) }}</span
               >
+              <span
+                v-if="conversationIsSuspended(conversation.id)"
+                class="conversation-tab-suspension"
+              >
+                <i class="pi pi-pause-circle" aria-hidden="true" /> AI
+                приостановлен до {{ suspensionTime(conversation.id) }}
+              </span>
             </button>
           </div>
+          <Button
+            v-if="nextConversationCursor"
+            label="Показать ещё диалоги"
+            icon="pi pi-chevron-down"
+            severity="secondary"
+            text
+            size="small"
+            :loading="conversationsLoadingMore"
+            @click="loadMoreConversations"
+          />
+
+          <ConversationAISuspensionBanner
+            v-if="conversationAISuspensionEnabled && selectedConversation && selectedSuspensionEntry"
+            :entry="selectedSuspensionEntry"
+            :can-manage="canManageSuspension"
+            :conversation-open="selectedConversation.status === 'ACTIVE'"
+            @start="openSuspensionDialog('START')"
+            @extend="openSuspensionDialog('EXTEND')"
+            @resume="openSuspensionDialog('RESUME')"
+            @history="suspensionHistoryVisible = true"
+            @retry="
+              selected &&
+              selectedConversation &&
+              suspensionStore.loadDetail(
+                selected.endUserId,
+                selectedConversation.id,
+              )
+            "
+          />
 
           <div class="message-history" aria-label="История сообщений">
             <div v-if="messagesLoading" class="loading-list">
@@ -797,7 +1140,10 @@ function classificationLabel(value: string) {
               v-else
               :key="message.id"
               class="conversation-message"
-              :class="message.author.toLowerCase()"
+              :class="[
+                message.author.toLowerCase(),
+                { cancelled: message.status === 'CANCELLED' },
+              ]"
             >
               <div>
                 <strong>{{ messageAuthorLabel(message.author) }}</strong>
@@ -806,6 +1152,10 @@ function classificationLabel(value: string) {
                 }}</time>
               </div>
               <p>{{ message.text }}</p>
+              <small v-if="message.status === 'CANCELLED'" class="cancelled-label"
+                ><i class="pi pi-stop-circle" aria-hidden="true" /> Ответ AI
+                остановлен оператором</small
+              >
             </div>
           </div>
 
@@ -829,11 +1179,47 @@ function classificationLabel(value: string) {
               :disabled="!onlineSession || !replyText.trim()"
               :loading="sendingReply"
             />
+            <Button
+              v-if="
+                conversationAISuspensionEnabled &&
+                canManageSuspension &&
+                onlineSession &&
+                replyText.trim() &&
+                selectedConversation &&
+                !conversationIsSuspended(selectedConversation.id)
+              "
+              type="button"
+              label="Приостановить AI и отправить"
+              icon="pi pi-pause-circle"
+              severity="danger"
+              outlined
+              :loading="sendingReply"
+              @click="openCombinedSend"
+            />
           </form>
         </template>
       </section>
     </div>
   </Drawer>
+
+  <ConversationAISuspensionDialog
+    v-if="conversationAISuspensionEnabled && selectedConversation && selectedSuspensionEntry"
+    v-model:visible="suspensionDialogVisible"
+    :mode="suspensionDialogMode"
+    :conversation-label="`${selectedConversation.title} · ${selectedConversation.id.slice(-8)}${combinedSend ? ' · сообщение будет отправлено одной операцией' : ''}`"
+    :current="selectedSuspensionEntry.detail ?? null"
+    :server-offset-ms="selectedSuspensionEntry.serverOffsetMs"
+    :busy="Boolean(selectedSuspensionEntry.mutating) || (combinedSend && sendingReply)"
+    :error="combinedSend ? combinedSuspensionError : selectedSuspensionEntry.error"
+    @submit="submitSuspension"
+  />
+  <ConversationAISuspensionHistory
+    v-if="conversationAISuspensionEnabled && auth.project && selected && selectedConversation"
+    v-model:visible="suspensionHistoryVisible"
+    :project-id="auth.project.id"
+    :end-user-id="selected.endUserId"
+    :conversation-id="selectedConversation.id"
+  />
 </template>
 
 <style scoped>
@@ -946,6 +1332,22 @@ function classificationLabel(value: string) {
 .conversation-tabs span {
   display: block;
 }
+.conversation-tabs .conversation-tab-suspension {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--status-danger-text);
+  font-weight: 800;
+}
+.conversation-suspension-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: var(--status-danger-text);
+  font-size: .72rem;
+  font-weight: 800;
+}
 .conversation-tabs strong {
   font-size: 0.74rem;
 }
@@ -976,6 +1378,19 @@ function classificationLabel(value: string) {
   align-self: flex-end;
   border-radius: 13px 4px 13px 13px;
   background: var(--status-violet-soft);
+}
+.conversation-message.cancelled {
+  border: 1px dashed var(--status-warning);
+  background: var(--status-warning-soft);
+}
+.cancelled-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  color: var(--status-warning-text);
+  font-size: .64rem;
+  font-weight: 800;
 }
 .conversation-message > div {
   align-items: baseline;
@@ -1012,7 +1427,8 @@ function classificationLabel(value: string) {
     minmax(0, 1.1fr)
     minmax(0, 0.75fr)
     minmax(0, 0.85fr)
-    minmax(0, 1.25fr);
+    minmax(0, 1.25fr)
+    minmax(0, 0.8fr);
   gap: 12px;
   padding: 14px;
   margin-bottom: 18px;
@@ -1124,10 +1540,17 @@ function classificationLabel(value: string) {
   justify-content: space-between;
   gap: 12px;
 }
+.detail-nav {
+  flex-wrap: wrap;
+}
 .profile-detail {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
+}
+:deep(.user-profile-drawer .p-drawer-content) {
+  overflow-x: hidden;
 }
 .profile-meta {
   display: grid;

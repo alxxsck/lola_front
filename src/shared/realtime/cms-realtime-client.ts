@@ -1,62 +1,85 @@
-import { io, type Socket } from "socket.io-client";
-import { isMockMode } from "@/shared/config/data-mode";
-import {
-  getAccessToken,
-  getRefreshToken,
-} from "@/shared/api/http/auth-session";
-import { refreshAccessToken } from "@/shared/api/http/axios-instance";
-import type {
-  CmsRealtimeCallbacks,
-  CmsRealtimeState,
-} from "./cms-realtime-contract";
+import { io, type Socket } from 'socket.io-client'
+import { isMockMode } from '@/shared/config/data-mode'
+import { getAccessToken, getRefreshToken } from '@/shared/api/http/auth-session'
+import { refreshAccessToken } from '@/shared/api/http/axios-instance'
+import type { CmsRealtimeCallbacks, CmsRealtimeState } from './cms-realtime-contract'
+
+type RealtimeHandler = (value: unknown) => void | Promise<void>
+type Unsubscribe = () => void
 
 function apiOrigin(): string {
-  return (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000").replace(
-    /\/api\/v1\/?$/,
-    "",
-  );
+  return (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000').replace(/\/api\/v1\/?$/, '')
 }
 
 async function freshAccessToken(): Promise<string> {
-  let token = getAccessToken();
-  if (token) return token;
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) throw new Error("CMS session is unavailable");
-  await refreshAccessToken(refreshToken);
-  token = getAccessToken();
-  if (!token) throw new Error("CMS access token refresh failed");
-  return token;
+  let token = getAccessToken()
+  if (token) return token
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) throw new Error('Сеанс центра управления недоступен')
+  await refreshAccessToken(refreshToken)
+  token = getAccessToken()
+  if (!token) throw new Error('Не удалось обновить сеанс центра управления')
+  return token
 }
 
 export class CmsRealtimeClient {
-  private socket: Socket | null = null;
-  private projectId: string | null = null;
-  private callbacks: CmsRealtimeCallbacks | null = null;
+  private socket: Socket | null = null
+  private projectId: string | null = null
+  private state: CmsRealtimeState = 'DISCONNECTED'
+  private readonly subscriptions = new Map<string, Set<RealtimeHandler>>()
+  private readonly stateHandlers = new Set<(state: CmsRealtimeState) => void>()
+  private readonly reconciliationHandlers = new Set<() => void | Promise<void>>()
+  private readonly registeredSocketEvents = new Set<string>()
+  private legacyUnsubscribers: Unsubscribe[] = []
+  private reconciliation: Promise<void> | null = null
 
-  async connect(
-    projectId: string,
-    callbacks: CmsRealtimeCallbacks,
-  ): Promise<void> {
-    this.disconnect();
-    this.projectId = projectId;
-    this.callbacks = callbacks;
+  subscribe(eventNames: string[], handler: RealtimeHandler): Unsubscribe {
+    for (const eventName of new Set(eventNames)) {
+      const handlers = this.subscriptions.get(eventName) ?? new Set<RealtimeHandler>()
+      handlers.add(handler)
+      this.subscriptions.set(eventName, handlers)
+      this.bindSocketEvent(eventName)
+    }
+    return () => {
+      for (const eventName of eventNames) {
+        const handlers = this.subscriptions.get(eventName)
+        handlers?.delete(handler)
+        if (!handlers?.size) this.subscriptions.delete(eventName)
+      }
+    }
+  }
+
+  onState(handler: (state: CmsRealtimeState) => void): Unsubscribe {
+    this.stateHandlers.add(handler)
+    handler(this.state)
+    return () => this.stateHandlers.delete(handler)
+  }
+
+  reconcile(handler: () => void | Promise<void>): Unsubscribe {
+    this.reconciliationHandlers.add(handler)
+    return () => this.reconciliationHandlers.delete(handler)
+  }
+
+  async activateProject(projectId: string): Promise<void> {
+    if (this.projectId === projectId && (this.socket || isMockMode)) return
+    this.disconnectSocket()
+    this.projectId = projectId
     if (isMockMode) {
-      this.setState("CONNECTED");
-      await callbacks.onConnect();
-      return;
+      this.setState('CONNECTED')
+      await this.runReconciliation()
+      return
     }
 
-    this.setState("CONNECTING");
+    this.setState('CONNECTING')
     try {
-      if (this.projectId !== projectId) return;
       const socket = io(`${apiOrigin()}/cms`, {
-        transports: ["websocket"],
+        transports: ['websocket'],
         auth: async (callback) => {
           try {
-            const token = await freshAccessToken();
-            if (this.projectId === projectId) callback({ token, projectId });
+            const token = await freshAccessToken()
+            if (this.projectId === projectId) callback({ token, projectId })
           } catch {
-            this.setState("DEGRADED");
+            this.setState('DEGRADED')
           }
         },
         reconnection: true,
@@ -64,55 +87,95 @@ export class CmsRealtimeClient {
         reconnectionDelay: 500,
         reconnectionDelayMax: 10_000,
         randomizationFactor: 0.35,
-      });
-      this.socket = socket;
-      socket.on("connect", () => {
-        this.setState("CONNECTED");
-        void callbacks.onConnect();
-      });
-      socket.on("disconnect", (reason) => {
-        this.setState("DEGRADED");
-        if (reason === "io server disconnect") socket.connect();
-      });
-      socket.on("connect_error", () => this.setState("DEGRADED"));
-      for (const [eventName, handle] of Object.entries(
-        callbacks.subscriptions,
-      )) {
-        socket.on(eventName, (value: unknown) => {
-          void Promise.resolve(handle(value)).then((eventId) => {
-            if (eventId) this.acknowledge(eventId, callbacks);
-          });
-        });
-      }
+      })
+      this.socket = socket
+      socket.on('connect', () => {
+        this.setState('CONNECTED')
+        void this.runReconciliation()
+      })
+      socket.on('disconnect', (reason) => {
+        this.setState('DEGRADED')
+        if (reason === 'io server disconnect') socket.connect()
+      })
+      socket.on('connect_error', () => this.setState('DEGRADED'))
+      for (const eventName of this.subscriptions.keys()) this.bindSocketEvent(eventName)
     } catch {
-      this.setState("DEGRADED");
+      this.setState('DEGRADED')
     }
+  }
+
+  deactivateProject(): void {
+    this.disconnectSocket()
+    this.projectId = null
+    this.setState('DISCONNECTED')
+  }
+
+  /** Совместимость на время перевода существующих возможностей на общий канал. */
+  async connect(projectId: string, callbacks: CmsRealtimeCallbacks): Promise<void> {
+    this.releaseLegacyCallbacks()
+    for (const [eventName, handle] of Object.entries(callbacks.subscriptions)) {
+      this.legacyUnsubscribers.push(this.subscribe([eventName], async (value) => {
+        const eventId = await handle(value)
+        if (eventId) await this.acknowledge(eventId, callbacks)
+      }))
+    }
+    this.legacyUnsubscribers.push(this.onState(callbacks.onStateChange))
+    this.legacyUnsubscribers.push(this.reconcile(callbacks.onConnect))
+    await this.activateProject(projectId)
   }
 
   disconnect(): void {
-    this.socket?.disconnect();
-    this.socket = null;
-    this.projectId = null;
-    this.callbacks = null;
-    this.setState("DISCONNECTED");
+    this.releaseLegacyCallbacks()
+    this.deactivateProject()
   }
 
-  private async acknowledge(
-    eventId: string,
-    callbacks: CmsRealtimeCallbacks,
-  ): Promise<void> {
-    const projectId = this.projectId;
-    if (!projectId) return;
-    if (this.socket?.connected) {
-      this.socket.emit(callbacks.acknowledgement.socketEvent, { eventId });
-      return;
+  releaseLegacyCallbacks(): void {
+    this.legacyUnsubscribers.forEach((unsubscribe) => unsubscribe())
+    this.legacyUnsubscribers = []
+  }
+
+  private bindSocketEvent(eventName: string): void {
+    if (!this.socket || this.registeredSocketEvents.has(eventName)) return
+    this.registeredSocketEvents.add(eventName)
+    this.socket.on(eventName, (value: unknown) => {
+      for (const handler of this.subscriptions.get(eventName) ?? []) {
+        void Promise.resolve(handler(value)).catch(() => this.runReconciliation())
+      }
+    })
+  }
+
+  private disconnectSocket(): void {
+    this.socket?.disconnect()
+    this.socket = null
+    this.registeredSocketEvents.clear()
+  }
+
+  private async runReconciliation(): Promise<void> {
+    if (!this.reconciliation) {
+      this.reconciliation = Promise.allSettled(
+        [...this.reconciliationHandlers].map((handler) => Promise.resolve(handler())),
+      ).then(() => undefined).finally(() => {
+        this.reconciliation = null
+      })
     }
-    await callbacks.acknowledgement.rest(projectId, eventId);
+    return this.reconciliation
+  }
+
+  private async acknowledge(eventId: string, callbacks: CmsRealtimeCallbacks): Promise<void> {
+    const projectId = this.projectId
+    if (!projectId) return
+    if (this.socket?.connected) {
+      this.socket.emit(callbacks.acknowledgement.socketEvent, { eventId })
+      return
+    }
+    await callbacks.acknowledgement.rest(projectId, eventId)
   }
 
   private setState(state: CmsRealtimeState): void {
-    this.callbacks?.onStateChange(state);
+    if (this.state === state) return
+    this.state = state
+    for (const handler of this.stateHandlers) handler(state)
   }
 }
 
-export const cmsRealtimeClient = new CmsRealtimeClient();
+export const cmsRealtimeClient = new CmsRealtimeClient()

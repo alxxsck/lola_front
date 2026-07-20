@@ -28,6 +28,7 @@ import {
   adminMessagingSend,
   presenceList,
   adminConversationsList,
+  adminConversationsGet,
   adminConversationsListMessages,
   adminEventLogsGet,
   adminEventLogsList,
@@ -37,6 +38,11 @@ import {
   platformUserAttributeDefinitions,
   platformActivitySettings,
   platformUpdateActivitySettings,
+  conversationAISuspensionsGet,
+  conversationAISuspensionsStart,
+  conversationAISuspensionsExtend,
+  conversationAISuspensionsResume,
+  conversationAISuspensionsHistory,
 } from '@/shared/api/generated/lola-backend'
 import type { ScenarioResponseDto } from '@/shared/api/generated/models'
 import { toCreateScenarioDto, toUpdateScenarioDto, toUpdateScenarioMetadataDto } from './scenario-contract'
@@ -64,6 +70,7 @@ import {
   mapConversationMessage,
   mapUserAttributeSchema,
   mapUserAttributeMutation,
+  mapConversationAISuspensionDetail,
 } from './mappers'
 
 const capabilities: RepositoryCapabilities = {
@@ -237,12 +244,42 @@ export const apiRepository: LolaRepository = {
     })
     return { items: response.items.map(mapConversation), nextCursor: response.nextCursor ?? null }
   },
+  async getConversation(projectId, userId, conversationId) {
+    return mapConversation(await adminConversationsGet(projectId, userId, conversationId))
+  },
   async getMessages(projectId, userId, conversationId, request) {
     const response = await adminConversationsListMessages(projectId, userId, conversationId, {
       limit: request?.limit ?? 50,
       ...(request?.cursor ? { cursor: request.cursor } : {}),
     })
     return { items: response.items.map(mapConversationMessage), nextCursor: response.nextCursor ?? null }
+  },
+  async getConversationAISuspension(projectId, endUserId, conversationId) {
+    return mapConversationAISuspensionDetail(
+      await conversationAISuspensionsGet(projectId, endUserId, conversationId),
+    )
+  },
+  async startConversationAISuspension(projectId, endUserId, conversationId, command, idempotencyKey) {
+    const response = await conversationAISuspensionsStart(projectId, endUserId, conversationId, command, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    })
+    return { ...response, state: mapConversationAISuspensionDetail(response.state) }
+  },
+  async extendConversationAISuspension(projectId, endUserId, conversationId, command, idempotencyKey) {
+    const response = await conversationAISuspensionsExtend(projectId, endUserId, conversationId, command, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    })
+    return { ...response, state: mapConversationAISuspensionDetail(response.state) }
+  },
+  async resumeConversationAI(projectId, endUserId, conversationId, command, idempotencyKey) {
+    const response = await conversationAISuspensionsResume(projectId, endUserId, conversationId, command, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    })
+    return { ...response, state: mapConversationAISuspensionDetail(response.state) }
+  },
+  async getConversationAISuspensionHistory(projectId, endUserId, conversationId, request) {
+    const response = await conversationAISuspensionsHistory(projectId, endUserId, conversationId, request)
+    return { items: response.items, nextCursor: response.nextCursor ?? null }
   },
   async sendAction() { return unsupported('manualActions') },
 
@@ -295,9 +332,12 @@ export const apiRepository: LolaRepository = {
     const idempotencyKey = message.idempotencyKey ?? globalThis.crypto.randomUUID()
     const response = await adminMessagingSend(projectId, userId, {
       text: message.text,
-      conversationPolicy: message.conversationPolicy,
+      ...(message.conversationId
+        ? { conversationId: message.conversationId }
+        : { conversationPolicy: message.conversationPolicy }),
       interactionSessionId: message.interactionSessionId,
       actions: message.actions,
+      aiSuspension: message.aiSuspension,
     }, { headers: { 'Idempotency-Key': idempotencyKey } })
     return {
       duplicate: response.duplicate,
@@ -305,6 +345,13 @@ export const apiRepository: LolaRepository = {
       threadId: response.message.threadId,
       commandIds: response.commandIds,
       status: response.message.status,
+      deliveryStatus: response.delivery?.status,
+      ...(response.aiSuspension ? {
+        aiSuspension: {
+          ...response.aiSuspension,
+          state: mapConversationAISuspensionDetail(response.aiSuspension.state),
+        },
+      } : {}),
     }
   },
 

@@ -811,7 +811,7 @@ function surfaceLabel(value: string): string {
 }
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(270px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
   gap: 12px;
   padding: 14px;
   background: var(--surface-canvas);

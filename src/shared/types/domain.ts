@@ -1,3 +1,5 @@
+import type { AdminMessageAISuspensionDto } from '@/shared/api/generated/models'
+
 export type EntityKind = 'BUTTON' | 'MODAL' | 'PAGE' | 'ELEMENT' | 'HANDLER'
 export type ScenarioStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
 export type ConversationPolicy = 'reuse_active' | 'create_new'
@@ -301,6 +303,27 @@ export interface Conversation {
   status: 'ACTIVE' | 'ARCHIVED'
   lastMessageAt: string
   messageCount: number
+  aiSuspension: ConversationAISuspensionSummary
+}
+
+export type ConversationAISuspensionLifecycle = 'NONE' | 'ACTIVE' | 'EXPIRED' | 'RESUMED'
+export type SuspensionReason = 'OPERATOR_TAKEOVER' | 'MANUAL_REVIEW' | 'INCIDENT_RESPONSE' | 'OTHER'
+
+export interface ConversationAISuspensionSummary {
+  mode: 'AUTOMATIC' | 'SUSPENDED'
+  lifecycle: ConversationAISuspensionLifecycle
+  version: string
+  suspendedUntil: string | null
+  serverTime: string
+}
+
+export interface ConversationAISuspensionDetail extends ConversationAISuspensionSummary {
+  startedAt: string | null
+  startedBy: { id: string; displayName: string } | null
+  reason: SuspensionReason | null
+  note: string | null
+  resumedAt: string | null
+  resumedBy: { id: string; displayName: string } | null
 }
 
 export interface ConversationMessage {
@@ -308,7 +331,7 @@ export interface ConversationMessage {
   conversationId: string
   author: 'USER' | 'ASSISTANT' | 'ADMIN' | 'SCENARIO' | 'SYSTEM'
   text: string
-  status: 'PENDING' | 'WRITING' | 'COMPLETED' | 'FAILED'
+  status: 'PENDING' | 'WRITING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
   createdAt: string
 }
 
@@ -426,9 +449,11 @@ export type DirectAdminActionType =
 export interface DirectAdminAction { type: DirectAdminActionType; config: Record<string, unknown> }
 export interface AdminMessageRequest {
   text: string
-  conversationPolicy: ConversationPolicy
+  conversationId?: string
+  conversationPolicy?: ConversationPolicy
   interactionSessionId?: string
   actions?: DirectAdminAction[]
+  aiSuspension?: AdminMessageAISuspensionDto
   idempotencyKey?: string
 }
 export interface AdminMessageResult {
@@ -437,4 +462,10 @@ export interface AdminMessageResult {
   threadId: string
   commandIds: string[]
   status: string
+  deliveryStatus?: 'DELIVERED' | 'NOT_REDELIVERED'
+  aiSuspension?: {
+    state: ConversationAISuspensionDetail
+    replayed: boolean
+    inFlightCancellation?: { status?: 'NOT_REQUIRED' | 'REQUESTED' }
+  }
 }

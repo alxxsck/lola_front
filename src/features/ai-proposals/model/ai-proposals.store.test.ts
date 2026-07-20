@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   markRead: vi.fn(),
   decide: vi.fn(),
   connect: vi.fn(),
-  disconnect: vi.fn(),
+  releaseLegacyCallbacks: vi.fn(),
   acknowledge: vi.fn(),
 }));
 
@@ -25,7 +25,7 @@ vi.mock("../api/ai-proposals-repository", () => ({
 vi.mock("@/shared/realtime/cms-realtime-client", () => ({
   cmsRealtimeClient: {
     connect: mocks.connect,
-    disconnect: mocks.disconnect,
+    releaseLegacyCallbacks: mocks.releaseLegacyCallbacks,
     acknowledge: mocks.acknowledge,
   },
 }));
@@ -244,7 +244,7 @@ describe("AI Proposals store", () => {
     await store.activateProject("project-1");
     await store.activateProject("project-2");
 
-    expect(mocks.disconnect).toHaveBeenCalled();
+    expect(mocks.releaseLegacyCallbacks).toHaveBeenCalled();
     expect(store.projectId).toBe("project-2");
     expect(mocks.connect).toHaveBeenLastCalledWith(
       "project-2",

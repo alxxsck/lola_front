@@ -5,48 +5,48 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AIProposalDetailResponseDtoKind } from "./aIProposalDetailResponseDtoKind";
-import type { AIProposalDetailResponseDtoWorkflowStatus } from "./aIProposalDetailResponseDtoWorkflowStatus";
+import type { AIProposalDetailResponseDtoContent } from "./aIProposalDetailResponseDtoContent";
 import type { AIProposalDetailResponseDtoDecisionMode } from "./aIProposalDetailResponseDtoDecisionMode";
+import type { AIProposalDetailResponseDtoEndUser } from "./aIProposalDetailResponseDtoEndUser";
+import type { AIProposalDetailResponseDtoEvidenceItem } from "./aIProposalDetailResponseDtoEvidenceItem";
+import type { AIProposalDetailResponseDtoKind } from "./aIProposalDetailResponseDtoKind";
 import type { AIProposalDetailResponseDtoPriority } from "./aIProposalDetailResponseDtoPriority";
 import type { AIProposalDetailResponseDtoSourceType } from "./aIProposalDetailResponseDtoSourceType";
-import type { AIProposalDetailResponseDtoEndUser } from "./aIProposalDetailResponseDtoEndUser";
-import type { AIProposalDetailResponseDtoContent } from "./aIProposalDetailResponseDtoContent";
-import type { AIProposalDetailResponseDtoEvidenceItem } from "./aIProposalDetailResponseDtoEvidenceItem";
+import type { AIProposalDetailResponseDtoWorkflowStatus } from "./aIProposalDetailResponseDtoWorkflowStatus";
 
 export interface AIProposalDetailResponseDto {
-  id: string;
-  projectSequence: string;
-  kind: AIProposalDetailResponseDtoKind;
-  workflowStatus: AIProposalDetailResponseDtoWorkflowStatus;
-  decisionMode: AIProposalDetailResponseDtoDecisionMode;
-  priority: AIProposalDetailResponseDtoPriority;
-  title: string;
-  summary: string;
-  sourceType: AIProposalDetailResponseDtoSourceType;
-  /** @nullable */
-  endUser?: AIProposalDetailResponseDtoEndUser;
+  content: AIProposalDetailResponseDtoContent;
   /** @nullable */
   conversationId?: string | null;
-  /** @nullable */
-  sourceMessageId?: string | null;
-  /** @minimum 1 */
-  version: number;
-  isRead: boolean;
   createdAt: string;
-  updatedAt: string;
-  content: AIProposalDetailResponseDtoContent;
-  evidence: AIProposalDetailResponseDtoEvidenceItem[];
-  /** @nullable */
-  sourceInvocationId?: string | null;
-  /** @nullable */
-  decidedByAdminId?: string | null;
-  /** @nullable */
-  readAt?: string | null;
   /** @nullable */
   decidedAt?: string | null;
   /** @nullable */
-  resolvedAt?: string | null;
+  decidedByAdminId?: string | null;
+  decisionMode: AIProposalDetailResponseDtoDecisionMode;
   /** @nullable */
   decisionReason?: string | null;
+  /** @nullable */
+  endUser?: AIProposalDetailResponseDtoEndUser;
+  evidence: AIProposalDetailResponseDtoEvidenceItem[];
+  id: string;
+  isRead: boolean;
+  kind: AIProposalDetailResponseDtoKind;
+  priority: AIProposalDetailResponseDtoPriority;
+  projectSequence: string;
+  /** @nullable */
+  readAt?: string | null;
+  /** @nullable */
+  resolvedAt?: string | null;
+  /** @nullable */
+  sourceInvocationId?: string | null;
+  /** @nullable */
+  sourceMessageId?: string | null;
+  sourceType: AIProposalDetailResponseDtoSourceType;
+  summary: string;
+  title: string;
+  updatedAt: string;
+  /** @minimum 1 */
+  version: number;
+  workflowStatus: AIProposalDetailResponseDtoWorkflowStatus;
 }

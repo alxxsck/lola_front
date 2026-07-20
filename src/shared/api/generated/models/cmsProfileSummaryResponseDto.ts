@@ -5,11 +5,13 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CmsConversationAISuspensionSummaryResponseDto } from "./cmsConversationAISuspensionSummaryResponseDto";
 import type { ProfileProjectionFieldResponseDto } from "./profileProjectionFieldResponseDto";
 import type { CmsProfileSummaryResponseDtoLastRejectedSync } from "./cmsProfileSummaryResponseDtoLastRejectedSync";
 import type { CmsProfileSummaryResponseDtoSyncStatus } from "./cmsProfileSummaryResponseDtoSyncStatus";
 
 export interface CmsProfileSummaryResponseDto {
+  conversationAiSuspensionSummary: CmsConversationAISuspensionSummaryResponseDto;
   endUserId: string;
   externalUserId: string;
   fields: ProfileProjectionFieldResponseDto[];

@@ -4,6 +4,7 @@ import type {
   CmsUser,
   Conversation,
   ConversationMessage,
+  ConversationAISuspensionDetail,
   DashboardStats,
   EndUser,
   EventDefinition,
@@ -26,6 +27,12 @@ import type {
   ActivitySettings,
   UpdateActivitySettings,
 } from '@/shared/types/domain'
+import type {
+  ConversationAISuspensionHistoryItemResponseDto,
+  ExtendConversationAISuspensionDto,
+  ResumeConversationAIDto,
+  StartConversationAISuspensionDto,
+} from '@/shared/api/generated/models'
 
 export type RepositoryMode = 'mock' | 'api'
 
@@ -70,6 +77,16 @@ export interface CursorPageRequest {
 export interface CursorPage<T> {
   items: T[]
   nextCursor: string | null
+}
+
+export interface ConversationAISuspensionMutationResult {
+  state: ConversationAISuspensionDetail
+  replayed: boolean
+  inFlightCancellation?: {
+    status?: 'NOT_REQUIRED' | 'REQUESTED'
+    messageIds?: string[]
+    voiceSessionIds?: string[]
+  }
 }
 
 export interface PageRequest {
@@ -152,7 +169,13 @@ export interface LolaRepository {
   getSessions(projectId: string): Promise<ActiveSession[]>
   getActivity(userId?: string): Promise<ActivityItem[]>
   getConversations(projectId: string, userId: string, request?: CursorPageRequest): Promise<CursorPage<Conversation>>
+  getConversation(projectId: string, userId: string, conversationId: string): Promise<Conversation>
   getMessages(projectId: string, userId: string, conversationId: string, request?: CursorPageRequest): Promise<CursorPage<ConversationMessage>>
+  getConversationAISuspension(projectId: string, endUserId: string, conversationId: string): Promise<ConversationAISuspensionDetail>
+  startConversationAISuspension(projectId: string, endUserId: string, conversationId: string, command: StartConversationAISuspensionDto, idempotencyKey: string): Promise<ConversationAISuspensionMutationResult>
+  extendConversationAISuspension(projectId: string, endUserId: string, conversationId: string, command: ExtendConversationAISuspensionDto, idempotencyKey: string): Promise<ConversationAISuspensionMutationResult>
+  resumeConversationAI(projectId: string, endUserId: string, conversationId: string, command: ResumeConversationAIDto, idempotencyKey: string): Promise<ConversationAISuspensionMutationResult>
+  getConversationAISuspensionHistory(projectId: string, endUserId: string, conversationId: string, request?: CursorPageRequest): Promise<CursorPage<ConversationAISuspensionHistoryItemResponseDto>>
   sendAction(session: ActiveSession, action: ManualAction): Promise<{ commandId: string; status: string }>
   getEventLogs(projectId: string, request?: EventLogsPageRequest): Promise<Page<EventLog>>
   getEventLogPage(projectId: string, filters?: EventLogFilters): Promise<CursorPage<EventLog>>

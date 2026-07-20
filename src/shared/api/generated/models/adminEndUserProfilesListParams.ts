@@ -40,4 +40,5 @@ export type AdminEndUserProfilesListParams = {
    */
   sortDefinitionId?: string;
   sortDirection?: AdminEndUserProfilesListSortDirection;
+  hasActiveConversationAiSuspension?: boolean;
 };

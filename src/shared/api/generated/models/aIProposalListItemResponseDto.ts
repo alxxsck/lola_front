@@ -5,32 +5,32 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AIProposalListItemResponseDtoKind } from "./aIProposalListItemResponseDtoKind";
-import type { AIProposalListItemResponseDtoWorkflowStatus } from "./aIProposalListItemResponseDtoWorkflowStatus";
 import type { AIProposalListItemResponseDtoDecisionMode } from "./aIProposalListItemResponseDtoDecisionMode";
+import type { AIProposalListItemResponseDtoEndUser } from "./aIProposalListItemResponseDtoEndUser";
+import type { AIProposalListItemResponseDtoKind } from "./aIProposalListItemResponseDtoKind";
 import type { AIProposalListItemResponseDtoPriority } from "./aIProposalListItemResponseDtoPriority";
 import type { AIProposalListItemResponseDtoSourceType } from "./aIProposalListItemResponseDtoSourceType";
-import type { AIProposalListItemResponseDtoEndUser } from "./aIProposalListItemResponseDtoEndUser";
+import type { AIProposalListItemResponseDtoWorkflowStatus } from "./aIProposalListItemResponseDtoWorkflowStatus";
 
 export interface AIProposalListItemResponseDto {
-  id: string;
-  projectSequence: string;
-  kind: AIProposalListItemResponseDtoKind;
-  workflowStatus: AIProposalListItemResponseDtoWorkflowStatus;
-  decisionMode: AIProposalListItemResponseDtoDecisionMode;
-  priority: AIProposalListItemResponseDtoPriority;
-  title: string;
-  summary: string;
-  sourceType: AIProposalListItemResponseDtoSourceType;
-  /** @nullable */
-  endUser?: AIProposalListItemResponseDtoEndUser;
   /** @nullable */
   conversationId?: string | null;
+  createdAt: string;
+  decisionMode: AIProposalListItemResponseDtoDecisionMode;
+  /** @nullable */
+  endUser?: AIProposalListItemResponseDtoEndUser;
+  id: string;
+  isRead: boolean;
+  kind: AIProposalListItemResponseDtoKind;
+  priority: AIProposalListItemResponseDtoPriority;
+  projectSequence: string;
   /** @nullable */
   sourceMessageId?: string | null;
+  sourceType: AIProposalListItemResponseDtoSourceType;
+  summary: string;
+  title: string;
+  updatedAt: string;
   /** @minimum 1 */
   version: number;
-  isRead: boolean;
-  createdAt: string;
-  updatedAt: string;
+  workflowStatus: AIProposalListItemResponseDtoWorkflowStatus;
 }

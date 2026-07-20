@@ -17,6 +17,13 @@ import { RealtimeVoice, ServerActionHandler } from '@/shared/api/generated/model
 
 const now = Date.now()
 const isoAgo = (minutes: number) => new Date(now - minutes * 60_000).toISOString()
+const automaticAISuspension = () => ({
+  mode: 'AUTOMATIC' as const,
+  lifecycle: 'NONE' as const,
+  version: '0',
+  suspendedUntil: null,
+  serverTime: new Date(now).toISOString(),
+})
 
 export const demoProject: Project = {
   id: 'prj_lola_demo', name: 'Lucky Stars', slug: 'lucky_stars', status: 'ACTIVE',
@@ -221,9 +228,9 @@ export const demoActivity: ActivityItem[] = [
 ]
 
 export const demoConversations: Conversation[] = [
-  { id: 'conv_1', userId: 'usr_1', title: 'Первый депозит', status: 'ACTIVE', lastMessageAt: isoAgo(5), messageCount: 5 },
-  { id: 'conv_2', userId: 'usr_1', title: 'Знакомство с Lola', status: 'ARCHIVED', lastMessageAt: isoAgo(1200), messageCount: 4 },
-  { id: 'conv_3', userId: 'usr_2', title: 'Бонусы и программа лояльности', status: 'ACTIVE', lastMessageAt: isoAgo(26), messageCount: 3 },
+  { id: 'conv_1', userId: 'usr_1', title: 'Первый депозит', status: 'ACTIVE', lastMessageAt: isoAgo(5), messageCount: 5, aiSuspension: automaticAISuspension() },
+  { id: 'conv_2', userId: 'usr_1', title: 'Знакомство с Lola', status: 'ARCHIVED', lastMessageAt: isoAgo(1200), messageCount: 4, aiSuspension: automaticAISuspension() },
+  { id: 'conv_3', userId: 'usr_2', title: 'Бонусы и программа лояльности', status: 'ACTIVE', lastMessageAt: isoAgo(26), messageCount: 3, aiSuspension: automaticAISuspension() },
 ]
 
 export const demoMessages: ConversationMessage[] = [

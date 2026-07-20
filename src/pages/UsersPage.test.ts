@@ -11,14 +11,28 @@ const profile = {
   lastSeenAt: "2026-07-16T10:00:00.000Z",
   observedAt: "2026-07-16T09:59:00.000Z",
   fields: [],
+  conversationAiSuspensionSummary: {
+    activeConversationCount: 0,
+    nearestSuspendedUntil: null,
+    mostRecentlyStartedConversationId: null,
+    serverTime: "2026-07-20T13:00:00.000Z",
+  },
 };
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   profile: vi.fn(),
   getConversations: vi.fn(),
+  getConversation: vi.fn(),
   getMessages: vi.fn(),
   getSessions: vi.fn(),
   sendAdminMessage: vi.fn(),
+  ingestConversations: vi.fn(),
+  applyConfirmedState: vi.fn(),
+  loadSuspension: vi.fn(),
+  getSuspensionEntry: vi.fn(),
+  startSuspension: vi.fn(),
+  extendSuspension: vi.fn(),
+  resumeSuspension: vi.fn(),
   replace: vi.fn(),
   routeParams: {} as Record<string, string>,
   routeQuery: {} as Record<string, string>,
@@ -33,7 +47,19 @@ function deferred<T>() {
 }
 
 vi.mock("@/features/auth/auth.store", () => ({
-  useAuthStore: () => ({ project: { id: "project-1" } }),
+  useAuthStore: () => ({ project: { id: "project-1" }, user: { role: "OWNER" } }),
+}));
+vi.mock("@/features/conversation-ai-suspension/model/conversation-ai-suspension.store", () => ({
+  useConversationAISuspensionStore: () => ({
+    changeRevision: 0,
+    ingestConversations: mocks.ingestConversations,
+    applyConfirmedState: mocks.applyConfirmedState,
+    loadDetail: mocks.loadSuspension,
+    getEntry: mocks.getSuspensionEntry,
+    start: mocks.startSuspension,
+    extend: mocks.extendSuspension,
+    resume: mocks.resumeSuspension,
+  }),
 }));
 vi.mock("vue-router", () => ({
   useRoute: () => ({ params: mocks.routeParams, query: mocks.routeQuery }),
@@ -43,6 +69,7 @@ vi.mock("@/shared/api/repository", () => ({
   repository: {
     mode: "api",
     getConversations: mocks.getConversations,
+    getConversation: mocks.getConversation,
     getMessages: mocks.getMessages,
     getSessions: mocks.getSessions,
     sendAdminMessage: mocks.sendAdminMessage,
@@ -70,6 +97,7 @@ describe("UsersPage Current Profile", () => {
       provenance: "PRODUCT_PROFILE",
     });
     mocks.getConversations.mockResolvedValue({ items: [], nextCursor: null });
+    mocks.getConversation.mockResolvedValue(null);
     mocks.getMessages.mockResolvedValue({ items: [], nextCursor: null });
     mocks.getSessions.mockResolvedValue([]);
   });
@@ -193,6 +221,7 @@ describe("UsersPage Current Profile", () => {
           status: "ACTIVE",
           lastMessageAt: "2026-07-19T18:00:00.000Z",
           messageCount: 2,
+          aiSuspension: { mode: "AUTOMATIC", lifecycle: "NONE", version: "0", suspendedUntil: null, serverTime: "2026-07-20T13:00:00.000Z" },
         },
       ],
       nextCursor: null,
@@ -215,7 +244,20 @@ describe("UsersPage Current Profile", () => {
 
   it("loads an exact deep-linked user even when it is absent from the first page", async () => {
     mocks.routeParams.endUserId = "user-off-page";
-    mocks.list.mockResolvedValue({ items: [profile], nextCursor: "next-page" });
+    const exactSummary = {
+      ...profile,
+      endUserId: "user-off-page",
+      externalUserId: "customer-off-page",
+      conversationAiSuspensionSummary: {
+        activeConversationCount: 1,
+        nearestSuspendedUntil: "2026-07-20T14:00:00.000Z",
+        mostRecentlyStartedConversationId: "conversation-99",
+        serverTime: "2026-07-20T13:00:00.000Z",
+      },
+    };
+    mocks.list
+      .mockResolvedValueOnce({ items: [profile], nextCursor: "next-page" })
+      .mockResolvedValueOnce({ items: [exactSummary], nextCursor: null });
     mocks.profile.mockResolvedValue({
       ...profile,
       endUserId: "user-off-page",
@@ -230,10 +272,57 @@ describe("UsersPage Current Profile", () => {
     await flushPromises();
 
     expect(mocks.profile).toHaveBeenCalledWith("project-1", "user-off-page");
+    expect(mocks.list).toHaveBeenLastCalledWith("project-1", {
+      limit: 50,
+      externalUserId: "customer-off-page",
+    });
     expect(mocks.getConversations).toHaveBeenCalledWith(
       "project-1",
       "user-off-page",
       { limit: 30 },
     );
+  });
+
+  it("добавляет точный диалог по глубокой ссылке, если его нет на первой странице", async () => {
+    mocks.routeParams.endUserId = "user-1";
+    mocks.routeQuery.conversationId = "conversation-99";
+    mocks.getConversations.mockResolvedValue({ items: [], nextCursor: "next" });
+    mocks.getConversation.mockResolvedValue({
+      id: "conversation-99", userId: "user-1", title: "Точная поддержка", status: "ACTIVE",
+      lastMessageAt: "2026-07-20T13:00:00.000Z", messageCount: 1,
+      aiSuspension: { mode: "SUSPENDED", lifecycle: "ACTIVE", version: "2", suspendedUntil: "2026-07-20T14:00:00.000Z", serverTime: "2026-07-20T13:00:00.000Z" },
+    });
+
+    shallowMount(UsersPage);
+    await flushPromises();
+
+    expect(mocks.getConversation).toHaveBeenCalledWith("project-1", "user-1", "conversation-99");
+    expect(mocks.getMessages).toHaveBeenCalledWith("project-1", "user-1", "conversation-99", { limit: 50 });
+  });
+
+  it("точечно обновляет сводку открытого пользователя, исчезнувшего из фильтрованной страницы", async () => {
+    mocks.routeParams.endUserId = "user-1";
+    const wrapper = shallowMount(UsersPage);
+    await flushPromises();
+    const resumedProfile = {
+      ...profile,
+      conversationAiSuspensionSummary: {
+        ...profile.conversationAiSuspensionSummary,
+        activeConversationCount: 0,
+      },
+    };
+    mocks.list
+      .mockResolvedValueOnce({ items: [], nextCursor: null })
+      .mockResolvedValueOnce({ items: [resumedProfile], nextCursor: null });
+
+    await (wrapper.vm as unknown as {
+      refreshSelectedSummary(endUserId: string): Promise<void>;
+    }).refreshSelectedSummary("user-1");
+
+    expect(
+      (wrapper.vm as unknown as {
+        selected: { conversationAiSuspensionSummary: { activeConversationCount: number } };
+      }).selected.conversationAiSuspensionSummary.activeConversationCount,
+    ).toBe(0);
   });
 });

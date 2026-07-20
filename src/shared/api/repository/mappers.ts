@@ -17,12 +17,14 @@ import type {
   ScenarioActionDefinitionResponseDto,
   AdminConversationResponseDto,
   AdminConversationMessageResponseDto,
+  ConversationAISuspensionResponseDto,
+  ConversationAISuspensionSummaryResponseDto,
   UserAttributeDefinitionResponseDto,
   UserAttributeSchemaRevisionResponseDto,
   UserAttributeSchemaResponseDto,
   UserAttributeDefinitionMutationResponseDto,
 } from '@/shared/api/generated/models'
-import type { ActiveSession, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventDefinitionRevision, EventLog, Project, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeMutation, UserAttributeSchema, UserAttributeSchemaRevision } from '@/shared/types/domain'
+import type { ActiveSession, AuditLog, CmsUser, Conversation, ConversationAISuspensionDetail, ConversationAISuspensionSummary, ConversationMessage, EndUser, EventDefinition, EventDefinitionRevision, EventLog, Project, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeMutation, UserAttributeSchema, UserAttributeSchemaRevision } from '@/shared/types/domain'
 import type { CreateUiElement, SaveEventDefinition, UpdateUiElement } from './contracts'
 import { parseActionDefinition } from '@/shared/lib/action-definition'
 
@@ -100,6 +102,33 @@ export function mapConversation(dto: AdminConversationResponseDto): Conversation
     status: dto.status === 'OPEN' ? 'ACTIVE' : 'ARCHIVED',
     lastMessageAt: dto.messages[0]?.createdAt ?? dto.updatedAt,
     messageCount: dto._count.messages,
+    aiSuspension: mapConversationAISuspensionSummary(dto.aiSuspension),
+  }
+}
+
+export function mapConversationAISuspensionSummary(
+  dto: ConversationAISuspensionSummaryResponseDto,
+): ConversationAISuspensionSummary {
+  return {
+    mode: dto.mode,
+    lifecycle: dto.lifecycle,
+    version: dto.version,
+    suspendedUntil: dto.suspendedUntil,
+    serverTime: dto.serverTime,
+  }
+}
+
+export function mapConversationAISuspensionDetail(
+  dto: ConversationAISuspensionResponseDto,
+): ConversationAISuspensionDetail {
+  return {
+    ...mapConversationAISuspensionSummary(dto),
+    startedAt: dto.startedAt,
+    startedBy: dto.startedBy,
+    reason: dto.reason,
+    note: dto.note,
+    resumedAt: dto.resumedAt,
+    resumedBy: dto.resumedBy,
   }
 }
 

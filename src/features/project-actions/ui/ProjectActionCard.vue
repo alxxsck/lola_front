@@ -57,24 +57,30 @@ const risk = computed(() =>
 
     <span class="surface-grid" aria-label="Состояние поверхностей">
       <span class="surface-state" :class="{ unsupported: !supportsScenario }">
-        <span><i class="pi pi-sitemap" /> Сценарии</span>
-        <strong :class="action.scenarioEnabled ? 'enabled' : 'disabled'">{{
-          supportsScenario
-            ? action.scenarioEnabled
-              ? "Включено"
-              : "Выключено"
-            : "Недоступно"
-        }}</strong>
+        <span class="surface-icon"><i class="pi pi-sitemap" /></span>
+        <span class="surface-details">
+          <span class="surface-label">Сценарии</span>
+          <strong :class="action.scenarioEnabled ? 'enabled' : 'disabled'">{{
+            supportsScenario
+              ? action.scenarioEnabled
+                ? "Включено"
+                : "Выключено"
+              : "Недоступно"
+          }}</strong>
+        </span>
       </span>
       <span class="surface-state" :class="{ unsupported: !supportsAi }">
-        <span><i class="pi pi-sparkles" /> Для помощника</span>
-        <strong :class="action.aiEnabled ? 'enabled' : 'disabled'">{{
-          supportsAi
-            ? action.aiEnabled
-              ? "Включено"
-              : "Выключено"
-            : "Недоступно"
-        }}</strong>
+        <span class="surface-icon"><i class="pi pi-sparkles" /></span>
+        <span class="surface-details">
+          <span class="surface-label">Для помощника</span>
+          <strong :class="action.aiEnabled ? 'enabled' : 'disabled'">{{
+            supportsAi
+              ? action.aiEnabled
+                ? "Включено"
+                : "Выключено"
+              : "Недоступно"
+          }}</strong>
+        </span>
       </span>
     </span>
 
@@ -88,10 +94,11 @@ const risk = computed(() =>
 <style scoped>
 .project-action-card {
   display: grid;
+  grid-template-rows: auto minmax(34px, 1fr) auto auto;
   gap: 12px;
-  align-content: start;
   padding: 16px;
   width: 100%;
+  height: 100%;
   min-width: 0;
   color: inherit;
   text-align: left;
@@ -133,9 +140,7 @@ const risk = computed(() =>
   border-radius: 11px;
 }
 .action-icon i,
-.open-icon,
-.surface-state i,
-.card-footer i {
+.open-icon {
   width: 1em;
   text-align: center;
 }
@@ -177,8 +182,13 @@ const risk = computed(() =>
   background: var(--status-violet-soft);
 }
 .open-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
   color: var(--text-secondary);
   font-size: 12px;
+  line-height: 1;
 }
 .description {
   display: -webkit-box;
@@ -193,25 +203,55 @@ const risk = computed(() =>
 .surface-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
 }
 .surface-state {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
   align-items: center;
-  padding: 8px 9px;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 58px;
+  padding: 9px 10px;
   background: var(--surface-subtle);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: 12px;
 }
-.surface-state > span {
+.surface-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--text-secondary);
+  background: var(--surface-card);
+  border-radius: 9px;
+}
+.surface-icon i {
+  width: 16px;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+}
+.surface-details {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.surface-label {
+  overflow: hidden;
   color: var(--text-secondary);
   font-size: 10px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .surface-state strong {
-  font-size: 10px;
+  overflow: hidden;
+  font-size: 10.5px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .surface-state .enabled {
   color: var(--status-success-text);
@@ -226,15 +266,32 @@ const risk = computed(() =>
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  align-items: center;
+  min-height: 24px;
   padding-top: 10px;
   color: var(--text-secondary);
   font-size: 10px;
   border-top: 1px solid var(--border-default);
 }
-.card-footer span {
+.card-footer > span {
+  display: flex;
+  align-items: center;
   overflow: hidden;
+  min-width: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.card-footer > span:first-child {
+  gap: 7px;
+}
+.card-footer i {
+  display: grid;
+  flex: 0 0 22px;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  font-size: 15px;
+  line-height: 1;
 }
 @media (max-width: 420px) {
   .surface-grid {

@@ -26,6 +26,11 @@ import {
   scenarioRunsPage,
   platformActivitySettings,
   platformUpdateActivitySettings,
+  conversationAISuspensionsGet,
+  conversationAISuspensionsStart,
+  conversationAISuspensionsExtend,
+  conversationAISuspensionsResume,
+  conversationAISuspensionsHistory,
 } from '@/shared/api/generated/lola-backend'
 import type { EventDefinitionResponseDto, UiElementResponseDto } from '@/shared/api/generated/models'
 import { apiRepository } from './api-repository'
@@ -47,6 +52,9 @@ vi.mock('@/shared/api/generated/lola-backend', () => ({
   platformEventDefinitionRevisions: vi.fn(), platformEventDefinitionRevision: vi.fn(),
   platformUsersPage: vi.fn(), scenarioRunsPage: vi.fn(),
   platformActivitySettings: vi.fn(), platformUpdateActivitySettings: vi.fn(),
+  conversationAISuspensionsGet: vi.fn(), conversationAISuspensionsStart: vi.fn(),
+  conversationAISuspensionsExtend: vi.fn(), conversationAISuspensionsResume: vi.fn(),
+  conversationAISuspensionsHistory: vi.fn(),
 }))
 
 const uiResponse = {
@@ -202,19 +210,65 @@ describe('api repository adapter', () => {
       duplicate: true,
       commandIds: ['command-1'],
       message: { id: 'message-1', threadId: 'thread-1', status: 'COMPLETED' },
+      aiSuspension: {
+        replayed: false,
+        state: {
+          mode: 'SUSPENDED', lifecycle: 'ACTIVE', version: '1', suspendedUntil: '2026-07-20T14:00:00.000Z', serverTime: '2026-07-20T13:00:00.000Z',
+          startedAt: '2026-07-20T13:00:00.000Z', startedBy: null, reason: 'OPERATOR_TAKEOVER', note: null, resumedAt: null, resumedBy: null,
+        },
+      },
     } as never)
 
     const result = await apiRepository.sendAdminMessage('project-1', 'user-1', {
-      text: 'Welcome', conversationPolicy: 'reuse_active', interactionSessionId: 'session-1',
+      text: 'Welcome', conversationId: 'conversation-7', interactionSessionId: 'session-1',
       actions: [{ type: 'OPEN_PAGE', config: { pageId: 'home' } }],
+      aiSuspension: { durationSeconds: 3600, reason: 'OPERATOR_TAKEOVER' },
       idempotencyKey: '2d77b597-1bc0-4b0f-a783-77597bb71483',
     })
 
     expect(adminMessagingSend).toHaveBeenCalledWith('project-1', 'user-1', {
-      text: 'Welcome', conversationPolicy: 'reuse_active', interactionSessionId: 'session-1',
+      text: 'Welcome', conversationId: 'conversation-7', interactionSessionId: 'session-1',
       actions: [{ type: 'OPEN_PAGE', config: { pageId: 'home' } }],
+      aiSuspension: { durationSeconds: 3600, reason: 'OPERATOR_TAKEOVER' },
     }, { headers: { 'Idempotency-Key': '2d77b597-1bc0-4b0f-a783-77597bb71483' } })
-    expect(result).toMatchObject({ duplicate: true, messageId: 'message-1', commandIds: ['command-1'] })
+    expect(result).toMatchObject({ duplicate: true, messageId: 'message-1', commandIds: ['command-1'], aiSuspension: { state: { version: '1' } } })
+  })
+
+  it('управляет приостановкой AI только через выбранный диалог и сохраняет ключ команды', async () => {
+    const state = {
+      mode: 'SUSPENDED', lifecycle: 'ACTIVE', version: '12',
+      suspendedUntil: '2026-07-20T14:00:00.000Z', serverTime: '2026-07-20T13:00:00.000Z',
+      startedAt: '2026-07-20T13:00:00.000Z', startedBy: { id: 'admin-1', displayName: 'Алексей' },
+      reason: 'OPERATOR_TAKEOVER', note: null, resumedAt: null, resumedBy: null,
+    } as const
+    vi.mocked(conversationAISuspensionsGet).mockResolvedValue(state)
+    vi.mocked(conversationAISuspensionsStart).mockResolvedValue({ state, replayed: false })
+    vi.mocked(conversationAISuspensionsExtend).mockResolvedValue({ state: { ...state, version: '13' }, replayed: false })
+    vi.mocked(conversationAISuspensionsResume).mockResolvedValue({ state: { ...state, mode: 'AUTOMATIC', lifecycle: 'RESUMED', version: '14', suspendedUntil: null }, replayed: false })
+    vi.mocked(conversationAISuspensionsHistory).mockResolvedValue({ items: [], nextCursor: null })
+
+    await expect(apiRepository.getConversationAISuspension('project-1', 'user-1', 'conversation-7')).resolves.toMatchObject({ version: '12' })
+    await apiRepository.startConversationAISuspension('project-1', 'user-1', 'conversation-7', {
+      durationSeconds: 3600, reason: 'OPERATOR_TAKEOVER',
+    }, 'start-key')
+    await apiRepository.extendConversationAISuspension('project-1', 'user-1', 'conversation-7', {
+      additionalSeconds: 1800, expectedVersion: '12',
+    }, 'extend-key')
+    await apiRepository.resumeConversationAI('project-1', 'user-1', 'conversation-7', {
+      expectedVersion: '13', reason: 'Вопрос решён',
+    }, 'resume-key')
+    await apiRepository.getConversationAISuspensionHistory('project-1', 'user-1', 'conversation-7', { limit: 20 })
+
+    expect(conversationAISuspensionsStart).toHaveBeenCalledWith('project-1', 'user-1', 'conversation-7', {
+      durationSeconds: 3600, reason: 'OPERATOR_TAKEOVER',
+    }, { headers: { 'Idempotency-Key': 'start-key' } })
+    expect(conversationAISuspensionsExtend).toHaveBeenCalledWith('project-1', 'user-1', 'conversation-7', {
+      additionalSeconds: 1800, expectedVersion: '12',
+    }, { headers: { 'Idempotency-Key': 'extend-key' } })
+    expect(conversationAISuspensionsResume).toHaveBeenCalledWith('project-1', 'user-1', 'conversation-7', {
+      expectedVersion: '13', reason: 'Вопрос решён',
+    }, { headers: { 'Idempotency-Key': 'resume-key' } })
+    expect(conversationAISuspensionsHistory).toHaveBeenCalledWith('project-1', 'user-1', 'conversation-7', { limit: 20 })
   })
 
   it('maps active backend users to selectable interaction sessions', async () => {
@@ -238,6 +292,7 @@ describe('api repository adapter', () => {
       items: [{
         id: 'conversation-1', projectId: 'project-1', endUserId: 'user-1', title: 'Deposit', status: 'OPEN',
         createdAt: '2026-07-13T08:00:00.000Z', updatedAt: '2026-07-13T09:00:00.000Z',
+        aiSuspension: { mode: 'AUTOMATIC', lifecycle: 'NONE', version: '0', suspendedUntil: null, serverTime: '2026-07-20T13:00:00.000Z' },
         _count: { messages: 42 }, messages: [{ id: 'message-last', role: 'ASSISTANT', text: 'Done', createdAt: '2026-07-13T09:00:00.000Z' }],
       }],
       nextCursor: 'conversation-1',

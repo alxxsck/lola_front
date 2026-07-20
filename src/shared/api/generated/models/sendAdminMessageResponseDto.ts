@@ -5,11 +5,17 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ConversationAISuspensionMutationResponseDto } from "./conversationAISuspensionMutationResponseDto";
+import type { AdminMessageDeliveryResponseDto } from "./adminMessageDeliveryResponseDto";
 import type { AdminStoredMessageResponseDto } from "./adminStoredMessageResponseDto";
+import type { AdminMessagePersistenceResponseDto } from "./adminMessagePersistenceResponseDto";
 
 export interface SendAdminMessageResponseDto {
+  aiSuspension?: ConversationAISuspensionMutationResponseDto;
   commandIds: string[];
+  delivery?: AdminMessageDeliveryResponseDto;
   /** True when the same Idempotency-Key was already processed. */
   duplicate: boolean;
   message: AdminStoredMessageResponseDto;
+  messagePersistence?: AdminMessagePersistenceResponseDto;
 }

@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Compatibility fallback. New CMS clients must send conversationId.
+ */
 export type AdminConversationPolicy =
   (typeof AdminConversationPolicy)[keyof typeof AdminConversationPolicy];
 

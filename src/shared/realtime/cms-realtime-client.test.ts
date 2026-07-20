@@ -46,6 +46,27 @@ describe("CmsRealtimeClient", () => {
     mocks.getRefreshToken.mockReturnValue("refresh-token");
   });
 
+  it("сохраняет одно соединение для независимых подписок возможностей", async () => {
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    const proposals = vi.fn();
+    const suspensions = vi.fn();
+
+    client.subscribe(["ai_proposal.summary"], proposals);
+    client.subscribe(["conversation.ai_suspension.started.v1"], suspensions);
+    await client.activateProject("project-1");
+
+    socket.trigger("ai_proposal.summary", { eventId: "proposal-1" });
+    socket.trigger("conversation.ai_suspension.started.v1", { eventId: "suspension-1" });
+    await vi.waitFor(() => expect(suspensions).toHaveBeenCalled());
+
+    expect(mocks.io).toHaveBeenCalledTimes(1);
+    expect(socket.disconnect).not.toHaveBeenCalled();
+    expect(proposals).toHaveBeenCalledWith({ eventId: "proposal-1" });
+    expect(suspensions).toHaveBeenCalledWith({ eventId: "suspension-1" });
+  });
+
   it("uses only the access token and project in the Socket.IO handshake", async () => {
     const socket = fakeSocket();
     mocks.io.mockReturnValue(socket);

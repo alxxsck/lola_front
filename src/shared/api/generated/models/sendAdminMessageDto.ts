@@ -6,12 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DirectAdminActionDto } from "./directAdminActionDto";
+import type { AdminMessageAISuspensionDto } from "./adminMessageAISuspensionDto";
 import type { AdminConversationPolicy } from "./adminConversationPolicy";
 
 export interface SendAdminMessageDto {
   /** @maxItems 5 */
   actions?: DirectAdminActionDto[];
-  conversationPolicy: AdminConversationPolicy;
+  aiSuspension?: AdminMessageAISuspensionDto;
+  /** Exact OPEN Conversation selected by the operator. Required for CMS vNext. */
+  conversationId?: string;
+  /**
+   * Compatibility fallback. New CMS clients must send conversationId.
+   * @deprecated
+   */
+  conversationPolicy?: AdminConversationPolicy;
   /** Optional preferred online session. If omitted, backend selects the most recently active session. */
   interactionSessionId?: string;
   /**

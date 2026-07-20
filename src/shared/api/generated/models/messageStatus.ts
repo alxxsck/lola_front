@@ -13,4 +13,5 @@ export const MessageStatus = {
   WRITING: "WRITING",
   COMPLETED: "COMPLETED",
   FAILED: "FAILED",
+  CANCELLED: "CANCELLED",
 } as const;

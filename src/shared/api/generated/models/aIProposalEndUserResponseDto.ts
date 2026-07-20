@@ -7,6 +7,6 @@
  */
 
 export interface AIProposalEndUserResponseDto {
-  id: string;
   externalId: string;
+  id: string;
 }

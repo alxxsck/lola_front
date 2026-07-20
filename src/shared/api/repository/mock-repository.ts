@@ -1,8 +1,10 @@
 import { demoActionDefinitions, demoActivity, demoConversations, demoElements, demoEvents, demoMessages, demoProject, demoScenarios, demoSessions, demoUsers } from '@/shared/api/mock-data'
 import { normalizeScenarioActions } from '@/shared/lib/domain'
 import { uid } from '@/shared/lib/format'
-import type { ActiveSession, ActivityItem, AuditLog, CmsUser, Conversation, ConversationMessage, EndUser, EventDefinition, EventLog, Project, Scenario, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeSchema } from '@/shared/types/domain'
-import type { LolaRepository } from './contracts'
+import type { ActiveSession, ActivityItem, AdminMessageResult, AuditLog, CmsUser, Conversation, ConversationAISuspensionDetail, ConversationMessage, EndUser, EventDefinition, EventLog, Project, Scenario, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeSchema } from '@/shared/types/domain'
+import type { ConversationAISuspensionHistoryItemResponseDto } from '@/shared/api/generated/models'
+import { ApiError } from '@/shared/api/http/api-error'
+import type { ConversationAISuspensionMutationResult, LolaRepository } from './contracts'
 
 const DATA_KEY = 'lola-cms-demo-data-v2'
 
@@ -19,6 +21,10 @@ interface DemoData {
   messages: ConversationMessage[]
   userAttributes: UserAttributeDefinition[]
   userAttributeRevision: number
+  suspensionDetails: Record<string, ConversationAISuspensionDetail>
+  suspensionHistory: Record<string, ConversationAISuspensionHistoryItemResponseDto[]>
+  suspensionIdempotency: Record<string, { payload: string; result: ConversationAISuspensionMutationResult }>
+  adminMessageIdempotency: Record<string, { payload: string; result: AdminMessageResult }>
 }
 
 const initialData = (): DemoData => structuredClone({
@@ -37,6 +43,10 @@ const initialData = (): DemoData => structuredClone({
     { id: 'attr_2', projectId: demoProject.id, key: 'depositCount', label: 'Количество пополнений', type: 'NUMBER', required: false, clientVisible: false, validation: { minimum: 0 }, enabled: true, position: 20, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   ],
   userAttributeRevision: 2,
+  suspensionDetails: {},
+  suspensionHistory: {},
+  suspensionIdempotency: {},
+  adminMessageIdempotency: {},
 })
 
 const readDemo = (): DemoData => {
@@ -48,6 +58,10 @@ const readDemo = (): DemoData => {
       ...initialData(),
       ...data,
       members: data.members ?? initialData().members,
+      suspensionDetails: data.suspensionDetails ?? {},
+      suspensionHistory: data.suspensionHistory ?? {},
+      suspensionIdempotency: data.suspensionIdempotency ?? {},
+      adminMessageIdempotency: data.adminMessageIdempotency ?? {},
       elements: (data.elements ?? initialData().elements).map((element) => ({
         ...element,
         aiEnabled: element.aiEnabled ?? false,
@@ -62,6 +76,70 @@ const readDemo = (): DemoData => {
 
 const writeDemo = (data: DemoData) => localStorage.setItem(DATA_KEY, JSON.stringify(data))
 const pause = () => new Promise((resolve) => setTimeout(resolve, 180))
+
+function suspensionDetail(data: DemoData, conversation: Conversation): ConversationAISuspensionDetail {
+  const now = new Date().toISOString()
+  const saved = data.suspensionDetails[conversation.id]
+  const detail: ConversationAISuspensionDetail = saved
+    ? { ...saved, serverTime: now }
+    : { ...conversation.aiSuspension, serverTime: now, startedAt: null, startedBy: null, reason: null, note: null, resumedAt: null, resumedBy: null }
+  if (detail.mode === 'SUSPENDED' && detail.lifecycle === 'ACTIVE' && detail.suspendedUntil && Date.parse(detail.suspendedUntil) <= Date.parse(now)) {
+    Object.assign(detail, { mode: 'AUTOMATIC', lifecycle: 'EXPIRED' })
+  }
+  data.suspensionDetails[conversation.id] = detail
+  conversation.aiSuspension = {
+    mode: detail.mode,
+    lifecycle: detail.lifecycle,
+    version: detail.version,
+    suspendedUntil: detail.suspendedUntil,
+    serverTime: detail.serverTime,
+  }
+  return detail
+}
+
+function findConversation(data: DemoData, endUserId: string, conversationId: string): Conversation {
+  const conversation = data.conversations.find((item) => item.id === conversationId && item.userId === endUserId)
+  if (!conversation) throw new ApiError(404, 'Диалог не найден', undefined, undefined, 'NOT_FOUND')
+  return conversation
+}
+
+function mutationReplay(
+  data: DemoData,
+  key: string,
+  payload: unknown,
+): ConversationAISuspensionMutationResult | null {
+  const serialized = JSON.stringify(payload)
+  const saved = data.suspensionIdempotency[key]
+  if (!saved) return null
+  if (saved.payload !== serialized) throw new ApiError(409, 'Ключ команды уже использован с другими данными', undefined, undefined, 'IDEMPOTENCY_KEY_REUSED')
+  return { ...structuredClone(saved.result), replayed: true }
+}
+
+function rememberMutation(
+  data: DemoData,
+  key: string,
+  payload: unknown,
+  result: ConversationAISuspensionMutationResult,
+): ConversationAISuspensionMutationResult {
+  data.suspensionIdempotency[key] = { payload: JSON.stringify(payload), result: structuredClone(result) }
+  return result
+}
+
+function appendSuspensionHistory(
+  data: DemoData,
+  conversationId: string,
+  item: Omit<ConversationAISuspensionHistoryItemResponseDto, 'id' | 'correlationId' | 'actor' | 'acceptedAt'>,
+): void {
+  const history = data.suspensionHistory[conversationId] ?? []
+  history.unshift({
+    ...item,
+    id: uid('suspension-history'),
+    correlationId: uid('correlation'),
+    actor: { id: 'member_1', displayName: 'Алексей' },
+    acceptedAt: new Date().toISOString(),
+  })
+  data.suspensionHistory[conversationId] = history
+}
 
 function mockUserAttributeSchema(data: DemoData): UserAttributeSchema {
   const definitions = [...data.userAttributes].sort((left, right) => left.position - right.position)
@@ -248,6 +326,12 @@ export const mockRepository: LolaRepository = {
     const limit = request?.limit ?? 30
     return { items: items.slice(offset, offset + limit), nextCursor: items[offset + limit]?.id ? items[offset + limit - 1]!.id : null }
   },
+  async getConversation(_projectId, userId, conversationId) {
+    await pause()
+    const conversation = readDemo().conversations.find((item) => item.id === conversationId && item.userId === userId)
+    if (!conversation) throw new ApiError(404, 'Диалог не найден')
+    return conversation
+  },
   async getMessages(_projectId, _userId, conversationId, request) {
     await pause()
     const items = readDemo().messages
@@ -256,6 +340,78 @@ export const mockRepository: LolaRepository = {
     const offset = request?.cursor ? items.findIndex((item) => item.id === request.cursor) + 1 : 0
     const limit = request?.limit ?? 50
     return { items: items.slice(offset, offset + limit), nextCursor: items[offset + limit]?.id ? items[offset + limit - 1]!.id : null }
+  },
+  async getConversationAISuspension(_projectId, endUserId, conversationId) {
+    const data = readDemo()
+    const detail = suspensionDetail(data, findConversation(data, endUserId, conversationId))
+    writeDemo(data); await pause(); return structuredClone(detail)
+  },
+  async startConversationAISuspension(_projectId, endUserId, conversationId, command, idempotencyKey) {
+    const data = readDemo()
+    const payload = { type: 'START', endUserId, conversationId, command }
+    const replay = mutationReplay(data, idempotencyKey, payload)
+    if (replay) { await pause(); return replay }
+    if (command.durationSeconds < 60 || command.durationSeconds > 604_800) throw new ApiError(422, 'Укажите срок от одной минуты до семи дней')
+    const conversation = findConversation(data, endUserId, conversationId)
+    if (conversation.status !== 'ACTIVE') throw new ApiError(409, 'Закрытый диалог нельзя приостановить', undefined, undefined, 'CONVERSATION_CLOSED')
+    const current = suspensionDetail(data, conversation)
+    if (current.mode === 'SUSPENDED' && current.lifecycle === 'ACTIVE') throw new ApiError(409, 'AI уже приостановлен', undefined, undefined, 'ALREADY_ACTIVE')
+    const now = new Date()
+    const state: ConversationAISuspensionDetail = {
+      mode: 'SUSPENDED', lifecycle: 'ACTIVE', version: (BigInt(current.version) + 1n).toString(),
+      suspendedUntil: new Date(now.getTime() + command.durationSeconds * 1000).toISOString(), serverTime: now.toISOString(),
+      startedAt: now.toISOString(), startedBy: { id: 'member_1', displayName: 'Алексей' },
+      reason: command.reason, note: command.note?.trim() || null, resumedAt: null, resumedBy: null,
+    }
+    data.suspensionDetails[conversationId] = state
+    suspensionDetail(data, conversation)
+    appendSuspensionHistory(data, conversationId, { type: 'STARTED', version: state.version, reason: command.reason, note: state.note, newSuspendedUntil: state.suspendedUntil })
+    const result = rememberMutation(data, idempotencyKey, payload, { state, replayed: false, inFlightCancellation: { status: 'NOT_REQUIRED' } })
+    writeDemo(data); await pause(); return structuredClone(result)
+  },
+  async extendConversationAISuspension(_projectId, endUserId, conversationId, command, idempotencyKey) {
+    const data = readDemo()
+    const payload = { type: 'EXTEND', endUserId, conversationId, command }
+    const replay = mutationReplay(data, idempotencyKey, payload)
+    if (replay) { await pause(); return replay }
+    const conversation = findConversation(data, endUserId, conversationId)
+    const current = suspensionDetail(data, conversation)
+    if (current.mode !== 'SUSPENDED' || current.lifecycle !== 'ACTIVE' || !current.suspendedUntil) throw new ApiError(409, 'AI уже отвечает', undefined, undefined, 'NOT_ACTIVE')
+    if (current.version !== command.expectedVersion) throw new ApiError(409, 'Состояние изменил другой администратор', undefined, undefined, 'VERSION_CONFLICT')
+    const nextDeadline = Date.parse(current.suspendedUntil) + command.additionalSeconds * 1000
+    if (command.additionalSeconds < 60 || command.additionalSeconds > 604_800 || nextDeadline > Date.now() + 604_800_000) throw new ApiError(422, 'Итоговый срок не может превышать семь дней')
+    const state = { ...current, version: (BigInt(current.version) + 1n).toString(), suspendedUntil: new Date(nextDeadline).toISOString(), serverTime: new Date().toISOString() }
+    data.suspensionDetails[conversationId] = state
+    suspensionDetail(data, conversation)
+    appendSuspensionHistory(data, conversationId, { type: 'EXTENDED', version: state.version, previousSuspendedUntil: current.suspendedUntil, newSuspendedUntil: state.suspendedUntil })
+    const result = rememberMutation(data, idempotencyKey, payload, { state, replayed: false })
+    writeDemo(data); await pause(); return structuredClone(result)
+  },
+  async resumeConversationAI(_projectId, endUserId, conversationId, command, idempotencyKey) {
+    const data = readDemo()
+    const payload = { type: 'RESUME', endUserId, conversationId, command }
+    const replay = mutationReplay(data, idempotencyKey, payload)
+    if (replay) { await pause(); return replay }
+    const conversation = findConversation(data, endUserId, conversationId)
+    const current = suspensionDetail(data, conversation)
+    if (current.mode !== 'SUSPENDED' || current.lifecycle !== 'ACTIVE') throw new ApiError(409, 'AI уже отвечает', undefined, undefined, 'NOT_ACTIVE')
+    if (current.version !== command.expectedVersion) throw new ApiError(409, 'Состояние изменил другой администратор', undefined, undefined, 'VERSION_CONFLICT')
+    const now = new Date().toISOString()
+    const state: ConversationAISuspensionDetail = { ...current, mode: 'AUTOMATIC', lifecycle: 'RESUMED', version: (BigInt(current.version) + 1n).toString(), serverTime: now, resumedAt: now, resumedBy: { id: 'member_1', displayName: 'Алексей' } }
+    data.suspensionDetails[conversationId] = state
+    suspensionDetail(data, conversation)
+    appendSuspensionHistory(data, conversationId, { type: 'RESUMED', version: state.version, reason: 'OTHER', note: command.reason?.trim() || null, previousSuspendedUntil: current.suspendedUntil, newSuspendedUntil: current.suspendedUntil })
+    const result = rememberMutation(data, idempotencyKey, payload, { state, replayed: false })
+    writeDemo(data); await pause(); return structuredClone(result)
+  },
+  async getConversationAISuspensionHistory(_projectId, endUserId, conversationId, request) {
+    const data = readDemo()
+    findConversation(data, endUserId, conversationId)
+    const items = data.suspensionHistory[conversationId] ?? []
+    const offset = request?.cursor ? Number(request.cursor) : 0
+    const limit = request?.limit ?? 20
+    await pause()
+    return { items: structuredClone(items.slice(offset, offset + limit)), nextCursor: offset + limit < items.length ? String(offset + limit) : null }
   },
   async sendAction(session, action) {
     const data = readDemo()
@@ -359,18 +515,44 @@ export const mockRepository: LolaRepository = {
     ] satisfies AuditLog[]
   },
   async sendAdminMessage(_projectId, userId, message) {
-    const data = readDemo()
+    const idempotencyKey = message.idempotencyKey ?? crypto.randomUUID()
+    const payload = JSON.stringify({ userId, message })
+    let data = readDemo()
+    const replay = data.adminMessageIdempotency[idempotencyKey]
+    if (replay) {
+      if (replay.payload !== payload) {
+        throw new ApiError(409, 'Ключ уже использован для другой операции', undefined, undefined, 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD')
+      }
+      await pause()
+      return structuredClone({
+        ...replay.result,
+        duplicate: true,
+        ...(replay.result.aiSuspension ? {
+          aiSuspension: { ...replay.result.aiSuspension, replayed: true },
+        } : {}),
+      })
+    }
     const user = data.users.find((item) => item.id === userId)
     if (!user) throw new Error('Пользователь не найден')
-    const conversation = data.conversations.find((item) => item.userId === userId && item.status === 'ACTIVE')
-      ?? { id: uid('conv'), userId, title: 'Сообщение администратора', status: 'ACTIVE' as const, lastMessageAt: new Date().toISOString(), messageCount: 0 }
+    const selectedConversation = message.conversationId
+      ? data.conversations.find((item) => item.id === message.conversationId && item.userId === userId && item.status === 'ACTIVE')
+      : data.conversations.find((item) => item.userId === userId && item.status === 'ACTIVE')
+        ?? { id: uid('conv'), userId, title: 'Сообщение администратора', status: 'ACTIVE' as const, lastMessageAt: new Date().toISOString(), messageCount: 0, aiSuspension: { mode: 'AUTOMATIC' as const, lifecycle: 'NONE' as const, version: '0', suspendedUntil: null, serverTime: new Date().toISOString() } }
+    if (!selectedConversation) throw new ApiError(404, 'Выбранный диалог не найден')
+    const aiSuspension = message.aiSuspension && message.conversationId
+      ? await this.startConversationAISuspension(_projectId, userId, message.conversationId, message.aiSuspension, idempotencyKey)
+      : undefined
+    data = readDemo()
+    const conversation = data.conversations.find((item) => item.id === selectedConversation.id) ?? selectedConversation
     if (!data.conversations.some((item) => item.id === conversation.id)) data.conversations.unshift(conversation)
     const messageId = uid('msg')
     data.messages.push({ id: messageId, conversationId: conversation.id, author: 'ADMIN', text: message.text, status: 'COMPLETED', createdAt: new Date().toISOString() })
     conversation.messageCount += 1
     conversation.lastMessageAt = new Date().toISOString()
+    const result: AdminMessageResult = { duplicate: false, messageId, threadId: conversation.id, commandIds: message.actions?.map(() => uid('cmd')) ?? [], status: 'COMPLETED', deliveryStatus: 'DELIVERED', ...(aiSuspension ? { aiSuspension } : {}) }
+    data.adminMessageIdempotency[idempotencyKey] = { payload, result }
     writeDemo(data); await pause()
-    return { duplicate: false, messageId, threadId: conversation.id, commandIds: message.actions?.map(() => uid('cmd')) ?? [], status: 'COMPLETED' }
+    return structuredClone(result)
   },
   async getStats(projectId) {
     const [project, scenarios, users, sessions] = await Promise.all([this.getProject(projectId), this.getScenarios(projectId), this.getUsers(projectId), this.getSessions(projectId)])

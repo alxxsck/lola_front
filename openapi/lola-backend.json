@@ -475,6 +475,7 @@
         "type": "object"
       },
       "AdminConversationPolicy": {
+        "description": "Compatibility fallback. New CMS clients must send conversationId.",
         "enum": [
           "reuse_active",
           "create_new"
@@ -514,6 +515,9 @@
         "properties": {
           "_count": {
             "$ref": "#/components/schemas/AdminConversationMessageCountResponseDto"
+          },
+          "aiSuspension": {
+            "$ref": "#/components/schemas/ConversationAISuspensionSummaryResponseDto"
           },
           "createdAt": {
             "format": "date-time",
@@ -566,7 +570,8 @@
           "createdAt",
           "updatedAt",
           "_count",
-          "messages"
+          "messages",
+          "aiSuspension"
         ],
         "type": "object"
       },
@@ -586,6 +591,79 @@
         },
         "required": [
           "items"
+        ],
+        "type": "object"
+      },
+      "AdminMessageAISuspensionDto": {
+        "properties": {
+          "durationSeconds": {
+            "maximum": 604800,
+            "minimum": 60,
+            "type": "number"
+          },
+          "note": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "OPERATOR_TAKEOVER",
+              "MANUAL_REVIEW",
+              "INCIDENT_RESPONSE",
+              "OTHER"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "durationSeconds",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "AdminMessageDeliveryResponseDto": {
+        "properties": {
+          "commandIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "interactionSessionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DELIVERED",
+              "NOT_REDELIVERED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "commandIds"
+        ],
+        "type": "object"
+      },
+      "AdminMessagePersistenceResponseDto": {
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "PERSISTED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "duplicate"
         ],
         "type": "object"
       },
@@ -891,6 +969,366 @@
           "description",
           "parameters",
           "strict"
+        ],
+        "type": "object"
+      },
+      "AIProposalDetailResponseDto": {
+        "properties": {
+          "content": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "decidedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "decidedByAdminId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "decisionMode": {
+            "enum": [
+              "ACKNOWLEDGE",
+              "APPROVE_REJECT"
+            ],
+            "type": "string"
+          },
+          "decisionReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "endUser": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "evidence": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isRead": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "ADMIN_ATTENTION",
+              "INSIGHT",
+              "ACTION_RECOMMENDATION"
+            ],
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT"
+            ],
+            "type": "string"
+          },
+          "projectSequence": {
+            "type": "string"
+          },
+          "readAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceInvocationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceMessageId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceType": {
+            "enum": [
+              "TEXT_CHAT",
+              "VOICE",
+              "BACKGROUND_AI"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "workflowStatus": {
+            "enum": [
+              "OPEN",
+              "ACCEPTED",
+              "REJECTED",
+              "RESOLVED",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectSequence",
+          "kind",
+          "workflowStatus",
+          "decisionMode",
+          "priority",
+          "title",
+          "summary",
+          "sourceType",
+          "version",
+          "isRead",
+          "createdAt",
+          "updatedAt",
+          "content",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "AIProposalEndUserResponseDto": {
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId"
+        ],
+        "type": "object"
+      },
+      "AIProposalListItemResponseDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "decisionMode": {
+            "enum": [
+              "ACKNOWLEDGE",
+              "APPROVE_REJECT"
+            ],
+            "type": "string"
+          },
+          "endUser": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isRead": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "ADMIN_ATTENTION",
+              "INSIGHT",
+              "ACTION_RECOMMENDATION"
+            ],
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT"
+            ],
+            "type": "string"
+          },
+          "projectSequence": {
+            "type": "string"
+          },
+          "sourceMessageId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceType": {
+            "enum": [
+              "TEXT_CHAT",
+              "VOICE",
+              "BACKGROUND_AI"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "workflowStatus": {
+            "enum": [
+              "OPEN",
+              "ACCEPTED",
+              "REJECTED",
+              "RESOLVED",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectSequence",
+          "kind",
+          "workflowStatus",
+          "decisionMode",
+          "priority",
+          "title",
+          "summary",
+          "sourceType",
+          "version",
+          "isRead",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AIProposalReadResponseDto": {
+        "properties": {
+          "proposal": {
+            "$ref": "#/components/schemas/AIProposalDetailResponseDto"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
+          }
+        },
+        "required": [
+          "proposal",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "AIProposalReceivedResponseDto": {
+        "properties": {
+          "received": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "received"
+        ],
+        "type": "object"
+      },
+      "AIProposalsPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AIProposalListItemResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "AIProposalSummaryResponseDto": {
+        "properties": {
+          "calculatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "highPriorityUnreadCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "lastSequence": {
+            "description": "JSON-safe project event sequence.",
+            "type": "string"
+          },
+          "openCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "unreadCount": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "openCount",
+          "unreadCount",
+          "highPriorityUnreadCount",
+          "lastSequence",
+          "calculatedAt"
         ],
         "type": "object"
       },
@@ -4321,6 +4759,33 @@
         ],
         "type": "object"
       },
+      "CmsConversationAISuspensionSummaryResponseDto": {
+        "properties": {
+          "activeConversationCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "mostRecentlyStartedConversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "nearestSuspendedUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "serverTime": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "activeConversationCount",
+          "serverTime"
+        ],
+        "type": "object"
+      },
       "CmsLoginDto": {
         "properties": {
           "login": {
@@ -4361,6 +4826,9 @@
       },
       "CmsProfileSummaryResponseDto": {
         "properties": {
+          "conversationAiSuspensionSummary": {
+            "$ref": "#/components/schemas/CmsConversationAISuspensionSummaryResponseDto"
+          },
           "endUserId": {
             "format": "uuid",
             "type": "string"
@@ -4411,7 +4879,8 @@
           "lastSeenAt",
           "profileVersion",
           "syncStatus",
-          "fields"
+          "fields",
+          "conversationAiSuspensionSummary"
         ],
         "type": "object"
       },
@@ -5017,6 +5486,286 @@
         ],
         "type": "object"
       },
+      "ConversationAISuspensionActorResponseDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName"
+        ],
+        "type": "object"
+      },
+      "ConversationAISuspensionHistoryItemResponseDto": {
+        "properties": {
+          "acceptedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/ConversationAISuspensionActorResponseDto"
+          },
+          "correlationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "newSuspendedUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "previousSuspendedUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "OPERATOR_TAKEOVER",
+              "MANUAL_REVIEW",
+              "INCIDENT_RESPONSE",
+              "OTHER"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "STARTED",
+              "EXTENDED",
+              "RESUMED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "version",
+          "actor",
+          "acceptedAt",
+          "correlationId"
+        ],
+        "type": "object"
+      },
+      "ConversationAISuspensionHistoryPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationAISuspensionHistoryItemResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "ConversationAISuspensionMutationResponseDto": {
+        "properties": {
+          "inFlightCancellation": {
+            "properties": {
+              "activeTextAttempts": {
+                "type": "number"
+              },
+              "activeVoiceSessions": {
+                "type": "number"
+              },
+              "failedVoiceSessionIds": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "messageIds": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "status": {
+                "enum": [
+                  "NOT_REQUIRED",
+                  "REQUESTED"
+                ],
+                "type": "string"
+              },
+              "voiceSessionIds": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ConversationAISuspensionResponseDto"
+          }
+        },
+        "required": [
+          "replayed",
+          "state"
+        ],
+        "type": "object"
+      },
+      "ConversationAISuspensionResponseDto": {
+        "properties": {
+          "lifecycle": {
+            "enum": [
+              "NONE",
+              "ACTIVE",
+              "EXPIRED",
+              "RESUMED"
+            ],
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "AUTOMATIC",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "OPERATOR_TAKEOVER",
+              "MANUAL_REVIEW",
+              "INCIDENT_RESPONSE",
+              "OTHER"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "resumedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "resumedBy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConversationAISuspensionActorResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "serverTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "startedBy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConversationAISuspensionActorResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "suspendedUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "lifecycle",
+          "version",
+          "serverTime",
+          "startedAt",
+          "suspendedUntil",
+          "startedBy",
+          "reason",
+          "note",
+          "resumedAt",
+          "resumedBy"
+        ],
+        "type": "object"
+      },
+      "ConversationAISuspensionSummaryResponseDto": {
+        "properties": {
+          "lifecycle": {
+            "enum": [
+              "NONE",
+              "ACTIVE",
+              "EXPIRED",
+              "RESUMED"
+            ],
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "AUTOMATIC",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          },
+          "serverTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "suspendedUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "lifecycle",
+          "version",
+          "serverTime",
+          "suspendedUntil"
+        ],
+        "type": "object"
+      },
       "ConversationPolicy": {
         "enum": [
           "reuse_active",
@@ -5557,6 +6306,30 @@
           "key",
           "label",
           "type"
+        ],
+        "type": "object"
+      },
+      "DecideAIProposalDto": {
+        "properties": {
+          "action": {
+            "enum": [
+              "RESOLVE"
+            ],
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "expectedVersion"
         ],
         "type": "object"
       },
@@ -6440,6 +7213,25 @@
         ],
         "type": "object"
       },
+      "ExtendConversationAISuspensionDto": {
+        "properties": {
+          "additionalSeconds": {
+            "example": 1800,
+            "maximum": 604800,
+            "minimum": 60,
+            "type": "number"
+          },
+          "expectedVersion": {
+            "pattern": "^[1-9]\\d*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "additionalSeconds",
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
       "FailIfOfflineDeliveryPolicyDto": {
         "additionalProperties": false,
         "properties": {
@@ -7300,7 +8092,8 @@
         "enum": [
           "WRITING",
           "COMPLETED",
-          "FAILED"
+          "FAILED",
+          "CANCELLED"
         ],
         "type": "string"
       },
@@ -8908,6 +9701,22 @@
         },
         "required": [
           "title"
+        ],
+        "type": "object"
+      },
+      "ResumeConversationAIDto": {
+        "properties": {
+          "expectedVersion": {
+            "pattern": "^[1-9]\\d*$",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 200,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion"
         ],
         "type": "object"
       },
@@ -11703,12 +12512,22 @@
             "maxItems": 5,
             "type": "array"
           },
+          "aiSuspension": {
+            "$ref": "#/components/schemas/AdminMessageAISuspensionDto"
+          },
+          "conversationId": {
+            "description": "Exact OPEN Conversation selected by the operator. Required for CMS vNext.",
+            "format": "uuid",
+            "type": "string"
+          },
           "conversationPolicy": {
             "allOf": [
               {
                 "$ref": "#/components/schemas/AdminConversationPolicy"
               }
-            ]
+            ],
+            "deprecated": true,
+            "description": "Compatibility fallback. New CMS clients must send conversationId."
           },
           "interactionSessionId": {
             "description": "Optional preferred online session. If omitted, backend selects the most recently active session.",
@@ -11722,13 +12541,15 @@
           }
         },
         "required": [
-          "conversationPolicy",
           "text"
         ],
         "type": "object"
       },
       "SendAdminMessageResponseDto": {
         "properties": {
+          "aiSuspension": {
+            "$ref": "#/components/schemas/ConversationAISuspensionMutationResponseDto"
+          },
           "commandIds": {
             "items": {
               "format": "uuid",
@@ -11736,12 +12557,18 @@
             },
             "type": "array"
           },
+          "delivery": {
+            "$ref": "#/components/schemas/AdminMessageDeliveryResponseDto"
+          },
           "duplicate": {
             "description": "True when the same Idempotency-Key was already processed.",
             "type": "boolean"
           },
           "message": {
             "$ref": "#/components/schemas/AdminStoredMessageResponseDto"
+          },
+          "messagePersistence": {
+            "$ref": "#/components/schemas/AdminMessagePersistenceResponseDto"
           }
         },
         "required": [
@@ -12020,6 +12847,34 @@
         },
         "required": [
           "text"
+        ],
+        "type": "object"
+      },
+      "StartConversationAISuspensionDto": {
+        "properties": {
+          "durationSeconds": {
+            "example": 3600,
+            "maximum": 604800,
+            "minimum": 60,
+            "type": "number"
+          },
+          "note": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "OPERATOR_TAKEOVER",
+              "MANUAL_REVIEW",
+              "INCIDENT_RESPONSE",
+              "OTHER"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "durationSeconds",
+          "reason"
         ],
         "type": "object"
       },
@@ -13144,390 +13999,6 @@
           "expiryMs"
         ],
         "type": "object"
-      },
-      "AIProposalSummaryResponseDto": {
-        "type": "object",
-        "properties": {
-          "openCount": {
-            "type": "number",
-            "minimum": 0
-          },
-          "unreadCount": {
-            "type": "number",
-            "minimum": 0
-          },
-          "highPriorityUnreadCount": {
-            "type": "number",
-            "minimum": 0
-          },
-          "lastSequence": {
-            "type": "string",
-            "description": "JSON-safe project event sequence."
-          },
-          "calculatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "openCount",
-          "unreadCount",
-          "highPriorityUnreadCount",
-          "lastSequence",
-          "calculatedAt"
-        ]
-      },
-      "AIProposalEndUserResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "externalId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "externalId"
-        ]
-      },
-      "AIProposalListItemResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "projectSequence": {
-            "type": "string"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "ADMIN_ATTENTION",
-              "INSIGHT",
-              "ACTION_RECOMMENDATION"
-            ]
-          },
-          "workflowStatus": {
-            "type": "string",
-            "enum": [
-              "OPEN",
-              "ACCEPTED",
-              "REJECTED",
-              "RESOLVED",
-              "EXPIRED",
-              "CANCELLED"
-            ]
-          },
-          "decisionMode": {
-            "type": "string",
-            "enum": [
-              "ACKNOWLEDGE",
-              "APPROVE_REJECT"
-            ]
-          },
-          "priority": {
-            "type": "string",
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT"
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "sourceType": {
-            "type": "string",
-            "enum": [
-              "TEXT_CHAT",
-              "VOICE",
-              "BACKGROUND_AI"
-            ]
-          },
-          "endUser": {
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
-              }
-            ]
-          },
-          "conversationId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "sourceMessageId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "version": {
-            "type": "number",
-            "minimum": 1
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "id",
-          "projectSequence",
-          "kind",
-          "workflowStatus",
-          "decisionMode",
-          "priority",
-          "title",
-          "summary",
-          "sourceType",
-          "version",
-          "isRead",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "AIProposalsPageResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AIProposalListItemResponseDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true
-          },
-          "summary": {
-            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-          }
-        },
-        "required": [
-          "items",
-          "summary"
-        ]
-      },
-      "AIProposalDetailResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "projectSequence": {
-            "type": "string"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "ADMIN_ATTENTION",
-              "INSIGHT",
-              "ACTION_RECOMMENDATION"
-            ]
-          },
-          "workflowStatus": {
-            "type": "string",
-            "enum": [
-              "OPEN",
-              "ACCEPTED",
-              "REJECTED",
-              "RESOLVED",
-              "EXPIRED",
-              "CANCELLED"
-            ]
-          },
-          "decisionMode": {
-            "type": "string",
-            "enum": [
-              "ACKNOWLEDGE",
-              "APPROVE_REJECT"
-            ]
-          },
-          "priority": {
-            "type": "string",
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT"
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "sourceType": {
-            "type": "string",
-            "enum": [
-              "TEXT_CHAT",
-              "VOICE",
-              "BACKGROUND_AI"
-            ]
-          },
-          "endUser": {
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
-              }
-            ]
-          },
-          "conversationId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "sourceMessageId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "version": {
-            "type": "number",
-            "minimum": 1
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "content": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "evidence": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "sourceInvocationId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "decidedByAdminId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "readAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "decidedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "resolvedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "decisionReason": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "projectSequence",
-          "kind",
-          "workflowStatus",
-          "decisionMode",
-          "priority",
-          "title",
-          "summary",
-          "sourceType",
-          "version",
-          "isRead",
-          "createdAt",
-          "updatedAt",
-          "content",
-          "evidence"
-        ]
-      },
-      "AIProposalReadResponseDto": {
-        "type": "object",
-        "properties": {
-          "proposal": {
-            "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-          },
-          "summary": {
-            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-          }
-        },
-        "required": [
-          "proposal",
-          "summary"
-        ]
-      },
-      "DecideAIProposalDto": {
-        "type": "object",
-        "properties": {
-          "action": {
-            "type": "string",
-            "enum": [
-              "RESOLVE"
-            ]
-          },
-          "expectedVersion": {
-            "type": "number",
-            "minimum": 1
-          },
-          "reason": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2000
-          }
-        },
-        "required": [
-          "action",
-          "expectedVersion"
-        ]
-      },
-      "AIProposalReceivedResponseDto": {
-        "type": "object",
-        "properties": {
-          "received": {
-            "type": "boolean",
-            "enum": [
-              true
-            ]
-          }
-        },
-        "required": [
-          "received"
-        ]
       }
     },
     "securitySchemes": {
@@ -13982,6 +14453,379 @@
         ],
         "tags": [
           "admin-product-actions"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposal-events/{eventId}/received": {
+      "post": {
+        "operationId": "AIProposalEvents_received",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalReceivedResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals": {
+      "get": {
+        "operationId": "AIProposals_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "OPEN",
+                  "ACCEPTED",
+                  "REJECTED",
+                  "RESOLVED",
+                  "EXPIRED",
+                  "CANCELLED"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "ADMIN_ATTENTION",
+                  "INSIGHT",
+                  "ACTION_RECOMMENDATION"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "priority",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "LOW",
+                  "NORMAL",
+                  "HIGH",
+                  "URGENT"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "read",
+            "required": false,
+            "schema": {
+              "enum": [
+                "READ",
+                "UNREAD"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalsPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}": {
+      "get": {
+        "operationId": "AIProposals_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "proposalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/decisions": {
+      "post": {
+        "operationId": "AIProposals_decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "proposalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideAIProposalDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/read": {
+      "post": {
+        "operationId": "AIProposals_markRead",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "proposalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalReadResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-proposals/summary": {
+      "get": {
+        "operationId": "AIProposals_summary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Proposals"
         ]
       }
     },
@@ -14863,6 +15707,14 @@
                 "DESC"
               ],
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hasActiveConversationAiSuspension",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -18891,6 +19743,425 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/users/{endUserId}/conversations/{conversationId}/ai-suspension": {
+      "get": {
+        "operationId": "ConversationAISuspensions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationAISuspensionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid command or request contract"
+          },
+          "403": {
+            "description": "Project write permission is missing"
+          },
+          "404": {
+            "description": "Conversation not found in the exact scope"
+          },
+          "409": {
+            "description": "State, version, or idempotency conflict"
+          },
+          "429": {
+            "description": "Durable mutation rate limit; includes Retry-After"
+          },
+          "503": {
+            "description": "Suspension mutations are disabled"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin conversation ai suspension"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{endUserId}/conversations/{conversationId}/ai-suspension/extend": {
+      "post": {
+        "operationId": "ConversationAISuspensions_extend",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendConversationAISuspensionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationAISuspensionMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid command or request contract"
+          },
+          "403": {
+            "description": "Project write permission is missing"
+          },
+          "404": {
+            "description": "Conversation not found in the exact scope"
+          },
+          "409": {
+            "description": "State, version, or idempotency conflict"
+          },
+          "429": {
+            "description": "Durable mutation rate limit; includes Retry-After"
+          },
+          "503": {
+            "description": "Suspension mutations are disabled"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin conversation ai suspension"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{endUserId}/conversations/{conversationId}/ai-suspension/history": {
+      "get": {
+        "operationId": "ConversationAISuspensions_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationAISuspensionHistoryPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid command or request contract"
+          },
+          "403": {
+            "description": "Project write permission is missing"
+          },
+          "404": {
+            "description": "Conversation not found in the exact scope"
+          },
+          "409": {
+            "description": "State, version, or idempotency conflict"
+          },
+          "429": {
+            "description": "Durable mutation rate limit; includes Retry-After"
+          },
+          "503": {
+            "description": "Suspension mutations are disabled"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin conversation ai suspension"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{endUserId}/conversations/{conversationId}/ai-suspension/resume": {
+      "post": {
+        "operationId": "ConversationAISuspensions_resume",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeConversationAIDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationAISuspensionMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid command or request contract"
+          },
+          "403": {
+            "description": "Project write permission is missing"
+          },
+          "404": {
+            "description": "Conversation not found in the exact scope"
+          },
+          "409": {
+            "description": "State, version, or idempotency conflict"
+          },
+          "429": {
+            "description": "Durable mutation rate limit; includes Retry-After"
+          },
+          "503": {
+            "description": "Suspension mutations are disabled"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin conversation ai suspension"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{endUserId}/conversations/{conversationId}/ai-suspension/start": {
+      "post": {
+        "operationId": "ConversationAISuspensions_start",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartConversationAISuspensionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationAISuspensionMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid command or request contract"
+          },
+          "403": {
+            "description": "Project write permission is missing"
+          },
+          "404": {
+            "description": "Conversation not found in the exact scope"
+          },
+          "409": {
+            "description": "State, version, or idempotency conflict"
+          },
+          "429": {
+            "description": "Durable mutation rate limit; includes Retry-After"
+          },
+          "503": {
+            "description": "Suspension mutations are disabled"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin conversation ai suspension"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/users/{userId}/conversations": {
       "get": {
         "operationId": "AdminConversations_list",
@@ -18949,6 +20220,61 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminConversationsPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin conversations"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}": {
+      "get": {
+        "operationId": "AdminConversations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Internal EndUser id.",
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminConversationResponseDto"
                 }
               }
             },
@@ -19924,7 +21250,267 @@
           "required": true
         },
         "responses": {
-          "201": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "discriminator": {
+                    "propertyName": "responseDisposition"
+                  },
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "aiSuspension": {
+                          "nullable": true,
+                          "type": "object"
+                        },
+                        "assistantMessageId": {
+                          "format": "uuid",
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "commands": {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "conversationCreated": {
+                          "type": "boolean"
+                        },
+                        "conversationId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "messageId": {
+                          "format": "uuid",
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "responseDisposition": {
+                          "enum": [
+                            "AI_REPLIED"
+                          ],
+                          "type": "string"
+                        },
+                        "sources": {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "text": {
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "threadId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "userMessageId": {
+                          "format": "uuid",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "responseDisposition",
+                        "userMessageId",
+                        "assistantMessageId",
+                        "messageId",
+                        "threadId",
+                        "conversationId",
+                        "conversationCreated",
+                        "text",
+                        "commands",
+                        "sources",
+                        "aiSuspension"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "aiSuspension": {
+                          "nullable": false,
+                          "properties": {
+                            "serverTime": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "suspendedUntil": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "version",
+                            "serverTime",
+                            "suspendedUntil"
+                          ],
+                          "type": "object"
+                        },
+                        "assistantMessageId": {
+                          "format": "uuid",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "commands": {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "conversationCreated": {
+                          "type": "boolean"
+                        },
+                        "conversationId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "messageId": {
+                          "format": "uuid",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "responseDisposition": {
+                          "enum": [
+                            "AI_SUSPENDED"
+                          ],
+                          "type": "string"
+                        },
+                        "sources": {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "text": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "threadId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "userMessageId": {
+                          "format": "uuid",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "responseDisposition",
+                        "userMessageId",
+                        "assistantMessageId",
+                        "messageId",
+                        "threadId",
+                        "conversationId",
+                        "conversationCreated",
+                        "text",
+                        "commands",
+                        "sources",
+                        "aiSuspension"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "aiSuspension": {
+                          "nullable": true,
+                          "properties": {
+                            "serverTime": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "suspendedUntil": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "version",
+                            "serverTime",
+                            "suspendedUntil"
+                          ],
+                          "type": "object"
+                        },
+                        "assistantMessageId": {
+                          "format": "uuid",
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "commands": {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "conversationCreated": {
+                          "type": "boolean"
+                        },
+                        "conversationId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "messageId": {
+                          "format": "uuid",
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "responseDisposition": {
+                          "enum": [
+                            "AI_CANCELLED"
+                          ],
+                          "type": "string"
+                        },
+                        "sources": {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "text": {
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "threadId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "userMessageId": {
+                          "format": "uuid",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "responseDisposition",
+                        "userMessageId",
+                        "assistantMessageId",
+                        "messageId",
+                        "threadId",
+                        "conversationId",
+                        "conversationCreated",
+                        "text",
+                        "commands",
+                        "sources",
+                        "aiSuspension"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
             "description": ""
           }
         },
@@ -20743,379 +22329,6 @@
         },
         "tags": [
           "system"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/summary": {
-      "get": {
-        "operationId": "AIProposals_summary",
-        "parameters": [
-          {
-            "name": "projectId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals": {
-      "get": {
-        "operationId": "AIProposals_list",
-        "parameters": [
-          {
-            "name": "projectId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enum": [
-                  "OPEN",
-                  "ACCEPTED",
-                  "REJECTED",
-                  "RESOLVED",
-                  "EXPIRED",
-                  "CANCELLED"
-                ]
-              }
-            }
-          },
-          {
-            "name": "kind",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enum": [
-                  "ADMIN_ATTENTION",
-                  "INSIGHT",
-                  "ACTION_RECOMMENDATION"
-                ]
-              }
-            }
-          },
-          {
-            "name": "priority",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enum": [
-                  "LOW",
-                  "NORMAL",
-                  "HIGH",
-                  "URGENT"
-                ]
-              }
-            }
-          },
-          {
-            "name": "read",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "READ",
-                "UNREAD"
-              ]
-            }
-          },
-          {
-            "name": "endUserId",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "createdFrom",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            }
-          },
-          {
-            "name": "createdTo",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 25,
-              "type": "number"
-            }
-          },
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "maxLength": 2048,
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalsPageResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}": {
-      "get": {
-        "operationId": "AIProposals_detail",
-        "parameters": [
-          {
-            "name": "projectId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposalId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/read": {
-      "post": {
-        "operationId": "AIProposals_markRead",
-        "parameters": [
-          {
-            "name": "projectId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposalId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalReadResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/decisions": {
-      "post": {
-        "operationId": "AIProposals_decide",
-        "parameters": [
-          {
-            "name": "projectId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposalId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DecideAIProposalDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposal-events/{eventId}/received": {
-      "post": {
-        "operationId": "AIProposalEvents_received",
-        "parameters": [
-          {
-            "name": "projectId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "eventId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalReceivedResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
         ]
       }
     }

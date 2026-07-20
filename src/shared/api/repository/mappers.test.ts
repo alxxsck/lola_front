@@ -113,11 +113,19 @@ describe('repository domain mappers', () => {
     expect(mapConversation({
       id: 'conversation-1', projectId: 'project-1', endUserId: 'user-1', title: null, status: 'CLOSED',
       createdAt: '2026-07-13T08:00:00.000Z', updatedAt: '2026-07-13T09:00:00.000Z', _count: { messages: 2 },
+      aiSuspension: { mode: 'SUSPENDED', lifecycle: 'ACTIVE', version: '90071992547409930', suspendedUntil: '2026-07-20T14:00:00.000Z', serverTime: '2026-07-20T13:00:00.000Z' },
       messages: [{ id: 'message-2', role: 'ASSISTANT', text: 'Last', createdAt: '2026-07-13T08:59:00.000Z' }],
-    })).toEqual(expect.objectContaining({ title: 'Диалог без названия', status: 'ARCHIVED', messageCount: 2, lastMessageAt: '2026-07-13T08:59:00.000Z' }))
+    })).toEqual(expect.objectContaining({
+      title: 'Диалог без названия', status: 'ARCHIVED', messageCount: 2, lastMessageAt: '2026-07-13T08:59:00.000Z',
+      aiSuspension: { mode: 'SUSPENDED', lifecycle: 'ACTIVE', version: '90071992547409930', suspendedUntil: '2026-07-20T14:00:00.000Z', serverTime: '2026-07-20T13:00:00.000Z' },
+    }))
     expect(mapConversationMessage({
       id: 'message-1', threadId: 'conversation-1', role: 'ASSISTANT', status: 'COMPLETED', text: 'Hello',
       createdAt: '2026-07-13T08:00:00.000Z', updatedAt: '2026-07-13T08:00:00.000Z',
     })).toEqual(expect.objectContaining({ conversationId: 'conversation-1', author: 'ASSISTANT', text: 'Hello' }))
+    expect(mapConversationMessage({
+      id: 'message-2', threadId: 'conversation-1', role: 'ASSISTANT', status: 'CANCELLED', text: 'Незавершённый ответ',
+      createdAt: '2026-07-13T08:01:00.000Z', updatedAt: '2026-07-13T08:01:00.000Z',
+    }).status).toBe('CANCELLED')
   })
 })

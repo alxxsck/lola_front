@@ -6,11 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AdminConversationMessageCountResponseDto } from "./adminConversationMessageCountResponseDto";
+import type { ConversationAISuspensionSummaryResponseDto } from "./conversationAISuspensionSummaryResponseDto";
 import type { AdminConversationPreviewMessageResponseDto } from "./adminConversationPreviewMessageResponseDto";
 import type { ThreadStatus } from "./threadStatus";
 
 export interface AdminConversationResponseDto {
   _count: AdminConversationMessageCountResponseDto;
+  aiSuspension: ConversationAISuspensionSummaryResponseDto;
   createdAt: string;
   endUserId: string;
   id: string;
