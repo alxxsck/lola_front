@@ -75,6 +75,10 @@ function mountPage() {
 describe('EventsPage event editor journey', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    })
     mocks.getEvents.mockResolvedValue([existingEvent])
     mocks.getContract.mockResolvedValue({ revision: 'catalog-1', events: [] })
     mocks.saveEvent.mockResolvedValue(existingEvent)
@@ -223,6 +227,29 @@ describe('EventsPage event editor journey', () => {
 
     expect(mocks.getEvents).toHaveBeenCalledTimes(2)
     expect(wrapper.text()).not.toContain('Сбой каталога')
+  })
+
+  it('copies the event contract directly from its card', async () => {
+    mocks.getEvents.mockResolvedValue([{
+      ...existingEvent,
+      payloadSchema: {
+        type: 'object',
+        properties: {
+          amount: { type: 'integer', description: 'Сумма в центах' },
+          note: { type: 'string' },
+        },
+        required: ['amount'],
+      },
+    }])
+    const wrapper = mountPage()
+    await flushPromises()
+
+    await wrapper.get('button-stub[aria-label="Скопировать контракт события Успешный депозит"]').trigger('click')
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('| `eventCode` | `string` | обязательно | `deposit.succeeded` |'))
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('| `payload.amount` | `integer` | обязательно | Сумма в центах |'))
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('| `payload.note` | `string` | необязательно | — |'))
+    expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ summary: 'Контракт события скопирован' }))
   })
 
 })

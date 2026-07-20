@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   validate: vi.fn(),
   publish: vi.fn(),
   routerPush: vi.fn(),
+  toast: vi.fn(),
 }));
 
 vi.mock("@/features/auth/auth.store", () => ({
@@ -42,7 +43,7 @@ vi.mock(
     },
   }),
 );
-vi.mock("primevue/usetoast", () => ({ useToast: () => ({ add: vi.fn() }) }));
+vi.mock("primevue/usetoast", () => ({ useToast: () => ({ add: mocks.toast }) }));
 
 const workspace = {
   currentRevision: null,
@@ -73,6 +74,10 @@ const workspace = {
 describe("ProjectUserAttributesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
     mocks.workspace.mockResolvedValue(structuredClone(workspace));
     mocks.health.mockResolvedValue(null);
     mocks.revisions.mockResolvedValue({ items: [], nextCursor: null });
@@ -582,5 +587,72 @@ describe("ProjectUserAttributesPage", () => {
         .find('button-stub[aria-label="Удалить Опубликованный город"]')
         .exists(),
     ).toBe(false);
+  });
+
+  it("copies every visible profile field without opening the integration guide", async () => {
+    const publishedWorkspace = structuredClone(
+      workspace,
+    ) as AttributeContractWorkspaceResponseDto;
+    publishedWorkspace.currentRevision = {
+      version: 5,
+      fields: [
+        {
+          key: "displayName",
+          label: "Отображаемое имя",
+          description: "Имя для интерфейса",
+          valueType: "STRING",
+          requirement: "OPTIONAL",
+          lifecycle: "ACTIVE",
+        },
+        {
+          key: "depositCount",
+          label: "Количество депозитов",
+          valueType: "INTEGER",
+          requirement: "REQUIRED_ENFORCED",
+          lifecycle: "ACTIVE",
+        },
+      ],
+    } as NonNullable<AttributeContractWorkspaceResponseDto["currentRevision"]>;
+    publishedWorkspace.draft.document.fields = [
+      {
+        ...createContractField(10),
+        key: "displayName",
+        label: "Отображаемое имя",
+      },
+      {
+        ...createContractField(20),
+        key: "depositCount",
+        label: "Количество депозитов",
+        valueType: "INTEGER",
+        requirement: "REQUIRED_ENFORCED",
+      },
+      {
+        ...createContractField(30),
+        key: "futureField",
+        label: "Будущее поле",
+      },
+    ];
+    mocks.workspace.mockResolvedValue(publishedWorkspace);
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+
+    await wrapper.get('button-stub[aria-label="Скопировать поля профиля"]').trigger("click");
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("- Состояние: текущий черновик (ещё не опубликован)"),
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("| `displayName` | `string` | необязательно |"),
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("| `depositCount` | `integer` | обязательно (строго) |"),
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("| `futureField` | `string` | необязательно |"),
+    );
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.toast).toHaveBeenCalledWith(
+      expect.objectContaining({ summary: "Поля профиля скопированы" }),
+    );
   });
 });

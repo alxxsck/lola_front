@@ -31,6 +31,7 @@ import {
 } from "@/features/end-user-attributes/model/demo-draft-storage";
 import { repository } from "@/shared/api/repository";
 import { ApiError } from "@/shared/api/http/api-error";
+import { formatProfileContractMarkdown } from "@/shared/lib/data-contract-markdown";
 import type {
   AttributeContractDraftResponseDto,
   AttributeContractDraftFieldDto,
@@ -101,6 +102,11 @@ const fields = computed(() => workspace.value?.draft.document.fields ?? []);
 const orderedFields = computed(() =>
   [...fields.value].sort(
     (a, b) => a.position - b.position || a.key.localeCompare(b.key),
+  ),
+);
+const profileContractFields = computed(() =>
+  fields.value.filter(
+    (field) => field.lifecycle !== "ARCHIVED",
   ),
 );
 const localIssues = computed(() =>
@@ -602,6 +608,36 @@ async function copyLocalConflict() {
   });
 }
 
+async function copyProfileContract() {
+  const revision = workspace.value?.currentRevision;
+  if (!workspace.value || !profileContractFields.value.length) return;
+  const copiesDraft = !revision || dirty.value || hasUnsavedDraftEdits.value;
+  try {
+    await navigator.clipboard.writeText(
+      formatProfileContractMarkdown({
+        version: revision?.version,
+        draft: copiesDraft,
+        fields: profileContractFields.value,
+      }),
+    );
+    toast.add({
+      severity: "success",
+      summary: "Поля профиля скопированы",
+      detail: copiesDraft
+        ? "Таблица помечена как черновик: ключи, типы и обязательность готовы для сверки."
+        : `Версия ${revision.version}: ключи, типы и обязательность готовы для передачи команде.`,
+      life: 2600,
+    });
+  } catch {
+    toast.add({
+      severity: "error",
+      summary: "Не удалось скопировать контракт",
+      detail: "Разрешите доступ к буферу обмена и повторите попытку.",
+      life: 3200,
+    });
+  }
+}
+
 async function validateDraft() {
   const projectId = auth.project?.id;
   if (!projectId || !workspace.value) return;
@@ -884,6 +920,16 @@ function archiveImpactedField() {
         </p>
       </div>
       <div class="header-actions">
+        <Button
+          label="Скопировать контракт"
+          icon="pi pi-copy"
+          severity="secondary"
+          outlined
+          :disabled="!profileContractFields.length"
+          :title="profileContractFields.length ? 'Скопировать текущий набор полей, их типы и обязательность' : 'Сначала добавьте хотя бы одно поле'"
+          aria-label="Скопировать поля профиля"
+          @click="copyProfileContract"
+        />
         <Button
           label="Как передавать данные"
           icon="pi pi-send"
