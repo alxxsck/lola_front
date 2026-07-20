@@ -66,6 +66,8 @@ import type {
   CreateProjectDto,
   CreateProjectResponseDto,
   CreateScenarioActionDefinitionDto,
+  CreateScenarioAuthoringDto,
+  CreateScenarioAuthoringResponseDto,
   CreateScenarioDto,
   CreateTranslationJobDto,
   CreateUiElementDto,
@@ -1111,6 +1113,22 @@ export const scenarioAuthoringPreview = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: previewScenarioRuleDto,
+    },
+    options,
+  );
+};
+
+export const scenarioAuthoringCreateScenario = (
+  projectId: string,
+  createScenarioAuthoringDto: BodyType<CreateScenarioAuthoringDto>,
+  options?: SecondParameter<typeof request<CreateScenarioAuthoringResponseDto>>,
+) => {
+  return request<CreateScenarioAuthoringResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/scenarios`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createScenarioAuthoringDto,
     },
     options,
   );
@@ -2698,6 +2716,9 @@ export type ScenarioAuthoringPreviewGoalResult = NonNullable<
 >;
 export type ScenarioAuthoringPreviewResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringPreview>>
+>;
+export type ScenarioAuthoringCreateScenarioResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringCreateScenario>>
 >;
 export type ScenarioAuthoringScenarioDocumentResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringScenarioDocument>>

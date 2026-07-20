@@ -9,6 +9,7 @@ import {
   scenarioAudienceRevision,
   scenarioAudienceSearch,
   scenarioAuthoringCatalog,
+  scenarioAuthoringCreateScenario,
   scenarioAuthoringPreview,
   scenarioAuthoringPreviewGoal,
   scenarioAuthoringPublishScenario,
@@ -27,6 +28,7 @@ import type {
   PublishScenarioResponseDto,
   ScenarioRuleDto,
   ScenarioRunExplainResponseDto,
+  CreateScenarioAuthoringDto,
 } from "@/shared/api/generated/models";
 import { ApiError } from "@/shared/api/http/api-error";
 
@@ -42,6 +44,7 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   scenarioAudienceRevision: vi.fn(),
   scenarioAudienceSearch: vi.fn(),
   scenarioAuthoringCatalog: vi.fn(),
+  scenarioAuthoringCreateScenario: vi.fn(),
   scenarioAuthoringPreview: vi.fn(),
   scenarioAuthoringPreviewGoal: vi.fn(),
   scenarioAuthoringPublishScenario: vi.fn(),
@@ -177,6 +180,66 @@ describe("scenario authoring repository", () => {
     ).resolves.toEqual(catalog);
     expect(scenarioAuthoringCatalog).toHaveBeenCalledWith("project-1");
   });
+
+  it.each([
+    ["one-locale", { ru: "Привет" }],
+    ["multi-locale", { ru: "Привет", en: "Hello" }],
+  ])(
+    "creates a Scenario and its %s draft through one authoring request",
+    async (_case, text) => {
+      const request: CreateScenarioAuthoringDto = {
+        scenario: {
+          code: "welcome.localized",
+          name: "Localized welcome",
+          triggerEventDefinitionRevisionId: "event-revision-1",
+        },
+        draft: {
+          catalogRevision: "catalog-revision-1",
+          deliveryPolicy: { kind: "IMMEDIATE" },
+          localization: {
+            version: 1,
+            mode: "ALL_PROJECT_LOCALES",
+            locales: [],
+          },
+          graph: {
+            actions: [
+              {
+                position: 0,
+                type: "SAY",
+                config: { text },
+              },
+            ],
+          },
+        },
+      };
+      const response = {
+        scenarioId: "scenario-1",
+        currentRevisionId: null,
+        draft: {
+          id: "draft-1",
+          version: 1,
+          baseRevisionId: null,
+          catalogRevision: "catalog-revision-1",
+          deliveryPolicy: { kind: "IMMEDIATE" },
+          localization: request.draft.localization,
+          graph: request.draft.graph,
+          createdAt: "2026-07-20T00:00:00.000Z",
+          updatedAt: "2026-07-20T00:00:00.000Z",
+        },
+      };
+      vi.mocked(scenarioAuthoringCreateScenario).mockResolvedValue(
+        response as never,
+      );
+
+      await expect(
+        scenarioAuthoringRepository.createScenario("project-1", request),
+      ).resolves.toBe(response);
+      expect(scenarioAuthoringCreateScenario).toHaveBeenCalledWith(
+        "project-1",
+        request,
+      );
+    },
+  );
 
   it("validates a generated rule DTO", async () => {
     const response = {

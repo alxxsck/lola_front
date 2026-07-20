@@ -7,6 +7,7 @@ import {
   scenarioAudienceRevision,
   scenarioAudienceSearch,
   scenarioAuthoringCatalog,
+  scenarioAuthoringCreateScenario,
   scenarioAuthoringPreview,
   scenarioAuthoringPreviewGoal,
   scenarioAuthoringPublishScenario,
@@ -21,6 +22,7 @@ import {
 } from "@/shared/api/generated/lola-backend";
 import type {
   AudienceRuleDto,
+  CreateScenarioAuthoringDto,
   PreviewScenarioGoalDto,
   PreviewScenarioScopeDto,
   PublishScenarioDto,
@@ -56,6 +58,8 @@ export type ScenarioDraftContent = Omit<
   "expectedCurrentRevisionId" | "expectedDraftVersion"
 >;
 
+export type ScenarioCreateInput = CreateScenarioAuthoringDto;
+
 export interface ScenarioAuthoringRequestOptions {
   signal?: AbortSignal;
 }
@@ -75,6 +79,10 @@ export const scenarioAuthoringRepository = {
     return adaptScenarioAuthoringContract(
       await callApi(() => scenarioAuthoringCatalog(projectId)),
     );
+  },
+
+  createScenario(projectId: string, input: CreateScenarioAuthoringDto) {
+    return callApi(() => scenarioAuthoringCreateScenario(projectId, input));
   },
 
   validateRule(

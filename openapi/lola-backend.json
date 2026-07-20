@@ -6083,6 +6083,166 @@
         ],
         "type": "object"
       },
+      "CreateScenarioAuthoringDto": {
+        "additionalProperties": false,
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/CreateScenarioDraftDto"
+          },
+          "scenario": {
+            "$ref": "#/components/schemas/CreateScenarioAuthoringMetadataDto"
+          }
+        },
+        "required": [
+          "scenario",
+          "draft"
+        ],
+        "type": "object"
+      },
+      "CreateScenarioAuthoringMetadataDto": {
+        "additionalProperties": false,
+        "properties": {
+          "activeFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "activeTo": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "code": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "conversationPolicy": {
+            "default": "create_new",
+            "enum": [
+              "reuse_active",
+              "create_new"
+            ],
+            "type": "string"
+          },
+          "cooldownSeconds": {
+            "default": 0,
+            "minimum": 0,
+            "type": "number"
+          },
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "maxRunsPerUser": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "priority": {
+            "default": 0,
+            "maximum": 1000,
+            "minimum": -1000,
+            "type": "number"
+          },
+          "triggerEventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "triggerEventDefinitionRevisionId"
+        ],
+        "type": "object"
+      },
+      "CreateScenarioAuthoringResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/ScenarioAuthoringDraftResponseDto"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scenarioId",
+          "currentRevisionId",
+          "draft"
+        ],
+        "type": "object"
+      },
+      "CreateScenarioDraftDto": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/AudienceRuleDto"
+          },
+          "catalogRevision": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "deliveryPolicy": {
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImmediateDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/SkipIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/FailIfOfflineDeliveryPolicyDto"
+              },
+              {
+                "$ref": "#/components/schemas/WaitUntilOnlineDeliveryPolicyDto"
+              }
+            ]
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ScenarioSourceGraphDto"
+          },
+          "localization": {
+            "$ref": "#/components/schemas/ScenarioLocalizationPolicyDto"
+          },
+          "profileFreshness": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AudienceUseLastKnownFreshnessDto"
+              },
+              {
+                "$ref": "#/components/schemas/AudienceRequireFreshFreshnessDto"
+              }
+            ]
+          },
+          "rule": {
+            "$ref": "#/components/schemas/ScenarioRuleDto"
+          }
+        },
+        "required": [
+          "catalogRevision",
+          "deliveryPolicy",
+          "graph"
+        ],
+        "type": "object"
+      },
       "CreateScenarioDto": {
         "properties": {
           "actions": {
@@ -18704,6 +18864,91 @@
               }
             },
             "description": "A redaction-safe explanation anchored to a Project-owned Event."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario authoring"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-authoring/scenarios": {
+      "post": {
+        "operationId": "ScenarioAuthoring_createScenario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScenarioAuthoringDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateScenarioAuthoringResponseDto"
+                }
+              }
+            },
+            "description": "A new draft Scenario and its first durable authoring document."
           },
           "400": {
             "content": {

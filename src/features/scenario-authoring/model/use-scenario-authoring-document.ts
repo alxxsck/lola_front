@@ -5,7 +5,7 @@ import { createDeliveryPolicyDraft, deserializeDeliveryPolicy } from '@/features
 import { createRuleDraft, deserializeRule, type RuleDomainContext } from '@/features/scenario-rules/model'
 import { normalizeScenarioActions } from '@/features/scenarios/model/scenario-graph'
 import { ApiError } from '@/shared/api/http/api-error'
-import { scenarioAuthoringRepository, type ScenarioDraftContent } from '@/shared/api/repository/scenario-authoring'
+import { scenarioAuthoringRepository, type ScenarioCreateInput, type ScenarioDraftContent } from '@/shared/api/repository/scenario-authoring'
 import type { ScenarioAction } from '@/shared/types/domain'
 import { defaultLocalizationPolicy } from '@/features/scenario-localization/model'
 import type { ScenarioLocalizationPolicyDto } from '@/shared/api/generated/models'
@@ -69,6 +69,14 @@ export function useScenarioAuthoringDocument() {
     return document
   }
 
+  async function create(projectId: string, input: ScenarioCreateInput) {
+    draftConflict.value = false
+    const created = await scenarioAuthoringRepository.createScenario(projectId, input)
+    currentRevisionId.value = created.currentRevisionId
+    currentDraftVersion.value = created.draft.version
+    return created
+  }
+
   async function save(projectId: string, scenarioId: string, content: ScenarioDraftContent) {
     draftConflict.value = false
     try {
@@ -88,6 +96,7 @@ export function useScenarioAuthoringDocument() {
   return {
     authoringEditable,
     authoringUnavailableReason,
+    create,
     currentDraftVersion,
     currentRevisionId,
     draftConflict,

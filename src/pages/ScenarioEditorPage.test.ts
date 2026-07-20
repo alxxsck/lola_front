@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   saveScenario: vi.fn(),
   updateScenarioMetadata: vi.fn(),
   getContract: vi.fn(),
+  createScenario: vi.fn(),
   getScenarioDocument: vi.fn(),
   saveScenarioDraft: vi.fn(),
   searchSegments: vi.fn(),
@@ -89,6 +90,7 @@ vi.mock(
       ...original,
       scenarioAuthoringRepository: {
         getContract: mocks.getContract,
+        createScenario: mocks.createScenario,
         getScenarioDocument: mocks.getScenarioDocument,
         saveScenarioDraft: mocks.saveScenarioDraft,
         searchSegments: mocks.searchSegments,
@@ -297,6 +299,20 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       createdAt: "now",
       updatedAt: "now",
     });
+    mocks.createScenario.mockResolvedValue({
+      scenarioId: "scenario-1",
+      currentRevisionId: null,
+      draft: {
+        id: "draft-1",
+        version: 1,
+        baseRevisionId: null,
+        catalogRevision: contract.revision,
+        deliveryPolicy: { kind: "IMMEDIATE" },
+        graph: { actions: [] },
+        createdAt: "now",
+        updatedAt: "now",
+      },
+    });
     mocks.searchSegments.mockResolvedValue({ items: [], nextCursor: null });
     mocks.saveScenario.mockResolvedValue(scenario);
     mocks.updateScenarioMetadata.mockResolvedValue(scenario);
@@ -320,6 +336,110 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(stageButton(wrapper, "Аудитория").text()).not.toContain(
       "Пока недоступна",
     );
+  });
+
+  it("preserves a new multilingual form after create failure and retries without legacy graph save", async () => {
+    mocks.route.params.scenarioId = "new";
+    mocks.getScenarios.mockResolvedValueOnce([]);
+    mocks.actionDefinitions = [
+      {
+        id: "say",
+        projectId: "project-1",
+        type: "SAY",
+        name: "Сказать текст",
+        description: null,
+        executor: "SERVER",
+        serverHandler: "SAY",
+        commandType: null,
+        configSchema: {
+          type: "object",
+          properties: { text: { type: "string", maxLength: 10_000 } },
+          required: ["text"],
+        },
+        uiSchema: { fields: [{ key: "text", label: "Текст", control: "textarea" }] },
+        enabled: true,
+        builtIn: true,
+        createdAt: "now",
+        updatedAt: "now",
+      },
+    ];
+    mocks.getContract.mockResolvedValueOnce({
+      ...contract,
+      localization: {
+        version: 1,
+        enabled: true,
+        attributeKey: "preferredLocale",
+        attributeContractRevision: 7,
+        defaultLocale: "ru",
+        localizedValueSchemaVersion: 1,
+        policyModes: ["ALL_PROJECT_LOCALES", "SELECTED_LOCALES"],
+        locales: [
+          { code: "ru", language: "ru", default: true },
+          { code: "en", language: "en", default: false },
+        ],
+        paths: [{ actionType: "SAY", path: "config.text", maxLength: 10_000 }],
+      },
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    const page = wrapper.vm as unknown as {
+      form: { name: string; code: string; actions: Array<Record<string, unknown>> };
+    };
+    page.form.name = "Localized welcome";
+    page.form.code = "welcome.localized";
+    page.form.actions = [
+      {
+        position: 0,
+        nodeKey: "say",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: { ru: "Привет", en: "Hello" } },
+      },
+    ];
+    await wrapper.vm.$nextTick();
+    const formBeforeFailure = JSON.stringify(page.form);
+    mocks.createScenario.mockRejectedValueOnce(new Error("create failed"));
+
+    await wrapper.find('button-stub[label="Сохранить"]').trigger("click");
+    await flushPromises();
+
+    expect(mocks.createScenario).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(page.form)).toBe(formBeforeFailure);
+    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(mocks.saveScenario).not.toHaveBeenCalled();
+    expect(mocks.saveScenarioDraft).not.toHaveBeenCalled();
+    expect(mocks.updateScenarioMetadata).not.toHaveBeenCalled();
+
+    await wrapper.find('button-stub[label="Сохранить"]').trigger("click");
+    await flushPromises();
+
+    expect(mocks.createScenario).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        scenario: expect.objectContaining({
+          code: "localized_welcome",
+          name: "Localized welcome",
+          triggerEventDefinitionRevisionId: event.id,
+        }),
+        draft: expect.objectContaining({
+          localization: { version: 1, mode: "ALL_PROJECT_LOCALES", locales: [] },
+          graph: {
+            actions: [expect.objectContaining({
+              type: "SAY",
+              config: { text: { ru: "Привет", en: "Hello" } },
+            })],
+          },
+        }),
+      }),
+    );
+    expect(mocks.createScenario).toHaveBeenCalledTimes(2);
+    expect(mocks.saveScenario).not.toHaveBeenCalled();
+    expect(mocks.saveScenarioDraft).not.toHaveBeenCalled();
+    expect(mocks.updateScenarioMetadata).not.toHaveBeenCalled();
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "scenario-edit",
+      params: { scenarioId: "scenario-1" },
+    });
   });
 
   it("restores the durable source document and observed concurrency versions after reload", async () => {

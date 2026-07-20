@@ -2,12 +2,36 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useScenarioAuthoringDocument } from './use-scenario-authoring-document'
 
-const mocks = vi.hoisted(() => ({ get: vi.fn(), save: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), get: vi.fn(), save: vi.fn() }))
 vi.mock('@/shared/api/repository/scenario-authoring', () => ({
-  scenarioAuthoringRepository: { getScenarioDocument: mocks.get, saveScenarioDraft: mocks.save },
+  scenarioAuthoringRepository: {
+    createScenario: mocks.create,
+    getScenarioDocument: mocks.get,
+    saveScenarioDraft: mocks.save,
+  },
 }))
 
 describe('useScenarioAuthoringDocument', () => {
+  it('adopts the Scenario identity and concurrency versions returned by atomic creation', async () => {
+    mocks.create.mockResolvedValue({
+      scenarioId: 'scenario-1', currentRevisionId: null, draft: { version: 1 },
+    })
+    const document = useScenarioAuthoringDocument()
+    const request = {
+      scenario: {
+        code: 'welcome', name: 'Welcome', triggerEventDefinitionRevisionId: 'event-revision-1',
+      },
+      draft: {
+        catalogRevision: 'catalog-1', deliveryPolicy: { kind: 'IMMEDIATE' as const }, graph: { actions: [] },
+      },
+    }
+
+    await expect(document.create('project-1', request)).resolves.toMatchObject({ scenarioId: 'scenario-1' })
+    expect(mocks.create).toHaveBeenCalledWith('project-1', request)
+    expect(document.currentRevisionId.value).toBeNull()
+    expect(document.currentDraftVersion.value).toBe(1)
+  })
+
   it('owns observed draft/head versions and injects them into optimistic writes', async () => {
     mocks.get.mockResolvedValue({
       currentRevisionId: 'revision-4', editable: true, unavailableReason: null,

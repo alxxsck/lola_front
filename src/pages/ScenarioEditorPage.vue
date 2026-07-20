@@ -210,6 +210,7 @@ const {
   authoringEditable,
   authoringUnavailableReason,
   draftConflict,
+  create: createAuthoringScenario,
   load: loadAuthoringDocument,
   reset: resetAuthoringDocument,
   save: saveAuthoringDraft,
@@ -1623,11 +1624,7 @@ async function save() {
         position,
       })),
     };
-    const scenarioId =
-      existingScenarioId ??
-      (await repository.saveScenario(projectId, payload)).id;
-    form.id = scenarioId;
-    const draft = await saveAuthoringDraft(projectId, scenarioId, {
+    const draftContent = {
       catalogRevision: context.contract.revision,
       ...(ruleResult?.ok ? { rule: ruleResult.value } : {}),
       ...(audienceResult?.ok ? { audience: audienceResult.value } : {}),
@@ -1648,8 +1645,12 @@ async function save() {
           position,
         })),
       },
-    });
+    };
+    let scenarioId: string;
+    let draft: Awaited<ReturnType<typeof saveAuthoringDraft>>;
     if (existingScenarioId) {
+      scenarioId = existingScenarioId;
+      draft = await saveAuthoringDraft(projectId, existingScenarioId, draftContent);
       const metadata: UpdateScenarioMetadata = {
         name: payload.name,
         description: payload.description,
@@ -1664,6 +1665,29 @@ async function save() {
         activeTo: payload.activeTo,
       };
       await repository.updateScenarioMetadata(projectId, scenarioId, metadata);
+    } else {
+      const created = await createAuthoringScenario(projectId, {
+        scenario: {
+          code: payload.code,
+          name: payload.name,
+          ...(payload.description ? { description: payload.description } : {}),
+          triggerEventDefinitionRevisionId: payload.eventDefinitionId,
+          conversationPolicy: payload.conversationPolicy,
+          priority: payload.priority,
+          ...(payload.cooldownSeconds !== undefined
+            ? { cooldownSeconds: payload.cooldownSeconds }
+            : {}),
+          ...(payload.maxRunsPerUser !== undefined
+            ? { maxRunsPerUser: payload.maxRunsPerUser }
+            : {}),
+          ...(payload.activeFrom ? { activeFrom: payload.activeFrom } : {}),
+          ...(payload.activeTo ? { activeTo: payload.activeTo } : {}),
+        },
+        draft: draftContent,
+      });
+      scenarioId = created.scenarioId;
+      draft = created.draft;
+      form.id = scenarioId;
     }
     initialSnapshot.value = JSON.stringify(form);
     initialRuleSnapshot.value = JSON.stringify(ruleDraft.value);

@@ -9,6 +9,7 @@ export type {
 export { scenarioAuthoringRepository } from "./scenario-authoring-repository";
 export type {
   ScenarioDraftContent,
+  ScenarioCreateInput,
   ScenarioPublishInput,
 } from "./scenario-authoring-repository";
 // Generated wire contracts are exposed only through the repository boundary.
