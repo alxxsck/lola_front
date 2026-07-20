@@ -10,6 +10,7 @@ export { applyEventMetadataUpdate } from "./event-catalog-contract";
 export type { EventCatalogRepository } from "./event-catalog-repository";
 export type {
   EventCatalogDefinition,
+  EventCatalogDefinitionHealth,
   EventMetadataUpdateResult,
   UpdateEventMetadataCommand,
 } from "./event-catalog-contract";

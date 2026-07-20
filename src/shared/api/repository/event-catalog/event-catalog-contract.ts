@@ -1,8 +1,15 @@
 import type {
+  EventCatalogHealthResponseDto,
   EventDefinitionMetadataMutationResponseDto,
   EventDefinitionResponseDto,
   UpdateEventDefinitionMetadataDto,
 } from "@/shared/api/generated/models";
+
+export interface EventCatalogDefinitionHealth {
+  consumers: EventCatalogHealthResponseDto["consumers"];
+  activeWaits: EventCatalogHealthResponseDto["activeWaits"];
+  drafts: EventCatalogHealthResponseDto["drafts"];
+}
 
 export interface EventCatalogDefinition {
   definitionKeyId: string;
@@ -114,5 +121,22 @@ export function applyEventMetadataUpdate(
   return {
     ...current,
     metadata: result.metadata,
+  };
+}
+
+export function toEventCatalogDefinitionHealth(
+  dto: EventCatalogHealthResponseDto,
+  definitionKeyId: string,
+): EventCatalogDefinitionHealth {
+  return {
+    consumers: dto.consumers.filter(
+      (consumer) => consumer.definitionKeyId === definitionKeyId,
+    ),
+    activeWaits: dto.activeWaits.filter(
+      (wait) => wait.definitionKeyId === definitionKeyId,
+    ),
+    drafts: dto.drafts.filter(
+      (draft) => draft.definitionKeyId === definitionKeyId,
+    ),
   };
 }

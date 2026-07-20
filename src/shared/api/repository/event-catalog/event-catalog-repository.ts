@@ -1,11 +1,14 @@
 import {
+  eventCatalogProjectHealth,
   eventCatalogUpdateMetadata,
   platformEventDefinitions,
 } from "@/shared/api/generated/lola-backend";
 import {
   toEventCatalogDefinition,
+  toEventCatalogDefinitionHealth,
   toEventMetadataUpdateResult,
   type EventCatalogDefinition,
+  type EventCatalogDefinitionHealth,
   type EventMetadataUpdateResult,
   type UpdateEventMetadataCommand,
 } from "./event-catalog-contract";
@@ -20,6 +23,10 @@ export interface EventCatalogRepository {
     definitionKeyId: string,
     command: UpdateEventMetadataCommand,
   ): Promise<EventMetadataUpdateResult>;
+  getHealth(
+    projectId: string,
+    definitionKeyId: string,
+  ): Promise<EventCatalogDefinitionHealth>;
 }
 
 export const apiEventCatalogRepository: EventCatalogRepository = {
@@ -35,6 +42,13 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
   async updateMetadata(projectId, definitionKeyId, command) {
     return toEventMetadataUpdateResult(
       await eventCatalogUpdateMetadata(projectId, definitionKeyId, command),
+    );
+  },
+
+  async getHealth(projectId, definitionKeyId) {
+    return toEventCatalogDefinitionHealth(
+      await eventCatalogProjectHealth(projectId),
+      definitionKeyId,
     );
   },
 };

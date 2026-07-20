@@ -5,6 +5,7 @@ import EventDefinitionWorkspacePage from "./EventDefinitionWorkspacePage.vue";
 
 const mocks = vi.hoisted(() => ({
   getDefinition: vi.fn(),
+  getHealth: vi.fn(),
   updateMetadata: vi.fn(),
   push: vi.fn(),
 }));
@@ -22,6 +23,7 @@ vi.mock("@/shared/api/repository/event-catalog", async (importOriginal) => ({
   >()),
   eventCatalogRepository: {
     getDefinition: mocks.getDefinition,
+    getHealth: mocks.getHealth,
     updateMetadata: mocks.updateMetadata,
   },
 }));
@@ -62,6 +64,11 @@ describe("EventDefinitionWorkspacePage Overview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getDefinition.mockResolvedValue(workspace);
+    mocks.getHealth.mockResolvedValue({
+      consumers: [],
+      activeWaits: [],
+      drafts: [],
+    });
     mocks.updateMetadata.mockResolvedValue({
       definitionKeyId: "event-key-1",
       code: "deposit.succeeded",
@@ -92,10 +99,39 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       wrapper.get('[data-test="producer-contract-hint"]').text(),
     ).toContain("eventCode + payload");
     expect(wrapper.get('[data-test="producer-contract-hint"]').text()).toMatch(
-      /номер ревизии передавать не нужно/i,
+      /номер версии схемы передавать не нужно/i,
     );
     expect(wrapper.find('input[name="code"]').exists()).toBe(false);
     expect(wrapper.find('input[name="revision"]').exists()).toBe(false);
+  });
+
+  it("uses Russian product copy and switches every visible workspace tab", async () => {
+    const wrapper = mount(EventDefinitionWorkspacePage);
+    await flushPromises();
+
+    expect(wrapper.text()).not.toMatch(
+      /Event Definition|Overview|Ingestion Policy|Schema Revisions|Usage \/ Health|Display metadata|Current published schema|Stable event code|Product backend|payload schema|producer contract/,
+    );
+    expect(wrapper.get('[data-test="overview-section"]').isVisible()).toBe(
+      true,
+    );
+
+    await wrapper
+      .get('button[role="tab"][data-section="policy"]')
+      .trigger("click");
+    expect(wrapper.get('[data-test="policy-section"]').isVisible()).toBe(true);
+
+    await wrapper
+      .get('button[role="tab"][data-section="schema"]')
+      .trigger("click");
+    expect(wrapper.get('[data-test="schema-section"]').isVisible()).toBe(true);
+
+    await wrapper
+      .get('button[role="tab"][data-section="usage"]')
+      .trigger("click");
+    await flushPromises();
+    expect(wrapper.get('[data-test="usage-section"]').isVisible()).toBe(true);
+    expect(mocks.getHealth).toHaveBeenCalledWith("project-1", "event-key-1");
   });
 
   it("saves rename and description through metadata command without changing the schema revision", async () => {
@@ -166,7 +202,7 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toContain(
-      "metadata mutation changed the schema revision",
+      "нарушает правило сохранения без новой версии схемы",
     );
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
@@ -180,11 +216,9 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toContain(
-      "metadata concurrency token",
+      "Сервер не предоставил данные",
     );
-    expect(wrapper.get("#event-overview-name").attributes("readonly")).toBe(
-      "",
-    );
+    expect(wrapper.get("#event-overview-name").attributes("readonly")).toBe("");
     expect(
       wrapper.get("#event-overview-description").attributes("readonly"),
     ).toBe("");

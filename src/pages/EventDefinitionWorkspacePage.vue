@@ -7,7 +7,10 @@ import {
   applyEventMetadataUpdate,
   eventCatalogRepository,
   type EventCatalogDefinition,
+  type EventCatalogDefinitionHealth,
 } from "@/shared/api/repository/event-catalog";
+
+type WorkspaceSection = "overview" | "policy" | "schema" | "usage";
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -21,6 +24,10 @@ const saving = ref(false);
 const loadError = ref("");
 const saveError = ref("");
 const success = ref("");
+const activeSection = ref<WorkspaceSection>("overview");
+const health = ref<EventCatalogDefinitionHealth | null>(null);
+const healthLoading = ref(false);
+const healthError = ref("");
 
 const definitionKeyId = computed(() =>
   String(route.params.definitionKeyId ?? ""),
@@ -39,6 +46,9 @@ const isDirty = computed(
     (name.value !== definition.value?.metadata.name ||
       description.value !== (definition.value?.metadata.description ?? "")),
 );
+const formattedSchema = computed(() =>
+  JSON.stringify(definition.value?.currentSchema.payloadSchema ?? {}, null, 2),
+);
 
 onMounted(loadDefinition);
 
@@ -56,10 +66,7 @@ async function loadDefinition() {
     name.value = loaded.metadata.name;
     description.value = loaded.metadata.description ?? "";
   } catch (cause) {
-    loadError.value = errorMessage(
-      cause,
-      "Не удалось загрузить Event Definition",
-    );
+    loadError.value = errorMessage(cause, "Не удалось загрузить событие");
   } finally {
     loading.value = false;
   }
@@ -73,12 +80,12 @@ async function saveMetadata() {
   saveError.value = "";
   success.value = "";
   if (!nextName) {
-    saveError.value = "Укажите название Event Definition.";
+    saveError.value = "Укажите название события.";
     return;
   }
   if (!current.metadata.concurrencyToken) {
     saveError.value =
-      "Backend contract не отдаёт metadata concurrency token. Сохранение безопасно недоступно.";
+      "Сервер не предоставил данные для безопасного сохранения. Обновите страницу или повторите позже.";
     return;
   }
 
@@ -95,7 +102,7 @@ async function saveMetadata() {
     );
     if (!result.schemaRevisionUnchanged) {
       throw new Error(
-        "Invalid backend response: metadata mutation changed the schema revision",
+        "Ответ сервера нарушает правило сохранения без новой версии схемы",
       );
     }
     const applied = applyEventMetadataUpdate(
@@ -107,9 +114,32 @@ async function saveMetadata() {
     description.value = applied.metadata.description ?? "";
     success.value = "Сохранено. Ревизия схемы не изменилась.";
   } catch (cause) {
-    saveError.value = errorMessage(cause, "Не удалось сохранить Overview");
+    saveError.value = errorMessage(cause, "Не удалось сохранить изменения");
   } finally {
     saving.value = false;
+  }
+}
+
+async function selectSection(section: WorkspaceSection) {
+  activeSection.value = section;
+  if (section !== "usage" || health.value || healthLoading.value) return;
+  const projectId = auth.project?.id;
+  const current = definition.value;
+  if (!projectId || !current) return;
+  healthLoading.value = true;
+  healthError.value = "";
+  try {
+    health.value = await eventCatalogRepository.getHealth(
+      projectId,
+      current.definitionKeyId,
+    );
+  } catch (cause) {
+    healthError.value = errorMessage(
+      cause,
+      "Не удалось загрузить сведения об использовании",
+    );
+  } finally {
+    healthLoading.value = false;
   }
 }
 
@@ -129,11 +159,11 @@ function errorMessage(cause: unknown, fallback: string) {
     </button>
 
     <div v-if="loading" class="workspace-loading" aria-live="polite">
-      Загружаем Event Definition…
+      Загружаем событие…
     </div>
 
     <div v-else-if="loadError" class="workspace-error card" role="alert">
-      <strong>Workspace недоступен</strong>
+      <strong>Страница события недоступна</strong>
       <span>{{ loadError }}</span>
       <button type="button" class="secondary-button" @click="loadDefinition">
         Повторить
@@ -143,7 +173,7 @@ function errorMessage(cause: unknown, fallback: string) {
     <template v-else-if="definition">
       <header class="workspace-header">
         <div>
-          <div class="eyebrow">Event Definition</div>
+          <div class="eyebrow">Событие</div>
           <h1>{{ definition.metadata.name }}</h1>
           <div class="identity-line">
             <code data-test="event-code">{{ definition.code }}</code>
@@ -162,37 +192,77 @@ function errorMessage(cause: unknown, fallback: string) {
         <div>
           <strong>Контракт интеграции остаётся стабильным</strong>
           <p>
-            Product backend отправляет <code>eventCode + payload</code>. Номер
-            ревизии передавать не нужно: это внутренняя метаинформация Lola.
+            Сервер продукта отправляет <code>eventCode + payload</code>. Номер
+            версии схемы передавать не нужно: его определяет Lola.
           </p>
         </div>
       </aside>
 
       <nav
         class="workspace-navigation card"
-        aria-label="Разделы Event Definition"
+        aria-label="Разделы события"
+        role="tablist"
       >
-        <span class="active" aria-current="page"
-          ><i class="pi pi-info-circle" /> Overview</span
+        <button
+          type="button"
+          role="tab"
+          data-section="overview"
+          :aria-selected="activeSection === 'overview'"
+          :class="{ active: activeSection === 'overview' }"
+          @click="selectSection('overview')"
         >
-        <span><i class="pi pi-shield" /> Ingestion Policy</span>
-        <span><i class="pi pi-code" /> Schema Revisions</span>
-        <span><i class="pi pi-chart-bar" /> Usage / Health</span>
+          <i class="pi pi-info-circle" /> Основное
+        </button>
+        <button
+          type="button"
+          role="tab"
+          data-section="policy"
+          :aria-selected="activeSection === 'policy'"
+          :class="{ active: activeSection === 'policy' }"
+          @click="selectSection('policy')"
+        >
+          <i class="pi pi-shield" /> Приём событий
+        </button>
+        <button
+          type="button"
+          role="tab"
+          data-section="schema"
+          :aria-selected="activeSection === 'schema'"
+          :class="{ active: activeSection === 'schema' }"
+          @click="selectSection('schema')"
+        >
+          <i class="pi pi-code" /> Схема данных
+        </button>
+        <button
+          type="button"
+          role="tab"
+          data-section="usage"
+          :aria-selected="activeSection === 'usage'"
+          :class="{ active: activeSection === 'usage' }"
+          @click="selectSection('usage')"
+        >
+          <i class="pi pi-chart-bar" /> Использование
+        </button>
       </nav>
 
-      <main class="overview-layout">
+      <main
+        v-if="activeSection === 'overview'"
+        class="overview-layout"
+        role="tabpanel"
+        data-test="overview-section"
+      >
         <form class="overview-form card" @submit.prevent="saveMetadata">
           <div class="section-heading">
             <div>
-              <span>Display metadata</span>
-              <h2>Overview</h2>
+              <span>Название и описание</span>
+              <h2>Основное</h2>
               <p>
                 Название и описание помогают людям понимать событие и не
-                изменяют payload schema.
+                изменяют структуру его данных.
               </p>
             </div>
             <span class="schema-safe-label"
-              ><i class="pi pi-check-circle" /> Без новой schema revision</span
+              ><i class="pi pi-check-circle" /> Без новой версии схемы</span
             >
           </div>
 
@@ -221,12 +291,12 @@ function errorMessage(cause: unknown, fallback: string) {
 
           <div class="stable-identity">
             <div>
-              <span>Stable event code</span>
+              <span>Код события</span>
               <code>{{ definition.code }}</code>
             </div>
             <p>
-              Не изменяется после создания и остаётся идентичностью producer
-              contract.
+              Не изменяется после создания. Именно этот код сервер продукта
+              передаёт в Lola.
             </p>
           </div>
 
@@ -238,8 +308,8 @@ function errorMessage(cause: unknown, fallback: string) {
             class="inline-message error"
             role="alert"
           >
-            Backend contract не отдаёт metadata concurrency token. Overview
-            доступен только для чтения до обновления контракта.
+            Сервер не предоставил данные для безопасного сохранения. Раздел
+            доступен только для чтения.
           </p>
           <p v-if="success" class="inline-message success" role="status">
             {{ success }}
@@ -252,24 +322,123 @@ function errorMessage(cause: unknown, fallback: string) {
               type="submit"
               :disabled="!isDirty || saving || !hasMetadataConcurrencyToken"
             >
-              {{ saving ? "Сохраняем…" : "Сохранить Overview" }}
+              {{ saving ? "Сохраняем…" : "Сохранить" }}
             </button>
           </footer>
           <p v-else class="read-only-note">
-            У вас нет права изменять metadata этой Event Definition.
+            У вас нет права изменять название и описание этого события.
           </p>
         </form>
 
         <aside class="revision-card card">
-          <span>Current published schema</span>
+          <span>Текущая схема данных</span>
           <strong>v{{ definition.currentSchema.revisionNumber }}</strong>
           <code>{{ definition.currentSchema.revisionId }}</code>
           <p>
-            Revision принадлежит Lola и доступна здесь только для аудита и
-            диагностики.
+            Эту версию определяет Lola. Она нужна для истории и диагностики, но
+            не передаётся сервером продукта.
           </p>
         </aside>
       </main>
+
+      <section
+        v-else-if="activeSection === 'policy'"
+        class="workspace-panel card"
+        role="tabpanel"
+        data-test="policy-section"
+      >
+        <div class="section-heading">
+          <div>
+            <span>Правила приёма</span>
+            <h2>Приём событий</h2>
+            <p>
+              Эти настройки влияют только на новые события и не меняют схему
+              данных.
+            </p>
+          </div>
+          <span class="schema-safe-label"
+            ><i class="pi pi-check-circle" /> Без новой версии схемы</span
+          >
+        </div>
+        <dl class="settings-grid">
+          <div>
+            <dt>Приём событий</dt>
+            <dd>{{ definition.policy.enabled ? "Включён" : "Выключен" }}</dd>
+          </div>
+          <div>
+            <dt>Приём из браузера</dt>
+            <dd>
+              {{ definition.policy.clientIngestible ? "Разрешён" : "Запрещён" }}
+            </dd>
+          </div>
+          <div>
+            <dt>Учитывать как активность</dt>
+            <dd>
+              {{
+                definition.policy.countsAsActivity
+                  ? "Да, для новых событий"
+                  : "Нет"
+              }}
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section
+        v-else-if="activeSection === 'schema'"
+        class="workspace-panel card"
+        role="tabpanel"
+        data-test="schema-section"
+      >
+        <div class="section-heading">
+          <div>
+            <span
+              >Опубликованная версия
+              {{ definition.currentSchema.revisionNumber }}</span
+            >
+            <h2>Схема данных</h2>
+            <p>
+              Текущая структура данных события. Номер версии назначает Lola.
+            </p>
+          </div>
+        </div>
+        <pre class="schema-preview"><code>{{ formattedSchema }}</code></pre>
+      </section>
+
+      <section
+        v-else
+        class="workspace-panel card"
+        role="tabpanel"
+        data-test="usage-section"
+      >
+        <div class="section-heading">
+          <div>
+            <span>Зависимости</span>
+            <h2>Использование</h2>
+            <p>Сценарии, ожидания и черновики, связанные с этим событием.</p>
+          </div>
+        </div>
+        <p v-if="healthLoading" class="panel-state" aria-live="polite">
+          Загружаем сведения…
+        </p>
+        <p v-else-if="healthError" class="inline-message error" role="alert">
+          {{ healthError }}
+        </p>
+        <div v-else-if="health" class="usage-summary">
+          <div>
+            <strong>{{ health.consumers.length }}</strong
+            ><span>сценариев и правил</span>
+          </div>
+          <div>
+            <strong>{{ health.activeWaits.length }}</strong
+            ><span>активных ожиданий</span>
+          </div>
+          <div>
+            <strong>{{ health.drafts.length }}</strong
+            ><span>черновиков схемы</span>
+          </div>
+        </div>
+      </section>
     </template>
   </section>
 </template>
@@ -381,13 +550,16 @@ function errorMessage(cause: unknown, fallback: string) {
   padding: 6px;
   min-width: 0;
 }
-.workspace-navigation span {
+.workspace-navigation button {
   display: flex;
   align-items: center;
   gap: 7px;
+  border: 0;
   border-radius: 9px;
+  background: transparent;
   padding: 10px 12px;
   color: var(--text-secondary);
+  cursor: pointer;
   font-size: 0.72rem;
   font-weight: 700;
   min-width: 0;
@@ -396,6 +568,10 @@ function errorMessage(cause: unknown, fallback: string) {
 .workspace-navigation .active {
   background: var(--surface-active);
   color: var(--text-primary);
+}
+.workspace-navigation button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
 }
 .overview-layout {
   display: grid;
@@ -407,6 +583,56 @@ function errorMessage(cause: unknown, fallback: string) {
 .overview-form {
   padding: 22px;
   min-width: 0;
+}
+.workspace-panel {
+  padding: 22px;
+  min-width: 0;
+}
+.settings-grid,
+.usage-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.settings-grid > div,
+.usage-summary > div {
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  padding: 16px;
+}
+.settings-grid dt,
+.usage-summary span {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+.settings-grid dd {
+  margin: 6px 0 0;
+  font-weight: 700;
+}
+.usage-summary strong,
+.usage-summary span {
+  display: block;
+}
+.usage-summary strong {
+  margin-bottom: 5px;
+  font: 800 1.8rem Manrope;
+}
+.schema-preview {
+  max-height: 480px;
+  overflow: auto;
+  margin: 0;
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  padding: 16px;
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+.panel-state {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
 }
 .section-heading {
   display: flex;
@@ -612,8 +838,12 @@ function errorMessage(cause: unknown, fallback: string) {
     display: flex;
     overflow-x: auto;
   }
-  .workspace-navigation span {
+  .workspace-navigation button {
     min-width: max-content;
+  }
+  .settings-grid,
+  .usage-summary {
+    grid-template-columns: 1fr;
   }
   .overview-form {
     padding: 16px;

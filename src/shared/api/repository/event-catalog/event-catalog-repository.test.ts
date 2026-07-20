@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  eventCatalogProjectHealth,
   eventCatalogUpdateMetadata,
   platformEventDefinitions,
 } from "@/shared/api/generated/lola-backend";
@@ -8,6 +9,7 @@ import type { EventDefinitionResponseDto } from "@/shared/api/generated/models";
 import { apiEventCatalogRepository } from "./event-catalog-repository";
 
 vi.mock("@/shared/api/generated/lola-backend", () => ({
+  eventCatalogProjectHealth: vi.fn(),
   eventCatalogUpdateMetadata: vi.fn(),
   platformEventDefinitions: vi.fn(),
 }));
@@ -136,5 +138,46 @@ describe("apiEventCatalogRepository", () => {
         expectedUpdatedAt: "2026-07-20T10:00:00.000Z",
       }),
     ).rejects.toThrow("metadata mutation changed the schema revision");
+  });
+
+  it("loads usage health from the server and keeps only the selected stable identity", async () => {
+    vi.mocked(eventCatalogProjectHealth).mockResolvedValue({
+      consumers: [
+        {
+          definitionKeyId: "event-key-1",
+          consumerId: "scenario-1",
+          consumerType: "SCENARIO_TRIGGER",
+          health: "HEALTHY",
+          matchingMode: "STABLE_TYPE",
+          acceptsCurrentRevision: true,
+        },
+        {
+          definitionKeyId: "event-key-2",
+          consumerId: "scenario-2",
+          consumerType: "SCENARIO_TRIGGER",
+          health: "BLOCKED",
+          matchingMode: "EXACT",
+          acceptsCurrentRevision: false,
+        },
+      ],
+      activeWaits: [],
+      drafts: [],
+      summary: {
+        healthyConsumerCount: 1,
+        exactConsumerCount: 1,
+        blockedConsumerCount: 1,
+        needsReviewDraftCount: 0,
+        blockedDraftCount: 0,
+      },
+      truncated: false,
+    });
+
+    await expect(
+      apiEventCatalogRepository.getHealth("project-1", "event-key-1"),
+    ).resolves.toMatchObject({
+      consumers: [{ consumerId: "scenario-1" }],
+      activeWaits: [],
+      drafts: [],
+    });
   });
 });

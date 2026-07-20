@@ -6,7 +6,6 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Skeleton from 'primevue/skeleton'
-import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useConfirm } from 'primevue/useconfirm'
@@ -19,7 +18,6 @@ import type { EventSchemaDraft, EventSchemaDraftIssue } from '@/features/event-s
 import { findCatalogEventForDefinition } from '@/features/event-schema/model/event-schema-capability'
 import EventPayloadStudio from '@/features/event-schema/ui/EventPayloadStudio.vue'
 import EventDefinitionHistory from '@/features/events/EventDefinitionHistory.vue'
-import { ApiError } from '@/shared/api/http/api-error'
 import { repository } from '@/shared/api/repository'
 import { scenarioAuthoringRepository } from '@/shared/api/repository/scenario-authoring'
 import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
@@ -54,7 +52,6 @@ const loadError = ref('')
 const catalogError = ref('')
 const authoringContract = ref<ScenarioAuthoringContract | null>(null)
 const formError = ref<EventDefinitionError | null>(null)
-const deleteError = ref<EventDefinitionError | null>(null)
 const dialogVisible = ref(false)
 const eventFormStep = ref(0)
 const nameError = ref('')
@@ -74,10 +71,6 @@ const isFormDirty = computed(() => dialogVisible.value && (
   hasTechnicalDraft.value
   || (Boolean(initialFormSnapshot.value) && JSON.stringify(form.value) !== initialFormSnapshot.value)
 ))
-const deleteErrorVisible = computed({
-  get: () => Boolean(deleteError.value),
-  set: (value: boolean) => { if (!value) deleteError.value = null },
-})
 const { confirmDiscard } = useUnsavedChangesGuard(isFormDirty, 'Есть несохранённые изменения события. Закрыть форму?')
 
 const eventSteps = [
@@ -372,36 +365,6 @@ function attachUpdateIdentity(value: Partial<EventDefinition>, id: string, code:
   })
 }
 
-function askDelete(item: EventDefinition) {
-  if (item.readOnly) return
-  confirm.require({
-    header: 'Удалить событие?',
-    message: `Событие «${item.name}» может использоваться в сценариях.`,
-    icon: 'pi pi-exclamation-triangle',
-    rejectLabel: 'Отмена',
-    acceptLabel: 'Удалить',
-    acceptProps: { severity: 'danger' },
-    accept: () => deleteEvent(item),
-  })
-}
-
-async function deleteEvent(item: EventDefinition) {
-  const projectId = auth.project?.id
-  if (!projectId) return
-  try {
-    await repository.deleteEvent(projectId, item.id)
-    events.value = events.value.filter((value) => value.id !== item.id)
-    toast.add({ severity: 'success', summary: 'Событие удалено', detail: item.name, life: 2500 })
-  } catch (cause) {
-    const error = eventDefinitionError(cause, 'Не удалось удалить событие')
-    if (cause instanceof ApiError && ['EVENT_DEFINITION_IN_USE', 'RESOURCE_IN_USE'].includes(cause.code ?? '')) {
-      deleteError.value = error
-    } else {
-      toast.add({ severity: 'error', summary: 'Не удалось удалить', detail: error.message, life: 4500 })
-    }
-  }
-}
-
 function eventFields(item: EventDefinition) {
   const properties = item.payloadSchema?.properties
   return properties && typeof properties === 'object' ? Object.keys(properties) : []
@@ -417,17 +380,6 @@ function openEventLogs(item: EventDefinition) {
 
 function requiredCount(item: EventDefinition) {
   return Array.isArray(item.payloadSchema?.required) ? item.payloadSchema.required.length : 0
-}
-
-function scenarioStatus(status?: string) {
-  return status ? ({ ACTIVE: 'Активен', DRAFT: 'Черновик', PAUSED: 'На паузе', ARCHIVED: 'Архив' }[status] ?? status) : ''
-}
-
-function eventLogCountLabel(count: number) {
-  const mod100 = count % 100
-  const mod10 = count % 10
-  const noun = mod100 >= 11 && mod100 <= 14 ? 'записей' : mod10 === 1 ? 'запись' : mod10 >= 2 && mod10 <= 4 ? 'записи' : 'записей'
-  return `${count} ${noun} в истории событий`
 }
 
 function canonicalJson(value: unknown): string {
@@ -450,14 +402,14 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
   <section class="page events-page">
     <header class="page-header">
       <div>
-        <div class="eyebrow">Event catalog</div>
+        <div class="eyebrow">Каталог событий</div>
         <h1>События</h1>
         <p class="subtitle">Опишите сигналы продукта и данные, с которыми будут запускаться сценарии.</p>
       </div>
       <div v-if="canManage" class="header-actions"><Button label="Журнал" icon="pi pi-list" severity="secondary" outlined @click="router.push({ name: 'event-logs' })" /><Button label="Новое событие" icon="pi pi-plus" @click="openCreate" /></div>
     </header>
 
-    <DocumentationCallout title="Как события запускают сценарии" text="Разберитесь в Event Definitions, версиях, payload и роли Trigger перед настройкой каталога." icon="pi pi-bolt" />
+    <DocumentationCallout title="Как события запускают сценарии" text="Разберитесь в событиях, версиях схемы, передаваемых данных и условиях запуска перед настройкой каталога." icon="pi pi-bolt" />
 
     <div class="summary-grid">
       <div class="summary-card card"><span class="summary-icon bolt"><i class="pi pi-bolt" /></span><div><strong>{{ events.length }}</strong><small>событий в каталоге</small></div></div>
@@ -509,8 +461,7 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
           <ToggleSwitch :model-value="item.enabled" :disabled="!canManage || item.readOnly || togglingId === item.id" :aria-label="`Включить ${item.name}`" @update:model-value="toggleEvent(item, $event)" />
           <Button v-if="canManage" icon="pi pi-list" severity="secondary" text rounded :aria-label="`Открыть журнал ${item.name}`" @click="openEventLogs(item)" />
           <EventDefinitionHistory v-if="auth.project?.id && item.definitionKeyId" :project-id="auth.project.id" :event="item" />
-          <Button icon="pi pi-arrow-right" severity="secondary" text rounded :aria-label="`Открыть ${item.name}`" @click="openEdit(item)" />
-          <Button v-if="canManage && !item.readOnly" icon="pi pi-trash" severity="danger" text rounded :aria-label="`Удалить ${item.name}`" @click="askDelete(item)" />
+          <Button :icon="item.readOnly ? 'pi pi-eye' : 'pi pi-pencil'" severity="secondary" text rounded :aria-label="`${item.readOnly ? 'Просмотреть' : 'Редактировать'} ${item.name}`" @click="openEdit(item)" />
         </div>
       </article>
     </div>
@@ -592,18 +543,6 @@ function errorMessage(cause: unknown, fallback = 'Произошла ошибк�
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="deleteErrorVisible" modal header="Событие нельзя удалить" :style="{ width: 'min(620px, calc(100vw - 28px))' }">
-      <div v-if="deleteError" class="delete-error-content">
-        <p>{{ deleteError.message }}</p>
-        <div v-if="deleteError.eventLogCount" class="dependency-stat"><i class="pi pi-history" /><span>{{ eventLogCountLabel(deleteError.eventLogCount) }}</span></div>
-        <ul v-if="deleteError.scenarios.length" class="dependency-list">
-          <li v-for="scenario in deleteError.scenarios" :key="scenario.id || scenario.code">
-            <div><span>{{ scenario.name }}</span><code v-if="scenario.code">{{ scenario.code }}</code><Tag v-if="scenario.status" :value="scenarioStatus(scenario.status)" severity="secondary" /></div>
-          </li>
-        </ul>
-      </div>
-      <template #footer><Button label="Понятно" @click="deleteErrorVisible = false" /></template>
-    </Dialog>
   </section>
 </template>
 

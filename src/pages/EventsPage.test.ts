@@ -100,7 +100,7 @@ describe('EventsPage event editor journey', () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    await wrapper.find('button-stub[aria-label="Открыть Успешный депозит"]').trigger('click')
+    await wrapper.find('button-stub[aria-label="Редактировать Успешный депозит"]').trigger('click')
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: 'event-definition-workspace',
@@ -188,7 +188,7 @@ describe('EventsPage event editor journey', () => {
     expect(cards[0]?.get('[role="tooltip"]').text()).toContain('техническое имя и схема данных задаются системой')
     expect(cards[0]?.text()).not.toContain('Lola managed')
     expect(cards[0]?.text()).not.toContain('stable identity')
-    await cards[0]?.get('button-stub[aria-label="Открыть Пользователь стал офлайн"]').trigger('click')
+    await cards[0]?.get('button-stub[aria-label="Просмотреть Пользователь стал офлайн"]').trigger('click')
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: 'event-definition-workspace',
       params: { definitionKeyId: 'definition-system' },
@@ -205,8 +205,8 @@ describe('EventsPage event editor journey', () => {
     expect(card.classes()).not.toContain('disabled')
     expect(card.get('.event-status').text()).toBe('Выключено')
     expect(wrapper.getComponent({ name: 'ToggleSwitch' }).attributes('disabled')).toBe('false')
-    expect(card.find('button-stub[aria-label="Открыть Успешный депозит"]').exists()).toBe(true)
-    expect(card.find('button-stub[aria-label="Удалить Успешный депозит"]').exists()).toBe(true)
+    expect(card.find('button-stub[aria-label="Редактировать Успешный депозит"]').exists()).toBe(true)
+    expect(card.find('button-stub[aria-label="Удалить Успешный депозит"]').exists()).toBe(false)
   })
 
   it('shows a load error and retries successfully', async () => {

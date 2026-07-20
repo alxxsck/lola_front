@@ -81,4 +81,8 @@ export const mockEventCatalogRepository: EventCatalogRepository = {
       schemaRevisionUnchanged: true,
     };
   },
+
+  async getHealth() {
+    return { consumers: [], activeWaits: [], drafts: [] };
+  },
 };
