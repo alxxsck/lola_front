@@ -118,14 +118,12 @@ const { errors, warnings } = useContractIssuePresentation(
 );
 const dirty = computed(() =>
   workspace.value
-    ? JSON.stringify(workspace.value.draft.document) !==
-      JSON.stringify(
-        workspace.value.currentRevision?.fields.map(toDraftField)
-          ? {
-              fields: workspace.value.currentRevision?.fields.map(toDraftField),
-            }
-          : { fields: [] },
-      )
+    ? contractDocumentSignature(workspace.value.draft.document) !==
+      contractDocumentSignature({
+        fields: (workspace.value.currentRevision?.fields ?? []).map(
+          toDraftField,
+        ),
+      })
     : false,
 );
 const hasUnsavedDraftEdits = computed(
@@ -147,6 +145,7 @@ const securityAffectedDefinitionIds = computed(() => [
 const canPublish = computed(
   () =>
     canManage.value &&
+    dirty.value &&
     !hasUnsavedDraftEdits.value &&
     validation.value?.valid &&
     validation.value.draftVersion === workspace.value?.draft.draftVersion &&
@@ -554,7 +553,7 @@ async function saveDraft() {
     toast.add({
       severity: "success",
       summary: "Черновик сохранён",
-      detail: `Версия черновика ${workspace.value.draft.draftVersion}`,
+      detail: "Изменения сохранены и готовы к проверке.",
       life: 2500,
     });
   } catch (cause) {
@@ -728,8 +727,36 @@ function indexPolicyLabel(value: string) {
   return optionLabel(indexOptions, value);
 }
 
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value === null || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, item]) => item !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => [key, canonicalize(item)]),
+  );
+}
+
+function canonicalSignature(value: unknown) {
+  return JSON.stringify(canonicalize(value));
+}
+
+function contractDocumentSignature(
+  document: AttributeContractDraftResponseDto["document"],
+) {
+  return canonicalSignature({
+    fields: [...document.fields].sort(
+      (left, right) =>
+        left.position - right.position ||
+        left.key.localeCompare(right.key) ||
+        (left.definitionId ?? "").localeCompare(right.definitionId ?? ""),
+    ),
+  });
+}
+
 function contractFieldSignature(field: AttributeContractDraftFieldDto) {
-  return JSON.stringify({
+  return canonicalSignature({
     definitionId: field.definitionId ?? null,
     key: field.key,
     label: field.label,
@@ -905,9 +932,8 @@ function archiveImpactedField() {
         <div>
           <strong>Нужна ручная сверка черновиков</strong>
           <span
-            >Другой администратор сохранил версию
-            {{ draftConflict.serverDraft.draftVersion }}. Сравните её со своими
-            изменениями перед продолжением.</span
+            >Другой администратор сохранил более новый черновик. Сравните его со
+            своими изменениями перед продолжением.</span
           >
         </div>
         <Button
@@ -987,13 +1013,21 @@ function archiveImpactedField() {
           <span>Текущий черновик</span
           ><strong>{{
             hasUnsavedDraftEdits
-              ? "Не сохранён"
-              : `Версия ${workspace.draft.draftVersion}`
+              ? "Есть несохранённые изменения"
+              : dirty
+                ? "Есть неопубликованные изменения"
+                : "Все изменения опубликованы"
           }}</strong
           ><small>{{
-            dirty
-              ? "Есть изменения для публикации"
-              : "Совпадает с опубликованной версией"
+            hasUnsavedDraftEdits
+              ? "Сохраните изменения, чтобы проверить и опубликовать их."
+              : dirty
+                ? workspace.currentRevision
+                  ? `Сохранённый черновик отличается от опубликованной версии ${workspace.currentRevision.version}.`
+                  : "Сохранённый черновик ещё не опубликован."
+                : workspace.currentRevision
+                  ? `Совпадает с опубликованной версией ${workspace.currentRevision.version}.`
+                  : "Изменений для публикации нет."
           }}</small>
         </article>
         <article class="metric card">
@@ -1164,6 +1198,7 @@ function archiveImpactedField() {
             <span class="notice-copy">
               <strong>{{ issue.title }}</strong>
               <small v-if="issue.detail">{{ issue.detail }}</small>
+              <small>Код: <code>{{ issue.code }}</code></small>
             </span>
             <Button
               v-if="issue.fieldIdentity"
@@ -1190,6 +1225,7 @@ function archiveImpactedField() {
             <span class="notice-copy">
               <strong>{{ issue.title }}</strong>
               <small>{{ issue.detail }}</small>
+              <small>Код: <code>{{ issue.code }}</code></small>
             </span>
             <Button
               v-if="issue.fieldIdentity"
@@ -1238,8 +1274,13 @@ function archiveImpactedField() {
                   fieldPublicationState(field) === 'draft'
                     ? 'В черновике'
                     : fieldPublicationState(field) === 'changed'
-                      ? 'Есть изменения'
+                      ? 'Изменено в черновике'
                       : lifecycleLabel(field.lifecycle)
+                "
+                :title="
+                  fieldPublicationState(field) === 'changed'
+                    ? 'Сохранённые настройки поля отличаются от опубликованных. Чтобы они начали действовать, проверьте и опубликуйте черновик.'
+                    : undefined
                 "
                 :severity="
                   fieldPublicationState(field) === 'draft'

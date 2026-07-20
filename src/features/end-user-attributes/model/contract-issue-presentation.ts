@@ -135,9 +135,13 @@ export function presentContractIssues(
   issues: ContractIssueInput[],
   fields: AttributeContractDraftFieldDto[],
 ): ContractIssuePresentation[] {
-  const result = new Map<string, ContractIssuePresentation>();
+  const result = new Map<
+    string,
+    { presentation: ContractIssuePresentation; fromBackend: boolean }
+  >();
 
   for (const issue of issues) {
+    const fromBackend = "compatibility" in issue;
     const code = canonicalCode(issue.code);
     const field = fieldForIssue(issue, fields);
     const backendDefinitionId =
@@ -148,8 +152,13 @@ export function presentContractIssues(
       field?.definitionId || field?.key || backendDefinitionId;
     const severity = issueSeverity(issue);
     const key = `${code}:${fieldIdentity || issuePath(issue) || "contract"}`;
-    const copy = issueCopy[code]?.(fieldName || "Без названия") ??
+    const baseCopy = issueCopy[code]?.(fieldName || "Без названия") ??
       fallbackCopy(fieldName, issue.code);
+    const backendMessage = fromBackend ? issue.message.trim() : "";
+    const copy = {
+      ...baseCopy,
+      detail: backendMessage || baseCopy.detail,
+    };
     const presentation: ContractIssuePresentation = {
       key,
       code: issue.code,
@@ -165,8 +174,15 @@ export function presentContractIssues(
     };
 
     const existing = result.get(key);
-    if (!existing || existing.severity === "warning") result.set(key, presentation);
+    const shouldReplace =
+      !existing ||
+      (existing.presentation.severity === "warning" &&
+        (severity === "error" || fromBackend || !existing.fromBackend)) ||
+      (existing.presentation.severity === severity &&
+        fromBackend &&
+        !existing.fromBackend);
+    if (shouldReplace) result.set(key, { presentation, fromBackend });
   }
 
-  return [...result.values()];
+  return [...result.values()].map(({ presentation }) => presentation);
 }

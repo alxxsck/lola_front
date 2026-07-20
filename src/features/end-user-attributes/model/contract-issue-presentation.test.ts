@@ -30,23 +30,22 @@ function backendIssue(
 
 describe("contract issue presentation", () => {
   it.each([
-    ["ATTRIBUTE_PURPOSE_REQUIRED", "Укажите назначение", "Для чего нужно это поле?"],
-    ["ATTRIBUTE_REQUIREMENT_CHANGED", "Изменилась обязательность", "передавать поле"],
-    ["ATTRIBUTE_REQUIRED_WARN_ADDED", "Поле стало желательным", "предупреждение"],
-    ["ATTRIBUTE_REQUIRED_ENFORCED_ADDED", "Поле стало обязательным", "отклоняться"],
-    ["ATTRIBUTE_EXPOSURE_BROADENED", "Поле стало доступно", "раздел"],
-    ["ATTRIBUTE_CONSTRAINTS_CHANGED", "Изменились допустимые значения", "данные"],
-    ["ATTRIBUTE_LIFECYCLE_CHANGED", "Изменился статус поля", "связанные настройки"],
-  ])("maps backend code %s to actionable Russian copy", (code, title, detail) => {
+    ["ATTRIBUTE_PURPOSE_REQUIRED", "Укажите назначение"],
+    ["ATTRIBUTE_REQUIREMENT_CHANGED", "Изменилась обязательность"],
+    ["ATTRIBUTE_REQUIRED_WARN_ADDED", "Поле стало желательным"],
+    ["ATTRIBUTE_REQUIRED_ENFORCED_ADDED", "Поле стало обязательным"],
+    ["ATTRIBUTE_EXPOSURE_BROADENED", "Поле стало доступно"],
+    ["ATTRIBUTE_CONSTRAINTS_CHANGED", "Изменились допустимые значения"],
+    ["ATTRIBUTE_LIFECYCLE_CHANGED", "Изменился статус поля"],
+  ])("keeps the local title for backend code %s and shows its message", (code, title) => {
     const [result] = presentContractIssues([backendIssue(code)], [field]);
 
     expect(result).toMatchObject({
       title: expect.stringContaining(title),
-      detail: expect.stringContaining(detail),
+      detail: `Technical backend message for ${code}`,
       fieldIdentity: "definition-loyalty",
       actionLabel: "Проверить поле",
     });
-    expect(JSON.stringify(result)).not.toContain("Technical backend message");
   });
 
   it("resolves a field by definition id, backend field key, or local path", () => {
@@ -73,6 +72,26 @@ describe("contract issue presentation", () => {
     );
   });
 
+  it("trims a backend message and falls back to local detail when it is blank", () => {
+    const [withMessage] = presentContractIssues(
+      [
+        backendIssue("ATTRIBUTE_CONSTRAINTS_CHANGED", {
+          message: "  Проверьте формат уже переданных значений.  ",
+        }),
+      ],
+      [field],
+    );
+    const [withoutMessage] = presentContractIssues(
+      [backendIssue("ATTRIBUTE_CONSTRAINTS_CHANGED", { message: "   " })],
+      [field],
+    );
+
+    expect(withMessage.detail).toBe("Проверьте формат уже переданных значений.");
+    expect(withoutMessage.detail).toBe(
+      "Проверьте, что уже передаваемые данные соответствуют новым ограничениям.",
+    );
+  });
+
   it("deduplicates the local and backend form of the same purpose error", () => {
     const results = presentContractIssues(
       [
@@ -84,7 +103,7 @@ describe("contract issue presentation", () => {
         },
         backendIssue("ATTRIBUTE_PURPOSE_REQUIRED", {
           message:
-            "A purpose is required for PERSONAL/SENSITIVE or exposed Attributes",
+            "Укажите назначение персонального или доступного разделам поля.",
           severity: "ERROR",
         }),
       ],
@@ -93,12 +112,15 @@ describe("contract issue presentation", () => {
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
+      code: "ATTRIBUTE_PURPOSE_REQUIRED",
       severity: "error",
+      detail:
+        "Укажите назначение персонального или доступного разделам поля.",
       actionLabel: "Исправить поле",
     });
   });
 
-  it("uses a safe Russian fallback for a new unknown backend code", () => {
+  it("uses a safe Russian title and backend detail for a new unknown code", () => {
     const [result] = presentContractIssues(
       [backendIssue("ATTRIBUTE_NEW_SERVER_RULE", { severity: "ERROR" })],
       [field],
@@ -106,9 +128,8 @@ describe("contract issue presentation", () => {
 
     expect(result).toMatchObject({
       title: "Проверьте настройки поля «Уровень лояльности».",
-      detail: expect.stringContaining("ATTRIBUTE_NEW_SERVER_RULE"),
+      detail: "Technical backend message for ATTRIBUTE_NEW_SERVER_RULE",
       actionLabel: "Исправить поле",
     });
-    expect(JSON.stringify(result)).not.toContain("Technical backend message");
   });
 });

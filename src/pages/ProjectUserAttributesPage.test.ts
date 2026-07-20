@@ -1,4 +1,5 @@
 import { flushPromises, shallowMount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   AttributeContractIssueResponseDto,
@@ -136,7 +137,18 @@ describe("ProjectUserAttributesPage", () => {
   });
 
   it("publishes readiness evidence and every security definition from validation", async () => {
-    const validatedWorkspace = structuredClone(workspace);
+    const validatedWorkspace = structuredClone(
+      workspace,
+    ) as AttributeContractWorkspaceResponseDto;
+    validatedWorkspace.draft.document.fields = [
+      {
+        ...createContractField(10),
+        definitionId: "definition-required",
+        key: "requiredField",
+        label: "Обязательное поле",
+        purpose: "Использовать поле в профиле пользователя",
+      },
+    ];
     (
       validatedWorkspace.validation as {
         issues: AttributeContractIssueResponseDto[];
@@ -233,7 +245,7 @@ describe("ProjectUserAttributesPage", () => {
     expect(vm.error).toContain("Сначала сохраните изменения черновика");
   });
 
-  it("turns a purpose validation error into one concrete Russian action", async () => {
+  it("shows a backend validation message, code, and concrete field action", async () => {
     const invalidWorkspace = structuredClone(
       workspace,
     ) as AttributeContractWorkspaceResponseDto;
@@ -258,14 +270,20 @@ describe("ProjectUserAttributesPage", () => {
           severity: "ERROR",
           definitionId: "definition-loyalty",
           message:
-            "A purpose is required for PERSONAL/SENSITIVE or exposed Attributes",
+            "Укажите назначение персонального или доступного разделам поля.",
           compatibility: "SECURITY",
         },
       ],
     };
     mocks.workspace.mockResolvedValue(invalidWorkspace);
 
-    const wrapper = shallowMount(ProjectUserAttributesPage);
+    const wrapper = shallowMount(ProjectUserAttributesPage, {
+      global: {
+        stubs: {
+          Message: { template: "<div><slot /></div>" },
+        },
+      },
+    });
     await flushPromises();
     const vm = wrapper.vm as unknown as {
       errors: Array<{
@@ -279,11 +297,15 @@ describe("ProjectUserAttributesPage", () => {
     expect(vm.errors).toEqual([
       expect.objectContaining({
         title: "Укажите назначение поля «Уровень лояльности».",
-        detail: expect.stringContaining("Для чего нужно это поле?"),
+        detail:
+          "Укажите назначение персонального или доступного разделам поля.",
         fieldIdentity: "definition-loyalty",
       }),
     ]);
-    expect(JSON.stringify(vm.errors)).not.toContain("A purpose is required");
+    expect(wrapper.text()).toContain(
+      "Укажите назначение персонального или доступного разделам поля.",
+    );
+    expect(wrapper.text()).toContain("Код: ATTRIBUTE_PURPOSE_REQUIRED");
     expect(wrapper.text()).toContain("Исправьте ошибки, чтобы опубликовать");
     expect(
       wrapper.find('button-stub[label="3. Опубликовать"]').attributes(
@@ -346,6 +368,9 @@ describe("ProjectUserAttributesPage", () => {
     };
     const vm = wrapper.vm as unknown as {
       workspace: {
+        draft: {
+          document: { fields: ReturnType<typeof createContractField>[] };
+        };
         currentRevision: { fields: Array<Record<string, unknown>> } | null;
       };
       fieldPublicationState: (
@@ -363,9 +388,9 @@ describe("ProjectUserAttributesPage", () => {
     };
 
     expect(vm.fieldPublicationState(published)).toBe("published");
-    expect(vm.fieldPublicationState({ ...published, label: "Новый город" })).toBe(
-      "changed",
-    );
+    expect(
+      vm.fieldPublicationState({ ...published, label: "Новый город" }),
+    ).toBe("changed");
     expect(
       vm.fieldPublicationState({
         ...createContractField(20),
@@ -373,6 +398,121 @@ describe("ProjectUserAttributesPage", () => {
         label: "Страна",
       }),
     ).toBe("draft");
+
+    vm.workspace.draft.document.fields = [
+      { ...published, label: "Новый город" },
+    ];
+    await nextTick();
+    const changedTag = wrapper.find('tag-stub[value="Изменено в черновике"]');
+    expect(changedTag.exists()).toBe(true);
+    expect(changedTag.attributes("title")).toContain(
+      "Сохранённые настройки поля отличаются от опубликованных",
+    );
+  });
+
+  it("treats a published draft with reordered object keys as unchanged", async () => {
+    const publishedWorkspace = structuredClone(
+      workspace,
+    ) as AttributeContractWorkspaceResponseDto;
+    const draftField = {
+      definitionId: "definition-loyalty",
+      key: "loyaltyLevel",
+      label: "Уровень лояльности",
+      description: null,
+      purpose: "Показывать уровень лояльности в карточке пользователя",
+      valueType: "STRING" as const,
+      lifecycle: "ACTIVE" as const,
+      classification: "INTERNAL" as const,
+      requirement: "OPTIONAL" as const,
+      position: 10,
+      constraints: {},
+      policies: {
+        adminRead: true,
+        aiRead: false,
+        audienceRead: false,
+        clientRead: false,
+        exportRead: false,
+        indexPolicy: "NONE" as const,
+        templateRead: false,
+      },
+      replacementDefinitionId: null,
+      sunsetAt: null,
+      semanticRole: null,
+    };
+    publishedWorkspace.draft.document.fields = [draftField];
+    publishedWorkspace.draft.draftVersion = 14;
+    publishedWorkspace.validation.draftVersion = 14;
+    publishedWorkspace.currentRevision = {
+      id: "revision-2",
+      projectId: "project-1",
+      version: 2,
+      canonicalHash: "canonical-hash",
+      validationHash: "validation-hash",
+      acceptances: [],
+      compatibilityReport: {
+        valid: true,
+        issues: [],
+        lifecycleImpacts: [],
+        authorization: {
+          readinessEvidenceId: null,
+          securityConfirmations: [],
+          breakingChangePlan: null,
+          compatibilityGraceDays: 7,
+        },
+      },
+      schema: {
+        $schema: "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        additionalProperties: false,
+        properties: {},
+        required: [],
+      },
+      fields: [
+        {
+          ...draftField,
+          definitionRevisionId: "definition-loyalty-r2",
+          definitionRevisionNumber: 2,
+          policies: {
+            templateRead: false,
+            indexPolicy: "NONE",
+            exportRead: false,
+            clientRead: false,
+            audienceRead: false,
+            aiRead: false,
+            adminRead: true,
+          },
+        },
+      ],
+      publishedAt: "2026-07-20T10:00:00.000Z",
+      publishedById: null,
+      publishReason: "Публикация версии 2",
+    };
+    mocks.workspace.mockResolvedValue(publishedWorkspace);
+
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      dirty: boolean;
+      canPublish: boolean;
+      publishForm: { reason: string };
+      fields: typeof publishedWorkspace.draft.document.fields;
+      fieldPublicationState: (
+        field: (typeof publishedWorkspace.draft.document.fields)[number],
+      ) => "draft" | "changed" | "published";
+    };
+
+    expect(vm.dirty).toBe(false);
+    expect(vm.fieldPublicationState(vm.fields[0])).toBe("published");
+    vm.publishForm.reason = "Повторная публикация";
+    await nextTick();
+    expect(vm.canPublish).toBe(false);
+    expect(wrapper.text()).toContain("Все изменения опубликованы");
+    expect(wrapper.text()).toContain("Совпадает с опубликованной версией 2");
+    expect(wrapper.text()).not.toContain("Версия 14");
+    expect(wrapper.text()).not.toContain("Есть изменения");
+    expect(wrapper.text()).not.toContain(
+      "Черновик проверен — можно публиковать",
+    );
   });
 
   it("allows removing a saved field that only exists in the draft", async () => {
