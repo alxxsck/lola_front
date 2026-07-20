@@ -1,5 +1,7 @@
 import { flushPromises, shallowMount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createContractField } from "@/features/end-user-attributes/model/contract-domain";
+import type { AttributeContractWorkspaceResponseDto } from "@/shared/api/generated/models";
 import ProfileFieldEditorPage from "./ProfileFieldEditorPage.vue";
 
 const mocks = vi.hoisted(() => ({ push: vi.fn() }));
@@ -142,5 +144,112 @@ describe("ProfileFieldEditorPage", () => {
       "Значение этого атрибута у пользователя определяет язык сообщений сценария",
     );
     expect(wrapper.text()).toContain("Основной язык проекта");
+  });
+
+  it("keeps key and type editable for a saved draft-only field", async () => {
+    const wrapper = shallowMount(ProfileFieldEditorPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: ReturnType<typeof createContractField>;
+      workspace: AttributeContractWorkspaceResponseDto;
+    };
+    vm.form.definitionId = "definition-draft-only";
+    vm.workspace.currentRevision = {
+      fields: [],
+    } as unknown as NonNullable<
+      AttributeContractWorkspaceResponseDto["currentRevision"]
+    >;
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper
+        .find('input-text-stub[id="profile-field-key"]')
+        .attributes("disabled"),
+    ).toBe("false");
+    expect(wrapper.findAll("select-stub")[0]?.attributes("disabled")).toBe(
+      "false",
+    );
+    expect(wrapper.text()).toContain(
+      "После первой публикации ключ и тип данных изменить нельзя.",
+    );
+  });
+
+  it("locks key and type when the field exists in the current revision", async () => {
+    const wrapper = shallowMount(ProfileFieldEditorPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: ReturnType<typeof createContractField>;
+      workspace: AttributeContractWorkspaceResponseDto;
+    };
+    vm.form.definitionId = "definition-published";
+    vm.workspace.currentRevision = {
+      fields: [{ definitionId: "definition-published" }],
+    } as unknown as NonNullable<
+      AttributeContractWorkspaceResponseDto["currentRevision"]
+    >;
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper
+        .find('input-text-stub[id="profile-field-key"]')
+        .attributes("disabled"),
+    ).toBe("true");
+    expect(wrapper.findAll("select-stub")[0]?.attributes("disabled")).toBe(
+      "true",
+    );
+  });
+
+  it("keeps identity locked when a published field has draft changes", async () => {
+    const wrapper = shallowMount(ProfileFieldEditorPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: ReturnType<typeof createContractField>;
+      workspace: AttributeContractWorkspaceResponseDto;
+    };
+    vm.form.definitionId = "definition-published";
+    vm.form.label = "Название из черновика";
+    vm.workspace.currentRevision = {
+      fields: [
+        {
+          definitionId: "definition-published",
+          label: "Опубликованное название",
+        },
+      ],
+    } as unknown as NonNullable<
+      AttributeContractWorkspaceResponseDto["currentRevision"]
+    >;
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper
+        .find('input-text-stub[id="profile-field-key"]')
+        .attributes("disabled"),
+    ).toBe("true");
+    expect(wrapper.findAll("select-stub")[0]?.attributes("disabled")).toBe(
+      "true",
+    );
+  });
+
+  it("does not change the type of a published field assigned as LOCALE", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const wrapper = shallowMount(ProfileFieldEditorPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: ReturnType<typeof createContractField>;
+      workspace: AttributeContractWorkspaceResponseDto;
+    };
+    vm.form.definitionId = "definition-published";
+    vm.form.valueType = "INTEGER";
+    vm.workspace.currentRevision = {
+      fields: [{ definitionId: "definition-published" }],
+    } as unknown as NonNullable<
+      AttributeContractWorkspaceResponseDto["currentRevision"]
+    >;
+
+    vm.form.semanticRole = "LOCALE";
+    await wrapper.vm.$nextTick();
+
+    expect(vm.form.valueType).toBe("INTEGER");
+    expect(confirm).not.toHaveBeenCalled();
   });
 });

@@ -374,4 +374,61 @@ describe("ProjectUserAttributesPage", () => {
       }),
     ).toBe("draft");
   });
+
+  it("allows removing a saved field that only exists in the draft", async () => {
+    const draftOnlyWorkspace = structuredClone(
+      workspace,
+    ) as AttributeContractWorkspaceResponseDto;
+    draftOnlyWorkspace.draft.document.fields = [
+      {
+        ...createContractField(10),
+        definitionId: "definition-draft-only",
+        key: "draftCity",
+        label: "Черновой город",
+      },
+    ];
+    mocks.workspace.mockResolvedValue(draftOnlyWorkspace);
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+
+    const removeButton = wrapper.find(
+      'button-stub[aria-label="Удалить Черновой город"]',
+    );
+    expect(removeButton.exists()).toBe(true);
+    await removeButton.trigger("click");
+    expect(wrapper.text()).not.toContain("Черновой город");
+  });
+
+  it("does not allow removing a field from the current revision", async () => {
+    const publishedWorkspace = structuredClone(
+      workspace,
+    ) as AttributeContractWorkspaceResponseDto;
+    const publishedField = {
+      ...createContractField(10),
+      definitionId: "definition-published",
+      key: "publishedCity",
+      label: "Опубликованный город",
+    };
+    publishedWorkspace.draft.document.fields = [publishedField];
+    publishedWorkspace.currentRevision = {
+      fields: [
+        {
+          ...publishedField,
+          definitionRevisionId: "definition-published-r1",
+          definitionRevisionNumber: 1,
+        },
+      ],
+    } as unknown as NonNullable<
+      AttributeContractWorkspaceResponseDto["currentRevision"]
+    >;
+    mocks.workspace.mockResolvedValue(publishedWorkspace);
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+
+    expect(
+      wrapper
+        .find('button-stub[aria-label="Удалить Опубликованный город"]')
+        .exists(),
+    ).toBe(false);
+  });
 });

@@ -95,6 +95,15 @@ const semanticRoleOptions = [
   { value: "CURRENCY", label: "Валюта" },
   { value: "LOCALE", label: "Язык контента" },
 ];
+const identityLocked = computed(() => {
+  const definitionId = form.value.definitionId;
+  return Boolean(
+    definitionId &&
+      workspace.value?.currentRevision?.fields.some(
+        (field) => field.definitionId === definitionId,
+      ),
+  );
+});
 const isLocaleField = computed(() => form.value.semanticRole === "LOCALE");
 const localeValues = computed(() =>
   (form.value.constraints.allowedValues ?? []).filter(
@@ -143,6 +152,12 @@ watch(
       return;
     }
     if (form.value.valueType !== "STRING") {
+      if (identityLocked.value) {
+        form.value.semanticRole = previous ?? null;
+        error.value =
+          "Для языка контента нужен текстовый тип, а тип опубликованного поля изменить нельзя.";
+        return;
+      }
       const confirmed =
         !form.value.definitionId ||
         window.confirm(
@@ -489,15 +504,15 @@ async function save() {
                 v-model="form.key"
                 class="mono"
                 :aria-invalid="Boolean(fieldErrors.key)"
-                :disabled="Boolean(form.definitionId)"
+                :disabled="identityLocked"
                 placeholder="loyaltyTier"
               />
               <small v-if="fieldErrors.key" class="control-error">{{
                 fieldErrors.key
               }}</small>
               <small
-                >Латинские буквы без пробелов. После создания ключ изменить
-                нельзя.</small
+                >Латинские буквы без пробелов. После первой публикации ключ и
+                тип данных изменить нельзя.</small
               >
             </label>
             <label class="field-control">
@@ -507,7 +522,7 @@ async function save() {
                 :options="valueTypes"
                 option-label="label"
                 option-value="value"
-                :disabled="Boolean(form.definitionId)"
+                :disabled="identityLocked"
               />
               <small>{{ typeHelp }}</small>
             </label>

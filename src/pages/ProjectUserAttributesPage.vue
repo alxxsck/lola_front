@@ -525,7 +525,7 @@ function saveField() {
 }
 
 function removeDraftField(field: AttributeContractDraftFieldDto) {
-  if (!workspace.value || field.definitionId) return;
+  if (!workspace.value || isPublishedField(field)) return;
   workspace.value.draft.document.fields = fields.value.filter(
     (item) => item !== field,
   );
@@ -749,9 +749,7 @@ function contractFieldSignature(field: AttributeContractDraftFieldDto) {
 }
 
 function fieldPublicationState(field: AttributeContractDraftFieldDto) {
-  const published = workspace.value?.currentRevision?.fields.find(
-    (item) => item.definitionId === field.definitionId,
-  );
+  const published = publishedFieldFor(field);
   if (!published) return "draft" as const;
   const publishedDraft = toDraftField(
     published as unknown as Record<string, unknown>,
@@ -759,6 +757,16 @@ function fieldPublicationState(field: AttributeContractDraftFieldDto) {
   return contractFieldSignature(field) === contractFieldSignature(publishedDraft)
     ? ("published" as const)
     : ("changed" as const);
+}
+
+function publishedFieldFor(field: AttributeContractDraftFieldDto) {
+  return workspace.value?.currentRevision?.fields.find(
+    (item) => item.definitionId === field.definitionId,
+  );
+}
+
+function isPublishedField(field: AttributeContractDraftFieldDto) {
+  return Boolean(field.definitionId && publishedFieldFor(field));
 }
 
 function healthWindowLabel(value: string) {
@@ -1281,7 +1289,7 @@ function archiveImpactedField() {
               :aria-label="`Изменить ${field.label}`"
               @click="openEdit(field)"
             /><Button
-              v-if="canManage && !field.definitionId"
+              v-if="canManage && !isPublishedField(field)"
               icon="pi pi-trash"
               severity="danger"
               text
@@ -1408,7 +1416,7 @@ function archiveImpactedField() {
             ><InputText
               v-model="form.key"
               class="mono"
-              :disabled="Boolean(form.definitionId)"
+              :disabled="isPublishedField(form)"
           /></label>
         </div>
         <div class="form-grid triple">
@@ -1419,7 +1427,7 @@ function archiveImpactedField() {
               :options="valueTypes"
               option-label="label"
               option-value="value"
-              :disabled="Boolean(form.definitionId)" /></label
+              :disabled="isPublishedField(form)" /></label
           ><label
             ><span>Lifecycle</span
             ><Select
