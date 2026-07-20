@@ -41,7 +41,7 @@ function stringValue(key: string): string | undefined {
 <template>
   <div class="schema-form">
     <Message v-if="form.blocked" severity="error" :closable="false">
-      <strong>Схема заблокирована</strong>
+      <strong>Настройки временно недоступны</strong>
       <ul>
         <li
           v-for="issue in form.issues"
@@ -118,7 +118,7 @@ function stringValue(key: string): string | undefined {
     </div>
     <div v-else class="empty-config">
       <i class="pi pi-lock" /><span
-        >Дополнительная конфигурация не требуется.</span
+        >Дополнительные настройки не требуются.</span
       >
     </div>
   </div>

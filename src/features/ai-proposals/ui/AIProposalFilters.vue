@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DatePicker from "primevue/datepicker";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import type {
@@ -6,9 +7,18 @@ import type {
   AIProposalKind,
   AIProposalPreset,
   AIProposalPriority,
+  AIProposalSort,
 } from "../model/ai-proposal";
+import { russianCount } from "@/shared/lib/russian-count";
 
-const props = defineProps<{ modelValue: AIProposalFilters }>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: AIProposalFilters;
+    openCount?: number;
+    unreadCount?: number;
+  }>(),
+  { openCount: 0, unreadCount: 0 },
+);
 const emit = defineEmits<{ "update:modelValue": [value: AIProposalFilters] }>();
 
 const presets: Array<{ value: AIProposalPreset; label: string }> = [
@@ -32,14 +42,33 @@ const priorities: Array<{
   { value: "NORMAL", label: "Обычный" },
   { value: "LOW", label: "Низкий" },
 ];
+const sorts: Array<{ value: AIProposalSort; label: string }> = [
+  { value: "ATTENTION_FIRST", label: "Сначала требующие решения" },
+  { value: "NEWEST", label: "Сначала новые" },
+  { value: "OLDEST", label: "Сначала старые" },
+];
 
 function update(patch: Partial<AIProposalFilters>): void {
   emit("update:modelValue", { ...props.modelValue, ...patch });
 }
 
-function dateBoundary(value: string, endOfDay = false): string | undefined {
+function dateValue(value?: string): Date | null {
+  if (!value) return null;
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dateBoundary(
+  value: Date | null,
+  endOfDay = false,
+): string | undefined {
   if (!value) return undefined;
-  return `${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}Z`;
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}Z`;
 }
 </script>
 
@@ -49,63 +78,101 @@ function dateBoundary(value: string, endOfDay = false): string | undefined {
       <button
         v-for="preset in presets"
         :key="preset.value"
+        :data-preset="preset.value"
         type="button"
         :class="{ active: modelValue.preset === preset.value }"
         :aria-pressed="modelValue.preset === preset.value"
         @click="update({ preset: preset.value })"
       >
-        {{ preset.label }}
+        <span>{{ preset.label }}</span>
+        <span
+          v-if="
+            (preset.value === 'OPEN' && openCount > 0) ||
+            (preset.value === 'UNREAD' && unreadCount > 0)
+          "
+          class="tab-notice"
+          :aria-label="
+            preset.value === 'OPEN'
+              ? `${russianCount(openCount, ['предложение требует', 'предложения требуют', 'предложений требуют'])} решения`
+              : russianCount(unreadCount, [
+                  'непрочитанное предложение',
+                  'непрочитанных предложения',
+                  'непрочитанных предложений',
+                ])
+          "
+          >{{ preset.value === "OPEN" ? openCount : unreadCount }}</span
+        >
       </button>
     </div>
     <div class="filter-fields">
-      <Select
-        :model-value="modelValue.kind"
-        :options="kinds"
-        option-label="label"
-        option-value="value"
-        aria-label="Тип предложения"
-        @update:model-value="update({ kind: $event })"
-      />
-      <Select
-        :model-value="modelValue.priority"
-        :options="priorities"
-        option-label="label"
-        option-value="value"
-        aria-label="Приоритет"
-        @update:model-value="update({ priority: $event })"
-      />
-      <InputText
-        :model-value="modelValue.endUserId"
-        aria-label="Внутренний ID пользователя"
-        placeholder="ID пользователя"
-        @update:model-value="update({ endUserId: $event || undefined })"
-      />
-      <label class="date-filter">
+      <label class="filter-field">
+        <span>Тип запроса</span>
+        <Select
+          :model-value="modelValue.kind"
+          :options="kinds"
+          option-label="label"
+          option-value="value"
+          aria-label="Тип запроса"
+          @update:model-value="update({ kind: $event })"
+        />
+      </label>
+      <label class="filter-field">
+        <span>Приоритет</span>
+        <Select
+          :model-value="modelValue.priority"
+          :options="priorities"
+          option-label="label"
+          option-value="value"
+          aria-label="Приоритет"
+          @update:model-value="update({ priority: $event })"
+        />
+      </label>
+      <label class="filter-field sort-field">
+        <span>Порядок показанных карточек</span>
+        <Select
+          :model-value="modelValue.sort"
+          :options="sorts"
+          option-label="label"
+          option-value="value"
+          aria-label="Порядок показанных карточек"
+          @update:model-value="update({ sort: $event })"
+        />
+        <small>Меняет порядок среди уже загруженных карточек.</small>
+      </label>
+      <label class="filter-field user-field">
+        <span>Пользователь</span>
+        <InputText
+          :model-value="modelValue.endUserId"
+          aria-label="Идентификатор пользователя"
+          placeholder="Например, user_123"
+          @update:model-value="update({ endUserId: $event || undefined })"
+        />
+      </label>
+      <label class="filter-field date-filter">
         <span>Создано от</span>
-        <input
-          type="date"
-          :value="modelValue.createdFrom?.slice(0, 10)"
-          @change="
-            update({
-              createdFrom: dateBoundary(
-                ($event.target as HTMLInputElement).value,
-              ),
-            })
+        <DatePicker
+          :model-value="dateValue(modelValue.createdFrom)"
+          date-format="dd.mm.yy"
+          show-icon
+          icon-display="input"
+          placeholder="дд.мм.гггг"
+          aria-label="Дата создания от"
+          @update:model-value="
+            update({ createdFrom: dateBoundary($event as Date | null) })
           "
         />
       </label>
-      <label class="date-filter">
+      <label class="filter-field date-filter">
         <span>Создано до</span>
-        <input
-          type="date"
-          :value="modelValue.createdTo?.slice(0, 10)"
-          @change="
-            update({
-              createdTo: dateBoundary(
-                ($event.target as HTMLInputElement).value,
-                true,
-              ),
-            })
+        <DatePicker
+          :model-value="dateValue(modelValue.createdTo)"
+          date-format="dd.mm.yy"
+          show-icon
+          icon-display="input"
+          placeholder="дд.мм.гггг"
+          aria-label="Дата создания до"
+          @update:model-value="
+            update({ createdTo: dateBoundary($event as Date | null, true) })
           "
         />
       </label>
@@ -123,6 +190,11 @@ function dateBoundary(value: string, endOfDay = false): string | undefined {
   padding: 10px;
   border-radius: 16px;
 }
+.filter-field > small {
+  color: var(--text-secondary);
+  font-size: 0.63rem;
+  line-height: 1.25;
+}
 .preset-tabs {
   display: flex;
   gap: 4px;
@@ -131,6 +203,9 @@ function dateBoundary(value: string, endOfDay = false): string | undefined {
   background: var(--surface-subtle);
 }
 .preset-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   min-height: 34px;
   padding: 0 12px;
   border: 0;
@@ -146,12 +221,24 @@ function dateBoundary(value: string, endOfDay = false): string | undefined {
   color: var(--text-primary);
   box-shadow: 0 1px 4px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
+.tab-notice {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: 5px;
+  color: var(--on-brand);
+  font-size: 0.6rem;
+  line-height: 1;
+  background: var(--action-primary);
+  border-radius: 999px;
+}
 .filter-fields {
   width: 100%;
   min-width: 0;
   flex: 1 1 700px;
   display: grid;
-  grid-template-columns: 150px 160px minmax(140px, 180px) 128px 128px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 .filter-fields > * {
@@ -159,30 +246,23 @@ function dateBoundary(value: string, endOfDay = false): string | undefined {
 }
 .filter-fields :deep(.p-select),
 .filter-fields :deep(.p-inputtext),
-.date-filter input {
+.filter-fields :deep(.p-datepicker) {
+  width: 100%;
   min-width: 0;
   min-height: 38px;
   font-size: 0.74rem;
 }
-.date-filter {
+.filter-field {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 3px;
 }
-.date-filter span {
+.filter-field > span {
   color: var(--text-tertiary);
   font-size: 0.58rem;
   font-weight: 700;
   text-transform: uppercase;
-}
-.date-filter input {
-  width: 100%;
-  padding: 0 8px;
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  background: var(--input-background);
-  color: var(--text-primary);
 }
 @media (max-width: 1120px) {
   .proposal-filters {
@@ -193,7 +273,7 @@ function dateBoundary(value: string, endOfDay = false): string | undefined {
     align-self: flex-start;
   }
   .filter-fields {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @media (max-width: 650px) {
@@ -210,7 +290,8 @@ function dateBoundary(value: string, endOfDay = false): string | undefined {
   .filter-fields {
     grid-template-columns: 1fr 1fr;
   }
-  .filter-fields :deep(.p-inputtext) {
+  .sort-field,
+  .user-field {
     grid-column: 1 / -1;
   }
 }

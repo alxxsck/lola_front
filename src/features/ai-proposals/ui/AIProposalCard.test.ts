@@ -26,7 +26,8 @@ describe("AIProposalCard", () => {
 
     expect(wrapper.text()).toContain("Голос");
     expect(wrapper.text()).toContain("Высокий приоритет");
-    expect(wrapper.text()).toContain("Открыто");
+    expect(wrapper.text()).toContain("Требует решения");
+    expect(wrapper.classes()).toContain("needs-action");
     expect(wrapper.find("script").exists()).toBe(false);
     expect(wrapper.find("img").exists()).toBe(false);
     expect(wrapper.get("button").attributes("aria-label")).toContain(

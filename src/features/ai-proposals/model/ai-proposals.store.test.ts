@@ -109,6 +109,38 @@ describe("AI Proposals store", () => {
     expect(store.summary).toMatchObject({ openCount: 7, unreadCount: 4 });
   });
 
+  it("shows unresolved proposals first by default and can order the loaded list by date", async () => {
+    const accepted = {
+      ...item,
+      id: "proposal-accepted",
+      workflowStatus: "ACCEPTED" as const,
+      createdAt: "2026-07-20T12:00:00.000Z",
+    };
+    const olderOpen = {
+      ...item,
+      id: "proposal-open",
+      createdAt: "2026-07-19T12:00:00.000Z",
+    };
+    mocks.list.mockResolvedValue({
+      items: [accepted, olderOpen],
+      nextCursor: null,
+      summary,
+    });
+    const store = useAIProposalsStore();
+    await store.activateProject("project-1");
+
+    expect(store.items.map((proposal) => proposal.id)).toEqual([
+      "proposal-open",
+      "proposal-accepted",
+    ]);
+
+    store.filters.sort = "NEWEST";
+    expect(store.items.map((proposal) => proposal.id)).toEqual([
+      "proposal-accepted",
+      "proposal-open",
+    ]);
+  });
+
   it("deduplicates stale events and reconciles a project sequence gap", async () => {
     const store = useAIProposalsStore();
     await store.activateProject("project-1");

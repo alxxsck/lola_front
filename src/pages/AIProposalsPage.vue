@@ -21,12 +21,14 @@ import {
   type AIProposalKind,
   type AIProposalPreset,
   type AIProposalPriority,
+  type AIProposalSort,
 } from "@/features/ai-proposals/model/ai-proposal";
 import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
 import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
 import AIProposalCard from "@/features/ai-proposals/ui/AIProposalCard.vue";
 import AIProposalDetail from "@/features/ai-proposals/ui/AIProposalDetail.vue";
 import AIProposalFilters from "@/features/ai-proposals/ui/AIProposalFilters.vue";
+import { russianCount } from "@/shared/lib/russian-count";
 
 const route = useRoute();
 const router = useRouter();
@@ -40,7 +42,7 @@ const canAccess = computed(() => canReviewAIProposals(auth.user?.role));
 const selectedVisible = computed(() => Boolean(store.selectedId));
 const countDescription = computed(() => {
   if (!store.summary) return "Загрузка сводки";
-  return `${store.summary.openCount} открытых · ${store.summary.unreadCount} непрочитанных`;
+  return `${russianCount(store.summary.openCount, ["запрос требует решения", "запроса требуют решения", "запросов требуют решения"])} · ${russianCount(store.summary.unreadCount, ["непрочитанное", "непрочитанных", "непрочитанных"])}`;
 });
 const emptyMessage = computed(() => {
   if (store.filters.preset === "UNREAD") return "Непрочитанных предложений нет";
@@ -55,11 +57,18 @@ function validPreset(value: unknown): AIProposalPreset {
     : "OPEN";
 }
 
+function validSort(value: unknown): AIProposalSort {
+  return ["ATTENTION_FIRST", "NEWEST", "OLDEST"].includes(String(value))
+    ? (value as AIProposalSort)
+    : "ATTENTION_FIRST";
+}
+
 function filtersFromRoute(): AIProposalFiltersModel {
   const kind = route.query.kind;
   const priority = route.query.priority;
   return {
     preset: validPreset(route.query.view),
+    sort: validSort(route.query.sort),
     ...(["ADMIN_ATTENTION", "INSIGHT", "ACTION_RECOMMENDATION"].includes(
       String(kind),
     )
@@ -83,6 +92,7 @@ function filtersFromRoute(): AIProposalFiltersModel {
 function queryFromFilters(filters: AIProposalFiltersModel) {
   return {
     ...(filters.preset !== "OPEN" ? { view: filters.preset } : {}),
+    ...(filters.sort !== "ATTENTION_FIRST" ? { sort: filters.sort } : {}),
     ...(filters.kind ? { kind: filters.kind } : {}),
     ...(filters.priority ? { priority: filters.priority } : {}),
     ...(filters.endUserId ? { endUserId: filters.endUserId } : {}),
@@ -187,7 +197,7 @@ watch(
   <section class="page proposals-page">
     <header class="page-header proposals-header">
       <div>
-        <div class="eyebrow">AI inbox</div>
+        <div class="eyebrow">Запросы пользователей</div>
         <h1>Предложения Lola</h1>
         <p class="subtitle">
           Запросы пользователей, которым нужно внимание команды. Lola ничего не
@@ -200,7 +210,7 @@ watch(
           <span
             v-if="store.realtimeState === 'DEGRADED'"
             class="realtime-state degraded"
-            ><i class="pi pi-cloud" /> Realtime временно недоступен</span
+            ><i class="pi pi-cloud" /> Автообновление временно недоступно</span
           >
           <span
             v-else-if="store.realtimeState === 'CONNECTED'"
@@ -226,6 +236,8 @@ watch(
     <template v-else>
       <AIProposalFilters
         :model-value="store.filters"
+        :open-count="store.summary?.openCount ?? 0"
+        :unread-count="store.summary?.unreadCount ?? 0"
         @update:model-value="applyFilters"
       />
 
@@ -234,8 +246,8 @@ watch(
         severity="info"
         :closable="false"
       >
-        Realtime временно недоступен. Список остаётся доступным и сверяется с
-        сервером при открытии страницы и по кнопке «Обновить».
+        Автообновление временно недоступно. Список остаётся доступным и
+        сверяется с сервером при открытии страницы и по кнопке «Обновить».
       </Message>
 
       <div class="inbox-layout card">

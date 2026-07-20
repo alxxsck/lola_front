@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
@@ -19,6 +20,15 @@ import {
   type ProjectActionDraftIssue,
 } from "../model/project-action";
 import type { ProjectActionError } from "../model/project-action-error";
+import {
+  actionConfirmationLabel,
+  actionExecutorLabel,
+  actionOriginLabel,
+  actionRiskLabel,
+  needsInterfaceSetup,
+  projectActionDescription,
+  projectActionName,
+} from "../model/project-action-presentation";
 import {
   buildProjectActionForm,
   validateProjectActionConfiguration,
@@ -65,6 +75,23 @@ const schemaForm = computed(() =>
     props.action.actionTypeRevision.uiSchema,
   ),
 );
+const originLabel = computed(() =>
+  actionOriginLabel(props.action.actionType.origin),
+);
+const executorLabel = computed(() =>
+  actionExecutorLabel(props.action.actionTypeRevision.executorAdapter),
+);
+const riskLabel = computed(() =>
+  actionRiskLabel(props.action.actionTypeRevision.risk),
+);
+const confirmationLabel = computed(() =>
+  actionConfirmationLabel(props.action.actionTypeRevision.confirmationPolicy),
+);
+const description = computed(() => projectActionDescription(props.action));
+const name = computed(() => projectActionName(props.action));
+const showInterfaceSetup = computed(() =>
+  needsInterfaceSetup(props.action.code),
+);
 
 watch(
   () => props.action,
@@ -87,7 +114,7 @@ function submit() {
       field: "configuration",
       code: "PROJECT_ACTION_CONFIGURATION_SCHEMA_UNSUPPORTED",
       message:
-        "Конфигурацию нельзя сохранить, пока backend schema не поддерживается безопасным редактором.",
+        "Эти настройки пока нельзя безопасно изменить в Lola. Обратитесь к разработчику проекта.",
     });
   } else {
     issues.value.push(
@@ -120,30 +147,27 @@ function confirmArchive() {
   <form class="project-action-editor" novalidate @submit.prevent="submit">
     <section class="contract-summary">
       <div class="summary-heading">
-        <span class="eyebrow">Закреплённый контракт</span>
+        <span class="eyebrow">Сведения о действии</span>
         <span class="origin"
-          >{{
-            action.actionType.origin === "SYSTEM" ? "System" : "Integration"
-          }}
-          · revision {{ action.actionTypeRevision.version }}</span
+          >{{ originLabel }} · версия
+          {{ action.actionTypeRevision.version }}</span
         >
       </div>
       <p class="contract-effect">
-        <strong>Фактический эффект</strong
-        >{{ action.actionTypeRevision.description }}
+        <strong>Что произойдёт</strong>{{ description }}
       </p>
       <dl>
         <div>
-          <dt>Executor</dt>
-          <dd>{{ action.actionTypeRevision.executorAdapter }}</dd>
+          <dt>Где выполняется</dt>
+          <dd>{{ executorLabel }}</dd>
         </div>
         <div>
-          <dt>Риск</dt>
-          <dd>{{ action.actionTypeRevision.risk }}</dd>
+          <dt>Что изменяет</dt>
+          <dd>{{ riskLabel }}</dd>
         </div>
         <div>
           <dt>Подтверждение</dt>
-          <dd>{{ action.actionTypeRevision.confirmationPolicy }}</dd>
+          <dd>{{ confirmationLabel }}</dd>
         </div>
       </dl>
     </section>
@@ -152,13 +176,13 @@ function confirmArchive() {
       {{
         action.lifecycle === "ARCHIVED"
           ? "Архивное действие доступно только для чтения."
-          : "Просматривать могут все участники проекта. Изменять и архивировать может только OWNER."
+          : "Просматривать могут все участники проекта. Изменять и архивировать может только владелец проекта."
       }}
     </Message>
     <Message v-if="mutationError" severity="error" :closable="false"
       >{{ mutationError.message
       }}<small v-if="mutationError.requestId"
-        >Request ID: {{ mutationError.requestId }}</small
+        >Код обращения: {{ mutationError.requestId }}</small
       ></Message
     >
     <Message
@@ -183,8 +207,8 @@ function confirmArchive() {
         <div>
           <h3>Доступность</h3>
           <p>
-            Scenario и AI публикуются отдельно; backend повторно проверяет
-            поддержку и права.
+            Выберите, где можно использовать действие. Каждое разрешение
+            сохраняется отдельно.
           </p>
         </div>
       </div>
@@ -199,7 +223,7 @@ function confirmArchive() {
             ><small>{{
               supportsScenario
                 ? "Появится в новых сценариях после сохранения."
-                : "Тип действия не поддерживает Scenario."
+                : "Это действие нельзя добавить в сценарий."
             }}</small></span
           >
           <ToggleSwitch
@@ -210,16 +234,17 @@ function confirmArchive() {
         </label>
         <label class="surface-control ai" :class="{ unsupported: !supportsAi }">
           <span class="surface-copy"
-            ><strong><i class="pi pi-sparkles" /> Разрешить AI</strong
+            ><strong
+              ><i class="pi pi-sparkles" /> Разрешить помощнику Lola</strong
             ><small>{{
               supportsAi
-                ? "Lola получит только строгий backend-контракт."
-                : "Тип действия не поддерживает AI."
+                ? "Lola сможет выбрать это действие, когда оно подходит к запросу пользователя."
+                : "Lola не умеет самостоятельно выбирать это действие."
             }}</small></span
           >
           <ToggleSwitch
             v-model="draft.aiEnabled"
-            aria-label="Разрешить AI"
+            aria-label="Разрешить помощнику Lola"
             :disabled="!canEdit || !supportsAi"
           />
         </label>
@@ -229,16 +254,16 @@ function confirmArchive() {
     <section v-if="supportsAi" class="editor-section ai-setup">
       <div class="section-heading">
         <div>
-          <h3>AI Usage Description</h3>
+          <h3>Когда Lola может выбрать действие</h3>
           <p>
-            Опишите, когда Grok должен вызывать действие и когда не должен. Не
-            меняйте заявленный фактический эффект.
+            Объясните простыми словами, в каких запросах пользователя это
+            действие уместно, а в каких — нет.
           </p>
         </div>
         <span>{{ draft.aiUsageDescription.trim().length }}/2000</span>
       </div>
       <label for="ai-usage-description" class="field-label"
-        >Описание для AI</label
+        >Подсказка для Lola</label
       >
       <Textarea
         id="ai-usage-description"
@@ -251,13 +276,13 @@ function confirmArchive() {
       />
       <div class="effect-lock">
         <i class="pi pi-lock" /><span
-          ><strong>Эффект нельзя переопределить текстом:</strong>
-          {{ action.actionTypeRevision.description }}</span
+          ><strong>Эта подсказка не меняет результат действия:</strong>
+          {{ description }}</span
         >
       </div>
       <label v-if="needsAuditReason" for="ai-audit-reason" class="audit-field">
         <span class="field-label"
-          >Причина включения или расширения AI <em>обязательно</em></span
+          >Зачем Lola нужен доступ <em>обязательно</em></span
         >
         <InputText
           id="ai-audit-reason"
@@ -265,22 +290,36 @@ function confirmArchive() {
           minlength="10"
           maxlength="500"
           :disabled="!canEdit"
-          placeholder="Почему проекту нужен этот AI-доступ"
+          placeholder="Например: пользователи часто просят открыть окно пополнения"
         />
-        <small>Причина попадёт в audit атомарно с изменением authority.</small>
+        <small
+          >Причина сохранится в истории изменений для администраторов.</small
+        >
       </label>
     </section>
 
     <section class="editor-section">
       <div class="section-heading">
         <div>
-          <h3>Безопасная конфигурация</h3>
+          <h3>Настройки действия</h3>
           <p>
-            Только поля projectConfigSchema. Route, selector, URL, token,
-            handler и script запрещены.
+            Здесь показаны только настройки, которые можно менять безопасно.
+            Адреса, ключи доступа и программный код Lola не принимает.
           </p>
         </div>
       </div>
+      <aside v-if="showInterfaceSetup" class="setup-notice">
+        <i class="pi pi-info-circle" />
+        <div>
+          <strong>Сначала добавьте доступный элемент интерфейса</strong>
+          <p>
+            Откройте раздел «Интерфейс», добавьте страницу, окно, анимацию или
+            элемент и разрешите его использование. После публикации он станет
+            доступен здесь и в сценариях.
+          </p>
+          <RouterLink to="/interface">Открыть раздел «Интерфейс»</RouterLink>
+        </div>
+      </aside>
       <ProjectActionSchemaForm
         v-model="draft.configuration"
         :schema="action.actionTypeRevision.projectConfigSchema"
@@ -325,19 +364,21 @@ function confirmArchive() {
   <Dialog
     v-model:visible="confirmSaveVisible"
     modal
-    header="Подтвердите изменение AI authority"
+    header="Проверьте изменения перед сохранением"
     :style="{ width: 'min(620px, 94vw)' }"
   >
     <div class="confirmation">
       <Message severity="warn" :closable="false"
-        ><strong>Backend применит authoritative policy.</strong> Изменение
-        Scenario и AI surfaces не объединяется в один общий статус.</Message
+        ><strong>Настройки вступят в силу сразу после сохранения.</strong>
+        Использование в сценариях и доступ для Lola включаются независимо друг
+        от друга.</Message
       >
       <dl>
         <div>
           <dt>Действие</dt>
           <dd>
-            {{ action.code }} · revision {{ action.actionTypeRevision.version }}
+            {{ name }} · версия
+            {{ action.actionTypeRevision.version }}
           </dd>
         </div>
         <div>
@@ -345,44 +386,46 @@ function confirmArchive() {
           <dd>{{ draft.scenarioEnabled ? "Включено" : "Выключено" }}</dd>
         </div>
         <div>
-          <dt>AI</dt>
+          <dt>Для Lola</dt>
           <dd>{{ draft.aiEnabled ? "Включено" : "Выключено" }}</dd>
         </div>
         <div v-if="draft.aiEnabled">
-          <dt>AI Usage Description</dt>
+          <dt>Когда Lola может выбрать действие</dt>
           <dd>{{ draft.aiUsageDescription.trim() }}</dd>
         </div>
         <div>
-          <dt>Конфигурация</dt>
+          <dt>Дополнительные настройки</dt>
           <dd>
-            <pre>{{ JSON.stringify(draft.configuration, null, 2) }}</pre>
+            {{
+              Object.keys(draft.configuration).length
+                ? "Заполнена"
+                : "Не требуется"
+            }}
           </dd>
         </div>
         <div>
-          <dt>Фактический эффект</dt>
-          <dd>{{ action.actionTypeRevision.description }}</dd>
+          <dt>Что произойдёт</dt>
+          <dd>{{ description }}</dd>
         </div>
         <div>
-          <dt>Риск</dt>
-          <dd>{{ action.actionTypeRevision.risk }}</dd>
+          <dt>Что может измениться</dt>
+          <dd>{{ riskLabel }}</dd>
         </div>
         <div>
-          <dt>Revision impact</dt>
+          <dt>Что изменится после сохранения</dt>
           <dd>
-            Остаётся закреплена revision
-            {{ action.actionTypeRevision.version }}. Backend вернёт
-            authoritative published view.
+            Lola применит выбранные разрешения к версии
+            {{ action.actionTypeRevision.version }} этого действия.
           </dd>
         </div>
         <div v-if="needsAuditReason">
-          <dt>Audit reason</dt>
+          <dt>Причина изменения</dt>
           <dd>{{ draft.auditReason.trim() }}</dd>
         </div>
       </dl>
       <Message v-if="draft.aiEnabled" severity="info" :closable="false"
-        >Текущий backend preview ниже относится к опубликованной конфигурации.
-        После сохранения CMS запросит его заново и покажет точный effective
-        tool.</Message
+        >После сохранения Lola автоматически обновит опубликованные настройки
+        действия.</Message
       >
     </div>
     <template #footer
@@ -404,8 +447,8 @@ function confirmArchive() {
     :style="{ width: 'min(520px, 94vw)' }"
   >
     <p>
-      Backend заблокирует архивирование, если действие используется активными
-      сценариями или открытыми AI invocations.
+      Действие нельзя будет архивировать, пока оно используется в активном
+      сценарии или выполняется по текущему запросу пользователя.
     </p>
     <template #footer
       ><Button
@@ -433,6 +476,32 @@ function confirmArchive() {
   background: var(--surface-raised);
   border: 1px solid var(--border-default);
   border-radius: 12px;
+}
+.setup-notice {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 12px;
+  color: var(--status-info-text, var(--text-primary));
+  background: var(--status-info-soft, var(--surface-subtle));
+  border: 1px solid
+    color-mix(in srgb, var(--text-link) 20%, var(--border-default));
+  border-radius: 10px;
+}
+.setup-notice > i {
+  margin-top: 2px;
+  color: var(--text-link);
+}
+.setup-notice p {
+  margin: 4px 0 7px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.setup-notice a {
+  color: var(--text-link);
+  font-size: 11px;
+  font-weight: 700;
 }
 .summary-heading,
 .section-heading {

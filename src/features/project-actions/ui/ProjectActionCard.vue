@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ProjectAction } from "../model/project-action";
+import {
+  actionExecutorLabel,
+  actionOriginLabel,
+  actionRiskLabel,
+  projectActionDescription,
+  projectActionName,
+} from "../model/project-action-presentation";
 
 const props = defineProps<{ action: ProjectAction }>();
 const emit = defineEmits<{ select: [action: ProjectAction] }>();
 
-const name = computed(
-  () => props.action.nameOverride || props.action.actionTypeRevision.name,
-);
-const description = computed(
-  () =>
-    props.action.descriptionOverride ||
-    props.action.actionTypeRevision.description,
-);
+const name = computed(() => projectActionName(props.action));
+const description = computed(() => projectActionDescription(props.action));
 const origin = computed(() =>
-  props.action.actionType.origin === "SYSTEM" ? "Системное" : "Интеграция",
+  actionOriginLabel(props.action.actionType.origin),
 );
 const supportsScenario = computed(() =>
   props.action.actionTypeRevision.supportedSurfaces.includes("SCENARIO"),
@@ -22,13 +23,11 @@ const supportsScenario = computed(() =>
 const supportsAi = computed(() =>
   props.action.actionTypeRevision.supportedSurfaces.includes("AI"),
 );
-const executor = computed(
-  () =>
-    ({
-      FRONTEND_COMMAND: "Frontend command",
-      SERVER_HANDLER: "Backend handler",
-      PROPOSAL: "Proposal",
-    })[props.action.actionTypeRevision.executorAdapter],
+const executor = computed(() =>
+  actionExecutorLabel(props.action.actionTypeRevision.executorAdapter),
+);
+const risk = computed(() =>
+  actionRiskLabel(props.action.actionTypeRevision.risk),
 );
 </script>
 
@@ -46,11 +45,10 @@ const executor = computed(
         <span class="tag-row"
           ><span class="origin-tag">{{ origin }}</span
           ><span class="revision-tag"
-            >Ревизия {{ action.actionTypeRevision.version }}</span
+            >Версия {{ action.actionTypeRevision.version }}</span
           ></span
         >
         <strong>{{ name }}</strong>
-        <code>{{ action.code }}</code>
       </span>
       <i class="pi pi-arrow-up-right open-icon" />
     </span>
@@ -69,7 +67,7 @@ const executor = computed(
         }}</strong>
       </span>
       <span class="surface-state" :class="{ unsupported: !supportsAi }">
-        <span><i class="pi pi-sparkles" /> AI</span>
+        <span><i class="pi pi-sparkles" /> Для помощника</span>
         <strong :class="action.aiEnabled ? 'enabled' : 'disabled'">{{
           supportsAi
             ? action.aiEnabled
@@ -82,11 +80,7 @@ const executor = computed(
 
     <span class="card-footer">
       <span><i class="pi pi-cog" /> {{ executor }}</span>
-      <span>{{
-        action.lifecycle === "ARCHIVED"
-          ? "Архив"
-          : action.actionTypeRevision.risk
-      }}</span>
+      <span>{{ action.lifecycle === "ARCHIVED" ? "В архиве" : risk }}</span>
     </span>
   </button>
 </template>
@@ -137,6 +131,13 @@ const executor = computed(
   color: var(--status-violet-text);
   background: var(--status-violet-soft);
   border-radius: 11px;
+}
+.action-icon i,
+.open-icon,
+.surface-state i,
+.card-footer i {
+  width: 1em;
+  text-align: center;
 }
 .identity {
   display: grid;

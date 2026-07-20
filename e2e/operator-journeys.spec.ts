@@ -400,24 +400,24 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
   );
   await page.goto("/interface/page");
   const bonusesTarget = page.locator("article").filter({
-    hasText: "bonuses_page",
+    hasText: "Бонусы",
   });
   await bonusesTarget.getByRole("button", { name: "Изменить" }).click();
   const targetEditor = page.getByRole("dialog", { name: "Изменить элемент" });
-  await targetEditor.getByRole("switch", { name: "Доступно AI" }).click();
+  await targetEditor.getByRole("switch", { name: "Разрешить Lola" }).click();
   await targetEditor
-    .getByLabel("Описание для AI 20–1000 символов")
+    .getByLabel("Описание для Lola 20–1000 символов")
     .fill(
       "Страница, где пользователь просматривает доступные бонусы и награды.",
     );
   await targetEditor
-    .getByLabel("Aliases через запятую, до 20")
-    .fill("награды, rewards");
+    .getByLabel("Другие названия через запятую, до 20")
+    .fill("награды, бонусы");
   await targetEditor
-    .getByLabel("Причина изменения AI-доступа обязательно")
+    .getByLabel("Зачем Lola нужен доступ обязательно")
     .fill("Разрешаем безопасную страницу бонусов для OPEN_PAGE");
   await targetEditor.getByRole("button", { name: "Сохранить" }).click();
-  await expect(bonusesTarget).toContainText("AI доступно");
+  await expect(bonusesTarget).toContainText("Доступно Lola");
 
   await page.goto("/actions");
 
@@ -425,48 +425,51 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
     name: "Открыть действие Открыть страницу",
   });
   await expect(card).toContainText("СценарииВключено");
-  await expect(card).toContainText("AIВыключено");
+  await expect(card).toContainText("Для помощникаВыключено");
   await card.click();
 
   const editor = page.locator(".project-action-dialog");
-  await expect(editor.getByText("Capability сейчас недоступна")).toBeVisible();
+  await expect(editor.getByText("Действие пока недоступно Lola")).toBeVisible();
   await editor.getByLabel("Использовать в сценариях").click();
-  await editor.getByLabel("Разрешить AI").click();
+  await editor.getByLabel("Разрешить помощнику Lola").click();
   await editor
-    .getByLabel("Описание для AI")
+    .getByLabel("Подсказка для Lola")
     .fill(
       "Используй, когда пользователь явно просит открыть страницу с бонусами.",
     );
   await editor
-    .getByLabel("Причина включения или расширения AI обязательно")
+    .getByLabel("Зачем Lola нужен доступ обязательно")
     .fill("Разрешаем безопасный переход на зарегистрированную страницу");
   await editor.locator('[data-test="save-project-action"]').click();
 
   const confirmation = page.getByRole("dialog", {
-    name: "Подтвердите изменение AI authority",
+    name: "Проверьте изменения перед сохранением",
   });
   await expect(confirmation).toContainText("СценарииВыключено");
-  await expect(confirmation).toContainText("AIВключено");
+  await expect(confirmation).toContainText("Для LolaВключено");
   await confirmation
     .locator('[data-test="confirm-project-action-save"]')
     .click();
 
+  await editor
+    .getByText("Технические сведения для разработчика", { exact: true })
+    .click();
   await expect(
     editor.getByText("lola_open_page", { exact: true }),
   ).toBeVisible();
   await expect(editor.locator("pre")).toContainText('"bonuses_page"');
   await expect(editor.locator("pre")).not.toContainText("route");
   await expect(editor.getByLabel("Использовать в сценариях")).not.toBeChecked();
-  await expect(editor.getByLabel("Разрешить AI")).toBeChecked();
+  await expect(editor.getByLabel("Разрешить помощнику Lola")).toBeChecked();
 
   await editor.getByLabel("Использовать в сценариях").click();
   await editor.locator('[data-test="save-project-action"]').click();
   await page
-    .getByRole("dialog", { name: "Подтвердите изменение AI authority" })
+    .getByRole("dialog", { name: "Проверьте изменения перед сохранением" })
     .locator('[data-test="confirm-project-action-save"]')
     .click();
   await expect(editor.getByLabel("Использовать в сценариях")).toBeChecked();
-  await expect(editor.getByLabel("Разрешить AI")).toBeChecked();
+  await expect(editor.getByLabel("Разрешить помощнику Lola")).toBeChecked();
 });
 
 test("core operator pages load without horizontal overflow or serious accessibility violations", async ({
@@ -776,7 +779,9 @@ test("AI Proposals stays durable, resolves explicitly and opens the exact conver
   await expect(
     page.getByRole("heading", { name: "Предложения Lola", level: 1 }),
   ).toBeVisible();
-  await expect(page.getByText("2 открытых · 1 непрочитанных")).toBeVisible();
+  await expect(
+    page.getByText("2 запроса требуют решения · 1 непрочитанное"),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", {
       name: /Непрочитанное предложение.*Клиент просит связаться/,
@@ -792,7 +797,9 @@ test("AI Proposals stays durable, resolves explicitly and opens the exact conver
   await expect(
     page.getByText("Безопасная выдержка из обращения"),
   ).toBeVisible();
-  await expect(page.getByText("2 открытых · 0 непрочитанных")).toBeVisible();
+  await expect(
+    page.getByText("2 запроса требуют решения · 0 непрочитанных"),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Обработано" }).click();
   await expect(

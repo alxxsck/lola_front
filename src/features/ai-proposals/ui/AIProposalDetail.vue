@@ -157,7 +157,7 @@ const evidence = computed(() =>
           <dd>{{ proposal.decisionReason }}</dd>
         </div>
         <div v-if="proposal.sourceInvocationId">
-          <dt>AI invocation</dt>
+          <dt>Связанный запуск Lola</dt>
           <dd>
             <code>{{ proposal.sourceInvocationId }}</code>
           </dd>

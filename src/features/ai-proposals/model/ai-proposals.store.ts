@@ -42,12 +42,24 @@ export const useAIProposalsStore = defineStore("ai-proposals", () => {
   let detailRequestSequence = 0;
   let reconciliation: Promise<void> | null = null;
 
-  const items = computed(() =>
-    orderedIds.value.flatMap((id) => {
+  const items = computed(() => {
+    const loaded = orderedIds.value.flatMap((id) => {
       const item = itemsById.value.get(id);
       return item ? [item] : [];
-    }),
-  );
+    });
+    return loaded.sort((left, right) => {
+      if (filters.value.sort === "ATTENTION_FIRST") {
+        const statusDifference =
+          Number(right.workflowStatus === "OPEN") -
+          Number(left.workflowStatus === "OPEN");
+        if (statusDifference) return statusDifference;
+      }
+      const dateDifference =
+        new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime();
+      return filters.value.sort === "OLDEST" ? -dateDifference : dateDifference;
+    });
+  });
   const selectedDetail = computed(() =>
     selectedId.value ? (detailsById.value.get(selectedId.value) ?? null) : null,
   );
@@ -265,7 +277,12 @@ export const useAIProposalsStore = defineStore("ai-proposals", () => {
   }
 
   async function setFilters(value: AIProposalFilters): Promise<void> {
+    const onlySortChanged =
+      filters.value.sort !== value.sort &&
+      JSON.stringify({ ...filters.value, sort: undefined }) ===
+        JSON.stringify({ ...value, sort: undefined });
     filters.value = { ...value };
+    if (onlySortChanged) return;
     nextCursor.value = null;
     await loadPage({ replace: true });
   }

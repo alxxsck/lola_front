@@ -26,6 +26,7 @@ import type {
   ProfileProjectionResponseDto,
 } from "@/shared/api/generated/models";
 import { formatDate, relativeTime } from "@/shared/lib/format";
+import { russianCount } from "@/shared/lib/russian-count";
 import type { ConversationMessage } from "@/shared/types/domain";
 
 const auth = useAuthStore();
@@ -135,11 +136,8 @@ onMounted(async () => {
         : {}),
     };
     await openProfile(summary, false, exactProfile);
-  } catch (cause) {
-    detailError.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось открыть пользователя";
+  } catch {
+    detailError.value = "Не удалось открыть пользователя";
   }
 });
 
@@ -243,12 +241,9 @@ async function load(append = false) {
     if (request !== requestSequence) return;
     items.value = append ? [...items.value, ...response.items] : response.items;
     nextCursor.value = response.nextCursor ?? null;
-  } catch (cause) {
+  } catch {
     if (request === requestSequence)
-      error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить профили пользователей";
+      error.value = "Не удалось загрузить профили пользователей";
   } finally {
     if (request === requestSequence) {
       loading.value = false;
@@ -322,10 +317,9 @@ async function openProfile(
       selected.value?.endUserId === profile.endUserId
     )
       detail.value = response;
-  } catch (cause) {
+  } catch {
     if (request === detailRequestSequence)
-      detailError.value =
-        cause instanceof Error ? cause.message : "Не удалось загрузить профиль";
+      detailError.value = "Не удалось загрузить профиль";
   } finally {
     if (request === detailRequestSequence) detailLoading.value = false;
   }
@@ -782,8 +776,14 @@ function classificationLabel(value: string) {
             >
               <strong>{{ conversation.title }}</strong>
               <span
-                >{{ conversation.messageCount }} сообщений ·
-                {{ relativeTime(conversation.lastMessageAt) }}</span
+                >{{
+                  russianCount(conversation.messageCount, [
+                    "сообщение",
+                    "сообщения",
+                    "сообщений",
+                  ])
+                }}
+                · {{ relativeTime(conversation.lastMessageAt) }}</span
               >
             </button>
           </div>
@@ -810,9 +810,8 @@ function classificationLabel(value: string) {
           </div>
 
           <Message v-if="!onlineSession" severity="info" :closable="false">
-            Пользователь сейчас офлайн. Backend пока не может доставить ответ;
-            предложение останется открытым, пока вы не обработаете запрос
-            вручную.
+            Пользователь сейчас не в сети, поэтому отправить ответ пока нельзя.
+            Вернитесь к диалогу позже или обработайте запрос другим способом.
           </Message>
           <form class="reply-form" @submit.prevent="sendReply">
             <Textarea

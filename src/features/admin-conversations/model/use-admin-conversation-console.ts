@@ -72,12 +72,9 @@ export function useAdminConversationConsole(
         null;
       selectedConversation.value = conversation;
       if (conversation) await loadMessages(conversation, false);
-    } catch (cause) {
+    } catch {
       if (request === conversationRequestSequence)
-        conversationError.value =
-          cause instanceof Error
-            ? cause.message
-            : "Не удалось загрузить диалоги";
+        conversationError.value = "Не удалось загрузить диалоги";
     } finally {
       if (request === conversationRequestSequence)
         conversationsLoading.value = false;
@@ -108,12 +105,9 @@ export function useAdminConversationConsole(
         selectedConversation.value?.id === conversation.id
       )
         messages.value = [...page.items].reverse();
-    } catch (cause) {
+    } catch {
       if (request === messageRequestSequence)
-        conversationError.value =
-          cause instanceof Error
-            ? cause.message
-            : "Не удалось загрузить сообщения";
+        conversationError.value = "Не удалось загрузить сообщения";
     } finally {
       if (request === messageRequestSequence) messagesLoading.value = false;
     }
@@ -142,11 +136,8 @@ export function useAdminConversationConsole(
       });
       replyText.value = "";
       await loadMessages(conversation, false);
-    } catch (cause) {
-      conversationError.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось отправить сообщение";
+    } catch {
+      conversationError.value = "Не удалось отправить сообщение";
     } finally {
       sendingReply.value = false;
     }

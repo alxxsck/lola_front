@@ -16,6 +16,13 @@ import { useProjectActionsStore } from "@/features/project-actions/model/project
 import ProjectActionCard from "@/features/project-actions/ui/ProjectActionCard.vue";
 import ProjectActionEditor from "@/features/project-actions/ui/ProjectActionEditor.vue";
 import AiCapabilityPreview from "@/features/project-actions/ui/AiCapabilityPreview.vue";
+import {
+  actionExecutorLabel,
+  actionOriginLabel,
+  actionRiskLabel,
+  actionTypeDescription,
+  actionTypeName,
+} from "@/features/project-actions/model/project-action-presentation";
 
 type ActionsView = "PROJECT" | "AI" | "SYSTEM" | "INTEGRATION";
 type SurfaceFilter = "ALL" | "SCENARIO" | "AI";
@@ -127,28 +134,28 @@ const visibleCatalog = computed(() =>
 );
 
 const surfaceOptions = [
-  { label: "Поверхности", value: "ALL" },
-  { label: "Scenario", value: "SCENARIO" },
-  { label: "AI", value: "AI" },
+  { label: "Где используется: везде", value: "ALL" },
+  { label: "В сценариях", value: "SCENARIO" },
+  { label: "Помощником Lola", value: "AI" },
 ];
 const statusOptions = [
-  { label: "Статусы", value: "ALL" },
-  { label: "Scenario включён", value: "SCENARIO_ENABLED" },
-  { label: "AI включён", value: "AI_ENABLED" },
-  { label: "Обе поверхности выключены", value: "DISABLED" },
-  { label: "Архив", value: "ARCHIVED" },
+  { label: "Состояние: любое", value: "ALL" },
+  { label: "Доступно в сценариях", value: "SCENARIO_ENABLED" },
+  { label: "Доступно Lola", value: "AI_ENABLED" },
+  { label: "Полностью выключено", value: "DISABLED" },
+  { label: "В архиве", value: "ARCHIVED" },
   { label: "Требуют внимания", value: "ISSUES" },
 ];
 const executorOptions = [
-  { label: "Исполнители", value: "ALL" },
-  { label: "Frontend command", value: "FRONTEND_COMMAND" },
-  { label: "Backend handler", value: "SERVER_HANDLER" },
-  { label: "Proposal", value: "PROPOSAL" },
+  { label: "Где выполняется: везде", value: "ALL" },
+  { label: "В приложении", value: "FRONTEND_COMMAND" },
+  { label: "На сервере", value: "SERVER_HANDLER" },
+  { label: "Через администратора", value: "PROPOSAL" },
 ];
 const originOptions = [
-  { label: "Источники", value: "ALL" },
-  { label: "System", value: "SYSTEM" },
-  { label: "Integration", value: "INTEGRATION" },
+  { label: "Источник: любой", value: "ALL" },
+  { label: "Встроенные", value: "SYSTEM" },
+  { label: "Подключённые", value: "INTEGRATION" },
 ];
 
 onMounted(load);
@@ -194,7 +201,7 @@ async function saveSelected(input: ConfigureProjectActionInput) {
     toast.add({
       severity: "success",
       summary: "Действие опубликовано",
-      detail: "Backend вернул актуальную конфигурацию.",
+      detail: "Новые настройки уже применены.",
       life: 3500,
     });
   } catch {
@@ -257,17 +264,21 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
     ? Object.keys(properties).length
     : 0;
 }
+
+function surfaceLabel(value: string): string {
+  return value === "SCENARIO" ? "В сценариях" : "Помощником Lola";
+}
 </script>
 
 <template>
   <div class="page actions-page">
     <header class="page-header">
       <div>
-        <div class="eyebrow">AI Product Actions</div>
+        <div class="eyebrow">Возможности проекта</div>
         <h1>Действия</h1>
         <p class="subtitle">
-          Безопасные code-owned действия проекта для Scenario и AI. Исполняемый
-          контракт остаётся read-only.
+          Выберите, какие действия доступны в сценариях и какие Lola может
+          предлагать пользователям. Все изменения проверяются перед сохранением.
         </p>
       </div>
       <Button
@@ -284,21 +295,21 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
       <div class="hero-copy">
         <span class="hero-icon"><i class="pi pi-shield" /></span>
         <div>
-          <strong>Default-deny authority</strong>
+          <strong>Безопасность включена по умолчанию</strong>
           <p>
-            OWNER публикует каждую поверхность отдельно. Grok получает только
-            strict schema, скомпилированную backend.
+            Новое действие недоступно, пока владелец проекта явно не разрешит
+            его. Доступ для сценариев и для Lola настраивается отдельно.
           </p>
         </div>
       </div>
       <div class="hero-metrics">
         <div>
           <strong>{{ scenarioEnabledCount }}</strong
-          ><span>в Scenario</span>
+          ><span>в сценариях</span>
         </div>
         <div>
           <strong>{{ aiEnabledCount }}</strong
-          ><span>для AI</span>
+          ><span>для Lola</span>
         </div>
         <div :class="{ warning: issueCount }">
           <strong>{{ issueCount }}</strong
@@ -314,7 +325,7 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
         @click="setView('PROJECT')"
       >
         <i class="pi pi-sliders-h" /><span
-          >Действия проекта<small>Surfaces и конфигурация</small></span
+          >Действия проекта<small>Доступность и настройки</small></span
         >
       </button>
       <button
@@ -323,7 +334,7 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
         @click="setView('AI')"
       >
         <i class="pi pi-sparkles" /><span
-          >AI capabilities<small>Authoritative preview</small></span
+          >Возможности помощника<small>Что Lola сможет сделать</small></span
         >
       </button>
       <button
@@ -332,7 +343,7 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
         @click="setView('SYSTEM')"
       >
         <i class="pi pi-box" /><span
-          >Системный каталог<small>Read-only contracts</small></span
+          >Встроенные действия<small>Готовые возможности Lola</small></span
         >
       </button>
       <button
@@ -341,14 +352,16 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
         @click="setView('INTEGRATION')"
       >
         <i class="pi pi-link" /><span
-          >Интеграция<small>Trusted registrations</small></span
+          >Подключённые действия<small>Возможности вашего продукта</small></span
         >
       </button>
     </nav>
 
     <Message v-if="error" severity="error" :closable="false">
       {{ error.message
-      }}<small v-if="error.requestId">Request ID: {{ error.requestId }}</small>
+      }}<small v-if="error.requestId"
+        >Код обращения: {{ error.requestId }}</small
+      >
       <Button label="Повторить" size="small" text @click="refresh" />
     </Message>
 
@@ -357,7 +370,7 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
         <div class="search-box">
           <i class="pi pi-search" /><InputText
             v-model="search"
-            placeholder="Название, code или описание"
+            placeholder="Найти действие по названию или описанию"
           />
         </div>
         <div class="filter-group">
@@ -428,7 +441,7 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
         </div>
         <div v-else class="empty">
           <i class="pi pi-filter-slash" /><strong>Действия не найдены</strong>
-          <p>Измените surface, lifecycle, executor или поисковый запрос.</p>
+          <p>Измените условия поиска или сбросьте выбранные фильтры.</p>
         </div>
       </template>
 
@@ -450,11 +463,11 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
         </div>
         <div v-else class="empty">
           <i class="pi pi-sparkles" /><strong
-            >AI capabilities пока не опубликованы</strong
+            >Для Lola пока не разрешено ни одного действия</strong
           >
           <p>
-            Включите AI у Project Action с обязательным описанием и OWNER
-            confirmation.
+            Откройте нужное действие, включите «Разрешить помощнику Lola»,
+            добавьте понятную подсказку и сохраните изменения.
           </p>
         </div>
       </template>
@@ -475,67 +488,88 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
               /></span>
               <div>
                 <span class="type-tags"
-                  ><b>{{
-                    item.origin === "SYSTEM" ? "System" : "Integration"
-                  }}</b
+                  ><b>{{ actionOriginLabel(item.origin) }}</b
                   ><em v-if="item.activeRevision"
-                    >revision {{ item.activeRevision.version }}</em
+                    >версия {{ item.activeRevision.version }}</em
                   ></span
                 >
-                <h3>{{ item.activeRevision?.name ?? item.key }}</h3>
-                <code>{{ item.key }}</code>
+                <h3>
+                  {{
+                    actionTypeName(
+                      item.key,
+                      item.activeRevision?.name ?? item.key,
+                    )
+                  }}
+                </h3>
               </div>
               <span v-if="!item.activeRevision" class="inactive"
-                >Нет активной ревизии</span
+                >Пока недоступно</span
               >
             </div>
             <template v-if="item.activeRevision">
-              <p>{{ item.activeRevision.description }}</p>
+              <p>
+                {{
+                  actionTypeDescription(
+                    item.key,
+                    item.activeRevision.description,
+                  )
+                }}
+              </p>
               <dl>
                 <div>
-                  <dt>Surfaces</dt>
+                  <dt>Можно использовать</dt>
                   <dd>
-                    {{ item.activeRevision.supportedSurfaces.join(" · ") }}
+                    {{
+                      item.activeRevision.supportedSurfaces
+                        .map(surfaceLabel)
+                        .join(" · ")
+                    }}
                   </dd>
                 </div>
                 <div>
-                  <dt>Executor</dt>
-                  <dd>{{ item.activeRevision.executorAdapter }}</dd>
+                  <dt>Где выполняется</dt>
+                  <dd>
+                    {{
+                      actionExecutorLabel(item.activeRevision.executorAdapter)
+                    }}
+                  </dd>
                 </div>
                 <div>
-                  <dt>Risk ceiling</dt>
-                  <dd>{{ item.activeRevision.risk }}</dd>
+                  <dt>Что делает</dt>
+                  <dd>{{ actionRiskLabel(item.activeRevision.risk) }}</dd>
                 </div>
                 <div>
-                  <dt>Variants</dt>
+                  <dt>Добавление</dt>
                   <dd>
                     {{
                       item.activeRevision.multipleInstances
-                        ? "Поддерживаются типом"
-                        : "Singleton"
+                        ? "Можно добавить несколько"
+                        : "Одно действие на проект"
                     }}
                   </dd>
                 </div>
               </dl>
               <div class="schema-summary">
-                <span><i class="pi pi-lock" /> Core contract read-only</span
+                <span
+                  ><i class="pi pi-lock" /> Основные правила защищены от
+                  изменений</span
                 ><span
-                  >Input fields:
+                  >Параметров:
                   {{
                     schemaPropertyCount(item.activeRevision.inputSchema)
                   }}</span
                 >
               </div>
               <details class="contract-schemas">
-                <summary>Публичные JSON Schemas</summary>
+                <summary>Технические сведения для разработчика</summary>
                 <div>
-                  <strong>Input</strong>
+                  <strong>Внутренний код: {{ item.key }}</strong>
                   <pre>{{
                     JSON.stringify(item.activeRevision.inputSchema, null, 2)
                   }}</pre>
                 </div>
                 <div>
-                  <strong>Project config</strong>
+                  <strong>Настройки проекта</strong>
                   <pre>{{
                     JSON.stringify(
                       item.activeRevision.projectConfigSchema,
@@ -545,7 +579,7 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
                   }}</pre>
                 </div>
                 <div>
-                  <strong>Result</strong>
+                  <strong>Результат выполнения</strong>
                   <pre>{{
                     JSON.stringify(item.activeRevision.resultSchema, null, 2)
                   }}</pre>
@@ -559,13 +593,13 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
             :class="view === 'INTEGRATION' ? 'pi pi-link' : 'pi pi-search'"
           /><strong>{{
             view === "INTEGRATION"
-              ? "Интеграционные типы не зарегистрированы"
+              ? "Подключённых действий пока нет"
               : "Типы действий не найдены"
           }}</strong>
           <p>
             {{
               view === "INTEGRATION"
-                ? "CMS не создаёт исполняемый код. Тип появится после trusted server-to-server регистрации."
+                ? "Действие появится здесь после того, как разработчик добавит его на сервере проекта."
                 : "Измените фильтры каталога."
             }}
           </p>
@@ -578,7 +612,7 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
       modal
       :header="
         selected
-          ? `${selected.actionTypeRevision.name} · ${selected.code}`
+          ? actionTypeName(selected.code, selected.actionTypeRevision.name)
           : 'Действие'
       "
       class="project-action-dialog"
@@ -701,6 +735,10 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
     color-mix(in srgb, var(--action-primary) 35%, transparent);
 }
 .view-tabs button > i {
+  display: inline-grid;
+  flex: 0 0 20px;
+  place-items: center;
+  width: 20px;
   color: var(--status-violet-text);
 }
 .view-tabs button span {
@@ -842,6 +880,12 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
   color: var(--status-violet-text);
   background: var(--status-violet-soft);
   border-radius: 12px;
+}
+.type-icon i,
+.hero-icon i,
+.schema-summary i {
+  width: 1em;
+  text-align: center;
 }
 .type-heading h3 {
   margin: 4px 0;

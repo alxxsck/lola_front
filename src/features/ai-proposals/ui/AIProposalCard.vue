@@ -32,6 +32,7 @@ const statusLabel = computed(() =>
     :class="{
       selected,
       unread: !proposal.isRead,
+      'needs-action': proposal.workflowStatus === 'OPEN',
       high: proposal.priority === 'HIGH' || proposal.priority === 'URGENT',
     }"
     :aria-label="`${proposal.isRead ? '' : 'Непрочитанное предложение. '}${proposal.title}`"
@@ -107,6 +108,24 @@ const statusLabel = computed(() =>
     color-mix(in srgb, var(--status-violet-soft) 62%, var(--surface-card)),
     var(--surface-card) 58%
   );
+}
+.proposal-card.needs-action {
+  border-color: color-mix(
+    in srgb,
+    var(--action-primary) 38%,
+    var(--border-default)
+  );
+  box-shadow: inset 3px 0 0 var(--action-primary);
+}
+.proposal-card.selected.needs-action {
+  border-color: color-mix(
+    in srgb,
+    var(--action-primary) 62%,
+    var(--border-default)
+  );
+  box-shadow:
+    inset 3px 0 0 var(--action-primary),
+    0 0 0 3px color-mix(in srgb, var(--action-primary) 12%, transparent);
 }
 .proposal-card.high {
   border-left: 3px solid var(--status-warning);

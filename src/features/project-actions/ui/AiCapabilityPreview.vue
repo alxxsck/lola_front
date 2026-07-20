@@ -2,6 +2,7 @@
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
+import { RouterLink } from "vue-router";
 import type { AiCapabilityPreview } from "../model/project-action";
 import type { ProjectActionError } from "../model/project-action-error";
 
@@ -40,21 +41,48 @@ function targetVariantCount(value: Record<string, unknown>): number {
     return total + (Array.isArray(variants) ? variants.length : 0);
   }, 0);
 }
+
+function fieldCountLabel(count: number): string {
+  if (count % 10 === 1 && count % 100 !== 11) return `${count} параметр`;
+  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100))
+    return `${count} параметра`;
+  return `${count} параметров`;
+}
+
+function variantCountLabel(count: number): string {
+  if (count % 10 === 1 && count % 100 !== 11)
+    return `${count} доступный вариант`;
+  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100))
+    return `${count} доступных варианта`;
+  return `${count} доступных вариантов`;
+}
+
+function issueMessage(code: string): string {
+  return (
+    {
+      AI_ACTION_DISABLED:
+        "Разрешите Lola использовать это действие и сохраните изменения.",
+      AI_ACTION_TARGETS_UNAVAILABLE:
+        "В разделе «Интерфейс» пока нет опубликованных элементов, которые Lola может использовать.",
+    }[code] ??
+    "Lola пока не может использовать это действие. Проверьте настройки и повторите попытку."
+  );
+}
 </script>
 
 <template>
   <section class="ai-preview" aria-labelledby="ai-preview-heading">
     <div class="preview-heading">
       <div>
-        <h3 id="ai-preview-heading">Что увидит Grok</h3>
+        <h3 id="ai-preview-heading">Как Lola будет использовать действие</h3>
         <p>
-          Точная capability компилируется backend из опубликованной
-          конфигурации.
+          Здесь показано, когда действие доступно Lola и какие данные она может
+          передать при выполнении.
         </p>
       </div>
       <span class="server-owned"
-        ><i class="pi pi-shield" /> Project, End User и Session подставляет
-        backend</span
+        ><i class="pi pi-shield" /> Данные проекта, пользователя и диалога
+        добавляются автоматически</span
       >
     </div>
     <div v-if="loading" class="preview-loading">
@@ -66,34 +94,39 @@ function targetVariantCount(value: Record<string, unknown>): number {
     </Message>
     <template v-else-if="preview?.tool">
       <div class="tool-card">
-        <div class="tool-name">
-          <span>function</span><code>{{ preview.tool.name }}</code
-          ><strong>strict</strong>
+        <div class="tool-status">
+          <i class="pi pi-check-circle" />
+          <strong>Действие доступно Lola</strong>
         </div>
         <div class="tool-metrics">
-          <span
-            >{{ schemaPropertyCount(preview.tool.parameters) }} model
-            fields</span
-          ><span
-            >{{ targetVariantCount(preview.tool.parameters) }} enum
-            variants</span
-          >
+          <span>{{
+            fieldCountLabel(schemaPropertyCount(preview.tool.parameters))
+          }}</span
+          ><span v-if="targetVariantCount(preview.tool.parameters)">{{
+            variantCountLabel(targetVariantCount(preview.tool.parameters))
+          }}</span>
         </div>
-        <p>{{ preview.tool.description }}</p>
-        <div>
-          <small>Model-visible arguments</small>
+        <div class="usage-copy">
+          <small>Когда Lola выберет действие</small>
+          <p>{{ preview.tool.description }}</p>
+        </div>
+        <details class="technical-details">
+          <summary>Технические сведения для разработчика</summary>
+          <code>{{ preview.tool.name }}</code>
           <pre>{{ formatSchema(preview.tool.parameters) }}</pre>
-        </div>
+        </details>
       </div>
     </template>
     <div v-else class="preview-empty">
       <i class="pi pi-eye-slash" />
       <div>
-        <strong>Capability сейчас недоступна</strong
-        ><span
-          >Backend не публикует tool, пока политика, цели или AI surface не
-          готовы.</span
-        >
+        <strong>Действие пока недоступно Lola</strong>
+        <span>
+          Проверьте, что доступ для Lola включён и сохранён. Если действие
+          открывает страницу, окно или элемент, сначала опубликуйте его в
+          разделе «Интерфейс».
+        </span>
+        <RouterLink to="/interface">Открыть раздел «Интерфейс»</RouterLink>
       </div>
     </div>
     <Message
@@ -102,7 +135,7 @@ function targetVariantCount(value: Record<string, unknown>): number {
       severity="warn"
       :closable="false"
     >
-      <code>{{ issue.code }}</code> — {{ issue.message }}
+      {{ issueMessage(issue.code) }}
     </Message>
   </section>
 </template>
@@ -151,22 +184,14 @@ function targetVariantCount(value: Record<string, unknown>): number {
   border: 1px solid var(--border-default);
   border-radius: 12px;
 }
-.tool-name {
+.tool-status {
   display: flex;
-  flex-wrap: wrap;
   gap: 7px;
   align-items: center;
-}
-.tool-name span,
-.tool-name strong {
-  padding: 3px 7px;
-  font-size: 10px;
-  background: var(--surface-hover);
-  border-radius: 999px;
-}
-.tool-name strong {
   color: var(--status-success-text);
-  background: var(--status-success-soft);
+}
+.tool-status strong {
+  font-size: 12px;
 }
 .tool-metrics {
   display: flex;
@@ -180,19 +205,31 @@ function targetVariantCount(value: Record<string, unknown>): number {
   background: var(--surface-card);
   border-radius: 999px;
 }
-.tool-card p {
+.usage-copy p {
   margin: 0;
   color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
 }
-.tool-card small {
+.usage-copy small {
   display: block;
   margin-bottom: 6px;
   color: var(--text-secondary);
   font-weight: 700;
-  text-transform: uppercase;
+}
+.technical-details {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.technical-details summary {
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.technical-details > code {
+  display: block;
+  margin-bottom: 8px;
 }
 pre {
   overflow: auto;
@@ -220,6 +257,11 @@ pre {
 .preview-empty div {
   display: grid;
   gap: 3px;
+}
+.preview-empty a {
+  color: var(--text-link);
+  font-size: 11px;
+  font-weight: 700;
 }
 .preview-empty strong {
   color: var(--text-primary);

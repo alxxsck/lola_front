@@ -59,7 +59,8 @@ const terminalPresentation = computed(() => {
       @click="$emit('resolve')"
     />
     <span v-else class="future-decision">
-      Решение недоступно в этой версии CMS
+      Этот тип запроса пока можно только просмотреть. Выполните нужное действие
+      вручную и оставьте запрос открытым.
     </span>
   </div>
   <div

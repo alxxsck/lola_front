@@ -12,6 +12,7 @@ export type AIProposalKind =
   "ADMIN_ATTENTION" | "INSIGHT" | "ACTION_RECOMMENDATION";
 export type AIProposalSourceType = "TEXT_CHAT" | "VOICE" | "BACKGROUND_AI";
 export type AIProposalPreset = "OPEN" | "UNREAD" | "COMPLETED";
+export type AIProposalSort = "ATTENTION_FIRST" | "NEWEST" | "OLDEST";
 
 export interface AIProposalEndUser {
   id: string;
@@ -59,6 +60,7 @@ export interface AIProposalSummary {
 
 export interface AIProposalFilters {
   preset: AIProposalPreset;
+  sort: AIProposalSort;
   kind?: AIProposalKind;
   priority?: AIProposalPriority;
   endUserId?: string;
@@ -68,6 +70,7 @@ export interface AIProposalFilters {
 
 export const defaultAIProposalFilters = (): AIProposalFilters => ({
   preset: "OPEN",
+  sort: "ATTENTION_FIRST",
 });
 
 export function mapAIProposalSummary(

@@ -33,7 +33,7 @@ export function proposalWorkflowLabel(
   status: AIProposalWorkflowStatus,
 ): string {
   return {
-    OPEN: "Открыто",
+    OPEN: "Требует решения",
     ACCEPTED: "Принято к выполнению",
     REJECTED: "Отклонено",
     RESOLVED: "Обработано",

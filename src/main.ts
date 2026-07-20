@@ -9,6 +9,7 @@ import '@/app/styles/main.css'
 import App from './App.vue'
 import { router } from '@/app/router'
 import { LolaPrimePreset } from '@/app/theme/lola-prime-preset'
+import { primeVueRussianLocale } from '@/app/primevue-ru'
 import { initializeTheme } from '@/shared/theme/theme'
 
 initializeTheme()
@@ -17,6 +18,7 @@ createApp(App)
   .use(createPinia())
   .use(router)
   .use(PrimeVue, {
+    locale: primeVueRussianLocale,
     theme: {
       preset: LolaPrimePreset,
       options: { darkModeSelector: '.lola-dark', cssLayer: false },

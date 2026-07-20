@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { russianCount } from "@/shared/lib/russian-count";
+
 defineProps<{ count: number }>();
 </script>
 
@@ -6,7 +8,7 @@ defineProps<{ count: number }>();
   <span
     v-if="count > 0"
     class="proposal-badge"
-    :aria-label="`${count} непрочитанных предложений Lola`"
+    :aria-label="`${russianCount(count, ['непрочитанное предложение', 'непрочитанных предложения', 'непрочитанных предложений'])} Lola`"
   >
     {{ count > 99 ? "99+" : count }}
   </span>

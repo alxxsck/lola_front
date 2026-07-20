@@ -21,4 +21,22 @@ describe('Project Action errors', () => {
       status: 409,
     })
   })
+
+  it('does not expose an unknown technical backend message', () => {
+    const error = toProjectActionError(
+      new ApiError(
+        500,
+        'Internal schema compiler exploded',
+        undefined,
+        'request-2',
+        'UNKNOWN_BACKEND_CODE',
+      ),
+    )
+
+    expect(error.message).toBe(
+      'Не удалось выполнить действие. Повторите попытку или сообщите администратору код обращения.',
+    )
+    expect(error.message).not.toContain('schema')
+    expect(error.requestId).toBe('request-2')
+  })
 })
