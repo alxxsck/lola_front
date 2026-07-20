@@ -180,8 +180,8 @@ function requestTargets(targets: string[]) {
           type="button"
           class="translate-button"
           data-translation-trigger
-          title="Перевести этот текст на все языки сценария с помощью Google Translation LLM"
-          :aria-label="`Перевести ${label} на языки сценария с помощью AI`"
+          title="Перевести этот текст на незаполненные языки сценария"
+          :aria-label="`Перевести ${label} на языки сценария`"
           :disabled="
             readonly ||
             !translation.enabled ||
@@ -191,11 +191,11 @@ function requestTargets(targets: string[]) {
           "
           @click="emit('translation-request', generateTargets)"
         >
-          <span aria-hidden="true" class="sparkle">✦</span>
-          {{ translationBusy ? "Переводим…" : "AI Перевести" }}
+          <i aria-hidden="true" class="pi pi-language" />
+          {{ translationBusy ? "Переводим…" : "Перевести" }}
         </button>
         <details v-if="allTranslatableTargets.length" ref="translationMenu" class="translation-menu">
-          <summary aria-label="Другие варианты AI-перевода">•••</summary>
+          <summary aria-label="Другие варианты перевода">•••</summary>
           <div>
             <button type="button" :disabled="!generateTargets.length" @click="emit('translation-request', generateTargets)">
               Перевести только незаполненные
@@ -215,9 +215,9 @@ function requestTargets(targets: string[]) {
       >Отменить</button>
     </div>
     <small v-if="translation.enabled" class="translation-privacy">
-      В Google Translation LLM через Lola отправляется только статический текст поля — без данных пользователей и значений шаблонов.
+      Для автоматического перевода Lola использует Grok от xAI. Передаётся только статический текст поля — без данных пользователей и значений шаблонов.
     </small>
-    <div v-if="targetPickerOpen" class="target-picker" role="group" aria-label="Выбрать языки для AI-перевода">
+    <div v-if="targetPickerOpen" class="target-picker" role="group" aria-label="Выбрать языки для перевода">
       <label v-for="locale in allTranslatableTargets" :key="locale">
         <input v-model="pickedTargets" type="checkbox" :value="locale" />
         {{ localeDisplayName(locale) }} ({{ locale }})

@@ -406,7 +406,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
         projectId: "project-1",
         type: "SAY",
         name: "Сказать текст",
-        description: null,
+        description: "Показывает полный приветственный текст пользователю.",
         executor: "SERVER",
         serverHandler: "say",
         commandType: null,
@@ -1030,7 +1030,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
 
     expect(wrapper.get(".mobile-action-outline").text()).toContain("legacy_action");
     expect(stageButton(wrapper, "Действия").classes()).toContain("active");
-    expect(wrapper.text()).toContain("1 ошибок действий");
+    expect(wrapper.text()).toContain("1 ошибка в действиях");
   });
 
   it("renders a mobile-safe action outline that can open a node without canvas gestures", async () => {
@@ -1055,8 +1055,11 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       "welcome_message",
     );
     expect(wrapper.get(".mobile-library summary").text()).toContain(
-      "Добавить узел",
+      "Добавить действие",
     );
+    expect(
+      wrapper.find('input[aria-label="Найти действие на мобильном"]').exists(),
+    ).toBe(true);
     await wrapper
       .get('button[aria-label="Открыть узел welcome_message"]')
       .trigger("click");
@@ -1064,6 +1067,110 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(
       wrapper.findComponent({ name: "ScenarioNodeInspector" }).exists(),
     ).toBe(true);
+  });
+
+  it("opens the graph as a dedicated mobile overview only when requested", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "welcome_message",
+            type: "SAY",
+            config: { text: "Добро пожаловать" },
+          },
+        ],
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+
+    expect(wrapper.find('[data-test="vue-flow"]').exists()).toBe(false);
+    await wrapper.get(".mobile-graph-button").trigger("click");
+
+    expect(wrapper.get(".graph-canvas").classes()).toContain("graph-expanded");
+    expect(wrapper.find('[data-test="vue-flow"]').exists()).toBe(true);
+    expect(
+      wrapper.get('button[aria-label="Вернуться к настройке действия"]').text(),
+    ).toContain("К настройке");
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
+  it("uses the created-action list as the primary navigation and keeps full names visible", async () => {
+    mocks.actionDefinitions = [
+      {
+        id: "say",
+        projectId: "project-1",
+        type: "SAY",
+        name: "Отправить пользователю приветственное сообщение",
+        description: "Показывает полный приветственный текст пользователю.",
+        executor: "SERVER",
+        serverHandler: "say",
+        commandType: null,
+        configSchema: {
+          type: "object",
+          properties: { text: { type: "string" } },
+          required: ["text"],
+        },
+        uiSchema: {
+          fields: [{ key: "text", label: "Текст", control: "textarea" }],
+        },
+        enabled: true,
+        builtIn: true,
+        createdAt: "now",
+        updatedAt: "now",
+      },
+    ];
+    mocks.projectActions = [projectAction("SAY")];
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "welcome_message",
+            type: "SAY",
+            config: { text: "Добро пожаловать" },
+          },
+        ],
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+
+    const actionButton = wrapper.get(
+      'button[aria-label="Настроить действие Отправить пользователю приветственное сообщение"]',
+    );
+    expect(actionButton.text()).toContain(
+      "Отправить пользователю приветственное сообщение",
+    );
+    expect(wrapper.get(".action-library summary").text()).toContain(
+      "Добавить действие",
+    );
+    expect(wrapper.get(".action-library").text()).toContain(
+      "Показывает полный приветственный текст пользователю.",
+    );
+    await wrapper.get(".graph-toolbar button").trigger("click");
+    expect(wrapper.get(".studio-grid").classes()).toContain("graph-is-expanded");
+    await actionButton.trigger("click");
+    expect(wrapper.get(".studio-grid").classes()).not.toContain(
+      "graph-is-expanded",
+    );
+    expect(wrapper.get(".studio-grid").classes()).toContain(
+      "has-action-inspector",
+    );
   });
 
   it("keeps Audience and publish mutations read-only outside OWNER and ADMIN roles", async () => {

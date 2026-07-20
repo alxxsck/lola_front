@@ -18,11 +18,11 @@ import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import { Position, VueFlow, type Edge, type Node } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
-import { Controls } from "@vue-flow/controls";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 import "@vue-flow/controls/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
+import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
 import ScenarioConditionRows from "@/features/scenarios/ScenarioConditionRows.vue";
 import {
@@ -153,6 +153,15 @@ function eventDisplayName(code: string, fallback: string) {
   return systemEventNames[code] ?? fallback;
 }
 
+function russianCount(count: number, one: string, few: string, many: string) {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  if (lastTwo >= 11 && lastTwo <= 14) return `${count} ${many}`;
+  if (last === 1) return `${count} ${one}`;
+  if (last >= 2 && last <= 4) return `${count} ${few}`;
+  return `${count} ${many}`;
+}
+
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -230,6 +239,15 @@ const focusedLocalizedFieldPath = ref("");
 const focusedLocale = ref("");
 const inspectorMode = ref<"node" | "settings">("settings");
 const compactActionLayout = ref(false);
+const graphExpanded = ref(false);
+const actionSearch = ref("");
+const graphCanvasElement = ref<HTMLElement | null>(null);
+const actionInspector = ref<{ focus?: () => void } | null>(null);
+const desktopActionLibrary = ref<HTMLDetailsElement | null>(null);
+const mobileActionLibrary = ref<HTMLDetailsElement | null>(null);
+const desktopActionSearchInput = ref<HTMLInputElement | null>(null);
+const mobileActionSearchInput = ref<HTMLInputElement | null>(null);
+let actionViewReturnFocus: HTMLElement | null = null;
 const publishPending = ref(false);
 const codeTouched = ref(false);
 const initialSnapshot = ref("");
@@ -578,7 +596,7 @@ const stages = computed<
   {
     key: "actions",
     label: "Действия",
-    detail: `${form.actions.length} узлов · ${form.actions.filter((action) => action.type === "WAIT_FOR_GOAL").length} целей`,
+    detail: `${russianCount(form.actions.length, "действие", "действия", "действий")} · ${russianCount(form.actions.filter((action) => action.type === "WAIT_FOR_GOAL").length, "цель", "цели", "целей")}`,
     status: actionIssues.value.length
       ? "invalid"
       : form.actions.length
@@ -701,6 +719,20 @@ const actionGroups = computed(() => {
       ),
     },
   ].filter((group) => group.items.length);
+});
+const filteredActionGroups = computed(() => {
+  const needle = actionSearch.value.trim().toLocaleLowerCase();
+  if (!needle) return actionGroups.value;
+  return actionGroups.value
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        `${item.name} ${item.description ?? ""} ${item.type}`
+          .toLocaleLowerCase()
+          .includes(needle),
+      ),
+    }))
+    .filter((group) => group.items.length);
 });
 
 const flowNodes = computed<Node[]>(() => {
@@ -874,7 +906,7 @@ async function load() {
       projectActionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
         actionsError.value = scenarioApiErrorMessage(
           cause,
-          "Не удалось загрузить настройки Project Actions",
+          "Не удалось загрузить настройки действий проекта",
         );
       }),
       scenarioAuthoringRepository
@@ -1070,6 +1102,7 @@ function selectStage(stage: StudioStage) {
     ruleEditorDirty.value = false;
   }
   studioStage.value = stage;
+  if (stage !== "actions") graphExpanded.value = false;
   if (stage === "trigger") {
     inspectorMode.value = "settings";
     selectedNodeKey.value = null;
@@ -1140,6 +1173,7 @@ function focusDraftIssue(issue: {
     issue.path.includes("goal")
   ) {
     studioStage.value = "actions";
+    graphExpanded.value = false;
     const index = Number(issue.path.match(/actions(?:\.|\[)(\d+)/)?.[1]);
     const action = Number.isInteger(index) ? form.actions[index] : undefined;
     selectedNodeKey.value = action?.nodeKey ?? null;
@@ -1161,6 +1195,7 @@ function focusDraftIssue(issue: {
       }
       focusedLocalizedFieldPath.value = `graph.actions.${action.nodeKey}.${suffix}`;
       focusedLocale.value = pathLocale ?? "";
+      focusActionInspector();
     }
     return;
   }
@@ -1248,7 +1283,7 @@ function nodeSummary(action: ScenarioAction) {
   if (action.type === "ASK_CHOICE")
     return displayText(action.config.message) || "Настройте вопрос и варианты ответа";
   if (action.type === "CONDITION")
-    return `${Array.isArray(action.config.branches) ? action.config.branches.length : 0} runtime-веток + fallback`;
+    return `${russianCount(Array.isArray(action.config.branches) ? action.config.branches.length : 0, "ветка", "ветки", "веток")} и запасной переход`;
   if (action.type === "WAIT_FOR_GOAL") {
     return authoringContract.value
       ? summarizeGoalDraft(
@@ -1264,6 +1299,7 @@ function nodeSummary(action: ScenarioAction) {
 }
 
 function appendNode(type: string, connectPrevious: boolean) {
+  rememberActionViewFocus();
   const definition = findActionDefinition(actionDefinitions.value, type);
   const node = createScenarioNode(
     type,
@@ -1292,12 +1328,86 @@ function appendNode(type: string, connectPrevious: boolean) {
   }
   selectedNodeKey.value = node.nodeKey ?? null;
   inspectorMode.value = "node";
+  graphExpanded.value = false;
   studioStage.value = "actions";
+  focusActionInspector();
   return node;
 }
 
 function addNode(type: string) {
-  appendNode(type, true);
+  const node = appendNode(type, true);
+  actionSearch.value = "";
+  if (desktopActionLibrary.value) desktopActionLibrary.value.open = false;
+  if (mobileActionLibrary.value) mobileActionLibrary.value.open = false;
+  void nextTick(() => {
+    const candidates = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        `[data-action-node-key="${node.nodeKey}"]`,
+      ),
+    );
+    actionViewReturnFocus =
+      candidates.find((candidate) => candidate.getClientRects().length > 0) ??
+      candidates[0] ??
+      null;
+  });
+}
+
+function rememberActionViewFocus() {
+  if (document.activeElement instanceof HTMLElement) {
+    actionViewReturnFocus = document.activeElement;
+  }
+}
+
+function focusActionInspector() {
+  void nextTick(() => actionInspector.value?.focus?.());
+}
+
+function visibleActionFocusFallback() {
+  const candidates = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      ".action-outline-item, .mobile-node-card, .action-library > summary, .mobile-library > summary, .mobile-graph-button",
+    ),
+  );
+  return (
+    candidates.find((candidate) => candidate.getClientRects().length > 0) ??
+    candidates[0] ??
+    null
+  );
+}
+
+function restoreActionViewFocus() {
+  const target = actionViewReturnFocus;
+  actionViewReturnFocus = null;
+  void nextTick(() => {
+    const targetVisible =
+      target?.isConnected && target.getClientRects().length > 0;
+    (targetVisible ? target : visibleActionFocusFallback())?.focus();
+  });
+}
+
+function handleActionLibraryToggle(
+  event: Event,
+  searchInput: HTMLInputElement | null,
+) {
+  if (!(event.currentTarget as HTMLDetailsElement).open) return;
+  void nextTick(() => searchInput?.focus());
+}
+
+function closeActionLibrary(library: HTMLDetailsElement | null) {
+  if (!library?.open) return;
+  library.open = false;
+  void nextTick(() => library.querySelector<HTMLElement>("summary")?.focus());
+}
+
+function toggleGraphExpanded() {
+  if (graphExpanded.value) {
+    graphExpanded.value = false;
+    restoreActionViewFocus();
+    return;
+  }
+  rememberActionViewFocus();
+  graphExpanded.value = true;
+  void nextTick(() => graphCanvasElement.value?.focus());
 }
 
 function createTarget(
@@ -1328,20 +1438,27 @@ function selectNode(event: { node: Node }) {
     selectStage("trigger");
     return;
   }
+  rememberActionViewFocus();
   selectedNodeKey.value = event.node.id;
   inspectorMode.value = "node";
+  graphExpanded.value = false;
   studioStage.value = "actions";
+  focusActionInspector();
 }
 
 function openNode(nodeKey: string) {
+  rememberActionViewFocus();
   selectedNodeKey.value = nodeKey;
   inspectorMode.value = "node";
+  graphExpanded.value = false;
   studioStage.value = "actions";
+  focusActionInspector();
 }
 
 function closeNodeInspector() {
   selectedNodeKey.value = null;
   inspectorMode.value = "settings";
+  restoreActionViewFocus();
 }
 
 function changeType(type: string) {
@@ -1403,6 +1520,7 @@ function removeSelected() {
   normalizePositions(form.actions);
   selectedNodeKey.value = null;
   inspectorMode.value = "settings";
+  restoreActionViewFocus();
 }
 
 async function save() {
@@ -1611,7 +1729,12 @@ function leave() {
           }"
           >{{
             actionIssues.length
-              ? `${actionIssues.length} ошибок действий`
+              ? russianCount(
+                  actionIssues.length,
+                  "ошибка в действиях",
+                  "ошибки в действиях",
+                  "ошибок в действиях",
+                )
               : audienceSummary?.status === "invalid"
                 ? "Исправьте аудиторию"
                 : audienceSummary?.status === "unsupported"
@@ -1695,7 +1818,8 @@ function leave() {
           `stage-${studioStage}`,
           {
             'has-action-inspector':
-              studioStage === 'actions' && Boolean(selectedAction),
+              studioStage === 'actions' && Boolean(selectedAction) && !graphExpanded,
+            'graph-is-expanded': studioStage === 'actions' && graphExpanded,
           },
         ]"
       >
@@ -1721,52 +1845,96 @@ function leave() {
               >
             </button>
           </nav>
-          <div
-            v-if="studioStage === 'actions' && canEdit"
-            class="action-library"
-          >
-            <div class="library-head">
-              <span>Библиотека</span><strong>Добавить узел</strong>
-            </div>
-            <div
-              v-for="group in actionGroups"
-              :key="group.label"
-              class="library-group"
-            >
-              <h3>{{ group.label }}</h3>
+          <section v-if="studioStage === 'actions'" class="action-workflow-nav">
+            <header class="action-workflow-head">
+              <div>
+                <span>Сценарий</span>
+                <strong>Действия</strong>
+              </div>
+              <small>{{ form.actions.length }}</small>
+            </header>
+            <div v-if="form.actions.length" class="action-outline-list">
               <button
-                v-for="definition in group.items"
-                :key="definition.type"
+                v-for="action in form.actions"
+                :key="action.nodeKey"
                 type="button"
-                @click="addNode(definition.type)"
+                class="action-outline-item"
+                :data-action-node-key="action.nodeKey"
+                :class="{ active: selectedNodeKey === action.nodeKey && !graphExpanded }"
+                :aria-label="`Настроить действие ${findActionDefinition(actionDefinitions, action.type)?.name ?? action.type}`"
+                @click="openNode(action.nodeKey ?? '')"
               >
-                <span
-                  ><i
-                    :class="
-                      definition.type === 'CONDITION'
-                        ? 'pi pi-code'
-                        : definition.type === 'ASK_CHOICE'
-                          ? 'pi pi-question-circle'
-                          : definition.executor === 'FRONTEND'
-                            ? 'pi pi-desktop'
-                            : 'pi pi-server'
-                    "
-                /></span>
+                <span><i :class="action.type === 'CONDITION' ? 'pi pi-code' : action.type === 'WAIT_FOR_GOAL' ? 'pi pi-clock' : 'pi pi-bolt'" /></span>
                 <div>
-                  <strong>{{ definition.name }}</strong
-                  ><small>{{
-                    definition.executor === "FRONTEND"
-                      ? "В интерфейсе"
-                      : "На сервере"
-                  }}</small>
+                  <strong>{{ findActionDefinition(actionDefinitions, action.type)?.name ?? action.type }}</strong>
+                  <small>{{ action.nodeKey }} · {{ nodeSummary(action) }}</small>
                 </div>
-                <i class="pi pi-plus" />
+                <em v-if="actionIssues.filter((issue) => issue.nodeKey === action.nodeKey).length">
+                  {{ actionIssues.filter((issue) => issue.nodeKey === action.nodeKey).length }}
+                </em>
               </button>
             </div>
-          </div>
+            <p v-else class="action-outline-empty">Здесь появятся добавленные действия.</p>
+
+            <details
+              v-if="canEdit"
+              ref="desktopActionLibrary"
+              class="action-library"
+              @toggle="handleActionLibraryToggle($event, desktopActionSearchInput)"
+              @keydown.esc.stop.prevent="closeActionLibrary(desktopActionLibrary)"
+            >
+              <summary><i class="pi pi-plus" />Добавить действие</summary>
+              <div class="action-library-body">
+                <label class="action-library-search">
+                  <i class="pi pi-search" />
+                  <input ref="desktopActionSearchInput" v-model="actionSearch" type="search" placeholder="Найти действие" aria-label="Найти действие" />
+                </label>
+                <div
+                  v-for="group in filteredActionGroups"
+                  :key="group.label"
+                  class="library-group"
+                >
+                  <h3>{{ group.label }}</h3>
+                  <button
+                    v-for="definition in group.items"
+                    :key="definition.type"
+                    type="button"
+                    @click="addNode(definition.type)"
+                  >
+                    <span><i :class="definition.type === 'CONDITION' ? 'pi pi-code' : definition.type === 'ASK_CHOICE' ? 'pi pi-question-circle' : definition.executor === 'FRONTEND' ? 'pi pi-desktop' : 'pi pi-server'" /></span>
+                    <div>
+                      <strong>{{ definition.name }}</strong>
+                      <small>{{ definition.description || "Описание пока не добавлено" }}</small>
+                      <small class="library-executor">{{ definition.executor === "FRONTEND" ? "В интерфейсе" : "На сервере" }}</small>
+                    </div>
+                    <i class="pi pi-plus" />
+                  </button>
+                </div>
+                <p v-if="!filteredActionGroups.length" class="action-library-empty">Ничего не найдено. Попробуйте другое название.</p>
+              </div>
+            </details>
+          </section>
         </aside>
 
-        <main v-if="studioStage === 'actions'" class="graph-canvas">
+        <main
+          v-if="studioStage === 'actions'"
+          ref="graphCanvasElement"
+          class="graph-canvas"
+          :class="{ 'graph-expanded': graphExpanded }"
+          tabindex="-1"
+          aria-label="Схема сценария"
+          @keydown.esc="graphExpanded && toggleGraphExpanded()"
+        >
+          <header v-if="form.actions.length" class="graph-toolbar">
+            <div>
+              <span>Схема сценария</span>
+              <small>{{ graphExpanded ? 'Полный обзор' : 'Обзор связей между действиями' }}</small>
+            </div>
+            <button type="button" :aria-label="graphExpanded ? 'Вернуться к настройке действия' : 'Развернуть схему сценария'" @click="toggleGraphExpanded">
+              <i :class="graphExpanded ? 'pi pi-compress' : 'pi pi-expand'" />
+              {{ graphExpanded ? "К настройке" : "Развернуть" }}
+            </button>
+          </header>
           <details
             v-if="authoringContract?.localization"
             class="localization-policy-card"
@@ -1822,18 +1990,24 @@ function leave() {
             <header>
               <div>
                 <span>Действия и ожидания</span
-                ><strong>{{ form.actions.length }} узлов</strong>
+                ><strong>{{ russianCount(form.actions.length, "действие", "действия", "действий") }}</strong>
               </div>
               <small
-                >На мобильном граф доступен как обзор; редактирование
-                выполняется через список.</small
+                >Выберите действие для настройки или откройте схему целиком.</small
               >
             </header>
+            <button
+              v-if="form.actions.length"
+              type="button"
+              class="mobile-graph-button"
+              @click="toggleGraphExpanded"
+            ><i class="pi pi-sitemap" />Открыть схему</button>
             <button
               v-for="action in form.actions"
               :key="action.nodeKey"
               type="button"
               class="mobile-node-card"
+              :data-action-node-key="action.nodeKey"
               :aria-label="`Открыть узел ${action.nodeKey}`"
               @click="openNode(action.nodeKey ?? '')"
             >
@@ -1868,11 +2042,21 @@ function leave() {
               ><i class="pi pi-chevron-right" />
             </button>
             <p v-if="!form.actions.length" class="mobile-empty">
-              Добавьте первый узел из библиотеки ниже.
+              Добавьте первое действие из списка ниже.
             </p>
-            <details v-if="canEdit" class="mobile-library">
-              <summary>Добавить узел</summary>
-              <div v-for="group in actionGroups" :key="group.label">
+            <details
+              v-if="canEdit"
+              ref="mobileActionLibrary"
+              class="mobile-library"
+              @toggle="handleActionLibraryToggle($event, mobileActionSearchInput)"
+              @keydown.esc.stop.prevent="closeActionLibrary(mobileActionLibrary)"
+            >
+              <summary>Добавить действие</summary>
+              <label class="mobile-library-search">
+                <i class="pi pi-search" />
+                <input ref="mobileActionSearchInput" v-model="actionSearch" type="search" placeholder="Найти действие" aria-label="Найти действие на мобильном" />
+              </label>
+              <div v-for="group in filteredActionGroups" :key="group.label">
                 <strong>{{ group.label }}</strong
                 ><button
                   v-for="definition in group.items"
@@ -1880,13 +2064,18 @@ function leave() {
                   type="button"
                   @click="addNode(definition.type)"
                 >
-                  <i class="pi pi-plus" />{{ definition.name }}
+                  <i class="pi pi-plus" />
+                  <span>
+                    <strong>{{ definition.name }}</strong>
+                    <small>{{ definition.description || "Описание пока не добавлено" }}</small>
+                  </span>
                 </button>
               </div>
+              <p v-if="!filteredActionGroups.length" class="action-library-empty">Ничего не найдено. Попробуйте другое название.</p>
             </details>
           </section>
           <VueFlow
-            v-if="!compactActionLayout && form.actions.length"
+            v-if="(!compactActionLayout || graphExpanded) && form.actions.length"
             :nodes="flowNodes"
             :edges="flowEdges"
             :node-types="flowNodeTypes"
@@ -1898,7 +2087,7 @@ function leave() {
             @node-click="selectNode"
           >
             <Background pattern-color="var(--graph-edge)" :gap="22" />
-            <Controls :show-interactive="false" />
+            <ScenarioFlowControls />
           </VueFlow>
           <section
             v-if="!compactActionLayout && !form.actions.length"
@@ -2193,8 +2382,10 @@ function leave() {
             studioStage === 'actions' &&
             inspectorMode === 'node' &&
             selectedAction &&
+            !graphExpanded &&
             canEdit
           "
+          ref="actionInspector"
           :project-id="auth.project?.id ?? ''"
           :action="selectedAction"
           :actions="form.actions"
@@ -2226,7 +2417,8 @@ function leave() {
           v-else-if="
             studioStage === 'actions' &&
             inspectorMode === 'node' &&
-            selectedAction
+            selectedAction &&
+            !graphExpanded
           "
           class="readonly-panel readonly-action-panel"
           aria-label="Действие только для просмотра"
@@ -2524,11 +2716,32 @@ function leave() {
   min-height: 0;
   flex: 1;
   display: grid;
-  grid-template-columns: 188px minmax(0, 1fr);
+  grid-template-columns: 208px minmax(0, 1fr);
   overflow: hidden;
 }
 .studio-grid.stage-actions.has-action-inspector {
-  grid-template-columns: 188px minmax(0, 1fr) 360px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-rows: minmax(430px, 1fr) minmax(220px, 34%);
+}
+.studio-grid.stage-actions.has-action-inspector > .studio-sidebar {
+  grid-row: 1 / -1;
+}
+.studio-grid.stage-actions.has-action-inspector > .graph-canvas {
+  grid-column: 2;
+  grid-row: 2;
+  border-top: 1px solid var(--line);
+}
+.studio-grid.stage-actions.has-action-inspector > .inspector,
+.studio-grid.stage-actions.has-action-inspector > .readonly-action-panel {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+.studio-grid.stage-actions.graph-is-expanded {
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+.studio-grid.stage-actions.graph-is-expanded > .graph-canvas {
+  grid-column: 2;
 }
 .studio-grid.stage-trigger > .stage-overview,
 .studio-grid.stage-audience > .stage-aside,
@@ -2612,27 +2825,159 @@ function leave() {
   color: var(--text-small-muted);
   font-size: 0.58rem;
 }
-.action-library {
+.action-workflow-nav {
   margin-top: 17px;
   padding-top: 15px;
   border-top: 1px solid var(--line);
 }
-.library-head {
-  padding: 0 7px 14px;
+.action-workflow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 7px 10px;
 }
-.library-head span,
-.library-head strong {
+.action-workflow-head span,
+.action-workflow-head strong {
   display: block;
 }
-.library-head span {
+.action-workflow-head span {
   color: var(--text-small-muted);
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
-.library-head strong {
+.action-workflow-head strong {
   margin-top: 3px;
   font: 700 0.85rem Manrope;
+}
+.action-workflow-head > small {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: var(--surface-active);
+  color: var(--text-secondary);
+  font-size: .65rem;
+  font-weight: 800;
+}
+.action-outline-list {
+  display: grid;
+  gap: 6px;
+}
+.action-outline-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.action-outline-item:hover,
+.action-outline-item.active {
+  border-color: var(--border-default);
+  background: var(--surface-card);
+}
+.action-outline-item.active {
+  border-color: var(--status-violet);
+  box-shadow: 0 0 0 2px var(--status-violet-soft);
+}
+.action-outline-item > span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+}
+.action-outline-item > div {
+  min-width: 0;
+}
+.action-outline-item strong,
+.action-outline-item small {
+  display: block;
+}
+.action-outline-item strong {
+  font-size: .7rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.action-outline-item small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text-small-muted);
+  font-size: .58rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.action-outline-item em {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+  font-size: .6rem;
+  font-style: normal;
+}
+.action-outline-empty,
+.action-library-empty {
+  margin: 4px 7px 12px;
+  color: var(--text-small-muted);
+  font-size: .66rem;
+  line-height: 1.45;
+}
+.action-library {
+  margin-top: 12px;
+}
+.action-library > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--status-violet);
+  border-radius: 11px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+  font-size: .7rem;
+  font-weight: 800;
+  list-style: none;
+  cursor: pointer;
+}
+.action-library > summary::-webkit-details-marker { display: none; }
+.action-library[open] > summary { margin-bottom: 10px; }
+.action-library-body { display: grid; }
+.action-library-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 12px;
+  padding: 8px 9px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--surface-card);
+}
+.action-library-search i { color: var(--text-small-muted); font-size: .7rem; }
+.action-library-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: .68rem;
 }
 .library-group {
   margin-bottom: 19px;
@@ -2679,17 +3024,22 @@ function leave() {
 .library-group button strong,
 .library-group button small {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .library-group button strong {
   font-size: 0.72rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .library-group button small {
   margin-top: 2px;
   color: var(--text-small-muted);
   font-size: 0.6rem;
+  line-height: 1.35;
+}
+.library-group button .library-executor {
+  color: var(--status-violet-text);
+  font-size: 0.58rem;
+  font-weight: 700;
 }
 .library-group button > .pi-plus {
   color: var(--text-tertiary);
@@ -2704,6 +3054,44 @@ function leave() {
   overflow: auto;
   background: var(--graph-canvas);
 }
+.graph-toolbar {
+  position: absolute;
+  z-index: 6;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  max-width: calc(100% - 24px);
+  padding: 9px 10px 9px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-card) 94%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+}
+.graph-toolbar span,
+.graph-toolbar small { display: block; }
+.graph-toolbar span { font-size: .7rem; font-weight: 800; }
+.graph-toolbar small { margin-top: 2px; color: var(--text-small-muted); font-size: .58rem; }
+.graph-toolbar button,
+.mobile-graph-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: 750 .66rem Manrope;
+  cursor: pointer;
+}
+.graph-toolbar button:hover,
+.mobile-graph-button:hover { border-color: var(--status-violet); color: var(--status-violet-text); }
 .scenario-studio :deep(.rule-validation-preview) {
   height: 100%;
   overflow: auto;
@@ -2831,6 +3219,7 @@ function leave() {
   background: var(--surface-card);
   box-shadow: var(--shadow-sm);
 }
+.stage-actions .localization-policy-card { top: 66px; }
 .localization-policy-card summary {
   cursor: pointer;
   color: var(--text-secondary);
@@ -3300,6 +3689,26 @@ function leave() {
   cursor: pointer;
   font-weight: 700;
 }
+.mobile-library-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  color: var(--text-small-muted);
+}
+.mobile-library-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+}
 .mobile-library > div {
   display: grid;
   gap: 6px;
@@ -3311,6 +3720,10 @@ function leave() {
   text-transform: uppercase;
 }
 .mobile-library button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
   min-height: 40px;
   border: 0;
   border-radius: 9px;
@@ -3320,7 +3733,25 @@ function leave() {
   padding: 9px;
 }
 .mobile-library button i {
-  margin-right: 7px;
+  margin-top: 2px;
+}
+.mobile-library button strong,
+.mobile-library button small {
+  display: block;
+}
+.mobile-library button strong {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.mobile-library button small {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+.mobile-graph-button {
+  width: 100%;
+  min-height: 44px;
 }
 .mobile-empty {
   color: var(--text-small-muted);
@@ -3355,6 +3786,14 @@ function leave() {
   }
   .studio-grid.stage-actions.has-action-inspector {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+  .studio-grid.stage-actions.has-action-inspector > .studio-sidebar,
+  .studio-grid.stage-actions.has-action-inspector > .graph-canvas,
+  .studio-grid.stage-actions.has-action-inspector > .inspector,
+  .studio-grid.stage-actions.has-action-inspector > .readonly-action-panel {
+    grid-column: 1;
+    grid-row: auto;
   }
   .studio-grid.stage-trigger > .settings-panel,
   .studio-grid.stage-trigger > .readonly-panel {
@@ -3377,7 +3816,7 @@ function leave() {
   .studio-stages button {
     width: 142px;
   }
-  .action-library {
+  .action-workflow-nav {
     display: none;
   }
   .graph-canvas {
@@ -3386,6 +3825,28 @@ function leave() {
   }
   .graph-canvas :deep(.vue-flow) {
     display: none;
+  }
+  .graph-toolbar {
+    display: none;
+  }
+  .graph-canvas.graph-expanded {
+    position: fixed;
+    z-index: 1100;
+    inset: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+  }
+  .graph-canvas.graph-expanded .graph-toolbar {
+    display: flex;
+  }
+  .graph-canvas.graph-expanded .mobile-action-outline,
+  .graph-canvas.graph-expanded .localization-policy-card,
+  .graph-canvas.graph-expanded .actions-warning {
+    display: none;
+  }
+  .graph-canvas.graph-expanded :deep(.vue-flow) {
+    display: block;
   }
   .mobile-action-outline {
     display: grid;
@@ -3466,6 +3927,9 @@ function leave() {
   }
   .graph-canvas :deep(.vue-flow) {
     display: none;
+  }
+  .graph-canvas.graph-expanded :deep(.vue-flow) {
+    display: block;
   }
   .mobile-action-outline {
     display: grid;

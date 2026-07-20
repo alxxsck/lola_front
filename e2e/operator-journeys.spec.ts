@@ -729,6 +729,141 @@ test("new scenario authoring journey remains usable at the active viewport", asy
   await expectNoSeriousAccessibilityViolations(page);
 });
 
+test("action editor gives configuration the primary desktop area and keeps the graph below", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium",
+    "Desktop composition is covered on the desktop project",
+  );
+  await page.goto("/scenarios/new");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  await page
+    .locator(".action-empty-options button", { hasText: "Озвучить текст" })
+    .click();
+
+  const inspector = page.locator(".inspector");
+  const graph = page.locator(".graph-canvas");
+  await expect(inspector).toBeVisible();
+  await expect(graph).toBeVisible();
+  expect(await inspector.evaluate((element) => element.clientWidth)).toBeGreaterThan(700);
+  expect(await graph.evaluate((element) => element.clientHeight)).toBeGreaterThan(200);
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Настроить действие Озвучить текст" }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-actions-desktop.png"),
+  });
+  await expectNoSeriousAccessibilityViolations(page);
+
+  const desktopLibrary = page.locator(".action-library");
+  await desktopLibrary.locator("summary").click();
+  await expect(desktopLibrary.getByRole("searchbox")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(desktopLibrary).not.toHaveAttribute("open", "");
+  await desktopLibrary.locator("summary").click();
+  await expect(desktopLibrary.getByRole("searchbox")).toBeFocused();
+  await page
+    .locator(".action-library button", {
+      hasText: "Задать вопрос с вариантами",
+    })
+    .click();
+  await expect(
+    inspector.getByRole("heading", { name: "Задать вопрос с вариантами" }),
+  ).toBeVisible();
+  await expectNoSeriousAccessibilityViolations(page);
+
+  await page.setViewportSize({ width: 1200, height: 800 });
+  await expect(inspector).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+});
+
+test("action editor uses list, full-width detail and graph views on mobile", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "mobile-chromium",
+    "Mobile composition is covered on the mobile project",
+  );
+  await page.goto("/scenarios/new");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  const mobileLibrary = page.locator(".mobile-library");
+  await mobileLibrary.locator("summary").click();
+  await expect(mobileLibrary.getByRole("searchbox")).toBeFocused();
+  await mobileLibrary
+    .locator("button", { hasText: "Озвучить текст" })
+    .click();
+
+  const inspector = page.locator(".inspector");
+  await expect(inspector).toBeVisible();
+  await expect(inspector).toBeFocused();
+  expect(
+    await inspector.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-actions-mobile-detail.png"),
+  });
+
+  await page
+    .getByRole("button", { name: "Закрыть инспектор узла" })
+    .click();
+  const outline = page.getByRole("region", {
+    name: "Линейный список действий и ожиданий",
+  });
+  await expect(outline).toBeVisible();
+  await expect(
+    outline.getByRole("button", { name: "Открыть узел step_1" }),
+  ).toBeFocused();
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-actions-mobile-list.png"),
+  });
+  const openGraphButton = outline.getByRole("button", { name: "Открыть схему" });
+  await openGraphButton.click();
+  const expandedGraph = page.locator(".graph-canvas.graph-expanded");
+  await expect(expandedGraph.locator(".vue-flow")).toBeVisible();
+  await expect(expandedGraph).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Вернуться к настройке действия" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-actions-mobile-graph.png"),
+  });
+  await expectNoSeriousAccessibilityViolations(page);
+  await page.keyboard.press("Escape");
+  await expect(outline).toBeVisible();
+  await expect(openGraphButton).toBeFocused();
+
+  await outline.getByRole("button", { name: "Открыть узел step_1" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Удалить узел" }).click();
+  await expect(
+    outline.getByRole("button", { name: "Открыть узел step_1" }),
+  ).toHaveCount(0);
+  await expect(mobileLibrary.locator("summary")).toBeFocused();
+});
+
 test("scenario author can save, validate, preview, publish and safely roll back a durable draft", async ({
   page,
 }, testInfo) => {

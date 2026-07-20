@@ -85,6 +85,84 @@ describe("translation job controller", () => {
     controller.dispose();
   });
 
+  it("applies a completed translation when the submitted source only differs by surrounding whitespace", async () => {
+    repo.create.mockResolvedValue({
+      jobId: "job-whitespace",
+      status: "PENDING",
+      sourceHash: "hash",
+      createdAt: "now",
+    });
+    repo.get.mockResolvedValue({
+      jobId: "job-whitespace",
+      status: "COMPLETED",
+      sourceHash: "hash",
+      createdAt: "now",
+      sourceLocale: "ru",
+      targets: [
+        {
+          targetLocale: "it",
+          status: "SUCCESS",
+          outputUnits: [
+            {
+              key: "graph.actions.step_1.config.text",
+              text: "Ciao, come va?",
+            },
+          ],
+          errorCode: null,
+        },
+        {
+          targetLocale: "de",
+          status: "SUCCESS",
+          outputUnits: [
+            {
+              key: "graph.actions.step_1.config.text",
+              text: "Hallo, wie geht es dir?",
+            },
+          ],
+          errorCode: null,
+        },
+      ],
+    });
+    const value = { ru: "Приветик как дела ", it: "", de: "" };
+    const apply = vi.fn(
+      (_: string, locale: string, text: string, snapshot: Parameters<
+        Parameters<typeof createTranslationJobController>[0]["apply"]
+      >[3]) => {
+        if (value.ru !== snapshot.sourceText) return "STALE_SOURCE" as const;
+        value[locale as "it" | "de"] = text;
+        return "APPLIED" as const;
+      },
+    );
+    const state = vi.fn();
+    const controller = createTranslationJobController({
+      repository: repo,
+      context: () => ({ projectId: "project-1", scenarioId: "scenario-1" }),
+      getValue: () => ({ ...value }),
+      apply,
+      state,
+    });
+
+    await controller.start({
+      fieldPath: "graph.actions.step_1.config.text",
+      sourceLocale: "ru",
+      targets: ["it", "de"],
+    });
+
+    expect(value.it).toBe("Ciao, come va?");
+    expect(value.de).toBe("Hallo, wie geht es dir?");
+    expect(state).toHaveBeenCalledWith(
+      "graph.actions.step_1.config.text",
+      "it",
+      "MACHINE_UNSAVED",
+    );
+    expect(state).toHaveBeenCalledWith(
+      "graph.actions.step_1.config.text",
+      "de",
+      "MACHINE_UNSAVED",
+    );
+    controller.dispose();
+  });
+
   it("keeps a source race stale instead of applying it", async () => {
     repo.create.mockResolvedValue({ jobId: "job-2", status: "PENDING", sourceHash: "hash", createdAt: "now" });
     repo.get.mockResolvedValue({

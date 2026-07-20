@@ -29,7 +29,7 @@ describe("TranslationUsagePanel", () => {
       },
       series: [],
       targetLocales: [],
-      statuses: [],
+      statuses: [{ status: "FAILED", requests: 1, successes: 0, errors: 1, inputCharacters: 20, outputCharacters: 0, billableCharacters: 20, cacheHits: 0, estimatedCostMicros: "0", estimatedSavingsMicros: "0", actualCostMicros: null, billingCurrency: "USD", latencyP50Ms: null, latencyP95Ms: null }],
       budget: {
         consumedMicros: "250000",
         reservedMicros: "0",
@@ -49,6 +49,8 @@ describe("TranslationUsagePanel", () => {
     expect(wrapper.text()).toContain("90%");
     expect(wrapper.text()).toContain("Лимит исчерпан");
     expect(wrapper.text()).toContain("Расчётная стоимость");
+    expect(wrapper.text()).toContain("Не выполнено · 1");
+    expect(wrapper.text()).not.toContain("FAILED");
   });
 
   it("shows a neutral empty state", async () => {

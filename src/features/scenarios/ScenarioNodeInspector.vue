@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
@@ -71,6 +71,12 @@ const emit = defineEmits<{
   "translation-cancel": [fieldPath: string];
   "translation-manual-edit": [payload: { fieldPath: string; locale: string }];
 }>();
+
+const inspectorElement = ref<HTMLElement | null>(null);
+
+defineExpose({
+  focus: () => inspectorElement.value?.focus(),
+});
 
 const createTargetPrefix = "__create__:";
 const definition = computed(() =>
@@ -258,7 +264,13 @@ function updateNodeKey(value: string | undefined) {
 </script>
 
 <template>
-  <aside class="inspector">
+  <aside
+    ref="inspectorElement"
+    class="inspector"
+    tabindex="-1"
+    aria-label="Настройка действия"
+    @keydown.esc="emit('close')"
+  >
     <div class="inspector-head">
       <div>
         <small>Узел {{ action.position + 1 }}</small>
@@ -291,8 +303,9 @@ function updateNodeKey(value: string | undefined) {
     <section>
       <h3>Основное</h3>
       <div class="field">
-        <label>Тип действия</label
+        <label :for="`${scenarioId}-${action.nodeKey}-type`">Тип действия</label
         ><Select
+          :input-id="`${scenarioId}-${action.nodeKey}-type`"
           :model-value="action.type"
           :options="actionOptions"
           option-label="label"
@@ -301,8 +314,9 @@ function updateNodeKey(value: string | undefined) {
         />
       </div>
       <div class="field">
-        <label>Ключ узла</label
+        <label :for="`${scenarioId}-${action.nodeKey}-node-key`">Ключ узла</label
         ><InputText
+          :id="`${scenarioId}-${action.nodeKey}-node-key`"
           :model-value="action.nodeKey"
           class="mono"
           @update:model-value="updateNodeKey"
@@ -314,8 +328,9 @@ function updateNodeKey(value: string | undefined) {
         "
         class="field"
       >
-        <label>Следующее действие</label
+        <label :for="`${scenarioId}-${action.nodeKey}-next-action`">Следующее действие</label
         ><Select
+          :input-id="`${scenarioId}-${action.nodeKey}-next-action`"
           :model-value="action.nextNodeKey"
           :options="targetOptions"
           option-label="label"
@@ -369,7 +384,7 @@ function updateNodeKey(value: string | undefined) {
         <i class="pi pi-exclamation-circle" />
         <div>
           <strong>Каталог недоступен</strong
-          ><span>Цель нельзя настроить без Scenario Authoring catalog.</span>
+          ><span>Цель нельзя настроить без каталога сценариев.</span>
         </div>
       </div>
     </section>
@@ -416,6 +431,8 @@ function updateNodeKey(value: string | undefined) {
           />
           <InputText
             v-else
+            :id="`${scenarioId}-${action.nodeKey}-choice-${index}-label`"
+            :aria-label="`Текст кнопки варианта ${index + 1}`"
             :model-value="choiceLabelText(option)"
             placeholder="Текст кнопки"
             @update:model-value="
@@ -428,6 +445,8 @@ function updateNodeKey(value: string | undefined) {
               })
             "
           /><InputText
+            :id="`${scenarioId}-${action.nodeKey}-choice-${index}-id`"
+            :aria-label="`Ключ варианта ${index + 1}`"
             :model-value="option.id"
             class="mono"
             placeholder="option_id"
@@ -437,7 +456,10 @@ function updateNodeKey(value: string | undefined) {
           />
         </div>
         <div class="choice-target">
-          <i class="pi pi-arrow-right" /><Select
+          <i class="pi pi-arrow-right" />
+          <label class="sr-only" :for="`${scenarioId}-${action.nodeKey}-choice-${index}-target`">Следующее действие для варианта {{ index + 1 }}</label>
+          <Select
+            :input-id="`${scenarioId}-${action.nodeKey}-choice-${index}-target`"
             :model-value="option.nextNodeKey"
             :options="targetOptions"
             option-label="label"
@@ -449,6 +471,7 @@ function updateNodeKey(value: string | undefined) {
             text
             rounded
             severity="danger"
+            :aria-label="`Удалить вариант ${index + 1}`"
             @click="
               setOptions(
                 choiceOptions(action).filter(
@@ -460,8 +483,9 @@ function updateNodeKey(value: string | undefined) {
         </div>
       </div>
       <div class="field timeout-field">
-        <label>Действие по timeout</label
+        <label :for="`${scenarioId}-${action.nodeKey}-timeout-target`">Действие по тайм-ауту</label
         ><Select
+          :input-id="`${scenarioId}-${action.nodeKey}-timeout-target`"
           :model-value="action.config.onTimeout"
           :options="targetOptions"
           option-label="label"
@@ -475,7 +499,7 @@ function updateNodeKey(value: string | undefined) {
     <section v-if="action.type === 'CONDITION'">
       <div class="section-title">
         <div>
-          <h3>Runtime-ветки</h3>
+          <h3>Ветки выполнения</h3>
           <p>Проверяются сверху вниз; сработает первая.</p>
         </div>
         <Button
@@ -498,6 +522,7 @@ function updateNodeKey(value: string | undefined) {
             text
             rounded
             severity="danger"
+            :aria-label="`Удалить ветку ${index + 1}`"
             @click="
               setBranches(
                 conditionBranches(action).filter(
@@ -519,8 +544,9 @@ function updateNodeKey(value: string | undefined) {
           "
         />
         <div class="branch-target">
-          <span>Тогда</span
+          <label :for="`${scenarioId}-${action.nodeKey}-branch-${index}-target`">Тогда</label
           ><Select
+            :input-id="`${scenarioId}-${action.nodeKey}-branch-${index}-target`"
             :model-value="branch.nextNodeKey"
             :options="targetOptions"
             option-label="label"
@@ -531,8 +557,9 @@ function updateNodeKey(value: string | undefined) {
         </div>
       </div>
       <div class="field">
-        <label>Иначе (fallback)</label
+        <label :for="`${scenarioId}-${action.nodeKey}-fallback-target`">Иначе</label
         ><Select
+          :input-id="`${scenarioId}-${action.nodeKey}-fallback-target`"
           :model-value="action.config.fallbackNodeKey"
           :options="targetOptions"
           option-label="label"
@@ -564,8 +591,9 @@ function updateNodeKey(value: string | undefined) {
       >
         <div class="reminder-head">
           <div class="field">
-            <label>Через, мс</label
+            <label :for="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-delay`">Через, мс</label
             ><InputNumber
+              :input-id="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-delay`"
               :model-value="reminder.afterMs"
               :min="1000"
               :max="86400000"
@@ -586,6 +614,7 @@ function updateNodeKey(value: string | undefined) {
             text
             rounded
             severity="danger"
+            :aria-label="`Удалить напоминание ${reminderIndex + 1}`"
             @click="
               setReminders(
                 choiceReminders(action).filter(
@@ -600,7 +629,9 @@ function updateNodeKey(value: string | undefined) {
           v-for="(reminderAction, actionIndex) in reminder.actions"
           :key="actionIndex"
         >
+          <label class="sr-only" :for="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-action-${actionIndex}-type`">Тип действия в напоминании {{ reminderIndex + 1 }}</label>
           <Select
+            :input-id="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-action-${actionIndex}-type`"
             :model-value="reminderAction.type"
             :options="reminderActionOptions"
             option-label="label"
@@ -653,6 +684,7 @@ function updateNodeKey(value: string | undefined) {
             text
             rounded
             severity="danger"
+            :aria-label="`Удалить действие ${actionIndex + 1} из напоминания ${reminderIndex + 1}`"
             @click="
               setReminders(
                 choiceReminders(action).map((item, index) =>
@@ -686,7 +718,18 @@ function updateNodeKey(value: string | undefined) {
   height: 100%;
   overflow: auto;
   background: var(--surface-card);
-  border-left: 1px solid var(--line);
+  container: action-inspector / inline-size;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .inspector-head {
   position: sticky;
@@ -710,7 +753,10 @@ function updateNodeKey(value: string | undefined) {
   font-size: 1.05rem;
 }
 .inspector section {
-  padding: 18px 20px;
+  width: min(960px, 100%);
+  margin-inline: auto;
+  padding: 22px clamp(20px, 4vw, 52px);
+  box-sizing: border-box;
   border-bottom: 1px solid var(--line);
 }
 h3 {
@@ -739,6 +785,11 @@ h3 {
   border-radius: 12px;
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
+}
+.inspector > .issue-box {
+  width: min(860px, calc(100% - 40px));
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 .issue-box strong,
 .issue-box span {
@@ -827,13 +878,24 @@ h3 {
   justify-self: end;
 }
 .inspector :deep(.schema-fields) {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .inspector :deep(.field-wide) {
-  grid-column: auto;
+  grid-column: 1 / -1;
 }
 .inspector-actions {
   display: flex;
   gap: 4px;
+}
+@container action-inspector (max-width: 680px) {
+  .inspector :deep(.schema-fields) {
+    grid-template-columns: 1fr;
+  }
+  .inspector :deep(.field-wide) {
+    grid-column: auto;
+  }
+  .choice-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

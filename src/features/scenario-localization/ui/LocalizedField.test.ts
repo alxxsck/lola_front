@@ -60,8 +60,10 @@ describe("LocalizedField", () => {
     expect(wrapper.get("textarea").attributes("aria-label")).toContain("en");
     expect(wrapper.findAll("textarea")).toHaveLength(1);
     expect(wrapper.get("button[data-translation-trigger]").attributes("title")).toContain(
-      "Google Translation LLM",
+      "незаполненные языки сценария",
     );
+    expect(wrapper.text()).toContain("Grok от xAI");
+    expect(wrapper.text()).not.toContain("Google Translation LLM");
   });
 
   it("renders a single-locale project without an empty accordion", () => {

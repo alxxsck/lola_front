@@ -175,12 +175,13 @@ export function createTranslationJobController(options: {
   }) {
     const { projectId } = options.context();
     const value = options.getValue(input.fieldPath);
-    const sourceText = value[input.sourceLocale]?.trim() ?? "";
-    if (!sourceText || !input.targets.length) return;
+    const sourceText = value[input.sourceLocale] ?? "";
+    const submittedText = sourceText.trim();
+    if (!submittedText || !input.targets.length) return;
     const request = {
       sourceLocale: input.sourceLocale,
       targetLocales: input.targets,
-      units: [{ key: input.fieldPath, text: sourceText }],
+      units: [{ key: input.fieldPath, text: submittedText }],
     };
     const idempotencyKey =
       globalThis.crypto?.randomUUID?.() ??

@@ -77,7 +77,7 @@ function toggle(locale: string, checked: boolean) {
         <small v-if="locale.code === catalog.defaultLocale">Основной</small>
       </label>
       <p>
-        Если Scenario запустится для другого языка, пользователь получит вариант на основном языке —
+        Если сценарий запустится для другого языка, пользователь получит вариант на основном языке —
         {{ localeDisplayName(catalog.defaultLocale) }} ({{ catalog.defaultLocale }}), а не пустое сообщение.
       </p>
     </div>

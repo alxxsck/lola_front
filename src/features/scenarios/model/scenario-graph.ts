@@ -248,7 +248,7 @@ export function validateScenarioGraph(actions: ScenarioAction[]): GraphValidatio
       const branches = conditionBranches(action)
       if (!branches.length) issues.push({ nodeKey: key, message: 'Добавьте минимум одну ветку условия' })
       if (branches.some((branch) => !branch.conditions.length)) issues.push({ nodeKey: key, message: 'Каждая ветка должна содержать условие' })
-      if (!record(action.config).fallbackNodeKey) issues.push({ nodeKey: key, message: 'Выберите fallback-переход' })
+      if (!record(action.config).fallbackNodeKey) issues.push({ nodeKey: key, message: 'Выберите запасной переход' })
     }
     if (action.type === 'WAIT_FOR_GOAL') {
       const config = record(action.config)

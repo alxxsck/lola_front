@@ -24,6 +24,19 @@ const customFrom = ref("");
 const customTo = ref("");
 const loadedAt = ref<Date | null>(null);
 const cache = new Map<string, { report: TranslationUsage; loadedAt: Date }>();
+const statusLabels: Record<string, string> = {
+  SUCCESS: "Успешно",
+  ERROR: "Ошибка перевода",
+  FAILED: "Не выполнено",
+  COMPLETED_WITH_ERRORS: "Завершено с ошибками",
+  PROVIDER_TIMEOUT: "Сервис перевода не ответил",
+  PLACEHOLDER_CORRUPTED: "Повреждены шаблонные переменные",
+  CANCELLED: "Отменено",
+};
+
+function statusLabel(status: string) {
+  return statusLabels[status] ?? "Другая ошибка перевода";
+}
 
 const successRate = computed(() => {
   const totals = report.value?.totals;
@@ -111,9 +124,9 @@ onMounted(load);
   <section class="translation-usage" aria-labelledby="translation-usage-title">
     <header>
       <div>
-        <span>Google Translation LLM</span>
+        <span>xAI · Grok</span>
         <h3 id="translation-usage-title">Автоматические переводы</h3>
-        <p>Агрегаты backend без текста сценариев.</p>
+        <p>Сводные данные серверной части без текста сценариев.</p>
       </div>
       <Button icon="pi pi-refresh" text rounded aria-label="Обновить статистику переводов" :loading="loading" @click="load(true)" />
     </header>
@@ -137,16 +150,16 @@ onMounted(load);
     </div>
     <template v-else-if="report">
       <div v-if="report.budget?.hardExhausted" class="budget-warning" role="alert">
-        <strong>Лимит исчерпан.</strong> Новые AI-переводы недоступны до обновления бюджета.
+        <strong>Лимит исчерпан.</strong> Новые автоматические переводы недоступны до обновления бюджета.
       </div>
       <div class="translation-summary">
-        <article><span>Billable characters</span><strong>{{ report.totals.billableCharacters.toLocaleString('ru-RU') }}</strong><small>{{ report.totals.inputCharacters.toLocaleString('ru-RU') }} исходных</small></article>
+        <article><span>Оплачиваемые символы</span><strong>{{ report.totals.billableCharacters.toLocaleString('ru-RU') }}</strong><small>{{ report.totals.inputCharacters.toLocaleString('ru-RU') }} исходных</small></article>
         <article><span>Успешность</span><strong>{{ successRate }}%</strong><small>{{ report.totals.successes }} успешно · {{ report.totals.errors }} ошибок</small></article>
         <article><span>Кэш</span><strong>{{ report.totals.cacheHits }}</strong><small>экономия {{ report.totals.estimatedSavingsMicros }} μUSD</small></article>
         <article><span>{{ report.totals.actualCostMicros ? 'Фактическая стоимость' : 'Расчётная стоимость' }}</span><strong>{{ cost }}</strong><small>{{ report.totals.billingCurrency }}</small></article>
       </div>
       <div v-if="report.budget" class="budget-meter">
-        <span><strong>Бюджет переводов</strong><small>{{ report.budget.hardPercent ?? 0 }}% hard limit · {{ report.budget.softPercent ?? 0 }}% soft limit</small></span>
+        <span><strong>Бюджет переводов</strong><small>{{ report.budget.hardPercent ?? 0 }}% жёсткого лимита · {{ report.budget.softPercent ?? 0 }}% предупредительного лимита</small></span>
         <progress :value="Math.min(report.budget.hardPercent ?? 0, 100)" max="100">{{ report.budget.hardPercent ?? 0 }}%</progress>
       </div>
       <div v-if="report.series.length" class="translation-chart" aria-label="Переводы по дням">
@@ -160,7 +173,7 @@ onMounted(load);
       </div>
       <div v-if="report.statuses.some((item) => item.errors)" class="status-breakdown">
         <strong>Ошибки по категориям</strong>
-        <span v-for="item in report.statuses.filter((status) => status.errors)" :key="item.status">{{ item.status }} · {{ item.errors }}</span>
+        <span v-for="item in report.statuses.filter((status) => status.errors)" :key="item.status">{{ statusLabel(item.status) }} · {{ item.errors }}</span>
       </div>
       <small v-if="report.totals.latencyP50Ms !== null" class="latency-note">
         Время ответа p50 {{ report.totals.latencyP50Ms }} мс · p95 {{ report.totals.latencyP95Ms ?? '—' }} мс
