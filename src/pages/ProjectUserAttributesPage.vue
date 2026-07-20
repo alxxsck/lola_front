@@ -746,22 +746,24 @@ function contractDocumentSignature(
   document: AttributeContractDraftResponseDto["document"],
 ) {
   return canonicalSignature({
-    fields: [...document.fields].sort(
-      (left, right) =>
-        left.position - right.position ||
-        left.key.localeCompare(right.key) ||
-        (left.definitionId ?? "").localeCompare(right.definitionId ?? ""),
-    ),
+    fields: [...document.fields]
+      .sort(
+        (left, right) =>
+          left.position - right.position ||
+          left.key.localeCompare(right.key) ||
+          (left.definitionId ?? "").localeCompare(right.definitionId ?? ""),
+      )
+      .map(comparableContractField),
   });
 }
 
-function contractFieldSignature(field: AttributeContractDraftFieldDto) {
-  return canonicalSignature({
+function comparableContractField(field: AttributeContractDraftFieldDto) {
+  return {
     definitionId: field.definitionId ?? null,
     key: field.key,
-    label: field.label,
-    description: field.description ?? null,
-    purpose: field.purpose ?? null,
+    label: field.label.trim(),
+    description: field.description?.trim() || null,
+    purpose: field.purpose?.trim() || null,
     valueType: field.valueType,
     lifecycle: field.lifecycle,
     classification: field.classification,
@@ -772,7 +774,11 @@ function contractFieldSignature(field: AttributeContractDraftFieldDto) {
     replacementDefinitionId: field.replacementDefinitionId ?? null,
     sunsetAt: field.sunsetAt ?? null,
     semanticRole: field.semanticRole ?? null,
-  });
+  };
+}
+
+function contractFieldSignature(field: AttributeContractDraftFieldDto) {
+  return canonicalSignature(comparableContractField(field));
 }
 
 function fieldPublicationState(field: AttributeContractDraftFieldDto) {

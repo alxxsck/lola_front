@@ -410,7 +410,26 @@ describe("ProjectUserAttributesPage", () => {
     );
   });
 
-  it("treats a published draft with reordered object keys as unchanged", async () => {
+  it.each([
+    {
+      scenario: "reordered object keys",
+      draftPurpose: "Показывать уровень лояльности в карточке пользователя",
+      publishedPolicies: {
+        templateRead: false,
+        indexPolicy: "NONE" as const,
+        exportRead: false,
+        clientRead: false,
+        audienceRead: false,
+        aiRead: false,
+        adminRead: true,
+      },
+    },
+    {
+      scenario: "backend-normalized field whitespace",
+      draftPurpose: "Показывать уровень лояльности в карточке пользователя ",
+      publishedPolicies: undefined,
+    },
+  ])("treats $scenario as published", async ({ draftPurpose, publishedPolicies }) => {
     const publishedWorkspace = structuredClone(
       workspace,
     ) as AttributeContractWorkspaceResponseDto;
@@ -419,7 +438,7 @@ describe("ProjectUserAttributesPage", () => {
       key: "loyaltyLevel",
       label: "Уровень лояльности",
       description: null,
-      purpose: "Показывать уровень лояльности в карточке пользователя",
+      purpose: draftPurpose,
       valueType: "STRING" as const,
       lifecycle: "ACTIVE" as const,
       classification: "INTERNAL" as const,
@@ -472,15 +491,8 @@ describe("ProjectUserAttributesPage", () => {
           ...draftField,
           definitionRevisionId: "definition-loyalty-r2",
           definitionRevisionNumber: 2,
-          policies: {
-            templateRead: false,
-            indexPolicy: "NONE",
-            exportRead: false,
-            clientRead: false,
-            audienceRead: false,
-            aiRead: false,
-            adminRead: true,
-          },
+          purpose: "Показывать уровень лояльности в карточке пользователя",
+          policies: publishedPolicies ?? draftField.policies,
         },
       ],
       publishedAt: "2026-07-20T10:00:00.000Z",
