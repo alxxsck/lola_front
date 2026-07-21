@@ -39,7 +39,6 @@ async function installFixtures(page: Page) {
         kind: 'AUTHENTICATED',
         tokenType: 'Bearer',
         accessToken: 'cms_access-token',
-        refreshToken: 'lrf_refresh-token',
         expiresIn: 900,
         refreshExpiresIn: 3600,
         user: { id: operatorId, email: 'operator@example.com', displayName: 'Оператор' },

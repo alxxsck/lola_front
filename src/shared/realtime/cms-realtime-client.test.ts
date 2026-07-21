@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   io: vi.fn(),
   getAccessToken: vi.fn(),
-  getRefreshToken: vi.fn(),
   refreshAccessToken: vi.fn(),
   acknowledge: vi.fn(),
 }));
@@ -12,7 +11,6 @@ vi.mock("socket.io-client", () => ({ io: mocks.io }));
 vi.mock("@/shared/config/data-mode", () => ({ isMockMode: false }));
 vi.mock("@/shared/api/http/auth-session", () => ({
   getAccessToken: mocks.getAccessToken,
-  getRefreshToken: mocks.getRefreshToken,
 }));
 vi.mock("@/shared/api/http/axios-instance", () => ({
   refreshAccessToken: mocks.refreshAccessToken,
@@ -46,7 +44,6 @@ describe("CmsRealtimeClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getAccessToken.mockReturnValue("access-token");
-    mocks.getRefreshToken.mockReturnValue("refresh-token");
   });
 
   it("сохраняет одно соединение для независимых подписок возможностей", async () => {
@@ -102,9 +99,7 @@ describe("CmsRealtimeClient", () => {
       token: "access-token",
       projectId: "project-1",
     });
-    expect(JSON.stringify(mocks.io.mock.calls[0])).not.toContain(
-      "refresh-token",
-    );
+    expect(JSON.stringify(mocks.io.mock.calls[0])).not.toContain("refreshToken");
   });
 
   it("refreshes an expired access token before a reconnect handshake", async () => {
@@ -129,7 +124,7 @@ describe("CmsRealtimeClient", () => {
     const callback = vi.fn();
     await auth(callback);
 
-    expect(mocks.refreshAccessToken).toHaveBeenCalledWith("refresh-token");
+    expect(mocks.refreshAccessToken).toHaveBeenCalledWith();
     expect(callback).toHaveBeenCalledWith({
       token: "fresh-access-token",
       projectId: "project-1",

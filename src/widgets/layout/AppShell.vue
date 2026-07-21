@@ -105,6 +105,7 @@ const navigation = computed(() =>
 const profileItems = [
   { label: auth.user?.email, disabled: true },
   { separator: true },
+  { label: "Безопасность", icon: "pi pi-lock", command: () => router.push("/settings/security") },
   { label: "Выйти", icon: "pi pi-sign-out", command: () => logout(false) },
   { label: "Выйти везде", icon: "pi pi-shield", command: () => logout(true) },
 ];

@@ -1,6 +1,6 @@
 import { io, type Socket } from 'socket.io-client'
 import { isMockMode } from '@/shared/config/data-mode'
-import { getAccessToken, getRefreshToken } from '@/shared/api/http/auth-session'
+import { getAccessToken } from '@/shared/api/http/auth-session'
 import { refreshAccessToken } from '@/shared/api/http/axios-instance'
 import type {
   CmsRealtimeCallbacks,
@@ -20,9 +20,7 @@ function apiOrigin(): string {
 async function freshAccessToken(): Promise<string> {
   let token = getAccessToken()
   if (token) return token
-  const refreshToken = getRefreshToken()
-  if (!refreshToken) throw new Error('Сеанс центра управления недоступен')
-  await refreshAccessToken(refreshToken)
+  await refreshAccessToken()
   token = getAccessToken()
   if (!token) throw new Error('Не удалось обновить сеанс центра управления')
   return token

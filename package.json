@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:api": "VITE_DATA_MODE=api playwright test --project=api-chromium"
+    "test:e2e:api": "VITE_DATA_MODE=api VITE_API_BASE_URL=http://127.0.0.1:3000/api/v1 playwright test --project=api-chromium"
   },
   "dependencies": {
     "@primeuix/themes": "^1.2.5",

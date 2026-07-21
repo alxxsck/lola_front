@@ -5,7 +5,8 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CmsSessionSummaryDto } from "./cmsSessionSummaryDto";
 
-export interface SuccessResponseDto {
-  success: boolean;
+export interface CmsSessionListResponseDto {
+  sessions: CmsSessionSummaryDto[];
 }

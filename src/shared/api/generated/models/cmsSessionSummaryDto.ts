@@ -6,7 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface LogoutDto {
-  /** Opaque CMS refresh JWT */
-  refreshToken: string;
+export interface CmsSessionSummaryDto {
+  createdAt: string;
+  current: boolean;
+  /** @maxLength 160 */
+  device: string;
+  expiresAt: string;
+  id: string;
+  lastSeenAt: string;
 }

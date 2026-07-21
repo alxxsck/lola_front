@@ -58,6 +58,19 @@ describe('authentication routes', () => {
     expect(router.currentRoute.value.name).toBe('overview')
   })
 
+  it('allows every authenticated CMS User to open personal security settings', async () => {
+    const auth = useAuthStore()
+    auth.$patch({
+      restored: true,
+      phase: 'AUTHENTICATED',
+      user: { id: 'operator-1', email: 'operator@example.com', name: 'Operator' },
+    })
+
+    await router.push('/settings/security')
+
+    expect(router.currentRoute.value.name).toBe('security-settings')
+  })
+
   it('allows Project Memberships only through the exact Platform-or-selected-Project read Permission', async () => {
     const auth = useAuthStore()
     const project = {

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authApi } from './auth.api'
 import { useAuthStore } from './auth.store'
 import { ApiError } from '@/shared/api/http/api-error'
+import { getAccessToken, storeAccessToken, storeSelectedProjectId } from '@/shared/api/http/auth-session'
 
 vi.mock('./auth.api', () => ({
   authApi: {
@@ -159,6 +160,8 @@ describe('CMS User authentication state', () => {
 
   it('fails closed when refreshed self authority cannot be established', async () => {
     const auth = useAuthStore()
+    storeAccessToken({ accessToken: 'stale-access', expiresIn: 900 })
+    storeSelectedProjectId('project-1')
     auth.$patch({
       phase: 'AUTHENTICATED',
       user: { id: 'operator-1', email: 'operator@example.com', name: 'Olga' },
@@ -170,6 +173,8 @@ describe('CMS User authentication state', () => {
     expect(auth.phase).toBe('ANONYMOUS')
     expect(auth.user).toBeNull()
     expect(auth.project).toBeNull()
+    expect(getAccessToken()).toBeNull()
+    expect(sessionStorage.getItem('lola-cms-selected-project-v1')).toBeNull()
   })
 
   it('keeps the setup capability active after a retryable password policy rejection', async () => {

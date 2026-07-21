@@ -1,4 +1,4 @@
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { describe, expect, it } from "vitest";
@@ -6,6 +6,48 @@ import AppShell from "./AppShell.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 
 describe("AppShell", () => {
+  it("opens personal security settings from the profile menu", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: { id: "operator-1", email: "operator@example.com", name: "Оператор" },
+      projects: [],
+      project: null,
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/overview", component: { template: "<div />" } },
+        { path: "/settings/security", component: { template: "<div />" } },
+      ],
+    });
+    await router.push("/overview");
+    await router.isReady();
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: {
+            props: ["model"],
+            template: '<div><button v-for="item in model" :key="item.label" type="button" @click="item.command?.()">{{ item.label }}</button></div>',
+          },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    const securityButton = wrapper.findAll("button").find((button) => button.text() === "Безопасность");
+    expect(securityButton).toBeDefined();
+    await securityButton!.trigger("click");
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/settings/security");
+  });
+
   it("keeps navigation and account controls in separate sidebar regions", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

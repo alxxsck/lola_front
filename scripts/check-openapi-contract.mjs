@@ -36,7 +36,7 @@ const requiredOperations = new Map([
     "InitialAccess_refresh",
     {
       label: "CMS session refresh rotation",
-      request: "RefreshRequestDto",
+      requestAbsent: true,
       response: "CmsAuthenticatedResponseDto",
     },
   ],
@@ -52,11 +52,49 @@ const requiredOperations = new Map([
     },
   ],
   [
-    "CmsAuth_logout",
+    "CmsSecuritySettings_logout",
     {
       label: "auth logout",
-      request: "LogoutDto",
-      response: "SuccessResponseDto",
+      requestAbsent: true,
+      response: "CmsSecurityMutationResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_logoutAll",
+    {
+      label: "auth logout all sessions",
+      requestAbsent: true,
+      response: "CmsSecurityMutationResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_list",
+    {
+      label: "CMS session inventory",
+      response: "CmsSessionListResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_revoke",
+    {
+      label: "CMS session revocation",
+      response: "CmsSecurityMutationResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_revokeOthers",
+    {
+      label: "CMS other-session revocation",
+      requestAbsent: true,
+      response: "CmsSecurityMutationResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_changePassword",
+    {
+      label: "CMS password change",
+      request: "CmsPasswordChangeRequestDto",
+      response: "CmsPasswordChangedResponseDto",
     },
   ],
   [
@@ -672,6 +710,12 @@ for (const [operationId, expectation] of requiredOperations) {
     );
   }
 
+  if (expectation.requestAbsent && operation.requestBody) {
+    throw new Error(
+      `OpenAPI operation ${operationId} must authenticate with its HttpOnly cookie and accept no request body`,
+    );
+  }
+
   for (const expectedResponse of expectedResponses) {
     if (!containsSchema(responseSchema, expectedResponse)) {
       throw new Error(
@@ -685,6 +729,9 @@ for (const deprecatedSchema of [
   "CmsLoginDto",
   "CmsAuthResponseDto",
   "RefreshTokenDto",
+  "RefreshRequestDto",
+  "LogoutDto",
+  "SuccessResponseDto",
 ]) {
   if (document.components?.schemas?.[deprecatedSchema]) {
     throw new Error(`OpenAPI still exposes deprecated auth schema ${deprecatedSchema}`);
@@ -718,11 +765,32 @@ requireSchemaProperties("CmsAuthenticatedResponseDto", [
   "kind",
   "tokenType",
   "accessToken",
-  "refreshToken",
   "expiresIn",
   "refreshExpiresIn",
   "user",
 ]);
+requireSchemaProperties("CmsPasswordChangeRequestDto", [
+  "currentPassword",
+  "newPassword",
+  "passwordConfirmation",
+]);
+requireRequiredProperties("CmsPasswordChangeRequestDto", [
+  "currentPassword",
+  "newPassword",
+  "passwordConfirmation",
+]);
+requireSchemaProperties("CmsPasswordChangedResponseDto", [
+  "kind",
+  "tokenType",
+  "accessToken",
+  "expiresIn",
+  "refreshExpiresIn",
+  "user",
+]);
+requireSchemaProperties("CmsSessionListResponseDto", ["sessions"]);
+requireRequiredProperties("CmsSessionListResponseDto", ["sessions"]);
+requireSchemaProperties("CmsSecurityMutationResponseDto", ["success"]);
+requireRequiredProperties("CmsSecurityMutationResponseDto", ["success"]);
 requireSchemaProperties("CmsSessionContextResponseDto", [
   "user",
   "platformPermissionCodes",

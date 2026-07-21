@@ -6,10 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface RefreshRequestDto {
-  /**
-   * @minLength 1
-   * @maxLength 1024
-   */
-  refreshToken: string;
+export interface CmsSecurityMutationResponseDto {
+  success: boolean;
 }

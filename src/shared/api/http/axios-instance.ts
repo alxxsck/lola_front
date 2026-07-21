@@ -1,7 +1,7 @@
 import axios, { AxiosHeaders, type InternalAxiosRequestConfig } from 'axios'
 
 import { normalizeApiError } from './api-error'
-import { clearAuthSession, getAccessToken, getRefreshToken } from './auth-session'
+import { clearAuthSession, getAccessToken } from './auth-session'
 
 function resolveApiOrigin(configuredUrl: string | undefined): string {
   const value = configuredUrl?.replace(/\/$/, '') ?? 'http://localhost:3000'
@@ -16,13 +16,14 @@ export const axiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 15_000,
+  withCredentials: true,
 })
 
 interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _authRetry?: boolean
 }
 
-type RefreshHandler = (refreshToken: string) => Promise<void>
+type RefreshHandler = () => Promise<void>
 
 let refreshHandler: RefreshHandler | undefined
 let unauthorizedHandler: (() => void) | undefined
@@ -44,10 +45,10 @@ function requestId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-export function refreshAccessToken(refreshToken: string): Promise<void> {
+export function refreshAccessToken(): Promise<void> {
   if (!refreshHandler) return Promise.reject(new Error('Refresh handler is not configured'))
   if (!refreshPromise) {
-    refreshPromise = refreshHandler(refreshToken).finally(() => { refreshPromise = null })
+    refreshPromise = refreshHandler().finally(() => { refreshPromise = null })
   }
   return refreshPromise
 }
@@ -76,14 +77,23 @@ axiosInstance.interceptors.response.use(
     if (!axios.isAxiosError(cause)) throw normalizeApiError(cause)
 
     const config = cause.config as RetriableRequestConfig | undefined
-    const refreshToken = getRefreshToken()
     const isRefreshRequest = config?.url?.includes('/api/v1/auth/refresh') ?? false
-    const canRetry = !authTeardown && cause.response?.status === 401 && config && !config._authRetry && !isRefreshRequest
+    const isCredentialProofRequest = [
+      '/api/v1/auth/login',
+      '/api/v1/auth/password/setup',
+      '/api/v1/auth/password/change',
+    ].some((path) => config?.url?.includes(path))
+    const canRetry = !authTeardown
+      && cause.response?.status === 401
+      && config
+      && !config._authRetry
+      && !isRefreshRequest
+      && !isCredentialProofRequest
 
-    if (canRetry && refreshToken) {
+    if (canRetry) {
       config._authRetry = true
       try {
-        await refreshAccessToken(refreshToken)
+        await refreshAccessToken()
         return await axiosInstance.request(config)
       } catch (refreshCause) {
         clearAuthSession()
@@ -92,7 +102,12 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    if (!authTeardown && cause.response?.status === 401 && !isRefreshRequest) {
+    if (
+      !authTeardown
+      && cause.response?.status === 401
+      && !isRefreshRequest
+      && !isCredentialProofRequest
+    ) {
       clearAuthSession()
       unauthorizedHandler?.()
     }

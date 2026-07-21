@@ -1,6 +1,6 @@
 import {
-  cmsAuthLogout,
-  cmsAuthLogoutAll,
+  cmsSecuritySettingsLogout,
+  cmsSecuritySettingsLogoutAll,
   cmsSessionContextMe,
   initialAccessLogin,
   initialAccessRefresh,
@@ -13,7 +13,7 @@ import type {
 } from '@/shared/api/generated/models'
 import { demoProject } from '@/shared/api/mock-data'
 import { beginAuthTeardown, endAuthTeardown, refreshAccessToken, registerRefreshHandler } from '@/shared/api/http/axios-instance'
-import { clearAuthSession, getRefreshToken, getSelectedProjectId, storeTokens } from '@/shared/api/http/auth-session'
+import { clearAuthSession, getAccessToken, getSelectedProjectId, storeAccessToken } from '@/shared/api/http/auth-session'
 import { isMockMode } from '@/shared/config/data-mode'
 import type { CmsUser, Project } from '@/shared/types/domain'
 
@@ -91,12 +91,12 @@ function mapProject(project: CmsSessionProjectContextDto): Project {
   }
 }
 
-function rememberTokens(response: CmsAuthenticatedResponseDto): void {
-  storeTokens(response)
+function rememberAccess(response: CmsAuthenticatedResponseDto): void {
+  storeAccessToken(response)
 }
 
-registerRefreshHandler(async (refreshToken) => {
-  rememberTokens(await initialAccessRefresh({ refreshToken }))
+registerRefreshHandler(async () => {
+  rememberAccess(await initialAccessRefresh())
 })
 
 async function loadContext(): Promise<AuthContext> {
@@ -142,7 +142,7 @@ export const authApi = {
     try {
       const response = await initialAccessLogin({ identifier: login, secret: password })
       if (response.kind === 'PASSWORD_SETUP_REQUIRED') return response
-      rememberTokens(response)
+      rememberAccess(response)
       return { kind: 'AUTHENTICATED', context: await loadContext() }
     } catch (cause) {
       clearAuthSession()
@@ -156,11 +156,9 @@ export const authApi = {
       if (!raw) return null
       try { return JSON.parse(raw) as AuthContext } catch { sessionStorage.removeItem(DEMO_SESSION_KEY); return null }
     }
-    const refreshToken = getRefreshToken()
-    if (!refreshToken) return null
     try {
-      const response = await initialAccessRefresh({ refreshToken })
-      rememberTokens(response)
+      const response = await initialAccessRefresh()
+      rememberAccess(response)
       return await loadContext()
     } catch (cause) {
       clearAuthSession()
@@ -190,14 +188,10 @@ export const authApi = {
       clearDemoSession()
       return
     }
-    const refreshToken = getRefreshToken()
-    beginAuthTeardown()
     try {
-      if (refreshToken) {
-        await refreshAccessToken(refreshToken)
-        const freshRefreshToken = getRefreshToken()
-        if (freshRefreshToken) await cmsAuthLogout({ refreshToken: freshRefreshToken })
-      }
+      if (!getAccessToken()) await refreshAccessToken()
+      beginAuthTeardown()
+      await cmsSecuritySettingsLogout()
     } catch {
       // Logout remains locally authoritative when the session is already expired or offline.
     } finally {
@@ -211,11 +205,10 @@ export const authApi = {
       clearDemoSession()
       return
     }
-    beginAuthTeardown()
     try {
-      const refreshToken = getRefreshToken()
-      if (refreshToken) await refreshAccessToken(refreshToken)
-      await cmsAuthLogoutAll()
+      if (!getAccessToken()) await refreshAccessToken()
+      beginAuthTeardown()
+      await cmsSecuritySettingsLogoutAll()
     } catch {
       // Local credentials must still be removed when server-side revocation is unavailable.
     } finally {

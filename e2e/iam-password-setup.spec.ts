@@ -40,7 +40,6 @@ async function installIamFixtures(page: Page): Promise<IamFixtureState> {
           kind: 'AUTHENTICATED',
           tokenType: 'Bearer',
           accessToken: 'cms_access-token',
-          refreshToken: 'lrf_refresh-capability',
           expiresIn: 900,
           refreshExpiresIn: 3_600,
           user: { id: '00000000-0000-4000-8000-000000000001', email: identifier, displayName: 'Olga Operator' },

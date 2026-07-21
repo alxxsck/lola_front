@@ -32,6 +32,11 @@ export const router = createRouter({
           component: () => import("@/pages/OverviewPage.vue"),
         },
         {
+          path: "settings/security",
+          name: "security-settings",
+          component: () => import("@/pages/SecuritySettingsPage.vue"),
+        },
+        {
           path: "platform/cms-users/:cmsUserId?",
           name: "platform-cms-users",
           component: () => import("@/pages/PlatformCmsUsersPage.vue"),

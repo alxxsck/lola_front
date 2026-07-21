@@ -4873,10 +4873,6 @@
             "minimum": 1,
             "type": "number"
           },
-          "refreshToken": {
-            "readOnly": true,
-            "type": "string"
-          },
           "tokenType": {
             "enum": [
               "Bearer"
@@ -4891,7 +4887,6 @@
           "kind",
           "tokenType",
           "accessToken",
-          "refreshToken",
           "expiresIn",
           "refreshExpiresIn",
           "user"
@@ -4964,6 +4959,77 @@
         "required": [
           "identifier",
           "secret"
+        ],
+        "type": "object"
+      },
+      "CmsPasswordChangedResponseDto": {
+        "properties": {
+          "accessToken": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "expiresIn": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "kind": {
+            "enum": [
+              "AUTHENTICATED"
+            ],
+            "type": "string"
+          },
+          "refreshExpiresIn": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "tokenType": {
+            "enum": [
+              "Bearer"
+            ],
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/CmsAuthenticatedUserResponseDto"
+          }
+        },
+        "required": [
+          "kind",
+          "tokenType",
+          "accessToken",
+          "expiresIn",
+          "refreshExpiresIn",
+          "user"
+        ],
+        "type": "object"
+      },
+      "CmsPasswordChangeRequestDto": {
+        "properties": {
+          "currentPassword": {
+            "format": "password",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          },
+          "newPassword": {
+            "format": "password",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          },
+          "passwordConfirmation": {
+            "format": "password",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword",
+          "passwordConfirmation"
         ],
         "type": "object"
       },
@@ -5045,6 +5111,20 @@
         ],
         "type": "object"
       },
+      "CmsSecurityMutationResponseDto": {
+        "properties": {
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "CmsSessionContextResponseDto": {
         "properties": {
           "platformPermissionCodes": {
@@ -5067,6 +5147,20 @@
           "user",
           "platformPermissionCodes",
           "projects"
+        ],
+        "type": "object"
+      },
+      "CmsSessionListResponseDto": {
+        "properties": {
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/CmsSessionSummaryDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "sessions"
         ],
         "type": "object"
       },
@@ -5186,6 +5280,42 @@
           "membershipVersion",
           "roleKeys",
           "effectivePermissionCodes"
+        ],
+        "type": "object"
+      },
+      "CmsSessionSummaryDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "device": {
+            "maxLength": 160,
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "current",
+          "device",
+          "createdAt",
+          "lastSeenAt",
+          "expiresAt"
         ],
         "type": "object"
       },
@@ -9914,18 +10044,6 @@
         "properties": {},
         "type": "object"
       },
-      "LogoutDto": {
-        "properties": {
-          "refreshToken": {
-            "description": "Opaque CMS refresh JWT",
-            "type": "string"
-          }
-        },
-        "required": [
-          "refreshToken"
-        ],
-        "type": "object"
-      },
       "ManagedProjectRoleSummaryDto": {
         "properties": {
           "id": {
@@ -12015,20 +12133,6 @@
           "expectedAssignedMembershipCountCapped",
           "reason",
           "replacementRoleIds"
-        ],
-        "type": "object"
-      },
-      "RefreshRequestDto": {
-        "properties": {
-          "refreshToken": {
-            "maxLength": 1024,
-            "minLength": 1,
-            "type": "string",
-            "writeOnly": true
-          }
-        },
-        "required": [
-          "refreshToken"
         ],
         "type": "object"
       },
@@ -15413,18 +15517,6 @@
             ]
           }
         },
-        "type": "object"
-      },
-      "SuccessResponseDto": {
-        "properties": {
-          "success": {
-            "example": true,
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "success"
-        ],
         "type": "object"
       },
       "SyncAttributeSnapshotDto": {
@@ -26249,28 +26341,46 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "operationId": "CmsAuth_logout",
+        "operationId": "CmsSecuritySettings_logout",
         "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LogoutDto"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponseDto"
+                  "$ref": "#/components/schemas/CmsSecurityMutationResponseDto"
                 }
               }
             },
-            "description": ""
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -26278,25 +26388,55 @@
             "bearer": []
           }
         ],
+        "summary": "Revoke the current CMS User session",
         "tags": [
-          "CMS authentication"
-        ]
+          "CMS security settings"
+        ],
+        "x-iam-authenticated": true
       }
     },
     "/api/v1/auth/logout-all": {
       "post": {
-        "operationId": "CmsAuth_logoutAll",
+        "operationId": "CmsSecuritySettings_logoutAll",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponseDto"
+                  "$ref": "#/components/schemas/CmsSecurityMutationResponseDto"
                 }
               }
             },
-            "description": ""
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -26304,9 +26444,11 @@
             "bearer": []
           }
         ],
+        "summary": "Revoke every CMS User session including the current session",
         "tags": [
-          "CMS authentication"
-        ]
+          "CMS security settings"
+        ],
+        "x-iam-authenticated": true
       }
     },
     "/api/v1/auth/me": {
@@ -26380,6 +26522,344 @@
         "summary": "Return the current CMS User target authorization context",
         "tags": [
           "CMS authentication"
+        ],
+        "x-iam-authenticated": true
+      }
+    },
+    "/api/v1/auth/me/sessions": {
+      "get": {
+        "operationId": "CmsSecuritySettings_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsSessionListResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List active browser sessions owned by the current CMS User",
+        "tags": [
+          "CMS security settings"
+        ],
+        "x-iam-authenticated": true
+      }
+    },
+    "/api/v1/auth/me/sessions/{sessionId}": {
+      "delete": {
+        "operationId": "CmsSecuritySettings_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsSecurityMutationResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Revoke one active session owned by the current CMS User",
+        "tags": [
+          "CMS security settings"
+        ],
+        "x-iam-authenticated": true
+      }
+    },
+    "/api/v1/auth/me/sessions/revoke-others": {
+      "post": {
+        "operationId": "CmsSecuritySettings_revokeOthers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsSecurityMutationResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Revoke all other sessions owned by the current CMS User",
+        "tags": [
+          "CMS security settings"
+        ],
+        "x-iam-authenticated": true
+      }
+    },
+    "/api/v1/auth/password/change": {
+      "post": {
+        "operationId": "CmsSecuritySettings_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsPasswordChangeRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsPasswordChangedResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change the current CMS User password and replace the browser session",
+        "tags": [
+          "CMS security settings"
         ],
         "x-iam-authenticated": true
       }
@@ -26637,16 +27117,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefreshRequestDto"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "content": {

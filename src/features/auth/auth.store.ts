@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { authApi, type AuthContext } from './auth.api'
 import { registerUnauthorizedHandler } from '@/shared/api/http/axios-instance'
-import { storeSelectedProjectId } from '@/shared/api/http/auth-session'
+import { clearAuthSession, storeSelectedProjectId } from '@/shared/api/http/auth-session'
 import { ApiError } from '@/shared/api/http/api-error'
 import type { CmsUser, Project } from '@/shared/types/domain'
 
@@ -37,6 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
   function resetAuthentication() {
     setupAttemptId += 1
     setupToken.value = null
+    clearAuthSession()
     clearLocalState()
     phase.value = 'ANONYMOUS'
   }

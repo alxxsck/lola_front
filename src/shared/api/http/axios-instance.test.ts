@@ -1,6 +1,6 @@
 import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { clearAuthSession, storeTokens } from './auth-session'
+import { clearAuthSession, getAccessToken, storeAccessToken } from './auth-session'
 import { axiosInstance, beginAuthTeardown, endAuthTeardown, registerRefreshHandler } from './axios-instance'
 
 function response(config: InternalAxiosRequestConfig, status: number): AxiosResponse {
@@ -18,13 +18,17 @@ describe('axios auth lifecycle', () => {
     clearAuthSession()
   })
 
+  it('sends browser cookies on generated API requests', () => {
+    expect(axiosInstance.defaults.withCredentials).toBe(true)
+  })
+
   it('uses one refresh for parallel 401 responses and retries with the new token', async () => {
-    storeTokens({ accessToken: 'stale', expiresIn: 60, refreshToken: 'refresh', refreshExpiresIn: 120 })
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 })
     let refreshCount = 0
     registerRefreshHandler(async () => {
       refreshCount += 1
       await Promise.resolve()
-      storeTokens({ accessToken: 'fresh', expiresIn: 60, refreshToken: 'rotated', refreshExpiresIn: 120 })
+      storeAccessToken({ accessToken: 'fresh', expiresIn: 60 })
     })
     const attempts = new Map<string, number>()
     const retryAuthorizations: string[] = []
@@ -44,9 +48,9 @@ describe('axios auth lifecycle', () => {
   })
 
   it('retries a request at most once', async () => {
-    storeTokens({ accessToken: 'stale', expiresIn: 60, refreshToken: 'refresh', refreshExpiresIn: 120 })
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 })
     const refresh = vi.fn(async () => {
-      storeTokens({ accessToken: 'fresh', expiresIn: 60, refreshToken: 'rotated', refreshExpiresIn: 120 })
+      storeAccessToken({ accessToken: 'fresh', expiresIn: 60 })
     })
     registerRefreshHandler(refresh)
     let attempts = 0
@@ -61,7 +65,7 @@ describe('axios auth lifecycle', () => {
   })
 
   it('does not enter a refresh loop for the refresh endpoint', async () => {
-    storeTokens({ accessToken: 'stale', expiresIn: 60, refreshToken: 'refresh', refreshExpiresIn: 120 })
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 })
     const refresh = vi.fn()
     registerRefreshHandler(refresh)
     axiosInstance.defaults.adapter = async (config) => reject(config, 401)
@@ -71,7 +75,7 @@ describe('axios auth lifecycle', () => {
   })
 
   it('does not refresh or retry requests while logout teardown is active', async () => {
-    storeTokens({ accessToken: 'stale', expiresIn: 60, refreshToken: 'refresh', refreshExpiresIn: 120 })
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 })
     const refresh = vi.fn()
     registerRefreshHandler(refresh)
     let attempts = 0
@@ -85,5 +89,17 @@ describe('axios auth lifecycle', () => {
 
     expect(refresh).not.toHaveBeenCalled()
     expect(attempts).toBe(1)
+  })
+
+  it('does not refresh or clear a valid session for a wrong current password', async () => {
+    storeAccessToken({ accessToken: 'valid', expiresIn: 60 })
+    const refresh = vi.fn()
+    registerRefreshHandler(refresh)
+    axiosInstance.defaults.adapter = async (config) => reject(config, 401)
+
+    await expect(axiosInstance.post('/api/v1/auth/password/change')).rejects.toMatchObject({ status: 401 })
+
+    expect(refresh).not.toHaveBeenCalled()
+    expect(getAccessToken()).toBe('valid')
   })
 })

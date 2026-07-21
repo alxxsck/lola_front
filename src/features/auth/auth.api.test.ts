@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  cmsAuthLogout,
+  cmsSecuritySettingsLogout,
+  cmsSecuritySettingsLogoutAll,
   cmsSessionContextMe,
   initialAccessLogin,
   initialAccessRefresh,
@@ -13,12 +14,12 @@ import type {
   PasswordEstablishedResponseDto,
   PasswordSetupRequiredResponseDto,
 } from '@/shared/api/generated/models'
-import { getRefreshToken, storeTokens } from '@/shared/api/http/auth-session'
+import { clearAuthSession, getAccessToken, storeAccessToken } from '@/shared/api/http/auth-session'
 import { authApi } from './auth.api'
 
 vi.mock('@/shared/api/generated/lola-backend', () => ({
-  cmsAuthLogout: vi.fn(),
-  cmsAuthLogoutAll: vi.fn(),
+  cmsSecuritySettingsLogout: vi.fn(),
+  cmsSecuritySettingsLogoutAll: vi.fn(),
   cmsSessionContextMe: vi.fn(),
   initialAccessLogin: vi.fn(),
   initialAccessRefresh: vi.fn(),
@@ -29,7 +30,6 @@ const authenticatedResponse = {
   kind: 'AUTHENTICATED',
   accessToken: 'access',
   expiresIn: 60,
-  refreshToken: 'refresh',
   refreshExpiresIn: 120,
   tokenType: 'Bearer',
   user: {
@@ -83,6 +83,7 @@ function sessionContext(
 describe('target CMS User auth API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearAuthSession()
     sessionStorage.clear()
   })
 
@@ -101,7 +102,6 @@ describe('target CMS User auth API', () => {
       secret: 'lia_initial-secret',
     })
     expect(cmsSessionContextMe).not.toHaveBeenCalled()
-    expect(getRefreshToken()).toBeNull()
     expect(JSON.stringify(Object.values(sessionStorage))).not.toContain(response.setupToken)
   })
 
@@ -187,30 +187,77 @@ describe('target CMS User auth API', () => {
     })
   })
 
-  it('refreshes an expired access session and revokes the rotated refresh token', async () => {
-    storeTokens({ accessToken: 'expired', expiresIn: -1, refreshToken: 'old-refresh', refreshExpiresIn: 120 })
+  it('refreshes through the cookie before revoking the current server session', async () => {
+    storeAccessToken({ accessToken: 'expired', expiresIn: -1 })
     vi.mocked(initialAccessRefresh).mockResolvedValue({
       ...authenticatedResponse,
       accessToken: 'fresh',
-      refreshToken: 'rotated-refresh',
     })
-    vi.mocked(cmsAuthLogout).mockResolvedValue({ success: true })
+    vi.mocked(cmsSecuritySettingsLogout).mockResolvedValue({ success: true })
 
     await authApi.logout()
 
-    expect(initialAccessRefresh).toHaveBeenCalledWith({ refreshToken: 'old-refresh' })
-    expect(cmsAuthLogout).toHaveBeenCalledWith({ refreshToken: 'rotated-refresh' })
-    expect(getRefreshToken()).toBeNull()
+    expect(initialAccessRefresh).toHaveBeenCalledWith()
+    expect(cmsSecuritySettingsLogout).toHaveBeenCalledWith()
+    expect(getAccessToken()).toBeNull()
   })
 
   it('clears local credentials even when refresh cannot reach the server', async () => {
-    storeTokens({ accessToken: 'expired', expiresIn: -1, refreshToken: 'old-refresh', refreshExpiresIn: 120 })
+    storeAccessToken({ accessToken: 'expired', expiresIn: -1 })
     sessionStorage.setItem('lola:translation-jobs:project-1:scenario-1', '[]')
     vi.mocked(initialAccessRefresh).mockRejectedValue(new Error('network'))
 
     await expect(authApi.logout()).resolves.toBeUndefined()
-    expect(cmsAuthLogout).not.toHaveBeenCalled()
-    expect(getRefreshToken()).toBeNull()
+    expect(cmsSecuritySettingsLogout).not.toHaveBeenCalled()
+    expect(getAccessToken()).toBeNull()
     expect(sessionStorage.getItem('lola:translation-jobs:project-1:scenario-1')).toBeNull()
+  })
+
+  it('revokes the current server session with a valid access token when the refresh cookie is unavailable', async () => {
+    storeAccessToken({ accessToken: 'still-valid', expiresIn: 900 })
+    vi.mocked(initialAccessRefresh).mockRejectedValue(new Error('refresh cookie unavailable'))
+    vi.mocked(cmsSecuritySettingsLogout).mockResolvedValue({ success: true })
+
+    await expect(authApi.logout()).resolves.toBeUndefined()
+
+    expect(initialAccessRefresh).not.toHaveBeenCalled()
+    expect(cmsSecuritySettingsLogout).toHaveBeenCalledWith()
+    expect(getAccessToken()).toBeNull()
+  })
+
+  it('restores from an unreadable HttpOnly cookie without browser token state', async () => {
+    vi.mocked(initialAccessRefresh).mockResolvedValue(authenticatedResponse)
+    vi.mocked(cmsSessionContextMe).mockResolvedValue(sessionContext([]))
+
+    await expect(authApi.restore()).resolves.toMatchObject({
+      user: { id: authenticatedResponse.user.id },
+    })
+
+    expect(initialAccessRefresh).toHaveBeenCalledWith()
+    expect(getAccessToken()).toBe('access')
+    expect(JSON.stringify(Object.values(sessionStorage))).not.toContain('access')
+  })
+
+  it('uses the cookie refresh before revoking every server session', async () => {
+    vi.mocked(initialAccessRefresh).mockResolvedValue(authenticatedResponse)
+    vi.mocked(cmsSecuritySettingsLogoutAll).mockResolvedValue({ success: true })
+
+    await authApi.logoutAll()
+
+    expect(initialAccessRefresh).toHaveBeenCalledWith()
+    expect(cmsSecuritySettingsLogoutAll).toHaveBeenCalledWith()
+    expect(getAccessToken()).toBeNull()
+  })
+
+  it('revokes every server session with a valid access token when the refresh cookie is unavailable', async () => {
+    storeAccessToken({ accessToken: 'still-valid', expiresIn: 900 })
+    vi.mocked(initialAccessRefresh).mockRejectedValue(new Error('refresh cookie unavailable'))
+    vi.mocked(cmsSecuritySettingsLogoutAll).mockResolvedValue({ success: true })
+
+    await expect(authApi.logoutAll()).resolves.toBeUndefined()
+
+    expect(initialAccessRefresh).not.toHaveBeenCalled()
+    expect(cmsSecuritySettingsLogoutAll).toHaveBeenCalledWith()
+    expect(getAccessToken()).toBeNull()
   })
 })

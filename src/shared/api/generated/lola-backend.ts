@@ -46,8 +46,12 @@ import type {
   ChatSend200,
   CmsAuthenticatedResponseDto,
   CmsLoginRequestDto,
+  CmsPasswordChangeRequestDto,
+  CmsPasswordChangedResponseDto,
   CmsProfileListResponseDto,
+  CmsSecurityMutationResponseDto,
   CmsSessionContextResponseDto,
+  CmsSessionListResponseDto,
   CmsUserDetailDto,
   CmsUserLifecycleListParams,
   CmsUserLifecycleMutationDto,
@@ -121,7 +125,6 @@ import type {
   LegacyEventLogPageResponseDto,
   ListMessagesDto,
   ListThreadMessagesDto,
-  LogoutDto,
   PasswordEstablishedResponseDto,
   PasswordSetupRequestDto,
   PlatformEventDefinitionRevisionsParams,
@@ -153,7 +156,6 @@ import type {
   PublishSegmentRevisionDto,
   PublishedSegmentResponseDto,
   ReassignProjectRoleDto,
-  RefreshRequestDto,
   RemoveProjectMembershipDto,
   RenameConversationDto,
   ResumeConversationAIDto,
@@ -185,7 +187,6 @@ import type {
   StartAdminVoiceConversationDto,
   StartConversationAISuspensionDto,
   StartVoiceSessionDto,
-  SuccessResponseDto,
   SyncAttributeSnapshotDto,
   TranslationJobAcceptedResponseDto,
   TranslationJobResponseDto,
@@ -2472,25 +2473,25 @@ export const initialAccessLogin = (
   );
 };
 
-export const cmsAuthLogout = (
-  logoutDto: BodyType<LogoutDto>,
-  options?: SecondParameter<typeof request<SuccessResponseDto>>,
+/**
+ * @summary Revoke the current CMS User session
+ */
+export const cmsSecuritySettingsLogout = (
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
 ) => {
-  return request<SuccessResponseDto>(
-    {
-      url: `/api/v1/auth/logout`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: logoutDto,
-    },
+  return request<CmsSecurityMutationResponseDto>(
+    { url: `/api/v1/auth/logout`, method: "POST" },
     options,
   );
 };
 
-export const cmsAuthLogoutAll = (
-  options?: SecondParameter<typeof request<SuccessResponseDto>>,
+/**
+ * @summary Revoke every CMS User session including the current session
+ */
+export const cmsSecuritySettingsLogoutAll = (
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
 ) => {
-  return request<SuccessResponseDto>(
+  return request<CmsSecurityMutationResponseDto>(
     { url: `/api/v1/auth/logout-all`, method: "POST" },
     options,
   );
@@ -2504,6 +2505,61 @@ export const cmsSessionContextMe = (
 ) => {
   return request<CmsSessionContextResponseDto>(
     { url: `/api/v1/auth/me`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary List active browser sessions owned by the current CMS User
+ */
+export const cmsSecuritySettingsList = (
+  options?: SecondParameter<typeof request<CmsSessionListResponseDto>>,
+) => {
+  return request<CmsSessionListResponseDto>(
+    { url: `/api/v1/auth/me/sessions`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary Revoke one active session owned by the current CMS User
+ */
+export const cmsSecuritySettingsRevoke = (
+  sessionId: string,
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
+) => {
+  return request<CmsSecurityMutationResponseDto>(
+    { url: `/api/v1/auth/me/sessions/${sessionId}`, method: "DELETE" },
+    options,
+  );
+};
+
+/**
+ * @summary Revoke all other sessions owned by the current CMS User
+ */
+export const cmsSecuritySettingsRevokeOthers = (
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
+) => {
+  return request<CmsSecurityMutationResponseDto>(
+    { url: `/api/v1/auth/me/sessions/revoke-others`, method: "POST" },
+    options,
+  );
+};
+
+/**
+ * @summary Change the current CMS User password and replace the browser session
+ */
+export const cmsSecuritySettingsChangePassword = (
+  cmsPasswordChangeRequestDto: BodyType<CmsPasswordChangeRequestDto>,
+  options?: SecondParameter<typeof request<CmsPasswordChangedResponseDto>>,
+) => {
+  return request<CmsPasswordChangedResponseDto>(
+    {
+      url: `/api/v1/auth/password/change`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsPasswordChangeRequestDto,
+    },
     options,
   );
 };
@@ -2530,16 +2586,10 @@ export const initialAccessSetupPassword = (
  * @summary Rotate a CMS refresh capability and issue a new session response
  */
 export const initialAccessRefresh = (
-  refreshRequestDto: BodyType<RefreshRequestDto>,
   options?: SecondParameter<typeof request<CmsAuthenticatedResponseDto>>,
 ) => {
   return request<CmsAuthenticatedResponseDto>(
-    {
-      url: `/api/v1/auth/refresh`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: refreshRequestDto,
-    },
+    { url: `/api/v1/auth/refresh`, method: "POST" },
     options,
   );
 };
@@ -3419,14 +3469,26 @@ export type BreakGlassAuthLoginResult = NonNullable<
 export type InitialAccessLoginResult = NonNullable<
   Awaited<ReturnType<typeof initialAccessLogin>>
 >;
-export type CmsAuthLogoutResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthLogout>>
+export type CmsSecuritySettingsLogoutResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsLogout>>
 >;
-export type CmsAuthLogoutAllResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthLogoutAll>>
+export type CmsSecuritySettingsLogoutAllResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsLogoutAll>>
 >;
 export type CmsSessionContextMeResult = NonNullable<
   Awaited<ReturnType<typeof cmsSessionContextMe>>
+>;
+export type CmsSecuritySettingsListResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsList>>
+>;
+export type CmsSecuritySettingsRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsRevoke>>
+>;
+export type CmsSecuritySettingsRevokeOthersResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsRevokeOthers>>
+>;
+export type CmsSecuritySettingsChangePasswordResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsChangePassword>>
 >;
 export type InitialAccessSetupPasswordResult = NonNullable<
   Awaited<ReturnType<typeof initialAccessSetupPassword>>
