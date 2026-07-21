@@ -27,38 +27,53 @@ const sidebarOpen = ref(false);
 
 const navigation = computed(() =>
   [
-    { label: "Обзор", icon: "pi pi-sparkles", to: "/overview" },
-    { label: "Проект", icon: "pi pi-sliders-h", to: "/project" },
-    { label: "Поля профиля", icon: "pi pi-id-card", to: "/profile-fields" },
-    { label: "База знаний", icon: "pi pi-book", to: "/knowledge" },
-    { label: "Интерфейс", icon: "pi pi-th-large", to: "/interface" },
-    { label: "События", icon: "pi pi-bolt", to: "/events" },
+    {
+      label: "CMS Users",
+      icon: "pi pi-users",
+      to: "/platform/cms-users",
+      platformPermission: "platform.cms_users.read",
+    },
+    { label: "Обзор", icon: "pi pi-sparkles", to: "/overview", project: true },
+    { label: "Проект", icon: "pi pi-sliders-h", to: "/project", project: true },
+    { label: "Поля профиля", icon: "pi pi-id-card", to: "/profile-fields", project: true },
+    { label: "База знаний", icon: "pi pi-book", to: "/knowledge", project: true },
+    { label: "Интерфейс", icon: "pi pi-th-large", to: "/interface", project: true },
+    { label: "События", icon: "pi pi-bolt", to: "/events", project: true },
     {
       label: "Журнал событий",
       icon: "pi pi-list",
       to: "/event-logs",
       adminOnly: true,
+      project: true,
     },
-    { label: "Действия", icon: "pi pi-directions-alt", to: "/actions" },
+    { label: "Действия", icon: "pi pi-directions-alt", to: "/actions", project: true },
     {
       label: "Предложения Lola",
       icon: "pi pi-inbox",
       to: "/ai-proposals",
       adminOnly: true,
       proposals: true,
+      project: true,
     },
-    { label: "Сценарии", icon: "pi pi-sitemap", to: "/scenarios" },
-    { label: "Сегменты", icon: "pi pi-filter-fill", to: "/segments" },
-    { label: "Документация", icon: "pi pi-bookmark", to: "/docs" },
-    { label: "Операции", icon: "pi pi-chart-bar", to: "/operations" },
-    { label: "Пользователи", icon: "pi pi-users", to: "/users" },
+    { label: "Сценарии", icon: "pi pi-sitemap", to: "/scenarios", project: true },
+    { label: "Сегменты", icon: "pi pi-filter-fill", to: "/segments", project: true },
+    { label: "Документация", icon: "pi pi-bookmark", to: "/docs", project: true },
+    { label: "Операции", icon: "pi pi-chart-bar", to: "/operations", project: true },
+    { label: "Пользователи", icon: "pi pi-users", to: "/users", project: true },
     {
       label: "Сейчас онлайн",
       icon: "pi pi-circle-fill",
       to: "/live",
       live: true,
+      project: true,
     },
-  ].filter((item) => !item.adminOnly || canReviewAIProposals(auth.user?.role)),
+  ].filter(
+    (item) =>
+      (!item.project || Boolean(auth.project)) &&
+      (!item.platformPermission ||
+        auth.user?.platformPermissionCodes?.includes(item.platformPermission)) &&
+      (!item.adminOnly || canReviewAIProposals(auth.user?.role)),
+  ),
 );
 
 const profileItems = [
@@ -116,12 +131,13 @@ onBeforeUnmount(() => {
 
         <div class="project-pill">
           <div class="project-avatar">
-            {{ auth.project?.name.slice(0, 2).toUpperCase() }}
+            {{ auth.project ? auth.project.name.slice(0, 2).toUpperCase() : "CP" }}
           </div>
           <div class="project-copy">
-            <strong>{{ auth.project?.name }}</strong
+            <strong>{{ auth.project?.name ?? "Управление платформой" }}</strong
             ><span>{{
-              auth.project?.organization?.name ?? "Текущий проект"
+              auth.project?.organization?.name ??
+              (auth.project ? "Текущий Project" : "Control plane")
             }}</span>
           </div>
           <i class="pi pi-lock" />
@@ -184,7 +200,11 @@ onBeforeUnmount(() => {
           <div>
             <strong>{{ auth.user?.name }}</strong
             ><span>{{
-              auth.user?.role === "OWNER" ? "Владелец" : "Администратор"
+              !auth.project && auth.user?.platformPermissionCodes?.length
+                ? "Platform Operator"
+                : auth.user?.role === "OWNER"
+                  ? "Владелец"
+                  : "Администратор"
             }}</span>
           </div>
           <i class="pi pi-ellipsis-h" />

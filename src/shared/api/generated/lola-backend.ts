@@ -46,8 +46,14 @@ import type {
   CmsLoginRequestDto,
   CmsProfileListResponseDto,
   CmsSessionContextResponseDto,
+  CmsUserDetailDto,
+  CmsUserLifecycleListParams,
+  CmsUserLifecycleMutationDto,
+  CmsUserListResponseDto,
   CmsUserProvisioningDto,
   CmsUserProvisioningProvision201,
+  CmsUserReactivationResponseDto,
+  CmsUserResetResponseDto,
   CompatibilityCreateMessageDto,
   CompatibilityEndVoiceSessionDto,
   CompatibilityGetVoiceSessionDto,
@@ -175,6 +181,7 @@ import type {
   TranslationUsageResponseDto,
   UiElementResponseDto,
   UpdateActivitySettingsDto,
+  UpdateCmsUserProfileDto,
   UpdateEventDefinitionDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
@@ -217,6 +224,19 @@ export const firstPlatformOperatorProvision = (
 };
 
 /**
+ * @summary List CMS Users using bounded cursor pagination
+ */
+export const cmsUserLifecycleList = (
+  params?: CmsUserLifecycleListParams,
+  options?: SecondParameter<typeof request<CmsUserListResponseDto>>,
+) => {
+  return request<CmsUserListResponseDto>(
+    { url: `/api/v1/admin/platform/cms-users`, method: "GET", params },
+    options,
+  );
+};
+
+/**
  * @summary Provision a CMS User with Project Roles
  */
 export const cmsUserProvisioningProvision = (
@@ -229,6 +249,114 @@ export const cmsUserProvisioningProvision = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: cmsUserProvisioningDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Get a CMS User without credential material
+ */
+export const cmsUserLifecycleGet = (
+  cmsUserId: string,
+  options?: SecondParameter<typeof request<CmsUserDetailDto>>,
+) => {
+  return request<CmsUserDetailDto>(
+    { url: `/api/v1/admin/platform/cms-users/${cmsUserId}`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary Update safe CMS User profile fields using optimistic versioning
+ */
+export const cmsUserLifecycleUpdate = (
+  cmsUserId: string,
+  updateCmsUserProfileDto: BodyType<UpdateCmsUserProfileDto>,
+  options?: SecondParameter<typeof request<CmsUserDetailDto>>,
+) => {
+  return request<CmsUserDetailDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateCmsUserProfileDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Deactivate CMS User while retaining stable audit attribution
+ */
+export const cmsUserLifecycleDeactivate = (
+  cmsUserId: string,
+  cmsUserLifecycleMutationDto: BodyType<CmsUserLifecycleMutationDto>,
+  options?: SecondParameter<typeof request<CmsUserDetailDto>>,
+) => {
+  return request<CmsUserDetailDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/deactivate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserLifecycleMutationDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Revoke CMS User credentials and issue one Initial Access Secret
+ */
+export const cmsUserLifecycleResetCredentials = (
+  cmsUserId: string,
+  cmsUserLifecycleMutationDto: BodyType<CmsUserLifecycleMutationDto>,
+  options?: SecondParameter<typeof request<CmsUserResetResponseDto>>,
+) => {
+  return request<CmsUserResetResponseDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/initial-access/reset`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserLifecycleMutationDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Reactivate CMS User according to current credential state
+ */
+export const cmsUserLifecycleReactivate = (
+  cmsUserId: string,
+  cmsUserLifecycleMutationDto: BodyType<CmsUserLifecycleMutationDto>,
+  options?: SecondParameter<typeof request<CmsUserReactivationResponseDto>>,
+) => {
+  return request<CmsUserReactivationResponseDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/reactivate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserLifecycleMutationDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Suspend CMS User access and revoke active capabilities
+ */
+export const cmsUserLifecycleSuspend = (
+  cmsUserId: string,
+  cmsUserLifecycleMutationDto: BodyType<CmsUserLifecycleMutationDto>,
+  options?: SecondParameter<typeof request<CmsUserDetailDto>>,
+) => {
+  return request<CmsUserDetailDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/suspend`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserLifecycleMutationDto,
     },
     options,
   );
@@ -2627,8 +2755,29 @@ export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
 export type FirstPlatformOperatorProvisionResult = NonNullable<
   Awaited<ReturnType<typeof firstPlatformOperatorProvision>>
 >;
+export type CmsUserLifecycleListResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleList>>
+>;
 export type CmsUserProvisioningProvisionResult = NonNullable<
   Awaited<ReturnType<typeof cmsUserProvisioningProvision>>
+>;
+export type CmsUserLifecycleGetResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleGet>>
+>;
+export type CmsUserLifecycleUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleUpdate>>
+>;
+export type CmsUserLifecycleDeactivateResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleDeactivate>>
+>;
+export type CmsUserLifecycleResetCredentialsResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleResetCredentials>>
+>;
+export type CmsUserLifecycleReactivateResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleReactivate>>
+>;
+export type CmsUserLifecycleSuspendResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleSuspend>>
 >;
 export type PlatformListProjectsResult = NonNullable<
   Awaited<ReturnType<typeof platformListProjects>>

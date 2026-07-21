@@ -30,6 +30,12 @@ export const router = createRouter({
           component: () => import("@/pages/OverviewPage.vue"),
         },
         {
+          path: "platform/cms-users/:cmsUserId?",
+          name: "platform-cms-users",
+          component: () => import("@/pages/PlatformCmsUsersPage.vue"),
+          meta: { platformPermission: "platform.cms_users.read" },
+        },
+        {
           path: "project",
           name: "project",
           component: () => import("@/pages/ProjectPage.vue"),
@@ -188,6 +194,11 @@ router.beforeEach(async (to) => {
     return { name: "login" };
   if (!to.meta.public && !auth.isAuthenticated)
     return { name: "login", query: { redirect: to.fullPath } };
+  if (
+    typeof to.meta.platformPermission === "string" &&
+    !auth.user?.platformPermissionCodes?.includes(to.meta.platformPermission)
+  )
+    return { name: "overview" };
   if (to.name === "login" && auth.isAuthenticated) return { name: "overview" };
   if (to.meta.proposalAccess && !canReviewAIProposals(auth.user?.role))
     return { name: "overview" };

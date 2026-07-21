@@ -5096,6 +5096,135 @@
         ],
         "type": "object"
       },
+      "CmsUserDetailDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deactivatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "deactivationReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "familyName": {
+            "type": "string"
+          },
+          "givenName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastLoginAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "platformPermissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "platformRoleKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "projectCount": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP",
+              "ACTIVE",
+              "SUSPENDED",
+              "DEACTIVATED"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "givenName",
+          "familyName",
+          "displayName",
+          "status",
+          "emailVerified",
+          "projectCount",
+          "lastLoginAt",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "platformRoleKeys",
+          "platformPermissionCodes",
+          "deactivatedAt",
+          "deactivationReason"
+        ],
+        "type": "object"
+      },
+      "CmsUserLifecycleMutationDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "CmsUserListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CmsUserSummaryDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
       "CmsUserProjectAssignmentDto": {
         "properties": {
           "projectId": {
@@ -5210,6 +5339,209 @@
           "cmsUserId",
           "status",
           "replayed"
+        ],
+        "type": "object"
+      },
+      "CmsUserReactivationResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deactivatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "deactivationReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "familyName": {
+            "type": "string"
+          },
+          "givenName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "initialAccessExpiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "initialAccessSecret": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "lastLoginAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "platformPermissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "platformRoleKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "projectCount": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP",
+              "ACTIVE",
+              "SUSPENDED",
+              "DEACTIVATED"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "givenName",
+          "familyName",
+          "displayName",
+          "status",
+          "emailVerified",
+          "projectCount",
+          "lastLoginAt",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "platformRoleKeys",
+          "platformPermissionCodes",
+          "deactivatedAt",
+          "deactivationReason"
+        ],
+        "type": "object"
+      },
+      "CmsUserResetResponseDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "initialAccessSecret": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP",
+              "ACTIVE",
+              "SUSPENDED",
+              "DEACTIVATED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "cmsUserId",
+          "status",
+          "version",
+          "initialAccessSecret",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "CmsUserSummaryDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "familyName": {
+            "type": "string"
+          },
+          "givenName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastLoginAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectCount": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP",
+              "ACTIVE",
+              "SUSPENDED",
+              "DEACTIVATED"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "givenName",
+          "familyName",
+          "displayName",
+          "status",
+          "emailVerified",
+          "projectCount",
+          "lastLoginAt",
+          "version",
+          "createdAt",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -14889,6 +15221,30 @@
         ],
         "type": "object"
       },
+      "UpdateCmsUserProfileDto": {
+        "properties": {
+          "familyName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "givenName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "givenName",
+          "familyName",
+          "version"
+        ],
+        "type": "object"
+      },
       "UpdateEventDefinitionDto": {
         "properties": {
           "clientIngestible": {
@@ -15938,6 +16294,71 @@
       }
     },
     "/api/v1/admin/platform/cms-users": {
+      "get": {
+        "operationId": "CmsUserLifecycle_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PENDING_SETUP",
+                "ACTIVE",
+                "SUSPENDED",
+                "DEACTIVATED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsUserListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List CMS Users using bounded cursor pagination",
+        "tags": [
+          "IAM CMS Users"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.read",
+          "scope": "PLATFORM"
+        }
+      },
       "post": {
         "operationId": "CmsUserProvisioning_provision",
         "parameters": [
@@ -16137,6 +16558,304 @@
         ],
         "x-iam-permission": {
           "code": "platform.cms_users.create",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/cms-users/{cmsUserId}": {
+      "get": {
+        "operationId": "CmsUserLifecycle_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cmsUserId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsUserDetailDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a CMS User without credential material",
+        "tags": [
+          "IAM CMS Users"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.read",
+          "scope": "PLATFORM"
+        }
+      },
+      "patch": {
+        "operationId": "CmsUserLifecycle_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cmsUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCmsUserProfileDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsUserDetailDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "description": "VERSION_CONFLICT"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update safe CMS User profile fields using optimistic versioning",
+        "tags": [
+          "IAM CMS Users"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.update",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/cms-users/{cmsUserId}/deactivate": {
+      "post": {
+        "operationId": "CmsUserLifecycle_deactivate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cmsUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsUserLifecycleMutationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsUserDetailDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate CMS User while retaining stable audit attribution",
+        "tags": [
+          "IAM CMS Users"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.deactivate",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/cms-users/{cmsUserId}/initial-access/reset": {
+      "post": {
+        "operationId": "CmsUserLifecycle_resetCredentials",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cmsUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsUserLifecycleMutationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsUserResetResponseDto"
+                }
+              }
+            },
+            "description": "Credential reset and one-time Initial Access Secret"
+          },
+          "409": {
+            "description": "Version or last-operator conflict"
+          },
+          "428": {
+            "description": "REAUTHENTICATION_REQUIRED"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Revoke CMS User credentials and issue one Initial Access Secret",
+        "tags": [
+          "IAM CMS Users"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.reset_credentials",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/cms-users/{cmsUserId}/reactivate": {
+      "post": {
+        "operationId": "CmsUserLifecycle_reactivate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cmsUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsUserLifecycleMutationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsUserReactivationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reactivate CMS User according to current credential state",
+        "tags": [
+          "IAM CMS Users"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.reactivate",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/cms-users/{cmsUserId}/suspend": {
+      "post": {
+        "operationId": "CmsUserLifecycle_suspend",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cmsUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsUserLifecycleMutationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsUserDetailDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Suspend CMS User access and revoke active capabilities",
+        "tags": [
+          "IAM CMS Users"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.deactivate",
           "scope": "PLATFORM"
         }
       }

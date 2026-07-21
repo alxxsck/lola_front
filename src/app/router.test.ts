@@ -35,4 +35,25 @@ describe('authentication routes', () => {
 
     expect(router.currentRoute.value.name).toBe('login')
   })
+
+  it('allows the CMS User control plane only with the exact read Permission', async () => {
+    const auth = useAuthStore()
+    auth.$patch({
+      restored: true,
+      phase: 'AUTHENTICATED',
+      user: {
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
+        platformPermissionCodes: ['platform.cms_users.read'],
+      },
+    })
+
+    await router.push('/platform/cms-users')
+    expect(router.currentRoute.value.name).toBe('platform-cms-users')
+
+    auth.user!.platformPermissionCodes = []
+    await router.push('/platform/cms-users/user-1')
+    expect(router.currentRoute.value.name).toBe('overview')
+  })
 })
