@@ -1,7 +1,7 @@
 import { getCurrentInstance, onBeforeUnmount, ref } from 'vue'
 import type {
   CreateProjectMembershipDto,
-  ManagedProjectRoleCatalogResponseDto,
+  AssignableProjectRoleCatalogResponseDto,
   ProjectMembershipListParams,
   ProjectMembershipListResponseDto,
   ProjectMembershipResponseDto,
@@ -28,7 +28,7 @@ export interface ProjectMembershipClient {
     projectId: string,
     params: ProjectMembershipListParams,
   ): Promise<ProjectMembershipListResponseDto>
-  roles(projectId: string): Promise<ManagedProjectRoleCatalogResponseDto>
+  roles(projectId: string): Promise<AssignableProjectRoleCatalogResponseDto>
   get(
     projectId: string,
     membershipId: string,
@@ -60,7 +60,7 @@ export function useProjectMemberships(
   options: ProjectMembershipOptions = {},
 ) {
   const items = ref<ProjectMembershipResponseDto[]>([])
-  const roles = ref<ManagedProjectRoleCatalogResponseDto['items']>([])
+  const roles = ref<AssignableProjectRoleCatalogResponseDto['items']>([])
   const nextCursor = ref<string | null>(null)
   const status = ref<ProjectMembershipStatusFilter>('ALL')
   const loading = ref(false)

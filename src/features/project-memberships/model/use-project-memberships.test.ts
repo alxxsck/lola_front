@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/shared/api/http/api-error'
 import type {
-  ManagedProjectRoleCatalogItemDto,
+  AssignableProjectRoleDto,
   ProjectMembershipListResponseDto,
   ProjectMembershipResponseDto,
 } from '@/shared/api/generated/models'
@@ -20,8 +20,8 @@ const membershipId = '00000000-0000-4000-8000-000000000020'
 const cmsUserId = '00000000-0000-4000-8000-000000000030'
 
 const role = (
-  overrides: Partial<ManagedProjectRoleCatalogItemDto> = {},
-): ManagedProjectRoleCatalogItemDto => ({
+  overrides: Partial<AssignableProjectRoleDto> = {},
+): AssignableProjectRoleDto => ({
   id: '00000000-0000-4000-8000-000000000040',
   key: 'PROJECT_ADMIN',
   name: 'Project Admin',

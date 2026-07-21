@@ -27,7 +27,9 @@ import type {
   AiUsageReportParams,
   AiUsageReportResponseDto,
   AnalyzeEventSchemaDraftDto,
+  ArchiveProjectRoleDto,
   ArchivedSegmentResponseDto,
+  AssignableProjectRoleCatalogResponseDto,
   AttributeContractDraftResponseDto,
   AttributeContractRevisionPageResponseDto,
   AttributeContractRevisionResponseDto,
@@ -76,6 +78,7 @@ import type {
   CreateProjectDto,
   CreateProjectMembershipDto,
   CreateProjectResponseDto,
+  CreateProjectRoleDto,
   CreateScenarioActionDefinitionDto,
   CreateScenarioAuthoringDto,
   CreateScenarioAuthoringResponseDto,
@@ -119,7 +122,6 @@ import type {
   ListMessagesDto,
   ListThreadMessagesDto,
   LogoutDto,
-  ManagedProjectRoleCatalogResponseDto,
   PasswordEstablishedResponseDto,
   PasswordSetupRequestDto,
   PlatformEventDefinitionRevisionsParams,
@@ -138,7 +140,10 @@ import type {
   ProjectMembershipListParams,
   ProjectMembershipListResponseDto,
   ProjectMembershipResponseDto,
+  ProjectPermissionCatalogResponseDto,
   ProjectResponseDto,
+  ProjectRoleListResponseDto,
+  ProjectRoleResponseDto,
   ProviderBillingSnapshotResponseDto,
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
@@ -147,6 +152,7 @@ import type {
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
   PublishedSegmentResponseDto,
+  ReassignProjectRoleDto,
   RefreshRequestDto,
   RemoveProjectMembershipDto,
   RenameConversationDto,
@@ -193,6 +199,7 @@ import type {
   UpdateEventIngestionPolicyDto,
   UpdateProjectDto,
   UpdateProjectMembershipDto,
+  UpdateProjectRoleDto,
   UpdateScenarioActionDefinitionDto,
   UpdateScenarioDto,
   UpdateSpeechSettingsDto,
@@ -1260,6 +1267,36 @@ export const projectMembershipRemove = (
   );
 };
 
+/**
+ * @summary List active Project Roles assignable through Membership management
+ */
+export const projectMembershipAssignableRoles = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<AssignableProjectRoleCatalogResponseDto>
+  >,
+) => {
+  return request<AssignableProjectRoleCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships/assignable-roles`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const projectPermissionList = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<ProjectPermissionCatalogResponseDto>
+  >,
+) => {
+  return request<ProjectPermissionCatalogResponseDto>(
+    { url: `/api/v1/admin/projects/${projectId}/permissions`, method: "GET" },
+    options,
+  );
+};
+
 export const productActionsProjectActions = (
   projectId: string,
   options?: SecondParameter<typeof request<ProjectActionResponseDto[]>>,
@@ -1318,17 +1355,96 @@ export const productActionsArchiveProjectAction = (
   );
 };
 
-/**
- * @summary List active managed Project Roles for membership assignment
- */
-export const managedProjectRoleList = (
+export const projectRoleList = (
   projectId: string,
-  options?: SecondParameter<
-    typeof request<ManagedProjectRoleCatalogResponseDto>
-  >,
+  options?: SecondParameter<typeof request<ProjectRoleListResponseDto>>,
 ) => {
-  return request<ManagedProjectRoleCatalogResponseDto>(
+  return request<ProjectRoleListResponseDto>(
     { url: `/api/v1/admin/projects/${projectId}/roles`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary Create a delegated custom Project Role
+ */
+export const projectRoleCreate = (
+  projectId: string,
+  createProjectRoleDto: BodyType<CreateProjectRoleDto>,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createProjectRoleDto,
+    },
+    options,
+  );
+};
+
+export const projectRoleGet = (
+  projectId: string,
+  roleId: string,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles/${roleId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const projectRoleUpdate = (
+  projectId: string,
+  roleId: string,
+  updateProjectRoleDto: BodyType<UpdateProjectRoleDto>,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles/${roleId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateProjectRoleDto,
+    },
+    options,
+  );
+};
+
+export const projectRoleArchive = (
+  projectId: string,
+  roleId: string,
+  archiveProjectRoleDto: BodyType<ArchiveProjectRoleDto>,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles/${roleId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archiveProjectRoleDto,
+    },
+    options,
+  );
+};
+
+export const projectRoleReassign = (
+  projectId: string,
+  roleId: string,
+  reassignProjectRoleDto: BodyType<ReassignProjectRoleDto>,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles/${roleId}/reassign`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: reassignProjectRoleDto,
+    },
     options,
   );
 };
@@ -3066,6 +3182,12 @@ export type ProjectMembershipUpdateResult = NonNullable<
 export type ProjectMembershipRemoveResult = NonNullable<
   Awaited<ReturnType<typeof projectMembershipRemove>>
 >;
+export type ProjectMembershipAssignableRolesResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipAssignableRoles>>
+>;
+export type ProjectPermissionListResult = NonNullable<
+  Awaited<ReturnType<typeof projectPermissionList>>
+>;
 export type ProductActionsProjectActionsResult = NonNullable<
   Awaited<ReturnType<typeof productActionsProjectActions>>
 >;
@@ -3078,8 +3200,23 @@ export type ProductActionsPreviewProjectActionResult = NonNullable<
 export type ProductActionsArchiveProjectActionResult = NonNullable<
   Awaited<ReturnType<typeof productActionsArchiveProjectAction>>
 >;
-export type ManagedProjectRoleListResult = NonNullable<
-  Awaited<ReturnType<typeof managedProjectRoleList>>
+export type ProjectRoleListResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleList>>
+>;
+export type ProjectRoleCreateResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleCreate>>
+>;
+export type ProjectRoleGetResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleGet>>
+>;
+export type ProjectRoleUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleUpdate>>
+>;
+export type ProjectRoleArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleArchive>>
+>;
+export type ProjectRoleReassignResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleReassign>>
 >;
 export type PlatformRotateResult = NonNullable<
   Awaited<ReturnType<typeof platformRotate>>

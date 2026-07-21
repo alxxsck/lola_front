@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  managedProjectRoleList,
+  projectMembershipAssignableRoles,
   projectMembershipCreate,
   projectMembershipGet,
   projectMembershipList,
@@ -10,7 +10,7 @@ import {
 import { projectMembershipApi } from './project-membership.api'
 
 vi.mock('@/shared/api/generated/lola-backend', () => ({
-  managedProjectRoleList: vi.fn(),
+  projectMembershipAssignableRoles: vi.fn(),
   projectMembershipCreate: vi.fn(),
   projectMembershipGet: vi.fn(),
   projectMembershipList: vi.fn(),
@@ -25,7 +25,7 @@ describe('Project Membership API', () => {
       items: [],
       nextCursor: null,
     })
-    vi.mocked(managedProjectRoleList).mockResolvedValue({ items: [] })
+    vi.mocked(projectMembershipAssignableRoles).mockResolvedValue({ items: [] })
     vi.mocked(projectMembershipCreate).mockResolvedValue({} as never)
     vi.mocked(projectMembershipGet).mockResolvedValue({} as never)
     vi.mocked(projectMembershipUpdate).mockResolvedValue({} as never)
@@ -46,7 +46,7 @@ describe('Project Membership API', () => {
       cursor: 'opaque-cursor',
       status: 'REMOVED',
     })
-    expect(managedProjectRoleList).toHaveBeenCalledWith('project-1')
+    expect(projectMembershipAssignableRoles).toHaveBeenCalledWith('project-1')
     expect(projectMembershipGet).toHaveBeenCalledWith(
       'project-1',
       'membership-1',

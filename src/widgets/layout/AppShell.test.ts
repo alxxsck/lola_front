@@ -153,9 +153,11 @@ describe("AppShell", () => {
     });
 
     expect(wrapper.text()).toContain("Администраторы");
+    expect(wrapper.text()).not.toContain("Роли");
 
     auth.project!.effectivePermissionCodes = ["project.roles.read"];
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).not.toContain("Администраторы");
+    expect(wrapper.text()).toContain("Роли");
   });
 });

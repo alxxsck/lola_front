@@ -1,5 +1,5 @@
 import {
-  managedProjectRoleList,
+  projectMembershipAssignableRoles,
   projectMembershipCreate,
   projectMembershipGet,
   projectMembershipList,
@@ -18,7 +18,7 @@ const reason = (value: string) => value.trim().normalize('NFC')
 export const projectMembershipApi = {
   list: (projectId: string, params: ProjectMembershipListParams) =>
     projectMembershipList(projectId, params),
-  roles: (projectId: string) => managedProjectRoleList(projectId),
+  roles: (projectId: string) => projectMembershipAssignableRoles(projectId),
   get: (projectId: string, membershipId: string) =>
     projectMembershipGet(projectId, membershipId),
   create: (projectId: string, body: CreateProjectMembershipDto) =>

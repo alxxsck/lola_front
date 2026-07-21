@@ -100,4 +100,43 @@ describe('authentication routes', () => {
     await router.push('/project/memberships')
     expect(router.currentRoute.value.name).toBe('overview')
   })
+
+  it('allows Project Roles only through the exact Platform-or-selected-Project role read Permission', async () => {
+    const auth = useAuthStore()
+    const project = {
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Lola',
+      systemPrompt: '',
+      voiceInstructions: '',
+      settings: {},
+      effectivePermissionCodes: ['project.roles.read'],
+    }
+    auth.$patch({
+      restored: true,
+      phase: 'AUTHENTICATED',
+      user: { id: 'operator-1', email: 'operator@example.com', name: 'Operator' },
+      project,
+      projects: [project],
+    })
+
+    await router.push('/project/roles')
+    expect(router.currentRoute.value.name).toBe('project-roles')
+
+    auth.project!.effectivePermissionCodes = ['project.members.read']
+    auth.user!.platformPermissionCodes = ['platform.roles.read']
+    await router.push('/overview')
+    await router.push('/project/roles')
+    expect(router.currentRoute.value.name).toBe('project-roles')
+
+    auth.user!.platformPermissionCodes = ['platform.projects.read']
+    await router.push('/overview')
+    await router.push('/project/roles')
+    expect(router.currentRoute.value.name).toBe('overview')
+  })
 })

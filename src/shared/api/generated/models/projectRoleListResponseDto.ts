@@ -5,13 +5,8 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectRoleResponseDto } from "./projectRoleResponseDto";
 
-export interface ManagedProjectRoleCatalogItemDto {
-  description: string;
-  id: string;
-  key: string;
-  managed: boolean;
-  name: string;
-  permissionCodes: string[];
-  version: number;
+export interface ProjectRoleListResponseDto {
+  items: ProjectRoleResponseDto[];
 }

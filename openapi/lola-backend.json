@@ -1987,6 +1987,87 @@
         ],
         "type": "object"
       },
+      "ArchiveProjectRoleDto": {
+        "properties": {
+          "expectedAssignedMembershipCount": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "expectedAssignedMembershipCountCapped": {
+            "type": "boolean"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "expectedAssignedMembershipCount",
+          "expectedAssignedMembershipCountCapped",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "AssignableProjectRoleCatalogResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssignableProjectRoleDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "AssignableProjectRoleDto": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "managed": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "name",
+          "managed",
+          "version",
+          "description",
+          "permissionCodes"
+        ],
+        "type": "object"
+      },
       "AttributeClassification": {
         "enum": [
           "INTERNAL",
@@ -6724,6 +6805,45 @@
         ],
         "type": "object"
       },
+      "CreateProjectRoleDto": {
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "minLength": 2,
+            "type": "string"
+          },
+          "key": {
+            "pattern": "^[A-Z][A-Z0-9_]{2,63}$",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 2,
+            "type": "string"
+          },
+          "permissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "description",
+          "permissionCodes",
+          "reason"
+        ],
+        "type": "object"
+      },
       "CreateScenarioActionDefinitionDto": {
         "properties": {
           "commandType": {
@@ -9806,62 +9926,6 @@
         ],
         "type": "object"
       },
-      "ManagedProjectRoleCatalogItemDto": {
-        "properties": {
-          "description": {
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "key": {
-            "type": "string"
-          },
-          "managed": {
-            "enum": [
-              true
-            ],
-            "type": "boolean"
-          },
-          "name": {
-            "type": "string"
-          },
-          "permissionCodes": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "version": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "key",
-          "name",
-          "managed",
-          "version",
-          "description",
-          "permissionCodes"
-        ],
-        "type": "object"
-      },
-      "ManagedProjectRoleCatalogResponseDto": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ManagedProjectRoleCatalogItemDto"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "type": "object"
-      },
       "ManagedProjectRoleSummaryDto": {
         "properties": {
           "id": {
@@ -9872,9 +9936,6 @@
             "type": "string"
           },
           "managed": {
-            "enum": [
-              true
-            ],
             "type": "boolean"
           },
           "name": {
@@ -11078,6 +11139,91 @@
         ],
         "type": "object"
       },
+      "ProjectPermissionCatalogResponseDto": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPermissionGroupDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "type": "object"
+      },
+      "ProjectPermissionDto": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "descriptionTranslations": {
+            "type": "object"
+          },
+          "label": {
+            "type": "string"
+          },
+          "labelTranslations": {
+            "type": "object"
+          },
+          "risk": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "PROJECT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "scope",
+          "category",
+          "risk",
+          "label",
+          "description",
+          "labelTranslations",
+          "descriptionTranslations"
+        ],
+        "type": "object"
+      },
+      "ProjectPermissionGroupDto": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPermissionDto"
+            },
+            "type": "array"
+          },
+          "risk": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "PROJECT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "category",
+          "risk",
+          "permissions"
+        ],
+        "type": "object"
+      },
       "ProjectResponseDto": {
         "properties": {
           "_count": {
@@ -11174,6 +11320,90 @@
           "VIEWER"
         ],
         "type": "string"
+      },
+      "ProjectRoleListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectRoleResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "ProjectRoleResponseDto": {
+        "properties": {
+          "assignedMembershipCount": {
+            "type": "number"
+          },
+          "assignedMembershipCountCapped": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "managed": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "key",
+          "name",
+          "description",
+          "status",
+          "managed",
+          "version",
+          "permissionCodes",
+          "assignedMembershipCount",
+          "assignedMembershipCountCapped",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
       },
       "ProjectSpeechSettingsResponseDto": {
         "properties": {
@@ -11750,6 +11980,43 @@
           "sal"
         ],
         "type": "string"
+      },
+      "ReassignProjectRoleDto": {
+        "properties": {
+          "expectedAssignedMembershipCount": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "expectedAssignedMembershipCountCapped": {
+            "type": "boolean"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "replacementRoleIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "expectedAssignedMembershipCount",
+          "expectedAssignedMembershipCountCapped",
+          "reason",
+          "replacementRoleIds"
+        ],
+        "type": "object"
       },
       "RefreshRequestDto": {
         "properties": {
@@ -15677,6 +15944,52 @@
           "roleIds",
           "reason",
           "version"
+        ],
+        "type": "object"
+      },
+      "UpdateProjectRoleDto": {
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "minLength": 2,
+            "type": "string"
+          },
+          "expectedAssignedMembershipCount": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "expectedAssignedMembershipCountCapped": {
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 2,
+            "type": "string"
+          },
+          "permissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "expectedAssignedMembershipCount",
+          "expectedAssignedMembershipCountCapped",
+          "reason"
         ],
         "type": "object"
       },
@@ -20946,6 +21259,107 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/memberships/assignable-roles": {
+      "get": {
+        "operationId": "ProjectMembership_assignableRoles",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignableProjectRoleCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List active Project Roles assignable through Membership management",
+        "tags": [
+          "IAM Project Memberships"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.memberships.read",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "platform.memberships.manage",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.members.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.members.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/permissions": {
+      "get": {
+        "operationId": "ProjectPermission_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPermissionCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "IAM Project Roles"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.roles.read",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.roles.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/project-actions": {
       "get": {
         "operationId": "ProductActions_projectActions",
@@ -21132,7 +21546,7 @@
     },
     "/api/v1/admin/projects/{projectId}/roles": {
       "get": {
-        "operationId": "ManagedProjectRole_list",
+        "operationId": "ProjectRole_list",
         "parameters": [
           {
             "in": "path",
@@ -21149,7 +21563,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ManagedProjectRoleCatalogResponseDto"
+                  "$ref": "#/components/schemas/ProjectRoleListResponseDto"
                 }
               }
             },
@@ -21161,21 +21575,315 @@
             "bearer": []
           }
         ],
-        "summary": "List active managed Project Roles for membership assignment",
         "tags": [
           "IAM Project Roles"
         ],
         "x-iam-any-permission": [
           {
-            "code": "platform.memberships.read",
+            "code": "platform.roles.read",
             "scope": "PLATFORM"
           },
           {
-            "code": "project.members.read",
+            "code": "project.roles.read",
             "scope": "PROJECT"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ProjectRole_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRoleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRoleResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a delegated custom Project Role",
+        "tags": [
+          "IAM Project Roles"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.roles.manage",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.roles.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/roles/{roleId}": {
+      "get": {
+        "operationId": "ProjectRole_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRoleResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "IAM Project Roles"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.roles.read",
+            "scope": "PLATFORM"
           },
           {
             "code": "project.roles.read",
+            "scope": "PROJECT"
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ProjectRole_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectRoleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRoleResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "IAM Project Roles"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.roles.manage",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.roles.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/roles/{roleId}/archive": {
+      "post": {
+        "operationId": "ProjectRole_archive",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveProjectRoleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRoleResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "IAM Project Roles"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.roles.manage",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.roles.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/roles/{roleId}/reassign": {
+      "post": {
+        "operationId": "ProjectRole_reassign",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReassignProjectRoleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRoleResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "IAM Project Roles"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.roles.manage",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.roles.manage",
             "scope": "PROJECT"
           }
         ]

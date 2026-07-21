@@ -127,7 +127,7 @@ async function installFixtures(page: Page) {
     }
     if (
       request.method() === 'GET' &&
-      path === `/api/v1/admin/projects/${projectId}/roles`
+      path === `/api/v1/admin/projects/${projectId}/memberships/assignable-roles`
     ) {
       return json(route, {
         items: [
