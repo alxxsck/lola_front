@@ -8413,14 +8413,19 @@
           "anyCablePath": {
             "type": "string"
           },
-          "socketIoNamespace": {
-            "type": "string"
-          }
+        "socketIoNamespace": {
+          "type": "string"
         },
-        "required": [
-          "socketIoNamespace",
-          "anyCablePath"
-        ],
+        "socketIoPath": {
+          "example": "/socket.io/assistant",
+          "type": "string"
+        }
+        },
+      "required": [
+        "socketIoPath",
+        "socketIoNamespace",
+        "anyCablePath"
+      ],
         "type": "object"
       },
       "InteractionSessionResponseDto": {

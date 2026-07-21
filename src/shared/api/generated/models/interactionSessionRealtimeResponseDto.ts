@@ -9,4 +9,5 @@
 export interface InteractionSessionRealtimeResponseDto {
   anyCablePath: string;
   socketIoNamespace: string;
+  socketIoPath: string;
 }

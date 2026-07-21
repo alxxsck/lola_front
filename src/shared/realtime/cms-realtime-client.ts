@@ -86,6 +86,7 @@ export class CmsRealtimeClient {
     this.setState('CONNECTING')
     try {
       const socket = io(`${apiOrigin()}/cms`, {
+        path: '/socket.io/cms',
         transports: ['websocket'],
         auth: async (callback) => {
           try {

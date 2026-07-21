@@ -88,7 +88,10 @@ describe("CmsRealtimeClient", () => {
 
     expect(mocks.io).toHaveBeenCalledWith(
       "http://localhost:3000/cms",
-      expect.objectContaining({ auth: expect.any(Function) }),
+      expect.objectContaining({
+        path: "/socket.io/cms",
+        auth: expect.any(Function),
+      }),
     );
     const auth = mocks.io.mock.calls[0]?.[1]?.auth as (
       callback: (value: Record<string, string>) => void,
