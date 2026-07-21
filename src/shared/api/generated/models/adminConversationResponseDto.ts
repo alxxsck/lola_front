@@ -14,8 +14,11 @@ export interface AdminConversationResponseDto {
   _count: AdminConversationMessageCountResponseDto;
   aiSuspension: ConversationAISuspensionSummaryResponseDto;
   createdAt: string;
+  /** @minimum 0 */
+  currentInteractionSessionCount: number;
   endUserId: string;
   id: string;
+  isCurrent: boolean;
   messages: AdminConversationPreviewMessageResponseDto[];
   projectId: string;
   /** @nullable */

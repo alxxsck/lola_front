@@ -34,4 +34,22 @@ describe('демонстрационное хранилище', () => {
     expect(messages.items.filter((item) => item.id === first.messageId)).toHaveLength(1)
     vi.useRealTimers()
   })
+
+  it('дополняет сохранённые demo-диалоги признаками текущей сессии после обновления схемы', async () => {
+    localStorage.setItem('lola-cms-demo-data-v2', JSON.stringify({
+      conversations: [{
+        id: 'conv_1', userId: 'usr_1', title: 'Первый депозит', status: 'ACTIVE',
+        lastMessageAt: '2026-07-20T13:00:00.000Z', messageCount: 5,
+        aiSuspension: { mode: 'AUTOMATIC', lifecycle: 'NONE', version: '0', suspendedUntil: null, serverTime: '2026-07-20T13:00:00.000Z' },
+      }],
+    }))
+
+    const pending = mockRepository.getConversations('prj_lola_demo', 'usr_1')
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toMatchObject({
+      items: [{ id: 'conv_1', isCurrent: true, currentInteractionSessionCount: 1 }],
+    })
+    vi.useRealTimers()
+  })
 })

@@ -24,15 +24,40 @@ import type {
   UserAttributeSchemaResponseDto,
   UserAttributeDefinitionMutationResponseDto,
 } from '@/shared/api/generated/models'
-import type { ActiveSession, AuditLog, CmsUser, Conversation, ConversationAISuspensionDetail, ConversationAISuspensionSummary, ConversationMessage, EndUser, EventDefinition, EventDefinitionRevision, EventLog, Project, ScenarioRun, UiElement, UserAttributeDefinition, UserAttributeMutation, UserAttributeSchema, UserAttributeSchemaRevision } from '@/shared/types/domain'
-import type { CreateUiElement, SaveEventDefinition, UpdateUiElement } from './contracts'
+import type {
+  ActiveSession,
+  AuditLog,
+  CmsUser,
+  Conversation,
+  ConversationAISuspensionDetail,
+  ConversationAISuspensionSummary,
+  ConversationMessage,
+  EndUser,
+  EventDefinition,
+  EventDefinitionRevision,
+  EventLog,
+  Project,
+  ScenarioRun,
+  UiElement,
+  UserAttributeDefinition,
+  UserAttributeMutation,
+  UserAttributeSchema,
+  UserAttributeSchemaRevision,
+} from '@/shared/types/domain'
+import type {
+  CreateUiElement,
+  SaveEventDefinition,
+  UpdateUiElement,
+} from './contracts'
 import { parseActionDefinition } from '@/shared/lib/action-definition'
 
-const defined = <T extends object>(value: T): T => Object.fromEntries(
-  Object.entries(value).filter(([, item]) => item !== undefined),
-) as T
+const defined = <T extends object>(value: T): T =>
+  Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined),
+  ) as T
 
-const optionalString = (value: unknown): string | undefined => typeof value === 'string' ? value : undefined
+const optionalString = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined
 
 export function mapActionDefinition(dto: ScenarioActionDefinitionResponseDto) {
   return parseActionDefinition(dto)
@@ -94,14 +119,19 @@ export function mapEndUser(dto: EndUserResponseDto): EndUser {
   }
 }
 
-export function mapConversation(dto: AdminConversationResponseDto): Conversation {
+export function mapConversation(
+  dto: AdminConversationResponseDto,
+): Conversation {
   return {
     id: dto.id,
     userId: dto.endUserId,
     title: dto.title?.trim() || 'Диалог без названия',
     status: dto.status === 'OPEN' ? 'ACTIVE' : 'ARCHIVED',
+    updatedAt: dto.updatedAt,
     lastMessageAt: dto.messages[0]?.createdAt ?? dto.updatedAt,
     messageCount: dto._count.messages,
+    isCurrent: dto.isCurrent,
+    currentInteractionSessionCount: dto.currentInteractionSessionCount,
     aiSuspension: mapConversationAISuspensionSummary(dto.aiSuspension),
   }
 }
@@ -132,7 +162,9 @@ export function mapConversationAISuspensionDetail(
   }
 }
 
-export function mapConversationMessage(dto: AdminConversationMessageResponseDto): ConversationMessage {
+export function mapConversationMessage(
+  dto: AdminConversationMessageResponseDto,
+): ConversationMessage {
   return {
     id: dto.id,
     conversationId: dto.threadId,
@@ -140,12 +172,16 @@ export function mapConversationMessage(dto: AdminConversationMessageResponseDto)
     text: dto.text,
     status: dto.status,
     createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
   }
 }
 
 export function mapActiveSessions(dto: ActiveUserResponseDto): ActiveSession[] {
   const profile = record(dto.profile)
-  const userName = typeof profile.name === 'string' && profile.name.trim() ? profile.name : dto.externalId
+  const userName =
+    typeof profile.name === 'string' && profile.name.trim()
+      ? profile.name
+      : dto.externalId
   const sessions = new Map<string, ActiveSession>()
 
   for (const connection of dto.connections) {
@@ -160,13 +196,16 @@ export function mapActiveSessions(dto: ActiveUserResponseDto): ActiveSession[] {
       transport: connection.transport,
       connectionCount: dto.activeConnectionCount,
       sessionCount: dto.activeSessionCount,
+      currentConversationId: connection.currentConversationId ?? null,
       startedAt: connection.connectedAt,
       lastSeenAt: connection.lastHeartbeatAt,
       status: 'ONLINE',
     })
   }
 
-  return [...sessions.values()].sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt))
+  return [...sessions.values()].sort((left, right) =>
+    right.lastSeenAt.localeCompare(left.lastSeenAt),
+  )
 }
 
 export function mapUiElement(dto: UiElementResponseDto): UiElement {
@@ -190,22 +229,25 @@ export function mapUiElement(dto: UiElementResponseDto): UiElement {
   }
 }
 
-const uiPayload = (value: UpdateUiElement) => defined({
-  code: value.code,
-  name: value.name,
-  kind: value.kind,
-  selector: value.selector,
-  route: value.route,
-  modalName: value.modalName,
-  config: value.config,
-  enabled: value.enabled,
-  aiEnabled: value.aiEnabled,
-  aiDescription: value.aiDescription,
-  aiAliases: value.aiAliases,
-  auditReason: value.auditReason,
-})
+const uiPayload = (value: UpdateUiElement) =>
+  defined({
+    code: value.code,
+    name: value.name,
+    kind: value.kind,
+    selector: value.selector,
+    route: value.route,
+    modalName: value.modalName,
+    config: value.config,
+    enabled: value.enabled,
+    aiEnabled: value.aiEnabled,
+    aiDescription: value.aiDescription,
+    aiAliases: value.aiAliases,
+    auditReason: value.auditReason,
+  })
 
-export function toCreateUiElementDto(value: CreateUiElement): CreateUiElementDto {
+export function toCreateUiElementDto(
+  value: CreateUiElement,
+): CreateUiElementDto {
   return {
     ...uiPayload(value),
     code: value.code,
@@ -215,11 +257,15 @@ export function toCreateUiElementDto(value: CreateUiElement): CreateUiElementDto
   }
 }
 
-export function toUpdateUiElementDto(value: UpdateUiElement): UpdateUiElementDto {
+export function toUpdateUiElementDto(
+  value: UpdateUiElement,
+): UpdateUiElementDto {
   return uiPayload(value)
 }
 
-export function mapEventDefinition(dto: EventDefinitionResponseDto): EventDefinition {
+export function mapEventDefinition(
+  dto: EventDefinitionResponseDto,
+): EventDefinition {
   return {
     id: dto.id,
     definitionKeyId: dto.definitionKeyId,
@@ -241,7 +287,9 @@ export function mapEventDefinition(dto: EventDefinitionResponseDto): EventDefini
   }
 }
 
-export function mapEventDefinitionRevision(dto: EventDefinitionRevisionResponseDto): EventDefinitionRevision {
+export function mapEventDefinitionRevision(
+  dto: EventDefinitionRevisionResponseDto,
+): EventDefinitionRevision {
   return {
     ...mapEventDefinition(dto as unknown as EventDefinitionResponseDto),
     definitionKeyId: dto.definitionKeyId,
@@ -254,7 +302,9 @@ export function mapEventDefinitionRevision(dto: EventDefinitionRevisionResponseD
   }
 }
 
-export function toCreateEventDefinitionDto(value: SaveEventDefinition): CreateEventDefinitionDto {
+export function toCreateEventDefinitionDto(
+  value: SaveEventDefinition,
+): CreateEventDefinitionDto {
   return defined({
     code: value.code,
     name: value.name,
@@ -266,7 +316,9 @@ export function toCreateEventDefinitionDto(value: SaveEventDefinition): CreateEv
   })
 }
 
-export function toUpdateEventDefinitionDto(value: SaveEventDefinition): UpdateEventDefinitionDto {
+export function toUpdateEventDefinitionDto(
+  value: SaveEventDefinition,
+): UpdateEventDefinitionDto {
   return defined({
     name: value.name,
     description: value.description,
@@ -277,7 +329,9 @@ export function toUpdateEventDefinitionDto(value: SaveEventDefinition): UpdateEv
   })
 }
 
-export function mapUserAttributeDefinition(dto: UserAttributeDefinitionResponseDto): UserAttributeDefinition {
+export function mapUserAttributeDefinition(
+  dto: UserAttributeDefinitionResponseDto,
+): UserAttributeDefinition {
   return {
     id: dto.id,
     projectId: dto.projectId,
@@ -295,7 +349,9 @@ export function mapUserAttributeDefinition(dto: UserAttributeDefinitionResponseD
   }
 }
 
-function mapUserAttributeRevision(dto: UserAttributeSchemaRevisionResponseDto): UserAttributeSchemaRevision {
+function mapUserAttributeRevision(
+  dto: UserAttributeSchemaRevisionResponseDto,
+): UserAttributeSchemaRevision {
   return {
     id: dto.id,
     projectId: dto.projectId,
@@ -306,21 +362,28 @@ function mapUserAttributeRevision(dto: UserAttributeSchemaRevisionResponseDto): 
   }
 }
 
-export function mapUserAttributeSchema(dto: UserAttributeSchemaResponseDto): UserAttributeSchema {
+export function mapUserAttributeSchema(
+  dto: UserAttributeSchemaResponseDto,
+): UserAttributeSchema {
   return {
     definitions: dto.definitions.map(mapUserAttributeDefinition),
-    currentRevision: dto.currentRevision ? mapUserAttributeRevision(dto.currentRevision) : null,
+    currentRevision: dto.currentRevision
+      ? mapUserAttributeRevision(dto.currentRevision)
+      : null,
   }
 }
 
-export function mapUserAttributeMutation(dto: UserAttributeDefinitionMutationResponseDto): UserAttributeMutation {
+export function mapUserAttributeMutation(
+  dto: UserAttributeDefinitionMutationResponseDto,
+): UserAttributeMutation {
   return {
     definition: mapUserAttributeDefinition(dto.definition),
     currentRevision: mapUserAttributeRevision(dto.currentRevision),
   }
 }
 
-const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {}
+const record = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
 
 export function mapEventLog(dto: EventLogResponseDto): EventLog {
   return {
@@ -339,7 +402,9 @@ export function mapEventLog(dto: EventLogResponseDto): EventLog {
     receivedAt: dto.receivedAt,
     payload: record(dto.payload),
     context: record(dto.context),
-    processingResult: dto.processingResult ? record(dto.processingResult) : undefined,
+    processingResult: dto.processingResult
+      ? record(dto.processingResult)
+      : undefined,
     error: dto.error ?? undefined,
   }
 }
@@ -369,21 +434,27 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
       actionType: step.actionType,
       executor: step.executor,
       status: step.status,
-      errorCode: typeof step.errorCode === 'string' ? step.errorCode : undefined,
+      errorCode:
+        typeof step.errorCode === 'string' ? step.errorCode : undefined,
       startedAt: optionalString(step.startedAt),
       finishedAt: optionalString(step.finishedAt),
       resumeAt: optionalString(step.resumeAt),
-      command: step.command ? {
-        id: step.command.id,
-        type: step.command.type,
-        status: step.command.status,
-        sequence: step.command.sequence,
-        createdAt: step.command.createdAt,
-        expiresAt: typeof step.command.expiresAt === 'string' ? step.command.expiresAt : undefined,
-        sentAt: optionalString(step.command.sentAt),
-        acknowledgedAt: optionalString(step.command.acknowledgedAt),
-        executedAt: optionalString(step.command.executedAt),
-      } : undefined,
+      command: step.command
+        ? {
+            id: step.command.id,
+            type: step.command.type,
+            status: step.command.status,
+            sequence: step.command.sequence,
+            createdAt: step.command.createdAt,
+            expiresAt:
+              typeof step.command.expiresAt === 'string'
+                ? step.command.expiresAt
+                : undefined,
+            sentAt: optionalString(step.command.sentAt),
+            acknowledgedAt: optionalString(step.command.acknowledgedAt),
+            executedAt: optionalString(step.command.executedAt),
+          }
+        : undefined,
     })),
   }
 }

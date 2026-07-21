@@ -25,12 +25,15 @@ import { CmsRealtimeClient } from "./cms-realtime-client";
 
 function fakeSocket() {
   const listeners = new Map<string, (...args: never[]) => void>();
+  const emitWithAck = vi.fn().mockResolvedValue({ ok: true });
   return {
     connected: true,
     on: vi.fn((event: string, callback: (...args: never[]) => void) => {
       listeners.set(event, callback);
     }),
     emit: vi.fn(),
+    emitWithAck,
+    timeout: vi.fn(() => ({ emitWithAck })),
     disconnect: vi.fn(),
     connect: vi.fn(),
     trigger(event: string, value?: unknown) {
@@ -58,7 +61,9 @@ describe("CmsRealtimeClient", () => {
     await client.activateProject("project-1");
 
     socket.trigger("ai_proposal.summary", { eventId: "proposal-1" });
-    socket.trigger("conversation.ai_suspension.started.v1", { eventId: "suspension-1" });
+    socket.trigger("conversation.ai_suspension.started.v1", {
+      eventId: "suspension-1",
+    });
     await vi.waitFor(() => expect(suspensions).toHaveBeenCalled());
 
     expect(mocks.io).toHaveBeenCalledTimes(1);
@@ -167,5 +172,112 @@ describe("CmsRealtimeClient", () => {
     expect(socket.emit).toHaveBeenCalledWith("ai_proposal.received", {
       eventId: "event-1",
     });
+  });
+
+  it("watches only the selected Conversation and restores it before reconciliation on reconnect", async () => {
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const reconciled = vi.fn();
+    const client = new CmsRealtimeClient();
+    client.reconcile(reconciled);
+    await client.activateProject("project-1");
+
+    client.watchConversation("conversation-1");
+    client.watchConversation("conversation-2");
+    client.unwatchConversation("conversation-1");
+    socket.trigger("connect");
+    await vi.waitFor(() => expect(reconciled).toHaveBeenCalled());
+
+    expect(socket.emitWithAck.mock.calls).toEqual([
+      ["conversation.watch.v1", { conversationId: "conversation-1" }],
+      ["conversation.watch.v1", { conversationId: "conversation-2" }],
+      ["conversation.watch.v1", { conversationId: "conversation-2" }],
+    ]);
+    client.unwatchConversation("conversation-2");
+    expect(socket.emit).toHaveBeenLastCalledWith("conversation.unwatch.v1", {
+      conversationId: "conversation-2",
+    });
+  });
+
+  it("marks realtime degraded when the server rejects a conversation watch", async () => {
+    const socket = fakeSocket();
+    socket.emitWithAck.mockResolvedValue({ ok: false });
+    mocks.io.mockReturnValue(socket);
+    const states: string[] = [];
+    const client = new CmsRealtimeClient();
+    client.onState((state) => states.push(state));
+    await client.activateProject("project-1");
+
+    client.watchConversation("conversation-1");
+
+    await vi.waitFor(() => expect(states.at(-1)).toBe("DEGRADED"));
+    client.unwatchConversation("conversation-1");
+  });
+
+  it("joins the conversation room before REST reconciliation and connected state", async () => {
+    const socket = fakeSocket();
+    const order: string[] = [];
+    socket.emitWithAck.mockImplementation(async () => {
+      order.push("watch-ack");
+      return { ok: true };
+    });
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    client.reconcile(() => {
+      order.push("reconcile");
+    });
+    client.onState((state) => {
+      if (state === "CONNECTED") order.push("connected");
+    });
+    await client.activateProject("project-1");
+
+    await client.watchConversation("conversation-1");
+
+    expect(order).toEqual(["watch-ack", "reconcile", "connected"]);
+  });
+
+  it("queues a trailing reconciliation when selection changes during an active pass", async () => {
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    let selected = "conversation-1";
+    let releaseFirst!: () => void;
+    const firstPass = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const reconciled: string[] = [];
+    client.reconcile(async () => {
+      reconciled.push(selected);
+      if (reconciled.length === 1) await firstPass;
+    });
+    await client.activateProject("project-1");
+    const first = client.watchConversation("conversation-1");
+    await vi.waitFor(() => expect(reconciled).toEqual(["conversation-1"]));
+
+    selected = "conversation-2";
+    const second = client.watchConversation("conversation-2");
+    await vi.waitFor(() => expect(socket.emitWithAck).toHaveBeenCalledTimes(2));
+    releaseFirst();
+    await Promise.all([first, second]);
+
+    expect(reconciled).toEqual(["conversation-1", "conversation-2"]);
+  });
+
+  it("retries a rejected watch without waiting for a socket reconnect", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    socket.emitWithAck
+      .mockRejectedValueOnce(new Error("timeout"))
+      .mockResolvedValueOnce({ ok: true });
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+
+    await client.watchConversation("conversation-1");
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(socket.emitWithAck).toHaveBeenCalledTimes(2);
+    client.unwatchConversation("conversation-1");
+    vi.useRealTimers();
   });
 });

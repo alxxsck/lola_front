@@ -156,6 +156,11 @@
             "format": "date-time",
             "type": "string"
           },
+          "currentConversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "sessionId": {
             "format": "uuid",
             "type": "string"
@@ -464,7 +469,6 @@
             "type": "array"
           },
           "nextCursor": {
-            "format": "uuid",
             "nullable": true,
             "type": "string"
           }
@@ -523,6 +527,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "currentInteractionSessionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
           "endUserId": {
             "format": "uuid",
             "type": "string"
@@ -530,6 +538,9 @@
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "isCurrent": {
+            "type": "boolean"
           },
           "messages": {
             "items": {
@@ -571,6 +582,8 @@
           "updatedAt",
           "_count",
           "messages",
+          "isCurrent",
+          "currentInteractionSessionCount",
           "aiSuspension"
         ],
         "type": "object"
@@ -584,7 +597,6 @@
             "type": "array"
           },
           "nextCursor": {
-            "format": "uuid",
             "nullable": true,
             "type": "string"
           }
@@ -21958,11 +21970,12 @@
             }
           },
           {
+            "description": "Opaque cursor returned by the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "format": "uuid",
+              "maxLength": 1024,
               "type": "string"
             }
           },
@@ -22088,11 +22101,12 @@
             }
           },
           {
+            "description": "Opaque cursor returned by the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "format": "uuid",
+              "maxLength": 1024,
               "type": "string"
             }
           },
@@ -22705,11 +22719,12 @@
             }
           },
           {
+            "description": "Opaque cursor returned by the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "format": "uuid",
+              "maxLength": 1024,
               "type": "string"
             }
           },
@@ -22872,11 +22887,12 @@
             }
           },
           {
+            "description": "Opaque cursor returned by the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "format": "uuid",
+              "maxLength": 1024,
               "type": "string"
             }
           },

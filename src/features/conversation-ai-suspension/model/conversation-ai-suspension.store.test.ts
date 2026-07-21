@@ -48,6 +48,8 @@ const conversation = (id: string): Conversation => ({
   status: 'ACTIVE',
   lastMessageAt: '2026-07-20T13:00:00.000Z',
   messageCount: 1,
+  isCurrent: true,
+  currentInteractionSessionCount: 1,
   aiSuspension: automatic,
 })
 

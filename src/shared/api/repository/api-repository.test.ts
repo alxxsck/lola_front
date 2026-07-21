@@ -292,6 +292,7 @@ describe('api repository adapter', () => {
       items: [{
         id: 'conversation-1', projectId: 'project-1', endUserId: 'user-1', title: 'Deposit', status: 'OPEN',
         createdAt: '2026-07-13T08:00:00.000Z', updatedAt: '2026-07-13T09:00:00.000Z',
+        isCurrent: true, currentInteractionSessionCount: 1,
         aiSuspension: { mode: 'AUTOMATIC', lifecycle: 'NONE', version: '0', suspendedUntil: null, serverTime: '2026-07-20T13:00:00.000Z' },
         _count: { messages: 42 }, messages: [{ id: 'message-last', role: 'ASSISTANT', text: 'Done', createdAt: '2026-07-13T09:00:00.000Z' }],
       }],

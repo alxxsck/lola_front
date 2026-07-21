@@ -19,7 +19,8 @@ export type ActionControl =
   | 'node'
 
 export type JsonPrimitive = string | number | boolean | null
-export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
+export type JsonValue =
+  JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
 
 export interface ActionConfigPropertySchema extends Record<string, unknown> {
   type?: 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'
@@ -81,7 +82,11 @@ export interface ScenarioActionDefinition {
   updatedAt: string
 }
 
-export interface Organization { id: string; name: string; slug: string }
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+}
 
 export interface Project {
   id: string
@@ -183,7 +188,10 @@ export interface ActivitySettings {
   }
 }
 
-export type UpdateActivitySettings = Pick<ActivitySettings, 'timezone' | 'visitInactivitySeconds' | 'reconnectGraceSeconds'>
+export type UpdateActivitySettings = Pick<
+  ActivitySettings,
+  'timezone' | 'visitInactivitySeconds' | 'reconnectGraceSeconds'
+>
 
 export type UserAttributeType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATETIME'
 export type UserAttributeAllowedValue = string | number | boolean
@@ -242,7 +250,8 @@ export interface ScenarioAction {
 
 export interface ScenarioCondition {
   path: string
-  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'exists' | 'contains'
+  operator:
+    'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'exists' | 'contains'
   value?: unknown
 }
 
@@ -291,6 +300,7 @@ export interface ActiveSession {
   transport?: 'SOCKET_IO' | 'ANY_CABLE'
   connectionCount?: number
   sessionCount?: number
+  currentConversationId?: string | null
   startedAt: string
   lastSeenAt: string
   status: 'ONLINE' | 'STALE'
@@ -301,13 +311,18 @@ export interface Conversation {
   userId: string
   title: string
   status: 'ACTIVE' | 'ARCHIVED'
+  updatedAt?: string
   lastMessageAt: string
   messageCount: number
+  isCurrent: boolean
+  currentInteractionSessionCount: number
   aiSuspension: ConversationAISuspensionSummary
 }
 
-export type ConversationAISuspensionLifecycle = 'NONE' | 'ACTIVE' | 'EXPIRED' | 'RESUMED'
-export type SuspensionReason = 'OPERATOR_TAKEOVER' | 'MANUAL_REVIEW' | 'INCIDENT_RESPONSE' | 'OTHER'
+export type ConversationAISuspensionLifecycle =
+  'NONE' | 'ACTIVE' | 'EXPIRED' | 'RESUMED'
+export type SuspensionReason =
+  'OPERATOR_TAKEOVER' | 'MANUAL_REVIEW' | 'INCIDENT_RESPONSE' | 'OTHER'
 
 export interface ConversationAISuspensionSummary {
   mode: 'AUTOMATIC' | 'SUSPENDED'
@@ -333,6 +348,7 @@ export interface ConversationMessage {
   text: string
   status: 'PENDING' | 'WRITING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
   createdAt: string
+  updatedAt?: string
 }
 
 export interface ActivityItem {
@@ -348,10 +364,24 @@ export interface ActivityItem {
 export type ManualAction =
   | { type: 'TEXT'; text: string }
   | { type: 'VOICE'; text: string; voice?: string }
-  | { type: 'BUTTON'; label: string; action: 'OPEN_PAGE' | 'OPEN_MODAL' | 'HIGHLIGHT_ELEMENT'; target: string }
+  | {
+      type: 'BUTTON'
+      label: string
+      action: 'OPEN_PAGE' | 'OPEN_MODAL' | 'HIGHLIGHT_ELEMENT'
+      target: string
+    }
   | { type: 'ANIMATION'; animation: string }
-  | { type: 'COMMAND'; action: 'OPEN_PAGE' | 'OPEN_MODAL' | 'HIGHLIGHT_ELEMENT'; target: string }
-  | { type: 'BONUS'; integrationCode: string; amount: number; currency: string }
+  | {
+      type: 'COMMAND'
+      action: 'OPEN_PAGE' | 'OPEN_MODAL' | 'HIGHLIGHT_ELEMENT'
+      target: string
+    }
+  | {
+      type: 'BONUS'
+      integrationCode: string
+      amount: number
+      currency: string
+    }
 
 export interface DashboardStats {
   users: number
@@ -402,7 +432,17 @@ export interface ScenarioRunStep {
   nodeKey: string
   actionType: string
   executor: ActionExecutor
-  status: 'PENDING' | 'RUNNING' | 'WAITING_TIME' | 'WAITING_ACK' | 'WAITING_INPUT' | 'WAITING_DELIVERY' | 'SUCCEEDED' | 'FAILED' | 'EXPIRED' | 'SKIPPED'
+  status:
+    | 'PENDING'
+    | 'RUNNING'
+    | 'WAITING_TIME'
+    | 'WAITING_ACK'
+    | 'WAITING_INPUT'
+    | 'WAITING_DELIVERY'
+    | 'SUCCEEDED'
+    | 'FAILED'
+    | 'EXPIRED'
+    | 'SKIPPED'
   errorCode?: string
   startedAt?: string
   finishedAt?: string
@@ -418,7 +458,8 @@ export interface ScenarioRun {
   eventLogId: string
   userId: string
   userExternalId: string
-  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'CANCELLED' | 'EXPIRED'
+  status:
+    'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'CANCELLED' | 'EXPIRED'
   conversationPolicy: ConversationPolicy
   conversationId?: string
   interactionSessionId?: string
@@ -443,10 +484,20 @@ export interface AuditLog {
 }
 
 export type DirectAdminActionType =
-  | 'SHOW_ASSISTANT' | 'HIDE_ASSISTANT' | 'OPEN_CHAT' | 'CLOSE_CHAT'
-  | 'PLAY_ANIMATION' | 'HIGHLIGHT_ELEMENT' | 'REMOVE_HIGHLIGHT'
-  | 'SHOW_CTA' | 'OPEN_PAGE' | 'OPEN_MODAL'
-export interface DirectAdminAction { type: DirectAdminActionType; config: Record<string, unknown> }
+  | 'SHOW_ASSISTANT'
+  | 'HIDE_ASSISTANT'
+  | 'OPEN_CHAT'
+  | 'CLOSE_CHAT'
+  | 'PLAY_ANIMATION'
+  | 'HIGHLIGHT_ELEMENT'
+  | 'REMOVE_HIGHLIGHT'
+  | 'SHOW_CTA'
+  | 'OPEN_PAGE'
+  | 'OPEN_MODAL'
+export interface DirectAdminAction {
+  type: DirectAdminActionType
+  config: Record<string, unknown>
+}
 export interface AdminMessageRequest {
   text: string
   conversationId?: string
