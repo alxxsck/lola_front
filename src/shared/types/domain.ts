@@ -120,6 +120,9 @@ export interface CmsUser {
   id: string
   email: string
   name: string
+  emailVerifiedAt?: string | null
+  pendingEmail?: string | null
+  emailVerificationRetryAfterSeconds?: number
   role?: 'OWNER' | 'ADMIN' | 'EDITOR' | 'VIEWER'
   platformPermissionCodes?: string[]
 }

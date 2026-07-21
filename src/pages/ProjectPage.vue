@@ -905,7 +905,7 @@ onBeforeUnmount(() => {
   margin: 8px 0 20px;
 }
 .assistant-orbit span {
-  font: 700 1.7rem Manrope;
+  font: 700 1.7rem var(--font-display);
   color: var(--project-assistant-on-orbit);
 }
 .assistant-preview small {

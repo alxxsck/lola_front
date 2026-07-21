@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { authApi } from '@/features/auth/auth.api'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { router } from './router'
 
@@ -69,6 +70,20 @@ describe('authentication routes', () => {
     await router.push('/settings/security')
 
     expect(router.currentRoute.value.name).toBe('security-settings')
+  })
+
+  it('removes an email capability fragment and skips session restoration before rendering', async () => {
+    const auth = useAuthStore()
+    auth.$patch({ restored: false, phase: 'ANONYMOUS' })
+    vi.mocked(authApi.restore).mockClear()
+    const capability = 'lev_00000000-0000-4000-8000-000000000001.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
+    await router.push(`/auth/email-verification#token=${capability}`)
+
+    expect(router.currentRoute.value.name).toBe('email-verification')
+    expect(router.currentRoute.value.hash).toBe('')
+    expect(window.location.href).not.toContain(capability)
+    expect(authApi.restore).not.toHaveBeenCalled()
   })
 
   it('allows Project Memberships only through the exact Platform-or-selected-Project read Permission', async () => {

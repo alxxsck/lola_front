@@ -334,7 +334,7 @@ onUnmounted(() => window.clearInterval(timer))
 }
 .summary-main > strong {
   flex: 0 0 auto;
-  font: 700 3.4rem/1 Manrope;
+  font: 700 3.4rem/1 var(--font-display);
   letter-spacing: -0.07em;
 }
 .summary-main > div {

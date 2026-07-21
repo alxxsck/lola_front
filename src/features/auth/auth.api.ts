@@ -50,10 +50,20 @@ function mapUser(
   platformPermissionCodes: string[],
   role?: CmsUser['role'],
 ): CmsUser {
+  const emailIdentity = user as CmsAuthenticatedUserResponseDto & {
+    emailVerifiedAt?: string | null
+    pendingEmail?: string | null
+    emailVerificationRetryAfterSeconds?: number
+  }
   return {
     id: user.id,
     email: user.email,
     name: user.displayName,
+    ...('emailVerifiedAt' in emailIdentity ? {
+      emailVerifiedAt: emailIdentity.emailVerifiedAt ?? null,
+      pendingEmail: emailIdentity.pendingEmail ?? null,
+      emailVerificationRetryAfterSeconds: emailIdentity.emailVerificationRetryAfterSeconds ?? 0,
+    } : {}),
     role,
     platformPermissionCodes,
   }

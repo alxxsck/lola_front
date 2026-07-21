@@ -1697,7 +1697,7 @@ onBeforeUnmount(() => {
 }
 .stat-grid strong {
   margin-top: 7px;
-  font: 700 1.35rem Manrope;
+  font: 700 1.35rem var(--font-display);
 }
 .stat-grid .ready strong {
   color: var(--status-success-on-emphasis);
@@ -2155,7 +2155,7 @@ onBeforeUnmount(() => {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font:
-    400 0.76rem/1.65 'DM Sans',
+    400 0.76rem/1.65 var(--font-sans),
     sans-serif;
 }
 .document-actions :deep(.p-button) {

@@ -995,7 +995,7 @@ function displayField(
 .pane-header h3,
 .chat-header h3 {
   margin: 2px 0 0;
-  font-family: Manrope, sans-serif;
+  font-family: var(--font-display);
   letter-spacing: -0.025em;
 }
 .workspace-title h2 {

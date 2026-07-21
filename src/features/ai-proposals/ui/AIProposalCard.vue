@@ -170,7 +170,7 @@ const statusLabel = computed(() =>
 }
 .card-title-row strong {
   font:
-    700 0.94rem/1.35 Manrope,
+    700 0.94rem/1.35 var(--font-display),
     sans-serif;
 }
 .unread-dot {

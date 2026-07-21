@@ -138,6 +138,33 @@ describe('target CMS User auth API', () => {
     expect(cmsSessionContextMe).toHaveBeenCalledOnce()
   })
 
+  it('maps canonical email verification state from the self context', async () => {
+    vi.mocked(initialAccessLogin).mockResolvedValue(authenticatedResponse)
+    vi.mocked(cmsSessionContextMe).mockResolvedValue({
+      ...sessionContext([]),
+      user: {
+        ...authenticatedResponse.user,
+        emailVerifiedAt: null,
+        pendingEmail: 'pending@example.com',
+        emailVerificationRetryAfterSeconds: 37,
+      },
+    } as CmsSessionContextResponseDto)
+
+    const result = await authApi.login('viewer@example.com', 'permanent password')
+
+    expect(result).toMatchObject({
+      kind: 'AUTHENTICATED',
+      context: {
+        user: {
+          email: 'viewer@example.com',
+          emailVerifiedAt: null,
+          pendingEmail: 'pending@example.com',
+          emailVerificationRetryAfterSeconds: 37,
+        },
+      },
+    })
+  })
+
   it('authenticates a projectless Platform Operator without fabricating VIEWER access', async () => {
     vi.mocked(initialAccessLogin).mockResolvedValue(authenticatedResponse)
     vi.mocked(cmsSessionContextMe).mockResolvedValue(sessionContext([], [

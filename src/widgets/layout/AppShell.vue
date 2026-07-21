@@ -298,12 +298,12 @@ onBeforeUnmount(() => {
   place-items: center;
   background: var(--brand);
   color: var(--on-brand);
-  font-family: Manrope;
+  font-family: var(--font-display);
   font-weight: 700;
   transform: rotate(-3deg);
 }
 .brand strong {
-  font: 700 1.15rem Manrope;
+  font: 700 1.15rem var(--font-display);
   display: block;
   letter-spacing: -0.04em;
 }

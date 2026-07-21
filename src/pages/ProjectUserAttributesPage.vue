@@ -2086,7 +2086,7 @@ await fetch("/api/v1/interaction-sessions", {
   border-radius: 50%;
   background: var(--surface-card);
   color: var(--muted);
-  font: 700 0.66rem Manrope;
+  font: 700 0.66rem var(--font-display);
 }
 .setup-status li.done > span {
   background: var(--status-success-text);
@@ -2210,7 +2210,7 @@ await fetch("/api/v1/interaction-sessions", {
 }
 .fact-grid strong {
   margin-top: 5px;
-  font: 700 1rem Manrope;
+  font: 700 1rem var(--font-display);
 }
 .fact-grid small {
   margin-top: 3px;
@@ -2304,7 +2304,7 @@ await fetch("/api/v1/interaction-sessions", {
 }
 .metric strong {
   margin-top: 8px;
-  font: 700 1.35rem Manrope;
+  font: 700 1.35rem var(--font-display);
 }
 .metric small {
   margin-top: 5px;

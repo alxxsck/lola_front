@@ -1295,7 +1295,7 @@ async function save() {
 .preset-title {
   display: block;
   color: var(--text-primary);
-  font: 750 1.05rem Manrope;
+  font: 750 1.05rem var(--font-display);
 }
 .preset-heading small {
   display: block;
@@ -1460,7 +1460,7 @@ async function save() {
 }
 :global(.preset-switch-dialog .p-dialog-title) {
   color: var(--text-primary);
-  font: 800 1.05rem/1.3 Manrope;
+  font: 800 1.05rem/1.3 var(--font-display);
 }
 :global(.preset-switch-dialog .p-dialog-content) {
   padding: 0 24px 6px;
@@ -1498,7 +1498,7 @@ async function save() {
   border-radius: 11px;
   background: var(--surface-emphasis);
   color: var(--accent);
-  font: 700 0.75rem Manrope;
+  font: 700 0.75rem var(--font-display);
 }
 .section-heading h2 {
   font-size: 1.05rem;

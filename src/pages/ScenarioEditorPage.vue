@@ -2714,7 +2714,7 @@ function leave() {
 }
 .header-left > div strong {
   margin-top: 3px;
-  font: 700 0.86rem Manrope;
+  font: 700 0.86rem var(--font-display);
 }
 .header-center {
   display: flex;
@@ -2873,7 +2873,7 @@ function leave() {
 }
 .action-workflow-head strong {
   margin-top: 3px;
-  font: 700 0.85rem Manrope;
+  font: 700 0.85rem var(--font-display);
 }
 .action-workflow-head > small {
   display: grid;
@@ -3111,7 +3111,7 @@ function leave() {
   border-radius: 9px;
   background: var(--surface-card);
   color: var(--text-primary);
-  font: 750 .66rem Manrope;
+  font: 750 .66rem var(--font-display);
   cursor: pointer;
 }
 .graph-toolbar button:hover,
@@ -3215,7 +3215,7 @@ function leave() {
   background: var(--surface-emphasis);
   color: var(--text-on-emphasis);
   box-shadow: var(--shadow-raised);
-  font: 700 0.75rem Manrope;
+  font: 700 0.75rem var(--font-display);
 }
 .graph-canvas :deep(.vue-flow__controls),
 .graph-canvas :deep(.vue-flow__minimap) {
@@ -3295,7 +3295,7 @@ function leave() {
   border-radius: 10px;
   background: var(--surface-card);
   color: var(--text-primary);
-  font: 700 var(--font-size-button) Manrope;
+  font: 700 var(--font-size-button) var(--font-display);
   cursor: pointer;
 }
 .action-empty-options button:hover {

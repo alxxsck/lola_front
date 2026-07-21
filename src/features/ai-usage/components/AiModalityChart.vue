@@ -237,7 +237,7 @@ function percentage(itemValue: number): string {
 }
 .chart-summary strong {
   color: var(--text-primary);
-  font: 700 1.2rem/1.1 Manrope;
+  font: 700 1.2rem/1.1 var(--font-display);
   letter-spacing: -0.03em;
   white-space: nowrap;
 }

@@ -3,7 +3,7 @@ import axios, { AxiosHeaders, type InternalAxiosRequestConfig } from 'axios'
 import { normalizeApiError } from './api-error'
 import { clearAuthSession, getAccessToken } from './auth-session'
 
-function resolveApiOrigin(configuredUrl: string | undefined): string {
+export function resolveApiOrigin(configuredUrl: string | undefined): string {
   const value = configuredUrl?.replace(/\/$/, '') ?? 'http://localhost:3000'
 
   // Generated paths already contain /api/v1, while the legacy env value may include it.
@@ -82,7 +82,10 @@ axiosInstance.interceptors.response.use(
       '/api/v1/auth/login',
       '/api/v1/auth/password/setup',
       '/api/v1/auth/password/change',
-    ].some((path) => config?.url?.includes(path))
+    ].some((path) => config?.url?.includes(path)) || (
+      config?.method?.toLowerCase() === 'post'
+      && Boolean(config.url?.includes('/api/v1/auth/me/email-change'))
+    )
     const canRetry = !authTeardown
       && cause.response?.status === 401
       && config

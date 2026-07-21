@@ -102,4 +102,44 @@ describe('axios auth lifecycle', () => {
     expect(refresh).not.toHaveBeenCalled()
     expect(getAccessToken()).toBe('valid')
   })
+
+  it('does not refresh, replay or clear the session for an email-change password rejection', async () => {
+    storeAccessToken({ accessToken: 'valid', expiresIn: 60 })
+    const refresh = vi.fn(async () => {})
+    registerRefreshHandler(refresh)
+    let attempts = 0
+    axiosInstance.defaults.adapter = async (config) => {
+      attempts += 1
+      return reject(config, 401)
+    }
+
+    await expect(axiosInstance.post('/api/v1/auth/me/email-change', {
+      newEmail: 'new@example.com',
+      currentPassword: 'wrong password',
+    })).rejects.toMatchObject({ status: 401 })
+
+    expect(refresh).not.toHaveBeenCalled()
+    expect(attempts).toBe(1)
+    expect(getAccessToken()).toBe('valid')
+  })
+
+  it('keeps ordinary refresh behavior for DELETE email-change cancellation', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 })
+    const refresh = vi.fn(async () => {
+      storeAccessToken({ accessToken: 'fresh', expiresIn: 60 })
+    })
+    registerRefreshHandler(refresh)
+    let attempts = 0
+    axiosInstance.defaults.adapter = async (config) => {
+      attempts += 1
+      if (attempts === 1) return reject(config, 401)
+      return response(config, 200)
+    }
+
+    await expect(axiosInstance.delete('/api/v1/auth/me/email-change')).resolves.toMatchObject({ status: 200 })
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(attempts).toBe(2)
+    expect(getAccessToken()).toBe('fresh')
+  })
 })

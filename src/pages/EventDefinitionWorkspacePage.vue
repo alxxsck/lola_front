@@ -456,7 +456,7 @@ function errorMessage(cause: unknown, fallback: string) {
   background: transparent;
   color: var(--text-link);
   cursor: pointer;
-  font: 600 0.76rem Manrope;
+  font: 600 0.76rem var(--font-display);
   padding: 2px 0;
 }
 .back-link i {
@@ -616,7 +616,7 @@ function errorMessage(cause: unknown, fallback: string) {
 }
 .usage-summary strong {
   margin-bottom: 5px;
-  font: 800 1.8rem Manrope;
+  font: 800 1.8rem var(--font-display);
 }
 .schema-preview {
   max-height: 480px;
@@ -769,7 +769,7 @@ function errorMessage(cause: unknown, fallback: string) {
   border: 0;
   border-radius: 9px;
   cursor: pointer;
-  font: 700 0.74rem Manrope;
+  font: 700 0.74rem var(--font-display);
   padding: 10px 14px;
 }
 .primary-button {
@@ -796,7 +796,7 @@ function errorMessage(cause: unknown, fallback: string) {
   padding: 19px;
 }
 .revision-card strong {
-  font: 800 2.3rem Manrope;
+  font: 800 2.3rem var(--font-display);
 }
 .revision-card code {
   overflow-wrap: anywhere;

@@ -113,7 +113,7 @@ onBeforeRouteLeave(() => {
 <style scoped>
 .setup-page{min-height:100vh;display:grid;place-items:center;padding:28px;background:var(--surface-ground)}
 .setup-card{width:min(560px,100%);display:flex;flex-direction:column;gap:28px;padding:36px;background:var(--surface-card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-raised)}
-.brand{display:flex;align-items:center;gap:11px;font:700 1.2rem Manrope}.brand span{display:grid;place-items:center;width:40px;height:40px;background:var(--accent);color:var(--surface-emphasis);border-radius:13px;transform:rotate(-4deg)}
+.brand{display:flex;align-items:center;gap:11px;font:700 1.2rem var(--font-display)}.brand span{display:grid;place-items:center;width:40px;height:40px;background:var(--accent);color:var(--surface-emphasis);border-radius:13px;transform:rotate(-4deg)}
 h1{margin:8px 0 10px;font-size:2rem}p{margin:0;color:var(--muted);line-height:1.5}.setup-form{display:flex;flex-direction:column;gap:20px}.field{display:flex;flex-direction:column;gap:8px}.field small{color:var(--muted);line-height:1.4}.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
 @media(max-width:600px){.setup-page{padding:16px}.setup-card{padding:24px}.actions{flex-direction:column-reverse}.actions :deep(.p-button){width:100%}}
 </style>

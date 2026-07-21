@@ -105,6 +105,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function beginEmailedPasswordSetup(token: string) {
+    setupAttemptId += 1
+    clearAuthSession()
+    clearLocalState()
+    setupToken.value = token
+    phase.value = 'SETUP_REQUIRED'
+    restored.value = true
+    restoring.value = false
+  }
+
   async function completePasswordSetup(newPassword: string, passwordConfirmation: string) {
     const token = setupToken.value
     if (!token) throw new Error('Сессия установки пароля недоступна. Войдите ещё раз.')
@@ -170,6 +180,7 @@ export const useAuthStore = defineStore('auth', () => {
     restore,
     refreshContext,
     login,
+    beginEmailedPasswordSetup,
     completePasswordSetup,
     cancelPasswordSetup,
     logout,

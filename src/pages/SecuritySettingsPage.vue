@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -8,6 +8,7 @@ import type { CmsSessionSummaryDto } from '@/shared/api/generated/models'
 import { securitySettingsApi } from '@/features/security-settings/security-settings.api'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { normalizeApiError } from '@/shared/api/http/api-error'
+import { emailIdentityApi } from '@/features/email-identity/email-identity.api'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -22,6 +23,21 @@ const changingPassword = ref(false)
 const currentPassword = ref('')
 const newPassword = ref('')
 const passwordConfirmation = ref('')
+const verificationRequesting = ref(false)
+const emailChangeSubmitting = ref(false)
+const emailChangeCancelling = ref(false)
+const verificationSeconds = ref(Math.max(0, auth.user?.emailVerificationRetryAfterSeconds ?? 0))
+const pendingEmail = ref(auth.user?.pendingEmail ?? null)
+const showEmailChangeForm = ref(!pendingEmail.value)
+const newEmail = ref('')
+const emailChangePassword = ref('')
+let countdownTimer: ReturnType<typeof setInterval> | undefined
+const canonicalEmail = computed(() => auth.user?.email ?? '')
+const emailVerified = computed(() => Boolean(auth.user?.emailVerifiedAt))
+const verificationButtonLabel = computed(() => verificationSeconds.value > 0
+  ? `Повторить через ${verificationSeconds.value} с`
+  : 'Отправить письмо')
+const canSubmitEmailChange = computed(() => Boolean(newEmail.value && emailChangePassword.value))
 const canSubmitPassword = computed(() =>
   Boolean(currentPassword.value && newPassword.value && passwordConfirmation.value),
 )
@@ -101,6 +117,79 @@ async function changePassword() {
   }
 }
 
+async function requestEmailVerification() {
+  if (verificationSeconds.value > 0 || emailVerified.value) return
+  clearFeedback()
+  verificationRequesting.value = true
+  try {
+    const response = await emailIdentityApi.requestVerification()
+    startVerificationCountdown(response.retryAfterSeconds)
+    actionSuccess.value = 'Письмо для подтверждения отправлено.'
+  } catch {
+    actionError.value = 'Не удалось отправить письмо. Повторите позже.'
+  } finally {
+    verificationRequesting.value = false
+  }
+}
+
+async function requestEmailChange() {
+  if (!canSubmitEmailChange.value) return
+  clearFeedback()
+  emailChangeSubmitting.value = true
+  try {
+    const response = await emailIdentityApi.requestEmailChange({
+      newEmail: newEmail.value,
+      currentPassword: emailChangePassword.value,
+    })
+    pendingEmail.value = response.pendingEmail
+    if (auth.user) auth.user.pendingEmail = response.pendingEmail
+    newEmail.value = ''
+    emailChangePassword.value = ''
+    showEmailChangeForm.value = false
+    actionSuccess.value = 'Письмо отправлено на новый адрес. Текущий email пока не изменён.'
+  } catch (cause) {
+    const error = normalizeApiError(cause)
+    actionError.value = error.code === 'EMAIL_CHANGE_REAUTHENTICATION_FAILED'
+      ? 'Текущий пароль указан неверно.'
+      : error.code === 'EMAIL_ALREADY_IN_USE'
+        ? 'Этот email уже используется.'
+        : 'Не удалось начать смену email.'
+  } finally {
+    emailChangeSubmitting.value = false
+  }
+}
+
+async function cancelEmailChange() {
+  if (!window.confirm('Отменить смену email?')) return
+  clearFeedback()
+  emailChangeCancelling.value = true
+  try {
+    await emailIdentityApi.cancelEmailChange()
+    pendingEmail.value = null
+    if (auth.user) auth.user.pendingEmail = null
+    showEmailChangeForm.value = true
+    newEmail.value = ''
+    emailChangePassword.value = ''
+    actionSuccess.value = 'Смена email отменена.'
+  } catch {
+    actionError.value = 'Не удалось отменить смену email.'
+  } finally {
+    emailChangeCancelling.value = false
+  }
+}
+
+function restartEmailChange() {
+  newEmail.value = pendingEmail.value ?? ''
+  emailChangePassword.value = ''
+  showEmailChangeForm.value = true
+  clearFeedback()
+}
+
+function startVerificationCountdown(seconds: number) {
+  verificationSeconds.value = Math.max(0, Math.ceil(seconds))
+  if (auth.user) auth.user.emailVerificationRetryAfterSeconds = verificationSeconds.value
+}
+
 function clearFeedback() {
   actionError.value = ''
   actionSuccess.value = ''
@@ -111,7 +200,16 @@ function formatDate(value: string) {
     .format(new Date(value))
 }
 
-onMounted(loadSessions)
+onMounted(() => {
+  void loadSessions()
+  countdownTimer = setInterval(() => {
+    if (verificationSeconds.value > 0) verificationSeconds.value -= 1
+  }, 1_000)
+})
+
+onBeforeUnmount(() => {
+  if (countdownTimer) clearInterval(countdownTimer)
+})
 </script>
 
 <template>
@@ -135,6 +233,66 @@ onMounted(loadSessions)
 
     <Message v-if="actionError" severity="error" role="alert">{{ actionError }}</Message>
     <Message v-if="actionSuccess" severity="success" role="status">{{ actionSuccess }}</Message>
+
+    <section class="security-card identity-card" aria-labelledby="identity-heading">
+      <div class="section-heading">
+        <i class="pi pi-envelope" />
+        <div><h2 id="identity-heading">Email аккаунта</h2><p>Подтверждённый адрес используется для восстановления доступа и уведомлений.</p></div>
+      </div>
+
+      <div class="identity-summary">
+        <div class="identity-avatar">{{ auth.user?.name?.slice(0, 1) || '?' }}</div>
+        <div class="identity-copy">
+          <strong>{{ auth.user?.name }}</strong>
+          <span>{{ canonicalEmail }}</span>
+        </div>
+        <span class="verification-badge" :class="emailVerified ? 'verified' : 'unverified'">
+          <i :class="emailVerified ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'" />
+          {{ emailVerified ? 'Подтверждён' : 'Не подтверждён' }}
+        </span>
+        <Button
+          v-if="!emailVerified"
+          data-testid="email-verification-action"
+          :label="verificationButtonLabel"
+          icon="pi pi-send"
+          outlined
+          :loading="verificationRequesting"
+          :disabled="verificationSeconds > 0"
+          @click="requestEmailVerification"
+        />
+      </div>
+
+      <div v-if="pendingEmail" class="pending-email">
+        <div>
+          <small>Смена email</small>
+          <strong>Ожидает подтверждения: {{ pendingEmail }}</strong>
+          <span>До подтверждения вход выполняется с {{ canonicalEmail }}.</span>
+        </div>
+        <div class="pending-actions">
+          <Button data-testid="restart-email-change" label="Начать заново" text @click="restartEmailChange" />
+          <Button
+            data-testid="cancel-email-change"
+            label="Отменить"
+            severity="danger"
+            text
+            :loading="emailChangeCancelling"
+            @click="cancelEmailChange"
+          />
+        </div>
+      </div>
+
+      <form v-if="showEmailChangeForm" class="email-change-form" @submit.prevent="requestEmailChange">
+        <label>Новый email<InputText v-model="newEmail" type="email" autocomplete="email" /></label>
+        <label>Текущий пароль для смены email<InputText v-model="emailChangePassword" type="password" autocomplete="current-password" /></label>
+        <Button
+          type="submit"
+          :label="pendingEmail ? 'Отправить новое письмо' : 'Изменить email'"
+          icon="pi pi-arrow-right"
+          :loading="emailChangeSubmitting"
+          :disabled="!canSubmitEmailChange"
+        />
+      </form>
+    </section>
 
     <section class="security-card" aria-labelledby="password-heading">
       <div class="section-heading">
@@ -181,6 +339,6 @@ onMounted(loadSessions)
 </template>
 
 <style scoped>
-.security-page{display:flex;flex-direction:column;gap:22px;max-width:1040px;margin:0 auto}.security-page>header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}.security-page h1{margin:6px 0 8px;font-size:2rem}.security-page header p,.section-heading p{margin:0;color:var(--muted)}.security-card{padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--surface-card);box-shadow:var(--shadow-card)}.section-heading{display:flex;align-items:flex-start;gap:13px;margin-bottom:20px}.section-heading>i,.device-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--status-violet);color:var(--on-status-violet)}.section-heading h2{margin:0 0 4px;font-size:1.12rem}.password-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end}.password-form label{display:flex;flex-direction:column;gap:7px;font-size:.76rem;font-weight:700}.password-form :deep(.p-button){grid-column:3}.session-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}.session-list li{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--border-subtle);border-radius:15px;background:var(--surface-subtle)}.device-icon{flex:0 0 auto;background:var(--surface-card);color:var(--status-violet-text)}.session-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}.session-copy strong span{margin-left:6px;padding:3px 7px;border-radius:999px;background:var(--status-success-soft);color:var(--status-success-text);font-size:.62rem}.session-copy small{color:var(--muted)}.state{display:flex;align-items:center;gap:8px;color:var(--muted)}.state-error{justify-content:space-between;color:var(--status-danger-text)}
-@media(max-width:760px){.security-page>header{align-items:stretch;flex-direction:column}.password-form{grid-template-columns:1fr}.password-form :deep(.p-button){grid-column:auto}.session-list li{align-items:flex-start;flex-wrap:wrap}.session-copy{min-width:calc(100% - 58px)}}
+.security-page{display:flex;flex-direction:column;gap:22px;max-width:1040px;margin:0 auto}.security-page>header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}.security-page h1{margin:6px 0 8px;font-size:2rem}.security-page header p,.section-heading p{margin:0;color:var(--muted)}.security-card{padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--surface-card);box-shadow:var(--shadow-card)}.section-heading{display:flex;align-items:flex-start;gap:13px;margin-bottom:20px}.section-heading>i,.device-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--status-violet);color:var(--on-status-violet)}.section-heading h2{margin:0 0 4px;font-size:1.12rem}.identity-summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:14px}.identity-avatar{display:grid;width:48px;height:48px;place-items:center;border-radius:15px;background:var(--brand-soft);color:var(--text-brand);font-family:var(--font-display);font-size:1.1rem;font-weight:800}.identity-copy{display:flex;min-width:0;flex-direction:column;gap:3px}.identity-copy span{overflow:hidden;color:var(--muted);text-overflow:ellipsis}.verification-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;font-size:.7rem;font-weight:700}.verification-badge.verified{background:var(--status-success-soft);color:var(--status-success-text)}.verification-badge.unverified{background:var(--status-warning-soft);color:var(--status-warning-text)}.pending-email{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:15px;border:1px solid var(--status-violet);border-radius:15px;background:var(--status-violet-soft)}.pending-email small,.pending-email strong,.pending-email span{display:block}.pending-email small{color:var(--status-violet-text);font-weight:800;text-transform:uppercase;letter-spacing:.08em}.pending-email strong{margin-top:4px}.pending-email span{margin-top:4px;color:var(--muted);font-size:.72rem}.pending-actions{display:flex;align-items:center;gap:4px}.email-change-form,.password-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end}.email-change-form{margin-top:18px;padding-top:18px;border-top:1px solid var(--border-subtle)}.email-change-form label,.password-form label{display:flex;flex-direction:column;gap:7px;font-size:.76rem;font-weight:700}.email-change-form :deep(.p-button),.password-form :deep(.p-button){grid-column:3}.session-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}.session-list li{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--border-subtle);border-radius:15px;background:var(--surface-subtle)}.device-icon{flex:0 0 auto;background:var(--surface-card);color:var(--status-violet-text)}.session-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}.session-copy strong span{margin-left:6px;padding:3px 7px;border-radius:999px;background:var(--status-success-soft);color:var(--status-success-text);font-size:.62rem}.session-copy small{color:var(--muted)}.state{display:flex;align-items:center;gap:8px;color:var(--muted)}.state-error{justify-content:space-between;color:var(--status-danger-text)}
+@media(max-width:760px){.security-page>header{align-items:stretch;flex-direction:column}.identity-summary{grid-template-columns:auto minmax(0,1fr)}.identity-summary :deep(.p-button),.verification-badge{grid-column:2;justify-self:start}.pending-email{align-items:flex-start;flex-direction:column}.pending-actions{flex-wrap:wrap}.email-change-form,.password-form{grid-template-columns:1fr}.email-change-form :deep(.p-button),.password-form :deep(.p-button){grid-column:auto}.session-list li{align-items:flex-start;flex-wrap:wrap}.session-copy{min-width:calc(100% - 58px)}}
 </style>

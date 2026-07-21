@@ -49,6 +49,18 @@ describe('CMS User authentication state', () => {
     expect(JSON.stringify(storageWrite.mock.calls)).not.toContain('lia_initial-secret')
   })
 
+  it('accepts an emailed setup capability into the same memory-only setup state', () => {
+    const storageWrite = vi.spyOn(Storage.prototype, 'setItem')
+    const auth = useAuthStore()
+
+    auth.beginEmailedPasswordSetup('lps_emailed-setup-capability')
+
+    expect(auth.phase).toBe('SETUP_REQUIRED')
+    expect(auth.setupToken).toBe('lps_emailed-setup-capability')
+    expect(auth.isAuthenticated).toBe(false)
+    expect(JSON.stringify(storageWrite.mock.calls)).not.toContain('lps_emailed-setup-capability')
+  })
+
   it('authenticates a Platform Operator without requiring a Project Membership', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
       kind: 'AUTHENTICATED',

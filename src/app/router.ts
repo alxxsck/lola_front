@@ -3,6 +3,11 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
 import { canReadProjectMemberships } from "@/features/project-memberships/model/project-membership-permissions";
 import { canReadProjectRoles } from "@/features/project-roles/model/project-role-permissions";
+import {
+  captureEmailActionCapability,
+  clearEmailActionCapability,
+  type EmailActionKind,
+} from "@/features/email-identity/email-action-capability";
 import AppShell from "@/widgets/layout/AppShell.vue";
 
 export const router = createRouter({
@@ -20,6 +25,27 @@ export const router = createRouter({
       name: "password-setup",
       component: () => import("@/pages/PasswordSetupPage.vue"),
       meta: { public: true },
+    },
+    {
+      path: "/auth/initial-access",
+      name: "email-initial-access",
+      component: () => import("@/pages/EmailActionLandingPage.vue"),
+      props: { action: "initial-access" },
+      meta: { public: true, emailAction: "initial-access" },
+    },
+    {
+      path: "/auth/email-verification",
+      name: "email-verification",
+      component: () => import("@/pages/EmailActionLandingPage.vue"),
+      props: { action: "verification" },
+      meta: { public: true, emailAction: "verification" },
+    },
+    {
+      path: "/auth/email-change",
+      name: "email-change",
+      component: () => import("@/pages/EmailActionLandingPage.vue"),
+      props: { action: "email-change" },
+      meta: { public: true, emailAction: "email-change" },
     },
     {
       path: "/",
@@ -207,6 +233,14 @@ export const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
+  const emailAction = to.meta.emailAction
+  if (isEmailAction(emailAction)) {
+    if (to.hash) {
+      captureEmailActionCapability(emailAction, to.hash)
+      return { path: to.path, query: to.query, hash: '', replace: true }
+    }
+    return true
+  }
   const auth = useAuthStore();
   await auth.restore();
   if (to.name === "password-setup" && !auth.requiresPasswordSetup)
@@ -240,3 +274,14 @@ router.beforeEach(async (to) => {
   if (to.meta.proposalAccess && !canReviewAIProposals(auth.user?.role))
     return { name: "overview" };
 });
+
+router.afterEach((to, from) => {
+  const previousAction = from.meta.emailAction
+  if (isEmailAction(previousAction) && previousAction !== to.meta.emailAction) {
+    clearEmailActionCapability(previousAction)
+  }
+})
+
+function isEmailAction(value: unknown): value is EmailActionKind {
+  return value === 'initial-access' || value === 'verification' || value === 'email-change'
+}
