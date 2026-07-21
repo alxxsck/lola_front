@@ -17,6 +17,8 @@ describe('email action hosting boundary', () => {
     '/auth/initial-access',
     '/auth/email-verification',
     '/auth/email-change',
+    '/auth/password-reset',
+    '/forgot-password',
   ])('serves %s with non-cacheable no-referrer headers', (source) => {
     const rule = config.headers?.find((candidate) => candidate.source === source)
     const headers = Object.fromEntries(

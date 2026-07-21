@@ -7,11 +7,11 @@ import { useAuthStore } from '@/features/auth/auth.store'
 import {
   hasEmailActionCapability,
   takeEmailActionCapability,
-  type EmailActionKind,
+  type EmailIdentityActionKind,
 } from '@/features/email-identity/email-action-capability'
 import { emailIdentityApi } from '@/features/email-identity/email-identity.api'
 
-const props = defineProps<{ action: EmailActionKind }>()
+const props = defineProps<{ action: EmailIdentityActionKind }>()
 const router = useRouter()
 const auth = useAuthStore()
 const state = ref<'READY' | 'PENDING' | 'SUCCESS' | 'ERROR' | 'MISSING'>(

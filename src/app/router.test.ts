@@ -86,6 +86,22 @@ describe('authentication routes', () => {
     expect(authApi.restore).not.toHaveBeenCalled()
   })
 
+  it('sanitizes a password-reset fragment before rendering and keeps both recovery GET routes inert', async () => {
+    vi.mocked(authApi.restore).mockClear()
+    const capability = 'lpr_00000000-0000-4000-8000-000000000001.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD'
+
+    await router.push(`/auth/password-reset#token=${capability}`)
+
+    expect(router.currentRoute.value.name).toBe('password-reset')
+    expect(router.currentRoute.value.hash).toBe('')
+    expect(window.location.href).not.toContain(capability)
+    expect(authApi.restore).not.toHaveBeenCalled()
+
+    await router.push('/forgot-password')
+    expect(router.currentRoute.value.name).toBe('forgot-password')
+    expect(authApi.restore).not.toHaveBeenCalled()
+  })
+
   it('allows Project Memberships only through the exact Platform-or-selected-Project read Permission', async () => {
     const auth = useAuthStore()
     const project = {

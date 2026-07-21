@@ -1,5 +1,5 @@
 import { axiosInstance } from '@/shared/api/http/axios-instance'
-import type { EmailActionKind } from './email-action-capability'
+import type { EmailIdentityActionKind } from './email-action-capability'
 import { publicEmailActionHttp } from './email-action-http'
 
 export interface InvitationConsumed {
@@ -24,14 +24,14 @@ export interface EmailChangeRequest {
   currentPassword: string
 }
 
-const consumePath: Record<EmailActionKind, string> = {
+const consumePath: Record<EmailIdentityActionKind, string> = {
   'initial-access': '/api/v1/auth/email-invitations/consume',
   verification: '/api/v1/auth/email-verifications/consume',
   'email-change': '/api/v1/auth/email-change/consume',
 }
 
 export const emailIdentityApi = {
-  async consume(action: EmailActionKind, token: string): Promise<EmailActionConsumeResult> {
+  async consume(action: EmailIdentityActionKind, token: string): Promise<EmailActionConsumeResult> {
     return (await publicEmailActionHttp.post<EmailActionConsumeResult>(consumePath[action], { token })).data
   },
 

@@ -27,6 +27,12 @@ export const router = createRouter({
       meta: { public: true },
     },
     {
+      path: "/forgot-password",
+      name: "forgot-password",
+      component: () => import("@/pages/ForgotPasswordPage.vue"),
+      meta: { public: true, skipAuthRestore: true },
+    },
+    {
       path: "/auth/initial-access",
       name: "email-initial-access",
       component: () => import("@/pages/EmailActionLandingPage.vue"),
@@ -46,6 +52,12 @@ export const router = createRouter({
       component: () => import("@/pages/EmailActionLandingPage.vue"),
       props: { action: "email-change" },
       meta: { public: true, emailAction: "email-change" },
+    },
+    {
+      path: "/auth/password-reset",
+      name: "password-reset",
+      component: () => import("@/pages/PasswordResetPage.vue"),
+      meta: { public: true, emailAction: "password-reset" },
     },
     {
       path: "/",
@@ -241,6 +253,7 @@ router.beforeEach(async (to) => {
     }
     return true
   }
+  if (to.meta.skipAuthRestore) return true
   const auth = useAuthStore();
   await auth.restore();
   if (to.name === "password-setup" && !auth.requiresPasswordSetup)
@@ -283,5 +296,8 @@ router.afterEach((to, from) => {
 })
 
 function isEmailAction(value: unknown): value is EmailActionKind {
-  return value === 'initial-access' || value === 'verification' || value === 'email-change'
+  return value === 'initial-access'
+    || value === 'verification'
+    || value === 'email-change'
+    || value === 'password-reset'
 }

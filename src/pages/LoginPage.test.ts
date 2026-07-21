@@ -25,16 +25,17 @@ const InputTextStub = {
   template: '<input v-bind="$attrs" :id="id" :type="type" :autocomplete="autocomplete" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
 }
 
-async function mountPage() {
+async function mountPage(location = '/login') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/login', name: 'login', component: LoginPage },
+      { path: '/forgot-password', name: 'forgot-password', component: { template: '<div>Recovery</div>' } },
       { path: '/password/setup', name: 'password-setup', component: { template: '<div>Setup</div>' } },
       { path: '/overview', name: 'overview', component: { template: '<div>Overview</div>' } },
     ],
   })
-  await router.push('/login')
+  await router.push(location)
   await router.isReady()
   const wrapper = mount(LoginPage, {
     attachTo: document.body,
@@ -89,6 +90,14 @@ describe('CMS User login page', () => {
 
     expect(wrapper.text()).toContain('После входа мы откроем доступное вам рабочее пространство.')
     expect(wrapper.text()).not.toContain('Доступ проверяется по участникам проекта.')
+  })
+
+  it('links to password recovery and announces a completed reset without logging in', async () => {
+    const { router, wrapper } = await mountPage('/login?passwordReset=success')
+
+    expect(wrapper.get('[data-testid="forgot-password-link"]').attributes('href')).toBe('/forgot-password')
+    expect(wrapper.text()).toContain('Пароль изменён. Войдите с новым паролем.')
+    expect(router.currentRoute.value.name).toBe('login')
   })
 
   it('announces a generic authentication error and focuses it', async () => {

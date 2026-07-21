@@ -6,7 +6,7 @@ import { useAuthStore } from '@/features/auth/auth.store'
 import {
   captureEmailActionCapability,
   clearEmailActionCapability,
-  type EmailActionKind,
+  type EmailIdentityActionKind,
 } from '@/features/email-identity/email-action-capability'
 import { emailIdentityApi } from '@/features/email-identity/email-identity.api'
 import EmailActionLandingPage from './EmailActionLandingPage.vue'
@@ -21,7 +21,7 @@ const ButtonStub = {
   template: '<button :disabled="disabled || loading" @click="$emit(\'click\')">{{ label }}</button>',
 }
 
-async function mountPage(action: EmailActionKind, token?: string) {
+async function mountPage(action: EmailIdentityActionKind, token?: string) {
   const pinia = createPinia()
   setActivePinia(pinia)
   if (token) captureEmailActionCapability(action, `#token=${token}`)

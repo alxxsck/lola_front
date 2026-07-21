@@ -148,7 +148,7 @@ test('cookie rotation restores reload and security actions never persist auth to
   await expect(page.getByText('Все остальные сессии завершены.')).toBeVisible()
   await expect(page.getByText('Firefox · Windows')).toBeHidden()
 
-  await page.getByLabel('Текущий пароль').fill('old password')
+  await page.locator('.password-form').getByLabel('Текущий пароль', { exact: true }).fill('old password')
   await page.getByLabel('Новый пароль', { exact: true }).fill('new secure passphrase')
   await page.getByLabel('Повторите новый пароль').fill('new secure passphrase')
   await page.getByRole('button', { name: 'Сохранить новый пароль' }).click()

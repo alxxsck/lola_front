@@ -140,6 +140,11 @@ export const useAuthStore = defineStore('auth', () => {
     resetAuthentication()
   }
 
+  function finishExternalPasswordReset() {
+    resetAuthentication()
+    restored.value = true
+  }
+
   function selectProject(projectId: string) {
     const selected = projects.value.find((item) => item.id === projectId)
     if (!selected) throw new Error('Проект недоступен текущему пользователю')
@@ -183,6 +188,7 @@ export const useAuthStore = defineStore('auth', () => {
     beginEmailedPasswordSetup,
     completePasswordSetup,
     cancelPasswordSetup,
+    finishExternalPasswordReset,
     logout,
     selectProject,
     updateProject,

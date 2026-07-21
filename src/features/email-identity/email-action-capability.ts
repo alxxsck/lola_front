@@ -1,4 +1,5 @@
-export type EmailActionKind = 'initial-access' | 'verification' | 'email-change'
+export type EmailActionKind = 'initial-access' | 'verification' | 'email-change' | 'password-reset'
+export type EmailIdentityActionKind = Exclude<EmailActionKind, 'password-reset'>
 
 const capabilities = new Map<EmailActionKind, string>()
 
@@ -17,6 +18,10 @@ export function takeEmailActionCapability(action: EmailActionKind): string | nul
   const token = capabilities.get(action) ?? null
   capabilities.delete(action)
   return token
+}
+
+export function peekEmailActionCapability(action: EmailActionKind): string | null {
+  return capabilities.get(action) ?? null
 }
 
 export function hasEmailActionCapability(action: EmailActionKind): boolean {
