@@ -6,11 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminConversationsListMessagesParams = {
-  cursor?: string;
+export interface RefreshRequestDto {
   /**
-   * @minimum 1
-   * @maximum 200
+   * @minLength 1
+   * @maxLength 1024
    */
-  limit?: number;
-};
+  refreshToken: string;
+}

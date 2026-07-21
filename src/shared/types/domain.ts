@@ -109,13 +109,16 @@ export interface Project {
   organization?: Organization
   _count?: { users: number; scenarios: number; eventLogs: number }
   memberRole?: CmsUser['role']
+  roleKeys?: string[]
+  effectivePermissionCodes?: string[]
 }
 
 export interface CmsUser {
   id: string
   email: string
   name: string
-  role: 'OWNER' | 'ADMIN' | 'EDITOR' | 'VIEWER'
+  role?: 'OWNER' | 'ADMIN' | 'EDITOR' | 'VIEWER'
+  platformPermissionCodes?: string[]
 }
 
 export interface UiElement {

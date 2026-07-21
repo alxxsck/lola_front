@@ -23,7 +23,6 @@ import type {
   AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
   AdminSpeechVoicesParams,
-  AdminUserResponseDto,
   AiCapabilityPreviewResponseDto,
   AiUsageReportParams,
   AiUsageReportResponseDto,
@@ -38,12 +37,17 @@ import type {
   AttributeDefinitionImpactResponseDto,
   AudienceEvaluationResponseDto,
   AuditLogResponseDto,
+  BreakGlassLoginDto,
+  BreakGlassLoginResponseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   ChatSend200,
-  CmsAuthResponseDto,
-  CmsLoginDto,
+  CmsAuthenticatedResponseDto,
+  CmsLoginRequestDto,
   CmsProfileListResponseDto,
+  CmsSessionContextResponseDto,
+  CmsUserProvisioningDto,
+  CmsUserProvisioningProvision201,
   CompatibilityCreateMessageDto,
   CompatibilityEndVoiceSessionDto,
   CompatibilityGetVoiceSessionDto,
@@ -92,8 +96,11 @@ import type {
   EventSchemaPublishResponseDto,
   EventsListParams,
   ExtendConversationAISuspensionDto,
+  FirstPlatformOperatorDto,
+  FirstPlatformOperatorProvision201,
   IngestClientEventDto,
   IngestEventDto,
+  InitialAccessLogin200,
   IntegrationAttributeContractResponseDto,
   InteractionSessionResponseDto,
   KnowledgeDocumentDetailResponseDto,
@@ -105,6 +112,8 @@ import type {
   ListMessagesDto,
   ListThreadMessagesDto,
   LogoutDto,
+  PasswordEstablishedResponseDto,
+  PasswordSetupRequestDto,
   PlatformEventDefinitionRevisionsParams,
   PlatformTranslationUsageUsageReportParams,
   PlatformUsersPageParams,
@@ -127,7 +136,7 @@ import type {
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
   PublishedSegmentResponseDto,
-  RefreshTokenDto,
+  RefreshRequestDto,
   RenameConversationDto,
   ResumeConversationAIDto,
   RollbackScenarioDto,
@@ -188,6 +197,42 @@ import type {
 import { request } from "../http/orval-mutator";
 import type { BodyType } from "../http/orval-mutator";
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary Provision the first Platform Operator
+ */
+export const firstPlatformOperatorProvision = (
+  firstPlatformOperatorDto: BodyType<FirstPlatformOperatorDto>,
+  options?: SecondParameter<typeof request<FirstPlatformOperatorProvision201>>,
+) => {
+  return request<FirstPlatformOperatorProvision201>(
+    {
+      url: `/api/v1/admin/platform/bootstrap/first-operator`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: firstPlatformOperatorDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Provision a CMS User with Project Roles
+ */
+export const cmsUserProvisioningProvision = (
+  cmsUserProvisioningDto: BodyType<CmsUserProvisioningDto>,
+  options?: SecondParameter<typeof request<CmsUserProvisioningProvision201>>,
+) => {
+  return request<CmsUserProvisioningProvision201>(
+    {
+      url: `/api/v1/admin/platform/cms-users`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserProvisioningDto,
+    },
+    options,
+  );
+};
 
 export const platformListProjects = (
   options?: SecondParameter<typeof request<ProjectResponseDto[]>>,
@@ -2031,16 +2076,37 @@ export const compatibilityVoiceStart = (
   );
 };
 
-export const cmsAuthLogin = (
-  cmsLoginDto: BodyType<CmsLoginDto>,
-  options?: SecondParameter<typeof request<CmsAuthResponseDto>>,
+/**
+ * @summary Authenticate the external Break-glass principal
+ */
+export const breakGlassAuthLogin = (
+  breakGlassLoginDto: BodyType<BreakGlassLoginDto>,
+  options?: SecondParameter<typeof request<BreakGlassLoginResponseDto>>,
 ) => {
-  return request<CmsAuthResponseDto>(
+  return request<BreakGlassLoginResponseDto>(
+    {
+      url: `/api/v1/auth/break-glass/login`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: breakGlassLoginDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Authenticate a CMS User or exchange an Initial Access Secret
+ */
+export const initialAccessLogin = (
+  cmsLoginRequestDto: BodyType<CmsLoginRequestDto>,
+  options?: SecondParameter<typeof request<InitialAccessLogin200>>,
+) => {
+  return request<InitialAccessLogin200>(
     {
       url: `/api/v1/auth/login`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: cmsLoginDto,
+      data: cmsLoginRequestDto,
     },
     options,
   );
@@ -2070,25 +2136,49 @@ export const cmsAuthLogoutAll = (
   );
 };
 
-export const cmsAuthMe = (
-  options?: SecondParameter<typeof request<AdminUserResponseDto>>,
+/**
+ * @summary Return the current CMS User target authorization context
+ */
+export const cmsSessionContextMe = (
+  options?: SecondParameter<typeof request<CmsSessionContextResponseDto>>,
 ) => {
-  return request<AdminUserResponseDto>(
+  return request<CmsSessionContextResponseDto>(
     { url: `/api/v1/auth/me`, method: "GET" },
     options,
   );
 };
 
-export const cmsAuthRefresh = (
-  refreshTokenDto: BodyType<RefreshTokenDto>,
-  options?: SecondParameter<typeof request<CmsAuthResponseDto>>,
+/**
+ * @summary Establish a permanent password using a setup capability
+ */
+export const initialAccessSetupPassword = (
+  passwordSetupRequestDto: BodyType<PasswordSetupRequestDto>,
+  options?: SecondParameter<typeof request<PasswordEstablishedResponseDto>>,
 ) => {
-  return request<CmsAuthResponseDto>(
+  return request<PasswordEstablishedResponseDto>(
+    {
+      url: `/api/v1/auth/password/setup`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: passwordSetupRequestDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Rotate a CMS refresh capability and issue a new session response
+ */
+export const initialAccessRefresh = (
+  refreshRequestDto: BodyType<RefreshRequestDto>,
+  options?: SecondParameter<typeof request<CmsAuthenticatedResponseDto>>,
+) => {
+  return request<CmsAuthenticatedResponseDto>(
     {
       url: `/api/v1/auth/refresh`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: refreshTokenDto,
+      data: refreshRequestDto,
     },
     options,
   );
@@ -2534,6 +2624,12 @@ export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
   return request<void>({ url: `/health`, method: "GET" }, options);
 };
 
+export type FirstPlatformOperatorProvisionResult = NonNullable<
+  Awaited<ReturnType<typeof firstPlatformOperatorProvision>>
+>;
+export type CmsUserProvisioningProvisionResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserProvisioningProvision>>
+>;
 export type PlatformListProjectsResult = NonNullable<
   Awaited<ReturnType<typeof platformListProjects>>
 >;
@@ -2897,8 +2993,11 @@ export type CompatibilityVoiceGetResult = NonNullable<
 export type CompatibilityVoiceStartResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityVoiceStart>>
 >;
-export type CmsAuthLoginResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthLogin>>
+export type BreakGlassAuthLoginResult = NonNullable<
+  Awaited<ReturnType<typeof breakGlassAuthLogin>>
+>;
+export type InitialAccessLoginResult = NonNullable<
+  Awaited<ReturnType<typeof initialAccessLogin>>
 >;
 export type CmsAuthLogoutResult = NonNullable<
   Awaited<ReturnType<typeof cmsAuthLogout>>
@@ -2906,11 +3005,14 @@ export type CmsAuthLogoutResult = NonNullable<
 export type CmsAuthLogoutAllResult = NonNullable<
   Awaited<ReturnType<typeof cmsAuthLogoutAll>>
 >;
-export type CmsAuthMeResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthMe>>
+export type CmsSessionContextMeResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSessionContextMe>>
 >;
-export type CmsAuthRefreshResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthRefresh>>
+export type InitialAccessSetupPasswordResult = NonNullable<
+  Awaited<ReturnType<typeof initialAccessSetupPassword>>
+>;
+export type InitialAccessRefreshResult = NonNullable<
+  Awaited<ReturnType<typeof initialAccessRefresh>>
 >;
 export type ChatListConversationsResult = NonNullable<
   Awaited<ReturnType<typeof chatListConversations>>

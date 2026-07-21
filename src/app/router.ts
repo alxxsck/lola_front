@@ -14,6 +14,12 @@ export const router = createRouter({
       meta: { public: true },
     },
     {
+      path: "/password/setup",
+      name: "password-setup",
+      component: () => import("@/pages/PasswordSetupPage.vue"),
+      meta: { public: true },
+    },
+    {
       path: "/",
       component: AppShell,
       children: [
@@ -178,6 +184,8 @@ export const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
   await auth.restore();
+  if (to.name === "password-setup" && !auth.requiresPasswordSetup)
+    return { name: "login" };
   if (!to.meta.public && !auth.isAuthenticated)
     return { name: "login", query: { redirect: to.fullPath } };
   if (to.name === "login" && auth.isAuthenticated) return { name: "overview" };

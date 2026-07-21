@@ -15,4 +15,7 @@ export interface ApiErrorDetailsResponseDto {
   /** @nullable */
   expectedCurrentRevisionId?: string | null;
   issues?: ApiErrorIssueResponseDto[];
+  reason?: string;
+  /** @minimum 1 */
+  retryAfterSeconds?: number;
 }

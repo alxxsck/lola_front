@@ -1,30 +1,202 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { cmsAuthLogin, cmsAuthLogout, cmsAuthRefresh, platformListProjects, platformMembers } from '@/shared/api/generated/lola-backend'
+import {
+  cmsAuthLogout,
+  cmsSessionContextMe,
+  initialAccessLogin,
+  initialAccessRefresh,
+  initialAccessSetupPassword,
+} from '@/shared/api/generated/lola-backend'
+import type {
+  CmsAuthenticatedResponseDto,
+  CmsSessionContextResponseDto,
+  CmsSessionProjectContextDto,
+  PasswordEstablishedResponseDto,
+  PasswordSetupRequiredResponseDto,
+} from '@/shared/api/generated/models'
 import { getRefreshToken, storeTokens } from '@/shared/api/http/auth-session'
 import { authApi } from './auth.api'
 
 vi.mock('@/shared/api/generated/lola-backend', () => ({
-  cmsAuthLogin: vi.fn(), cmsAuthLogout: vi.fn(), cmsAuthLogoutAll: vi.fn(), cmsAuthMe: vi.fn(),
-  cmsAuthRefresh: vi.fn(), platformListProjects: vi.fn(), platformMembers: vi.fn(),
+  cmsAuthLogout: vi.fn(),
+  cmsAuthLogoutAll: vi.fn(),
+  cmsSessionContextMe: vi.fn(),
+  initialAccessLogin: vi.fn(),
+  initialAccessRefresh: vi.fn(),
+  initialAccessSetupPassword: vi.fn(),
 }))
 
-describe('auth API logout', () => {
+const authenticatedResponse = {
+  kind: 'AUTHENTICATED',
+  accessToken: 'access',
+  expiresIn: 60,
+  refreshToken: 'refresh',
+  refreshExpiresIn: 120,
+  tokenType: 'Bearer',
+  user: {
+    id: '00000000-0000-4000-8000-000000000001',
+    email: 'viewer@example.com',
+    displayName: 'Viewer',
+  },
+} satisfies CmsAuthenticatedResponseDto
+
+function project(
+  id: string,
+  name: string,
+  roleKeys = ['PROJECT_VIEWER'],
+  effectivePermissionCodes = ['project.read'],
+): CmsSessionProjectContextDto {
+  return {
+    id,
+    name,
+    slug: id,
+    status: 'ACTIVE',
+    publicKey: `public-${id}`,
+    serverKeyPrefix: `server-${id}`,
+    organizationId: 'organization-1',
+    defaultLocale: 'ru',
+    supportedLocales: ['ru'],
+    assistantName: 'Lola',
+    systemPrompt: '',
+    voiceInstructions: '',
+    settings: {},
+    createdAt: '2026-07-21T10:00:00.000Z',
+    updatedAt: '2026-07-21T10:00:00.000Z',
+    membershipId: `membership-${id}`,
+    roleKeys,
+    effectivePermissionCodes,
+  }
+}
+
+function sessionContext(
+  projects: CmsSessionProjectContextDto[],
+  platformPermissionCodes: string[] = [],
+): CmsSessionContextResponseDto {
+  return {
+    user: authenticatedResponse.user,
+    platformPermissionCodes,
+    projects,
+  }
+}
+
+describe('target CMS User auth API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     sessionStorage.clear()
   })
 
+  it('keeps a Password Setup capability out of browser storage', async () => {
+    const response = {
+      kind: 'PASSWORD_SETUP_REQUIRED',
+      setupToken: 'lps_setup-capability',
+      expiresAt: '2026-07-21T10:10:00.000Z',
+    } satisfies PasswordSetupRequiredResponseDto
+    vi.mocked(initialAccessLogin).mockResolvedValue(response)
+
+    await expect(authApi.login('operator@example.com', 'lia_initial-secret')).resolves.toEqual(response)
+
+    expect(initialAccessLogin).toHaveBeenCalledWith({
+      identifier: 'operator@example.com',
+      secret: 'lia_initial-secret',
+    })
+    expect(cmsSessionContextMe).not.toHaveBeenCalled()
+    expect(getRefreshToken()).toBeNull()
+    expect(JSON.stringify(Object.values(sessionStorage))).not.toContain(response.setupToken)
+  })
+
+  it('loads target memberships and effective permissions from the self context', async () => {
+    vi.mocked(initialAccessLogin).mockResolvedValue(authenticatedResponse)
+    vi.mocked(cmsSessionContextMe).mockResolvedValue(sessionContext([
+      project(
+        'project-member',
+        'Member Project',
+        ['PROJECT_ADMIN'],
+        ['project.read', 'scenario.write'],
+      ),
+    ]))
+
+    await expect(authApi.login('viewer@example.com', 'permanent password')).resolves.toEqual({
+      kind: 'AUTHENTICATED',
+      context: {
+        user: {
+          id: authenticatedResponse.user.id,
+          email: authenticatedResponse.user.email,
+          name: authenticatedResponse.user.displayName,
+          role: 'ADMIN',
+          platformPermissionCodes: [],
+        },
+        projects: [expect.objectContaining({
+          id: 'project-member',
+          memberRole: 'ADMIN',
+          roleKeys: ['PROJECT_ADMIN'],
+          effectivePermissionCodes: ['project.read', 'scenario.write'],
+        })],
+        selectedProjectId: 'project-member',
+      },
+    })
+    expect(cmsSessionContextMe).toHaveBeenCalledOnce()
+  })
+
+  it('authenticates a projectless Platform Operator without fabricating VIEWER access', async () => {
+    vi.mocked(initialAccessLogin).mockResolvedValue(authenticatedResponse)
+    vi.mocked(cmsSessionContextMe).mockResolvedValue(sessionContext([], [
+      'platform.projects.manage',
+    ]))
+
+    const result = await authApi.login('viewer@example.com', 'permanent password')
+
+    expect(result).toEqual({
+      kind: 'AUTHENTICATED',
+      context: {
+        user: {
+          id: authenticatedResponse.user.id,
+          email: authenticatedResponse.user.email,
+          name: authenticatedResponse.user.displayName,
+          role: undefined,
+          platformPermissionCodes: ['platform.projects.manage'],
+        },
+        projects: [],
+        selectedProjectId: undefined,
+      },
+    })
+  })
+
+  it('maps the generated password setup result to the frontend state contract', async () => {
+    const response = {
+      kind: 'PASSWORD_ESTABLISHED',
+      cmsUserId: authenticatedResponse.user.id,
+      status: 'ACTIVE',
+      next: 'LOGIN',
+    } satisfies PasswordEstablishedResponseDto
+    vi.mocked(initialAccessSetupPassword).mockResolvedValue(response)
+
+    await expect(authApi.completePasswordSetup(
+      'lps_setup-capability',
+      'a long permanent passphrase',
+      'a long permanent passphrase',
+    )).resolves.toEqual({
+      kind: 'PASSWORD_ESTABLISHED',
+      status: 'ACTIVE',
+      nextAction: 'LOGIN',
+    })
+    expect(initialAccessSetupPassword).toHaveBeenCalledWith({
+      setupToken: 'lps_setup-capability',
+      newPassword: 'a long permanent passphrase',
+      passwordConfirmation: 'a long permanent passphrase',
+    })
+  })
+
   it('refreshes an expired access session and revokes the rotated refresh token', async () => {
     storeTokens({ accessToken: 'expired', expiresIn: -1, refreshToken: 'old-refresh', refreshExpiresIn: 120 })
-    vi.mocked(cmsAuthRefresh).mockResolvedValue({
-      accessToken: 'fresh', expiresIn: 60, refreshToken: 'rotated-refresh', refreshExpiresIn: 120,
-      tokenType: 'Bearer', user: {} as never,
+    vi.mocked(initialAccessRefresh).mockResolvedValue({
+      ...authenticatedResponse,
+      accessToken: 'fresh',
+      refreshToken: 'rotated-refresh',
     })
     vi.mocked(cmsAuthLogout).mockResolvedValue({ success: true })
 
     await authApi.logout()
 
-    expect(cmsAuthRefresh).toHaveBeenCalledWith({ refreshToken: 'old-refresh' })
+    expect(initialAccessRefresh).toHaveBeenCalledWith({ refreshToken: 'old-refresh' })
     expect(cmsAuthLogout).toHaveBeenCalledWith({ refreshToken: 'rotated-refresh' })
     expect(getRefreshToken()).toBeNull()
   })
@@ -32,26 +204,11 @@ describe('auth API logout', () => {
   it('clears local credentials even when refresh cannot reach the server', async () => {
     storeTokens({ accessToken: 'expired', expiresIn: -1, refreshToken: 'old-refresh', refreshExpiresIn: 120 })
     sessionStorage.setItem('lola:translation-jobs:project-1:scenario-1', '[]')
-    vi.mocked(cmsAuthRefresh).mockRejectedValue(new Error('network'))
+    vi.mocked(initialAccessRefresh).mockRejectedValue(new Error('network'))
 
     await expect(authApi.logout()).resolves.toBeUndefined()
     expect(cmsAuthLogout).not.toHaveBeenCalled()
     expect(getRefreshToken()).toBeNull()
     expect(sessionStorage.getItem('lola:translation-jobs:project-1:scenario-1')).toBeNull()
-  })
-
-  it('uses the selected project membership role instead of assuming ADMIN', async () => {
-    vi.mocked(cmsAuthLogin).mockResolvedValue({
-      accessToken: 'access', expiresIn: 60, refreshToken: 'refresh', refreshExpiresIn: 120, tokenType: 'Bearer',
-      user: { id: 'admin-1', login: 'viewer', email: 'viewer@example.com', displayName: 'Viewer', createdAt: 'now' },
-    })
-    vi.mocked(platformListProjects).mockResolvedValue([{ id: 'project-1', name: 'Lola' } as never])
-    vi.mocked(platformMembers).mockResolvedValue([{ id: 'member-1', projectId: 'project-1', adminUserId: 'admin-1', email: 'viewer@example.com', name: 'Viewer', role: 'VIEWER', createdAt: 'now', updatedAt: 'now' } as never])
-
-    await expect(authApi.login('viewer', 'password')).resolves.toEqual(expect.objectContaining({
-      user: expect.objectContaining({ role: 'VIEWER' }),
-      projects: [expect.objectContaining({ id: 'project-1', memberRole: 'VIEWER' })],
-    }))
-    expect(platformMembers).toHaveBeenCalledWith('project-1')
   })
 })

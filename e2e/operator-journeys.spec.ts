@@ -273,7 +273,7 @@ async function login(page: Page) {
       throw new Error(
         "E2E_LOGIN and E2E_PASSWORD are required for test:e2e:api",
       );
-    await page.getByLabel("Email или имя пользователя").fill(login);
+    await page.getByLabel("Email", { exact: true }).fill(login);
     await page.getByLabel("Пароль").fill(password);
   }
   await page.getByRole("button", { name: "Продолжить" }).click();

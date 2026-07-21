@@ -11,8 +11,6 @@ export interface ActiveConnectionResponseDto {
   connectedAt: string;
   id: string;
   lastHeartbeatAt: string;
-  /** @nullable */
-  currentConversationId?: string | null;
   sessionId: string;
   transport: ActiveConnectionResponseDtoTransport;
 }

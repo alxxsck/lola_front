@@ -9,10 +9,6 @@ import type { ConversationStatus } from "./conversationStatus";
 
 export type ChatListConversationsParams = {
   status?: ConversationStatus;
-  /**
-   * Opaque cursor returned by the previous page.
-   * @maxLength 1024
-   */
   cursor?: string;
   /**
    * @minimum 1

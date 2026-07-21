@@ -14,19 +14,41 @@ if (unversionedPaths.length) {
 
 const requiredOperations = new Map([
   [
-    "CmsAuth_login",
+    "InitialAccess_login",
     {
-      label: "auth login",
-      request: "CmsLoginDto",
-      response: "CmsAuthResponseDto",
+      label: "CMS User login and Initial Access exchange",
+      request: "CmsLoginRequestDto",
+      responses: [
+        "CmsAuthenticatedResponseDto",
+        "PasswordSetupRequiredResponseDto",
+      ],
     },
   ],
   [
-    "CmsAuth_refresh",
+    "InitialAccess_setupPassword",
     {
-      label: "auth refresh",
-      request: "RefreshTokenDto",
-      response: "CmsAuthResponseDto",
+      label: "mandatory password setup",
+      request: "PasswordSetupRequestDto",
+      response: "PasswordEstablishedResponseDto",
+    },
+  ],
+  [
+    "InitialAccess_refresh",
+    {
+      label: "CMS session refresh rotation",
+      request: "RefreshRequestDto",
+      response: "CmsAuthenticatedResponseDto",
+    },
+  ],
+  [
+    "CmsUserProvisioning_provision",
+    {
+      label: "CMS User provisioning",
+      request: "CmsUserProvisioningDto",
+      responses: [
+        "CmsUserProvisioningCreatedResponseDto",
+        "CmsUserProvisioningReplayResponseDto",
+      ],
     },
   ],
   [
@@ -37,7 +59,13 @@ const requiredOperations = new Map([
       response: "SuccessResponseDto",
     },
   ],
-  ["CmsAuth_me", { label: "current admin", response: "AdminUserResponseDto" }],
+  [
+    "CmsSessionContext_me",
+    {
+      label: "target CMS User session context",
+      response: "CmsSessionContextResponseDto",
+    },
+  ],
   [
     "Platform_createProject",
     {
@@ -210,6 +238,14 @@ const requiredOperations = new Map([
     {
       label: "scenario authoring catalog",
       response: "ConditionCatalogResponseDto",
+    },
+  ],
+  [
+    "ScenarioAuthoring_createScenario",
+    {
+      label: "atomic scenario and authoring draft creation",
+      request: "CreateScenarioAuthoringDto",
+      response: "CreateScenarioAuthoringResponseDto",
     },
   ],
   [
@@ -618,7 +654,10 @@ for (const [operationId, expectation] of requiredOperations) {
     throw new Error(`OpenAPI operation ${operationId} has no success response`);
   }
 
-  if (expectation.response && !responseSchema) {
+  const expectedResponses = expectation.responses ??
+    (expectation.response ? [expectation.response] : []);
+
+  if (expectedResponses.length && !responseSchema) {
     throw new Error(
       `OpenAPI operation ${operationId} has no typed JSON success response`,
     );
@@ -633,15 +672,97 @@ for (const [operationId, expectation] of requiredOperations) {
     );
   }
 
-  if (
-    expectation.response &&
-    !containsSchema(responseSchema, expectation.response)
-  ) {
-    throw new Error(
-      `OpenAPI operation ${operationId} does not return ${expectation.response}`,
-    );
+  for (const expectedResponse of expectedResponses) {
+    if (!containsSchema(responseSchema, expectedResponse)) {
+      throw new Error(
+        `OpenAPI operation ${operationId} does not return ${expectedResponse}`,
+      );
+    }
   }
 }
+
+for (const deprecatedSchema of [
+  "CmsLoginDto",
+  "CmsAuthResponseDto",
+  "RefreshTokenDto",
+]) {
+  if (document.components?.schemas?.[deprecatedSchema]) {
+    throw new Error(`OpenAPI still exposes deprecated auth schema ${deprecatedSchema}`);
+  }
+}
+
+requireSchemaProperties("CmsLoginRequestDto", ["identifier", "secret"]);
+requireRequiredProperties("CmsLoginRequestDto", ["identifier", "secret"]);
+requireSchemaProperties("PasswordSetupRequestDto", [
+  "setupToken",
+  "newPassword",
+  "passwordConfirmation",
+]);
+requireRequiredProperties("PasswordSetupRequestDto", [
+  "setupToken",
+  "newPassword",
+  "passwordConfirmation",
+]);
+requireSchemaProperties("PasswordSetupRequiredResponseDto", [
+  "kind",
+  "setupToken",
+  "expiresAt",
+]);
+requireSchemaProperties("PasswordEstablishedResponseDto", [
+  "kind",
+  "cmsUserId",
+  "status",
+  "next",
+]);
+requireSchemaProperties("CmsAuthenticatedResponseDto", [
+  "kind",
+  "tokenType",
+  "accessToken",
+  "refreshToken",
+  "expiresIn",
+  "refreshExpiresIn",
+  "user",
+]);
+requireSchemaProperties("CmsSessionContextResponseDto", [
+  "user",
+  "platformPermissionCodes",
+  "projects",
+]);
+requireRequiredProperties("CmsSessionContextResponseDto", [
+  "user",
+  "platformPermissionCodes",
+  "projects",
+]);
+requireSchemaProperties("CmsSessionProjectContextDto", [
+  "membershipId",
+  "roleKeys",
+  "effectivePermissionCodes",
+]);
+requireRequiredProperties("CmsSessionProjectContextDto", [
+  "membershipId",
+  "roleKeys",
+  "effectivePermissionCodes",
+]);
+requireSchemaProperties("CmsUserProvisioningDto", [
+  "email",
+  "givenName",
+  "familyName",
+  "projectAssignments",
+]);
+requireRequiredProperties("CmsUserProvisioningDto", [
+  "email",
+  "givenName",
+  "familyName",
+  "projectAssignments",
+]);
+requireSchemaProperties("AdminConversationResponseDto", [
+  "isCurrent",
+  "currentInteractionSessionCount",
+]);
+requireRequiredProperties("AdminConversationResponseDto", [
+  "isCurrent",
+  "currentInteractionSessionCount",
+]);
 
 for (const schemaName of ["CreateProjectDto", "UpdateProjectDto"]) {
   const properties =

@@ -6,11 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminConversationsListMessagesParams = {
-  cursor?: string;
+export interface CmsLoginRequestDto {
+  /** @maxLength 320 */
+  identifier: string;
   /**
-   * @minimum 1
-   * @maximum 200
+   * @minLength 1
+   * @maxLength 512
    */
-  limit?: number;
-};
+  secret: string;
+}

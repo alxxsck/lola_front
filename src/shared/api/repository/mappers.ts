@@ -196,7 +196,7 @@ export function mapActiveSessions(dto: ActiveUserResponseDto): ActiveSession[] {
       transport: connection.transport,
       connectionCount: dto.activeConnectionCount,
       sessionCount: dto.activeSessionCount,
-      currentConversationId: connection.currentConversationId ?? null,
+      currentConversationId: null,
       startedAt: connection.connectedAt,
       lastSeenAt: connection.lastHeartbeatAt,
       status: 'ONLINE',

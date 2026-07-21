@@ -344,8 +344,8 @@ describe('repository domain mappers', () => {
         createdAt: '2026-07-13T08:00:00.000Z',
         updatedAt: '2026-07-13T09:00:00.000Z',
         _count: { messages: 2 },
-        isCurrent: false,
-        currentInteractionSessionCount: 0,
+        isCurrent: true,
+        currentInteractionSessionCount: 2,
         aiSuspension: {
           mode: 'SUSPENDED',
           lifecycle: 'ACTIVE',
@@ -368,6 +368,8 @@ describe('repository domain mappers', () => {
         status: 'ARCHIVED',
         updatedAt: '2026-07-13T09:00:00.000Z',
         messageCount: 2,
+        isCurrent: true,
+        currentInteractionSessionCount: 2,
         lastMessageAt: '2026-07-13T08:59:00.000Z',
         aiSuspension: {
           mode: 'SUSPENDED',

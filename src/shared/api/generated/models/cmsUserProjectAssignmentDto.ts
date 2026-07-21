@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminConversationsListMessagesParams = {
-  cursor?: string;
+export interface CmsUserProjectAssignmentDto {
+  projectId: string;
   /**
-   * @minimum 1
-   * @maximum 200
+   * @minItems 1
+   * @maxItems 32
    */
-  limit?: number;
-};
+  roleIds: string[];
+}

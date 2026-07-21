@@ -6,12 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CmsLoginDto {
-  /** @maxLength 200 */
-  login: string;
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  password: string;
-}
+export type CmsSessionProjectContextDtoSettings = { [key: string]: unknown };

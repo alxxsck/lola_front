@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { useAuthErrorFeedback } from '@/features/auth/use-auth-error-feedback'
 import { loginDefaults } from '@/features/auth/login-defaults'
 import { dataMode } from '@/shared/config/data-mode'
 
@@ -13,23 +14,45 @@ const login = ref(defaults.login)
 const password = ref(defaults.password)
 const showPassword = ref(false)
 const loading = ref(false)
-const error = ref('')
+const errorElement = ref<HTMLElement | null>(null)
+const { clear: clearError, displayMessage: error, present: presentError, retryBlocked, show: showError } = useAuthErrorFeedback()
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
 async function submit() {
-  error.value = ''
+  if (retryBlocked.value || loading.value) return
+  clearError()
   const normalizedLogin = login.value.trim()
-  if (!normalizedLogin || normalizedLogin.length > 255) { error.value = 'Введите email или имя пользователя'; return }
-  if (password.value.length < 8) { error.value = 'Пароль должен содержать минимум 8 символов'; return }
+  if (!normalizedLogin || normalizedLogin.length > 255) {
+    showError('Введите email')
+    await focusError()
+    return
+  }
+  if (!password.value) {
+    showError('Введите пароль или секрет первоначального доступа')
+    await focusError()
+    return
+  }
   loading.value = true
   try {
-    await auth.login(normalizedLogin, password.value)
+    const result = await auth.login(normalizedLogin, password.value)
+    if (result === 'PASSWORD_SETUP_REQUIRED') {
+      await router.push({ name: 'password-setup' })
+      return
+    }
     if (auth.requiresProjectSelection) return
     await router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/overview')
-  } catch (cause) { error.value = cause instanceof Error ? cause.message : 'Не удалось войти' }
+  } catch (cause) {
+    presentError(cause, 'Не удалось войти')
+    await focusError()
+  }
   finally { loading.value = false }
+}
+
+async function focusError() {
+  await nextTick()
+  errorElement.value?.focus()
 }
 
 async function chooseProject(projectId: string) {
@@ -54,14 +77,15 @@ async function chooseProject(projectId: string) {
       <div class="orb orb-one" /><div class="orb orb-two" />
     </section>
     <section class="login-panel">
-      <form v-if="!auth.requiresProjectSelection" class="login-form" @submit.prevent="submit">
+      <form v-if="!auth.requiresProjectSelection" class="login-form" :aria-busy="loading" @submit.prevent="submit">
         <div class="mobile-logo logo"><span>Lo</span><strong>Lola</strong></div>
-        <div><div class="eyebrow">Добро пожаловать</div><h2>Войти в Lola</h2><p>После входа мы откроем доступный вам проект.</p></div>
-        <div class="field"><label for="login">Email или имя пользователя</label><InputText id="login" v-model="login" type="text" size="large" autofocus autocomplete="username" placeholder="name@company.com или admin" /></div>
-        <div class="field"><div class="row-between"><label for="password">Пароль</label><span class="forgot" title="Обратитесь к администратору проекта">Забыли пароль?</span></div><div class="password-wrap"><InputText id="password" v-model="password" :type="showPassword ? 'text' : 'password'" size="large" placeholder="Введите пароль" /><button type="button" :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'" @click="showPassword = !showPassword"><i :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'" /></button></div></div>
-        <Message v-if="error" severity="error" size="small">{{ error }}</Message>
-        <Button type="submit" label="Продолжить" icon="pi pi-arrow-right" icon-pos="right" size="large" :loading="loading" fluid />
-        <p class="mode-note"><i class="pi pi-info-circle" /> {{ auth.mode === 'mock' ? 'Demo-режим: подойдёт любой логин.' : 'Доступ проверяется по участникам проекта.' }}</p>
+        <div><div class="eyebrow">Добро пожаловать</div><h2>Войти в Lola</h2><p>После входа мы откроем доступное вам рабочее пространство.</p></div>
+        <div class="field"><label for="login">Email</label><InputText id="login" v-model="login" type="text" size="large" autofocus autocomplete="username" placeholder="name@company.com" :aria-invalid="Boolean(error)" :aria-describedby="error ? 'login-error' : undefined" /></div>
+        <div class="field"><div class="row-between"><label for="password">Пароль или секрет первоначального доступа</label><span class="forgot" title="Обратитесь к администратору">Забыли пароль?</span></div><div class="password-wrap"><InputText id="password" v-model="password" :type="showPassword ? 'text' : 'password'" size="large" autocomplete="current-password" placeholder="Введите пароль" :aria-invalid="Boolean(error)" :aria-describedby="error ? 'login-error' : undefined" /><button type="button" :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'" @click="showPassword = !showPassword"><i :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'" /></button></div></div>
+        <Message v-if="auth.phase === 'ANONYMOUS_WITH_SETUP_SUCCESS'" severity="success" size="small">Пароль сохранён. Теперь войдите с новым паролем.</Message>
+        <div v-if="error" id="login-error" ref="errorElement" tabindex="-1"><Message severity="error" size="small">{{ error }}</Message></div>
+        <Button type="submit" label="Продолжить" icon="pi pi-arrow-right" icon-pos="right" size="large" :loading="loading" :disabled="retryBlocked" fluid />
+        <p class="mode-note"><i class="pi pi-info-circle" /> {{ auth.mode === 'mock' ? 'Demo-режим: подойдёт любой email.' : 'Вход в административное пространство Lola.' }}</p>
       </form>
       <section v-else class="login-form project-choice">
         <div><div class="eyebrow">Рабочее пространство</div><h2>Выберите проект</h2><p>У вашей учётной записи есть доступ к нескольким проектам.</p></div>

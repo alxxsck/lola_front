@@ -156,11 +156,6 @@
             "format": "date-time",
             "type": "string"
           },
-          "currentConversationId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
           "sessionId": {
             "format": "uuid",
             "type": "string"
@@ -469,6 +464,7 @@
             "type": "array"
           },
           "nextCursor": {
+            "format": "uuid",
             "nullable": true,
             "type": "string"
           }
@@ -597,6 +593,7 @@
             "type": "array"
           },
           "nextCursor": {
+            "format": "uuid",
             "nullable": true,
             "type": "string"
           }
@@ -816,41 +813,6 @@
           "createdAt",
           "updatedAt",
           "thread"
-        ],
-        "type": "object"
-      },
-      "AdminUserResponseDto": {
-        "properties": {
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "displayName": {
-            "nullable": true,
-            "type": "string"
-          },
-          "email": {
-            "format": "email",
-            "nullable": true,
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "lastLoginAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "login": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "login",
-          "createdAt"
         ],
         "type": "object"
       },
@@ -1960,6 +1922,14 @@
               "$ref": "#/components/schemas/ApiErrorIssueResponseDto"
             },
             "type": "array"
+          },
+          "reason": {
+            "example": "MIN_LENGTH",
+            "type": "string"
+          },
+          "retryAfterSeconds": {
+            "minimum": 1,
+            "type": "number"
           }
         },
         "type": "object"
@@ -4746,37 +4716,125 @@
         ],
         "type": "string"
       },
-      "CmsAuthResponseDto": {
+      "BreakGlassLoginDto": {
+        "properties": {
+          "identifier": {
+            "example": "emergency-root",
+            "maxLength": 64,
+            "minLength": 3,
+            "type": "string"
+          },
+          "primaryCredential": {
+            "format": "password",
+            "maxLength": 1024,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "secondFactorProof": {
+            "pattern": "^\\d{6}$",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "identifier",
+          "primaryCredential",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "BreakGlassLoginResponseDto": {
         "properties": {
           "accessToken": {
             "type": "string"
           },
           "expiresIn": {
-            "description": "Access token lifetime in seconds.",
+            "example": 300,
             "type": "number"
-          },
-          "refreshExpiresIn": {
-            "description": "Refresh token lifetime in seconds.",
-            "type": "number"
-          },
-          "refreshToken": {
-            "type": "string"
           },
           "tokenType": {
-            "example": "Bearer",
+            "enum": [
+              "Bearer"
+            ],
             "type": "string"
-          },
-          "user": {
-            "$ref": "#/components/schemas/AdminUserResponseDto"
           }
         },
         "required": [
+          "accessToken",
+          "tokenType",
+          "expiresIn"
+        ],
+        "type": "object"
+      },
+      "CmsAuthenticatedResponseDto": {
+        "properties": {
+          "accessToken": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "expiresIn": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "kind": {
+            "enum": [
+              "AUTHENTICATED"
+            ],
+            "type": "string"
+          },
+          "refreshExpiresIn": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "refreshToken": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "tokenType": {
+            "enum": [
+              "Bearer"
+            ],
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/CmsAuthenticatedUserResponseDto"
+          }
+        },
+        "required": [
+          "kind",
           "tokenType",
           "accessToken",
-          "expiresIn",
           "refreshToken",
+          "expiresIn",
           "refreshExpiresIn",
           "user"
+        ],
+        "type": "object"
+      },
+      "CmsAuthenticatedUserResponseDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "displayName"
         ],
         "type": "object"
       },
@@ -4807,23 +4865,24 @@
         ],
         "type": "object"
       },
-      "CmsLoginDto": {
+      "CmsLoginRequestDto": {
         "properties": {
-          "login": {
-            "example": "owner@example.com",
-            "maxLength": 200,
+          "identifier": {
+            "example": "operator@example.com",
+            "maxLength": 320,
             "type": "string"
           },
-          "password": {
+          "secret": {
             "format": "password",
-            "maxLength": 200,
+            "maxLength": 512,
             "minLength": 1,
-            "type": "string"
+            "type": "string",
+            "writeOnly": true
           }
         },
         "required": [
-          "login",
-          "password"
+          "identifier",
+          "secret"
         ],
         "type": "object"
       },
@@ -4902,6 +4961,255 @@
           "syncStatus",
           "fields",
           "conversationAiSuspensionSummary"
+        ],
+        "type": "object"
+      },
+      "CmsSessionContextResponseDto": {
+        "properties": {
+          "platformPermissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/CmsSessionProjectContextDto"
+            },
+            "type": "array"
+          },
+          "user": {
+            "$ref": "#/components/schemas/CmsAuthenticatedUserResponseDto"
+          }
+        },
+        "required": [
+          "user",
+          "platformPermissionCodes",
+          "projects"
+        ],
+        "type": "object"
+      },
+      "CmsSessionProjectContextDto": {
+        "properties": {
+          "_count": {
+            "$ref": "#/components/schemas/ProjectCountsResponseDto"
+          },
+          "assistantName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "defaultLocale": {
+            "type": "string"
+          },
+          "effectivePermissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "membershipId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrganizationResponseDto"
+          },
+          "organizationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publicKey": {
+            "type": "string"
+          },
+          "roleKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "serverKeyPrefix": {
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          },
+          "supportedLocales": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "systemPrompt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "voiceInstructions": {
+            "default": "",
+            "description": "Project-wide instructions for voice tone, pacing, emotion, and delivery.",
+            "maxLength": 20000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "name",
+          "slug",
+          "status",
+          "publicKey",
+          "serverKeyPrefix",
+          "defaultLocale",
+          "supportedLocales",
+          "assistantName",
+          "systemPrompt",
+          "voiceInstructions",
+          "settings",
+          "createdAt",
+          "updatedAt",
+          "membershipId",
+          "roleKeys",
+          "effectivePermissionCodes"
+        ],
+        "type": "object"
+      },
+      "CmsUserProjectAssignmentDto": {
+        "properties": {
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "roleIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "projectId",
+          "roleIds"
+        ],
+        "type": "object"
+      },
+      "CmsUserProvisioningCreatedResponseDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "initialAccessSecret": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "replayed": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "cmsUserId",
+          "status",
+          "replayed",
+          "initialAccessSecret",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "CmsUserProvisioningDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 320,
+            "type": "string"
+          },
+          "familyName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "givenName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "projectAssignments": {
+            "items": {
+              "$ref": "#/components/schemas/CmsUserProjectAssignmentDto"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "email",
+          "givenName",
+          "familyName",
+          "projectAssignments"
+        ],
+        "type": "object"
+      },
+      "CmsUserProvisioningReplayResponseDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "cmsUserId",
+          "status",
+          "replayed"
         ],
         "type": "object"
       },
@@ -6096,7 +6404,6 @@
         "type": "object"
       },
       "CreateScenarioAuthoringDto": {
-        "additionalProperties": false,
         "properties": {
           "draft": {
             "$ref": "#/components/schemas/CreateScenarioDraftDto"
@@ -6112,7 +6419,6 @@
         "type": "object"
       },
       "CreateScenarioAuthoringMetadataDto": {
-        "additionalProperties": false,
         "properties": {
           "activeFrom": {
             "format": "date-time",
@@ -6172,7 +6478,6 @@
         "type": "object"
       },
       "CreateScenarioAuthoringResponseDto": {
-        "additionalProperties": false,
         "properties": {
           "currentRevisionId": {
             "format": "uuid",
@@ -6195,7 +6500,6 @@
         "type": "object"
       },
       "CreateScenarioDraftDto": {
-        "additionalProperties": false,
         "properties": {
           "audience": {
             "$ref": "#/components/schemas/AudienceRuleDto"
@@ -8203,6 +8507,93 @@
         ],
         "type": "object"
       },
+      "FirstPlatformOperatorCreatedResponseDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "initialAccessSecret": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "replayed": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "cmsUserId",
+          "status",
+          "replayed",
+          "initialAccessSecret",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "FirstPlatformOperatorDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 320,
+            "type": "string"
+          },
+          "familyName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "givenName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "givenName",
+          "familyName"
+        ],
+        "type": "object"
+      },
+      "FirstPlatformOperatorReplayResponseDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "cmsUserId",
+          "status",
+          "replayed"
+        ],
+        "type": "object"
+      },
       "ImmediateDeliveryPolicyDto": {
         "additionalProperties": false,
         "properties": {
@@ -8413,19 +8804,19 @@
           "anyCablePath": {
             "type": "string"
           },
-        "socketIoNamespace": {
-          "type": "string"
+          "socketIoNamespace": {
+            "type": "string"
+          },
+          "socketIoPath": {
+            "example": "/socket.io/assistant",
+            "type": "string"
+          }
         },
-        "socketIoPath": {
-          "example": "/socket.io/assistant",
-          "type": "string"
-        }
-        },
-      "required": [
-        "socketIoPath",
-        "socketIoNamespace",
-        "anyCablePath"
-      ],
+        "required": [
+          "socketIoPath",
+          "socketIoNamespace",
+          "anyCablePath"
+        ],
         "type": "object"
       },
       "InteractionSessionResponseDto": {
@@ -9205,6 +9596,93 @@
           "slug",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "PasswordEstablishedResponseDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "PASSWORD_ESTABLISHED"
+            ],
+            "type": "string"
+          },
+          "next": {
+            "enum": [
+              "LOGIN"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "cmsUserId",
+          "status",
+          "next"
+        ],
+        "type": "object"
+      },
+      "PasswordSetupRequestDto": {
+        "properties": {
+          "newPassword": {
+            "format": "password",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          },
+          "passwordConfirmation": {
+            "format": "password",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          },
+          "setupToken": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "setupToken",
+          "newPassword",
+          "passwordConfirmation"
+        ],
+        "type": "object"
+      },
+      "PasswordSetupRequiredResponseDto": {
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "PASSWORD_SETUP_REQUIRED"
+            ],
+            "type": "string"
+          },
+          "setupToken": {
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "setupToken",
+          "expiresAt"
         ],
         "type": "object"
       },
@@ -10679,11 +11157,13 @@
         ],
         "type": "string"
       },
-      "RefreshTokenDto": {
+      "RefreshRequestDto": {
         "properties": {
           "refreshToken": {
-            "description": "Opaque CMS refresh JWT",
-            "type": "string"
+            "maxLength": 1024,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
           }
         },
         "required": [
@@ -15243,6 +15723,424 @@
   },
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1/admin/platform/bootstrap/first-operator": {
+      "post": {
+        "operationId": "FirstPlatformOperator_provision",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-IAM-Incident-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-IAM-Audit-Reason",
+            "required": true,
+            "schema": {
+              "maxLength": 500,
+              "minLength": 10,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional bounded client correlation identifier; distinct from X-Request-ID",
+            "in": "header",
+            "name": "X-Correlation-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FirstPlatformOperatorDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "discriminator": {
+                    "propertyName": "replayed"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FirstPlatformOperatorCreatedResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FirstPlatformOperatorReplayResponseDto"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Invalid DTO, audit reason, incident or idempotency key",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Missing or invalid bearer token",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Break-glass authorization was denied",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "The first Platform Operator already exists",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Unexpected fail-closed server error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Fail-closed audit or dependency failure",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Provision the first Platform Operator",
+        "tags": [
+          "IAM Platform recovery"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.create",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/cms-users": {
+      "post": {
+        "operationId": "CmsUserProvisioning_provision",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional bounded client correlation identifier; distinct from X-Request-ID",
+            "in": "header",
+            "name": "X-Correlation-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsUserProvisioningDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "discriminator": {
+                    "propertyName": "replayed"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CmsUserProvisioningCreatedResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CmsUserProvisioningReplayResponseDto"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage or transformation of the one-time credential response",
+                "schema": {
+                  "enum": [
+                    "no-store, no-transform"
+                  ],
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Invalid request",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Invalid CMS token",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Permission denied",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Project not available",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Email or idempotency conflict",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "IAM dependency unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Provision a CMS User with Project Roles",
+        "tags": [
+          "IAM CMS Users"
+        ],
+        "x-iam-permission": {
+          "code": "platform.cms_users.create",
+          "scope": "PLATFORM"
+        }
+      }
+    },
     "/api/v1/admin/projects": {
       "get": {
         "operationId": "Platform_listProjects",
@@ -15348,6 +16246,37 @@
             "name": "projectId",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-IAM-Incident-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Required for Break-glass tokens",
+            "in": "header",
+            "name": "X-IAM-Audit-Reason",
+            "required": false,
+            "schema": {
+              "maxLength": 500,
+              "minLength": 10,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional bounded client correlation identifier; distinct from X-Request-ID",
+            "in": "header",
+            "name": "X-Correlation-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -15361,7 +16290,130 @@
                 }
               }
             },
-            "description": ""
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -15371,7 +16423,11 @@
         ],
         "tags": [
           "admin"
-        ]
+        ],
+        "x-iam-permission": {
+          "code": "platform.projects.read",
+          "scope": "PLATFORM"
+        }
       },
       "patch": {
         "operationId": "Platform_updateProject",
@@ -16776,6 +17832,36 @@
               "format": "uuid",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "X-IAM-Incident-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Required for Break-glass tokens",
+            "in": "header",
+            "name": "X-IAM-Audit-Reason",
+            "required": false,
+            "schema": {
+              "maxLength": 500,
+              "minLength": 10,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional bounded client correlation identifier; distinct from X-Request-ID",
+            "in": "header",
+            "name": "X-Correlation-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -16790,7 +17876,130 @@
                 }
               }
             },
-            "description": ""
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -16800,7 +18009,11 @@
         ],
         "tags": [
           "admin audit"
-        ]
+        ],
+        "x-iam-permission": {
+          "code": "project.audit.read",
+          "scope": "PROJECT"
+        }
       }
     },
     "/api/v1/admin/projects/{projectId}/end-users": {
@@ -21975,12 +23188,11 @@
             }
           },
           {
-            "description": "Opaque cursor returned by the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "maxLength": 1024,
+              "format": "uuid",
               "type": "string"
             }
           },
@@ -22106,12 +23318,11 @@
             }
           },
           {
-            "description": "Opaque cursor returned by the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "maxLength": 1024,
+              "format": "uuid",
               "type": "string"
             }
           },
@@ -22561,15 +23772,26 @@
         ]
       }
     },
-    "/api/v1/auth/login": {
+    "/api/v1/auth/break-glass/login": {
       "post": {
-        "operationId": "CmsAuth_login",
-        "parameters": [],
+        "operationId": "BreakGlassAuth_login",
+        "parameters": [
+          {
+            "description": "Optional bounded client correlation identifier; distinct from X-Request-ID",
+            "in": "header",
+            "name": "X-Correlation-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CmsLoginDto"
+                "$ref": "#/components/schemas/BreakGlassLoginDto"
               }
             }
           },
@@ -22580,13 +23802,338 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CmsAuthResponseDto"
+                  "$ref": "#/components/schemas/BreakGlassLoginResponseDto"
                 }
               }
             },
-            "description": ""
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Malformed request or audit reason",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Uniform authentication failure",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Break-glass authentication is disabled",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Pre-admission capacity exhausted",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Fail-closed audit, Argon lease, or dependency failure",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
+        "summary": "Authenticate the external Break-glass principal",
+        "tags": [
+          "IAM Break-glass"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "InitialAccess_login",
+        "parameters": [
+          {
+            "description": "Optional bounded client correlation identifier; distinct from X-Request-ID",
+            "in": "header",
+            "name": "X-Correlation-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsLoginRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "discriminator": {
+                    "propertyName": "kind"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CmsAuthenticatedResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasswordSetupRequiredResponseDto"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Malformed authentication request",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Uniform authentication failure",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Authentication admission limit reached",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before another authentication attempt",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Authentication dependency unavailable",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Authenticate a CMS User or exchange an Initial Access Secret",
         "tags": [
           "CMS authentication"
         ]
@@ -22656,18 +24203,65 @@
     },
     "/api/v1/auth/me": {
       "get": {
-        "operationId": "CmsAuth_me",
+        "operationId": "CmsSessionContext_me",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                  "$ref": "#/components/schemas/CmsSessionContextResponseDto"
                 }
               }
             },
-            "description": ""
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -22675,20 +24269,33 @@
             "bearer": []
           }
         ],
+        "summary": "Return the current CMS User target authorization context",
         "tags": [
           "CMS authentication"
-        ]
+        ],
+        "x-iam-authenticated": true
       }
     },
-    "/api/v1/auth/refresh": {
+    "/api/v1/auth/password/setup": {
       "post": {
-        "operationId": "CmsAuth_refresh",
-        "parameters": [],
+        "operationId": "InitialAccess_setupPassword",
+        "parameters": [
+          {
+            "description": "Optional bounded client correlation identifier; distinct from X-Request-ID",
+            "in": "header",
+            "name": "X-Correlation-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenDto"
+                "$ref": "#/components/schemas/PasswordSetupRequestDto"
               }
             }
           },
@@ -22699,13 +24306,414 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CmsAuthResponseDto"
+                  "$ref": "#/components/schemas/PasswordEstablishedResponseDto"
                 }
               }
             },
-            "description": ""
+            "description": "",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Malformed request or password confirmation mismatch",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Uniform invalid setup capability failure",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Permanent password policy violation",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Password setup admission limit reached",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before another authentication attempt",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Password setup dependency unavailable",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
+        "summary": "Establish a permanent password using a setup capability",
+        "tags": [
+          "CMS authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "InitialAccess_refresh",
+        "parameters": [
+          {
+            "description": "Optional bounded client correlation identifier; distinct from X-Request-ID",
+            "in": "header",
+            "name": "X-Correlation-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsAuthenticatedResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Malformed refresh request",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Uniform invalid refresh capability failure",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Refresh admission limit reached",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before another authentication attempt",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Refresh dependency unavailable",
+            "headers": {
+              "Cache-Control": {
+                "description": "Prevents storage of credentials and issued capabilities",
+                "schema": {
+                  "example": "no-store, no-transform",
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "Legacy cache prevention",
+                "schema": {
+                  "example": "no-cache",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Rotate a CMS refresh capability and issue a new session response",
         "tags": [
           "CMS authentication"
         ]
@@ -22724,12 +24732,11 @@
             }
           },
           {
-            "description": "Opaque cursor returned by the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "maxLength": 1024,
+              "format": "uuid",
               "type": "string"
             }
           },
@@ -22892,12 +24899,11 @@
             }
           },
           {
-            "description": "Opaque cursor returned by the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "maxLength": 1024,
+              "format": "uuid",
               "type": "string"
             }
           },

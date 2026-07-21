@@ -1,13 +1,16 @@
 import {
-  cmsAuthLogin,
   cmsAuthLogout,
   cmsAuthLogoutAll,
-  cmsAuthMe,
-  cmsAuthRefresh,
-  platformListProjects,
-  platformMembers,
+  cmsSessionContextMe,
+  initialAccessLogin,
+  initialAccessRefresh,
+  initialAccessSetupPassword,
 } from '@/shared/api/generated/lola-backend'
-import type { AdminUserResponseDto, CmsAuthResponseDto, ProjectResponseDto } from '@/shared/api/generated/models'
+import type {
+  CmsAuthenticatedResponseDto,
+  CmsAuthenticatedUserResponseDto,
+  CmsSessionProjectContextDto,
+} from '@/shared/api/generated/models'
 import { demoProject } from '@/shared/api/mock-data'
 import { beginAuthTeardown, endAuthTeardown, refreshAccessToken, registerRefreshHandler } from '@/shared/api/http/axios-instance'
 import { clearAuthSession, getRefreshToken, getSelectedProjectId, storeTokens } from '@/shared/api/http/auth-session'
@@ -32,16 +35,39 @@ export interface AuthContext {
   selectedProjectId?: string
 }
 
-function mapUser(user: AdminUserResponseDto, role: CmsUser['role']): CmsUser {
+export type AuthLoginResult =
+  | { kind: 'AUTHENTICATED'; context: AuthContext }
+  | { kind: 'PASSWORD_SETUP_REQUIRED'; setupToken: string; expiresAt: string }
+
+export interface PasswordSetupResult {
+  kind: 'PASSWORD_ESTABLISHED'
+  status: 'ACTIVE'
+  nextAction: 'LOGIN'
+}
+
+function mapUser(
+  user: CmsAuthenticatedUserResponseDto,
+  platformPermissionCodes: string[],
+  role?: CmsUser['role'],
+): CmsUser {
   return {
     id: user.id,
-    email: user.email ?? user.login,
-    name: user.displayName ?? user.email ?? user.login,
+    email: user.email,
+    name: user.displayName,
     role,
+    platformPermissionCodes,
   }
 }
 
-function mapProject(project: ProjectResponseDto): Project {
+function legacyRole(roleKeys: string[]): CmsUser['role'] | undefined {
+  if (roleKeys.includes('PROJECT_OWNER')) return 'OWNER'
+  if (roleKeys.includes('PROJECT_ADMIN')) return 'ADMIN'
+  if (roleKeys.includes('CONTENT_EDITOR')) return 'EDITOR'
+  if (roleKeys.includes('PROJECT_VIEWER')) return 'VIEWER'
+  return undefined
+}
+
+function mapProject(project: CmsSessionProjectContextDto): Project {
   return {
     id: project.id,
     name: project.name,
@@ -56,32 +82,35 @@ function mapProject(project: ProjectResponseDto): Project {
     settings: project.settings,
     organization: project.organization,
     _count: project._count,
+    memberRole: legacyRole(project.roleKeys),
+    roleKeys: project.roleKeys,
+    effectivePermissionCodes: project.effectivePermissionCodes,
   }
 }
 
-function rememberTokens(response: CmsAuthResponseDto): void {
+function rememberTokens(response: CmsAuthenticatedResponseDto): void {
   storeTokens(response)
 }
 
 registerRefreshHandler(async (refreshToken) => {
-  rememberTokens(await cmsAuthRefresh({ refreshToken }))
+  rememberTokens(await initialAccessRefresh({ refreshToken }))
 })
 
-async function loadContext(user: AdminUserResponseDto): Promise<AuthContext> {
-  const projects = (await platformListProjects()).map(mapProject)
-  const projectsWithRoles = await Promise.all(projects.map(async (project) => {
-    try {
-      const members = await platformMembers(project.id)
-      const membership = members.find((member) => (member.adminUserId as unknown) === user.id)
-        ?? members.find((member) => member.email.toLowerCase() === (user.email ?? '').toLowerCase())
-      return { ...project, memberRole: membership?.role ?? 'VIEWER' }
-    } catch {
-      return { ...project, memberRole: 'VIEWER' as const }
-    }
-  }))
+async function loadContext(): Promise<AuthContext> {
+  const response = await cmsSessionContextMe()
+  const projects = response.projects.map(mapProject)
   const storedProjectId = getSelectedProjectId()
-  const selectedProject = projectsWithRoles.find((project) => project.id === storedProjectId) ?? (projectsWithRoles.length === 1 ? projectsWithRoles[0] : undefined)
-  return { user: mapUser(user, selectedProject?.memberRole ?? 'VIEWER'), projects: projectsWithRoles, selectedProjectId: storedProjectId }
+  const selectedProject = projects.find((project) => project.id === storedProjectId)
+    ?? (projects.length === 1 ? projects[0] : undefined)
+  return {
+    user: mapUser(
+      response.user,
+      response.platformPermissionCodes,
+      selectedProject?.memberRole,
+    ),
+    projects,
+    selectedProjectId: selectedProject?.id,
+  }
 }
 
 function demoContext(login: string): AuthContext {
@@ -100,17 +129,18 @@ function demoContext(login: string): AuthContext {
 export const authApi = {
   mode: isMockMode ? 'mock' : 'api',
 
-  async login(login: string, password: string): Promise<AuthContext> {
+  async login(login: string, password: string): Promise<AuthLoginResult> {
     if (isMockMode) {
       const context = demoContext(login)
       sessionStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(context))
-      return context
+      return { kind: 'AUTHENTICATED', context }
     }
     clearAuthSession()
     try {
-      const response = await cmsAuthLogin({ login, password })
+      const response = await initialAccessLogin({ identifier: login, secret: password })
+      if (response.kind === 'PASSWORD_SETUP_REQUIRED') return response
       rememberTokens(response)
-      return await loadContext(response.user)
+      return { kind: 'AUTHENTICATED', context: await loadContext() }
     } catch (cause) {
       clearAuthSession()
       throw cause
@@ -126,12 +156,25 @@ export const authApi = {
     const refreshToken = getRefreshToken()
     if (!refreshToken) return null
     try {
-      const response = await cmsAuthRefresh({ refreshToken })
+      const response = await initialAccessRefresh({ refreshToken })
       rememberTokens(response)
-      return await loadContext(await cmsAuthMe())
+      return await loadContext()
     } catch (cause) {
       clearAuthSession()
       throw cause
+    }
+  },
+
+  async completePasswordSetup(
+    setupToken: string,
+    newPassword: string,
+    passwordConfirmation: string,
+  ): Promise<PasswordSetupResult> {
+    const response = await initialAccessSetupPassword({ setupToken, newPassword, passwordConfirmation })
+    return {
+      kind: response.kind,
+      status: response.status,
+      nextAction: response.next,
     }
   },
 

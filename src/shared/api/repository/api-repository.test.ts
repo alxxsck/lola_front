@@ -292,7 +292,9 @@ describe('api repository adapter', () => {
       items: [{
         id: 'conversation-1', projectId: 'project-1', endUserId: 'user-1', title: 'Deposit', status: 'OPEN',
         createdAt: '2026-07-13T08:00:00.000Z', updatedAt: '2026-07-13T09:00:00.000Z',
-        isCurrent: true, currentInteractionSessionCount: 1,
+        sessionId: 'session-1',
+        isCurrent: true,
+        currentInteractionSessionCount: 1,
         aiSuspension: { mode: 'AUTOMATIC', lifecycle: 'NONE', version: '0', suspendedUntil: null, serverTime: '2026-07-20T13:00:00.000Z' },
         _count: { messages: 42 }, messages: [{ id: 'message-last', role: 'ASSISTANT', text: 'Done', createdAt: '2026-07-13T09:00:00.000Z' }],
       }],
@@ -307,7 +309,13 @@ describe('api repository adapter', () => {
     })
 
     await expect(apiRepository.getConversations('project-1', 'user-1', { cursor: 'previous', limit: 20 })).resolves.toEqual({
-      items: [expect.objectContaining({ id: 'conversation-1', messageCount: 42, status: 'ACTIVE' })],
+      items: [expect.objectContaining({
+        id: 'conversation-1',
+        messageCount: 42,
+        status: 'ACTIVE',
+        isCurrent: true,
+        currentInteractionSessionCount: 1,
+      })],
       nextCursor: 'conversation-1',
     })
     await expect(apiRepository.getMessages('project-1', 'user-1', 'conversation-1', { cursor: 'older' })).resolves.toEqual({

@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface RefreshTokenDto {
-  /** Opaque CMS refresh JWT */
-  refreshToken: string;
+export interface CmsAuthenticatedUserResponseDto {
+  displayName: string;
+  email: string;
+  id: string;
 }
