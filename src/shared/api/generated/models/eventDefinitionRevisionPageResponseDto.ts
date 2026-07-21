@@ -6,10 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EventDefinitionRevisionResponseDto } from "./eventDefinitionRevisionResponseDto";
-import type { EventDefinitionRevisionPageResponseDtoNextCursor } from "./eventDefinitionRevisionPageResponseDtoNextCursor";
 
 export interface EventDefinitionRevisionPageResponseDto {
   items: EventDefinitionRevisionResponseDto[];
   /** @nullable */
-  nextCursor?: EventDefinitionRevisionPageResponseDtoNextCursor;
+  nextCursor: string | null;
 }

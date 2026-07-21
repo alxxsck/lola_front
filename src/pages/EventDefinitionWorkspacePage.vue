@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import Dialog from "primevue/dialog";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useAuthStore } from "@/features/auth/auth.store";
+import EventDefinitionHistory from "@/features/events/EventDefinitionHistory.vue";
+import { ApiError } from "@/shared/api/http/api-error";
 import {
   applyEventMetadataUpdate,
   eventCatalogRepository,
   type EventCatalogDefinition,
-  type EventCatalogDefinitionHealth,
+  type EventDefinitionUsage,
 } from "@/shared/api/repository/event-catalog";
 
 type WorkspaceSection = "overview" | "policy" | "schema" | "usage";
@@ -25,9 +28,25 @@ const loadError = ref("");
 const saveError = ref("");
 const success = ref("");
 const activeSection = ref<WorkspaceSection>("overview");
-const health = ref<EventCatalogDefinitionHealth | null>(null);
-const healthLoading = ref(false);
-const healthError = ref("");
+const linkedRevisionId = computed(() =>
+  typeof route.query?.revisionId === "string"
+    ? route.query.revisionId
+    : undefined,
+);
+const usage = ref<EventDefinitionUsage | null>(null);
+const usageLoading = ref(false);
+const usageError = ref("");
+const mutationPending = ref(false);
+const mutationError = ref("");
+const archiveDialogVisible = ref(false);
+const deleteDialogVisible = ref(false);
+const disableDialogVisible = ref(false);
+const archiveReason = ref("");
+const deleteReason = ref("");
+const deleteConfirmation = ref("");
+let definitionRequestId = 0;
+let usageRequestId = 0;
+let workspaceGeneration = 0;
 
 const definitionKeyId = computed(() =>
   String(route.params.definitionKeyId ?? ""),
@@ -37,6 +56,12 @@ const canEdit = computed(
     (auth.user?.role === "OWNER" || auth.user?.role === "ADMIN") &&
     !definition.value?.readOnly,
 );
+const canManageLifecycle = computed(
+  () =>
+    (auth.user?.role === "OWNER" || auth.user?.role === "ADMIN") &&
+    definition.value?.origin === "CUSTOM",
+);
+const isArchived = computed(() => definition.value?.lifecycle === "ARCHIVED");
 const hasMetadataConcurrencyToken = computed(() =>
   Boolean(definition.value?.metadata.concurrencyToken),
 );
@@ -51,30 +76,69 @@ const formattedSchema = computed(() =>
 );
 
 onMounted(loadDefinition);
+watch(
+  () => [auth.project?.id, definitionKeyId.value],
+  ([projectId, key], [previousProjectId, previousKey]) => {
+    if (projectId === previousProjectId && key === previousKey) return;
+    resetWorkspace();
+    void loadDefinition();
+  },
+);
+
+function resetWorkspace() {
+  workspaceGeneration += 1;
+  definitionRequestId += 1;
+  usageRequestId += 1;
+  definition.value = null;
+  usage.value = null;
+  loading.value = false;
+  usageLoading.value = false;
+  saving.value = false;
+  mutationPending.value = false;
+  archiveDialogVisible.value = false;
+  deleteDialogVisible.value = false;
+  disableDialogVisible.value = false;
+  mutationError.value = "";
+  loadError.value = "";
+  saveError.value = "";
+  usageError.value = "";
+  success.value = "";
+  archiveReason.value = "";
+  deleteReason.value = "";
+  deleteConfirmation.value = "";
+}
 
 async function loadDefinition() {
   const projectId = auth.project?.id;
-  if (!projectId || !definitionKeyId.value) return;
+  const key = definitionKeyId.value;
+  if (!projectId || !key) return;
+  const requestId = ++definitionRequestId;
   loading.value = true;
   loadError.value = "";
   try {
-    const loaded = await eventCatalogRepository.getDefinition(
-      projectId,
-      definitionKeyId.value,
-    );
+    const loaded = await eventCatalogRepository.getDefinition(projectId, key);
+    if (!isCurrentRequest(projectId, key, requestId, definitionRequestId))
+      return;
     definition.value = loaded;
     name.value = loaded.metadata.name;
     description.value = loaded.metadata.description ?? "";
+    usage.value = null;
+    void loadUsage();
   } catch (cause) {
+    if (!isCurrentRequest(projectId, key, requestId, definitionRequestId))
+      return;
     loadError.value = errorMessage(cause, "Не удалось загрузить событие");
   } finally {
-    loading.value = false;
+    if (isCurrentRequest(projectId, key, requestId, definitionRequestId)) {
+      loading.value = false;
+    }
   }
 }
 
 async function saveMetadata() {
   const projectId = auth.project?.id;
   const current = definition.value;
+  const generation = workspaceGeneration;
   const nextName = name.value.trim();
   if (!projectId || !current || !canEdit.value || saving.value) return;
   saveError.value = "";
@@ -100,6 +164,8 @@ async function saveMetadata() {
         expectedUpdatedAt: current.metadata.concurrencyToken,
       },
     );
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
     if (!result.schemaRevisionUnchanged) {
       throw new Error(
         "Ответ сервера нарушает правило сохранения без новой версии схемы",
@@ -114,33 +180,346 @@ async function saveMetadata() {
     description.value = applied.metadata.description ?? "";
     success.value = "Сохранено. Ревизия схемы не изменилась.";
   } catch (cause) {
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
     saveError.value = errorMessage(cause, "Не удалось сохранить изменения");
   } finally {
-    saving.value = false;
+    if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
+      saving.value = false;
+    }
   }
 }
 
 async function selectSection(section: WorkspaceSection) {
   activeSection.value = section;
-  if (section !== "usage" || health.value || healthLoading.value) return;
+  if (section !== "usage" || usage.value || usageLoading.value) return;
+  await loadUsage();
+}
+
+async function loadUsage() {
   const projectId = auth.project?.id;
   const current = definition.value;
-  if (!projectId || !current) return;
-  healthLoading.value = true;
-  healthError.value = "";
+  if (!projectId || !current) return null;
+  const key = current.definitionKeyId;
+  const requestId = ++usageRequestId;
+  usageLoading.value = true;
+  usageError.value = "";
   try {
-    health.value = await eventCatalogRepository.getHealth(
-      projectId,
-      current.definitionKeyId,
-    );
+    const loaded = await eventCatalogRepository.getUsage(projectId, key);
+    if (!isCurrentRequest(projectId, key, requestId, usageRequestId))
+      return null;
+    usage.value = loaded;
+    return usage.value;
   } catch (cause) {
-    healthError.value = errorMessage(
+    if (!isCurrentRequest(projectId, key, requestId, usageRequestId))
+      return null;
+    usageError.value = errorMessage(
       cause,
       "Не удалось загрузить сведения об использовании",
     );
+    return null;
   } finally {
-    healthLoading.value = false;
+    if (isCurrentRequest(projectId, key, requestId, usageRequestId)) {
+      usageLoading.value = false;
+    }
   }
+}
+
+function isCurrentRequest(
+  projectId: string,
+  key: string,
+  requestId: number,
+  currentRequestId: number,
+) {
+  return (
+    requestId === currentRequestId &&
+    isCurrentWorkspace(projectId, key, workspaceGeneration)
+  );
+}
+
+function isCurrentWorkspace(
+  projectId: string,
+  key: string,
+  generation: number,
+) {
+  return (
+    generation === workspaceGeneration &&
+    auth.project?.id === projectId &&
+    definitionKeyId.value === key
+  );
+}
+
+async function prepareArchive() {
+  mutationError.value = "";
+  const currentUsage = await loadUsage();
+  if (!currentUsage) return;
+  archiveDialogVisible.value = true;
+}
+
+async function prepareDelete() {
+  mutationError.value = "";
+  deleteConfirmation.value = "";
+  const currentUsage = await loadUsage();
+  if (!currentUsage) return;
+  deleteDialogVisible.value = true;
+}
+
+async function requestPolicyChange() {
+  const current = definition.value;
+  if (!current || isArchived.value || mutationPending.value) return;
+  mutationError.value = "";
+  if (current.policy.enabled) {
+    const currentUsage = await loadUsage();
+    if (!currentUsage) return;
+    if (currentUsage.scenarios.total > 0 || currentUsage.activeWaitCount > 0) {
+      disableDialogVisible.value = true;
+      return;
+    }
+  }
+  await applyPolicyChange(!current.policy.enabled);
+}
+
+async function applyPolicyChange(enabled: boolean) {
+  const projectId = auth.project?.id;
+  const current = definition.value;
+  const generation = workspaceGeneration;
+  if (!projectId || !current || mutationPending.value) return;
+  mutationPending.value = true;
+  mutationError.value = "";
+  success.value = "";
+  try {
+    await eventCatalogRepository.updatePolicy(
+      projectId,
+      current.definitionKeyId,
+      {
+        enabled,
+        clientIngestible: current.policy.clientIngestible,
+        countsAsActivity: current.policy.countsAsActivity,
+        expectedVersion: current.policy.version,
+        reason: enabled
+          ? "Enabled from CMS workspace"
+          : "Disabled from CMS workspace",
+      },
+    );
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    const reloaded = await eventCatalogRepository.getDefinition(
+      projectId,
+      current.definitionKeyId,
+    );
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    if (
+      reloaded.policy.enabled !== enabled ||
+      reloaded.policy.version <= current.policy.version
+    ) {
+      throw new Error("Сервер не подтвердил изменение приёма событий");
+    }
+    definition.value = reloaded;
+    usage.value = null;
+    disableDialogVisible.value = false;
+    success.value = enabled
+      ? "Приём новых событий включён."
+      : "Приём новых событий выключен.";
+  } catch (cause) {
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    await recoverConflict(cause);
+    mutationError.value = errorMessage(
+      cause,
+      "Не удалось изменить приём событий",
+    );
+  } finally {
+    if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
+      mutationPending.value = false;
+    }
+  }
+}
+
+async function archiveDefinition() {
+  const projectId = auth.project?.id;
+  const current = definition.value;
+  const currentUsage = usage.value;
+  const generation = workspaceGeneration;
+  if (
+    !projectId ||
+    !current ||
+    !currentUsage?.canArchive ||
+    mutationPending.value
+  )
+    return;
+  mutationPending.value = true;
+  mutationError.value = "";
+  try {
+    await eventCatalogRepository.archive(projectId, current.definitionKeyId, {
+      expectedLifecycleVersion: currentUsage.lifecycleVersion,
+      expectedPolicyVersion: currentUsage.policyVersion,
+      reason: archiveReason.value.trim() || undefined,
+    });
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    const [active, archived] = await Promise.all([
+      eventCatalogRepository.listDefinitions(projectId, "ACTIVE"),
+      eventCatalogRepository.listDefinitions(projectId, "ARCHIVED"),
+    ]);
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    const absentFromActive = !active.some(
+      (item) => item.definitionKeyId === current.definitionKeyId,
+    );
+    const archivedDefinition = archived.find(
+      (item) => item.definitionKeyId === current.definitionKeyId,
+    );
+    if (
+      !absentFromActive ||
+      !archivedDefinition ||
+      archivedDefinition.policy.enabled
+    ) {
+      throw new Error("Сервер не подтвердил перемещение события в архив");
+    }
+    archiveDialogVisible.value = false;
+    await router.push({ name: "events", query: { lifecycle: "ARCHIVED" } });
+  } catch (cause) {
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    await recoverConflict(cause);
+    mutationError.value = errorMessage(
+      cause,
+      "Не удалось архивировать событие",
+    );
+  } finally {
+    if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
+      mutationPending.value = false;
+    }
+  }
+}
+
+async function restoreDefinition() {
+  const projectId = auth.project?.id;
+  const current = definition.value;
+  const generation = workspaceGeneration;
+  if (!projectId || !current || !isArchived.value || mutationPending.value)
+    return;
+  mutationPending.value = true;
+  mutationError.value = "";
+  success.value = "";
+  try {
+    const currentUsage = await loadUsage();
+    if (!currentUsage) return;
+    await eventCatalogRepository.restore(projectId, current.definitionKeyId, {
+      expectedLifecycleVersion: currentUsage.lifecycleVersion,
+      reason: "Restored from CMS workspace",
+    });
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    const active = await eventCatalogRepository.listDefinitions(
+      projectId,
+      "ACTIVE",
+    );
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    const restored = active.find(
+      (item) => item.definitionKeyId === current.definitionKeyId,
+    );
+    if (
+      !restored ||
+      restored.lifecycle !== "ACTIVE" ||
+      restored.policy.enabled
+    ) {
+      throw new Error(
+        "Сервер не подтвердил восстановление с выключенным приёмом событий",
+      );
+    }
+    definition.value = restored;
+    usage.value = null;
+    success.value =
+      "Событие восстановлено. Приём новых событий остаётся выключенным.";
+  } catch (cause) {
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    await recoverConflict(cause);
+    mutationError.value = errorMessage(
+      cause,
+      "Не удалось восстановить событие",
+    );
+  } finally {
+    if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
+      mutationPending.value = false;
+    }
+  }
+}
+
+async function deleteDefinition() {
+  const projectId = auth.project?.id;
+  const current = definition.value;
+  const currentUsage = usage.value;
+  const generation = workspaceGeneration;
+  if (
+    !projectId ||
+    !current ||
+    !currentUsage?.canDelete ||
+    mutationPending.value ||
+    deleteConfirmation.value !== current.code ||
+    !deleteReason.value.trim()
+  )
+    return;
+  mutationPending.value = true;
+  mutationError.value = "";
+  try {
+    await eventCatalogRepository.hardDelete(
+      projectId,
+      current.definitionKeyId,
+      {
+        expectedLifecycleVersion: currentUsage.lifecycleVersion,
+        expectedPolicyVersion: currentUsage.policyVersion,
+        reason: deleteReason.value.trim(),
+      },
+    );
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    const lifecycle = current.lifecycle;
+    const remaining = await eventCatalogRepository.listDefinitions(
+      projectId,
+      lifecycle,
+    );
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    if (
+      remaining.some((item) => item.definitionKeyId === current.definitionKeyId)
+    ) {
+      throw new Error("Сервер не подтвердил физическое удаление события");
+    }
+    deleteDialogVisible.value = false;
+    await router.push({
+      name: "events",
+      query: lifecycle === "ARCHIVED" ? { lifecycle } : {},
+    });
+  } catch (cause) {
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+      return;
+    await recoverConflict(cause);
+    mutationError.value = errorMessage(cause, "Не удалось удалить событие");
+  } finally {
+    if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
+      mutationPending.value = false;
+    }
+  }
+}
+
+async function recoverConflict(cause: unknown) {
+  if (!(cause instanceof ApiError) || cause.status !== 409) return;
+  await loadDefinition();
+  await loadUsage();
+}
+
+function blockerLabel(blocker: string) {
+  return (
+    {
+      SCENARIO_DEPENDENCIES: "Событие используется в сценариях или их истории",
+      ACTIVE_WAITS: "Есть активные ожидания события",
+      EVENT_LOGS: "Существуют записанные Event Logs",
+    }[blocker] ?? blocker
+  );
 }
 
 function errorMessage(cause: unknown, fallback: string) {
@@ -182,10 +561,107 @@ function errorMessage(cause: unknown, fallback: string) {
             >
           </div>
         </div>
-        <span v-if="definition.readOnly" class="read-only-badge"
-          ><i class="pi pi-lock" /> Только чтение</span
-        >
+        <div class="header-actions">
+          <span
+            class="lifecycle-badge"
+            :class="{ archived: isArchived }"
+            data-test="lifecycle-state"
+          >
+            {{
+              isArchived
+                ? "В архиве"
+                : definition.policy.enabled
+                  ? "Включено"
+                  : "Выключено"
+            }}
+          </span>
+          <template v-if="canManageLifecycle">
+            <button
+              v-if="isArchived"
+              type="button"
+              class="secondary-button"
+              :disabled="mutationPending"
+              @click="restoreDefinition"
+            >
+              Восстановить
+            </button>
+            <button
+              v-else
+              type="button"
+              class="secondary-button"
+              :disabled="
+                mutationPending || usageLoading || usage?.canArchive === false
+              "
+              @click="prepareArchive"
+            >
+              Архивировать
+            </button>
+            <button
+              type="button"
+              class="danger-button"
+              :disabled="
+                mutationPending || usageLoading || usage?.canDelete === false
+              "
+              @click="prepareDelete"
+            >
+              Удалить
+            </button>
+          </template>
+          <span v-else-if="definition.readOnly" class="read-only-badge"
+            ><i class="pi pi-lock" /> Управляется Lola · только чтение</span
+          >
+        </div>
       </header>
+
+      <aside
+        v-if="
+          canManageLifecycle &&
+          usage &&
+          ((!isArchived && !usage.canArchive) || !usage.canDelete)
+        "
+        class="lifecycle-blocker-summary"
+        role="note"
+      >
+        <strong>Действия ограничены существующими зависимостями.</strong>
+        <router-link
+          v-for="scenario in usage.scenarios.items"
+          :key="scenario.scenarioId"
+          :to="{
+            name: 'scenario-edit',
+            params: { scenarioId: scenario.scenarioId },
+          }"
+        >
+          Сценарий: {{ scenario.name }}
+        </router-link>
+        <router-link
+          v-if="usage.activeWaitCount > 0"
+          :to="{
+            name: 'operations',
+            query: {
+              section: 'runs',
+              eventDefinitionKeyId: definition.definitionKeyId,
+            },
+          }"
+        >
+          Активные ожидания: {{ usage.activeWaitCount }}
+        </router-link>
+        <router-link
+          v-if="usage.eventLogs.exists"
+          :to="{
+            name: 'event-logs',
+            query: { eventCode: definition.code },
+          }"
+        >
+          Открыть Event Logs
+        </router-link>
+      </aside>
+
+      <p v-if="mutationError" class="inline-message error" role="alert">
+        {{ mutationError }}
+      </p>
+      <p v-if="success" class="inline-message success" role="status">
+        {{ success }}
+      </p>
 
       <aside class="producer-contract card" data-test="producer-contract-hint">
         <i class="pi pi-send" aria-hidden="true" />
@@ -311,10 +787,6 @@ function errorMessage(cause: unknown, fallback: string) {
             Сервер не предоставил данные для безопасного сохранения. Раздел
             доступен только для чтения.
           </p>
-          <p v-if="success" class="inline-message success" role="status">
-            {{ success }}
-          </p>
-
           <footer v-if="canEdit" class="form-actions">
             <span v-if="isDirty">Есть несохранённые изменения</span>
             <button
@@ -382,6 +854,22 @@ function errorMessage(cause: unknown, fallback: string) {
             </dd>
           </div>
         </dl>
+        <div v-if="canManageLifecycle" class="policy-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            :disabled="isArchived || mutationPending"
+            @click="requestPolicyChange"
+          >
+            {{
+              definition.policy.enabled ? "Выключить приём" : "Включить приём"
+            }}
+          </button>
+          <p v-if="isArchived">
+            Сначала восстановите событие. Восстановление не включает ingestion
+            автоматически.
+          </p>
+        </div>
       </section>
 
       <section
@@ -401,6 +889,11 @@ function errorMessage(cause: unknown, fallback: string) {
               Текущая структура данных события. Номер версии назначает Lola.
             </p>
           </div>
+          <EventDefinitionHistory
+            :project-id="definition.projectId"
+            :event="definition"
+            :initial-revision-id="linkedRevisionId"
+          />
         </div>
         <pre class="schema-preview"><code>{{ formattedSchema }}</code></pre>
       </section>
@@ -418,28 +911,212 @@ function errorMessage(cause: unknown, fallback: string) {
             <p>Сценарии, ожидания и черновики, связанные с этим событием.</p>
           </div>
         </div>
-        <p v-if="healthLoading" class="panel-state" aria-live="polite">
+        <p v-if="usageLoading" class="panel-state" aria-live="polite">
           Загружаем сведения…
         </p>
-        <p v-else-if="healthError" class="inline-message error" role="alert">
-          {{ healthError }}
+        <p v-else-if="usageError" class="inline-message error" role="alert">
+          {{ usageError }}
         </p>
-        <div v-else-if="health" class="usage-summary">
-          <div>
-            <strong>{{ health.consumers.length }}</strong
-            ><span>сценариев и правил</span>
+        <div v-else-if="usage" class="usage-content">
+          <div class="usage-summary">
+            <div>
+              <strong>{{ usage.scenarios.total }}</strong
+              ><span>сценариев</span>
+            </div>
+            <div>
+              <strong>{{ usage.activeWaitCount }}</strong
+              ><span>активных ожиданий</span>
+            </div>
+            <div>
+              <strong>{{ usage.scenarioDraftDependencyCount }}</strong
+              ><span>зависимостей в черновиках</span>
+            </div>
+            <div>
+              <strong>{{ usage.publishedScenarioRevisionCount }}</strong
+              ><span>опубликованных ревизий</span>
+            </div>
+            <div>
+              <strong>{{ usage.eventLogs.exists ? "Есть" : "Нет" }}</strong
+              ><span>Event Logs</span>
+            </div>
           </div>
-          <div>
-            <strong>{{ health.activeWaits.length }}</strong
-            ><span>активных ожиданий</span>
-          </div>
-          <div>
-            <strong>{{ health.drafts.length }}</strong
-            ><span>черновиков схемы</span>
-          </div>
+          <ul
+            v-if="usage.scenarios.items.length"
+            class="dependency-list"
+            aria-label="Сценарии, использующие событие"
+          >
+            <li
+              v-for="scenario in usage.scenarios.items"
+              :key="scenario.scenarioId"
+            >
+              <router-link
+                :to="{
+                  name: 'scenario-edit',
+                  params: { scenarioId: scenario.scenarioId },
+                }"
+                >{{ scenario.name }}</router-link
+              >
+              <span
+                >{{ scenario.status }} · {{ scenario.usages.join(", ") }}</span
+              >
+            </li>
+          </ul>
+          <router-link
+            :to="{ name: 'event-logs', query: { eventCode: definition.code } }"
+            class="usage-link"
+          >
+            Открыть Event Logs
+          </router-link>
         </div>
       </section>
     </template>
+
+    <Dialog
+      v-model:visible="disableDialogVisible"
+      modal
+      header="Выключить приём событий?"
+      :style="{ width: 'min(540px, 94vw)' }"
+    >
+      <p>
+        Новые события перестанут запускать и продвигать сценарии. Существующие
+        данные и само определение сохранятся.
+      </p>
+      <p v-if="usage">
+        <strong
+          >Связано сценариев: {{ usage.scenarios.total }}; активных ожиданий:
+          {{ usage.activeWaitCount }}.</strong
+        >
+      </p>
+      <template #footer>
+        <button
+          type="button"
+          class="secondary-button"
+          @click="disableDialogVisible = false"
+        >
+          Отмена
+        </button>
+        <button
+          type="button"
+          class="primary-button"
+          :disabled="mutationPending"
+          @click="applyPolicyChange(false)"
+        >
+          Выключить приём
+        </button>
+      </template>
+    </Dialog>
+
+    <Dialog
+      v-model:visible="archiveDialogVisible"
+      modal
+      header="Архивировать событие?"
+      :style="{ width: 'min(580px, 94vw)' }"
+    >
+      <p>
+        Событие исчезнет из активного каталога, приём новых событий будет
+        выключен. Event Logs и история схемы сохранятся.
+      </p>
+      <ul v-if="usage && !usage.canArchive" class="blocker-list" role="alert">
+        <li v-for="blocker in usage.archiveBlockers" :key="blocker">
+          {{ blockerLabel(blocker) }}
+        </li>
+      </ul>
+      <router-link
+        v-if="usage && usage.activeWaitCount > 0"
+        :to="{
+          name: 'operations',
+          query: {
+            section: 'runs',
+            eventDefinitionKeyId: definition?.definitionKeyId,
+          },
+        }"
+      >
+        Открыть активные ожидания
+      </router-link>
+      <label class="field" for="event-archive-reason"
+        ><span>Причина <small>необязательно</small></span
+        ><textarea
+          id="event-archive-reason"
+          v-model="archiveReason"
+          rows="3"
+          maxlength="500"
+        />
+      </label>
+      <template #footer>
+        <button
+          type="button"
+          class="secondary-button"
+          @click="archiveDialogVisible = false"
+        >
+          Отмена
+        </button>
+        <button
+          type="button"
+          class="primary-button"
+          :disabled="!usage?.canArchive || mutationPending"
+          @click="archiveDefinition"
+        >
+          Архивировать
+        </button>
+      </template>
+    </Dialog>
+
+    <Dialog
+      v-model:visible="deleteDialogVisible"
+      modal
+      header="Удалить событие навсегда?"
+      :style="{ width: 'min(600px, 94vw)' }"
+    >
+      <p>
+        Stable identity, черновики и все ревизии схемы будут физически удалены.
+        Это действие нельзя отменить.
+      </p>
+      <ul v-if="usage && !usage.canDelete" class="blocker-list" role="alert">
+        <li v-for="blocker in usage.deleteBlockers" :key="blocker">
+          {{ blockerLabel(blocker) }}
+        </li>
+      </ul>
+      <label class="field" for="event-delete-reason"
+        ><span>Причина удаления</span
+        ><textarea
+          id="event-delete-reason"
+          v-model="deleteReason"
+          rows="3"
+          maxlength="500"
+          required
+        />
+      </label>
+      <label class="field" for="event-delete-confirmation"
+        ><span
+          >Введите код <code>{{ definition?.code }}</code></span
+        ><input
+          id="event-delete-confirmation"
+          v-model="deleteConfirmation"
+          autocomplete="off"
+      /></label>
+      <template #footer>
+        <button
+          type="button"
+          class="secondary-button"
+          @click="deleteDialogVisible = false"
+        >
+          Отмена
+        </button>
+        <button
+          type="button"
+          class="danger-button"
+          :disabled="
+            !usage?.canDelete ||
+            deleteConfirmation !== definition?.code ||
+            !deleteReason.trim() ||
+            mutationPending
+          "
+          @click="deleteDefinition"
+        >
+          Удалить навсегда
+        </button>
+      </template>
+    </Dialog>
   </section>
 </template>
 
@@ -488,6 +1165,25 @@ function errorMessage(cause: unknown, fallback: string) {
   margin: 4px 0 9px;
   overflow-wrap: anywhere;
   font-size: clamp(2rem, 4vw, 4.2rem);
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lifecycle-badge {
+  border-radius: 999px;
+  background: var(--status-success-soft);
+  padding: 7px 10px;
+  color: var(--status-success-text);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.lifecycle-badge.archived {
+  background: var(--surface-active);
+  color: var(--text-secondary);
 }
 .identity-line {
   display: flex;
@@ -617,6 +1313,49 @@ function errorMessage(cause: unknown, fallback: string) {
 .usage-summary strong {
   margin-bottom: 5px;
   font: 800 1.8rem Manrope;
+}
+.usage-content {
+  display: grid;
+  gap: 16px;
+}
+.dependency-list,
+.blocker-list {
+  margin: 0;
+  padding-left: 20px;
+}
+.dependency-list li + li,
+.blocker-list li + li {
+  margin-top: 8px;
+}
+.dependency-list span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+}
+.blocker-list {
+  border-radius: 10px;
+  background: var(--status-danger-soft);
+  padding: 12px 16px 12px 34px;
+  color: var(--status-danger-text);
+  font-size: 0.75rem;
+}
+.usage-link {
+  justify-self: start;
+  color: var(--text-link);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.policy-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+.policy-actions p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
 }
 .schema-preview {
   max-height: 480px;
@@ -765,7 +1504,8 @@ function errorMessage(cause: unknown, fallback: string) {
   font-size: 0.7rem;
 }
 .primary-button,
-.secondary-button {
+.secondary-button,
+.danger-button {
   border: 0;
   border-radius: 9px;
   cursor: pointer;
@@ -776,13 +1516,19 @@ function errorMessage(cause: unknown, fallback: string) {
   background: var(--action-primary);
   color: var(--on-action-primary);
 }
-.primary-button:disabled {
+.primary-button:disabled,
+.secondary-button:disabled,
+.danger-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 .secondary-button {
   background: var(--surface-active);
   color: var(--text-primary);
+}
+.danger-button {
+  background: var(--status-danger);
+  color: var(--on-status-danger);
 }
 .read-only-note {
   margin: 18px 0 0;
@@ -834,6 +1580,10 @@ function errorMessage(cause: unknown, fallback: string) {
   .section-heading {
     flex-direction: column;
   }
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
   .workspace-navigation {
     display: flex;
     overflow-x: auto;
@@ -858,8 +1608,13 @@ function errorMessage(cause: unknown, fallback: string) {
     align-items: stretch;
     flex-direction: column;
   }
-  .primary-button {
+  .primary-button,
+  .danger-button {
     width: 100%;
+  }
+  .policy-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 </style>

@@ -9,6 +9,7 @@
     "api:generate": "orval --config orval.config.ts",
     "api:update": "npm run api:fetch && npm run api:generate",
     "dev": "vite",
+    "preview": "vite preview",
     "build": "vue-tsc -b && vite build",
     "typecheck": "vue-tsc -b",
     "lint": "eslint . --max-warnings=0",

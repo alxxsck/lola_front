@@ -21,6 +21,7 @@ export interface LegacyEventLogResponseDto {
   error?: string | null;
   eventDefinition: LegacyEventDefinitionResponseDto;
   eventDefinitionId: string;
+  eventDefinitionKeyId: string;
   /** @nullable */
   externalEventId?: string | null;
   id: string;

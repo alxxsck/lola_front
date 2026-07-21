@@ -6,12 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ScenarioRunsPageParams = {
+export type EventCatalogDeleteEventDefinitionParams = {
   /**
    * @minimum 1
-   * @maximum 100
    */
-  limit?: number;
-  cursor?: string;
-  eventDefinitionKeyId?: string;
+  expectedLifecycleVersion: number;
+  /**
+   * @minimum 1
+   */
+  expectedPolicyVersion: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
 };

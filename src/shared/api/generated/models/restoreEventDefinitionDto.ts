@@ -6,4 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type UpdateEventDefinitionDtoPayloadSchema = { [key: string]: unknown };
+export interface RestoreEventDefinitionDto {
+  /** @minimum 1 */
+  expectedLifecycleVersion: number;
+  /** @maxLength 500 */
+  reason?: string;
+}

@@ -2017,6 +2017,27 @@
         ],
         "type": "object"
       },
+      "ArchiveEventDefinitionDto": {
+        "properties": {
+          "expectedLifecycleVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedPolicyVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedLifecycleVersion",
+          "expectedPolicyVersion"
+        ],
+        "type": "object"
+      },
       "AttributeClassification": {
         "enum": [
           "INTERNAL",
@@ -5826,7 +5847,6 @@
           },
           "countsAsActivity": {
             "default": false,
-            "description": "Whether a valid frontend occurrence extends Visit and Activity Day.",
             "type": "boolean"
           },
           "description": {
@@ -5844,10 +5864,6 @@
           "payloadSchema": {
             "additionalProperties": true,
             "type": "object"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
           }
         },
         "required": [
@@ -6896,6 +6912,119 @@
         ],
         "type": "object"
       },
+      "EventDefinitionCatalogResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "currentRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventDefinitionCurrentRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable Event Definition Key ID.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "lifecycle": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventDefinitionLifecycle"
+              }
+            ]
+          },
+          "lifecycleUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lifecycleVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "metadataUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventDefinitionOrigin"
+              }
+            ]
+          },
+          "policy": {
+            "$ref": "#/components/schemas/EventIngestionPolicyResponseDto"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "readOnly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "code",
+          "name",
+          "description",
+          "origin",
+          "lifecycle",
+          "lifecycleVersion",
+          "lifecycleUpdatedAt",
+          "metadataUpdatedAt",
+          "policy",
+          "currentRevision",
+          "readOnly"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionCurrentRevisionResponseDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "number": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "payloadSchema": {
+            "type": "object"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "payloadSchema",
+          "publishedAt"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionLifecycle": {
+        "enum": [
+          "ACTIVE",
+          "ARCHIVED"
+        ],
+        "type": "string"
+      },
       "EventDefinitionMetadataMutationResponseDto": {
         "properties": {
           "code": {
@@ -7061,19 +7190,17 @@
           "nextCursor": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           }
         },
         "required": [
-          "items"
+          "items",
+          "nextCursor"
         ],
         "type": "object"
       },
       "EventDefinitionRevisionResponseDto": {
         "properties": {
-          "clientIngestible": {
-            "type": "boolean"
-          },
           "code": {
             "type": "string"
           },
@@ -7085,28 +7212,9 @@
             ],
             "type": "string"
           },
-          "countsAsActivity": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "currentRevisionId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "object"
-          },
           "definitionKeyId": {
             "format": "uuid",
             "type": "string"
-          },
-          "description": {
-            "nullable": true,
-            "type": "object"
-          },
-          "enabled": {
-            "type": "boolean"
           },
           "id": {
             "format": "uuid",
@@ -7115,72 +7223,192 @@
           "isCurrent": {
             "type": "boolean"
           },
-          "metadataUpdatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "origin": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/EventDefinitionOrigin"
-              }
-            ]
+          "number": {
+            "minimum": 1,
+            "type": "number"
           },
           "payloadSchema": {
-            "additionalProperties": true,
             "type": "object"
           },
           "pinnedScenarioRevisionCount": {
             "minimum": 0,
             "type": "number"
           },
-          "policyUpdatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "policyVersion": {
-            "minimum": 1,
-            "type": "number"
-          },
           "projectId": {
             "format": "uuid",
             "type": "string"
           },
-          "readOnly": {
-            "type": "boolean"
-          },
-          "updatedAt": {
+          "publishedAt": {
             "format": "date-time",
             "type": "string"
-          },
-          "version": {
-            "type": "number"
           }
         },
         "required": [
           "id",
           "projectId",
-          "code",
-          "name",
-          "version",
-          "payloadSchema",
-          "enabled",
-          "clientIngestible",
-          "countsAsActivity",
-          "policyVersion",
-          "policyUpdatedAt",
-          "metadataUpdatedAt",
           "definitionKeyId",
-          "isCurrent",
-          "origin",
-          "readOnly",
-          "createdAt",
-          "updatedAt",
+          "code",
+          "number",
+          "payloadSchema",
+          "publishedAt",
           "pinnedScenarioRevisionCount",
-          "compatibility"
+          "compatibility",
+          "isCurrent"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionUsageEventLogsResponseDto": {
+        "properties": {
+          "exists": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "exists"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionUsageResponseDto": {
+        "properties": {
+          "activeWaitCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "archiveBlockers": {
+            "items": {
+              "enum": [
+                "SCENARIO_DEPENDENCIES",
+                "ACTIVE_WAITS"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "canArchive": {
+            "type": "boolean"
+          },
+          "canDelete": {
+            "type": "boolean"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "deleteBlockers": {
+            "items": {
+              "enum": [
+                "SCENARIO_DEPENDENCIES",
+                "ACTIVE_WAITS",
+                "EVENT_LOGS"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "eventLogs": {
+            "$ref": "#/components/schemas/EventDefinitionUsageEventLogsResponseDto"
+          },
+          "lifecycleVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "policyVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "publishedScenarioRevisionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "scenarioDraftDependencyCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "scenarios": {
+            "$ref": "#/components/schemas/EventDefinitionUsageScenarioPageResponseDto"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "evaluatedAt",
+          "lifecycleVersion",
+          "policyVersion",
+          "eventLogs",
+          "scenarios",
+          "scenarioDraftDependencyCount",
+          "publishedScenarioRevisionCount",
+          "activeWaitCount",
+          "canArchive",
+          "canDelete",
+          "archiveBlockers",
+          "deleteBlockers"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionUsageScenarioPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EventDefinitionUsageScenarioResponseDto"
+            },
+            "type": "array"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "total",
+          "items",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "EventDefinitionUsageScenarioResponseDto": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "usages": {
+            "items": {
+              "enum": [
+                "TRIGGER",
+                "RULE",
+                "GOAL",
+                "AGGREGATE",
+                "TEMPLATE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "scenarioId",
+          "name",
+          "status",
+          "usages"
         ],
         "type": "object"
       },
@@ -7481,6 +7709,10 @@
             "format": "uuid",
             "type": "string"
           },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "externalEventId": {
             "nullable": true,
             "type": "string"
@@ -7533,6 +7765,7 @@
           "id",
           "projectId",
           "eventDefinitionId",
+          "eventDefinitionKeyId",
           "endUserId",
           "source",
           "payload",
@@ -8862,6 +9095,10 @@
             "format": "uuid",
             "type": "string"
           },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "externalEventId": {
             "nullable": true,
             "type": "string"
@@ -8914,6 +9151,7 @@
           "id",
           "projectId",
           "eventDefinitionId",
+          "eventDefinitionKeyId",
           "endUserId",
           "source",
           "payload",
@@ -10696,6 +10934,22 @@
         },
         "required": [
           "title"
+        ],
+        "type": "object"
+      },
+      "RestoreEventDefinitionDto": {
+        "properties": {
+          "expectedLifecycleVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedLifecycleVersion"
         ],
         "type": "object"
       },
@@ -14404,32 +14658,6 @@
         ],
         "type": "object"
       },
-      "UpdateEventDefinitionDto": {
-        "properties": {
-          "clientIngestible": {
-            "type": "boolean"
-          },
-          "countsAsActivity": {
-            "type": "boolean"
-          },
-          "description": {
-            "maxLength": 2000,
-            "type": "string"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "name": {
-            "maxLength": 120,
-            "type": "string"
-          },
-          "payloadSchema": {
-            "additionalProperties": true,
-            "type": "object"
-          }
-        },
-        "type": "object"
-      },
       "UpdateEventDefinitionMetadataDto": {
         "properties": {
           "description": {
@@ -16996,6 +17224,408 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions": {
+      "get": {
+        "operationId": "EventCatalog_listEventDefinitions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lifecycle",
+            "required": false,
+            "schema": {
+              "default": "ACTIVE",
+              "enum": [
+                "ACTIVE",
+                "ARCHIVED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventDefinitionCatalogResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      },
+      "post": {
+        "operationId": "EventCatalog_createEventDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}": {
+      "delete": {
+        "operationId": "EventCatalog_deleteEventDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedLifecycleVersion",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedPolicyVersion",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "required": true,
+            "schema": {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Stable Event Definition was physically deleted."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      },
+      "get": {
+        "operationId": "EventCatalog_getEventDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/archive": {
+      "post": {
+        "operationId": "EventCatalog_archiveEventDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveEventDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/metadata": {
       "patch": {
         "operationId": "EventCatalog_updateMetadata",
@@ -17116,6 +17746,263 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EventIngestionPolicyMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/restore": {
+      "post": {
+        "operationId": "EventCatalog_restoreEventDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreEventDefinitionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/revisions": {
+      "get": {
+        "operationId": "EventCatalog_eventDefinitionRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionRevisionPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/revisions/{revisionId}": {
+      "get": {
+        "operationId": "EventCatalog_eventDefinitionRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionRevisionResponseDto"
                 }
               }
             },
@@ -17411,6 +18298,79 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/usage": {
+      "get": {
+        "operationId": "EventCatalog_eventDefinitionUsage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDefinitionUsageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/event-catalog/health": {
       "get": {
         "operationId": "EventCatalog_projectHealth",
@@ -17473,301 +18433,6 @@
         ],
         "tags": [
           "event catalog"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/event-definition-keys/{definitionKeyId}/revisions": {
-      "get": {
-        "operationId": "Platform_eventDefinitionRevisions",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "definitionKeyId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "type": "number"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cursor",
-            "required": false,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventDefinitionRevisionPageResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/event-definition-keys/{definitionKeyId}/revisions/{revisionId}": {
-      "get": {
-        "operationId": "Platform_eventDefinitionRevision",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "definitionKeyId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "revisionId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventDefinitionRevisionResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/event-definitions": {
-      "get": {
-        "operationId": "Platform_eventDefinitions",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/EventDefinitionResponseDto"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin"
-        ]
-      },
-      "post": {
-        "operationId": "Platform_createEventDefinition",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateEventDefinitionDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventDefinitionResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/event-definitions/{id}": {
-      "delete": {
-        "operationId": "Platform_deleteEventDefinition",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventDefinitionResponseDto"
-                }
-              }
-            },
-            "description": ""
-          },
-          "409": {
-            "description": "EVENT_DEFINITION_IN_USE: scenarios or historical event logs reference the definition"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin"
-        ]
-      },
-      "patch": {
-        "operationId": "Platform_updateEventDefinition",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEventDefinitionDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventDefinitionResponseDto"
-                }
-              }
-            },
-            "description": ""
-          },
-          "409": {
-            "description": "EVENT_SCHEMA_BREAKS_SCENARIOS: the new schema invalidates conditions or templates in stored scenarios"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin"
         ]
       }
     },
@@ -20491,6 +21156,15 @@
           {
             "in": "query",
             "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventDefinitionKeyId",
             "required": false,
             "schema": {
               "format": "uuid",

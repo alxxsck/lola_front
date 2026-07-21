@@ -133,18 +133,67 @@ const requiredOperations = new Map([
     { label: "cursor-paginated users", response: "EndUserPageResponseDto" },
   ],
   [
-    "Platform_eventDefinitionRevisions",
+    "EventCatalog_eventDefinitionRevisions",
     {
       label: "event definition revision history",
       response: "EventDefinitionRevisionPageResponseDto",
     },
   ],
   [
-    "Platform_eventDefinitionRevision",
+    "EventCatalog_eventDefinitionRevision",
     {
       label: "event definition revision detail",
       response: "EventDefinitionRevisionResponseDto",
     },
+  ],
+  [
+    "EventCatalog_listEventDefinitions",
+    {
+      label: "stable event definition catalog",
+      response: "EventDefinitionCatalogResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_createEventDefinition",
+    {
+      label: "stable event definition creation",
+      request: "CreateEventDefinitionDto",
+      response: "EventDefinitionCatalogResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_getEventDefinition",
+    {
+      label: "stable event definition detail",
+      response: "EventDefinitionCatalogResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_eventDefinitionUsage",
+    {
+      label: "event lifecycle usage",
+      response: "EventDefinitionUsageResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_archiveEventDefinition",
+    {
+      label: "event definition archive",
+      request: "ArchiveEventDefinitionDto",
+      response: "EventDefinitionCatalogResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_restoreEventDefinition",
+    {
+      label: "event definition restore",
+      request: "RestoreEventDefinitionDto",
+      response: "EventDefinitionCatalogResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_deleteEventDefinition",
+    { label: "event definition hard delete" },
   ],
   [
     "EventCatalog_updateMetadata",
@@ -1109,13 +1158,46 @@ requireSchemaProperties("EventDefinitionResponseDto", [
   "readOnly",
 ]);
 requireSchemaProperties("EventDefinitionRevisionResponseDto", [
+  "id",
+  "projectId",
   "definitionKeyId",
-  "currentRevisionId",
+  "code",
+  "number",
+  "payloadSchema",
+  "publishedAt",
   "isCurrent",
-  "origin",
-  "readOnly",
   "compatibility",
   "pinnedScenarioRevisionCount",
+]);
+requireSchemaProperties("EventDefinitionCatalogResponseDto", [
+  "id",
+  "projectId",
+  "code",
+  "name",
+  "description",
+  "origin",
+  "lifecycle",
+  "lifecycleVersion",
+  "lifecycleUpdatedAt",
+  "metadataUpdatedAt",
+  "policy",
+  "currentRevision",
+  "readOnly",
+]);
+requireSchemaProperties("EventDefinitionUsageResponseDto", [
+  "definitionKeyId",
+  "evaluatedAt",
+  "lifecycleVersion",
+  "policyVersion",
+  "eventLogs",
+  "scenarios",
+  "scenarioDraftDependencyCount",
+  "publishedScenarioRevisionCount",
+  "activeWaitCount",
+  "canArchive",
+  "canDelete",
+  "archiveBlockers",
+  "deleteBlockers",
 ]);
 requireSchemaProperties("ActivitySettingsResponseDto", [
   "timezone",
@@ -1143,12 +1225,10 @@ requireDiscriminatedUnion("PublishScenarioDto", "deliveryPolicy", "kind", [
   "WaitUntilOnlineDeliveryPolicyDto",
 ]);
 
-for (const schemaName of [
-  "CreateEventDefinitionDto",
-  "UpdateEventDefinitionDto",
-]) {
-  requireSchemaProperties(schemaName, ["countsAsActivity", "payloadSchema"]);
-}
+requireSchemaProperties("CreateEventDefinitionDto", [
+  "countsAsActivity",
+  "payloadSchema",
+]);
 
 console.log(
   `OpenAPI contract check passed (${requiredOperations.size} required operations)`,

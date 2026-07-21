@@ -6,36 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EventDefinitionRevisionResponseDtoCompatibility } from "./eventDefinitionRevisionResponseDtoCompatibility";
-import type { EventDefinitionRevisionResponseDtoCurrentRevisionId } from "./eventDefinitionRevisionResponseDtoCurrentRevisionId";
-import type { EventDefinitionRevisionResponseDtoDescription } from "./eventDefinitionRevisionResponseDtoDescription";
-import type { EventDefinitionOrigin } from "./eventDefinitionOrigin";
 import type { EventDefinitionRevisionResponseDtoPayloadSchema } from "./eventDefinitionRevisionResponseDtoPayloadSchema";
 
 export interface EventDefinitionRevisionResponseDto {
-  clientIngestible: boolean;
   code: string;
   compatibility: EventDefinitionRevisionResponseDtoCompatibility;
-  countsAsActivity: boolean;
-  createdAt: string;
-  /** @nullable */
-  currentRevisionId?: EventDefinitionRevisionResponseDtoCurrentRevisionId;
   definitionKeyId: string;
-  /** @nullable */
-  description?: EventDefinitionRevisionResponseDtoDescription;
-  enabled: boolean;
   id: string;
   isCurrent: boolean;
-  metadataUpdatedAt: string;
-  name: string;
-  origin: EventDefinitionOrigin;
+  /** @minimum 1 */
+  number: number;
   payloadSchema: EventDefinitionRevisionResponseDtoPayloadSchema;
   /** @minimum 0 */
   pinnedScenarioRevisionCount: number;
-  policyUpdatedAt: string;
-  /** @minimum 1 */
-  policyVersion: number;
   projectId: string;
-  readOnly: boolean;
-  updatedAt: string;
-  version: number;
+  publishedAt: string;
 }

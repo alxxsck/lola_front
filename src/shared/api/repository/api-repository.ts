@@ -1,21 +1,16 @@
 import {
-  platformCreateEventDefinition,
   platformCreateMember,
   platformCreateScenario,
   platformCreateUi,
-  platformDeleteEventDefinition,
   platformDeleteMember,
   platformDeleteScenario,
   platformDeleteUi,
-  platformEventDefinitions,
-  platformEventDefinitionRevisions,
-  platformEventDefinitionRevision,
+  eventCatalogListEventDefinitions,
   platformGetProject,
   platformMembers,
   platformScenarios,
   platformActionDefinitions,
   platformUiElements,
-  platformUpdateEventDefinition,
   platformUpdateProject,
   platformUpdateScenario,
   platformUpdateUi,
@@ -43,22 +38,26 @@ import {
   conversationAISuspensionsExtend,
   conversationAISuspensionsResume,
   conversationAISuspensionsHistory,
-} from '@/shared/api/generated/lola-backend'
-import type { ScenarioResponseDto } from '@/shared/api/generated/models'
-import { toCreateScenarioDto, toUpdateScenarioDto, toUpdateScenarioMetadataDto } from './scenario-contract'
-import type { Scenario } from '@/shared/types/domain'
-import type { LolaRepository, RepositoryCapabilities } from './contracts'
-import { UnsupportedRepositoryCapabilityError } from './contracts'
+} from "@/shared/api/generated/lola-backend";
+import type {
+  EventDefinitionCatalogResponseDto,
+  ScenarioResponseDto,
+} from "@/shared/api/generated/models";
+import {
+  toCreateScenarioDto,
+  toUpdateScenarioDto,
+  toUpdateScenarioMetadataDto,
+} from "./scenario-contract";
+import type { Scenario } from "@/shared/types/domain";
+import type { LolaRepository, RepositoryCapabilities } from "./contracts";
+import { UnsupportedRepositoryCapabilityError } from "./contracts";
 import {
   mapEndUser,
   mapEventDefinition,
-  mapEventDefinitionRevision,
   mapProject,
   mapProjectMember,
   mapUiElement,
-  toCreateEventDefinitionDto,
   toCreateUiElementDto,
-  toUpdateEventDefinitionDto,
   toUpdateProjectDto,
   toUpdateUiElementDto,
   mapAuditLog,
@@ -71,7 +70,7 @@ import {
   mapUserAttributeSchema,
   mapUserAttributeMutation,
   mapConversationAISuspensionDetail,
-} from './mappers'
+} from "./mappers";
 
 const capabilities: RepositoryCapabilities = {
   projectSettings: true,
@@ -89,14 +88,16 @@ const capabilities: RepositoryCapabilities = {
   auditLogs: true,
   adminMessaging: true,
   userAttributes: true,
-}
+};
 
 function unsupported(capability: keyof RepositoryCapabilities): never {
-  throw new UnsupportedRepositoryCapabilityError(capability)
+  throw new UnsupportedRepositoryCapabilityError(capability);
 }
 
-const optionalString = (value: unknown): string | undefined => typeof value === 'string' ? value : undefined
-const optionalNumber = (value: unknown): number | undefined => typeof value === 'number' ? value : undefined
+const optionalString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+const optionalNumber = (value: unknown): number | undefined =>
+  typeof value === "number" ? value : undefined;
 
 function mapScenario(dto: ScenarioResponseDto): Scenario {
   return {
@@ -106,239 +107,373 @@ function mapScenario(dto: ScenarioResponseDto): Scenario {
     name: dto.name,
     description: optionalString(dto.description),
     eventDefinitionId: dto.eventDefinitionId,
-    eventDefinition: dto.eventDefinition ? mapEventDefinition(dto.eventDefinition) : undefined,
+    eventDefinition: dto.eventDefinition
+      ? mapEventDefinition(dto.eventDefinition)
+      : undefined,
     status: dto.status,
     conversationPolicy: dto.conversationPolicy,
     priority: dto.priority,
-    conditions: Array.isArray(dto.conditions) ? dto.conditions as unknown as Scenario['conditions'] : [],
+    conditions: Array.isArray(dto.conditions)
+      ? (dto.conditions as unknown as Scenario["conditions"])
+      : [],
     cooldownSeconds: dto.cooldownSeconds,
     maxRunsPerUser: optionalNumber(dto.maxRunsPerUser),
     activeFrom: optionalString(dto.activeFrom),
     activeTo: optionalString(dto.activeTo),
-    actions: dto.actions as unknown as Scenario['actions'],
+    actions: dto.actions as unknown as Scenario["actions"],
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
-  }
+  };
+}
+
+function mapCatalogEvent(dto: EventDefinitionCatalogResponseDto) {
+  if (!dto.currentRevision)
+    throw new Error(`Event Definition ${dto.id} has no current revision`);
+  return {
+    id: dto.currentRevision.id,
+    projectId: dto.projectId,
+    definitionKeyId: dto.id,
+    currentRevisionId: dto.currentRevision.id,
+    isCurrent: true,
+    code: dto.code,
+    name: dto.name,
+    description: dto.description ?? undefined,
+    version: dto.currentRevision.number,
+    payloadSchema: dto.currentRevision.payloadSchema,
+    enabled: dto.policy.enabled,
+    clientIngestible: dto.policy.clientIngestible,
+    countsAsActivity: dto.policy.countsAsActivity,
+    policyVersion: dto.policy.version,
+    policyUpdatedAt: dto.policy.updatedAt,
+    metadataUpdatedAt: dto.metadataUpdatedAt,
+    origin: dto.origin,
+    readOnly: dto.readOnly,
+    createdAt: dto.currentRevision.publishedAt,
+    updatedAt: dto.lifecycleUpdatedAt,
+  };
 }
 
 export const apiRepository: LolaRepository = {
-  mode: 'api',
+  mode: "api",
   capabilities,
 
   async getProject(projectId) {
-    return mapProject(await platformGetProject(projectId))
+    return mapProject(await platformGetProject(projectId));
   },
 
   async updateProject(projectId, patch) {
-    return mapProject(await platformUpdateProject(projectId, toUpdateProjectDto(patch)))
+    return mapProject(
+      await platformUpdateProject(projectId, toUpdateProjectDto(patch)),
+    );
   },
 
   async getMembers(projectId) {
-    return (await platformMembers(projectId)).map(mapProjectMember)
+    return (await platformMembers(projectId)).map(mapProjectMember);
   },
 
   async createMember(projectId, member) {
-    return mapProjectMember(await platformCreateMember(projectId, member))
+    return mapProjectMember(await platformCreateMember(projectId, member));
   },
 
   async deleteMember(projectId, memberId) {
-    await platformDeleteMember(projectId, memberId)
+    await platformDeleteMember(projectId, memberId);
   },
 
   async getElements(projectId) {
-    return (await platformUiElements(projectId)).map(mapUiElement)
+    return (await platformUiElements(projectId)).map(mapUiElement);
   },
 
   async createElement(projectId, value) {
-    return mapUiElement(await platformCreateUi(projectId, toCreateUiElementDto(value)))
+    return mapUiElement(
+      await platformCreateUi(projectId, toCreateUiElementDto(value)),
+    );
   },
 
   async updateElement(projectId, id, value) {
-    return mapUiElement(await platformUpdateUi(projectId, id, toUpdateUiElementDto(value)))
+    return mapUiElement(
+      await platformUpdateUi(projectId, id, toUpdateUiElementDto(value)),
+    );
   },
 
   async deleteElement(projectId, id) {
-    await platformDeleteUi(projectId, id)
+    await platformDeleteUi(projectId, id);
   },
 
   async getEvents(projectId) {
-    return (await platformEventDefinitions(projectId)).map(mapEventDefinition)
-  },
-
-  async getEventDefinitionRevisions(projectId, definitionKeyId, request) {
-    const response = await platformEventDefinitionRevisions(projectId, definitionKeyId, request)
-    return { items: response.items.map(mapEventDefinitionRevision), nextCursor: optionalString(response.nextCursor) ?? null }
-  },
-
-  async getEventDefinitionRevision(projectId, definitionKeyId, revisionId) {
-    return mapEventDefinitionRevision(await platformEventDefinitionRevision(projectId, definitionKeyId, revisionId))
-  },
-
-  async saveEvent(projectId, value) {
-    const dto = value.id
-      ? await platformUpdateEventDefinition(projectId, value.id, toUpdateEventDefinitionDto(value))
-      : await platformCreateEventDefinition(projectId, toCreateEventDefinitionDto(value))
-    return mapEventDefinition(dto)
-  },
-
-  async deleteEvent(projectId, id) {
-    await platformDeleteEventDefinition(projectId, id)
+    return (
+      await eventCatalogListEventDefinitions(projectId, { lifecycle: "ACTIVE" })
+    ).map(mapCatalogEvent);
   },
 
   async getUserAttributeSchema(projectId) {
-    return mapUserAttributeSchema(await platformUserAttributeDefinitions(projectId))
+    return mapUserAttributeSchema(
+      await platformUserAttributeDefinitions(projectId),
+    );
   },
 
   async createUserAttributeDefinition(projectId, value) {
-    return mapUserAttributeMutation(await platformCreateUserAttributeDefinition(projectId, { ...value, validation: value.validation ? { ...value.validation } : undefined }))
+    return mapUserAttributeMutation(
+      await platformCreateUserAttributeDefinition(projectId, {
+        ...value,
+        validation: value.validation ? { ...value.validation } : undefined,
+      }),
+    );
   },
 
   async updateUserAttributeDefinition(projectId, id, value) {
-    return mapUserAttributeMutation(await platformUpdateUserAttributeDefinition(projectId, id, { ...value, validation: value.validation ? { ...value.validation } : undefined }))
+    return mapUserAttributeMutation(
+      await platformUpdateUserAttributeDefinition(projectId, id, {
+        ...value,
+        validation: value.validation ? { ...value.validation } : undefined,
+      }),
+    );
   },
 
   async deleteUserAttributeDefinition(projectId, id) {
-    return mapUserAttributeMutation(await platformDeleteUserAttributeDefinition(projectId, id))
+    return mapUserAttributeMutation(
+      await platformDeleteUserAttributeDefinition(projectId, id),
+    );
   },
 
   async getScenarios(projectId) {
-    return (await platformScenarios(projectId)).map(mapScenario)
+    return (await platformScenarios(projectId)).map(mapScenario);
   },
 
   async getActionDefinitions(projectId) {
-    return (await platformActionDefinitions(projectId)).map(mapActionDefinition)
+    return (await platformActionDefinitions(projectId)).map(
+      mapActionDefinition,
+    );
   },
 
   async saveScenario(projectId, value) {
     const dto = value.id
-      ? await platformUpdateScenario(projectId, value.id, toUpdateScenarioDto(value))
-      : await platformCreateScenario(projectId, toCreateScenarioDto(value))
-    return mapScenario(dto)
+      ? await platformUpdateScenario(
+          projectId,
+          value.id,
+          toUpdateScenarioDto(value),
+        )
+      : await platformCreateScenario(projectId, toCreateScenarioDto(value));
+    return mapScenario(dto);
   },
 
   async updateScenarioMetadata(projectId, scenarioId, value) {
-    return mapScenario(await platformUpdateScenario(projectId, scenarioId, toUpdateScenarioMetadataDto(value)))
+    return mapScenario(
+      await platformUpdateScenario(
+        projectId,
+        scenarioId,
+        toUpdateScenarioMetadataDto(value),
+      ),
+    );
   },
 
   async deleteScenario(projectId, id) {
-    await platformDeleteScenario(projectId, id)
+    await platformDeleteScenario(projectId, id);
   },
 
   async getUsers(projectId) {
-    return (await platformUsers(projectId)).map(mapEndUser)
+    return (await platformUsers(projectId)).map(mapEndUser);
   },
 
   async getUsersPage(projectId, request) {
-    const response = await platformUsersPage(projectId, request)
-    return { items: response.items.map(mapEndUser), nextCursor: optionalString(response.nextCursor) ?? null }
+    const response = await platformUsersPage(projectId, request);
+    return {
+      items: response.items.map(mapEndUser),
+      nextCursor: optionalString(response.nextCursor) ?? null,
+    };
   },
 
   async getSessions(projectId) {
-    return (await presenceList(projectId)).flatMap(mapActiveSessions)
+    return (await presenceList(projectId)).flatMap(mapActiveSessions);
   },
-  async getActivity() { return unsupported('activity') },
+  async getActivity() {
+    return unsupported("activity");
+  },
   async getConversations(projectId, userId, request) {
     const response = await adminConversationsList(projectId, userId, {
       limit: request?.limit ?? 30,
       ...(request?.cursor ? { cursor: request.cursor } : {}),
-    })
-    return { items: response.items.map(mapConversation), nextCursor: response.nextCursor ?? null }
+    });
+    return {
+      items: response.items.map(mapConversation),
+      nextCursor: response.nextCursor ?? null,
+    };
   },
   async getConversation(projectId, userId, conversationId) {
-    return mapConversation(await adminConversationsGet(projectId, userId, conversationId))
+    return mapConversation(
+      await adminConversationsGet(projectId, userId, conversationId),
+    );
   },
   async getMessages(projectId, userId, conversationId, request) {
-    const response = await adminConversationsListMessages(projectId, userId, conversationId, {
-      limit: request?.limit ?? 50,
-      ...(request?.cursor ? { cursor: request.cursor } : {}),
-    })
-    return { items: response.items.map(mapConversationMessage), nextCursor: response.nextCursor ?? null }
+    const response = await adminConversationsListMessages(
+      projectId,
+      userId,
+      conversationId,
+      {
+        limit: request?.limit ?? 50,
+        ...(request?.cursor ? { cursor: request.cursor } : {}),
+      },
+    );
+    return {
+      items: response.items.map(mapConversationMessage),
+      nextCursor: response.nextCursor ?? null,
+    };
   },
   async getConversationAISuspension(projectId, endUserId, conversationId) {
     return mapConversationAISuspensionDetail(
       await conversationAISuspensionsGet(projectId, endUserId, conversationId),
-    )
+    );
   },
-  async startConversationAISuspension(projectId, endUserId, conversationId, command, idempotencyKey) {
-    const response = await conversationAISuspensionsStart(projectId, endUserId, conversationId, command, {
-      headers: { 'Idempotency-Key': idempotencyKey },
-    })
-    return { ...response, state: mapConversationAISuspensionDetail(response.state) }
+  async startConversationAISuspension(
+    projectId,
+    endUserId,
+    conversationId,
+    command,
+    idempotencyKey,
+  ) {
+    const response = await conversationAISuspensionsStart(
+      projectId,
+      endUserId,
+      conversationId,
+      command,
+      {
+        headers: { "Idempotency-Key": idempotencyKey },
+      },
+    );
+    return {
+      ...response,
+      state: mapConversationAISuspensionDetail(response.state),
+    };
   },
-  async extendConversationAISuspension(projectId, endUserId, conversationId, command, idempotencyKey) {
-    const response = await conversationAISuspensionsExtend(projectId, endUserId, conversationId, command, {
-      headers: { 'Idempotency-Key': idempotencyKey },
-    })
-    return { ...response, state: mapConversationAISuspensionDetail(response.state) }
+  async extendConversationAISuspension(
+    projectId,
+    endUserId,
+    conversationId,
+    command,
+    idempotencyKey,
+  ) {
+    const response = await conversationAISuspensionsExtend(
+      projectId,
+      endUserId,
+      conversationId,
+      command,
+      {
+        headers: { "Idempotency-Key": idempotencyKey },
+      },
+    );
+    return {
+      ...response,
+      state: mapConversationAISuspensionDetail(response.state),
+    };
   },
-  async resumeConversationAI(projectId, endUserId, conversationId, command, idempotencyKey) {
-    const response = await conversationAISuspensionsResume(projectId, endUserId, conversationId, command, {
-      headers: { 'Idempotency-Key': idempotencyKey },
-    })
-    return { ...response, state: mapConversationAISuspensionDetail(response.state) }
+  async resumeConversationAI(
+    projectId,
+    endUserId,
+    conversationId,
+    command,
+    idempotencyKey,
+  ) {
+    const response = await conversationAISuspensionsResume(
+      projectId,
+      endUserId,
+      conversationId,
+      command,
+      {
+        headers: { "Idempotency-Key": idempotencyKey },
+      },
+    );
+    return {
+      ...response,
+      state: mapConversationAISuspensionDetail(response.state),
+    };
   },
-  async getConversationAISuspensionHistory(projectId, endUserId, conversationId, request) {
-    const response = await conversationAISuspensionsHistory(projectId, endUserId, conversationId, request)
-    return { items: response.items, nextCursor: response.nextCursor ?? null }
+  async getConversationAISuspensionHistory(
+    projectId,
+    endUserId,
+    conversationId,
+    request,
+  ) {
+    const response = await conversationAISuspensionsHistory(
+      projectId,
+      endUserId,
+      conversationId,
+      request,
+    );
+    return { items: response.items, nextCursor: response.nextCursor ?? null };
   },
-  async sendAction() { return unsupported('manualActions') },
+  async sendAction() {
+    return unsupported("manualActions");
+  },
 
   async getEventLogs(projectId, request) {
-    const response = await eventsList(projectId, request)
+    const response = await eventsList(projectId, request);
     return {
       items: response.items.map(mapEventLog),
       pagination: response.pagination,
-    }
+    };
   },
 
   async getEventLogPage(projectId, filters) {
-    const response = await adminEventLogsList(projectId, filters, { paramsSerializer: { indexes: null } })
+    const response = await adminEventLogsList(projectId, filters, {
+      paramsSerializer: { indexes: null },
+    });
     return {
       items: response.items.map(mapEventLog),
       nextCursor: response.pageInfo.nextCursor ?? null,
-    }
+    };
   },
 
   async getEventLog(projectId, eventId) {
-    return mapEventLog(await adminEventLogsGet(projectId, eventId))
+    return mapEventLog(await adminEventLogsGet(projectId, eventId));
   },
 
   async getScenarioRuns(projectId) {
-    return (await scenarioRunsList(projectId)).map(mapScenarioRun)
+    return (await scenarioRunsList(projectId)).map(mapScenarioRun);
   },
 
   async getScenarioRunsPage(projectId, request) {
-    const response = await scenarioRunsPage(projectId, request)
-    return { items: response.items.map(mapScenarioRun), nextCursor: response.nextCursor ?? null }
+    const response = await scenarioRunsPage(projectId, request);
+    return {
+      items: response.items.map(mapScenarioRun),
+      nextCursor: response.nextCursor ?? null,
+    };
   },
 
   async getActivitySettings(projectId) {
-    return platformActivitySettings(projectId)
+    return platformActivitySettings(projectId);
   },
 
   async updateActivitySettings(projectId, value) {
-    return platformUpdateActivitySettings(projectId, value)
+    return platformUpdateActivitySettings(projectId, value);
   },
 
   async getAuditLogs(projectId) {
-    return (await auditList(projectId)).map(mapAuditLog)
+    return (await auditList(projectId)).map(mapAuditLog);
   },
 
   async sendAdminMessage(projectId, userId, message) {
     if (message.actions?.length && !message.interactionSessionId) {
-      throw new Error('Для отправки действий нужна активная сессия пользователя')
+      throw new Error(
+        "Для отправки действий нужна активная сессия пользователя",
+      );
     }
-    if ((message.actions?.length ?? 0) > 5) throw new Error('Можно отправить не более 5 действий')
-    const idempotencyKey = message.idempotencyKey ?? globalThis.crypto.randomUUID()
-    const response = await adminMessagingSend(projectId, userId, {
-      text: message.text,
-      ...(message.conversationId
-        ? { conversationId: message.conversationId }
-        : { conversationPolicy: message.conversationPolicy }),
-      interactionSessionId: message.interactionSessionId,
-      actions: message.actions,
-      aiSuspension: message.aiSuspension,
-    }, { headers: { 'Idempotency-Key': idempotencyKey } })
+    if ((message.actions?.length ?? 0) > 5)
+      throw new Error("Можно отправить не более 5 действий");
+    const idempotencyKey =
+      message.idempotencyKey ?? globalThis.crypto.randomUUID();
+    const response = await adminMessagingSend(
+      projectId,
+      userId,
+      {
+        text: message.text,
+        ...(message.conversationId
+          ? { conversationId: message.conversationId }
+          : { conversationPolicy: message.conversationPolicy }),
+        interactionSessionId: message.interactionSessionId,
+        actions: message.actions,
+        aiSuspension: message.aiSuspension,
+      },
+      { headers: { "Idempotency-Key": idempotencyKey } },
+    );
     return {
       duplicate: response.duplicate,
       messageId: response.message.id,
@@ -346,33 +481,47 @@ export const apiRepository: LolaRepository = {
       commandIds: response.commandIds,
       status: response.message.status,
       deliveryStatus: response.delivery?.status,
-      ...(response.aiSuspension ? {
-        aiSuspension: {
-          ...response.aiSuspension,
-          state: mapConversationAISuspensionDetail(response.aiSuspension.state),
-        },
-      } : {}),
-    }
+      ...(response.aiSuspension
+        ? {
+            aiSuspension: {
+              ...response.aiSuspension,
+              state: mapConversationAISuspensionDetail(
+                response.aiSuspension.state,
+              ),
+            },
+          }
+        : {}),
+    };
   },
 
   async getStats(projectId) {
-    const [project, scenarios, users, sessions, eventLogs, failedEventLogs, runs] = await Promise.all([
+    const [
+      project,
+      scenarios,
+      users,
+      sessions,
+      eventLogs,
+      failedEventLogs,
+      runs,
+    ] = await Promise.all([
       this.getProject(projectId),
       this.getScenarios(projectId),
       this.getUsers(projectId),
       this.getSessions(projectId),
       this.getEventLogs(projectId, { limit: 1 }),
-      this.getEventLogs(projectId, { status: 'FAILED', limit: 1 }),
+      this.getEventLogs(projectId, { status: "FAILED", limit: 1 }),
       this.getScenarioRuns(projectId),
-    ])
+    ]);
     return {
       users: project._count?.users ?? users.length,
       online: new Set(sessions.map((item) => item.userId)).size,
       events: project._count?.eventLogs ?? eventLogs.pagination.total,
-      scenarios: scenarios.filter((item) => item.status === 'ACTIVE').length,
+      scenarios: scenarios.filter((item) => item.status === "ACTIVE").length,
       conversations: 0,
       ctaConversion: 0,
-      integrationErrors: failedEventLogs.pagination.total + runs.filter((item) => item.status === 'FAILED').length,
-    }
+      integrationErrors:
+        failedEventLogs.pagination.total +
+        runs.filter((item) => item.status === "FAILED").length,
+    };
   },
-}
+};

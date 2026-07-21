@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type EventDefinitionRevisionResponseDtoDescription = {
-  [key: string]: unknown;
-} | null;
+export type EventCatalogEventDefinitionRevisionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  cursor?: string;
+};

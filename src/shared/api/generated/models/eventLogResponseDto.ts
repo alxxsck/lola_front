@@ -21,6 +21,7 @@ export interface EventLogResponseDto {
   error?: string | null;
   eventDefinition: EventLogDefinitionRefResponseDto;
   eventDefinitionId: string;
+  eventDefinitionKeyId: string;
   /** @nullable */
   externalEventId?: string | null;
   id: string;

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from "vitest";
 import type {
   AuditLogResponseDto,
   EndUserResponseDto,
@@ -7,7 +7,7 @@ import type {
   ProjectResponseDto,
   ScenarioRunResponseDto,
   UiElementResponseDto,
-} from '@/shared/api/generated/models'
+} from "@/shared/api/generated/models";
 import {
   mapActiveSessions,
   mapAuditLog,
@@ -19,392 +19,385 @@ import {
   mapProject,
   mapScenarioRun,
   mapUiElement,
-  toCreateEventDefinitionDto,
   toCreateUiElementDto,
   toUpdateProjectDto,
   toUpdateUiElementDto,
-} from './mappers'
+} from "./mappers";
 
-describe('repository domain mappers', () => {
-  it('maps the project contract without leaking backend-only fields', () => {
+describe("repository domain mappers", () => {
+  it("maps the project contract without leaking backend-only fields", () => {
     const dto: ProjectResponseDto = {
-      id: 'project-1',
-      organizationId: 'org-1',
-      name: 'Lola',
-      slug: 'lola',
-      status: 'ACTIVE',
-      publicKey: 'public',
-      serverKeyPrefix: 'secret-prefix',
-      defaultLocale: 'ru',
-      supportedLocales: ['ru'],
-      assistantName: 'Lola',
-      systemPrompt: 'Help',
-      voiceInstructions: 'Speak warmly',
-      settings: { timezone: 'UTC' },
-      createdAt: 'now',
-      updatedAt: 'now',
-    }
+      id: "project-1",
+      organizationId: "org-1",
+      name: "Lola",
+      slug: "lola",
+      status: "ACTIVE",
+      publicKey: "public",
+      serverKeyPrefix: "secret-prefix",
+      defaultLocale: "ru",
+      supportedLocales: ["ru"],
+      assistantName: "Lola",
+      systemPrompt: "Help",
+      voiceInstructions: "Speak warmly",
+      settings: { timezone: "UTC" },
+      createdAt: "now",
+      updatedAt: "now",
+    };
     expect(mapProject(dto)).toEqual(
       expect.objectContaining({
-        id: 'project-1',
-        voiceInstructions: 'Speak warmly',
-        settings: { timezone: 'UTC' },
+        id: "project-1",
+        voiceInstructions: "Speak warmly",
+        settings: { timezone: "UTC" },
       }),
-    )
-    expect(mapProject(dto)).not.toHaveProperty('serverKeyPrefix')
-  })
+    );
+    expect(mapProject(dto)).not.toHaveProperty("serverKeyPrefix");
+  });
 
-  it('only sends editable project fields', () => {
+  it("only sends editable project fields", () => {
     expect(
       toUpdateProjectDto({
-        id: 'immutable',
-        slug: 'immutable',
-        publicKey: 'immutable',
-        name: 'Updated',
-        voiceInstructions: '  Speak slowly.\nPause.  ',
-        settings: { description: 'New' },
+        id: "immutable",
+        slug: "immutable",
+        publicKey: "immutable",
+        name: "Updated",
+        voiceInstructions: "  Speak slowly.\nPause.  ",
+        settings: { description: "New" },
       }),
     ).toEqual({
-      name: 'Updated',
-      voiceInstructions: '  Speak slowly.\nPause.  ',
-      settings: { description: 'New' },
-    })
-  })
+      name: "Updated",
+      voiceInstructions: "  Speak slowly.\nPause.  ",
+      settings: { description: "New" },
+    });
+  });
 
-  it('normalizes nullable response fields and preserves JSON payloads', () => {
+  it("normalizes nullable response fields and preserves JSON payloads", () => {
     const ui = mapUiElement({
-      id: 'ui-1',
-      projectId: 'project-1',
-      code: 'home',
-      name: 'Home',
-      kind: 'PAGE',
+      id: "ui-1",
+      projectId: "project-1",
+      code: "home",
+      name: "Home",
+      kind: "PAGE",
       selector: null,
-      route: '/home',
+      route: "/home",
       modalName: null,
       handler: null,
       config: { direct: true },
       enabled: true,
-      createdAt: 'now',
-      updatedAt: 'now',
-    } as unknown as UiElementResponseDto)
+      createdAt: "now",
+      updatedAt: "now",
+    } as unknown as UiElementResponseDto);
     const eventDto = {
-      id: 'event-1',
-      projectId: 'project-1',
-      code: 'signup',
-      name: 'Signup',
+      id: "event-1",
+      projectId: "project-1",
+      code: "signup",
+      name: "Signup",
       description: null,
       version: 1,
-      definitionKeyId: 'event-key-1',
-      currentRevisionId: 'event-1',
+      definitionKeyId: "event-key-1",
+      currentRevisionId: "event-1",
       isCurrent: true,
-      origin: 'CUSTOM',
+      origin: "CUSTOM",
       readOnly: false,
-      payloadSchema: { type: 'object' },
+      payloadSchema: { type: "object" },
       clientIngestible: false,
       countsAsActivity: false,
       enabled: true,
-      createdAt: 'now',
-      updatedAt: 'now',
-    } as unknown as EventDefinitionResponseDto
+      createdAt: "now",
+      updatedAt: "now",
+    } as unknown as EventDefinitionResponseDto;
     const user = mapEndUser({
-      id: 'user-1',
-      projectId: 'project-1',
-      externalId: 'external',
+      id: "user-1",
+      projectId: "project-1",
+      externalId: "external",
       isGuest: false,
       locale: null,
       segment: null,
       profile: {},
       attributes: {},
       preferences: {},
-      lastSeenAt: 'now',
-      createdAt: 'now',
-      updatedAt: 'now',
-    } as EndUserResponseDto)
+      lastSeenAt: "now",
+      createdAt: "now",
+      updatedAt: "now",
+    } as EndUserResponseDto);
 
     expect(ui).toMatchObject({
-      route: '/home',
+      route: "/home",
       selector: undefined,
       config: { direct: true },
-    })
+    });
     expect(mapEventDefinition(eventDto)).toMatchObject({
-      definitionKeyId: 'event-key-1',
-      currentRevisionId: 'event-1',
+      definitionKeyId: "event-key-1",
+      currentRevisionId: "event-1",
       isCurrent: true,
-      origin: 'CUSTOM',
+      origin: "CUSTOM",
       readOnly: false,
       description: undefined,
-      payloadSchema: { type: 'object' },
-    })
-    expect(user).toMatchObject({ locale: undefined, segment: undefined })
-    expect(toCreateEventDefinitionDto(mapEventDefinition(eventDto))).toEqual({
-      code: 'signup',
-      name: 'Signup',
-      payloadSchema: { type: 'object' },
-      clientIngestible: false,
-      countsAsActivity: false,
-      enabled: true,
-    })
-  })
+      payloadSchema: { type: "object" },
+    });
+    expect(user).toMatchObject({ locale: undefined, segment: undefined });
+  });
 
-  it('maps modalName in both directions without using the deprecated handler as a binding', () => {
+  it("maps modalName in both directions without using the deprecated handler as a binding", () => {
     const modal = mapUiElement({
-      id: 'ui-2',
-      projectId: 'project-1',
-      code: 'deposit_modal',
-      name: 'Deposit',
-      kind: 'MODAL',
+      id: "ui-2",
+      projectId: "project-1",
+      code: "deposit_modal",
+      name: "Deposit",
+      kind: "MODAL",
       selector: null,
       route: null,
-      modalName: 'deposit',
-      handler: 'openDepositModal',
+      modalName: "deposit",
+      handler: "openDepositModal",
       config: {},
       enabled: true,
-      createdAt: 'now',
-      updatedAt: 'now',
-    } as unknown as UiElementResponseDto)
+      createdAt: "now",
+      updatedAt: "now",
+    } as unknown as UiElementResponseDto);
 
     expect(modal).toMatchObject({
-      modalName: 'deposit',
-      handler: 'openDepositModal',
-    })
+      modalName: "deposit",
+      handler: "openDepositModal",
+    });
     expect(
       toCreateUiElementDto({
         code: modal.code,
         name: modal.name,
-        kind: 'MODAL',
+        kind: "MODAL",
         modalName: modal.modalName!,
       }),
     ).toEqual({
-      code: 'deposit_modal',
-      name: 'Deposit',
-      kind: 'MODAL',
-      modalName: 'deposit',
-    })
-  })
+      code: "deposit_modal",
+      name: "Deposit",
+      kind: "MODAL",
+      modalName: "deposit",
+    });
+  });
 
-  it('preserves bounded AI target exposure and its audit reason in generated DTOs', () => {
+  it("preserves bounded AI target exposure and its audit reason in generated DTOs", () => {
     const page = mapUiElement({
-      id: 'ui-3',
-      projectId: 'project-1',
-      code: 'bonuses',
-      name: 'Bonuses',
-      kind: 'PAGE',
+      id: "ui-3",
+      projectId: "project-1",
+      code: "bonuses",
+      name: "Bonuses",
+      kind: "PAGE",
       selector: null,
-      route: '/bonuses',
+      route: "/bonuses",
       modalName: null,
       handler: null,
       config: {},
       enabled: true,
       aiEnabled: true,
-      aiDescription: 'The page where the user reviews available bonuses.',
-      aiAliases: ['rewards'],
-      createdAt: 'now',
-      updatedAt: 'now',
-    })
+      aiDescription: "The page where the user reviews available bonuses.",
+      aiAliases: ["rewards"],
+      createdAt: "now",
+      updatedAt: "now",
+    });
 
     expect(page).toMatchObject({
       aiEnabled: true,
-      aiDescription: 'The page where the user reviews available bonuses.',
-      aiAliases: ['rewards'],
-    })
+      aiDescription: "The page where the user reviews available bonuses.",
+      aiAliases: ["rewards"],
+    });
     expect(
       toUpdateUiElementDto({
         aiEnabled: true,
-        aiDescription: 'The page where the user reviews available bonuses.',
-        aiAliases: ['rewards'],
-        auditReason: 'Expose bonuses target for OPEN_PAGE',
+        aiDescription: "The page where the user reviews available bonuses.",
+        aiAliases: ["rewards"],
+        auditReason: "Expose bonuses target for OPEN_PAGE",
       }),
     ).toEqual({
       aiEnabled: true,
-      aiDescription: 'The page where the user reviews available bonuses.',
-      aiAliases: ['rewards'],
-      auditReason: 'Expose bonuses target for OPEN_PAGE',
-    })
-  })
+      aiDescription: "The page where the user reviews available bonuses.",
+      aiAliases: ["rewards"],
+      auditReason: "Expose bonuses target for OPEN_PAGE",
+    });
+  });
 
-  it('maps operational DTOs into page-safe domain models', () => {
+  it("maps operational DTOs into page-safe domain models", () => {
     const event = mapEventLog({
-      id: 'log-1',
-      projectId: 'project-1',
-      eventDefinitionId: 'event-1',
-      endUserId: 'user-1',
-      source: 'SERVER',
+      id: "log-1",
+      projectId: "project-1",
+      eventDefinitionId: "event-1",
+      eventDefinitionKeyId: "event-key-1",
+      endUserId: "user-1",
+      source: "SERVER",
       payload: { amount: 12 },
       context: {},
-      occurredAt: 'now',
-      receivedAt: 'now',
-      status: 'PROCESSED',
+      occurredAt: "now",
+      receivedAt: "now",
+      status: "PROCESSED",
       eventDefinition: {
-        id: 'event-1',
-        projectId: 'project-1',
-        code: 'deposit',
-        name: 'Deposit',
+        id: "event-1",
+        projectId: "project-1",
+        code: "deposit",
+        name: "Deposit",
       },
-      endUser: { id: 'user-1', externalId: 'customer-42' },
-    } as unknown as EventLogResponseDto)
+      endUser: { id: "user-1", externalId: "customer-42" },
+    } as unknown as EventLogResponseDto);
+    expect(event.eventDefinitionKeyId).toBe("event-key-1");
     const run = mapScenarioRun({
-      id: 'run-1',
-      projectId: 'project-1',
-      scenarioId: 'scenario-1',
-      eventLogId: 'log-1',
-      endUserId: 'user-1',
-      status: 'RUNNING',
-      conversationPolicy: 'reuse_active',
-      startedAt: 'now',
+      id: "run-1",
+      projectId: "project-1",
+      scenarioId: "scenario-1",
+      eventLogId: "log-1",
+      endUserId: "user-1",
+      status: "RUNNING",
+      conversationPolicy: "reuse_active",
+      startedAt: "now",
       currentStep: 0,
-      scenario: { id: 'scenario-1', code: 'welcome', name: 'Welcome' },
-      endUser: { id: 'user-1', externalId: 'customer-42' },
+      scenario: { id: "scenario-1", code: "welcome", name: "Welcome" },
+      endUser: { id: "user-1", externalId: "customer-42" },
       steps: [
         {
-          id: 'step-1',
+          id: "step-1",
           position: 0,
-          nodeKey: 'open-page',
-          actionType: 'OPEN_PAGE',
-          executor: 'FRONTEND',
-          status: 'WAITING_ACK',
+          nodeKey: "open-page",
+          actionType: "OPEN_PAGE",
+          executor: "FRONTEND",
+          status: "WAITING_ACK",
           command: {
-            id: 'command-1',
-            type: 'OPEN_PAGE',
+            id: "command-1",
+            type: "OPEN_PAGE",
             sequence: 1,
-            status: 'SENT',
-            createdAt: 'now',
+            status: "SENT",
+            createdAt: "now",
           },
         },
       ],
-    } as ScenarioRunResponseDto)
+    } as ScenarioRunResponseDto);
     const audit = mapAuditLog({
-      id: 'audit-1',
-      action: 'scenario.update',
-      status: 'SUCCEEDED',
+      id: "audit-1",
+      action: "scenario.update",
+      status: "SUCCEEDED",
       metadata: {},
-      createdAt: 'now',
-      adminUser: { id: 'admin-1', login: 'owner@lola.dev', displayName: null },
-    } as AuditLogResponseDto)
+      createdAt: "now",
+      adminUser: { id: "admin-1", login: "owner@lola.dev", displayName: null },
+    } as AuditLogResponseDto);
 
     expect(event).toMatchObject({
-      eventCode: 'deposit',
-      userExternalId: 'customer-42',
+      eventCode: "deposit",
+      userExternalId: "customer-42",
       payload: { amount: 12 },
-    })
+    });
     expect(run.steps[0]).toMatchObject({
-      status: 'WAITING_ACK',
-      command: { id: 'command-1', sequence: 1 },
-    })
+      status: "WAITING_ACK",
+      command: { id: "command-1", sequence: 1 },
+    });
     expect(audit.actor).toEqual({
-      id: 'admin-1',
-      email: 'owner@lola.dev',
+      id: "admin-1",
+      email: "owner@lola.dev",
       name: undefined,
-    })
-  })
+    });
+  });
 
-  it('deduplicates multiple connections of the same active session by latest heartbeat', () => {
+  it("deduplicates multiple connections of the same active session by latest heartbeat", () => {
     const sessions = mapActiveSessions({
-      id: 'user-1',
-      externalId: 'customer-1',
+      id: "user-1",
+      externalId: "customer-1",
       isGuest: false,
-      presence: 'online',
+      presence: "online",
       profile: {},
-      lastSeenAt: '2026-07-11T10:00:00.000Z',
+      lastSeenAt: "2026-07-11T10:00:00.000Z",
       activeConnectionCount: 2,
       activeSessionCount: 1,
       connections: [
         {
-          id: 'connection-1',
-          sessionId: 'session-1',
-          transport: 'SOCKET_IO',
-          connectedAt: '2026-07-11T09:00:00.000Z',
-          lastHeartbeatAt: '2026-07-11T09:58:00.000Z',
+          id: "connection-1",
+          sessionId: "session-1",
+          transport: "SOCKET_IO",
+          connectedAt: "2026-07-11T09:00:00.000Z",
+          lastHeartbeatAt: "2026-07-11T09:58:00.000Z",
         },
         {
-          id: 'connection-2',
-          sessionId: 'session-1',
-          transport: 'ANY_CABLE',
-          connectedAt: '2026-07-11T09:05:00.000Z',
-          lastHeartbeatAt: '2026-07-11T10:00:00.000Z',
+          id: "connection-2",
+          sessionId: "session-1",
+          transport: "ANY_CABLE",
+          connectedAt: "2026-07-11T09:05:00.000Z",
+          lastHeartbeatAt: "2026-07-11T10:00:00.000Z",
         },
       ],
-    })
-    expect(sessions).toHaveLength(1)
+    });
+    expect(sessions).toHaveLength(1);
     expect(sessions[0]).toMatchObject({
-      id: 'session-1',
-      userName: 'customer-1',
-      device: 'AnyCable',
-      status: 'ONLINE',
-    })
-  })
+      id: "session-1",
+      userName: "customer-1",
+      device: "AnyCable",
+      status: "ONLINE",
+    });
+  });
 
-  it('maps admin conversation history into the UI domain', () => {
+  it("maps admin conversation history into the UI domain", () => {
     expect(
       mapConversation({
-        id: 'conversation-1',
-        projectId: 'project-1',
-        endUserId: 'user-1',
+        id: "conversation-1",
+        projectId: "project-1",
+        endUserId: "user-1",
         title: null,
-        status: 'CLOSED',
-        createdAt: '2026-07-13T08:00:00.000Z',
-        updatedAt: '2026-07-13T09:00:00.000Z',
-        _count: { messages: 2 },
+        status: "CLOSED",
+        createdAt: "2026-07-13T08:00:00.000Z",
+        updatedAt: "2026-07-13T09:00:00.000Z",
         isCurrent: false,
         currentInteractionSessionCount: 0,
+        _count: { messages: 2 },
         aiSuspension: {
-          mode: 'SUSPENDED',
-          lifecycle: 'ACTIVE',
-          version: '90071992547409930',
-          suspendedUntil: '2026-07-20T14:00:00.000Z',
-          serverTime: '2026-07-20T13:00:00.000Z',
+          mode: "SUSPENDED",
+          lifecycle: "ACTIVE",
+          version: "90071992547409930",
+          suspendedUntil: "2026-07-20T14:00:00.000Z",
+          serverTime: "2026-07-20T13:00:00.000Z",
         },
         messages: [
           {
-            id: 'message-2',
-            role: 'ASSISTANT',
-            text: 'Last',
-            createdAt: '2026-07-13T08:59:00.000Z',
+            id: "message-2",
+            role: "ASSISTANT",
+            text: "Last",
+            createdAt: "2026-07-13T08:59:00.000Z",
           },
         ],
       }),
     ).toEqual(
       expect.objectContaining({
-        title: 'Диалог без названия',
-        status: 'ARCHIVED',
-        updatedAt: '2026-07-13T09:00:00.000Z',
+        title: "Диалог без названия",
+        status: "ARCHIVED",
+        updatedAt: "2026-07-13T09:00:00.000Z",
         messageCount: 2,
-        lastMessageAt: '2026-07-13T08:59:00.000Z',
+        lastMessageAt: "2026-07-13T08:59:00.000Z",
         aiSuspension: {
-          mode: 'SUSPENDED',
-          lifecycle: 'ACTIVE',
-          version: '90071992547409930',
-          suspendedUntil: '2026-07-20T14:00:00.000Z',
-          serverTime: '2026-07-20T13:00:00.000Z',
+          mode: "SUSPENDED",
+          lifecycle: "ACTIVE",
+          version: "90071992547409930",
+          suspendedUntil: "2026-07-20T14:00:00.000Z",
+          serverTime: "2026-07-20T13:00:00.000Z",
         },
       }),
-    )
+    );
     expect(
       mapConversationMessage({
-        id: 'message-1',
-        threadId: 'conversation-1',
-        role: 'ASSISTANT',
-        status: 'COMPLETED',
-        text: 'Hello',
-        createdAt: '2026-07-13T08:00:00.000Z',
-        updatedAt: '2026-07-13T08:00:00.000Z',
+        id: "message-1",
+        threadId: "conversation-1",
+        role: "ASSISTANT",
+        status: "COMPLETED",
+        text: "Hello",
+        createdAt: "2026-07-13T08:00:00.000Z",
+        updatedAt: "2026-07-13T08:00:00.000Z",
       }),
     ).toEqual(
       expect.objectContaining({
-        conversationId: 'conversation-1',
-        author: 'ASSISTANT',
-        text: 'Hello',
+        conversationId: "conversation-1",
+        author: "ASSISTANT",
+        text: "Hello",
       }),
-    )
+    );
     expect(
       mapConversationMessage({
-        id: 'message-2',
-        threadId: 'conversation-1',
-        role: 'ASSISTANT',
-        status: 'CANCELLED',
-        text: 'Незавершённый ответ',
-        createdAt: '2026-07-13T08:01:00.000Z',
-        updatedAt: '2026-07-13T08:01:00.000Z',
+        id: "message-2",
+        threadId: "conversation-1",
+        role: "ASSISTANT",
+        status: "CANCELLED",
+        text: "Незавершённый ответ",
+        createdAt: "2026-07-13T08:01:00.000Z",
+        updatedAt: "2026-07-13T08:01:00.000Z",
       }).status,
-    ).toBe('CANCELLED')
-  })
-})
+    ).toBe("CANCELLED");
+  });
+});

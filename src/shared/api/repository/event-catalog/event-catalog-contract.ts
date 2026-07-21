@@ -1,23 +1,29 @@
 import type {
-  EventCatalogHealthResponseDto,
-  EventDefinitionMetadataMutationResponseDto,
-  EventDefinitionResponseDto,
+  ArchiveEventDefinitionDto,
+  CreateEventDefinitionDto,
+  EventCatalogDeleteEventDefinitionParams,
+  EventDefinitionCatalogResponseDto,
+  EventDefinitionRevisionPageResponseDto,
+  EventDefinitionRevisionResponseDto,
+  EventDefinitionUsageResponseDto,
+  RestoreEventDefinitionDto,
   UpdateEventDefinitionMetadataDto,
+  UpdateEventIngestionPolicyDto,
 } from "@/shared/api/generated/models";
 
-export interface EventCatalogDefinitionHealth {
-  consumers: EventCatalogHealthResponseDto["consumers"];
-  activeWaits: EventCatalogHealthResponseDto["activeWaits"];
-  drafts: EventCatalogHealthResponseDto["drafts"];
-}
+export type EventDefinitionLifecycle = "ACTIVE" | "ARCHIVED";
 
 export interface EventCatalogDefinition {
   definitionKeyId: string;
+  projectId: string;
   code: string;
+  lifecycle: EventDefinitionLifecycle;
+  lifecycleVersion: number;
+  lifecycleUpdatedAt: string;
   metadata: {
     name: string;
     description: string | null;
-    concurrencyToken: string | null;
+    concurrencyToken: string;
   };
   policy: {
     version: number;
@@ -30,77 +36,62 @@ export interface EventCatalogDefinition {
     revisionId: string;
     revisionNumber: number;
     payloadSchema: Record<string, unknown>;
+    publishedAt: string;
   };
-  origin: EventDefinitionResponseDto["origin"];
+  origin: EventDefinitionCatalogResponseDto["origin"];
   readOnly: boolean;
 }
 
+export type EventDefinitionUsage = EventDefinitionUsageResponseDto;
+export type EventDefinitionRevision = EventDefinitionRevisionResponseDto;
+export type EventDefinitionRevisionPage =
+  EventDefinitionRevisionPageResponseDto;
+export type CreateEventDefinitionCommand = CreateEventDefinitionDto;
 export type UpdateEventMetadataCommand = UpdateEventDefinitionMetadataDto;
+export type UpdateEventPolicyCommand = UpdateEventIngestionPolicyDto;
+export type ArchiveEventDefinitionCommand = ArchiveEventDefinitionDto;
+export type RestoreEventDefinitionCommand = RestoreEventDefinitionDto;
+export type DeleteEventDefinitionCommand =
+  EventCatalogDeleteEventDefinitionParams;
 
 export interface EventMetadataUpdateResult {
   definitionKeyId: string;
   code: string;
-  metadata: EventCatalogDefinition["metadata"] & { concurrencyToken: string };
+  metadata: EventCatalogDefinition["metadata"];
   currentRevisionId: string | null;
   metadataChanged: boolean;
   schemaRevisionUnchanged: boolean;
 }
 
 export function toEventCatalogDefinition(
-  dto: EventDefinitionResponseDto,
+  dto: EventDefinitionCatalogResponseDto,
 ): EventCatalogDefinition {
-  const currentRevisionId =
-    typeof dto.currentRevisionId === "string" ? dto.currentRevisionId : null;
-  if (!currentRevisionId) {
+  if (!dto.currentRevision) {
     throw new Error(
-      `Event Definition ${dto.definitionKeyId} has no current schema revision`,
+      `Event Definition ${dto.id} has no current schema revision`,
     );
   }
-
   return {
-    definitionKeyId: dto.definitionKeyId,
+    definitionKeyId: dto.id,
+    projectId: dto.projectId,
     code: dto.code,
+    lifecycle: dto.lifecycle,
+    lifecycleVersion: dto.lifecycleVersion,
+    lifecycleUpdatedAt: dto.lifecycleUpdatedAt,
     metadata: {
       name: dto.name,
-      description: typeof dto.description === "string" ? dto.description : null,
+      description: dto.description,
       concurrencyToken: dto.metadataUpdatedAt,
     },
-    policy: {
-      version: dto.policyVersion,
-      updatedAt: dto.policyUpdatedAt,
-      enabled: dto.enabled,
-      clientIngestible: dto.clientIngestible,
-      countsAsActivity: dto.countsAsActivity,
-    },
+    policy: dto.policy,
     currentSchema: {
-      revisionId: currentRevisionId,
-      revisionNumber: dto.version,
-      payloadSchema: dto.payloadSchema,
+      revisionId: dto.currentRevision.id,
+      revisionNumber: dto.currentRevision.number,
+      payloadSchema: dto.currentRevision.payloadSchema,
+      publishedAt: dto.currentRevision.publishedAt,
     },
     origin: dto.origin,
     readOnly: dto.readOnly,
-  };
-}
-
-export function toEventMetadataUpdateResult(
-  dto: EventDefinitionMetadataMutationResponseDto,
-): EventMetadataUpdateResult {
-  if (!dto.schemaRevisionUnchanged) {
-    throw new Error(
-      "Invalid backend response: metadata mutation changed the schema revision",
-    );
-  }
-  return {
-    definitionKeyId: dto.definitionKeyId,
-    code: dto.code,
-    metadata: {
-      name: dto.name,
-      description: dto.description ?? null,
-      concurrencyToken: dto.updatedAt,
-    },
-    currentRevisionId: dto.currentRevisionId ?? null,
-    metadataChanged: dto.metadataChanged,
-    schemaRevisionUnchanged: dto.schemaRevisionUnchanged,
   };
 }
 
@@ -109,34 +100,13 @@ export function applyEventMetadataUpdate(
   result: EventMetadataUpdateResult,
 ): EventCatalogDefinition {
   const responseTime = Date.parse(result.metadata.concurrencyToken);
-  const currentTime = current.metadata.concurrencyToken
-    ? Date.parse(current.metadata.concurrencyToken)
-    : Number.NEGATIVE_INFINITY;
-  const matchesWorkspace =
-    result.definitionKeyId === current.definitionKeyId &&
-    result.code === current.code;
-
-  if (!matchesWorkspace || responseTime < currentTime) return current;
-
-  return {
-    ...current,
-    metadata: result.metadata,
-  };
-}
-
-export function toEventCatalogDefinitionHealth(
-  dto: EventCatalogHealthResponseDto,
-  definitionKeyId: string,
-): EventCatalogDefinitionHealth {
-  return {
-    consumers: dto.consumers.filter(
-      (consumer) => consumer.definitionKeyId === definitionKeyId,
-    ),
-    activeWaits: dto.activeWaits.filter(
-      (wait) => wait.definitionKeyId === definitionKeyId,
-    ),
-    drafts: dto.drafts.filter(
-      (draft) => draft.definitionKeyId === definitionKeyId,
-    ),
-  };
+  const currentTime = Date.parse(current.metadata.concurrencyToken);
+  if (
+    result.definitionKeyId !== current.definitionKeyId ||
+    result.code !== current.code ||
+    responseTime < currentTime
+  ) {
+    return current;
+  }
+  return { ...current, metadata: result.metadata };
 }

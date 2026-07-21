@@ -1,77 +1,66 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import { mockRepository } from "@/shared/api/repository/mock-repository";
+import { describe, expect, it } from "vitest";
 import { mockEventCatalogRepository } from "./mock-event-catalog-repository";
 
-vi.mock("@/shared/api/repository/mock-repository", () => ({
-  mockRepository: {
-    getEvents: vi.fn(),
-    saveEvent: vi.fn(),
-  },
-}));
-
-const event = {
-  id: "revision-1",
-  definitionKeyId: "event-key-1",
-  currentRevisionId: "revision-1",
-  isCurrent: true,
-  origin: "CUSTOM" as const,
-  readOnly: false,
-  projectId: "project-1",
-  code: "registration_completed",
-  name: "Регистрация завершена",
-  description: "Пользователь завершил регистрацию",
-  version: 1,
-  payloadSchema: {
-    type: "object",
-    properties: { language: { type: "string" } },
-  },
-  clientIngestible: true,
-  countsAsActivity: true,
-  enabled: true,
-};
-
 describe("mockEventCatalogRepository", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(mockRepository.getEvents).mockResolvedValue([event]);
-    vi.mocked(mockRepository.saveEvent).mockImplementation(
-      async (_projectId, value) => ({
-        ...event,
-        ...value,
-      }),
-    );
-  });
-
-  it("updates demo metadata without changing policy, payload schema or revision identity", async () => {
-    const loaded = await mockEventCatalogRepository.getDefinition(
+  it("models create, metadata, archive and restore without changing schema identity", async () => {
+    const created = await mockEventCatalogRepository.createDefinition(
       "project-1",
-      "event-key-1",
-    );
-    const result = await mockEventCatalogRepository.updateMetadata(
-      "project-1",
-      "event-key-1",
       {
-        name: "Регистрация готова",
+        code: `test_event_${Date.now()}`,
+        name: "Тестовое событие",
+        payloadSchema: { type: "object" },
+        enabled: true,
+        clientIngestible: false,
+        countsAsActivity: false,
+      },
+    );
+    const metadata = await mockEventCatalogRepository.updateMetadata(
+      "project-1",
+      created.definitionKeyId,
+      {
+        name: "Новое имя",
         description: null,
-        expectedUpdatedAt: loaded.metadata.concurrencyToken!,
+        expectedUpdatedAt: created.metadata.concurrencyToken,
+      },
+    );
+    const disabled = await mockEventCatalogRepository.updatePolicy(
+      "project-1",
+      created.definitionKeyId,
+      {
+        enabled: false,
+        clientIngestible: created.policy.clientIngestible,
+        countsAsActivity: created.policy.countsAsActivity,
+        expectedVersion: created.policy.version,
+      },
+    );
+    const archived = await mockEventCatalogRepository.archive(
+      "project-1",
+      created.definitionKeyId,
+      {
+        expectedLifecycleVersion: created.lifecycleVersion,
+        expectedPolicyVersion: disabled.policy.version,
+      },
+    );
+    const restored = await mockEventCatalogRepository.restore(
+      "project-1",
+      created.definitionKeyId,
+      {
+        expectedLifecycleVersion: archived.lifecycleVersion,
       },
     );
 
-    expect(mockRepository.saveEvent).toHaveBeenCalledWith(
-      "project-1",
-      expect.objectContaining({
-        id: "revision-1",
-        code: "registration_completed",
-        name: "Регистрация готова",
-        payloadSchema: event.payloadSchema,
-        enabled: true,
-        clientIngestible: true,
-        countsAsActivity: true,
-        version: 1,
-      }),
+    expect(metadata.schemaRevisionUnchanged).toBe(true);
+    expect(disabled.policy).toMatchObject({ enabled: false, version: 2 });
+    expect(archived).toMatchObject({
+      lifecycle: "ARCHIVED",
+      policy: { enabled: false },
+    });
+    expect(restored).toMatchObject({
+      lifecycle: "ACTIVE",
+      policy: { enabled: false },
+    });
+    expect(restored.currentSchema.revisionId).toBe(
+      created.currentSchema.revisionId,
     );
-    expect(result.currentRevisionId).toBe("revision-1");
-    expect(result.schemaRevisionUnchanged).toBe(true);
   });
 });

@@ -6,9 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type EventDefinitionRevisionPageResponseDtoNextCursor = {
-  [key: string]: unknown;
-} | null;
+export interface EventDefinitionUsageEventLogsResponseDto {
+  exists: boolean;
+}

@@ -6,11 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type PlatformEventDefinitionRevisionsParams = {
-  /**
-   * @minimum 1
-   * @maximum 100
-   */
-  limit?: number;
-  cursor?: string;
+export type EventDefinitionCurrentRevisionResponseDtoPayloadSchema = {
+  [key: string]: unknown;
 };

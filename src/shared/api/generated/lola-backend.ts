@@ -28,6 +28,7 @@ import type {
   AiUsageReportParams,
   AiUsageReportResponseDto,
   AnalyzeEventSchemaDraftDto,
+  ArchiveEventDefinitionDto,
   ArchivedSegmentResponseDto,
   AttributeContractDraftResponseDto,
   AttributeContractRevisionPageResponseDto,
@@ -78,11 +79,15 @@ import type {
   EndUserResponseDto,
   EndVoiceSessionDto,
   EvaluateAudienceUserDto,
+  EventCatalogDeleteEventDefinitionParams,
+  EventCatalogEventDefinitionRevisionsParams,
   EventCatalogHealthResponseDto,
+  EventCatalogListEventDefinitionsParams,
+  EventDefinitionCatalogResponseDto,
   EventDefinitionMetadataMutationResponseDto,
-  EventDefinitionResponseDto,
   EventDefinitionRevisionPageResponseDto,
   EventDefinitionRevisionResponseDto,
+  EventDefinitionUsageResponseDto,
   EventIngestResponseDto,
   EventIngestionPolicyMutationResponseDto,
   EventLogPageResponseDto,
@@ -105,7 +110,6 @@ import type {
   ListMessagesDto,
   ListThreadMessagesDto,
   LogoutDto,
-  PlatformEventDefinitionRevisionsParams,
   PlatformTranslationUsageUsageReportParams,
   PlatformUsersPageParams,
   PreviewScenarioGoalDto,
@@ -129,6 +133,7 @@ import type {
   PublishedSegmentResponseDto,
   RefreshTokenDto,
   RenameConversationDto,
+  RestoreEventDefinitionDto,
   ResumeConversationAIDto,
   RollbackScenarioDto,
   RotateServerKeyResponseDto,
@@ -166,7 +171,6 @@ import type {
   TranslationUsageResponseDto,
   UiElementResponseDto,
   UpdateActivitySettingsDto,
-  UpdateEventDefinitionDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
   UpdateProjectDto,
@@ -615,6 +619,86 @@ export const adminEndUserProfilesProfile = (
   );
 };
 
+export const eventCatalogListEventDefinitions = (
+  projectId: string,
+  params?: EventCatalogListEventDefinitionsParams,
+  options?: SecondParameter<
+    typeof request<EventDefinitionCatalogResponseDto[]>
+  >,
+) => {
+  return request<EventDefinitionCatalogResponseDto[]>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const eventCatalogCreateEventDefinition = (
+  projectId: string,
+  createEventDefinitionDto: BodyType<CreateEventDefinitionDto>,
+  options?: SecondParameter<typeof request<EventDefinitionCatalogResponseDto>>,
+) => {
+  return request<EventDefinitionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createEventDefinitionDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogDeleteEventDefinition = (
+  projectId: string,
+  definitionKeyId: string,
+  params: EventCatalogDeleteEventDefinitionParams,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}`,
+      method: "DELETE",
+      params,
+    },
+    options,
+  );
+};
+
+export const eventCatalogGetEventDefinition = (
+  projectId: string,
+  definitionKeyId: string,
+  options?: SecondParameter<typeof request<EventDefinitionCatalogResponseDto>>,
+) => {
+  return request<EventDefinitionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const eventCatalogArchiveEventDefinition = (
+  projectId: string,
+  definitionKeyId: string,
+  archiveEventDefinitionDto: BodyType<ArchiveEventDefinitionDto>,
+  options?: SecondParameter<typeof request<EventDefinitionCatalogResponseDto>>,
+) => {
+  return request<EventDefinitionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archiveEventDefinitionDto,
+    },
+    options,
+  );
+};
+
 export const eventCatalogUpdateMetadata = (
   projectId: string,
   definitionKeyId: string,
@@ -648,6 +732,56 @@ export const eventCatalogUpdatePolicy = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateEventIngestionPolicyDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogRestoreEventDefinition = (
+  projectId: string,
+  definitionKeyId: string,
+  restoreEventDefinitionDto: BodyType<RestoreEventDefinitionDto>,
+  options?: SecondParameter<typeof request<EventDefinitionCatalogResponseDto>>,
+) => {
+  return request<EventDefinitionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/restore`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: restoreEventDefinitionDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogEventDefinitionRevisions = (
+  projectId: string,
+  definitionKeyId: string,
+  params?: EventCatalogEventDefinitionRevisionsParams,
+  options?: SecondParameter<
+    typeof request<EventDefinitionRevisionPageResponseDto>
+  >,
+) => {
+  return request<EventDefinitionRevisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const eventCatalogEventDefinitionRevision = (
+  projectId: string,
+  definitionKeyId: string,
+  revisionId: string,
+  options?: SecondParameter<typeof request<EventDefinitionRevisionResponseDto>>,
+) => {
+  return request<EventDefinitionRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/revisions/${revisionId}`,
+      method: "GET",
     },
     options,
   );
@@ -704,6 +838,20 @@ export const eventCatalogPublishSchemaDraft = (
   );
 };
 
+export const eventCatalogEventDefinitionUsage = (
+  projectId: string,
+  definitionKeyId: string,
+  options?: SecondParameter<typeof request<EventDefinitionUsageResponseDto>>,
+) => {
+  return request<EventDefinitionUsageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/usage`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const eventCatalogProjectHealth = (
   projectId: string,
   options?: SecondParameter<typeof request<EventCatalogHealthResponseDto>>,
@@ -712,99 +860,6 @@ export const eventCatalogProjectHealth = (
     {
       url: `/api/v1/admin/projects/${projectId}/event-catalog/health`,
       method: "GET",
-    },
-    options,
-  );
-};
-
-export const platformEventDefinitionRevisions = (
-  projectId: string,
-  definitionKeyId: string,
-  params?: PlatformEventDefinitionRevisionsParams,
-  options?: SecondParameter<
-    typeof request<EventDefinitionRevisionPageResponseDto>
-  >,
-) => {
-  return request<EventDefinitionRevisionPageResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/event-definition-keys/${definitionKeyId}/revisions`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
-export const platformEventDefinitionRevision = (
-  projectId: string,
-  definitionKeyId: string,
-  revisionId: string,
-  options?: SecondParameter<typeof request<EventDefinitionRevisionResponseDto>>,
-) => {
-  return request<EventDefinitionRevisionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/event-definition-keys/${definitionKeyId}/revisions/${revisionId}`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const platformEventDefinitions = (
-  projectId: string,
-  options?: SecondParameter<typeof request<EventDefinitionResponseDto[]>>,
-) => {
-  return request<EventDefinitionResponseDto[]>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/event-definitions`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const platformCreateEventDefinition = (
-  projectId: string,
-  createEventDefinitionDto: BodyType<CreateEventDefinitionDto>,
-  options?: SecondParameter<typeof request<EventDefinitionResponseDto>>,
-) => {
-  return request<EventDefinitionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/event-definitions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createEventDefinitionDto,
-    },
-    options,
-  );
-};
-
-export const platformDeleteEventDefinition = (
-  projectId: string,
-  id: string,
-  options?: SecondParameter<typeof request<EventDefinitionResponseDto>>,
-) => {
-  return request<EventDefinitionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/event-definitions/${id}`,
-      method: "DELETE",
-    },
-    options,
-  );
-};
-
-export const platformUpdateEventDefinition = (
-  projectId: string,
-  id: string,
-  updateEventDefinitionDto: BodyType<UpdateEventDefinitionDto>,
-  options?: SecondParameter<typeof request<EventDefinitionResponseDto>>,
-) => {
-  return request<EventDefinitionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/event-definitions/${id}`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: updateEventDefinitionDto,
     },
     options,
   );
@@ -2621,11 +2676,35 @@ export type AdminEndUserProfilesListResult = NonNullable<
 export type AdminEndUserProfilesProfileResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesProfile>>
 >;
+export type EventCatalogListEventDefinitionsResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogListEventDefinitions>>
+>;
+export type EventCatalogCreateEventDefinitionResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogCreateEventDefinition>>
+>;
+export type EventCatalogDeleteEventDefinitionResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogDeleteEventDefinition>>
+>;
+export type EventCatalogGetEventDefinitionResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogGetEventDefinition>>
+>;
+export type EventCatalogArchiveEventDefinitionResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogArchiveEventDefinition>>
+>;
 export type EventCatalogUpdateMetadataResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogUpdateMetadata>>
 >;
 export type EventCatalogUpdatePolicyResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogUpdatePolicy>>
+>;
+export type EventCatalogRestoreEventDefinitionResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogRestoreEventDefinition>>
+>;
+export type EventCatalogEventDefinitionRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogEventDefinitionRevisions>>
+>;
+export type EventCatalogEventDefinitionRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogEventDefinitionRevision>>
 >;
 export type EventCatalogSaveSchemaDraftResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogSaveSchemaDraft>>
@@ -2636,26 +2715,11 @@ export type EventCatalogAnalyzeSchemaDraftResult = NonNullable<
 export type EventCatalogPublishSchemaDraftResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogPublishSchemaDraft>>
 >;
+export type EventCatalogEventDefinitionUsageResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogEventDefinitionUsage>>
+>;
 export type EventCatalogProjectHealthResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogProjectHealth>>
->;
-export type PlatformEventDefinitionRevisionsResult = NonNullable<
-  Awaited<ReturnType<typeof platformEventDefinitionRevisions>>
->;
-export type PlatformEventDefinitionRevisionResult = NonNullable<
-  Awaited<ReturnType<typeof platformEventDefinitionRevision>>
->;
-export type PlatformEventDefinitionsResult = NonNullable<
-  Awaited<ReturnType<typeof platformEventDefinitions>>
->;
-export type PlatformCreateEventDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformCreateEventDefinition>>
->;
-export type PlatformDeleteEventDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformDeleteEventDefinition>>
->;
-export type PlatformUpdateEventDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformUpdateEventDefinition>>
 >;
 export type AdminEventLogsListResult = NonNullable<
   Awaited<ReturnType<typeof adminEventLogsList>>
