@@ -10,6 +10,7 @@ import { useActionDefinitionsStore } from "@/features/actions/action-definitions
 import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
+import { canReadProjectMemberships } from "@/features/project-memberships/model/project-membership-permissions";
 import AIProposalBadge from "@/features/ai-proposals/ui/AIProposalBadge.vue";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
@@ -35,6 +36,13 @@ const navigation = computed(() =>
     },
     { label: "Обзор", icon: "pi pi-sparkles", to: "/overview", project: true },
     { label: "Проект", icon: "pi pi-sliders-h", to: "/project", project: true },
+    {
+      label: "Администраторы",
+      icon: "pi pi-user-edit",
+      to: "/project/memberships",
+      project: true,
+      projectMemberships: true,
+    },
     { label: "Поля профиля", icon: "pi pi-id-card", to: "/profile-fields", project: true },
     { label: "База знаний", icon: "pi pi-book", to: "/knowledge", project: true },
     { label: "Интерфейс", icon: "pi pi-th-large", to: "/interface", project: true },
@@ -72,6 +80,11 @@ const navigation = computed(() =>
       (!item.project || Boolean(auth.project)) &&
       (!item.platformPermission ||
         auth.user?.platformPermissionCodes?.includes(item.platformPermission)) &&
+      (!item.projectMemberships ||
+        canReadProjectMemberships(
+          auth.user?.platformPermissionCodes ?? [],
+          auth.project?.effectivePermissionCodes ?? [],
+        )) &&
       (!item.adminOnly || canReviewAIProposals(auth.user?.role)),
   ),
 );

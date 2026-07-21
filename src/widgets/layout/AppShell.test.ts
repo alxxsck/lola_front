@@ -111,4 +111,51 @@ describe("AppShell", () => {
     expect(wrapper.text()).toContain("Управление платформой");
     expect(wrapper.text()).toContain("Platform Operator");
   });
+
+  it("shows Project administrators only with the exact selected-Project read Permission", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: { id: "operator-1", email: "operator@example.com", name: "Оператор" },
+      project: {
+        id: "project-1",
+        name: "Project One",
+        slug: "project-one",
+        status: "ACTIVE",
+        publicKey: "public",
+        defaultLocale: "ru",
+        supportedLocales: ["ru"],
+        assistantName: "Lola",
+        systemPrompt: "",
+        voiceInstructions: "",
+        settings: {},
+        effectivePermissionCodes: ["project.members.read"],
+      },
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: { template: "<div />" },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain("Администраторы");
+
+    auth.project!.effectivePermissionCodes = ["project.roles.read"];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).not.toContain("Администраторы");
+  });
 });

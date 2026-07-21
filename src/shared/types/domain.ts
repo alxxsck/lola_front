@@ -109,6 +109,9 @@ export interface Project {
   organization?: Organization
   _count?: { users: number; scenarios: number; eventLogs: number }
   memberRole?: CmsUser['role']
+  membershipId?: string
+  membershipStatus?: 'ACTIVE' | 'REMOVED'
+  membershipVersion?: number
   roleKeys?: string[]
   effectivePermissionCodes?: string[]
 }

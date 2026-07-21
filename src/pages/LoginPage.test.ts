@@ -14,6 +14,7 @@ vi.mock('@/features/auth/auth.api', () => ({
     logout: vi.fn(),
     logoutAll: vi.fn(),
     completePasswordSetup: vi.fn(),
+    refreshContext: vi.fn(),
   },
 }))
 

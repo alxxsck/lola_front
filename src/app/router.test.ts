@@ -11,6 +11,7 @@ vi.mock('@/features/auth/auth.api', () => ({
     logout: vi.fn(),
     logoutAll: vi.fn(),
     completePasswordSetup: vi.fn(),
+    refreshContext: vi.fn(),
   },
 }))
 
@@ -54,6 +55,49 @@ describe('authentication routes', () => {
 
     auth.user!.platformPermissionCodes = []
     await router.push('/platform/cms-users/user-1')
+    expect(router.currentRoute.value.name).toBe('overview')
+  })
+
+  it('allows Project Memberships only through the exact Platform-or-selected-Project read Permission', async () => {
+    const auth = useAuthStore()
+    const project = {
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Lola',
+      systemPrompt: '',
+      voiceInstructions: '',
+      settings: {},
+      effectivePermissionCodes: ['project.members.read'],
+    }
+    auth.$patch({
+      restored: true,
+      phase: 'AUTHENTICATED',
+      user: {
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
+      },
+      project,
+      projects: [project],
+    })
+
+    await router.push('/project/memberships')
+    expect(router.currentRoute.value.name).toBe('project-memberships')
+
+    auth.project!.effectivePermissionCodes = ['project.roles.read']
+    auth.user!.platformPermissionCodes = ['platform.memberships.read']
+    await router.push('/overview')
+    await router.push('/project/memberships')
+    expect(router.currentRoute.value.name).toBe('project-memberships')
+
+    auth.user!.platformPermissionCodes = ['platform.projects.read']
+    await router.push('/overview')
+    await router.push('/project/memberships')
     expect(router.currentRoute.value.name).toBe('overview')
   })
 })

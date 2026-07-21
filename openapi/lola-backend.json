@@ -5018,6 +5018,16 @@
             "format": "uuid",
             "type": "string"
           },
+          "membershipStatus": {
+            "enum": [
+              "ACTIVE"
+            ],
+            "type": "string"
+          },
+          "membershipVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
           "name": {
             "type": "string"
           },
@@ -5091,6 +5101,8 @@
           "createdAt",
           "updatedAt",
           "membershipId",
+          "membershipStatus",
+          "membershipVersion",
           "roleKeys",
           "effectivePermissionCodes"
         ],
@@ -6662,6 +6674,38 @@
           "organizationSlug",
           "name",
           "slug"
+        ],
+        "type": "object"
+      },
+      "CreateProjectMembershipDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "roleIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array"
+          },
+          "version": {
+            "description": "Required only when reactivating a previously removed membership",
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "roleIds",
+          "reason",
+          "cmsUserId"
         ],
         "type": "object"
       },
@@ -9762,6 +9806,93 @@
         ],
         "type": "object"
       },
+      "ManagedProjectRoleCatalogItemDto": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "managed": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "name",
+          "managed",
+          "version",
+          "description",
+          "permissionCodes"
+        ],
+        "type": "object"
+      },
+      "ManagedProjectRoleCatalogResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ManagedProjectRoleCatalogItemDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "ManagedProjectRoleSummaryDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "managed": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "name",
+          "managed",
+          "version"
+        ],
+        "type": "object"
+      },
       "MessageRole": {
         "enum": [
           "USER",
@@ -10816,6 +10947,137 @@
         ],
         "type": "object"
       },
+      "ProjectMembershipCmsUserSummaryDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "familyName": {
+            "type": "string"
+          },
+          "givenName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastLoginAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING_SETUP",
+              "ACTIVE",
+              "SUSPENDED",
+              "DEACTIVATED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "givenName",
+          "familyName",
+          "displayName",
+          "status",
+          "emailVerified",
+          "lastLoginAt"
+        ],
+        "type": "object"
+      },
+      "ProjectMembershipListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectMembershipResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "ProjectMembershipResponseDto": {
+        "properties": {
+          "cmsUser": {
+            "$ref": "#/components/schemas/ProjectMembershipCmsUserSummaryDto"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "effectivePermissionCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "removedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/ManagedProjectRoleSummaryDto"
+            },
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "REMOVED"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "cmsUser",
+          "status",
+          "roles",
+          "effectivePermissionCodes",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "removedAt"
+        ],
+        "type": "object"
+      },
       "ProjectResponseDto": {
         "properties": {
           "_count": {
@@ -11500,6 +11762,24 @@
         },
         "required": [
           "refreshToken"
+        ],
+        "type": "object"
+      },
+      "RemoveProjectMembershipDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "reason"
         ],
         "type": "object"
       },
@@ -15371,6 +15651,33 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpdateProjectMembershipDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "roleIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "roleIds",
+          "reason",
+          "version"
+        ],
         "type": "object"
       },
       "UpdateScenarioActionDefinitionDto": {
@@ -20316,6 +20623,329 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/memberships": {
+      "get": {
+        "operationId": "ProjectMembership_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "REMOVED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMembershipListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List safe Project Membership summaries",
+        "tags": [
+          "IAM Project Memberships"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.memberships.read",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.members.read",
+            "scope": "PROJECT"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ProjectMembership_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectMembershipDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMembershipResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "description": "Membership conflict"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add or reactivate a managed Project Membership",
+        "tags": [
+          "IAM Project Memberships"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.memberships.manage",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.members.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/memberships/{membershipId}": {
+      "get": {
+        "operationId": "ProjectMembership_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "membershipId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMembershipResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one safe Project Membership summary",
+        "tags": [
+          "IAM Project Memberships"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.memberships.read",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.members.read",
+            "scope": "PROJECT"
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ProjectMembership_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "membershipId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectMembershipDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMembershipResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "description": "VERSION_CONFLICT or LAST_PROJECT_OWNER"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace managed roles using optimistic versioning",
+        "tags": [
+          "IAM Project Memberships"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.memberships.manage",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.members.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/memberships/{membershipId}/remove": {
+      "post": {
+        "operationId": "ProjectMembership_remove",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "membershipId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveProjectMembershipDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMembershipResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "description": "VERSION_CONFLICT or LAST_PROJECT_OWNER"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove Project Membership access without physical deletion",
+        "tags": [
+          "IAM Project Memberships"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.memberships.manage",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.members.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/project-actions": {
       "get": {
         "operationId": "ProductActions_projectActions",
@@ -20497,6 +21127,57 @@
         ],
         "tags": [
           "admin-product-actions"
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/roles": {
+      "get": {
+        "operationId": "ManagedProjectRole_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedProjectRoleCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List active managed Project Roles for membership assignment",
+        "tags": [
+          "IAM Project Roles"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "platform.memberships.read",
+            "scope": "PLATFORM"
+          },
+          {
+            "code": "project.members.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.roles.read",
+            "scope": "PROJECT"
+          }
         ]
       }
     },

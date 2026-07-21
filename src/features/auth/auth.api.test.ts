@@ -62,6 +62,8 @@ function project(
     createdAt: '2026-07-21T10:00:00.000Z',
     updatedAt: '2026-07-21T10:00:00.000Z',
     membershipId: `membership-${id}`,
+    membershipStatus: 'ACTIVE',
+    membershipVersion: 1,
     roleKeys,
     effectivePermissionCodes,
   }

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
+import { canReadProjectMemberships } from "@/features/project-memberships/model/project-membership-permissions";
 import AppShell from "@/widgets/layout/AppShell.vue";
 
 export const router = createRouter({
@@ -39,6 +40,12 @@ export const router = createRouter({
           path: "project",
           name: "project",
           component: () => import("@/pages/ProjectPage.vue"),
+        },
+        {
+          path: "project/memberships",
+          name: "project-memberships",
+          component: () => import("@/pages/ProjectMembershipsPage.vue"),
+          meta: { projectMembershipAccess: true },
         },
         {
           path: "profile-fields",
@@ -197,6 +204,15 @@ router.beforeEach(async (to) => {
   if (
     typeof to.meta.platformPermission === "string" &&
     !auth.user?.platformPermissionCodes?.includes(to.meta.platformPermission)
+  )
+    return { name: "overview" };
+  if (
+    to.meta.projectMembershipAccess &&
+    (!auth.project ||
+      !canReadProjectMemberships(
+        auth.user?.platformPermissionCodes ?? [],
+        auth.project.effectivePermissionCodes ?? [],
+      ))
   )
     return { name: "overview" };
   if (to.name === "login" && auth.isAuthenticated) return { name: "overview" };

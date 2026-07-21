@@ -73,6 +73,16 @@ export const useAuthStore = defineStore('auth', () => {
     return restorePromise
   }
 
+  async function refreshContext() {
+    if (phase.value !== 'AUTHENTICATED') return
+    try {
+      applyContext(await authApi.refreshContext())
+    } catch (cause) {
+      resetAuthentication()
+      throw cause
+    }
+  }
+
   async function login(login: string, password: string) {
     phase.value = 'LOGIN_PENDING'
     setupToken.value = null
@@ -157,6 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
     requiresPasswordSetup,
     requiresProjectSelection,
     restore,
+    refreshContext,
     login,
     completePasswordSetup,
     cancelPasswordSetup,

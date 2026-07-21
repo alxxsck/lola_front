@@ -12,6 +12,7 @@ vi.mock('./auth.api', () => ({
     logout: vi.fn(),
     logoutAll: vi.fn(),
     completePasswordSetup: vi.fn(),
+    refreshContext: vi.fn(),
   },
 }))
 
@@ -105,6 +106,69 @@ describe('CMS User authentication state', () => {
 
     expect(auth.phase).toBe('AUTHENTICATED')
     expect(auth.isAuthenticated).toBe(true)
+    expect(auth.project).toBeNull()
+  })
+
+  it('refreshes selected Project authority after a self-affecting membership mutation', async () => {
+    const auth = useAuthStore()
+    auth.$patch({
+      phase: 'AUTHENTICATED',
+      user: { id: 'operator-1', email: 'operator@example.com', name: 'Olga' },
+      projects: [
+        {
+          id: 'project-1',
+          name: 'Project One',
+          slug: 'project-one',
+          status: 'ACTIVE',
+          publicKey: 'public',
+          defaultLocale: 'ru',
+          supportedLocales: ['ru'],
+          assistantName: 'Lola',
+          systemPrompt: '',
+          voiceInstructions: '',
+          settings: {},
+          effectivePermissionCodes: ['project.members.manage'],
+        },
+      ],
+      project: {
+        id: 'project-1',
+        name: 'Project One',
+        slug: 'project-one',
+        status: 'ACTIVE',
+        publicKey: 'public',
+        defaultLocale: 'ru',
+        supportedLocales: ['ru'],
+        assistantName: 'Lola',
+        systemPrompt: '',
+        voiceInstructions: '',
+        settings: {},
+        effectivePermissionCodes: ['project.members.manage'],
+      },
+    })
+    vi.mocked(authApi.refreshContext).mockResolvedValue({
+      user: { id: 'operator-1', email: 'operator@example.com', name: 'Olga' },
+      projects: [],
+    })
+
+    await auth.refreshContext()
+
+    expect(authApi.refreshContext).toHaveBeenCalledOnce()
+    expect(auth.project).toBeNull()
+    expect(auth.projects).toEqual([])
+  })
+
+  it('fails closed when refreshed self authority cannot be established', async () => {
+    const auth = useAuthStore()
+    auth.$patch({
+      phase: 'AUTHENTICATED',
+      user: { id: 'operator-1', email: 'operator@example.com', name: 'Olga' },
+    })
+    vi.mocked(authApi.refreshContext).mockRejectedValue(new Error('context unavailable'))
+
+    await expect(auth.refreshContext()).rejects.toThrow('context unavailable')
+
+    expect(auth.phase).toBe('ANONYMOUS')
+    expect(auth.user).toBeNull()
     expect(auth.project).toBeNull()
   })
 

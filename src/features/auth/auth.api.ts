@@ -83,6 +83,9 @@ function mapProject(project: CmsSessionProjectContextDto): Project {
     organization: project.organization,
     _count: project._count,
     memberRole: legacyRole(project.roleKeys),
+    membershipId: project.membershipId,
+    membershipStatus: project.membershipStatus,
+    membershipVersion: project.membershipVersion,
     roleKeys: project.roleKeys,
     effectivePermissionCodes: project.effectivePermissionCodes,
   }
@@ -163,6 +166,10 @@ export const authApi = {
       clearAuthSession()
       throw cause
     }
+  },
+
+  refreshContext(): Promise<AuthContext> {
+    return loadContext()
   },
 
   async completePasswordSetup(

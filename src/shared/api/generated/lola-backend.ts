@@ -74,6 +74,7 @@ import type {
   CreateKnowledgeTextDto,
   CreateMemberDto,
   CreateProjectDto,
+  CreateProjectMembershipDto,
   CreateProjectResponseDto,
   CreateScenarioActionDefinitionDto,
   CreateScenarioAuthoringDto,
@@ -118,6 +119,7 @@ import type {
   ListMessagesDto,
   ListThreadMessagesDto,
   LogoutDto,
+  ManagedProjectRoleCatalogResponseDto,
   PasswordEstablishedResponseDto,
   PasswordSetupRequestDto,
   PlatformEventDefinitionRevisionsParams,
@@ -133,6 +135,9 @@ import type {
   ProfileSyncResponseDto,
   ProjectActionResponseDto,
   ProjectMemberResponseDto,
+  ProjectMembershipListParams,
+  ProjectMembershipListResponseDto,
+  ProjectMembershipResponseDto,
   ProjectResponseDto,
   ProviderBillingSnapshotResponseDto,
   PublishAttributeContractDto,
@@ -143,6 +148,7 @@ import type {
   PublishSegmentRevisionDto,
   PublishedSegmentResponseDto,
   RefreshRequestDto,
+  RemoveProjectMembershipDto,
   RenameConversationDto,
   ResumeConversationAIDto,
   RollbackScenarioDto,
@@ -186,6 +192,7 @@ import type {
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
   UpdateProjectDto,
+  UpdateProjectMembershipDto,
   UpdateScenarioActionDefinitionDto,
   UpdateScenarioDto,
   UpdateSpeechSettingsDto,
@@ -1159,6 +1166,100 @@ export const platformDeleteMember = (
   );
 };
 
+/**
+ * @summary List safe Project Membership summaries
+ */
+export const projectMembershipList = (
+  projectId: string,
+  params?: ProjectMembershipListParams,
+  options?: SecondParameter<typeof request<ProjectMembershipListResponseDto>>,
+) => {
+  return request<ProjectMembershipListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Add or reactivate a managed Project Membership
+ */
+export const projectMembershipCreate = (
+  projectId: string,
+  createProjectMembershipDto: BodyType<CreateProjectMembershipDto>,
+  options?: SecondParameter<typeof request<ProjectMembershipResponseDto>>,
+) => {
+  return request<ProjectMembershipResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createProjectMembershipDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Get one safe Project Membership summary
+ */
+export const projectMembershipGet = (
+  projectId: string,
+  membershipId: string,
+  options?: SecondParameter<typeof request<ProjectMembershipResponseDto>>,
+) => {
+  return request<ProjectMembershipResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships/${membershipId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Replace managed roles using optimistic versioning
+ */
+export const projectMembershipUpdate = (
+  projectId: string,
+  membershipId: string,
+  updateProjectMembershipDto: BodyType<UpdateProjectMembershipDto>,
+  options?: SecondParameter<typeof request<ProjectMembershipResponseDto>>,
+) => {
+  return request<ProjectMembershipResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships/${membershipId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateProjectMembershipDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Remove Project Membership access without physical deletion
+ */
+export const projectMembershipRemove = (
+  projectId: string,
+  membershipId: string,
+  removeProjectMembershipDto: BodyType<RemoveProjectMembershipDto>,
+  options?: SecondParameter<typeof request<ProjectMembershipResponseDto>>,
+) => {
+  return request<ProjectMembershipResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships/${membershipId}/remove`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: removeProjectMembershipDto,
+    },
+    options,
+  );
+};
+
 export const productActionsProjectActions = (
   projectId: string,
   options?: SecondParameter<typeof request<ProjectActionResponseDto[]>>,
@@ -1213,6 +1314,21 @@ export const productActionsArchiveProjectAction = (
       url: `/api/v1/admin/projects/${projectId}/project-actions/${id}/archive`,
       method: "POST",
     },
+    options,
+  );
+};
+
+/**
+ * @summary List active managed Project Roles for membership assignment
+ */
+export const managedProjectRoleList = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<ManagedProjectRoleCatalogResponseDto>
+  >,
+) => {
+  return request<ManagedProjectRoleCatalogResponseDto>(
+    { url: `/api/v1/admin/projects/${projectId}/roles`, method: "GET" },
     options,
   );
 };
@@ -2935,6 +3051,21 @@ export type PlatformCreateMemberResult = NonNullable<
 export type PlatformDeleteMemberResult = NonNullable<
   Awaited<ReturnType<typeof platformDeleteMember>>
 >;
+export type ProjectMembershipListResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipList>>
+>;
+export type ProjectMembershipCreateResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipCreate>>
+>;
+export type ProjectMembershipGetResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipGet>>
+>;
+export type ProjectMembershipUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipUpdate>>
+>;
+export type ProjectMembershipRemoveResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipRemove>>
+>;
 export type ProductActionsProjectActionsResult = NonNullable<
   Awaited<ReturnType<typeof productActionsProjectActions>>
 >;
@@ -2946,6 +3077,9 @@ export type ProductActionsPreviewProjectActionResult = NonNullable<
 >;
 export type ProductActionsArchiveProjectActionResult = NonNullable<
   Awaited<ReturnType<typeof productActionsArchiveProjectAction>>
+>;
+export type ManagedProjectRoleListResult = NonNullable<
+  Awaited<ReturnType<typeof managedProjectRoleList>>
 >;
 export type PlatformRotateResult = NonNullable<
   Awaited<ReturnType<typeof platformRotate>>

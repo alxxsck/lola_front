@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProjectCountsResponseDto } from "./projectCountsResponseDto";
+import type { CmsSessionProjectContextDtoMembershipStatus } from "./cmsSessionProjectContextDtoMembershipStatus";
 import type { OrganizationResponseDto } from "./organizationResponseDto";
 import type { CmsSessionProjectContextDtoSettings } from "./cmsSessionProjectContextDtoSettings";
 import type { ProjectStatus } from "./projectStatus";
@@ -18,6 +19,9 @@ export interface CmsSessionProjectContextDto {
   effectivePermissionCodes: string[];
   id: string;
   membershipId: string;
+  membershipStatus: CmsSessionProjectContextDtoMembershipStatus;
+  /** @minimum 1 */
+  membershipVersion: number;
   name: string;
   organization?: OrganizationResponseDto;
   organizationId: string;
