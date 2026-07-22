@@ -5,13 +5,11 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CmsAuthenticatedResponseDto } from "./cmsAuthenticatedResponseDto";
 import type { PasswordSetupRequiredResponseDto } from "./passwordSetupRequiredResponseDto";
 import type { MfaEnrollmentRequiredResponseDto } from "./mfaEnrollmentRequiredResponseDto";
 import type { MfaRequiredResponseDto } from "./mfaRequiredResponseDto";
 
 export type InitialAccessLogin200 =
-  | CmsAuthenticatedResponseDto
   | PasswordSetupRequiredResponseDto
   | MfaEnrollmentRequiredResponseDto
   | MfaRequiredResponseDto;

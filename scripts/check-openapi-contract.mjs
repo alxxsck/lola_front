@@ -19,7 +19,6 @@ const requiredOperations = new Map([
       label: "CMS User login and Initial Access exchange",
       request: "CmsLoginRequestDto",
       responses: [
-        "CmsAuthenticatedResponseDto",
         "PasswordSetupRequiredResponseDto",
         "MfaEnrollmentRequiredResponseDto",
         "MfaRequiredResponseDto",
@@ -333,18 +332,6 @@ const requiredOperations = new Map([
   [
     "IamMfaManagement_rotateRecoveryCodes",
     { label: "recovery-code rotation", response: "IamMfaRecoveryCodesResponseDto" },
-  ],
-  [
-    "ProjectMfaPolicy_get",
-    { label: "Project MFA policy", response: "ProjectMfaPolicyResponseDto" },
-  ],
-  [
-    "ProjectMfaPolicy_update",
-    {
-      label: "versioned Project MFA policy update",
-      request: "UpdateProjectMfaPolicyDto",
-      response: "ProjectMfaPolicyResponseDto",
-    },
   ],
   [
     "ScenarioAuthoring_catalog",

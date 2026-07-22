@@ -120,7 +120,6 @@ describe("target CMS User auth API", () => {
   });
 
   it("loads target memberships and effective permissions from the self context", async () => {
-    vi.mocked(initialAccessLogin).mockResolvedValue(authenticatedResponse);
     vi.mocked(cmsSessionContextMe).mockResolvedValue(
       sessionContext([
         project(
@@ -132,35 +131,29 @@ describe("target CMS User auth API", () => {
       ]),
     );
 
-    await expect(
-      authApi.login("viewer@example.com", "permanent password"),
-    ).resolves.toEqual({
-      kind: "AUTHENTICATED",
-      context: {
-        user: {
-          id: authenticatedResponse.user.id,
-          email: authenticatedResponse.user.email,
-          name: authenticatedResponse.user.displayName,
-          emailVerifiedAt: null,
-          pendingEmail: null,
-          emailVerificationRetryAfterSeconds: 0,
-          platformPermissionCodes: [],
-        },
-        projects: [
-          expect.objectContaining({
-            id: "project-member",
-            roleKeys: ["PROJECT_ADMIN"],
-            effectivePermissionCodes: ["project.read", "scenario.write"],
-          }),
-        ],
-        selectedProjectId: "project-member",
+    await expect(authApi.refreshContext()).resolves.toEqual({
+      user: {
+        id: authenticatedResponse.user.id,
+        email: authenticatedResponse.user.email,
+        name: authenticatedResponse.user.displayName,
+        emailVerifiedAt: null,
+        pendingEmail: null,
+        emailVerificationRetryAfterSeconds: 0,
+        platformPermissionCodes: [],
       },
+      projects: [
+        expect.objectContaining({
+          id: "project-member",
+          roleKeys: ["PROJECT_ADMIN"],
+          effectivePermissionCodes: ["project.read", "scenario.write"],
+        }),
+      ],
+      selectedProjectId: "project-member",
     });
     expect(cmsSessionContextMe).toHaveBeenCalledOnce();
   });
 
   it("preserves a permission-projected Project context without fabricating settings defaults", async () => {
-    vi.mocked(initialAccessLogin).mockResolvedValue(authenticatedResponse);
     vi.mocked(cmsSessionContextMe).mockResolvedValue(
       sessionContext([
         {
@@ -178,14 +171,8 @@ describe("target CMS User auth API", () => {
       ]),
     );
 
-    const result = await authApi.login(
-      "viewer@example.com",
-      "permanent password",
-    );
-    expect(result.kind).toBe("AUTHENTICATED");
-    if (result.kind !== "AUTHENTICATED")
-      throw new Error("Expected authenticated context");
-    const [mapped] = result.context.projects;
+    const result = await authApi.refreshContext();
+    const [mapped] = result.projects;
 
     expect(mapped).toMatchObject({
       id: "speech-project",
@@ -199,7 +186,6 @@ describe("target CMS User auth API", () => {
   });
 
   it("maps canonical email verification state from the self context", async () => {
-    vi.mocked(initialAccessLogin).mockResolvedValue(authenticatedResponse);
     vi.mocked(cmsSessionContextMe).mockResolvedValue({
       ...sessionContext([]),
       user: {
@@ -210,50 +196,37 @@ describe("target CMS User auth API", () => {
       },
     } as CmsSessionContextResponseDto);
 
-    const result = await authApi.login(
-      "viewer@example.com",
-      "permanent password",
-    );
+    const result = await authApi.refreshContext();
 
     expect(result).toMatchObject({
-      kind: "AUTHENTICATED",
-      context: {
-        user: {
-          email: "viewer@example.com",
-          emailVerifiedAt: null,
-          pendingEmail: "pending@example.com",
-          emailVerificationRetryAfterSeconds: 37,
-        },
+      user: {
+        email: "viewer@example.com",
+        emailVerifiedAt: null,
+        pendingEmail: "pending@example.com",
+        emailVerificationRetryAfterSeconds: 37,
       },
     });
   });
 
   it("authenticates a projectless Platform Operator without fabricating VIEWER access", async () => {
-    vi.mocked(initialAccessLogin).mockResolvedValue(authenticatedResponse);
     vi.mocked(cmsSessionContextMe).mockResolvedValue(
       sessionContext([], ["platform.projects.manage"]),
     );
 
-    const result = await authApi.login(
-      "viewer@example.com",
-      "permanent password",
-    );
+    const result = await authApi.refreshContext();
 
     expect(result).toEqual({
-      kind: "AUTHENTICATED",
-      context: {
-        user: {
-          id: authenticatedResponse.user.id,
-          email: authenticatedResponse.user.email,
-          name: authenticatedResponse.user.displayName,
-          emailVerifiedAt: null,
-          pendingEmail: null,
-          emailVerificationRetryAfterSeconds: 0,
-          platformPermissionCodes: ["platform.projects.manage"],
-        },
-        projects: [],
-        selectedProjectId: undefined,
+      user: {
+        id: authenticatedResponse.user.id,
+        email: authenticatedResponse.user.email,
+        name: authenticatedResponse.user.displayName,
+        emailVerifiedAt: null,
+        pendingEmail: null,
+        emailVerificationRetryAfterSeconds: 0,
+        platformPermissionCodes: ["platform.projects.manage"],
       },
+      projects: [],
+      selectedProjectId: undefined,
     });
   });
 

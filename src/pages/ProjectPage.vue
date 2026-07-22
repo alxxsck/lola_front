@@ -14,7 +14,6 @@ import ActivitySettingsSection from "@/features/activity-settings/ActivitySettin
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
-import ProjectMfaPolicySection from "@/features/project-security/ui/ProjectMfaPolicySection.vue";
 import SpeechSynthesisSection from "@/features/speech-synthesis/SpeechSynthesisSection.vue";
 import type {
   AttributeContractRevisionFieldResponseDto,
@@ -617,12 +616,6 @@ onBeforeUnmount(() => {
           :project-id="project.id"
           :editable="canEditSettings"
           @change="handleActivitySettingsChange"
-        />
-
-        <ProjectMfaPolicySection
-          v-if="canReadSettings"
-          :project-id="project.id"
-          :editable="canEditSettings"
         />
 
         <form
