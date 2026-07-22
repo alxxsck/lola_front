@@ -79,6 +79,9 @@ async function installFixtures(page: Page) {
     if (request.method() === 'GET' && path === '/api/v1/auth/me/sessions') {
       return json(route, { sessions })
     }
+    if (request.method() === 'GET' && path === '/api/v1/auth/me/mfa') {
+      return json(route, { passkeys: [], recoveryCodesRemaining: 0 })
+    }
     if (request.method() === 'DELETE' && path.startsWith('/api/v1/auth/me/sessions/')) {
       const sessionId = path.split('/').at(-1)!
       revokedSessionIds.push(sessionId)
@@ -126,14 +129,14 @@ test('cookie rotation restores reload and security actions never persist auth to
   await page.getByLabel('Email', { exact: true }).fill('operator@example.com')
   await page.getByLabel('Пароль или секрет первоначального доступа').fill('permanent passphrase')
   await page.getByRole('button', { name: 'Продолжить' }).click()
-  await expect(page).toHaveURL(/\/overview$/)
+  await expect(page).toHaveURL(/\/settings\/security$/)
   await expectNoAuthSecrets(page)
 
   const [cookieAfterLogin] = await context.cookies('http://127.0.0.1:4173/api/v1/auth/refresh')
   expect(cookieAfterLogin).toMatchObject({ name: 'lola_cms_refresh', httpOnly: true, sameSite: 'Strict' })
 
   await page.reload()
-  await expect(page).toHaveURL(/\/overview$/)
+  await expect(page).toHaveURL(/\/settings\/security$/)
   expect(fixture.refreshBodies).toEqual([null])
   const [cookieAfterRestore] = await context.cookies('http://127.0.0.1:4173/api/v1/auth/refresh')
   expect(cookieAfterRestore?.value).toBe(refreshCapabilities[1])

@@ -20,6 +20,7 @@ export type ProjectRoleOperation =
   | { kind: 'ROLE_IN_USE' }
   | { kind: 'MANAGED_ROLE_PROTECTED' }
   | { kind: 'PERMISSION_DENIED' }
+  | { kind: 'STEP_UP_REQUIRED' }
   | { kind: 'NOT_FOUND' }
   | { kind: 'ERROR'; message: string }
 
@@ -227,6 +228,14 @@ export function useProjectRoles(
 
   function handleFailure(cause: unknown): void {
     if (cause instanceof ApiError) {
+      if (
+        cause.status === 428 ||
+        cause.code === 'REAUTHENTICATION_REQUIRED' ||
+        cause.code === 'MFA_REQUIRED'
+      ) {
+        operation.value = { kind: 'STEP_UP_REQUIRED' }
+        return
+      }
       if (cause.code === 'ROLE_IN_USE') return void (operation.value = { kind: 'ROLE_IN_USE' })
       if (cause.code === 'MANAGED_ROLE_PROTECTED')
         return void (operation.value = { kind: 'MANAGED_ROLE_PROTECTED' })

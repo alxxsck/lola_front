@@ -15,8 +15,11 @@ import type {
 } from '@/shared/types/domain'
 import {
   RealtimeVoice,
-  ServerActionHandler,
 } from '@/shared/api/generated/models'
+
+const ServerActionHandler = {
+  START_VOICE_CONVERSATION: 'START_VOICE_CONVERSATION',
+} as const
 
 const now = Date.now()
 const isoAgo = (minutes: number) =>
@@ -31,6 +34,7 @@ const automaticAISuspension = () => ({
 
 export const demoProject: Project = {
   id: 'prj_lola_demo',
+  version: 1,
   name: 'Lucky Stars',
   slug: 'lucky_stars',
   status: 'ACTIVE',

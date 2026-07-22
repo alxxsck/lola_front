@@ -12,6 +12,7 @@ const props = defineProps<{
   proposal: AIProposalDetail | null;
   loading: boolean;
   deciding: boolean;
+  canDecide?: boolean;
   error?: string | null;
 }>();
 defineEmits<{ resolve: []; retry: [] }>();
@@ -138,6 +139,7 @@ const evidence = computed(() =>
       <AIProposalDecisionBar
         :proposal="proposal"
         :deciding="deciding"
+        :can-decide="canDecide ?? false"
         @resolve="$emit('resolve')"
       />
 

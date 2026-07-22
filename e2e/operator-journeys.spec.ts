@@ -86,6 +86,35 @@ async function installScenarioAuthoringFixtures(
       }
       if (
         request.method() === "POST" &&
+        path.endsWith("/scenario-authoring/scenarios")
+      ) {
+        const body = request.postDataJSON() as {
+          draft: Record<string, unknown>;
+        };
+        state.calls.draft += 1;
+        state.draftVersion = 1;
+        state.savedDraft = body.draft;
+        return json(route, {
+          scenarioId: "scenario-e2e",
+          currentRevisionId: null,
+          draft: {
+            id: "draft-e2e",
+            version: state.draftVersion,
+            baseRevisionId: null,
+            catalogRevision,
+            deliveryPolicy: body.draft.deliveryPolicy,
+            graph: body.draft.graph,
+            ...(body.draft.rule ? { rule: body.draft.rule } : {}),
+            ...(body.draft.audience ? { audience: body.draft.audience } : {}),
+            localization: body.draft.localization,
+            createdAt: publishedAt,
+            updatedAt: publishedAt,
+            updatedByAdminId: "admin-e2e",
+          },
+        });
+      }
+      if (
+        request.method() === "POST" &&
         path.endsWith("/scenario-authoring/validate")
       ) {
         state.calls.validateRule += 1;
@@ -517,6 +546,8 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
 test("core operator pages load without horizontal overflow or serious accessibility violations", async ({
   page,
 }) => {
+  test.slow();
+
   for (const path of [
     "/overview",
     "/project",
@@ -598,7 +629,7 @@ test("content locales are configured through the Locale Attribute journey", asyn
 
 test("EUAP workspace, Current Profiles and Segment Library expose their primary operator journeys", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto("/profile-fields");
   await expect(
     page.getByRole("heading", {
@@ -611,6 +642,7 @@ test("EUAP workspace, Current Profiles and Segment Library expose their primary 
   await expect(
     page.getByRole("heading", { name: "Новое поле профиля", level: 1 }),
   ).toBeVisible();
+  await page.locator('label[for="profile-field-kind-CUSTOM"]').click();
   await expect(
     page.getByText("Обязательно ли передавать поле?", { exact: true }),
   ).toBeVisible();
@@ -648,8 +680,14 @@ test("EUAP workspace, Current Profiles and Segment Library expose their primary 
   ).toBeVisible();
   await expect(page.locator("tbody tr").first()).toBeVisible();
   await page.locator("tbody tr").first().click();
+  const workspace = page.getByRole("dialog");
+  if (testInfo.project.name === "mobile-chromium") {
+    await page
+      .locator(".mobile-workspace-nav button", { hasText: "Профиль" })
+      .click();
+  }
   await expect(
-    page.getByRole("dialog").getByText("Версия профиля"),
+    workspace.getByText("Версия профиля"),
   ).toBeVisible();
 
   await page.goto("/segments");

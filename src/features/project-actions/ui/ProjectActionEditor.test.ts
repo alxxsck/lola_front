@@ -50,11 +50,15 @@ const dialogStub = {
     '<div v-if="visible" class="dialog-stub"><h2>{{ header }}</h2><slot /><slot name="footer" /></div>',
 };
 const messageStub = { template: '<div class="message-stub"><slot /></div>' };
+const allPermissions = [
+  "project.actions.manage",
+  "project.actions.manage_ai_exposure",
+];
 
 describe("ProjectActionEditor", () => {
-  it("requires OWNER description, audit reason and explicit confirmation before enabling AI", async () => {
+  it("requires AI-exposure Permission, description, audit reason and explicit confirmation", async () => {
     const wrapper = shallowMount(ProjectActionEditor, {
-      props: { action, role: "OWNER" },
+      props: { action, effectivePermissionCodes: allPermissions },
       global: { stubs: { Dialog: dialogStub, Message: messageStub } },
     });
     const aiToggle = wrapper
@@ -103,9 +107,9 @@ describe("ProjectActionEditor", () => {
     });
   });
 
-  it("keeps mutation controls read-only for non-owners", () => {
+  it("keeps mutation controls read-only without the manage Permission", () => {
     const wrapper = shallowMount(ProjectActionEditor, {
-      props: { action, role: "EDITOR" },
+      props: { action, effectivePermissionCodes: [] },
     });
 
     expect(
@@ -135,7 +139,7 @@ describe("ProjectActionEditor", () => {
       },
     };
     const wrapper = shallowMount(ProjectActionEditor, {
-      props: { action: configuredAction, role: "OWNER" },
+      props: { action: configuredAction, effectivePermissionCodes: allPermissions },
       global: { stubs: { Dialog: dialogStub, Message: messageStub } },
     });
 

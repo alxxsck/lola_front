@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CmsSessionProjectContextDto } from "./cmsSessionProjectContextDto";
-import type { CmsAuthenticatedUserResponseDto } from "./cmsAuthenticatedUserResponseDto";
+import type { CmsSessionIdentityResponseDto } from "./cmsSessionIdentityResponseDto";
 
 export interface CmsSessionContextResponseDto {
   platformPermissionCodes: string[];
   projects: CmsSessionProjectContextDto[];
-  user: CmsAuthenticatedUserResponseDto;
+  user: CmsSessionIdentityResponseDto;
 }

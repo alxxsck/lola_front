@@ -30,6 +30,7 @@ const replacementRoleIds = ref<string[]>([])
 const reason = ref('')
 const impactConfirmed = ref(false)
 const validationError = ref('')
+const stepUpPending = ref(false)
 
 let clearRoles: () => void = () => undefined
 const library = useProjectRoles(undefined, {
@@ -127,6 +128,22 @@ function closeDialog(): void {
   target.value = null
 }
 
+async function requireFreshLogin(): Promise<void> {
+  if (stepUpPending.value) return
+  stepUpPending.value = true
+  try {
+    await auth.logout()
+    library.clear()
+    dialogAction.value = null
+    await router.replace({
+      name: 'login',
+      query: { redirect: '/project/roles' },
+    })
+  } finally {
+    stepUpPending.value = false
+  }
+}
+
 function togglePermission(code: string, checked: boolean): void {
   permissionCodes.value = checked
     ? [...new Set([...permissionCodes.value, code])]
@@ -192,7 +209,12 @@ async function submit(): Promise<void> {
     target.value = library.selected.value
     impactConfirmed.value = false
   }
-  if (library.operation.value.kind === 'SUCCESS') closeDialog()
+  if (
+    library.operation.value.kind === 'SUCCESS' ||
+    library.operation.value.kind === 'STEP_UP_REQUIRED'
+  ) {
+    closeDialog()
+  }
 }
 
 watch(
@@ -251,6 +273,18 @@ watch(
     </Message>
     <Message v-else-if="library.operation.value.kind === 'PERMISSION_DENIED'" severity="error" :closable="false">
       Недостаточно прав для этой роли. Действие не повторялось.
+    </Message>
+    <Message v-else-if="library.operation.value.kind === 'STEP_UP_REQUIRED'" severity="warn" :closable="false">
+      <div class="message-action">
+        <span><strong>Требуется свежий вход с MFA.</strong> Действие не повторялось.</span>
+        <Button
+          data-testid="role-step-up"
+          label="Войти заново"
+          size="small"
+          :loading="stepUpPending"
+          @click="requireFreshLogin"
+        />
+      </div>
     </Message>
 
     <div class="role-grid" data-testid="role-library">

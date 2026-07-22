@@ -21,8 +21,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => ({
-    project: { id: "project-1" },
-    user: { role: "OWNER" },
+    project: {
+      id: "project-1",
+      effectivePermissionCodes: [
+        "project.profile_contract.read",
+        "project.profile_contract.write",
+        "project.profile_contract.publish",
+      ],
+    },
   }),
 }));
 vi.mock("vue-router", () => ({

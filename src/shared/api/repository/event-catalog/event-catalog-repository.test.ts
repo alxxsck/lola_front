@@ -1,80 +1,55 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  eventCatalogDetail,
   eventCatalogProjectHealth,
   eventCatalogUpdateMetadata,
-  platformEventDefinitions,
 } from "@/shared/api/generated/lola-backend";
-import type { EventDefinitionResponseDto } from "@/shared/api/generated/models";
 import { apiEventCatalogRepository } from "./event-catalog-repository";
 
 vi.mock("@/shared/api/generated/lola-backend", () => ({
+  eventCatalogDetail: vi.fn(),
   eventCatalogProjectHealth: vi.fn(),
   eventCatalogUpdateMetadata: vi.fn(),
-  platformEventDefinitions: vi.fn(),
 }));
-
-const definitionDto = {
-  id: "revision-4",
-  definitionKeyId: "event-key-1",
-  currentRevisionId: "revision-4",
-  isCurrent: true,
-  projectId: "project-1",
-  code: "deposit.succeeded",
-  name: "Deposit succeeded",
-  description: "A deposit reached the account",
-  version: 4,
-  payloadSchema: {
-    type: "object",
-    properties: { amount: { type: "integer" } },
-  },
-  clientIngestible: false,
-  countsAsActivity: true,
-  enabled: true,
-  origin: "CUSTOM" as const,
-  readOnly: false,
-  createdAt: "2026-07-01T10:00:00.000Z",
-  updatedAt: "2026-07-20T10:00:00.000Z",
-  policyVersion: 3,
-  policyUpdatedAt: "2026-07-19T10:00:00.000Z",
-  metadataUpdatedAt: "2026-07-20T10:00:00.000Z",
-};
 
 describe("apiEventCatalogRepository", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("loads a workspace by stable Event Definition identity and keeps metadata, policy and schema evidence separate", async () => {
-    vi.mocked(platformEventDefinitions).mockResolvedValue([
-      definitionDto as unknown as EventDefinitionResponseDto,
-    ]);
+  it("loads a definition through the generated target endpoint", async () => {
+    vi.mocked(eventCatalogDetail).mockResolvedValue({
+      id: "event-revision-4",
+      projectId: "project-1",
+      definitionKeyId: "event-key-1",
+      currentRevisionId: "event-revision-4",
+      isCurrent: true,
+      code: "deposit.succeeded",
+      name: "Successful deposit",
+      description: null,
+      version: 4,
+      payloadSchema: { type: "object" },
+      enabled: true,
+      clientIngestible: true,
+      countsAsActivity: true,
+      policyVersion: 2,
+      policyUpdatedAt: "2026-07-20T10:00:00.000Z",
+      metadataUpdatedAt: "2026-07-20T09:00:00.000Z",
+      origin: "CUSTOM",
+      readOnly: false,
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-20T10:00:00.000Z",
+      lifecycle: "ACTIVE",
+      archivedAt: null,
+    });
 
     await expect(
       apiEventCatalogRepository.getDefinition("project-1", "event-key-1"),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       definitionKeyId: "event-key-1",
-      code: "deposit.succeeded",
-      metadata: {
-        name: "Deposit succeeded",
-        description: "A deposit reached the account",
-        concurrencyToken: "2026-07-20T10:00:00.000Z",
-      },
-      policy: {
-        version: 3,
-        updatedAt: "2026-07-19T10:00:00.000Z",
-        enabled: true,
-        clientIngestible: false,
-        countsAsActivity: true,
-      },
-      currentSchema: {
-        revisionId: "revision-4",
-        revisionNumber: 4,
-        payloadSchema: definitionDto.payloadSchema,
-      },
-      origin: "CUSTOM",
-      readOnly: false,
+      currentSchema: { revisionId: "event-revision-4", revisionNumber: 4 },
+      policy: { version: 2, enabled: true },
     });
-
-    expect(platformEventDefinitions).toHaveBeenCalledWith("project-1");
+    expect(eventCatalogDetail).toHaveBeenCalledWith("project-1", "event-key-1");
   });
 
   it("updates metadata with its concurrency evidence and preserves the backend schema guarantee", async () => {

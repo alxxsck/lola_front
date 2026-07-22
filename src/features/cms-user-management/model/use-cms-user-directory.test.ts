@@ -93,6 +93,21 @@ describe('CMS User directory state', () => {
     expect(directory.operation.value).toEqual({ kind: 'VERSION_CONFLICT' })
   })
 
+  it('clears stale detail when opening another CMS User fails', async () => {
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(detail())
+      .mockRejectedValueOnce(new Error('network'))
+    const directory = useCmsUserDirectory(api)
+
+    await directory.open(user().id)
+    expect(directory.detail.value?.id).toBe(user().id)
+
+    await directory.open('another-user')
+
+    expect(directory.detail.value).toBeNull()
+    expect(directory.detailError.value).toBe('Не удалось открыть CMS User.')
+  })
+
   it('exposes reauthentication and ambiguous secret outcomes without retrying', async () => {
     vi.mocked(api.get).mockResolvedValue(detail())
     vi.mocked(api.mutate)

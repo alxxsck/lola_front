@@ -7,6 +7,7 @@ export type {
   ScenarioAuthoringField,
 } from "./scenario-authoring-contract";
 export { scenarioAuthoringRepository } from "./scenario-authoring-repository";
+export { segmentCatalogRepository } from "./segment-catalog-repository";
 export type {
   ScenarioDraftContent,
   ScenarioCreateInput,

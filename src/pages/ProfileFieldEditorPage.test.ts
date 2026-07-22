@@ -19,7 +19,12 @@ vi.mock("vue-router", () => ({
   onBeforeRouteLeave: vi.fn(),
 }));
 vi.mock("@/features/auth/auth.store", () => ({
-  useAuthStore: () => ({ project: { id: "project-1" } }),
+  useAuthStore: () => ({
+    project: {
+      id: "project-1",
+      effectivePermissionCodes: ["project.profile_contract.write"],
+    },
+  }),
 }));
 vi.mock("@/shared/api/repository", () => ({ repository: { mode: "mock" } }));
 vi.mock("primevue/usetoast", () => ({ useToast: () => ({ add: vi.fn() }) }));

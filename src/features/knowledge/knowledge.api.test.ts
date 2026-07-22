@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { request } from '@/shared/api/http/orval-mutator'
 import {
   deleteKnowledgeDocument,
-  getKnowledgeProjectRole,
   uploadKnowledgeFile,
 } from './knowledge.api'
 
@@ -28,22 +27,6 @@ const document = {
 
 describe('knowledge API', () => {
   beforeEach(() => vi.mocked(request).mockReset())
-
-  it('resolves the current project role from the real membership', async () => {
-    vi.mocked(request).mockResolvedValue([
-      {
-        id: 'membership-1',
-        projectId: 'project-1',
-        adminUserId: 'user-1',
-        email: 'viewer@example.com',
-        role: 'VIEWER',
-      },
-    ])
-
-    await expect(
-      getKnowledgeProjectRole('project-1', 'user-1', 'viewer@example.com'),
-    ).resolves.toBe('VIEWER')
-  })
 
   it('uses a dedicated upload timeout and sends the per-file title', async () => {
     vi.mocked(request).mockResolvedValue({ document, duplicate: false })

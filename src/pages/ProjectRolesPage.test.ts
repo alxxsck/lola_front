@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
       effectivePermissionCodes: ['project.roles.read', 'project.roles.manage'],
     } as { id: string; effectivePermissionCodes: string[] } | null,
     refreshContext: vi.fn(),
+    logout: vi.fn(),
   },
 }))
 
@@ -97,6 +98,7 @@ describe('Project Roles page', () => {
       effectivePermissionCodes: ['project.roles.read', 'project.roles.manage'],
     }
     mocks.auth.refreshContext.mockResolvedValue(undefined)
+    mocks.auth.logout.mockResolvedValue(undefined)
     vi.mocked(projectRoleApi.list).mockResolvedValue({ items: [role()] })
     vi.mocked(projectRoleApi.permissions).mockResolvedValue({
       groups: [
@@ -205,5 +207,34 @@ describe('Project Roles page', () => {
         expectedAssignedMembershipCountCapped: false,
       }),
     )
+  })
+
+  it('offers a fresh login after step-up denial without replaying the role mutation', async () => {
+    vi.mocked(projectRoleApi.create).mockRejectedValue(
+      new ApiError(428, 'unsafe backend text', undefined, 'step-up-request', 'MFA_REQUIRED'),
+    )
+    const wrapper = mountPage()
+    await flushPromises()
+    await wrapper.get('[data-testid="create-role"]').trigger('click')
+    await wrapper.get('[data-testid="role-key"]').setValue('SUPPORT_READER')
+    await wrapper.get('[data-testid="role-name"]').setValue('Support reader')
+    await wrapper.get('[data-testid="role-description"]').setValue('Reads support queues')
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    await wrapper.get('[data-testid="role-reason"]').setValue('Approved role creation')
+    await wrapper.get('[data-testid="submit-role"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Требуется свежий вход с MFA')
+    expect(wrapper.text()).not.toContain('unsafe backend text')
+    expect(projectRoleApi.create).toHaveBeenCalledOnce()
+
+    await wrapper.get('[data-testid="role-step-up"]').trigger('click')
+    await flushPromises()
+    expect(mocks.auth.logout).toHaveBeenCalledOnce()
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: 'login',
+      query: { redirect: '/project/roles' },
+    })
+    expect(projectRoleApi.create).toHaveBeenCalledOnce()
   })
 })

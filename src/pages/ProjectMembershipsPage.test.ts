@@ -2,6 +2,7 @@ import { flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProjectMembershipsPage from './ProjectMembershipsPage.vue'
 import { projectMembershipApi } from '@/features/project-memberships/api/project-membership.api'
+import { ApiError } from '@/shared/api/http/api-error'
 
 const projectId = '00000000-0000-4000-8000-000000000010'
 const currentUserId = '00000000-0000-4000-8000-000000000020'
@@ -27,6 +28,7 @@ const mocks = vi.hoisted(() => ({
       ],
     } as { id: string; effectivePermissionCodes: string[] } | null,
     refreshContext: vi.fn(),
+    logout: vi.fn(),
   },
 }))
 
@@ -172,6 +174,7 @@ describe('Project Memberships page', () => {
     })
     vi.mocked(projectMembershipApi.create).mockResolvedValue(createdMembership)
     mocks.auth.refreshContext.mockResolvedValue(undefined)
+    mocks.auth.logout.mockResolvedValue(undefined)
   })
 
   it('keeps attach Platform-only even when Project membership management is available', async () => {
@@ -196,6 +199,22 @@ describe('Project Memberships page', () => {
       reason: 'Назначение подтверждено владельцем',
     })
     expect(mocks.auth.refreshContext).toHaveBeenCalledOnce()
+  })
+
+  it('formats email verification and last login for the member table', async () => {
+    const wrapper = mountPage()
+    await flushPromises()
+    const page = wrapper.vm as unknown as {
+      emailVerificationLabel(verified: boolean): string
+      lastLoginLabel(value: string | null): string
+    }
+
+    expect(page.emailVerificationLabel(true)).toBe('Email подтверждён')
+    expect(page.emailVerificationLabel(false)).toBe('Email не подтверждён')
+    expect(page.lastLoginLabel(null)).toBe('Последний вход: ещё не было')
+    expect(page.lastLoginLabel('2026-07-21T10:00:00.000Z')).toContain(
+      'Последний вход:',
+    )
   })
 
   it('clears cached identities and redirects after a successful self-removal refresh', async () => {
@@ -235,5 +254,27 @@ describe('Project Memberships page', () => {
 
     expect(wrapper.get('[data-testid="membership-count"]').text()).toBe('0')
     expect(mocks.replace).toHaveBeenCalledWith({ name: 'overview' })
+  })
+
+  it('offers a fresh login after step-up denial without replaying the membership mutation', async () => {
+    vi.mocked(projectMembershipApi.create).mockRejectedValue(
+      new ApiError(401, 'unsafe backend text', undefined, 'step-up-request', 'MFA_REQUIRED'),
+    )
+    const wrapper = mountPage()
+    await flushPromises()
+    await submitSelfMutation(wrapper)
+
+    expect(wrapper.text()).toContain('Требуется свежий вход с MFA')
+    expect(wrapper.text()).not.toContain('unsafe backend text')
+    expect(projectMembershipApi.create).toHaveBeenCalledOnce()
+
+    await wrapper.get('[data-testid="membership-step-up"]').trigger('click')
+    await flushPromises()
+    expect(mocks.auth.logout).toHaveBeenCalledOnce()
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: 'login',
+      query: { redirect: '/project/memberships' },
+    })
+    expect(projectMembershipApi.create).toHaveBeenCalledOnce()
   })
 })

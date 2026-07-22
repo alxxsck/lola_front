@@ -17,7 +17,6 @@ import type {
   ActivityItem,
   AdminMessageResult,
   AuditLog,
-  CmsUser,
   Conversation,
   ConversationAISuspensionDetail,
   ConversationMessage,
@@ -42,7 +41,6 @@ const DATA_KEY = 'lola-cms-demo-data-v2'
 
 interface DemoData {
   project: Project
-  members: CmsUser[]
   elements: UiElement[]
   events: EventDefinition[]
   scenarios: Scenario[]
@@ -71,14 +69,6 @@ interface DemoData {
 const initialData = (): DemoData =>
   structuredClone({
     project: demoProject,
-    members: [
-      {
-        id: 'member_1',
-        email: 'admin@lola.demo',
-        name: 'Алексей',
-        role: 'OWNER',
-      },
-    ],
     elements: demoElements,
     events: demoEvents,
     scenarios: demoScenarios,
@@ -133,7 +123,6 @@ const readDemo = (): DemoData => {
     return {
       ...initialData(),
       ...data,
-      members: data.members ?? initialData().members,
       suspensionDetails: data.suspensionDetails ?? {},
       suspensionHistory: data.suspensionHistory ?? {},
       suspensionIdempotency: data.suspensionIdempotency ?? {},
@@ -363,28 +352,6 @@ export const mockRepository: LolaRepository = {
     writeDemo(data)
     await pause()
     return data.project
-  },
-  async getMembers() {
-    await pause()
-    return readDemo().members
-  },
-  async createMember(_projectId, member) {
-    const data = readDemo()
-    const saved: CmsUser = {
-      id: uid('member'),
-      name: member.name ?? member.email,
-      ...member,
-    }
-    data.members.push(saved)
-    writeDemo(data)
-    await pause()
-    return saved
-  },
-  async deleteMember(_projectId, memberId) {
-    const data = readDemo()
-    data.members = data.members.filter((item) => item.id !== memberId)
-    writeDemo(data)
-    await pause()
   },
   async getElements() {
     await pause()
@@ -1049,6 +1016,7 @@ export const mockRepository: LolaRepository = {
   async getActivitySettings() {
     await pause()
     return {
+      projectVersion: demoProject.version,
       timezone: 'UTC',
       visitInactivitySeconds: 1800,
       reconnectGraceSeconds: 30,
@@ -1067,6 +1035,7 @@ export const mockRepository: LolaRepository = {
     await pause()
     return {
       ...value,
+      projectVersion: value.expectedVersion + 1,
       limits: {
         visitInactivitySeconds: { min: 60, max: 86400 },
         reconnectGraceSeconds: { min: 1, max: 300 },

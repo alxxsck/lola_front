@@ -170,6 +170,32 @@ describe('Project Role state', () => {
     },
   )
 
+  it.each([
+    [428, undefined],
+    [401, 'REAUTHENTICATION_REQUIRED'],
+    [401, 'MFA_REQUIRED'],
+  ] as const)(
+    'requires an explicit step-up for HTTP %s / %s and never replays the role mutation',
+    async (status, code) => {
+      const api = client()
+      vi.mocked(api.update).mockRejectedValue(
+        new ApiError(status, 'unsafe backend text', undefined, 'step-up-request', code),
+      )
+      const roles = useProjectRoles(api)
+      await roles.initialize(projectId)
+
+      await roles.update(projectId, role(), {
+        name: 'Changed',
+        permissionCodes: ['project.members.read'],
+        reason: 'Approved support role change',
+      })
+
+      expect(api.update).toHaveBeenCalledOnce()
+      expect(roles.items.value).toEqual([role()])
+      expect(roles.operation.value).toEqual({ kind: 'STEP_UP_REQUIRED' })
+    },
+  )
+
   it('requires explicit reassignment data and does not archive a role in use', async () => {
     const api = client()
     vi.mocked(api.archive).mockRejectedValue(new ApiError(409, 'unsafe', undefined, 'r2', 'ROLE_IN_USE'))

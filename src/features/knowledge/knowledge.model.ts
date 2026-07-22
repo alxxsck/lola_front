@@ -32,8 +32,6 @@ export interface KnowledgeDocumentMutation {
   duplicate: boolean
 }
 
-export type KnowledgeProjectRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'VIEWER'
-
 export interface KnowledgeTextInput {
   title: string
   text: string

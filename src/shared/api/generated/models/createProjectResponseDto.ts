@@ -11,4 +11,5 @@ import type { ProjectResponseDto } from "./projectResponseDto";
 export interface CreateProjectResponseDto {
   credentials: ProjectCredentialsResponseDto;
   project: ProjectResponseDto;
+  replayed: boolean;
 }

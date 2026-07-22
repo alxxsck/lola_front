@@ -82,6 +82,7 @@ import {
   type TranslationUiState,
 } from "@/features/scenario-localization/ui";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import { repository } from "@/shared/api/repository";
 import type {
@@ -124,6 +125,7 @@ import {
 
 interface ScenarioForm {
   id?: string;
+  updatedAt?: string;
   code: string;
   name: string;
   description: string;
@@ -470,7 +472,17 @@ const durableSourceIsDirty = computed(
     localizationIsDirty.value,
 );
 const canManage = computed(
-  () => auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.scenarios.write",
+    ),
+);
+const canPublishScenario = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.scenarios.publish",
+  ),
 );
 const canEdit = computed(() => canManage.value && authoringEditable.value);
 const sourceSnapshotUnavailable = computed(
@@ -974,6 +986,7 @@ async function load() {
     if (scenario) {
       Object.assign(form, {
         id: scenario.id,
+        updatedAt: scenario.updatedAt,
         code: scenario.code,
         name: scenario.name,
         description: scenario.description ?? "",
@@ -1624,6 +1637,9 @@ async function save() {
         position,
       })),
     };
+    if (payload.status === 'ARCHIVED') {
+      throw new Error('Архивный сценарий нельзя изменить из редактора');
+    }
     const draftContent = {
       catalogRevision: context.contract.revision,
       ...(ruleResult?.ok ? { rule: ruleResult.value } : {}),
@@ -1658,13 +1674,16 @@ async function save() {
         status: payload.status,
         conversationPolicy: payload.conversationPolicy,
         priority: payload.priority,
-        conditions: payload.conditions,
         cooldownSeconds: payload.cooldownSeconds,
         maxRunsPerUser: payload.maxRunsPerUser,
         activeFrom: payload.activeFrom,
         activeTo: payload.activeTo,
+        expectedUpdatedAt: form.updatedAt ?? '',
+        reason: 'Update scenario metadata from CMS editor',
       };
-      await repository.updateScenarioMetadata(projectId, scenarioId, metadata);
+      if (!form.updatedAt) throw new Error('Не удалось определить версию сценария');
+      const updated = await repository.updateScenarioMetadata(projectId, scenarioId, metadata);
+      form.updatedAt = updated.updatedAt;
     } else {
       const created = await createAuthoringScenario(projectId, {
         scenario: {
@@ -2323,7 +2342,7 @@ function leave() {
               публикации условия и аудитория фиксируются по версии; перед
               доставкой обе проверки выполняются независимо.</Message
             ><ScenarioPublishPanel
-              v-if="ruleContext && canEdit"
+              v-if="ruleContext && canEdit && canPublishScenario"
               :project-id="auth.project?.id ?? ''"
               :scenario-id="form.id ?? ''"
               :draft="ruleDraft"
@@ -2344,8 +2363,8 @@ function leave() {
               @focus-issue="focusDraftIssue"
               @reload-request="reloadAfterConflict"
               @resave-required="requireDraftResave"
-            /><Message v-else-if="!canManage" severity="info" :closable="false"
-              >Публикация доступна только владельцам и администраторам.</Message
+            /><Message v-else-if="!canPublishScenario" severity="info" :closable="false"
+              >У вас нет права публиковать сценарии.</Message
             ><Message
               v-else-if="!authoringEditable"
               severity="info"
@@ -2360,7 +2379,7 @@ function leave() {
               :scenario-id="form.id"
               :current-revision-id="currentRevisionId"
               :localization-catalog="authoringContract?.localization"
-              :readonly="!canManage"
+              :readonly="!canPublishScenario"
               @head-change="revisionHeadChanged"
             />
           </div>

@@ -1,9 +1,26 @@
 import type {
   EventCatalogHealthResponseDto,
   EventDefinitionMetadataMutationResponseDto,
-  EventDefinitionResponseDto,
   UpdateEventDefinitionMetadataDto,
 } from "@/shared/api/generated/models";
+
+export interface EventCatalogDefinitionRecord {
+  definitionKeyId: string;
+  currentRevisionId?: string | null;
+  code: string;
+  name: string;
+  description?: string | null;
+  version: number;
+  payloadSchema: Record<string, unknown>;
+  enabled: boolean;
+  clientIngestible: boolean;
+  countsAsActivity: boolean;
+  policyVersion: number;
+  policyUpdatedAt: string;
+  metadataUpdatedAt: string;
+  origin: "CUSTOM" | "LOLA_MANAGED";
+  readOnly: boolean;
+}
 
 export interface EventCatalogDefinitionHealth {
   consumers: EventCatalogHealthResponseDto["consumers"];
@@ -31,7 +48,7 @@ export interface EventCatalogDefinition {
     revisionNumber: number;
     payloadSchema: Record<string, unknown>;
   };
-  origin: EventDefinitionResponseDto["origin"];
+  origin: EventCatalogDefinitionRecord["origin"];
   readOnly: boolean;
 }
 
@@ -47,7 +64,7 @@ export interface EventMetadataUpdateResult {
 }
 
 export function toEventCatalogDefinition(
-  dto: EventDefinitionResponseDto,
+  dto: EventCatalogDefinitionRecord,
 ): EventCatalogDefinition {
   const currentRevisionId =
     typeof dto.currentRevisionId === "string" ? dto.currentRevisionId : null;

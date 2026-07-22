@@ -5,9 +5,11 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CmsUserProvisioningDtoDeliveryMode } from "./cmsUserProvisioningDtoDeliveryMode";
 import type { CmsUserProjectAssignmentDto } from "./cmsUserProjectAssignmentDto";
 
 export interface CmsUserProvisioningDto {
+  deliveryMode?: CmsUserProvisioningDtoDeliveryMode;
   /** @maxLength 320 */
   email: string;
   /**
@@ -20,9 +22,6 @@ export interface CmsUserProvisioningDto {
    * @maxLength 100
    */
   givenName: string;
-  /**
-   * @minItems 1
-   * @maxItems 64
-   */
-  projectAssignments: CmsUserProjectAssignmentDto[];
+  /** @maxItems 64 */
+  projectAssignments?: CmsUserProjectAssignmentDto[];
 }

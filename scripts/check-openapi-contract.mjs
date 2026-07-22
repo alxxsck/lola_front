@@ -21,6 +21,8 @@ const requiredOperations = new Map([
       responses: [
         "CmsAuthenticatedResponseDto",
         "PasswordSetupRequiredResponseDto",
+        "MfaEnrollmentRequiredResponseDto",
+        "MfaRequiredResponseDto",
       ],
     },
   ],
@@ -47,6 +49,7 @@ const requiredOperations = new Map([
       request: "CmsUserProvisioningDto",
       responses: [
         "CmsUserProvisioningCreatedResponseDto",
+        "CmsUserProvisioningManualCreatedResponseDto",
         "CmsUserProvisioningReplayResponseDto",
       ],
     },
@@ -117,22 +120,15 @@ const requiredOperations = new Map([
     { label: "projects", response: "ProjectResponseDto" },
   ],
   [
-    "Platform_createScenario",
-    {
-      label: "scenario creation",
-      request: "CreateScenarioDto",
-      response: "ScenarioResponseDto",
-    },
+    "PlatformOperations_projectSettings",
+    { label: "project-scoped settings", response: "ProjectResponseDto" },
   ],
   [
-    "Platform_scenarios",
-    { label: "scenarios", response: "ScenarioResponseDto" },
-  ],
-  [
-    "Platform_actionDefinitions",
+    "PlatformOperations_updateProjectSettings",
     {
-      label: "scenario action definitions",
-      response: "ScenarioActionDefinitionResponseDto",
+      label: "project-scoped settings update",
+      request: "UpdateProjectSettingsDto",
+      response: "ProjectResponseDto",
     },
   ],
   [
@@ -154,36 +150,6 @@ const requiredOperations = new Map([
     { label: "event log detail", response: "EventLogResponseDto" },
   ],
   [
-    "Platform_userAttributeDefinitions",
-    {
-      label: "user attribute schema",
-      response: "UserAttributeSchemaResponseDto",
-    },
-  ],
-  [
-    "Platform_createUserAttributeDefinition",
-    {
-      label: "user attribute creation",
-      request: "CreateUserAttributeDefinitionDto",
-      response: "UserAttributeDefinitionMutationResponseDto",
-    },
-  ],
-  [
-    "Platform_updateUserAttributeDefinition",
-    {
-      label: "user attribute update",
-      request: "UpdateUserAttributeDefinitionDto",
-      response: "UserAttributeDefinitionMutationResponseDto",
-    },
-  ],
-  [
-    "Platform_deleteUserAttributeDefinition",
-    {
-      label: "user attribute deletion",
-      response: "UserAttributeDefinitionMutationResponseDto",
-    },
-  ],
-  [
     "ScenarioRuns_list",
     { label: "scenario runs", response: "ScenarioRunResponseDto" },
   ],
@@ -195,21 +161,51 @@ const requiredOperations = new Map([
     },
   ],
   [
-    "Platform_usersPage",
+    "PlatformOperations_usersPage",
     { label: "cursor-paginated users", response: "EndUserPageResponseDto" },
   ],
   [
-    "Platform_eventDefinitionRevisions",
+    "EventCatalog_list",
     {
-      label: "event definition revision history",
-      response: "EventDefinitionRevisionPageResponseDto",
+      label: "event catalog definition collection",
+      response: "EventCatalogDefinitionListResponseDto",
     },
   ],
   [
-    "Platform_eventDefinitionRevision",
+    "EventCatalog_create",
     {
-      label: "event definition revision detail",
-      response: "EventDefinitionRevisionResponseDto",
+      label: "event catalog definition creation",
+      request: "CreateEventCatalogDefinitionDto",
+      response: "EventCatalogDefinitionResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_detail",
+    {
+      label: "event catalog definition detail",
+      response: "EventCatalogDefinitionResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_revisions",
+    {
+      label: "event catalog revision collection",
+      response: "EventCatalogRevisionPageResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_revision",
+    {
+      label: "event catalog revision detail",
+      response: "EventCatalogRevisionResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_archive",
+    {
+      label: "event catalog definition archive",
+      request: "ArchiveEventDefinitionDto",
+      response: "EventCatalogDefinitionResponseDto",
     },
   ],
   [
@@ -260,15 +256,75 @@ const requiredOperations = new Map([
     },
   ],
   [
-    "Platform_activitySettings",
+    "PlatformOperations_activitySettings",
     { label: "activity settings", response: "ActivitySettingsResponseDto" },
   ],
   [
-    "Platform_updateActivitySettings",
+    "PlatformOperations_updateActivitySettings",
     {
       label: "activity settings update",
       request: "UpdateActivitySettingsDto",
       response: "ActivitySettingsResponseDto",
+    },
+  ],
+  [
+    "IamMfa_enrollmentOptions",
+    {
+      label: "MFA passkey enrollment options",
+      request: "IamMfaCapabilityRequestDto",
+      response: "IamMfaEnrollmentOptionsResponseDto",
+    },
+  ],
+  [
+    "IamMfa_completeEnrollment",
+    {
+      label: "MFA passkey enrollment completion",
+      request: "IamMfaEnrollmentCompleteRequestDto",
+      response: "IamMfaEnrollmentCompleteResponseDto",
+    },
+  ],
+  [
+    "IamMfa_completeAuthentication",
+    {
+      label: "MFA passkey authentication completion",
+      request: "IamMfaAuthenticationCompleteRequestDto",
+      response: "IamMfaAuthenticatedResponseDto",
+    },
+  ],
+  [
+    "IamMfa_completeRecovery",
+    {
+      label: "MFA recovery and replacement enrollment",
+      request: "IamMfaRecoveryCompleteRequestDto",
+      response: "IamMfaRecoveryEnrollmentOptionsResponseDto",
+    },
+  ],
+  [
+    "IamMfaManagement_summary",
+    { label: "MFA factor summary", response: "IamMfaFactorSummaryResponseDto" },
+  ],
+  [
+    "IamMfaManagement_beginPasskeyEnrollment",
+    { label: "managed passkey enrollment", response: "IamMfaEnrollmentOptionsResponseDto" },
+  ],
+  [
+    "IamMfaManagement_removePasskey",
+    { label: "passkey removal", response: "IamMfaPasskeyRemovedResponseDto" },
+  ],
+  [
+    "IamMfaManagement_rotateRecoveryCodes",
+    { label: "recovery-code rotation", response: "IamMfaRecoveryCodesResponseDto" },
+  ],
+  [
+    "ProjectMfaPolicy_get",
+    { label: "Project MFA policy", response: "ProjectMfaPolicyResponseDto" },
+  ],
+  [
+    "ProjectMfaPolicy_update",
+    {
+      label: "versioned Project MFA policy update",
+      request: "UpdateProjectMfaPolicyDto",
+      response: "ProjectMfaPolicyResponseDto",
     },
   ],
   [
@@ -284,6 +340,36 @@ const requiredOperations = new Map([
       label: "atomic scenario and authoring draft creation",
       request: "CreateScenarioAuthoringDto",
       response: "CreateScenarioAuthoringResponseDto",
+    },
+  ],
+  [
+    "ScenarioAuthoring_listScenarios",
+    {
+      label: "scenario authoring summary collection",
+      response: "ScenarioAuthoringSummaryResponseDto",
+    },
+  ],
+  [
+    "ScenarioAuthoring_updateScenarioMetadata",
+    {
+      label: "scenario authoring metadata update",
+      request: "UpdateScenarioAuthoringMetadataDto",
+      response: "ScenarioAuthoringSummaryResponseDto",
+    },
+  ],
+  [
+    "ScenarioAuthoring_archiveScenario",
+    {
+      label: "scenario authoring archive",
+      request: "ArchiveScenarioAuthoringDto",
+      response: "ScenarioAuthoringSummaryResponseDto",
+    },
+  ],
+  [
+    "SegmentCatalog_catalog",
+    {
+      label: "segment-owned authoring catalog",
+      response: "ConditionCatalogResponseDto",
     },
   ],
   [
@@ -732,9 +818,39 @@ for (const deprecatedSchema of [
   "RefreshRequestDto",
   "LogoutDto",
   "SuccessResponseDto",
+  "CreateScenarioDto",
+  "ScenarioResponseDto",
+  "EventDefinitionResponseDto",
+  "CreateEventDefinitionDto",
+  "UpdateEventDefinitionDto",
+  "ScenarioActionDefinitionResponseDto",
 ]) {
   if (document.components?.schemas?.[deprecatedSchema]) {
     throw new Error(`OpenAPI still exposes deprecated auth schema ${deprecatedSchema}`);
+  }
+}
+
+for (const deprecatedOperation of [
+  "Platform_scenarios",
+  "Platform_createScenario",
+  "Platform_updateScenario",
+  "Platform_deleteScenario",
+  "Platform_eventDefinitions",
+  "Platform_createEventDefinition",
+  "Platform_updateEventDefinition",
+  "Platform_deleteEventDefinition",
+  "Platform_actionDefinitions",
+  "Platform_uiElements",
+  "Platform_createUi",
+  "Platform_updateUi",
+  "Platform_deleteUi",
+  "Platform_users",
+  "Platform_usersPage",
+  "Platform_activitySettings",
+  "Platform_updateActivitySettings",
+]) {
+  if (operations.some((operation) => operation.operationId === deprecatedOperation)) {
+    throw new Error(`OpenAPI still exposes deprecated operation ${deprecatedOperation}`);
   }
 }
 
@@ -821,8 +937,62 @@ requireRequiredProperties("CmsUserProvisioningDto", [
   "email",
   "givenName",
   "familyName",
-  "projectAssignments",
 ]);
+const provisioningAssignments = contractSchema("CmsUserProvisioningDto")
+  .properties?.projectAssignments;
+if (
+  provisioningAssignments?.type !== "array" ||
+  !Array.isArray(provisioningAssignments.default) ||
+  provisioningAssignments.default.length !== 0
+) {
+  throw new Error(
+    "CmsUserProvisioningDto.projectAssignments must be an optional array with an empty default",
+  );
+}
+requireSchemaProperties("CmsUserProvisioningManualCreatedResponseDto", [
+  "cmsUserId",
+  "status",
+  "replayed",
+  "deliveryMode",
+  "initialAccessSecret",
+  "expiresAt",
+]);
+requireRequiredProperties("CmsUserProvisioningManualCreatedResponseDto", [
+  "cmsUserId",
+  "status",
+  "replayed",
+  "deliveryMode",
+  "initialAccessSecret",
+  "expiresAt",
+]);
+
+for (const schemaName of [
+  "MfaEnrollmentRequiredResponseDto",
+  "MfaRequiredResponseDto",
+  "IamMfaEnrollmentOptionsResponseDto",
+  "IamMfaRecoveryEnrollmentOptionsResponseDto",
+]) {
+  requireSchemaProperties(schemaName, ["kind", "ceremonyToken", "expiresAt"]);
+  requireRequiredProperties(schemaName, ["kind", "ceremonyToken", "expiresAt"]);
+}
+requireSchemaProperties("MfaRequiredResponseDto", [
+  "publicKey",
+  "recoveryAvailable",
+]);
+requireRequiredProperties("MfaRequiredResponseDto", [
+  "publicKey",
+  "recoveryAvailable",
+]);
+requireSchemaProperties("IamMfaEnrollmentOptionsResponseDto", ["publicKey"]);
+requireSchemaProperties("IamMfaRecoveryEnrollmentOptionsResponseDto", ["publicKey", "reason"]);
+for (const schemaName of [
+  "IamMfaEnrollmentOptionsResponseDto",
+  "IamMfaRecoveryEnrollmentOptionsResponseDto",
+]) {
+  if (contractSchema(schemaName).properties?.ceremonyToken?.writeOnly === true) {
+    throw new Error(`${schemaName}.ceremonyToken is a response value and cannot be writeOnly`);
+  }
+}
 requireSchemaProperties("AdminConversationResponseDto", [
   "isCurrent",
   "currentInteractionSessionCount",
@@ -1290,14 +1460,14 @@ requireRequiredProperties("ScenarioRunEligibilityRecheckResponseDto", [
   "decision",
   "fidelity",
 ]);
-requireSchemaProperties("EventDefinitionResponseDto", [
+requireSchemaProperties("EventCatalogDefinitionResponseDto", [
   "definitionKeyId",
   "currentRevisionId",
   "isCurrent",
   "origin",
   "readOnly",
 ]);
-requireSchemaProperties("EventDefinitionRevisionResponseDto", [
+requireSchemaProperties("EventCatalogRevisionResponseDto", [
   "definitionKeyId",
   "currentRevisionId",
   "isCurrent",
@@ -1332,12 +1502,10 @@ requireDiscriminatedUnion("PublishScenarioDto", "deliveryPolicy", "kind", [
   "WaitUntilOnlineDeliveryPolicyDto",
 ]);
 
-for (const schemaName of [
-  "CreateEventDefinitionDto",
-  "UpdateEventDefinitionDto",
-]) {
-  requireSchemaProperties(schemaName, ["countsAsActivity", "payloadSchema"]);
-}
+requireSchemaProperties("CreateEventCatalogDefinitionDto", [
+  "countsAsActivity",
+  "payloadSchema",
+]);
 
 console.log(
   `OpenAPI contract check passed (${requiredOperations.size} required operations)`,

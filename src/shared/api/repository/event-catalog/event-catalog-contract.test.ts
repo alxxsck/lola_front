@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { EventDefinitionResponseDto } from "@/shared/api/generated/models";
+import type { EventCatalogDefinitionRecord } from "./event-catalog-contract";
 
 import {
   applyEventMetadataUpdate,
@@ -29,7 +29,7 @@ describe("toEventCatalogDefinition", () => {
       readOnly: false,
       createdAt: "2026-07-19T10:00:00.000Z",
       updatedAt: "2026-07-19T10:00:00.000Z",
-    } as unknown as EventDefinitionResponseDto);
+    } as EventCatalogDefinitionRecord);
 
     expect(definition.metadata.concurrencyToken).toBe(
       "2026-07-20T10:00:00.000Z",

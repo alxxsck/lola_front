@@ -13,6 +13,7 @@ import { useRouter } from 'vue-router'
 import { DocumentationCallout } from '@/features/documentation/ui'
 import { useActionDefinitionsStore } from '@/features/actions/action-definitions.store'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { hasProjectPermission } from '@/features/auth/permission-access'
 import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
 import { repository } from '@/shared/api/repository'
 import { formatDate } from '@/shared/lib/format'
@@ -36,6 +37,11 @@ const search = ref('')
 const statusFilter = ref<ScenarioStatus | 'ALL'>('ALL')
 const pendingIds = ref(new Set<string>())
 const actionDefinitions = computed<ScenarioActionDefinition[]>(() => actionDefinitionsStore.forProject(auth.project?.id ?? ''))
+const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? [])
+const canWrite = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.write'))
+const canPublish = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.publish'))
+const canReadEvents = computed(() => hasProjectPermission(projectPermissions.value, 'project.event_catalog.read'))
+const canReadActions = computed(() => hasProjectPermission(projectPermissions.value, 'project.actions.read'))
 
 const statusOptions: { label: string; value: ScenarioStatus | 'ALL' }[] = [
   { label: 'Все статусы', value: 'ALL' },
@@ -69,8 +75,8 @@ async function load() {
   try {
     const [scenarioItems, eventItems] = await Promise.all([
       repository.getScenarios(projectId),
-      repository.getEvents(projectId),
-      actionDefinitionsStore.ensureLoaded(projectId),
+      canReadEvents.value ? repository.getEvents(projectId) : Promise.resolve([]),
+      canReadActions.value ? actionDefinitionsStore.ensureLoaded(projectId) : Promise.resolve(),
     ])
     scenarios.value = scenarioItems
     events.value = eventItems
@@ -82,6 +88,7 @@ async function load() {
 }
 
 function openCreate() {
+  if (!canWrite.value) return
   router.push({ name: 'scenario-create' })
 }
 
@@ -91,8 +98,9 @@ function openEdit(scenario: Scenario) {
 
 async function toggleScenario(scenario: Scenario) {
   const projectId = auth.project?.id
-  if (!projectId || pendingIds.value.has(scenario.id)) return
+  if (!projectId || pendingIds.value.has(scenario.id) || !canWrite.value) return
   if (scenario.status !== 'ACTIVE') {
+    if (!canPublish.value) return
     openEdit(scenario)
     toast.add({ severity: 'info', summary: 'Публикация выполняется в Studio', detail: 'Проверьте условия, Actions и Delivery перед запуском.', life: 4200 })
     return
@@ -116,6 +124,7 @@ async function toggleScenario(scenario: Scenario) {
 }
 
 function requestDelete(scenario: Scenario) {
+  if (!canWrite.value) return
   confirm.require({
     header: 'Удалить сценарий?',
     message: `«${scenario.name}» будет удалён без возможности восстановления.`,
@@ -129,10 +138,14 @@ function requestDelete(scenario: Scenario) {
 
 async function deleteScenario(scenario: Scenario) {
   const projectId = auth.project?.id
-  if (!projectId) return
+  if (!projectId || !canWrite.value) return
   pendingIds.value.add(scenario.id)
   try {
-    await repository.deleteScenario(projectId, scenario.id)
+    if (!scenario.updatedAt) throw new Error('Не удалось определить версию сценария')
+    await repository.deleteScenario(projectId, scenario.id, {
+      expectedUpdatedAt: scenario.updatedAt,
+      reason: 'Archive scenario from CMS list',
+    })
     scenarios.value = scenarios.value.filter((item) => item.id !== scenario.id)
     toast.add({ severity: 'success', summary: 'Сценарий удалён', detail: scenario.name, life: 2800 })
   } catch (cause) {
@@ -158,6 +171,7 @@ function toPayload(scenario: Scenario, status = scenario.status): ScenarioPayloa
     activeFrom: scenario.activeFrom,
     activeTo: scenario.activeTo,
     actions: scenario.actions,
+    updatedAt: scenario.updatedAt,
   }
 }
 
@@ -199,7 +213,7 @@ function errorMessage(cause: unknown) {
         <h1>Сценарии</h1>
         <p class="subtitle">Собирайте реакции Lola как наглядный граф: вопросы, условия, ветки и безопасные действия.</p>
       </div>
-      <Button label="Создать сценарий" icon="pi pi-plus" @click="openCreate" />
+      <Button v-if="canWrite" label="Создать сценарий" icon="pi pi-plus" @click="openCreate" />
     </header>
 
     <DocumentationCallout title="Как работают сценарии Lola" text="Trigger, Audience, Eligibility, действия, Goal, доставка, публикация и откат — в одном практическом руководстве." icon="pi pi-sitemap" />
@@ -239,7 +253,7 @@ function errorMessage(cause: unknown) {
             <i class="pi pi-sitemap" />
             <strong>{{ scenarios.length ? 'Ничего не найдено' : 'Создайте первый сценарий' }}</strong>
             <p>{{ scenarios.length ? 'Измените поиск или фильтр статуса.' : 'Выберите событие и добавьте действия Lola.' }}</p>
-            <Button v-if="!scenarios.length" label="Создать сценарий" icon="pi pi-plus" size="small" @click="openCreate" />
+            <Button v-if="!scenarios.length && canWrite" label="Создать сценарий" icon="pi pi-plus" size="small" @click="openCreate" />
           </div>
         </template>
 
@@ -273,9 +287,9 @@ function errorMessage(cause: unknown) {
         <Column style="width: 128px">
           <template #body="{ data }">
             <div class="row-actions" @click.stop>
-              <Button :icon="data.status === 'ACTIVE' ? 'pi pi-pause' : 'pi pi-send'" text rounded size="small" :severity="data.status === 'ACTIVE' ? 'warn' : 'success'" :loading="pendingIds.has(data.id)" :aria-label="data.status === 'ACTIVE' ? 'Поставить на паузу' : 'Настроить и опубликовать'" @click="toggleScenario(data)" />
-              <Button icon="pi pi-pencil" text rounded size="small" aria-label="Редактировать" @click="openEdit(data)" />
-              <Button icon="pi pi-trash" text rounded size="small" severity="danger" aria-label="Удалить" :disabled="pendingIds.has(data.id)" @click="requestDelete(data)" />
+              <Button v-if="canWrite && (data.status === 'ACTIVE' || canPublish)" :icon="data.status === 'ACTIVE' ? 'pi pi-pause' : 'pi pi-send'" text rounded size="small" :severity="data.status === 'ACTIVE' ? 'warn' : 'success'" :loading="pendingIds.has(data.id)" :aria-label="data.status === 'ACTIVE' ? 'Поставить на паузу' : 'Настроить и опубликовать'" @click="toggleScenario(data)" />
+              <Button :icon="canWrite ? 'pi pi-pencil' : 'pi pi-eye'" text rounded size="small" :aria-label="canWrite ? 'Редактировать' : 'Просмотреть'" @click="openEdit(data)" />
+              <Button v-if="canWrite" icon="pi pi-trash" text rounded size="small" severity="danger" aria-label="Удалить" :disabled="pendingIds.has(data.id)" @click="requestDelete(data)" />
             </div>
           </template>
         </Column>

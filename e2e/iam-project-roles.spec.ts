@@ -63,7 +63,7 @@ function role(
   }
 }
 
-async function installFixtures(page: Page) {
+async function installFixtures(page: Page, options: { stepUpOnUpdate?: boolean } = {}) {
   const updateBodies: unknown[] = []
   const reassignBodies: unknown[] = []
   const archiveBodies: unknown[] = []
@@ -132,6 +132,19 @@ async function installFixtures(page: Page) {
       path === `/api/v1/admin/projects/${projectId}/roles/${customRoleId}`
     ) {
       updateBodies.push(request.postDataJSON())
+      if (options.stepUpOnUpdate) {
+        return json(
+          route,
+          {
+            error: {
+              code: 'MFA_REQUIRED',
+              message: 'unsafe backend text',
+              requestId: 'step-up-request',
+            },
+          },
+          428,
+        )
+      }
       updateConflicted = true
       currentCustom = { ...currentCustom, version: 4 }
       return json(
@@ -223,4 +236,26 @@ test('Project Role manager confirms impact, never replays a conflict, reassigns 
       reason: 'Approved role retirement',
     },
   ])
+})
+
+test('Project Role step-up denial returns to login and never replays the mutation', async ({ page }) => {
+  const fixture = await installFixtures(page, { stepUpOnUpdate: true })
+  await login(page)
+  await page.getByRole('link', { name: 'Роли' }).click()
+  await page.getByRole('button', { name: 'Изменить' }).click()
+  const updateDialog = page.getByRole('dialog', { name: 'Изменить роль' })
+  await updateDialog.getByLabel('Причина').fill('Approved role update')
+  await updateDialog.getByTestId('impact-confirmation').check()
+  await updateDialog.getByRole('button', { name: 'Подтвердить' }).click()
+
+  await expect(page).toHaveURL(
+    /\/login\?redirect=\/project\/roles&mfa=MFA_REQUIRED$/,
+  )
+  await expect(
+    page.getByText(
+      'Для продолжения войдите снова: система переведёт вас к обязательной проверке MFA.',
+    ),
+  ).toBeVisible()
+  await expect(page.getByText('unsafe backend text')).toHaveCount(0)
+  expect(fixture.updateBodies).toHaveLength(1)
 })

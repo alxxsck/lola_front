@@ -61,6 +61,7 @@ async function save() {
   error.value = ''
   try {
     fill(await repository.updateActivitySettings(props.projectId, {
+      expectedVersion: settings.value.projectVersion,
       timezone: form.timezone.trim(),
       visitInactivitySeconds: form.visitInactivitySeconds,
       reconnectGraceSeconds: form.reconnectGraceSeconds,

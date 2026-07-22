@@ -11,16 +11,11 @@ import {
   type KnowledgeDocumentMutation,
   type KnowledgeDocumentPage,
   type KnowledgeFileInput,
-  type KnowledgeProjectRole,
   type KnowledgeTextInput,
 } from './knowledge.model'
 
 const DEMO_KEY = 'lola-cms-demo-knowledge-v1'
 const DEMO_AUTH_KEY = 'lola-cms-demo-auth-v1'
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 function demoStorageKey(): string {
   try {
@@ -151,39 +146,6 @@ function writeDemo(
     demoStorageKey(),
     JSON.stringify({ ...data, [projectId]: documents }),
   )
-}
-
-export async function getKnowledgeProjectRole(
-  projectId: string,
-  adminUserId: string,
-  adminEmail: string,
-  signal?: AbortSignal,
-): Promise<KnowledgeProjectRole> {
-  if (isMockMode) return 'OWNER'
-  const response = await request<unknown>({
-    url: `/api/v1/admin/projects/${encodeURIComponent(projectId)}/members`,
-    method: 'GET',
-    signal,
-  })
-  if (!Array.isArray(response) || response.length > 1_000)
-    return invalidResponse()
-  const email = adminEmail.trim().toLowerCase()
-  for (const value of response) {
-    if (!isRecord(value) || value.projectId !== projectId) continue
-    const matchesUser =
-      value.adminUserId === adminUserId ||
-      (typeof value.email === 'string' && value.email.toLowerCase() === email)
-    if (!matchesUser) continue
-    if (
-      value.role === 'OWNER' ||
-      value.role === 'ADMIN' ||
-      value.role === 'EDITOR' ||
-      value.role === 'VIEWER'
-    )
-      return value.role
-    return invalidResponse()
-  }
-  throw new Error('Не удалось определить роль пользователя в текущем проекте')
 }
 
 function newDemoDocument(

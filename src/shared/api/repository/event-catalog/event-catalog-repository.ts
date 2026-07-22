@@ -1,7 +1,7 @@
 import {
+  eventCatalogDetail,
   eventCatalogProjectHealth,
   eventCatalogUpdateMetadata,
-  platformEventDefinitions,
 } from "@/shared/api/generated/lola-backend";
 import {
   toEventCatalogDefinition,
@@ -31,12 +31,9 @@ export interface EventCatalogRepository {
 
 export const apiEventCatalogRepository: EventCatalogRepository = {
   async getDefinition(projectId, definitionKeyId) {
-    const definitions = await platformEventDefinitions(projectId);
-    const definition = definitions.find(
-      (item) => item.definitionKeyId === definitionKeyId,
+    return toEventCatalogDefinition(
+      await eventCatalogDetail(projectId, definitionKeyId),
     );
-    if (!definition) throw new Error("Event Definition not found");
-    return toEventCatalogDefinition(definition);
   },
 
   async updateMetadata(projectId, definitionKeyId, command) {

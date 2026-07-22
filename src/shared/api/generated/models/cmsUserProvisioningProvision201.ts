@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CmsUserProvisioningCreatedResponseDto } from "./cmsUserProvisioningCreatedResponseDto";
+import type { CmsUserProvisioningManualCreatedResponseDto } from "./cmsUserProvisioningManualCreatedResponseDto";
 import type { CmsUserProvisioningReplayResponseDto } from "./cmsUserProvisioningReplayResponseDto";
 
 export type CmsUserProvisioningProvision201 =
-  CmsUserProvisioningCreatedResponseDto | CmsUserProvisioningReplayResponseDto;
+  | CmsUserProvisioningCreatedResponseDto
+  | CmsUserProvisioningManualCreatedResponseDto
+  | CmsUserProvisioningReplayResponseDto;

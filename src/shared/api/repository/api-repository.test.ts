@@ -1,57 +1,53 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  platformCreateEventDefinition,
-  platformCreateScenario,
-  platformCreateUi,
-  platformDeleteUi,
-  platformDeleteScenario,
-  platformUpdateEventDefinition,
-  platformUpdateProject,
-  platformUpdateScenario,
-  platformUpdateUi,
-  platformScenarios,
+  uiRegistryCreate,
+  uiRegistryRemove,
+  uiRegistryUpdate,
+  platformOperationsProjectSettings,
+  platformOperationsUpdateProjectSettings,
+  eventCatalogArchive,
+  eventCatalogCreate,
+  eventCatalogDetail,
+  eventCatalogList,
+  eventCatalogRevision,
+  eventCatalogRevisions,
+  eventCatalogUpdatePolicy,
+  scenarioAuthoringArchiveScenario,
+  scenarioAuthoringListScenarios,
+  scenarioAuthoringUpdateScenarioMetadata,
   adminMessagingSend,
   presenceList,
-  platformActionDefinitions,
   adminConversationsList,
   adminConversationsListMessages,
   adminEventLogsGet,
   adminEventLogsList,
   eventsList,
-  platformCreateUserAttributeDefinition,
-  platformUserAttributeDefinitions,
-  platformEventDefinitionRevisions,
-  platformEventDefinitionRevision,
-  platformUsersPage,
+  platformOperationsUsersPage,
   scenarioRunsPage,
-  platformActivitySettings,
-  platformUpdateActivitySettings,
+  platformOperationsActivitySettings,
+  platformOperationsUpdateActivitySettings,
   conversationAISuspensionsGet,
   conversationAISuspensionsStart,
   conversationAISuspensionsExtend,
   conversationAISuspensionsResume,
   conversationAISuspensionsHistory,
 } from '@/shared/api/generated/lola-backend'
-import type { EventDefinitionResponseDto, UiElementResponseDto } from '@/shared/api/generated/models'
+import type { ProjectResponseDto, UiElementResponseDto } from '@/shared/api/generated/models'
 import { apiRepository } from './api-repository'
 
 vi.mock('@/shared/api/generated/lola-backend', () => ({
-  platformCreateEventDefinition: vi.fn(), platformCreateMember: vi.fn(), platformCreateScenario: vi.fn(),
-  platformCreateUi: vi.fn(), platformDeleteEventDefinition: vi.fn(), platformDeleteMember: vi.fn(),
-  platformDeleteScenario: vi.fn(), platformDeleteUi: vi.fn(), platformEventDefinitions: vi.fn(),
-  platformGetProject: vi.fn(), platformMembers: vi.fn(), platformScenarios: vi.fn(), platformUiElements: vi.fn(),
-  platformActionDefinitions: vi.fn(),
-  platformUpdateEventDefinition: vi.fn(), platformUpdateProject: vi.fn(), platformUpdateScenario: vi.fn(),
-  platformUpdateUi: vi.fn(), platformUsers: vi.fn(),
+  uiRegistryCreate: vi.fn(), uiRegistryList: vi.fn(), uiRegistryRemove: vi.fn(), uiRegistryUpdate: vi.fn(),
+  platformOperationsProjectSettings: vi.fn(), platformOperationsUpdateProjectSettings: vi.fn(),
+  eventCatalogArchive: vi.fn(), eventCatalogCreate: vi.fn(), eventCatalogDetail: vi.fn(),
+  eventCatalogList: vi.fn(), eventCatalogRevision: vi.fn(), eventCatalogRevisions: vi.fn(), eventCatalogUpdatePolicy: vi.fn(),
+  scenarioAuthoringArchiveScenario: vi.fn(), scenarioAuthoringListScenarios: vi.fn(), scenarioAuthoringUpdateScenarioMetadata: vi.fn(),
+  platformOperationsUsers: vi.fn(), platformOperationsUsersPage: vi.fn(),
   adminMessagingSend: vi.fn(), auditList: vi.fn(), eventsList: vi.fn(), scenarioRunsList: vi.fn(),
   presenceList: vi.fn(),
   adminConversationsList: vi.fn(), adminConversationsListMessages: vi.fn(),
   adminEventLogsGet: vi.fn(), adminEventLogsList: vi.fn(),
-  platformCreateUserAttributeDefinition: vi.fn(), platformDeleteUserAttributeDefinition: vi.fn(),
-  platformUpdateUserAttributeDefinition: vi.fn(), platformUserAttributeDefinitions: vi.fn(),
-  platformEventDefinitionRevisions: vi.fn(), platformEventDefinitionRevision: vi.fn(),
-  platformUsersPage: vi.fn(), scenarioRunsPage: vi.fn(),
-  platformActivitySettings: vi.fn(), platformUpdateActivitySettings: vi.fn(),
+  scenarioRunsPage: vi.fn(),
+  platformOperationsActivitySettings: vi.fn(), platformOperationsUpdateActivitySettings: vi.fn(),
   conversationAISuspensionsGet: vi.fn(), conversationAISuspensionsStart: vi.fn(),
   conversationAISuspensionsExtend: vi.fn(), conversationAISuspensionsResume: vi.fn(),
   conversationAISuspensionsHistory: vi.fn(),
@@ -62,147 +58,154 @@ const uiResponse = {
   selector: '#deposit', config: {}, enabled: true, createdAt: 'now', updatedAt: 'now',
 } as unknown as UiElementResponseDto
 
-const eventResponse = {
-  id: 'event-1', projectId: 'project-1', code: 'signup', name: 'Signup', version: 1,
-  definitionKeyId: 'event-key-1', currentRevisionId: 'event-1', isCurrent: true, origin: 'CUSTOM' as const, readOnly: false,
-  payloadSchema: { type: 'object' }, clientIngestible: false, countsAsActivity: false, enabled: true, createdAt: 'now', updatedAt: 'now',
-} as unknown as EventDefinitionResponseDto
-
 describe('api repository adapter', () => {
   beforeEach(() => vi.clearAllMocks())
   afterEach(() => vi.restoreAllMocks())
 
   it('routes UI create, update and delete through the generated client', async () => {
-    vi.mocked(platformCreateUi).mockResolvedValue(uiResponse)
-    vi.mocked(platformUpdateUi).mockResolvedValue(uiResponse)
-    vi.mocked(platformDeleteUi).mockResolvedValue(uiResponse)
+    vi.mocked(uiRegistryCreate).mockResolvedValue(uiResponse)
+    vi.mocked(uiRegistryUpdate).mockResolvedValue(uiResponse)
+    vi.mocked(uiRegistryRemove).mockResolvedValue(uiResponse)
 
     await apiRepository.createElement('project-1', { code: 'deposit', name: 'Deposit', kind: 'ELEMENT', selector: '#deposit' })
     await apiRepository.updateElement('project-1', 'ui-1', { name: 'Deposit updated' })
     await apiRepository.deleteElement('project-1', 'ui-1')
 
-    expect(platformCreateUi).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'deposit', selector: '#deposit' }))
-    expect(platformUpdateUi).toHaveBeenCalledWith('project-1', 'ui-1', { name: 'Deposit updated' })
-    expect(platformDeleteUi).toHaveBeenCalledWith('project-1', 'ui-1')
+    expect(uiRegistryCreate).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'deposit', selector: '#deposit' }))
+    expect(uiRegistryUpdate).toHaveBeenCalledWith('project-1', 'ui-1', { name: 'Deposit updated' })
+    expect(uiRegistryRemove).toHaveBeenCalledWith('project-1', 'ui-1')
   })
 
-  it('keeps immutable event code out of update payloads', async () => {
-    vi.mocked(platformCreateEventDefinition).mockResolvedValue(eventResponse)
-    vi.mocked(platformUpdateEventDefinition).mockResolvedValue(eventResponse)
-
-    await apiRepository.saveEvent('project-1', { code: 'signup', name: 'Signup', payloadSchema: { type: 'object' } })
-    await apiRepository.saveEvent('project-1', {
-      id: 'event-1', code: 'signup', name: 'Signup updated', payloadSchema: { type: 'object' },
-      clientIngestible: false, countsAsActivity: false, enabled: true,
-    })
-
-    expect(platformCreateEventDefinition).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'signup' }))
-    expect(platformUpdateEventDefinition).toHaveBeenCalledWith(
-      'project-1', 'event-1', expect.not.objectContaining({ code: 'signup', version: 1 }),
-    )
-  })
-
-  it('exposes revision history, cursor pages and activity settings through generated contracts', async () => {
-    vi.mocked(platformEventDefinitionRevisions).mockResolvedValue({
-      items: [{ ...eventResponse, compatibility: 'PINNED', pinnedScenarioRevisionCount: 2 } as never],
-      nextCursor: 'revision-2' as never,
-    })
-    vi.mocked(platformEventDefinitionRevision).mockResolvedValue({
-      ...eventResponse, compatibility: 'CURRENT', pinnedScenarioRevisionCount: 0,
-    } as never)
-    vi.mocked(platformUsersPage).mockResolvedValue({ items: [], nextCursor: 'user-2' as never })
+  it('exposes current cursor pages and activity settings through generated target contracts', async () => {
+    vi.mocked(platformOperationsUsersPage).mockResolvedValue({ items: [], nextCursor: 'user-2' as never })
     vi.mocked(scenarioRunsPage).mockResolvedValue({ items: [], nextCursor: 'run-2' })
     const settings = {
+      projectVersion: 2,
       timezone: 'Europe/Madrid', visitInactivitySeconds: 1800, reconnectGraceSeconds: 30,
       limits: { visitInactivitySeconds: { min: 60, max: 86400 }, reconnectGraceSeconds: { min: 1, max: 300 } },
       semantics: { timezone: 'activity_day', visitInactivitySeconds: 'visit_boundary', reconnectGraceSeconds: 'reconnect' },
     } as never
-    vi.mocked(platformActivitySettings).mockResolvedValue(settings)
-    vi.mocked(platformUpdateActivitySettings).mockResolvedValue(settings)
+    vi.mocked(platformOperationsActivitySettings).mockResolvedValue(settings)
+    vi.mocked(platformOperationsUpdateActivitySettings).mockResolvedValue(settings)
 
-    await expect(apiRepository.getEventDefinitionRevisions('project-1', 'event-key-1', { limit: 25 })).resolves.toEqual({
-      items: [expect.objectContaining({ compatibility: 'PINNED', pinnedScenarioRevisionCount: 2 })],
-      nextCursor: 'revision-2',
-    })
-    await expect(apiRepository.getEventDefinitionRevision('project-1', 'event-key-1', 'event-1')).resolves.toEqual(
-      expect.objectContaining({ compatibility: 'CURRENT' }),
-    )
     await expect(apiRepository.getUsersPage('project-1', { cursor: 'user-1', limit: 50 })).resolves.toEqual({ items: [], nextCursor: 'user-2' })
     await expect(apiRepository.getScenarioRunsPage('project-1', { cursor: 'run-1', limit: 50 })).resolves.toEqual({ items: [], nextCursor: 'run-2' })
     await apiRepository.getActivitySettings('project-1')
-    await apiRepository.updateActivitySettings('project-1', { timezone: 'Europe/Madrid', visitInactivitySeconds: 1800, reconnectGraceSeconds: 30 })
+    await apiRepository.updateActivitySettings('project-1', { expectedVersion: 2, timezone: 'Europe/Madrid', visitInactivitySeconds: 1800, reconnectGraceSeconds: 30 })
 
-    expect(platformEventDefinitionRevisions).toHaveBeenCalledWith('project-1', 'event-key-1', { limit: 25 })
-    expect(platformUsersPage).toHaveBeenCalledWith('project-1', { cursor: 'user-1', limit: 50 })
+    expect(platformOperationsUsersPage).toHaveBeenCalledWith('project-1', { cursor: 'user-1', limit: 50 })
     expect(scenarioRunsPage).toHaveBeenCalledWith('project-1', { cursor: 'run-1', limit: 50 })
-    expect(platformUpdateActivitySettings).toHaveBeenCalledWith('project-1', expect.objectContaining({ visitInactivitySeconds: 1800 }))
+    expect(platformOperationsUpdateActivitySettings).toHaveBeenCalledWith('project-1', expect.objectContaining({ expectedVersion: 2, visitInactivitySeconds: 1800 }))
   })
 
   it('sends only backend-editable project settings', async () => {
-    vi.mocked(platformUpdateProject).mockResolvedValue({
-      id: 'project-1', organizationId: 'org-1', name: 'Updated', slug: 'lola', status: 'ACTIVE', publicKey: 'public',
+    const response: ProjectResponseDto = {
+      id: 'project-1', version: 1, organizationId: 'org-1', name: 'Updated', slug: 'lola', status: 'ACTIVE', publicKey: 'public',
       serverKeyPrefix: 'secret', defaultLocale: 'ru', supportedLocales: ['ru'], assistantName: 'Lola', systemPrompt: 'Help',
       voiceInstructions: '', settings: {}, createdAt: 'now', updatedAt: 'now',
+    }
+    vi.mocked(platformOperationsProjectSettings).mockResolvedValue(response)
+    vi.mocked(platformOperationsUpdateProjectSettings).mockResolvedValue(response)
+    await expect(apiRepository.getProject('project-1')).resolves.toMatchObject({ id: 'project-1', name: 'Updated' })
+    await apiRepository.updateProject('project-1', { id: 'ignored', version: 1, slug: 'ignored', name: 'Updated' })
+    expect(platformOperationsUpdateProjectSettings).toHaveBeenCalledWith('project-1', { expectedVersion: 1, name: 'Updated' })
+    expect(platformOperationsProjectSettings).toHaveBeenCalledWith('project-1')
+  })
+
+  it('uses generated event catalog list, create, revision and archive endpoints', async () => {
+    const definition = {
+      id: 'event-revision-1', projectId: 'project-1', definitionKeyId: 'event-key-1', currentRevisionId: 'event-revision-1',
+      isCurrent: true, code: 'deposit', name: 'Deposit', description: null, version: 1, payloadSchema: { type: 'object' },
+      enabled: true, clientIngestible: false, countsAsActivity: true, policyVersion: 1,
+      policyUpdatedAt: '2026-07-20T10:00:00.000Z', metadataUpdatedAt: '2026-07-20T10:00:00.000Z', origin: 'CUSTOM', readOnly: false,
+      createdAt: '2026-07-20T10:00:00.000Z', updatedAt: '2026-07-20T10:00:00.000Z', lifecycle: 'ACTIVE', archivedAt: null,
+    } as const
+    const revision = { ...definition, pinnedScenarioRevisionCount: 0, compatibility: 'CURRENT' as const }
+    vi.mocked(eventCatalogList).mockResolvedValue({ items: [definition] })
+    vi.mocked(eventCatalogCreate).mockResolvedValue(definition)
+    vi.mocked(eventCatalogRevisions).mockResolvedValue({ items: [revision], nextCursor: 'next' })
+    vi.mocked(eventCatalogRevision).mockResolvedValue(revision)
+    vi.mocked(eventCatalogArchive).mockResolvedValue({ ...definition, lifecycle: 'ARCHIVED' })
+
+    await expect(apiRepository.getEvents('project-1')).resolves.toEqual([expect.objectContaining({ definitionKeyId: 'event-key-1', policyVersion: 1 })])
+    await apiRepository.saveEvent('project-1', { name: 'Deposit', code: 'deposit', payloadSchema: { type: 'object' } })
+    await expect(apiRepository.getEventDefinitionRevisions('project-1', 'event-key-1', { cursor: 'cursor', limit: 25 })).resolves.toMatchObject({ nextCursor: 'next' })
+    await expect(apiRepository.getEventDefinitionRevision('project-1', 'event-key-1', 'event-revision-1')).resolves.toMatchObject({ compatibility: 'CURRENT' })
+    await apiRepository.deleteEvent('project-1', 'event-key-1', { expectedPolicyVersion: 1, reason: 'Archive obsolete event' })
+
+    expect(eventCatalogCreate).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'deposit' }))
+    expect(eventCatalogRevisions).toHaveBeenCalledWith('project-1', 'event-key-1', { cursor: 'cursor', limit: 25 })
+    expect(eventCatalogArchive).toHaveBeenCalledWith('project-1', 'event-key-1', { expectedPolicyVersion: 1, reason: 'Archive obsolete event' })
+  })
+
+  it('updates event ingestion policy with caller concurrency evidence', async () => {
+    const current = {
+      id: 'event-revision-1', projectId: 'project-1', definitionKeyId: 'event-key-1', currentRevisionId: 'event-revision-1', isCurrent: true,
+      code: 'deposit', name: 'Deposit', description: null, version: 1, payloadSchema: { type: 'object' }, enabled: true,
+      clientIngestible: false, countsAsActivity: true, policyVersion: 7, policyUpdatedAt: 'now', metadataUpdatedAt: 'now',
+      origin: 'CUSTOM', readOnly: false, createdAt: 'now', updatedAt: 'now', lifecycle: 'ACTIVE', archivedAt: null,
+    } as const
+    vi.mocked(eventCatalogUpdatePolicy).mockResolvedValue({
+      definitionKeyId: 'event-key-1', currentRevisionId: 'event-revision-1', policyChanged: true, schemaRevisionUnchanged: true,
+      policy: { version: 8, updatedAt: 'later', enabled: false, clientIngestible: false, countsAsActivity: true },
     })
-    await apiRepository.updateProject('project-1', { id: 'ignored', slug: 'ignored', name: 'Updated' })
-    expect(platformUpdateProject).toHaveBeenCalledWith('project-1', { name: 'Updated' })
+    vi.mocked(eventCatalogDetail)
+      .mockResolvedValueOnce(current)
+      .mockResolvedValueOnce({ ...current, enabled: false, policyVersion: 8 })
+
+    await apiRepository.saveEvent('project-1', { ...current, description: undefined, enabled: false })
+    expect(eventCatalogUpdatePolicy).toHaveBeenCalledWith('project-1', 'event-key-1', {
+      enabled: false, clientIngestible: false, countsAsActivity: true, expectedVersion: 7,
+    })
   })
 
-  it('routes scenario CRUD through generated endpoints with backend DTOs', async () => {
-    const response = {
-      id: 'scenario-1', projectId: 'project-1', code: 'welcome', name: 'Welcome', eventDefinitionId: 'event-1',
-      status: 'DRAFT' as const, conversationPolicy: 'reuse_active' as const, priority: 0, conditions: [], cooldownSeconds: 0, actions: [
-        { id: 'action-1', scenarioId: 'scenario-1', position: 0, type: 'OPEN_PAGE' as const, config: { pageId: 'home' }, createdAt: 'now', updatedAt: 'now' },
-      ], createdAt: 'now', updatedAt: 'now',
-    }
-    vi.mocked(platformCreateScenario).mockResolvedValue(response)
-    vi.mocked(platformUpdateScenario).mockResolvedValue(response)
-    vi.mocked(platformDeleteScenario).mockResolvedValue(response)
-    const value = { code: 'welcome', name: 'Welcome', eventDefinitionId: 'event-1', conversationPolicy: 'reuse_active' as const, actions: [{ position: 0, type: 'OPEN_PAGE' as const, config: { pageId: 'home' } }] }
+  it('uses generated scenario list, metadata and archive endpoints without legacy scenario conditions', async () => {
+    const scenario = {
+      id: 'scenario-1', projectId: 'project-1', eventDefinitionId: 'event-revision-1', code: 'welcome', name: 'Welcome', description: null,
+      status: 'ACTIVE', conversationPolicy: 'create_new', priority: 0, conditions: [{ path: 'legacy', operator: 'eq', value: true }],
+      currentRevisionId: 'scenario-revision-1', cooldownSeconds: 0, maxRunsPerUser: null, activeFrom: null, activeTo: null,
+      createdAt: '2026-07-20T10:00:00.000Z', updatedAt: '2026-07-20T11:00:00.000Z', actions: [],
+    } as const
+    vi.mocked(scenarioAuthoringListScenarios).mockResolvedValue([scenario as never])
+    vi.mocked(scenarioAuthoringUpdateScenarioMetadata).mockResolvedValue({ ...scenario, status: 'PAUSED' } as never)
+    vi.mocked(scenarioAuthoringArchiveScenario).mockResolvedValue({ ...scenario, status: 'ARCHIVED' } as never)
 
-    await expect(apiRepository.saveScenario('project-1', value)).resolves.toEqual(expect.objectContaining({ conversationPolicy: 'reuse_active' }))
-    await apiRepository.saveScenario('project-1', { ...value, id: 'scenario-1' })
-    await apiRepository.updateScenarioMetadata('project-1', 'scenario-1', { name: 'Updated metadata', priority: 5 })
-    await apiRepository.deleteScenario('project-1', 'scenario-1')
+    await expect(apiRepository.getScenarios('project-1')).resolves.toEqual([expect.objectContaining({ id: 'scenario-1', conditions: [] })])
+    await apiRepository.updateScenarioMetadata('project-1', 'scenario-1', {
+      status: 'PAUSED', expectedUpdatedAt: scenario.updatedAt, reason: 'Pause from scenario list',
+    })
+    await apiRepository.deleteScenario('project-1', 'scenario-1', {
+      expectedUpdatedAt: scenario.updatedAt, reason: 'Archive obsolete scenario',
+    })
 
-    expect(platformCreateScenario).toHaveBeenCalledWith('project-1', expect.objectContaining({ code: 'welcome', conversationPolicy: 'reuse_active', actions: [{ position: 0, type: 'OPEN_PAGE', config: { pageId: 'home' } }] }))
-    expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', expect.objectContaining({ conversationPolicy: 'reuse_active' }))
-    expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', expect.not.objectContaining({ code: 'welcome' }))
-    expect(platformUpdateScenario).toHaveBeenCalledWith('project-1', 'scenario-1', { name: 'Updated metadata', priority: 5 })
-    expect(platformDeleteScenario).toHaveBeenCalledWith('project-1', 'scenario-1')
+    expect(scenarioAuthoringUpdateScenarioMetadata).toHaveBeenCalledWith('project-1', 'scenario-1', {
+      status: 'PAUSED', expectedUpdatedAt: scenario.updatedAt, reason: 'Pause from scenario list',
+    })
+    expect(scenarioAuthoringArchiveScenario).toHaveBeenCalledWith('project-1', 'scenario-1', {
+      expectedUpdatedAt: scenario.updatedAt, reason: 'Archive obsolete scenario',
+    })
   })
 
-  it('normalizes legacy non-array scenario conditions before saving', async () => {
-    const legacyResponse = {
-      id: 'scenario-1', projectId: 'project-1', code: 'open_deposit_modal', name: 'Open deposit modal',
-      eventDefinitionId: 'event-1', status: 'DRAFT' as const, conversationPolicy: 'create_new' as const, priority: 0, conditions: {},
-      cooldownSeconds: 0, actions: [], createdAt: 'now', updatedAt: 'now',
-    }
-    vi.mocked(platformScenarios).mockResolvedValue([legacyResponse as never])
-    vi.mocked(platformUpdateScenario).mockResolvedValue({ ...legacyResponse, conditions: [] })
-
-    const [scenario] = await apiRepository.getScenarios('project-1')
-    expect(scenario.conditions).toEqual([])
-
-    await apiRepository.saveScenario('project-1', scenario)
-    expect(platformUpdateScenario).toHaveBeenCalledWith(
-      'project-1', 'scenario-1', expect.objectContaining({ conditions: [] }),
-    )
+  it('fails closed when generic scenario save tries to bypass the audited archive operation', async () => {
+    await expect(apiRepository.saveScenario('project-1', {
+      id: 'scenario-1',
+      projectId: 'project-1',
+      code: 'welcome',
+      name: 'Welcome',
+      eventDefinitionId: 'event-revision-1',
+      status: 'ARCHIVED',
+      conversationPolicy: 'create_new',
+      priority: 0,
+      conditions: [],
+      actions: [],
+      updatedAt: '2026-07-20T11:00:00.000Z',
+    })).rejects.toThrow('audited archive operation')
+    expect(scenarioAuthoringUpdateScenarioMetadata).not.toHaveBeenCalled()
   })
 
-  it('loads and parses project action definitions', async () => {
-    vi.mocked(platformActionDefinitions).mockResolvedValue([{
-      id: 'definition-1', projectId: 'project-1', type: 'WAIT_FOR', name: 'Wait', description: null,
-      executor: 'SERVER', serverHandler: 'waitFor', commandType: null, enabled: true, builtIn: true,
-      configSchema: { type: 'object', properties: { durationMs: { type: 'integer' } }, required: ['durationMs'] },
-      uiSchema: { fields: [{ key: 'durationMs', label: 'Duration', control: 'number' }] },
-      createdAt: 'now', updatedAt: 'now',
-    } as never])
-
-    await expect(apiRepository.getActionDefinitions('project-1')).resolves.toEqual([
-      expect.objectContaining({ type: 'WAIT_FOR', executor: 'SERVER', configSchema: expect.objectContaining({ required: ['durationMs'] }) }),
-    ])
-    expect(platformActionDefinitions).toHaveBeenCalledWith('project-1')
+  it('fails closed only for authoring capabilities that still have no target endpoint', async () => {
+    await expect(apiRepository.getActionDefinitions('project-1')).rejects.toThrow('actionDefinitions')
+    await expect(apiRepository.getUserAttributeSchema('project-1')).rejects.toThrow('userAttributes')
   })
 
   it('sends admin messages with a UUID idempotency header and a bounded API payload', async () => {
@@ -387,24 +390,36 @@ describe('api repository adapter', () => {
     expect(getEventLogs).toHaveBeenNthCalledWith(2, 'project-1', { status: 'FAILED', limit: 1 })
   })
 
-  it('publishes a user attribute definition and reloads the current immutable schema', async () => {
-    const definition = {
-      id: 'attribute-1', projectId: 'project-1', key: 'plan', label: 'Plan', type: 'STRING' as const,
-      required: true, clientVisible: false, validation: { allowedValues: ['free', 'premium'] }, enabled: true,
-      position: 10, createdAt: '2026-07-16T10:00:00.000Z', updatedAt: '2026-07-16T10:00:00.000Z',
-    }
-    const revision = {
-      id: 'revision-3', projectId: 'project-1', version: 3, schema: { type: 'object' },
-      clientVisibleKeys: [], createdAt: '2026-07-16T10:00:00.000Z',
-    }
-    vi.mocked(platformCreateUserAttributeDefinition).mockResolvedValue({ definition, currentRevision: revision })
-    vi.mocked(platformUserAttributeDefinitions).mockResolvedValue({ definitions: [definition], currentRevision: revision })
+  it('loads dashboard sources only when their exact Project Permissions are effective', async () => {
+    const getProject = vi.spyOn(apiRepository, 'getProject').mockResolvedValue({ _count: undefined } as never)
+    const getScenarios = vi.spyOn(apiRepository, 'getScenarios').mockResolvedValue([
+      { status: 'ACTIVE' },
+      { status: 'DRAFT' },
+    ] as never)
+    const getUsers = vi.spyOn(apiRepository, 'getUsers').mockResolvedValue([])
+    const getSessions = vi.spyOn(apiRepository, 'getSessions').mockResolvedValue([])
+    const getEventLogs = vi.spyOn(apiRepository, 'getEventLogs').mockResolvedValue({
+      items: [],
+      pagination: { page: 1, limit: 1, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false },
+    })
+    const getScenarioRuns = vi.spyOn(apiRepository, 'getScenarioRuns').mockResolvedValue([])
 
-    await expect(apiRepository.createUserAttributeDefinition('project-1', {
-      key: 'plan', label: 'Plan', type: 'STRING', required: true, validation: { allowedValues: ['free', 'premium'] },
-    })).resolves.toEqual(expect.objectContaining({ currentRevision: expect.objectContaining({ version: 3 }), definition: expect.objectContaining({ key: 'plan' }) }))
-    expect(platformCreateUserAttributeDefinition).toHaveBeenCalledWith('project-1', expect.objectContaining({ validation: { allowedValues: ['free', 'premium'] } }))
-    expect(platformUserAttributeDefinitions).not.toHaveBeenCalled()
+    await expect(
+      apiRepository.getStats('project-1', ['project.scenarios.read']),
+    ).resolves.toEqual(expect.objectContaining({
+      users: 0,
+      online: 0,
+      events: 0,
+      scenarios: 1,
+      integrationErrors: 0,
+    }))
+
+    expect(getScenarios).toHaveBeenCalledWith('project-1')
+    expect(getProject).not.toHaveBeenCalled()
+    expect(getUsers).not.toHaveBeenCalled()
+    expect(getSessions).not.toHaveBeenCalled()
+    expect(getEventLogs).not.toHaveBeenCalled()
+    expect(getScenarioRuns).not.toHaveBeenCalled()
   })
 
   it('rejects direct actions without an active interaction session', async () => {

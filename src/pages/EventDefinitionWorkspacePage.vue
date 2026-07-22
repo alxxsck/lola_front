@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import {
   applyEventMetadataUpdate,
   eventCatalogRepository,
@@ -34,7 +35,10 @@ const definitionKeyId = computed(() =>
 );
 const canEdit = computed(
   () =>
-    (auth.user?.role === "OWNER" || auth.user?.role === "ADMIN") &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.event_catalog.write",
+    ) &&
     !definition.value?.readOnly,
 );
 const hasMetadataConcurrencyToken = computed(() =>

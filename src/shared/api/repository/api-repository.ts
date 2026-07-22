@@ -1,26 +1,23 @@
 import {
-  platformCreateEventDefinition,
-  platformCreateMember,
-  platformCreateScenario,
-  platformCreateUi,
-  platformDeleteEventDefinition,
-  platformDeleteMember,
-  platformDeleteScenario,
-  platformDeleteUi,
-  platformEventDefinitions,
-  platformEventDefinitionRevisions,
-  platformEventDefinitionRevision,
-  platformGetProject,
-  platformMembers,
-  platformScenarios,
-  platformActionDefinitions,
-  platformUiElements,
-  platformUpdateEventDefinition,
-  platformUpdateProject,
-  platformUpdateScenario,
-  platformUpdateUi,
-  platformUsers,
-  platformUsersPage,
+  platformOperationsProjectSettings,
+  platformOperationsUpdateProjectSettings,
+  eventCatalogArchive,
+  eventCatalogCreate,
+  eventCatalogDetail,
+  eventCatalogList,
+  eventCatalogRevision,
+  eventCatalogRevisions,
+  eventCatalogUpdateMetadata,
+  eventCatalogUpdatePolicy,
+  scenarioAuthoringArchiveScenario,
+  scenarioAuthoringListScenarios,
+  scenarioAuthoringUpdateScenarioMetadata,
+  uiRegistryCreate,
+  uiRegistryList,
+  uiRegistryRemove,
+  uiRegistryUpdate,
+  platformOperationsUsers,
+  platformOperationsUsersPage,
   eventsList,
   scenarioRunsList,
   scenarioRunsPage,
@@ -32,21 +29,14 @@ import {
   adminConversationsListMessages,
   adminEventLogsGet,
   adminEventLogsList,
-  platformCreateUserAttributeDefinition,
-  platformDeleteUserAttributeDefinition,
-  platformUpdateUserAttributeDefinition,
-  platformUserAttributeDefinitions,
-  platformActivitySettings,
-  platformUpdateActivitySettings,
+  platformOperationsActivitySettings,
+  platformOperationsUpdateActivitySettings,
   conversationAISuspensionsGet,
   conversationAISuspensionsStart,
   conversationAISuspensionsExtend,
   conversationAISuspensionsResume,
   conversationAISuspensionsHistory,
 } from '@/shared/api/generated/lola-backend'
-import type { ScenarioResponseDto } from '@/shared/api/generated/models'
-import { toCreateScenarioDto, toUpdateScenarioDto, toUpdateScenarioMetadataDto } from './scenario-contract'
-import type { Scenario } from '@/shared/types/domain'
 import type { LolaRepository, RepositoryCapabilities } from './contracts'
 import { UnsupportedRepositoryCapabilityError } from './contracts'
 import {
@@ -54,22 +44,17 @@ import {
   mapEventDefinition,
   mapEventDefinitionRevision,
   mapProject,
-  mapProjectMember,
   mapUiElement,
-  toCreateEventDefinitionDto,
   toCreateUiElementDto,
-  toUpdateEventDefinitionDto,
-  toUpdateProjectDto,
+  toUpdateProjectSettingsDto,
   toUpdateUiElementDto,
   mapAuditLog,
   mapEventLog,
   mapScenarioRun,
+  mapScenario,
   mapActiveSessions,
-  mapActionDefinition,
   mapConversation,
   mapConversationMessage,
-  mapUserAttributeSchema,
-  mapUserAttributeMutation,
   mapConversationAISuspensionDetail,
 } from './mappers'
 
@@ -80,7 +65,7 @@ const capabilities: RepositoryCapabilities = {
   uiElements: true,
   eventDefinitions: true,
   scenarios: true,
-  actionDefinitions: true,
+  actionDefinitions: false,
   presence: true,
   activity: false,
   conversations: true,
@@ -88,7 +73,7 @@ const capabilities: RepositoryCapabilities = {
   operations: true,
   auditLogs: true,
   adminMessaging: true,
-  userAttributes: true,
+  userAttributes: false,
 }
 
 function unsupported(capability: keyof RepositoryCapabilities): never {
@@ -96,140 +81,141 @@ function unsupported(capability: keyof RepositoryCapabilities): never {
 }
 
 const optionalString = (value: unknown): string | undefined => typeof value === 'string' ? value : undefined
-const optionalNumber = (value: unknown): number | undefined => typeof value === 'number' ? value : undefined
-
-function mapScenario(dto: ScenarioResponseDto): Scenario {
-  return {
-    id: dto.id,
-    projectId: dto.projectId,
-    code: dto.code,
-    name: dto.name,
-    description: optionalString(dto.description),
-    eventDefinitionId: dto.eventDefinitionId,
-    eventDefinition: dto.eventDefinition ? mapEventDefinition(dto.eventDefinition) : undefined,
-    status: dto.status,
-    conversationPolicy: dto.conversationPolicy,
-    priority: dto.priority,
-    conditions: Array.isArray(dto.conditions) ? dto.conditions as unknown as Scenario['conditions'] : [],
-    cooldownSeconds: dto.cooldownSeconds,
-    maxRunsPerUser: optionalNumber(dto.maxRunsPerUser),
-    activeFrom: optionalString(dto.activeFrom),
-    activeTo: optionalString(dto.activeTo),
-    actions: dto.actions as unknown as Scenario['actions'],
-    createdAt: dto.createdAt,
-    updatedAt: dto.updatedAt,
-  }
-}
-
 export const apiRepository: LolaRepository = {
   mode: 'api',
   capabilities,
 
   async getProject(projectId) {
-    return mapProject(await platformGetProject(projectId))
+    return mapProject(await platformOperationsProjectSettings(projectId))
   },
 
   async updateProject(projectId, patch) {
-    return mapProject(await platformUpdateProject(projectId, toUpdateProjectDto(patch)))
-  },
-
-  async getMembers(projectId) {
-    return (await platformMembers(projectId)).map(mapProjectMember)
-  },
-
-  async createMember(projectId, member) {
-    return mapProjectMember(await platformCreateMember(projectId, member))
-  },
-
-  async deleteMember(projectId, memberId) {
-    await platformDeleteMember(projectId, memberId)
+    return mapProject(await platformOperationsUpdateProjectSettings(projectId, toUpdateProjectSettingsDto(patch)))
   },
 
   async getElements(projectId) {
-    return (await platformUiElements(projectId)).map(mapUiElement)
+    return (await uiRegistryList(projectId)).map(mapUiElement)
   },
 
   async createElement(projectId, value) {
-    return mapUiElement(await platformCreateUi(projectId, toCreateUiElementDto(value)))
+    return mapUiElement(await uiRegistryCreate(projectId, toCreateUiElementDto(value)))
   },
 
   async updateElement(projectId, id, value) {
-    return mapUiElement(await platformUpdateUi(projectId, id, toUpdateUiElementDto(value)))
+    return mapUiElement(await uiRegistryUpdate(projectId, id, toUpdateUiElementDto(value)))
   },
 
   async deleteElement(projectId, id) {
-    await platformDeleteUi(projectId, id)
+    await uiRegistryRemove(projectId, id)
   },
 
   async getEvents(projectId) {
-    return (await platformEventDefinitions(projectId)).map(mapEventDefinition)
+    return (await eventCatalogList(projectId)).items.map(mapEventDefinition)
   },
 
   async getEventDefinitionRevisions(projectId, definitionKeyId, request) {
-    const response = await platformEventDefinitionRevisions(projectId, definitionKeyId, request)
-    return { items: response.items.map(mapEventDefinitionRevision), nextCursor: optionalString(response.nextCursor) ?? null }
+    const response = await eventCatalogRevisions(projectId, definitionKeyId, request)
+    return { items: response.items.map(mapEventDefinitionRevision), nextCursor: response.nextCursor ?? null }
   },
 
   async getEventDefinitionRevision(projectId, definitionKeyId, revisionId) {
-    return mapEventDefinitionRevision(await platformEventDefinitionRevision(projectId, definitionKeyId, revisionId))
+    return mapEventDefinitionRevision(await eventCatalogRevision(projectId, definitionKeyId, revisionId))
   },
 
   async saveEvent(projectId, value) {
-    const dto = value.id
-      ? await platformUpdateEventDefinition(projectId, value.id, toUpdateEventDefinitionDto(value))
-      : await platformCreateEventDefinition(projectId, toCreateEventDefinitionDto(value))
-    return mapEventDefinition(dto)
+    if (!value.id) {
+      return mapEventDefinition(await eventCatalogCreate(projectId, {
+        code: value.code,
+        name: value.name,
+        ...(value.description === undefined ? {} : { description: value.description }),
+        payloadSchema: value.payloadSchema,
+        ...(value.enabled === undefined ? {} : { enabled: value.enabled }),
+        ...(value.clientIngestible === undefined ? {} : { clientIngestible: value.clientIngestible }),
+        ...(value.countsAsActivity === undefined ? {} : { countsAsActivity: value.countsAsActivity }),
+      }))
+    }
+
+    const definitionKeyId = value.definitionKeyId
+    if (!definitionKeyId || value.policyVersion === undefined || !value.metadataUpdatedAt) {
+      throw new Error('Event update requires stable identity and concurrency evidence')
+    }
+    const current = await eventCatalogDetail(projectId, definitionKeyId)
+    if (JSON.stringify(current.payloadSchema) !== JSON.stringify(value.payloadSchema)) {
+      throw new Error('Event schema changes must use the schema draft publication workflow')
+    }
+    if (current.name !== value.name || (current.description ?? undefined) !== value.description) {
+      await eventCatalogUpdateMetadata(projectId, definitionKeyId, {
+        name: value.name,
+        ...(value.description === undefined ? {} : { description: value.description }),
+        expectedUpdatedAt: value.metadataUpdatedAt,
+      })
+    }
+    if (current.enabled !== value.enabled || current.clientIngestible !== value.clientIngestible || current.countsAsActivity !== value.countsAsActivity) {
+      await eventCatalogUpdatePolicy(projectId, definitionKeyId, {
+        enabled: value.enabled ?? current.enabled,
+        clientIngestible: value.clientIngestible ?? current.clientIngestible,
+        countsAsActivity: value.countsAsActivity ?? current.countsAsActivity,
+        expectedVersion: value.policyVersion,
+      })
+    }
+    return mapEventDefinition(await eventCatalogDetail(projectId, definitionKeyId))
   },
 
-  async deleteEvent(projectId, id) {
-    await platformDeleteEventDefinition(projectId, id)
+  async deleteEvent(projectId, definitionKeyId, command) {
+    await eventCatalogArchive(projectId, definitionKeyId, command)
   },
 
-  async getUserAttributeSchema(projectId) {
-    return mapUserAttributeSchema(await platformUserAttributeDefinitions(projectId))
-  },
+  async getUserAttributeSchema() { return unsupported('userAttributes') },
 
-  async createUserAttributeDefinition(projectId, value) {
-    return mapUserAttributeMutation(await platformCreateUserAttributeDefinition(projectId, { ...value, validation: value.validation ? { ...value.validation } : undefined }))
-  },
+  async createUserAttributeDefinition() { return unsupported('userAttributes') },
 
-  async updateUserAttributeDefinition(projectId, id, value) {
-    return mapUserAttributeMutation(await platformUpdateUserAttributeDefinition(projectId, id, { ...value, validation: value.validation ? { ...value.validation } : undefined }))
-  },
+  async updateUserAttributeDefinition() { return unsupported('userAttributes') },
 
-  async deleteUserAttributeDefinition(projectId, id) {
-    return mapUserAttributeMutation(await platformDeleteUserAttributeDefinition(projectId, id))
-  },
+  async deleteUserAttributeDefinition() { return unsupported('userAttributes') },
 
   async getScenarios(projectId) {
-    return (await platformScenarios(projectId)).map(mapScenario)
+    return (await scenarioAuthoringListScenarios(projectId)).map(mapScenario)
   },
 
-  async getActionDefinitions(projectId) {
-    return (await platformActionDefinitions(projectId)).map(mapActionDefinition)
-  },
+  async getActionDefinitions() { return unsupported('actionDefinitions') },
 
   async saveScenario(projectId, value) {
-    const dto = value.id
-      ? await platformUpdateScenario(projectId, value.id, toUpdateScenarioDto(value))
-      : await platformCreateScenario(projectId, toCreateScenarioDto(value))
-    return mapScenario(dto)
+    if (!value.id || !value.updatedAt) {
+      throw new Error('Scenario updates require stable identity and concurrency evidence')
+    }
+    if (value.status === 'ARCHIVED') {
+      throw new Error('Scenario archival must use the audited archive operation')
+    }
+    return mapScenario(await scenarioAuthoringUpdateScenarioMetadata(projectId, value.id, {
+      name: value.name,
+      ...(value.description === undefined ? {} : { description: value.description }),
+      eventDefinitionId: value.eventDefinitionId,
+      ...(value.status === undefined ? {} : { status: value.status }),
+      ...(value.conversationPolicy === undefined ? {} : { conversationPolicy: value.conversationPolicy }),
+      ...(value.priority === undefined ? {} : { priority: value.priority }),
+      ...(value.cooldownSeconds === undefined ? {} : { cooldownSeconds: value.cooldownSeconds }),
+      ...(value.maxRunsPerUser === undefined ? {} : { maxRunsPerUser: value.maxRunsPerUser }),
+      ...(value.activeFrom === undefined ? {} : { activeFrom: value.activeFrom }),
+      ...(value.activeTo === undefined ? {} : { activeTo: value.activeTo }),
+      expectedUpdatedAt: value.updatedAt,
+      reason: 'Scenario metadata updated from CMS',
+    }))
   },
 
   async updateScenarioMetadata(projectId, scenarioId, value) {
-    return mapScenario(await platformUpdateScenario(projectId, scenarioId, toUpdateScenarioMetadataDto(value)))
+    return mapScenario(await scenarioAuthoringUpdateScenarioMetadata(projectId, scenarioId, value))
   },
 
-  async deleteScenario(projectId, id) {
-    await platformDeleteScenario(projectId, id)
+  async deleteScenario(projectId, scenarioId, command) {
+    await scenarioAuthoringArchiveScenario(projectId, scenarioId, command)
   },
 
   async getUsers(projectId) {
-    return (await platformUsers(projectId)).map(mapEndUser)
+    return (await platformOperationsUsers(projectId)).map(mapEndUser)
   },
 
   async getUsersPage(projectId, request) {
-    const response = await platformUsersPage(projectId, request)
+    const response = await platformOperationsUsersPage(projectId, request)
     return { items: response.items.map(mapEndUser), nextCursor: optionalString(response.nextCursor) ?? null }
   },
 
@@ -313,11 +299,11 @@ export const apiRepository: LolaRepository = {
   },
 
   async getActivitySettings(projectId) {
-    return platformActivitySettings(projectId)
+    return platformOperationsActivitySettings(projectId)
   },
 
   async updateActivitySettings(projectId, value) {
-    return platformUpdateActivitySettings(projectId, value)
+    return platformOperationsUpdateActivitySettings(projectId, value)
   },
 
   async getAuditLogs(projectId) {
@@ -355,24 +341,29 @@ export const apiRepository: LolaRepository = {
     }
   },
 
-  async getStats(projectId) {
+  async getStats(projectId, effectivePermissionCodes) {
+    const permitted = (permission: string) =>
+      effectivePermissionCodes === undefined || effectivePermissionCodes.includes(permission)
+    const canReadEvents = permitted('project.event_logs.read')
     const [project, scenarios, users, sessions, eventLogs, failedEventLogs, runs] = await Promise.all([
-      this.getProject(projectId),
-      this.getScenarios(projectId),
-      this.getUsers(projectId),
-      this.getSessions(projectId),
-      this.getEventLogs(projectId, { limit: 1 }),
-      this.getEventLogs(projectId, { status: 'FAILED', limit: 1 }),
-      this.getScenarioRuns(projectId),
+      permitted('project.settings.read') ? this.getProject(projectId) : Promise.resolve(null),
+      capabilities.scenarios && permitted('project.scenarios.read') ? this.getScenarios(projectId) : Promise.resolve([]),
+      permitted('project.end_users.read') ? this.getUsers(projectId) : Promise.resolve([]),
+      permitted('project.conversations.read') ? this.getSessions(projectId) : Promise.resolve([]),
+      canReadEvents ? this.getEventLogs(projectId, { limit: 1 }) : Promise.resolve(null),
+      canReadEvents ? this.getEventLogs(projectId, { status: 'FAILED', limit: 1 }) : Promise.resolve(null),
+      permitted('project.scenario_runs.read') ? this.getScenarioRuns(projectId) : Promise.resolve([]),
     ])
     return {
-      users: project._count?.users ?? users.length,
+      users: project?._count?.users ?? users.length,
       online: new Set(sessions.map((item) => item.userId)).size,
-      events: project._count?.eventLogs ?? eventLogs.pagination.total,
+      events: project?._count?.eventLogs ?? eventLogs?.pagination.total ?? 0,
       scenarios: scenarios.filter((item) => item.status === 'ACTIVE').length,
       conversations: 0,
       ctaConversion: 0,
-      integrationErrors: failedEventLogs.pagination.total + runs.filter((item) => item.status === 'FAILED').length,
+      integrationErrors:
+        (failedEventLogs?.pagination.total ?? 0) +
+        runs.filter((item) => item.status === 'FAILED').length,
     }
   },
 }

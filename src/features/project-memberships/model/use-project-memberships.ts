@@ -21,6 +21,7 @@ export type ProjectMembershipOperation =
   | { kind: 'LAST_PROJECT_OWNER' }
   | { kind: 'NOT_FOUND' }
   | { kind: 'PERMISSION_DENIED' }
+  | { kind: 'STEP_UP_REQUIRED' }
   | { kind: 'ERROR'; message: string }
 
 export interface ProjectMembershipClient {
@@ -248,6 +249,14 @@ export function useProjectMemberships(
 
   function handleFailure(cause: unknown): void {
     if (cause instanceof ApiError) {
+      if (
+        cause.status === 428 ||
+        cause.code === 'REAUTHENTICATION_REQUIRED' ||
+        cause.code === 'MFA_REQUIRED'
+      ) {
+        operation.value = { kind: 'STEP_UP_REQUIRED' }
+        return
+      }
       if (cause.code === 'LAST_PROJECT_OWNER') {
         operation.value = { kind: 'LAST_PROJECT_OWNER' }
         return

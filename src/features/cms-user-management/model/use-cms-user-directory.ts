@@ -122,6 +122,7 @@ export function useCmsUserDirectory(
 
   async function open(cmsUserId: string): Promise<void> {
     const request = ++detailSequence
+    detail.value = null
     detailLoading.value = true
     detailError.value = ''
     operation.value = { kind: 'IDLE' }

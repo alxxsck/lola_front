@@ -6,12 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UpdateProjectDtoSettings } from "./updateProjectDtoSettings";
-import type { ProjectStatus } from "./projectStatus";
+import type { MutableProjectStatus } from "./mutableProjectStatus";
 
 export interface UpdateProjectDto {
   /** @maxLength 80 */
   assistantName?: string;
   defaultLocale?: string;
+  /** @minimum 1 */
+  expectedVersion: number;
   /**
    * @minLength 2
    * @maxLength 100
@@ -19,7 +21,7 @@ export interface UpdateProjectDto {
   name?: string;
   /** General project settings. The speechSynthesis subtree is preserved and can only be changed through the dedicated endpoint. */
   settings?: UpdateProjectDtoSettings;
-  status?: ProjectStatus;
+  status?: MutableProjectStatus;
   /** @maxItems 20 */
   supportedLocales?: string[];
   /** @maxLength 20000 */

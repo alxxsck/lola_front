@@ -16,7 +16,16 @@ function deferred<T>() {
 }
 
 vi.mock('@/features/auth/auth.store', () => ({
-  useAuthStore: () => ({ project: { id: 'project-1' } }),
+  useAuthStore: () => ({
+    project: {
+      id: 'project-1',
+      effectivePermissionCodes: [
+        'project.event_logs.read',
+        'project.scenario_runs.read',
+        'project.audit.read',
+      ],
+    },
+  }),
 }))
 
 vi.mock('@/shared/api/repository', () => ({

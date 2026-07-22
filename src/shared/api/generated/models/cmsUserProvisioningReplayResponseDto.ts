@@ -5,10 +5,12 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CmsUserProvisioningReplayResponseDtoDeliveryMode } from "./cmsUserProvisioningReplayResponseDtoDeliveryMode";
 import type { CmsUserProvisioningReplayResponseDtoStatus } from "./cmsUserProvisioningReplayResponseDtoStatus";
 
 export interface CmsUserProvisioningReplayResponseDto {
   cmsUserId: string;
+  deliveryMode: CmsUserProvisioningReplayResponseDtoDeliveryMode;
   replayed: boolean;
   status: CmsUserProvisioningReplayResponseDtoStatus;
 }

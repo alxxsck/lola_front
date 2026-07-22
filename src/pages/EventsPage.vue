@@ -11,6 +11,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { hasProjectPermission } from '@/features/auth/permission-access'
 import { DocumentationCallout } from '@/features/documentation/ui'
 import { eventDefinitionError, type EventDefinitionError } from '@/features/events/event-definition-error'
 import { buildEventSchemaExample, parseEventSchema, serializeEventSchema, validateEventSchemaDraft } from '@/features/event-schema/model/event-schema'
@@ -64,7 +65,12 @@ const payloadStudio = ref<{ discardAdvancedDraft?: () => void } | null>(null)
 const hasTechnicalDraft = ref(false)
 const codeTouched = ref(false)
 const form = ref<EventForm>(emptyForm())
-const canManage = computed(() => auth.user?.role === 'OWNER' || auth.user?.role === 'ADMIN')
+const canManage = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    'project.event_catalog.write',
+  ),
+)
 const initialFormSnapshot = ref('')
 const initialSchemaSnapshot = ref('')
 const baselineSchema = ref<Record<string, unknown> | undefined>()

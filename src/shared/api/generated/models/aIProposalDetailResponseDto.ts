@@ -22,7 +22,7 @@ export interface AIProposalDetailResponseDto {
   /** @nullable */
   decidedAt?: string | null;
   /** @nullable */
-  decidedByAdminId?: string | null;
+  decidedByActorId?: string | null;
   decisionMode: AIProposalDetailResponseDtoDecisionMode;
   /** @nullable */
   decisionReason?: string | null;

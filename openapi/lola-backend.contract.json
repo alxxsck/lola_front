@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "backend": {
+    "repository": "alxxsck/lola_back"
+  },
+  "artifact": "lola-backend.json",
+  "contractRevision": "sha256:73415f18585ae800830043f84d3bb1ffb2daa133d9ac53bd52c31a32dfdd1635",
+  "sha256": "73415f18585ae800830043f84d3bb1ffb2daa133d9ac53bd52c31a32dfdd1635"
+}

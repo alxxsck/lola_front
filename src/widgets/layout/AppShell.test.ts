@@ -12,7 +12,11 @@ describe("AppShell", () => {
     const auth = useAuthStore();
     auth.$patch({
       phase: "AUTHENTICATED",
-      user: { id: "operator-1", email: "operator@example.com", name: "Оператор" },
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+      },
       projects: [],
       project: null,
     });
@@ -33,14 +37,17 @@ describe("AppShell", () => {
           Avatar: { template: "<span />" },
           Menu: {
             props: ["model"],
-            template: '<div><button v-for="item in model" :key="item.label" type="button" @click="item.command?.()">{{ item.label }}</button></div>',
+            template:
+              '<div><button v-for="item in model" :key="item.label" type="button" @click="item.command?.()">{{ item.label }}</button></div>',
           },
           Tag: { template: "<span />" },
         },
       },
     });
 
-    const securityButton = wrapper.findAll("button").find((button) => button.text() === "Безопасность");
+    const securityButton = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Безопасность");
     expect(securityButton).toBeDefined();
     await securityButton!.trigger("click");
     await flushPromises();
@@ -58,7 +65,6 @@ describe("AppShell", () => {
         id: "operator-1",
         email: "operator@example.com",
         name: "Оператор",
-        role: "OWNER",
         platformPermissionCodes: ["platform.cms_users.read"],
       },
       project: {
@@ -73,6 +79,22 @@ describe("AppShell", () => {
         systemPrompt: "",
         voiceInstructions: "",
         settings: {},
+        effectivePermissionCodes: [
+          "project.settings.read",
+          "project.profile_contract.read",
+          "project.profiles.read",
+          "project.knowledge.read",
+          "project.ui_registry.read",
+          "project.event_catalog.read",
+          "project.event_logs.read",
+          "project.actions.read",
+          "project.ai_proposals.read",
+          "project.scenarios.read",
+          "project.segments.read",
+          "project.scenario_runs.read",
+          "project.end_users.read",
+          "project.conversations.read",
+        ],
       },
     });
     const router = createRouter({
@@ -131,7 +153,9 @@ describe("AppShell", () => {
     });
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [{ path: "/platform/cms-users", component: { template: "<div />" } }],
+      routes: [
+        { path: "/platform/cms-users", component: { template: "<div />" } },
+      ],
     });
     await router.push("/platform/cms-users");
     await router.isReady();
@@ -160,7 +184,11 @@ describe("AppShell", () => {
     const auth = useAuthStore();
     auth.$patch({
       phase: "AUTHENTICATED",
-      user: { id: "operator-1", email: "operator@example.com", name: "Оператор" },
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+      },
       project: {
         id: "project-1",
         name: "Project One",
@@ -201,5 +229,55 @@ describe("AppShell", () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).not.toContain("Администраторы");
     expect(wrapper.text()).toContain("Роли");
+  });
+
+  it("does not expose authoring navigation from a legacy role without Permissions", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+      },
+      project: {
+        id: "project-1",
+        name: "Project One",
+        slug: "project-one",
+        status: "ACTIVE",
+        publicKey: "public",
+        defaultLocale: "ru",
+        supportedLocales: ["ru"],
+        assistantName: "Lola",
+        systemPrompt: "",
+        voiceInstructions: "",
+        settings: {},
+        effectivePermissionCodes: [],
+      },
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: { template: "<div />" },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    expect(wrapper.text()).not.toContain("База знаний");
+    expect(wrapper.text()).not.toContain("Предложения Lola");
+    expect(wrapper.text()).not.toContain("Журнал событий");
   });
 });

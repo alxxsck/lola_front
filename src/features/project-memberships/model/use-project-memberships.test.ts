@@ -214,6 +214,36 @@ describe('Project Membership state', () => {
       expect(directory.items.value).toEqual([membership()])
     },
   )
+
+  it.each([
+    [428, undefined],
+    [401, 'REAUTHENTICATION_REQUIRED'],
+    [401, 'MFA_REQUIRED'],
+  ] as const)(
+    'requires an explicit step-up for HTTP %s / %s and never replays the membership mutation',
+    async (status, code) => {
+      vi.mocked(api.list).mockResolvedValue({
+        items: [membership()],
+        nextCursor: null,
+      })
+      vi.mocked(api.update).mockRejectedValue(
+        new ApiError(status, 'unsafe backend text', undefined, 'step-up-request', code),
+      )
+      const directory = useProjectMemberships(api)
+      await directory.load(projectId)
+
+      await directory.update(
+        projectId,
+        membership(),
+        [role().id],
+        'Изменение роли подтверждено',
+      )
+
+      expect(api.update).toHaveBeenCalledOnce()
+      expect(directory.items.value).toEqual([membership()])
+      expect(directory.operation.value).toEqual({ kind: 'STEP_UP_REQUIRED' })
+    },
+  )
 })
 
 describe('Project Membership permission gates', () => {

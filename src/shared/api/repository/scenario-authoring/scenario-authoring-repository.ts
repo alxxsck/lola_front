@@ -8,6 +8,8 @@ import {
   scenarioAudienceSearch,
   scenarioAuthoringCatalog,
   scenarioAuthoringCreateScenario,
+  scenarioAuthoringArchiveScenario,
+  scenarioAuthoringListScenarios,
   scenarioAuthoringPreview,
   scenarioAuthoringPreviewGoal,
   scenarioAuthoringPublishScenario,
@@ -16,6 +18,7 @@ import {
   scenarioAuthoringScenarioDocument,
   scenarioAuthoringScenarioRevision,
   scenarioAuthoringScenarioRevisions,
+  scenarioAuthoringUpdateScenarioMetadata,
   scenarioAuthoringValidate,
   scenarioAuthoringValidateScenarioDraft,
   scenarioRunsExplain,
@@ -23,6 +26,7 @@ import {
 import type {
   AudienceRuleDto,
   CreateScenarioAuthoringDto,
+  ArchiveScenarioAuthoringDto,
   PreviewScenarioGoalDto,
   PreviewScenarioScopeDto,
   PublishScenarioDto,
@@ -32,6 +36,7 @@ import type {
   ScenarioAudienceSearchParams,
   ScenarioAuthoringScenarioRevisionsParams,
   ScenarioRuleDto,
+  UpdateScenarioAuthoringMetadataDto,
   ValidateScenarioDraftDto,
 } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
@@ -83,6 +88,30 @@ export const scenarioAuthoringRepository = {
 
   createScenario(projectId: string, input: CreateScenarioAuthoringDto) {
     return callApi(() => scenarioAuthoringCreateScenario(projectId, input));
+  },
+
+  listScenarios(projectId: string) {
+    return callApi(() => scenarioAuthoringListScenarios(projectId));
+  },
+
+  updateScenarioMetadata(
+    projectId: string,
+    scenarioId: string,
+    input: UpdateScenarioAuthoringMetadataDto,
+  ) {
+    return callApi(() =>
+      scenarioAuthoringUpdateScenarioMetadata(projectId, scenarioId, input),
+    );
+  },
+
+  archiveScenario(
+    projectId: string,
+    scenarioId: string,
+    input: ArchiveScenarioAuthoringDto,
+  ) {
+    return callApi(() =>
+      scenarioAuthoringArchiveScenario(projectId, scenarioId, input),
+    );
   },
 
   validateRule(

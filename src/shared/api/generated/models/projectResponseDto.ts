@@ -27,6 +27,8 @@ export interface ProjectResponseDto {
   supportedLocales: string[];
   systemPrompt: string;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
   /**
    * Project-wide instructions for voice tone, pacing, emotion, and delivery.
    * @maxLength 20000

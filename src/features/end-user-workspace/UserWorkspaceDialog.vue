@@ -14,6 +14,7 @@ import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { useAdminConversationConsole } from "@/features/admin-conversations/model/use-admin-conversation-console";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import { formatProfileValue } from "@/features/end-user-profile/model/profile-value";
@@ -94,6 +95,10 @@ const consoleState = useAdminConversationConsole({
   updateRoute: (conversationId) => emit("conversationSelected", conversationId),
   beforeLoadMessages: (conversationId) =>
     cmsRealtimeClient.watchConversation(conversationId),
+  canReadPresence: () => hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.end_users.read",
+  ),
 });
 const {
   conversations,
@@ -120,7 +125,23 @@ const selectedSuspensionEntry = computed(() =>
     : undefined,
 );
 const canManageSuspension = computed(
-  () => auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.conversations.ai_suspend",
+    ),
+);
+const projectPermissions = computed(
+  () => auth.project?.effectivePermissionCodes ?? [],
+);
+const canReadProfiles = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.profiles.read"),
+);
+const canReadConversations = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.conversations.read"),
+);
+const canReply = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.conversations.reply"),
 );
 const displayName = computed(
   () =>
@@ -176,16 +197,20 @@ onMounted(() => {
       );
     }
   });
-  unsubscribeMessage = cmsRealtimeClient.subscribe(
-    ["conversation.message.upserted.v1"],
-    handleMessageUpsert,
-  );
-  unsubscribeReconcile = cmsRealtimeClient.reconcile(() =>
-    visible.value ? consoleState.reconcileSelected() : undefined,
-  );
-  presenceTimer = setInterval(() => {
-    if (visible.value) void consoleState.refreshPresence();
-  }, 15_000);
+  if (canReadConversations.value) {
+    unsubscribeMessage = cmsRealtimeClient.subscribe(
+      ["conversation.message.upserted.v1"],
+      handleMessageUpsert,
+    );
+    unsubscribeReconcile = cmsRealtimeClient.reconcile(() =>
+      visible.value ? consoleState.reconcileSelected() : undefined,
+    );
+  }
+  if (canReadConversations.value) {
+    presenceTimer = setInterval(() => {
+      if (visible.value) void consoleState.refreshPresence();
+    }, 15_000);
+  }
 });
 onBeforeUnmount(() => {
   unsubscribeRealtimeState?.();
@@ -210,10 +235,13 @@ async function openWorkspace(
   profileCollapsed.value = false;
   liveMessageIds.value = [];
   consoleState.reset();
-  await cmsRealtimeClient.activateProject(props.projectId);
+  if (canReadConversations.value)
+    await cmsRealtimeClient.activateProject(props.projectId);
   const results = await Promise.allSettled([
-    loadProfile(endUserId),
-    consoleState.loadConversations(endUserId, preferredConversationId),
+    canReadProfiles.value ? loadProfile(endUserId) : Promise.resolve(null),
+    canReadConversations.value
+      ? consoleState.loadConversations(endUserId, preferredConversationId)
+      : Promise.resolve(),
   ]);
   if (
     request !== profileRequest ||
@@ -392,6 +420,7 @@ async function selectConversation(
 }
 
 async function createConversation(): Promise<void> {
+  if (!canReply.value) return;
   const conversationId = await consoleState.sendNewConversation(
     newChatText.value,
   );
@@ -399,6 +428,11 @@ async function createConversation(): Promise<void> {
   newChatText.value = "";
   newChatOpen.value = false;
   emit("changed");
+}
+
+async function sendReply(): Promise<void> {
+  if (!canReply.value) return;
+  await consoleState.sendReply();
 }
 
 function openSuspension(mode: SuspensionMode, combined = false): void {
@@ -584,6 +618,7 @@ function displayField(
             <h3>Диалоги</h3>
           </div>
           <Button
+            v-if="canReply"
             icon="pi pi-plus"
             label="Новый"
             size="small"
@@ -799,9 +834,9 @@ function displayField(
           {{ newMessageCount }} новых сообщений <i class="pi pi-arrow-down" />
         </button>
         <form
-          v-if="selectedConversation"
+          v-if="selectedConversation && canReply"
           class="composer"
-          @submit.prevent="consoleState.sendReply"
+          @submit.prevent="sendReply"
         >
           <Textarea
             v-model="replyText"
@@ -819,6 +854,7 @@ function displayField(
             <div>
               <Button
                 v-if="
+                  canReply &&
                   conversationAISuspensionEnabled &&
                   canManageSuspension &&
                   !isSuspended()
@@ -832,6 +868,7 @@ function displayField(
                 @click="openSuspension('START', true)"
               />
               <Button
+                v-if="canReply"
                 type="submit"
                 label="Отправить"
                 icon="pi pi-send"
@@ -936,6 +973,7 @@ function displayField(
             text
             @click="newChatOpen = false"
           /><Button
+            v-if="canReply"
             label="Создать и отправить"
             icon="pi pi-send"
             :loading="creatingConversation"

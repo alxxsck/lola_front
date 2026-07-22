@@ -49,7 +49,9 @@ const origin = ref<OriginFilter>("ALL");
 const selected = shallowRef<ProjectAction | null>(null);
 
 const projectId = computed(() => auth.project?.id ?? "");
-const role = computed(() => auth.user?.role ?? "VIEWER");
+const effectivePermissionCodes = computed(
+  () => auth.project?.effectivePermissionCodes ?? [],
+);
 const actions = computed(() => store.actionsForProject(projectId.value));
 const catalog = computed(() => store.catalogForProject(projectId.value));
 const loading = computed(() =>
@@ -625,7 +627,7 @@ function surfaceLabel(value: string): string {
       <ProjectActionEditor
         v-if="selected"
         :action="selected"
-        :role="role"
+        :effective-permission-codes="effectivePermissionCodes"
         :preview="store.previewByAction[selected.id]"
         :preview-loading="store.previewLoadingByAction[selected.id]"
         :preview-error="store.previewErrorsByAction[selected.id]"

@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Present only when the membership grants project.settings.read.
+ */
 export type CmsSessionProjectContextDtoSettings = { [key: string]: unknown };

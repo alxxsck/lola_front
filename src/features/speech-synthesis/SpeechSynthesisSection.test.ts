@@ -77,7 +77,7 @@ describe('SpeechSynthesisSection', () => {
 
   it('loads dedicated settings and the current provider voice catalog', async () => {
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru', 'en'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru', 'en'], editable: true },
     })
     await flushPromises()
 
@@ -95,7 +95,7 @@ describe('SpeechSynthesisSection', () => {
 
   it('saves only the eleven_v3 settings supported by the CMS contract', async () => {
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru'], editable: true },
     })
     await flushPromises()
 
@@ -122,7 +122,7 @@ describe('SpeechSynthesisSection', () => {
   it('shows a save failure and restores the controls after the request', async () => {
     mocks.updateSettings.mockRejectedValueOnce(new Error('TTS save failed'))
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru'], editable: true },
     })
     await flushPromises()
 
@@ -140,7 +140,7 @@ describe('SpeechSynthesisSection', () => {
 
   it('starts collapsed to the header and exposes the expanded state', async () => {
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru'], editable: true },
     })
     await flushPromises()
 
@@ -156,7 +156,7 @@ describe('SpeechSynthesisSection', () => {
 
   it('clears the previous project state when the next project fails to load', async () => {
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru'], editable: true },
     })
     await flushPromises()
     expect(wrapper.find('form').exists()).toBe(true)
@@ -173,7 +173,7 @@ describe('SpeechSynthesisSection', () => {
     let resolveUpdate!: (value: SpeechSettingsResponseDto) => void
     mocks.updateSettings.mockImplementationOnce(() => new Promise((resolve) => { resolveUpdate = resolve }))
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru'], editable: true },
     })
     await flushPromises()
 
@@ -202,7 +202,7 @@ describe('SpeechSynthesisSection', () => {
     withoutDefault.integration.defaults = { voiceId: null }
     mocks.fetchSettings.mockResolvedValueOnce(withoutDefault)
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru'], editable: true },
     })
     await flushPromises()
 
@@ -218,7 +218,7 @@ describe('SpeechSynthesisSection', () => {
     withServerDefault.settings.voiceId = undefined
     mocks.fetchSettings.mockResolvedValueOnce(withServerDefault)
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru'], editable: true },
     })
     await flushPromises()
 
@@ -236,7 +236,7 @@ describe('SpeechSynthesisSection', () => {
       .mockResolvedValueOnce(unconfigured)
 
     const wrapper = shallowMount(SpeechSynthesisSection, {
-      props: { projectId: 'project-1', supportedLocales: ['ru'] },
+      props: { projectId: 'project-1', supportedLocales: ['ru'], editable: true },
     })
     await flushPromises()
     await wrapper.setProps({ projectId: 'project-2' })

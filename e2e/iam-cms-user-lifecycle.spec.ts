@@ -31,6 +31,7 @@ function summary(status: 'ACTIVE' | 'PENDING_SETUP' = 'ACTIVE', version = 3) {
 async function installFixtures(page: Page) {
   let reset = false
   const resetBodies: unknown[] = []
+  const platformRoleBodies: unknown[] = []
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request()
     const path = new URL(request.url()).pathname
@@ -53,6 +54,8 @@ async function installFixtures(page: Page) {
           'platform.cms_users.deactivate',
           'platform.cms_users.reactivate',
           'platform.cms_users.reset_credentials',
+          'platform.roles.read',
+          'platform.roles.manage',
         ],
         projects: [],
       })
@@ -68,6 +71,48 @@ async function installFixtures(page: Page) {
         deactivatedAt: null,
         deactivationReason: null,
       })
+    }
+    if (request.method() === 'GET' && path === '/api/v1/admin/platform/roles') {
+      return json(route, {
+        items: [{
+          id: '00000000-0000-4000-8000-000000000010',
+          key: 'PLATFORM_OPERATOR',
+          name: 'Platform operator',
+          description: 'Control plane access',
+          status: 'ACTIVE',
+          managed: true,
+          version: 1,
+          permissionCodes: ['platform.cms_users.read'],
+          assignedUserCount: 2,
+          assignedUserCountCapped: false,
+          createdAt: '2026-07-20T10:00:00.000Z',
+          updatedAt: '2026-07-20T10:00:00.000Z',
+        }],
+      })
+    }
+    if (
+      request.method() === 'GET'
+      && path === `/api/v1/admin/platform/cms-users/${targetId}/platform-roles`
+    ) {
+      return json(route, {
+        cmsUserId: targetId,
+        version: 3,
+        roleIds: ['00000000-0000-4000-8000-000000000010'],
+        roleKeys: ['PLATFORM_OPERATOR'],
+        effectivePermissionCodes: ['platform.cms_users.read'],
+      })
+    }
+    if (
+      request.method() === 'PUT'
+      && path === `/api/v1/admin/platform/cms-users/${targetId}/platform-roles`
+    ) {
+      platformRoleBodies.push(request.postDataJSON())
+      return json(route, {
+        error: {
+          code: 'REAUTHENTICATION_REQUIRED',
+          message: 'internal message must not be rendered',
+        },
+      }, 428)
     }
     if (
       request.method() === 'POST' &&
@@ -85,7 +130,7 @@ async function installFixtures(page: Page) {
     }
     return json(route, { error: { code: 'UNHANDLED_FIXTURE', message: `${request.method()} ${path}` } }, 501)
   })
-  return { resetBodies }
+  return { resetBodies, platformRoleBodies }
 }
 
 async function login(page: Page) {
@@ -93,7 +138,7 @@ async function login(page: Page) {
   await page.getByLabel('Email', { exact: true }).fill('operator@example.com')
   await page.getByLabel('Пароль или секрет первоначального доступа').fill('a permanent passphrase')
   await page.getByRole('button', { name: 'Продолжить' }).click()
-  await expect(page).toHaveURL(/\/overview$/)
+  await expect(page).toHaveURL(/\/platform\/cms-users$/)
 }
 
 test('Platform Operator resets access and sees the Initial Access Secret exactly once', async ({ page, context }) => {
@@ -132,4 +177,22 @@ test('Platform Operator resets access and sees the Initial Access Secret exactly
   // for semantic and structural accessibility regressions.
   const accessibility = await new AxeBuilder({ page }).disableRules(['color-contrast']).analyze()
   expect(accessibility.violations).toEqual([])
+})
+
+test('platform-role mutation requires explicit retry after fresh authentication', async ({ page }) => {
+  const fixture = await installFixtures(page)
+  await login(page)
+  await page.getByRole('link', { name: 'CMS Users' }).click()
+  await page.getByText('Анна Орлова').click()
+  await page.getByRole('button', { name: 'Изменить роли' }).click()
+  await page.getByLabel('Причина изменения').fill('Подтверждено службой безопасности')
+  await page.getByRole('button', { name: 'Сохранить роли' }).click()
+
+  await expect(page.getByText('Требуется свежий вход.')).toBeVisible()
+  await expect(page.getByText('internal message must not be rendered')).toHaveCount(0)
+  expect(fixture.platformRoleBodies).toEqual([{
+    version: 3,
+    roleIds: ['00000000-0000-4000-8000-000000000010'],
+    reason: 'Подтверждено службой безопасности',
+  }])
 })

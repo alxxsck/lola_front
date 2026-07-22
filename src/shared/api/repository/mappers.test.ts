@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type {
   AuditLogResponseDto,
   EndUserResponseDto,
-  EventDefinitionResponseDto,
   EventLogResponseDto,
   ProjectResponseDto,
   ScenarioRunResponseDto,
@@ -14,14 +13,12 @@ import {
   mapConversation,
   mapConversationMessage,
   mapEndUser,
-  mapEventDefinition,
   mapEventLog,
   mapProject,
   mapScenarioRun,
   mapUiElement,
-  toCreateEventDefinitionDto,
   toCreateUiElementDto,
-  toUpdateProjectDto,
+  toUpdateProjectSettingsDto,
   toUpdateUiElementDto,
 } from './mappers'
 
@@ -29,6 +26,7 @@ describe('repository domain mappers', () => {
   it('maps the project contract without leaking backend-only fields', () => {
     const dto: ProjectResponseDto = {
       id: 'project-1',
+      version: 1,
       organizationId: 'org-1',
       name: 'Lola',
       slug: 'lola',
@@ -56,8 +54,9 @@ describe('repository domain mappers', () => {
 
   it('only sends editable project fields', () => {
     expect(
-      toUpdateProjectDto({
+      toUpdateProjectSettingsDto({
         id: 'immutable',
+        version: 7,
         slug: 'immutable',
         publicKey: 'immutable',
         name: 'Updated',
@@ -65,6 +64,7 @@ describe('repository domain mappers', () => {
         settings: { description: 'New' },
       }),
     ).toEqual({
+      expectedVersion: 7,
       name: 'Updated',
       voiceInstructions: '  Speak slowly.\nPause.  ',
       settings: { description: 'New' },
@@ -87,25 +87,6 @@ describe('repository domain mappers', () => {
       createdAt: 'now',
       updatedAt: 'now',
     } as unknown as UiElementResponseDto)
-    const eventDto = {
-      id: 'event-1',
-      projectId: 'project-1',
-      code: 'signup',
-      name: 'Signup',
-      description: null,
-      version: 1,
-      definitionKeyId: 'event-key-1',
-      currentRevisionId: 'event-1',
-      isCurrent: true,
-      origin: 'CUSTOM',
-      readOnly: false,
-      payloadSchema: { type: 'object' },
-      clientIngestible: false,
-      countsAsActivity: false,
-      enabled: true,
-      createdAt: 'now',
-      updatedAt: 'now',
-    } as unknown as EventDefinitionResponseDto
     const user = mapEndUser({
       id: 'user-1',
       projectId: 'project-1',
@@ -126,24 +107,7 @@ describe('repository domain mappers', () => {
       selector: undefined,
       config: { direct: true },
     })
-    expect(mapEventDefinition(eventDto)).toMatchObject({
-      definitionKeyId: 'event-key-1',
-      currentRevisionId: 'event-1',
-      isCurrent: true,
-      origin: 'CUSTOM',
-      readOnly: false,
-      description: undefined,
-      payloadSchema: { type: 'object' },
-    })
     expect(user).toMatchObject({ locale: undefined, segment: undefined })
-    expect(toCreateEventDefinitionDto(mapEventDefinition(eventDto))).toEqual({
-      code: 'signup',
-      name: 'Signup',
-      payloadSchema: { type: 'object' },
-      clientIngestible: false,
-      countsAsActivity: false,
-      enabled: true,
-    })
   })
 
   it('maps modalName in both directions without using the deprecated handler as a binding', () => {
@@ -278,7 +242,8 @@ describe('repository domain mappers', () => {
       status: 'SUCCEEDED',
       metadata: {},
       createdAt: 'now',
-      adminUser: { id: 'admin-1', login: 'owner@lola.dev', displayName: null },
+      actorCmsUserId: 'admin-1',
+      actorCmsUser: { id: 'admin-1', email: 'owner@lola.dev', displayName: 'Owner' },
     } as AuditLogResponseDto)
 
     expect(event).toMatchObject({
@@ -293,7 +258,7 @@ describe('repository domain mappers', () => {
     expect(audit.actor).toEqual({
       id: 'admin-1',
       email: 'owner@lola.dev',
-      name: undefined,
+      name: 'Owner',
     })
   })
 

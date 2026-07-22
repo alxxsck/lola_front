@@ -13,6 +13,7 @@ import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { hasProjectPermission } from '@/features/auth/permission-access'
 import { repository } from '@/shared/api/repository'
 import type { EventLogFilters } from '@/shared/api/repository/contracts'
 import { buildEventLogFilters, eventPayloadHighlights } from '@/shared/lib/event-logs'
@@ -58,7 +59,12 @@ const filters = reactive({
 })
 const appliedFilters = ref<EventLogFilters>({})
 const failedRequest = ref<FailedPageRequest | null>(null)
-const canRead = computed(() => auth.user?.role === 'OWNER' || auth.user?.role === 'ADMIN')
+const canRead = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    'project.event_logs.read',
+  ),
+)
 const eventOptions = computed(() => eventDefinitions.value.map((item) => ({ label: `${item.name} · ${item.code}`, value: item.code })))
 const sourceOptions = [
   { label: 'Backend', value: 'SERVER' },
@@ -259,7 +265,7 @@ function json(value: unknown) {
       <div class="header-actions"><div class="view-switch" role="group" aria-label="Вид журнала"><button type="button" :class="{ active: viewMode === 'table' }" :aria-pressed="viewMode === 'table'" @click="viewMode = 'table'"><i class="pi pi-table" /> Таблица</button><button type="button" :class="{ active: viewMode === 'timeline' }" :aria-pressed="viewMode === 'timeline'" @click="viewMode = 'timeline'"><i class="pi pi-align-left" /> Путь</button></div><Button icon="pi pi-refresh" label="Обновить" severity="secondary" outlined :loading="loading" @click="refreshLogs" /></div>
     </header>
 
-    <Message v-if="!canRead" severity="warn" :closable="false">Журнал содержит чувствительные диагностические данные и доступен только OWNER и ADMIN.</Message>
+    <Message v-if="!canRead" severity="warn" :closable="false">Для просмотра чувствительных диагностических данных требуется разрешение на чтение журнала событий.</Message>
     <template v-else>
       <section class="filter-panel card">
         <div class="filter-main"><div class="field"><label for="event-filter">Событие</label><MultiSelect id="event-filter" v-model="filters.eventCode" :options="eventOptions" option-label="label" option-value="value" display="chip" placeholder="Все события" filter :selection-limit="50" :max-selected-labels="1" selected-items-label="{0} событий" /></div><div class="field user-filter"><label for="user-filter">External user ID</label><span class="input-icon"><i class="pi pi-user" /><InputText id="user-filter" v-model="filters.externalUserId" class="mono" placeholder="user_123" @keydown.enter="applyFilters" /></span></div><div class="field"><label for="status-filter">Статус</label><MultiSelect id="status-filter" v-model="filters.status" :options="statusOptions" option-label="label" option-value="value" display="chip" placeholder="Все статусы" :selection-limit="3" :max-selected-labels="1" selected-items-label="{0} статуса" /></div><div class="field"><label for="source-filter">Источник</label><MultiSelect id="source-filter" v-model="filters.source" :options="sourceOptions" option-label="label" option-value="value" display="chip" placeholder="Все источники" :selection-limit="3" :max-selected-labels="1" selected-items-label="{0} источника" /></div></div>

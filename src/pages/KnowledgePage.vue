@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import ProgressBar from 'primevue/progressbar'
-import Select from 'primevue/select'
-import Skeleton from 'primevue/skeleton'
-import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { useAuthStore } from '@/features/auth/auth.store'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import ProgressBar from "primevue/progressbar";
+import Select from "primevue/select";
+import Skeleton from "primevue/skeleton";
+import Tag from "primevue/tag";
+import Textarea from "primevue/textarea";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
+import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import {
   createKnowledgeText,
   deleteKnowledgeDocument,
-  getKnowledgeProjectRole,
   getKnowledgeDocument,
   listKnowledgeDocuments,
   retryKnowledgeDocument,
   uploadKnowledgeFile,
-} from '@/features/knowledge/knowledge.api'
+} from "@/features/knowledge/knowledge.api";
 import {
   KNOWLEDGE_FILE_ACCEPT,
   MAX_KNOWLEDGE_TEXT_LENGTH,
@@ -29,145 +29,169 @@ import {
   type KnowledgeDocument,
   type KnowledgeDocumentDetail,
   type KnowledgeDocumentStatus,
-  type KnowledgeProjectRole,
-} from '@/features/knowledge/knowledge.model'
-import { ApiError } from '@/shared/api/http/api-error'
-import { useUnsavedChangesGuard } from '@/shared/lib/use-unsaved-changes-guard'
+} from "@/features/knowledge/knowledge.model";
+import { ApiError } from "@/shared/api/http/api-error";
+import { useUnsavedChangesGuard } from "@/shared/lib/use-unsaved-changes-guard";
 
-type StatusFilter = 'ALL' | KnowledgeDocumentStatus
-type UploadStatus = 'QUEUED' | 'UPLOADING' | 'DONE' | 'ERROR'
+type StatusFilter = "ALL" | KnowledgeDocumentStatus;
+type UploadStatus = "QUEUED" | "UPLOADING" | "DONE" | "ERROR";
 
 interface UploadItem {
-  id: string
-  file: File
-  title: string
-  status: UploadStatus
-  progress: number
-  error: string
-  clientRejected: boolean
-  duplicate: boolean
+  id: string;
+  file: File;
+  title: string;
+  status: UploadStatus;
+  progress: number;
+  error: string;
+  clientRejected: boolean;
+  duplicate: boolean;
 }
 
-const MAX_UPLOAD_BATCH_FILES = 50
-const MAX_UPLOAD_BATCH_BYTES = 250 * 1024 * 1024
+const MAX_UPLOAD_BATCH_FILES = 50;
+const MAX_UPLOAD_BATCH_BYTES = 250 * 1024 * 1024;
 
 const localeNames: Record<string, string> = {
-  ru: 'Русский',
-  en: 'English',
-  es: 'Español',
-  pt: 'Português',
-  de: 'Deutsch',
-  fr: 'Français',
-  it: 'Italiano',
-}
+  ru: "Русский",
+  en: "English",
+  es: "Español",
+  pt: "Português",
+  de: "Deutsch",
+  fr: "Français",
+  it: "Italiano",
+};
 const statusOptions: Array<{ label: string; value: StatusFilter }> = [
-  { label: 'Все', value: 'ALL' },
-  { label: 'Готовы', value: 'READY' },
-  { label: 'Индексируются', value: 'INDEXING' },
-  { label: 'С ошибкой', value: 'FAILED' },
-]
+  { label: "Все", value: "ALL" },
+  { label: "Готовы", value: "READY" },
+  { label: "Индексируются", value: "INDEXING" },
+  { label: "С ошибкой", value: "FAILED" },
+];
 
-const auth = useAuthStore()
-const toast = useToast()
-const confirm = useConfirm()
-const documents = ref<KnowledgeDocument[]>([])
-const nextCursor = ref<string | null>(null)
-const loading = ref(true)
-const loadingMore = ref(false)
-const refreshing = ref(false)
-const loadError = ref('')
-const search = ref('')
-const statusFilter = ref<StatusFilter>('ALL')
-const uploadDialogVisible = ref(false)
-const uploadItems = ref<UploadItem[]>([])
-const uploadLocale = ref<string | null>(null)
-const uploadCategory = ref('')
-const uploadError = ref('')
-const dragging = ref(false)
-const fileInput = ref<HTMLInputElement | null>(null)
-const uploadController = ref<AbortController | null>(null)
-const textDialogVisible = ref(false)
-const textMode = ref<'CREATE' | 'VERSION'>('CREATE')
-const textSource = ref<KnowledgeDocumentDetail | null>(null)
-const textTitle = ref('')
-const textContent = ref('')
-const textLocale = ref<string | null>(null)
-const textCategory = ref('')
-const textError = ref('')
-const savingText = ref(false)
-const initialTextSnapshot = ref('')
-const detailsVisible = ref(false)
-const detailsLoading = ref(false)
-const detailsError = ref('')
-const details = ref<KnowledgeDocumentDetail | null>(null)
-const detailsController = ref<AbortController | null>(null)
-const textController = ref<AbortController | null>(null)
-const permissionController = ref<AbortController | null>(null)
-const loadMoreController = ref<AbortController | null>(null)
-const projectRole = ref<KnowledgeProjectRole | null>(null)
-const permissionLoading = ref(true)
-const permissionError = ref('')
-const retryingIds = ref(new Set<string>())
-const deletingIds = ref(new Set<string>())
-let listController: AbortController | null = null
-let pollTimer: number | undefined
-let listGeneration = 0
-let projectEpoch = 0
-let pollGeneration = 0
-const mutationControllers = new Set<AbortController>()
+const auth = useAuthStore();
+const toast = useToast();
+const confirm = useConfirm();
+const documents = ref<KnowledgeDocument[]>([]);
+const nextCursor = ref<string | null>(null);
+const loading = ref(true);
+const loadingMore = ref(false);
+const refreshing = ref(false);
+const loadError = ref("");
+const search = ref("");
+const statusFilter = ref<StatusFilter>("ALL");
+const uploadDialogVisible = ref(false);
+const uploadItems = ref<UploadItem[]>([]);
+const uploadLocale = ref<string | null>(null);
+const uploadCategory = ref("");
+const uploadError = ref("");
+const dragging = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null);
+const uploadController = ref<AbortController | null>(null);
+const textDialogVisible = ref(false);
+const textMode = ref<"CREATE" | "VERSION">("CREATE");
+const textSource = ref<KnowledgeDocumentDetail | null>(null);
+const textTitle = ref("");
+const textContent = ref("");
+const textLocale = ref<string | null>(null);
+const textCategory = ref("");
+const textError = ref("");
+const savingText = ref(false);
+const initialTextSnapshot = ref("");
+const detailsVisible = ref(false);
+const detailsLoading = ref(false);
+const detailsError = ref("");
+const details = ref<KnowledgeDocumentDetail | null>(null);
+const detailsController = ref<AbortController | null>(null);
+const textController = ref<AbortController | null>(null);
+const loadMoreController = ref<AbortController | null>(null);
+const retryingIds = ref(new Set<string>());
+const deletingIds = ref(new Set<string>());
+let listController: AbortController | null = null;
+let pollTimer: number | undefined;
+let listGeneration = 0;
+let projectEpoch = 0;
+let pollGeneration = 0;
+const mutationControllers = new Set<AbortController>();
 
-const projectId = computed(() => auth.project?.id ?? '')
+const projectId = computed(() => auth.project?.id ?? "");
+const hasManagePermission = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.knowledge.write",
+  ),
+);
+const localeCatalog = computed(() => {
+  const defaultLocale = auth.project?.defaultLocale;
+  const supportedLocales = auth.project?.supportedLocales;
+  if (
+    !defaultLocale ||
+    !Array.isArray(supportedLocales) ||
+    supportedLocales.length === 0 ||
+    !supportedLocales.includes(defaultLocale)
+  )
+    return null;
+  return {
+    defaultLocale,
+    supportedLocales: supportedLocales.filter(
+      (value, index, values) =>
+        Boolean(value) && values.indexOf(value) === index,
+    ),
+  };
+});
+const localeProjectionError =
+  "Backend не вернул разрешённый каталог языков проекта. База знаний заблокирована до обновления прав или контракта.";
 const canManage = computed(
-  () => projectRole.value !== null && projectRole.value !== 'VIEWER',
-)
+  () => hasManagePermission.value && Boolean(localeCatalog.value),
+);
 const uploading = computed(() =>
-  uploadItems.value.some((item) => item.status === 'UPLOADING'),
-)
+  uploadItems.value.some((item) => item.status === "UPLOADING"),
+);
 const queuedUploads = computed(
   () =>
     uploadItems.value.filter(
-      (item) => item.status === 'QUEUED' && !item.clientRejected,
+      (item) => item.status === "QUEUED" && !item.clientRejected,
     ).length,
-)
+);
 const uploadDone = computed(
   () =>
     uploadItems.value.length > 0 &&
     uploadItems.value.every(
-      (item) => item.status === 'DONE' || item.clientRejected,
+      (item) => item.status === "DONE" || item.clientRejected,
     ),
-)
+);
 const localeOptions = computed(() =>
-  (auth.project?.supportedLocales ?? [auth.project?.defaultLocale ?? 'ru'])
-    .filter((value, index, values) => value && values.indexOf(value) === index)
-    .map((value) => ({
-      label: localeNames[value] ?? value.toUpperCase(),
-      value,
-    })),
-)
+  (localeCatalog.value?.supportedLocales ?? []).map((value) => ({
+    label: localeNames[value] ?? value.toUpperCase(),
+    value,
+  })),
+);
+function isAllowedKnowledgeLocale(value: string | null): value is string {
+  return Boolean(
+    value && localeCatalog.value?.supportedLocales.includes(value),
+  );
+}
 const stats = computed(() => ({
   total: documents.value.length,
-  ready: documents.value.filter((item) => item.status === 'READY').length,
-  indexing: documents.value.filter((item) => item.status === 'INDEXING').length,
-  failed: documents.value.filter((item) => item.status === 'FAILED').length,
-}))
+  ready: documents.value.filter((item) => item.status === "READY").length,
+  indexing: documents.value.filter((item) => item.status === "INDEXING").length,
+  failed: documents.value.filter((item) => item.status === "FAILED").length,
+}));
 const filteredDocuments = computed(() => {
-  const query = search.value.trim().toLocaleLowerCase('ru')
+  const query = search.value.trim().toLowerCase();
   return documents.value.filter((item) => {
     const matchesStatus =
-      statusFilter.value === 'ALL' || item.status === statusFilter.value
+      statusFilter.value === "ALL" || item.status === statusFilter.value;
     const matchesQuery =
       !query ||
       [item.title, item.filename, item.category, item.locale].some((value) =>
-        value?.toLocaleLowerCase('ru').includes(query),
-      )
-    return matchesStatus && matchesQuery
-  })
-})
+        value?.toLowerCase().includes(query),
+      );
+    return matchesStatus && matchesQuery;
+  });
+});
 const textContentChanged = computed(
   () =>
     !textSource.value ||
-    textContent.value.trim() !== (textSource.value.contentText ?? '').trim(),
-)
+    textContent.value.trim() !== (textSource.value.contentText ?? "").trim(),
+);
 const textSnapshot = computed(() =>
   JSON.stringify({
     title: textTitle.value,
@@ -175,128 +199,95 @@ const textSnapshot = computed(() =>
     locale: textLocale.value,
     category: textCategory.value,
   }),
-)
+);
 const textDirty = computed(
   () =>
     textDialogVisible.value &&
     Boolean(initialTextSnapshot.value) &&
     textSnapshot.value !== initialTextSnapshot.value,
-)
+);
 const { confirmDiscard: confirmTextDiscard } = useUnsavedChangesGuard(
   textDirty,
-  'Есть несохранённые изменения документа. Закрыть форму?',
-)
+  "Есть несохранённые изменения документа. Закрыть форму?",
+);
 
 function errorMessage(cause: unknown, fallback: string): string {
   if (!(cause instanceof ApiError))
-    return cause instanceof Error ? cause.message : fallback
+    return cause instanceof Error ? cause.message : fallback;
   if (cause.status === 0)
-    return 'Нет соединения с сервером. Проверьте сеть и повторите попытку.'
+    return "Нет соединения с сервером. Проверьте сеть и повторите попытку.";
   if (cause.status === 403)
-    return 'Недостаточно прав для управления базой знаний.'
-  if (cause.status === 413) return 'Файл превышает допустимый размер 25 МБ.'
+    return "Недостаточно прав для управления базой знаний.";
+  if (cause.status === 413) return "Файл превышает допустимый размер 25 МБ.";
   if (cause.status === 415)
-    return 'Сервер не поддерживает формат или MIME-тип файла.'
+    return "Сервер не поддерживает формат или MIME-тип файла.";
   if (cause.status === 409)
     return (
-      cause.message || 'Операция конфликтует с текущим состоянием документа.'
-    )
-  const request = cause.requestId ? ` Код запроса: ${cause.requestId}.` : ''
-  return `${cause.message || fallback}${request}`
+      cause.message || "Операция конфликтует с текущим состоянием документа."
+    );
+  const request = cause.requestId ? ` Код запроса: ${cause.requestId}.` : "";
+  return `${cause.message || fallback}${request}`;
 }
 
 function uploadFailureMessage(cause: unknown): string {
   if (cause instanceof ApiError && cause.status === 0) {
-    return 'Связь прервана или истёк таймаут. Результат может быть неизвестен — обновите список документов.'
+    return "Связь прервана или истёк таймаут. Результат может быть неизвестен — обновите список документов.";
   }
-  return errorMessage(cause, 'Не удалось загрузить файл')
+  return errorMessage(cause, "Не удалось загрузить файл");
 }
 
 function invalidateListRequest() {
-  listGeneration += 1
-  pollGeneration += 1
-  listController?.abort()
-  listController = null
-  loadMoreController.value?.abort()
-  loadMoreController.value = null
-  loadingMore.value = false
-  refreshing.value = false
+  listGeneration += 1;
+  pollGeneration += 1;
+  listController?.abort();
+  listController = null;
+  loadMoreController.value?.abort();
+  loadMoreController.value = null;
+  loadingMore.value = false;
+  refreshing.value = false;
 }
 
 function mutationController(): AbortController {
-  const controller = new AbortController()
-  mutationControllers.add(controller)
-  return controller
+  const controller = new AbortController();
+  mutationControllers.add(controller);
+  return controller;
 }
 
 function releaseMutationController(controller: AbortController) {
-  mutationControllers.delete(controller)
+  mutationControllers.delete(controller);
 }
 
 function mergeDocument(document: KnowledgeDocument) {
-  if (document.projectId !== projectId.value) return
-  const index = documents.value.findIndex((item) => item.id === document.id)
-  if (index >= 0) documents.value.splice(index, 1, document)
-  else documents.value.unshift(document)
+  if (document.projectId !== projectId.value) return;
+  const index = documents.value.findIndex((item) => item.id === document.id);
+  if (index >= 0) documents.value.splice(index, 1, document);
+  else documents.value.unshift(document);
   if (details.value?.id === document.id)
-    details.value = { ...details.value, ...document }
-  schedulePoll()
-}
-
-async function loadPermission() {
-  const requestedProjectId = projectId.value
-  const requestedEpoch = projectEpoch
-  const user = auth.user
-  if (!requestedProjectId || !user) {
-    permissionLoading.value = false
-    projectRole.value = null
-    return
-  }
-  permissionController.value?.abort()
-  const controller = new AbortController()
-  permissionController.value = controller
-  permissionLoading.value = true
-  permissionError.value = ''
-  projectRole.value = null
-  try {
-    const role = await getKnowledgeProjectRole(
-      requestedProjectId,
-      user.id,
-      user.email,
-      controller.signal,
-    )
-    if (
-      requestedEpoch !== projectEpoch ||
-      requestedProjectId !== projectId.value
-    )
-      return
-    projectRole.value = role
-  } catch (cause) {
-    if (controller.signal.aborted || requestedEpoch !== projectEpoch) return
-    permissionError.value = errorMessage(
-      cause,
-      'Не удалось проверить права доступа',
-    )
-  } finally {
-    if (requestedEpoch === projectEpoch) permissionLoading.value = false
-  }
+    details.value = { ...details.value, ...document };
+  schedulePoll();
 }
 
 async function loadDocuments(force = false, resetWindow = false) {
-  const requestedProjectId = projectId.value
-  const requestedEpoch = projectEpoch
+  const requestedProjectId = projectId.value;
+  const requestedEpoch = projectEpoch;
   if (!requestedProjectId) {
-    loading.value = false
-    loadError.value = 'Текущий проект не найден. Войдите заново.'
-    return
+    loading.value = false;
+    loadError.value = "Текущий проект не найден. Войдите заново.";
+    return;
   }
-  listController?.abort()
-  const controller = new AbortController()
-  listController = controller
-  const generation = ++listGeneration
-  if (!force) loading.value = true
-  else refreshing.value = true
-  loadError.value = ''
+  if (!localeCatalog.value) {
+    loading.value = false;
+    refreshing.value = false;
+    loadError.value = localeProjectionError;
+    return;
+  }
+  listController?.abort();
+  const controller = new AbortController();
+  listController = controller;
+  const generation = ++listGeneration;
+  if (!force) loading.value = true;
+  else refreshing.value = true;
+  loadError.value = "";
   try {
     const page = await listKnowledgeDocuments(
       requestedProjectId,
@@ -306,167 +297,169 @@ async function loadDocuments(force = false, resetWindow = false) {
           : Math.min(Math.max(documents.value.length, 30), 100),
       },
       controller.signal,
-    )
+    );
     if (
       generation !== listGeneration ||
       requestedEpoch !== projectEpoch ||
       requestedProjectId !== projectId.value
     )
-      return
-    documents.value = page.items
-    nextCursor.value = page.nextCursor
+      return;
+    documents.value = page.items;
+    nextCursor.value = page.nextCursor;
   } catch (cause) {
-    if (controller.signal.aborted || generation !== listGeneration) return
-    loadError.value = errorMessage(cause, 'Не удалось загрузить документы')
+    if (controller.signal.aborted || generation !== listGeneration) return;
+    loadError.value = errorMessage(cause, "Не удалось загрузить документы");
   } finally {
     if (generation === listGeneration) {
-      loading.value = false
-      refreshing.value = false
-      schedulePoll()
+      loading.value = false;
+      refreshing.value = false;
+      schedulePoll();
     }
   }
 }
 
 async function loadMore() {
-  if (!projectId.value || !nextCursor.value || loadingMore.value) return
-  const requestedProjectId = projectId.value
-  const requestedCursor = nextCursor.value
-  const requestedEpoch = projectEpoch
-  loadMoreController.value?.abort()
-  const controller = new AbortController()
-  loadMoreController.value = controller
-  loadingMore.value = true
+  if (!projectId.value || !nextCursor.value || loadingMore.value) return;
+  const requestedProjectId = projectId.value;
+  const requestedCursor = nextCursor.value;
+  const requestedEpoch = projectEpoch;
+  loadMoreController.value?.abort();
+  const controller = new AbortController();
+  loadMoreController.value = controller;
+  loadingMore.value = true;
   try {
     const page = await listKnowledgeDocuments(
       requestedProjectId,
       { limit: 30, cursor: requestedCursor },
       controller.signal,
-    )
+    );
     if (
       controller.signal.aborted ||
       requestedEpoch !== projectEpoch ||
       requestedProjectId !== projectId.value ||
       requestedCursor !== nextCursor.value
     )
-      return
-    const existing = new Set(documents.value.map((item) => item.id))
-    documents.value.push(...page.items.filter((item) => !existing.has(item.id)))
-    nextCursor.value = page.nextCursor
+      return;
+    const existing = new Set(documents.value.map((item) => item.id));
+    documents.value.push(
+      ...page.items.filter((item) => !existing.has(item.id)),
+    );
+    nextCursor.value = page.nextCursor;
   } catch (cause) {
     if (!controller.signal.aborted && requestedEpoch === projectEpoch)
       toast.add({
-        severity: 'error',
-        summary: 'Не удалось загрузить ещё',
-        detail: errorMessage(cause, 'Повторите попытку'),
+        severity: "error",
+        summary: "Не удалось загрузить ещё",
+        detail: errorMessage(cause, "Повторите попытку"),
         life: 4500,
-      })
+      });
   } finally {
     if (loadMoreController.value === controller) {
-      loadMoreController.value = null
-      loadingMore.value = false
-      schedulePoll()
+      loadMoreController.value = null;
+      loadingMore.value = false;
+      schedulePoll();
     }
   }
 }
 
 function schedulePoll() {
-  if (pollTimer) window.clearTimeout(pollTimer)
-  if (!documents.value.some((item) => item.status === 'INDEXING')) return
+  if (pollTimer) window.clearTimeout(pollTimer);
+  if (!documents.value.some((item) => item.status === "INDEXING")) return;
   pollTimer = window.setTimeout(async () => {
     if (document.hidden) {
-      schedulePoll()
-      return
+      schedulePoll();
+      return;
     }
-    const requestedProjectId = projectId.value
-    const requestedEpoch = projectEpoch
-    const requestedPollGeneration = pollGeneration
+    const requestedProjectId = projectId.value;
+    const requestedEpoch = projectEpoch;
+    const requestedPollGeneration = pollGeneration;
     const indexing = documents.value
-      .filter((item) => item.status === 'INDEXING')
-      .slice(0, 10)
+      .filter((item) => item.status === "INDEXING")
+      .slice(0, 10);
     const updates = await Promise.allSettled(
       indexing.map((item) => getKnowledgeDocument(requestedProjectId, item.id)),
-    )
+    );
     if (
       requestedEpoch !== projectEpoch ||
       requestedProjectId !== projectId.value ||
       requestedPollGeneration !== pollGeneration
     )
-      return
+      return;
     for (const update of updates) {
-      if (update.status === 'fulfilled') mergeDocument(update.value)
+      if (update.status === "fulfilled") mergeDocument(update.value);
     }
-    schedulePoll()
-  }, 5_000)
+    schedulePoll();
+  }, 5_000);
 }
 
 function openUploadDialog() {
-  if (!canManage.value) return
-  uploadItems.value = []
-  uploadLocale.value = auth.project?.defaultLocale ?? null
-  uploadCategory.value = ''
-  uploadError.value = ''
-  uploadDialogVisible.value = true
+  if (!canManage.value) return;
+  uploadItems.value = [];
+  uploadLocale.value = localeCatalog.value?.defaultLocale ?? null;
+  uploadCategory.value = "";
+  uploadError.value = "";
+  uploadDialogVisible.value = true;
 }
 
 function requestUploadDialog(value: boolean) {
-  if (!value && uploading.value) return
-  uploadDialogVisible.value = value
+  if (!value && uploading.value) return;
+  uploadDialogVisible.value = value;
 }
 
 function addFiles(files: File[]) {
-  if (uploading.value || !files.length) return
+  if (uploading.value || !files.length) return;
   const available = Math.max(
     0,
     MAX_UPLOAD_BATCH_FILES - uploadItems.value.length,
-  )
-  const accepted = files.slice(0, available)
+  );
+  const accepted = files.slice(0, available);
   let batchBytes = uploadItems.value.reduce(
     (total, item) => total + item.file.size,
     0,
-  )
-  let limited = files.length > accepted.length
+  );
+  let limited = files.length > accepted.length;
   for (const file of accepted) {
     if (batchBytes + file.size > MAX_UPLOAD_BATCH_BYTES) {
-      limited = true
-      continue
+      limited = true;
+      continue;
     }
-    batchBytes += file.size
-    const error = validateKnowledgeFile(file) ?? ''
+    batchBytes += file.size;
+    const error = validateKnowledgeFile(file) ?? "";
     uploadItems.value.push({
       id: globalThis.crypto.randomUUID(),
       file,
-      title: file.name.replace(/\.[^.]+$/, '').slice(0, 200),
-      status: error ? 'ERROR' : 'QUEUED',
+      title: file.name.replace(/\.[^.]+$/, "").slice(0, 200),
+      status: error ? "ERROR" : "QUEUED",
       progress: 0,
       error,
       clientRejected: Boolean(error),
       duplicate: false,
-    })
+    });
   }
   uploadError.value = limited
-    ? 'За один запуск можно выбрать до 50 файлов общим размером не более 250 МБ.'
-    : ''
-  if (fileInput.value) fileInput.value.value = ''
+    ? "За один запуск можно выбрать до 50 файлов общим размером не более 250 МБ."
+    : "";
+  if (fileInput.value) fileInput.value.value = "";
 }
 
 function onFileSelection(event: Event) {
-  addFiles(Array.from((event.target as HTMLInputElement).files ?? []))
+  addFiles(Array.from((event.target as HTMLInputElement).files ?? []));
 }
 
 function onDrop(event: DragEvent) {
-  dragging.value = false
-  addFiles(Array.from(event.dataTransfer?.files ?? []))
+  dragging.value = false;
+  addFiles(Array.from(event.dataTransfer?.files ?? []));
 }
 
 function removeUpload(id: string) {
-  if (uploading.value) return
-  uploadItems.value = uploadItems.value.filter((item) => item.id !== id)
+  if (uploading.value) return;
+  uploadItems.value = uploadItems.value.filter((item) => item.id !== id);
 }
 
 function queueUploadAgain(item: UploadItem) {
-  item.status = 'QUEUED'
-  item.error = ''
-  item.progress = 0
+  item.status = "QUEUED";
+  item.error = "";
+  item.progress = 0;
 }
 
 async function startUpload() {
@@ -476,225 +469,235 @@ async function startUpload() {
     !queuedUploads.value ||
     uploading.value
   )
-    return
+    return;
+  const locale = uploadLocale.value;
   if (uploadCategory.value.trim().length > 80) {
-    uploadError.value = 'Категория не должна превышать 80 символов.'
-    return
+    uploadError.value = "Категория не должна превышать 80 символов.";
+    return;
+  }
+  if (!isAllowedKnowledgeLocale(locale)) {
+    uploadError.value = localeProjectionError;
+    return;
   }
   const invalidTitle = uploadItems.value.find(
     (item) =>
-      item.status === 'QUEUED' &&
+      item.status === "QUEUED" &&
       (!item.title.trim() || item.title.trim().length > 200),
-  )
+  );
   if (invalidTitle) {
-    uploadError.value = `Укажите название для файла «${invalidTitle.file.name}».`
-    return
+    uploadError.value = `Укажите название для файла «${invalidTitle.file.name}».`;
+    return;
   }
-  uploadError.value = ''
-  const requestedProjectId = projectId.value
-  const requestedEpoch = projectEpoch
+  uploadError.value = "";
+  const requestedProjectId = projectId.value;
+  const requestedEpoch = projectEpoch;
   const batch = uploadItems.value.filter(
-    (item) => item.status === 'QUEUED' && !item.clientRejected,
-  )
-  const controller = new AbortController()
-  uploadController.value = controller
-  let uploaded = 0
-  let duplicates = 0
+    (item) => item.status === "QUEUED" && !item.clientRejected,
+  );
+  const controller = new AbortController();
+  uploadController.value = controller;
+  let uploaded = 0;
+  let duplicates = 0;
   for (const item of batch) {
     if (
       controller.signal.aborted ||
       requestedEpoch !== projectEpoch ||
       requestedProjectId !== projectId.value
     )
-      break
-    item.status = 'UPLOADING'
-    item.error = ''
+      break;
+    item.status = "UPLOADING";
+    item.error = "";
     try {
       const result = await uploadKnowledgeFile(
         requestedProjectId,
         {
           file: item.file,
           title: item.title.trim(),
-          locale: uploadLocale.value || undefined,
+          locale,
           category: uploadCategory.value.trim() || undefined,
         },
         controller.signal,
         (progress) => {
-          item.progress = progress
+          item.progress = progress;
         },
-      )
+      );
       if (
         requestedEpoch !== projectEpoch ||
         requestedProjectId !== projectId.value
       )
-        break
-      invalidateListRequest()
-      item.progress = 100
-      item.status = 'DONE'
-      item.duplicate = result.duplicate
-      uploaded += 1
-      if (result.duplicate) duplicates += 1
-      mergeDocument(result.document)
+        break;
+      invalidateListRequest();
+      item.progress = 100;
+      item.status = "DONE";
+      item.duplicate = result.duplicate;
+      uploaded += 1;
+      if (result.duplicate) duplicates += 1;
+      mergeDocument(result.document);
     } catch (cause) {
       if (controller.signal.aborted) {
-        item.status = 'ERROR'
+        item.status = "ERROR";
         item.error =
-          'Загрузка остановлена. Результат текущего запроса может быть неизвестен — обновите список.'
-        break
+          "Загрузка остановлена. Результат текущего запроса может быть неизвестен — обновите список.";
+        break;
       }
-      item.status = 'ERROR'
-      item.error = uploadFailureMessage(cause)
+      item.status = "ERROR";
+      item.error = uploadFailureMessage(cause);
     }
   }
-  if (uploadController.value === controller) uploadController.value = null
+  if (uploadController.value === controller) uploadController.value = null;
   if (uploaded && requestedEpoch === projectEpoch) {
     toast.add({
-      severity: duplicates === uploaded ? 'info' : 'success',
+      severity: duplicates === uploaded ? "info" : "success",
       summary:
-        duplicates === uploaded ? 'Файлы уже были загружены' : 'Файлы приняты',
+        duplicates === uploaded ? "Файлы уже были загружены" : "Файлы приняты",
       detail: duplicates
         ? `${uploaded} обработано, совпадений: ${duplicates}.`
         : `${uploaded} отправлено на индексацию.`,
       life: 3800,
-    })
+    });
   }
 }
 
 function stopUpload() {
-  uploadController.value?.abort()
+  uploadController.value?.abort();
 }
 
 function openCreateText() {
-  if (!canManage.value) return
-  textMode.value = 'CREATE'
-  textSource.value = null
-  textTitle.value = ''
-  textContent.value = ''
-  textLocale.value = auth.project?.defaultLocale ?? null
-  textCategory.value = ''
-  textError.value = ''
-  initialTextSnapshot.value = textSnapshot.value
-  textDialogVisible.value = true
+  if (!canManage.value) return;
+  textMode.value = "CREATE";
+  textSource.value = null;
+  textTitle.value = "";
+  textContent.value = "";
+  textLocale.value = localeCatalog.value?.defaultLocale ?? null;
+  textCategory.value = "";
+  textError.value = "";
+  initialTextSnapshot.value = textSnapshot.value;
+  textDialogVisible.value = true;
 }
 
 function openNewVersion(document: KnowledgeDocumentDetail) {
-  if (!canManage.value || document.projectId !== projectId.value) return
-  textMode.value = 'VERSION'
-  textSource.value = document
-  textTitle.value = document.title
-  textContent.value = document.contentText ?? ''
-  textLocale.value = document.locale
-  textCategory.value = document.category ?? ''
-  textError.value = ''
-  initialTextSnapshot.value = textSnapshot.value
-  detailsVisible.value = false
-  textDialogVisible.value = true
+  if (!canManage.value || document.projectId !== projectId.value) return;
+  textMode.value = "VERSION";
+  textSource.value = document;
+  textTitle.value = document.title;
+  textContent.value = document.contentText ?? "";
+  textLocale.value = document.locale;
+  textCategory.value = document.category ?? "";
+  textError.value = "";
+  initialTextSnapshot.value = textSnapshot.value;
+  detailsVisible.value = false;
+  textDialogVisible.value = true;
 }
 
 function requestTextDialog(value: boolean) {
-  if (!value && savingText.value) return
-  if (!value && !confirmTextDiscard()) return
-  textDialogVisible.value = value
+  if (!value && savingText.value) return;
+  if (!value && !confirmTextDiscard()) return;
+  textDialogVisible.value = value;
 }
 
 async function saveText() {
-  if (!canManage.value || !projectId.value || savingText.value) return
-  const title = textTitle.value.trim()
-  const text = textContent.value.trim()
-  if (!title) textError.value = 'Укажите название документа.'
+  if (!canManage.value || !projectId.value || savingText.value) return;
+  const title = textTitle.value.trim();
+  const text = textContent.value.trim();
+  const locale = textLocale.value;
+  if (!title) textError.value = "Укажите название документа.";
   else if (title.length > 200)
-    textError.value = 'Название не должно превышать 200 символов.'
-  else if (!text) textError.value = 'Добавьте текст документа.'
+    textError.value = "Название не должно превышать 200 символов.";
+  else if (!text) textError.value = "Добавьте текст документа.";
   else if (text.length > MAX_KNOWLEDGE_TEXT_LENGTH)
-    textError.value = 'Текст превышает ограничение 500 000 символов.'
+    textError.value = "Текст превышает ограничение 500 000 символов.";
   else if (textCategory.value.trim().length > 80)
-    textError.value = 'Категория не должна превышать 80 символов.'
-  else if (textMode.value === 'VERSION' && !textContentChanged.value)
+    textError.value = "Категория не должна превышать 80 символов.";
+  else if (textMode.value === "VERSION" && !textContentChanged.value)
     textError.value =
-      'Backend пока не умеет менять только название или метаданные. Измените содержимое обновлённой копии.'
-  else textError.value = ''
-  if (textError.value) return
+      "Backend пока не умеет менять только название или метаданные. Измените содержимое обновлённой копии.";
+  else textError.value = "";
+  if (textError.value) return;
+  if (!isAllowedKnowledgeLocale(locale)) {
+    textError.value = localeProjectionError;
+    return;
+  }
 
-  savingText.value = true
-  const requestedProjectId = projectId.value
-  const requestedEpoch = projectEpoch
-  const controller = new AbortController()
-  textController.value = controller
+  savingText.value = true;
+  const requestedProjectId = projectId.value;
+  const requestedEpoch = projectEpoch;
+  const controller = new AbortController();
+  textController.value = controller;
   try {
     const result = await createKnowledgeText(
       requestedProjectId,
       {
         title,
         text,
-        locale: textLocale.value || undefined,
+        locale,
         category: textCategory.value.trim() || undefined,
       },
       controller.signal,
-    )
+    );
     if (
       requestedEpoch !== projectEpoch ||
       requestedProjectId !== projectId.value
     )
-      return
-    invalidateListRequest()
-    mergeDocument(result.document)
-    initialTextSnapshot.value = ''
-    textDialogVisible.value = false
+      return;
+    invalidateListRequest();
+    mergeDocument(result.document);
+    initialTextSnapshot.value = "";
+    textDialogVisible.value = false;
     toast.add({
-      severity: result.duplicate ? 'info' : 'success',
+      severity: result.duplicate ? "info" : "success",
       summary: result.duplicate
-        ? 'Такой материал уже есть'
-        : textMode.value === 'VERSION'
-          ? 'Обновлённая копия создана'
-          : 'Текст принят',
+        ? "Такой материал уже есть"
+        : textMode.value === "VERSION"
+          ? "Обновлённая копия создана"
+          : "Текст принят",
       detail: result.duplicate
-        ? 'Повторная копия не добавлена.'
-        : 'Индексация продолжится в фоне.',
+        ? "Повторная копия не добавлена."
+        : "Индексация продолжится в фоне.",
       life: 3600,
-    })
+    });
   } catch (cause) {
     if (!controller.signal.aborted && requestedEpoch === projectEpoch)
-      textError.value = errorMessage(cause, 'Не удалось сохранить текст')
+      textError.value = errorMessage(cause, "Не удалось сохранить текст");
   } finally {
-    if (textController.value === controller) textController.value = null
-    if (requestedEpoch === projectEpoch) savingText.value = false
+    if (textController.value === controller) textController.value = null;
+    if (requestedEpoch === projectEpoch) savingText.value = false;
   }
 }
 
 async function openDetails(document: KnowledgeDocument) {
-  if (document.projectId !== projectId.value) return
-  const requestedProjectId = projectId.value
-  const requestedEpoch = projectEpoch
-  detailsController.value?.abort()
-  const controller = new AbortController()
-  detailsController.value = controller
-  details.value = null
-  detailsError.value = ''
-  detailsLoading.value = true
-  detailsVisible.value = true
+  if (document.projectId !== projectId.value) return;
+  const requestedProjectId = projectId.value;
+  const requestedEpoch = projectEpoch;
+  detailsController.value?.abort();
+  const controller = new AbortController();
+  detailsController.value = controller;
+  details.value = null;
+  detailsError.value = "";
+  detailsLoading.value = true;
+  detailsVisible.value = true;
   try {
     const result = await getKnowledgeDocument(
       requestedProjectId,
       document.id,
       controller.signal,
-    )
+    );
     if (
       requestedEpoch !== projectEpoch ||
       requestedProjectId !== projectId.value
     )
-      return
-    details.value = result
+      return;
+    details.value = result;
   } catch (cause) {
     if (!controller.signal.aborted)
-      detailsError.value = errorMessage(cause, 'Не удалось открыть документ')
+      detailsError.value = errorMessage(cause, "Не удалось открыть документ");
   } finally {
-    if (!controller.signal.aborted) detailsLoading.value = false
+    if (!controller.signal.aborted) detailsLoading.value = false;
   }
 }
 
 function closeDetails() {
-  detailsController.value?.abort()
-  detailsVisible.value = false
+  detailsController.value?.abort();
+  detailsVisible.value = false;
 }
 
 async function retryDocument(document: KnowledgeDocument) {
@@ -703,57 +706,57 @@ async function retryDocument(document: KnowledgeDocument) {
     document.projectId !== projectId.value ||
     retryingIds.value.has(document.id)
   )
-    return
-  const requestedProjectId = projectId.value
-  const requestedEpoch = projectEpoch
-  const controller = mutationController()
-  retryingIds.value = new Set(retryingIds.value).add(document.id)
+    return;
+  const requestedProjectId = projectId.value;
+  const requestedEpoch = projectEpoch;
+  const controller = mutationController();
+  retryingIds.value = new Set(retryingIds.value).add(document.id);
   try {
     const result = await retryKnowledgeDocument(
       requestedProjectId,
       document.id,
       controller.signal,
-    )
+    );
     if (
       requestedEpoch !== projectEpoch ||
       requestedProjectId !== projectId.value
     )
-      return
-    invalidateListRequest()
-    mergeDocument(result.document)
+      return;
+    invalidateListRequest();
+    mergeDocument(result.document);
     toast.add({
-      severity: 'success',
-      summary: 'Повторная индексация запущена',
+      severity: "success",
+      summary: "Повторная индексация запущена",
       detail: document.title,
       life: 3000,
-    })
+    });
   } catch (cause) {
     if (!controller.signal.aborted && requestedEpoch === projectEpoch)
       toast.add({
-        severity: 'error',
-        summary: 'Не удалось повторить',
-        detail: errorMessage(cause, 'Повторите попытку'),
+        severity: "error",
+        summary: "Не удалось повторить",
+        detail: errorMessage(cause, "Повторите попытку"),
         life: 4500,
-      })
+      });
   } finally {
-    releaseMutationController(controller)
-    const next = new Set(retryingIds.value)
-    next.delete(document.id)
-    retryingIds.value = next
+    releaseMutationController(controller);
+    const next = new Set(retryingIds.value);
+    next.delete(document.id);
+    retryingIds.value = next;
   }
 }
 
 function askDelete(document: KnowledgeDocument) {
-  if (!canManage.value || document.projectId !== projectId.value) return
+  if (!canManage.value || document.projectId !== projectId.value) return;
   confirm.require({
-    header: 'Удалить документ?',
+    header: "Удалить документ?",
     message: `«${document.title}» перестанет использоваться в ответах Lola. Отменить удаление будет нельзя.`,
-    icon: 'pi pi-exclamation-triangle',
-    rejectLabel: 'Отмена',
-    acceptLabel: 'Удалить',
-    acceptProps: { severity: 'danger' },
+    icon: "pi pi-exclamation-triangle",
+    rejectLabel: "Отмена",
+    acceptLabel: "Удалить",
+    acceptProps: { severity: "danger" },
     accept: () => deleteDocument(document),
-  })
+  });
 }
 
 async function deleteDocument(document: KnowledgeDocument) {
@@ -762,138 +765,133 @@ async function deleteDocument(document: KnowledgeDocument) {
     document.projectId !== projectId.value ||
     deletingIds.value.has(document.id)
   )
-    return
-  const requestedProjectId = projectId.value
-  const requestedEpoch = projectEpoch
-  const controller = mutationController()
-  deletingIds.value = new Set(deletingIds.value).add(document.id)
-  const cursorDeleted = nextCursor.value === document.id
+    return;
+  const requestedProjectId = projectId.value;
+  const requestedEpoch = projectEpoch;
+  const controller = mutationController();
+  deletingIds.value = new Set(deletingIds.value).add(document.id);
+  const cursorDeleted = nextCursor.value === document.id;
   try {
     await deleteKnowledgeDocument(
       requestedProjectId,
       document.id,
       controller.signal,
-    )
+    );
     if (
       requestedEpoch !== projectEpoch ||
       requestedProjectId !== projectId.value
     )
-      return
-    invalidateListRequest()
-    documents.value = documents.value.filter((item) => item.id !== document.id)
-    schedulePoll()
-    if (details.value?.id === document.id) closeDetails()
-    if (cursorDeleted) await loadDocuments(true, true)
+      return;
+    invalidateListRequest();
+    documents.value = documents.value.filter((item) => item.id !== document.id);
+    schedulePoll();
+    if (details.value?.id === document.id) closeDetails();
+    if (cursorDeleted) await loadDocuments(true, true);
     toast.add({
-      severity: 'success',
-      summary: 'Документ удалён',
+      severity: "success",
+      summary: "Документ удалён",
       detail: document.title,
       life: 2800,
-    })
+    });
   } catch (cause) {
     if (!controller.signal.aborted && requestedEpoch === projectEpoch)
       toast.add({
-        severity: 'error',
-        summary: 'Не удалось удалить',
-        detail: errorMessage(cause, 'Повторите попытку'),
+        severity: "error",
+        summary: "Не удалось удалить",
+        detail: errorMessage(cause, "Повторите попытку"),
         life: 4500,
-      })
+      });
   } finally {
-    releaseMutationController(controller)
-    const next = new Set(deletingIds.value)
-    next.delete(document.id)
-    deletingIds.value = next
+    releaseMutationController(controller);
+    const next = new Set(deletingIds.value);
+    next.delete(document.id);
+    deletingIds.value = next;
   }
 }
 
 function statusLabel(status: KnowledgeDocumentStatus): string {
-  return { INDEXING: 'Индексируется', READY: 'Готов', FAILED: 'Ошибка' }[status]
+  return { INDEXING: "Индексируется", READY: "Готов", FAILED: "Ошибка" }[
+    status
+  ];
 }
 
 function statusSeverity(
   status: KnowledgeDocumentStatus,
-): 'success' | 'warn' | 'danger' {
-  return { INDEXING: 'warn', READY: 'success', FAILED: 'danger' }[status] as
-    'success' | 'warn' | 'danger'
+): "success" | "warn" | "danger" {
+  return { INDEXING: "warn", READY: "success", FAILED: "danger" }[status] as
+    "success" | "warn" | "danger";
 }
 
 function documentIcon(document: KnowledgeDocument): string {
-  if (document.sourceType === 'TEXT') return 'pi pi-align-left'
-  if (document.filename.toLowerCase().endsWith('.pdf')) return 'pi pi-file-pdf'
-  if (/\.docx?$/.test(document.filename.toLowerCase())) return 'pi pi-file-word'
-  return 'pi pi-file'
+  if (document.sourceType === "TEXT") return "pi pi-align-left";
+  if (document.filename.toLowerCase().endsWith(".pdf")) return "pi pi-file-pdf";
+  if (/\.docx?$/.test(document.filename.toLowerCase()))
+    return "pi pi-file-word";
+  return "pi pi-file";
 }
 
 function formatDate(value: string): string {
-  const date = new Date(value)
+  const date = new Date(value);
   return Number.isNaN(date.getTime())
-    ? '—'
-    : new Intl.DateTimeFormat('ru-RU', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      }).format(date)
+    ? "—"
+    : new Intl.DateTimeFormat("ru-RU", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(date);
 }
 
 watch(projectId, (next, previous) => {
-  if (next === previous) return
-  projectEpoch += 1
-  invalidateListRequest()
-  loadMoreController.value?.abort()
-  loadMoreController.value = null
-  loadingMore.value = false
-  detailsController.value?.abort()
-  textController.value?.abort()
-  permissionController.value?.abort()
-  uploadController.value?.abort()
-  textController.value = null
-  permissionController.value = null
-  uploadController.value = null
-  savingText.value = false
-  detailsLoading.value = false
-  confirm.close()
-  for (const controller of mutationControllers) controller.abort()
-  mutationControllers.clear()
-  if (pollTimer) window.clearTimeout(pollTimer)
-  documents.value = []
-  nextCursor.value = null
-  details.value = null
-  detailsVisible.value = false
-  textDialogVisible.value = false
-  initialTextSnapshot.value = ''
-  uploadDialogVisible.value = false
-  uploadItems.value = []
-  retryingIds.value = new Set()
-  deletingIds.value = new Set()
-  projectRole.value = null
-  permissionError.value = ''
+  if (next === previous) return;
+  projectEpoch += 1;
+  invalidateListRequest();
+  loadMoreController.value?.abort();
+  loadMoreController.value = null;
+  loadingMore.value = false;
+  detailsController.value?.abort();
+  textController.value?.abort();
+  uploadController.value?.abort();
+  textController.value = null;
+  uploadController.value = null;
+  savingText.value = false;
+  detailsLoading.value = false;
+  confirm.close();
+  for (const controller of mutationControllers) controller.abort();
+  mutationControllers.clear();
+  if (pollTimer) window.clearTimeout(pollTimer);
+  documents.value = [];
+  nextCursor.value = null;
+  details.value = null;
+  detailsVisible.value = false;
+  textDialogVisible.value = false;
+  initialTextSnapshot.value = "";
+  uploadDialogVisible.value = false;
+  uploadItems.value = [];
+  retryingIds.value = new Set();
+  deletingIds.value = new Set();
   if (next) {
-    void loadDocuments()
-    void loadPermission()
+    void loadDocuments();
   } else {
-    loading.value = false
-    permissionLoading.value = false
-    loadError.value = 'Текущий проект не найден. Войдите заново.'
+    loading.value = false;
+    loadError.value = "Текущий проект не найден. Войдите заново.";
   }
-})
+});
 
 onMounted(() => {
-  void loadDocuments()
-  void loadPermission()
-})
+  void loadDocuments();
+});
 onBeforeUnmount(() => {
-  projectEpoch += 1
-  listGeneration += 1
-  listController?.abort()
-  loadMoreController.value?.abort()
-  detailsController.value?.abort()
-  textController.value?.abort()
-  permissionController.value?.abort()
-  uploadController.value?.abort()
-  confirm.close()
-  for (const controller of mutationControllers) controller.abort()
-  mutationControllers.clear()
-  if (pollTimer) window.clearTimeout(pollTimer)
-})
+  projectEpoch += 1;
+  listGeneration += 1;
+  listController?.abort();
+  loadMoreController.value?.abort();
+  detailsController.value?.abort();
+  textController.value?.abort();
+  uploadController.value?.abort();
+  confirm.close();
+  for (const controller of mutationControllers) controller.abort();
+  mutationControllers.clear();
+  if (pollTimer) window.clearTimeout(pollTimer);
+});
 </script>
 
 <template>
@@ -925,31 +923,13 @@ onBeforeUnmount(() => {
     </header>
 
     <Message
-      v-if="permissionError"
-      severity="warn"
-      :closable="false"
-      class="permission-message"
-    >
-      <div class="message-row">
-        <span
-          >Права управления не подтверждены, доступен только просмотр.
-          {{ permissionError }}</span
-        ><Button
-          label="Проверить снова"
-          size="small"
-          text
-          @click="loadPermission"
-        />
-      </div>
-    </Message>
-    <Message
-      v-else-if="!permissionLoading && projectRole === 'VIEWER'"
+      v-if="!hasManagePermission"
       severity="info"
       :closable="false"
       class="permission-message"
     >
-      У вас доступ только для просмотра. Загружать, повторять индексацию и
-      удалять документы могут OWNER, ADMIN и EDITOR.
+      У вас доступ только для просмотра. Для загрузки, повторной индексации и
+      удаления документов требуется разрешение на изменение базы знаний.
     </Message>
     <Message
       v-if="loadError"
@@ -984,25 +964,25 @@ onBeforeUnmount(() => {
         <div>
           <span>В списке</span
           ><strong>{{
-            loadError && !documents.length ? '—' : stats.total
+            loadError && !documents.length ? "—" : stats.total
           }}</strong>
         </div>
         <div class="ready">
           <span>Готово</span
           ><strong>{{
-            loadError && !documents.length ? '—' : stats.ready
+            loadError && !documents.length ? "—" : stats.ready
           }}</strong>
         </div>
         <div class="indexing">
           <span>В работе</span
           ><strong>{{
-            loadError && !documents.length ? '—' : stats.indexing
+            loadError && !documents.length ? "—" : stats.indexing
           }}</strong>
         </div>
         <div class="failed">
           <span>Ошибки</span
           ><strong>{{
-            loadError && !documents.length ? '—' : stats.failed
+            loadError && !documents.length ? "—" : stats.failed
           }}</strong>
         </div>
       </div>
@@ -1162,14 +1142,14 @@ onBeforeUnmount(() => {
         /></span>
         <h3>
           {{
-            documents.length ? 'Ничего не найдено' : 'Добавьте первый материал'
+            documents.length ? "Ничего не найдено" : "Добавьте первый материал"
           }}
         </h3>
         <p>
           {{
             documents.length
-              ? 'Измените запрос или фильтр статуса.'
-              : 'Загрузите файлы или добавьте структурированный текст, чтобы Lola отвечала точнее.'
+              ? "Измените запрос или фильтр статуса."
+              : "Загрузите файлы или добавьте структурированный текст, чтобы Lola отвечала точнее."
           }}
         </p>
         <div v-if="!documents.length && canManage" class="empty-actions">
@@ -1204,9 +1184,9 @@ onBeforeUnmount(() => {
           >Не загружайте секреты и персональные данные без
           необходимости.</strong
         >
-        Файлы хранятся в xAI Files и Collections до удаления документа. Для балансов,
-        заказов и другой изменяемой информации нужны backend tools, а не база
-        знаний.
+        Файлы хранятся в xAI Files и Collections до удаления документа. Для
+        балансов, заказов и другой изменяемой информации нужны backend tools, а
+        не база знаний.
       </p>
     </aside>
 
@@ -1273,7 +1253,7 @@ onBeforeUnmount(() => {
             </div>
             <span v-if="item.status === 'DONE'" class="upload-result success"
               ><i class="pi pi-check" />
-              {{ item.duplicate ? 'Уже есть' : 'Принят' }}</span
+              {{ item.duplicate ? "Уже есть" : "Принят" }}</span
             >
             <span
               v-else-if="item.status === 'ERROR'"
@@ -1286,7 +1266,7 @@ onBeforeUnmount(() => {
               class="upload-result"
               >{{
                 item.progress >= 100
-                  ? 'Передаётся провайдеру'
+                  ? "Передаётся провайдеру"
                   : `${item.progress}%`
               }}</span
             >
@@ -1421,9 +1401,9 @@ onBeforeUnmount(() => {
             placeholder="Используйте понятные заголовки, списки и короткие абзацы…"
             :disabled="savingText"
           /><small
-            >{{ new Intl.NumberFormat('ru-RU').format(textContent.length) }} /
+            >{{ new Intl.NumberFormat("ru-RU").format(textContent.length) }} /
             {{
-              new Intl.NumberFormat('ru-RU').format(MAX_KNOWLEDGE_TEXT_LENGTH)
+              new Intl.NumberFormat("ru-RU").format(MAX_KNOWLEDGE_TEXT_LENGTH)
             }}</small
           >
         </div>
@@ -1515,8 +1495,8 @@ onBeforeUnmount(() => {
             <dt>Тип</dt>
             <dd>
               {{
-                details.sourceType === 'TEXT'
-                  ? 'Текст из CMS'
+                details.sourceType === "TEXT"
+                  ? "Текст из CMS"
                   : details.mimeType
               }}
             </dd>
@@ -1527,11 +1507,11 @@ onBeforeUnmount(() => {
           </div>
           <div>
             <dt>Язык</dt>
-            <dd>{{ details.locale?.toUpperCase() ?? 'Не указан' }}</dd>
+            <dd>{{ details.locale?.toUpperCase() ?? "Не указан" }}</dd>
           </div>
           <div>
             <dt>Категория</dt>
-            <dd>{{ details.category ?? 'Не указана' }}</dd>
+            <dd>{{ details.category ?? "Не указана" }}</dd>
           </div>
           <div>
             <dt>Создан</dt>
@@ -1546,9 +1526,9 @@ onBeforeUnmount(() => {
           v-if="details.status === 'FAILED'"
           severity="error"
           :closable="false"
-          ><strong>{{ details.errorCode ?? 'Ошибка индексации' }}</strong
+          ><strong>{{ details.errorCode ?? "Ошибка индексации" }}</strong
           ><br />{{
-            details.error ?? 'Провайдер не смог обработать документ.'
+            details.error ?? "Провайдер не смог обработать документ."
           }}</Message
         >
         <section v-if="details.sourceType === 'TEXT'" class="text-preview">
@@ -1556,7 +1536,7 @@ onBeforeUnmount(() => {
             <strong>Содержимое</strong
             ><span
               >{{
-                new Intl.NumberFormat('ru-RU').format(
+                new Intl.NumberFormat("ru-RU").format(
                   details.contentText?.length ?? 0,
                 )
               }}
@@ -1632,13 +1612,17 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1.2fr) minmax(440px, 0.8fr);
   gap: 30px;
   padding: 28px;
-  background: linear-gradient(135deg, var(--surface-emphasis) 0%, var(--surface-emphasis-raised) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--surface-emphasis) 0%,
+    var(--surface-emphasis-raised) 100%
+  );
   color: var(--text-on-emphasis);
   overflow: hidden;
   position: relative;
 }
 .knowledge-hero::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 260px;
   height: 260px;

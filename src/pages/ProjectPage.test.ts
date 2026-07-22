@@ -13,6 +13,16 @@ const mocks = vi.hoisted(() => ({
   updateAuthProject: vi.fn(),
   addToast: vi.fn(),
   attributeWorkspace: vi.fn(),
+  authProject: {} as object,
+  permissions: [
+    "project.settings.read",
+    "project.settings.write",
+    "project.profile_contract.read",
+    "project.profile_contract.write",
+    "project.speech.read",
+    "project.speech.write",
+    "project.ai_usage.read",
+  ] as string[],
 }));
 
 vi.mock("@/shared/api/repository", () => ({
@@ -25,13 +35,21 @@ vi.mock("@/shared/api/repository", () => ({
 
 vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => ({
-    project: { id: "project-1", name: "Lola" },
+    get project() {
+      return {
+        ...mocks.authProject,
+        effectivePermissionCodes: mocks.permissions,
+      };
+    },
     updateProject: mocks.updateAuthProject,
   }),
 }));
-vi.mock("@/features/end-user-attributes/api/attribute-contract-repository", () => ({
-  attributeContractRepository: { workspace: mocks.attributeWorkspace },
-}));
+vi.mock(
+  "@/features/end-user-attributes/api/attribute-contract-repository",
+  () => ({
+    attributeContractRepository: { workspace: mocks.attributeWorkspace },
+  }),
+);
 
 vi.mock("primevue/usetoast", () => ({
   useToast: () => ({ add: mocks.addToast }),
@@ -45,6 +63,7 @@ vi.mock("vue-router", async (importOriginal) => ({
 function project(overrides: Partial<Project> = {}): Project {
   return {
     id: "project-1",
+    version: 1,
     name: "Lola",
     slug: "lola",
     status: "ACTIVE",
@@ -79,6 +98,16 @@ function systemPromptInput(wrapper: ReturnType<typeof shallowMount>) {
 describe("ProjectPage voice instructions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.permissions = [
+      "project.settings.read",
+      "project.settings.write",
+      "project.profile_contract.read",
+      "project.profile_contract.write",
+      "project.speech.read",
+      "project.speech.write",
+      "project.ai_usage.read",
+    ];
+    mocks.authProject = project();
     mocks.getProject.mockResolvedValue(project());
     mocks.attributeWorkspace.mockResolvedValue({
       currentRevision: null,
@@ -88,6 +117,79 @@ describe("ProjectPage voice instructions", () => {
     mocks.updateProject.mockImplementation(
       async (_projectId: string, patch: Partial<Project>) => project(patch),
     );
+  });
+
+  it("does not load or render independently protected settings sections", async () => {
+    mocks.permissions = ["project.settings.read"];
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    expect(mocks.attributeWorkspace).not.toHaveBeenCalled();
+    expect(
+      wrapper.findComponent({ name: "SpeechSynthesisSection" }).exists(),
+    ).toBe(false);
+    expect(wrapper.findComponent({ name: "AiUsageSection" }).exists()).toBe(
+      false,
+    );
+    expect(
+      wrapper
+        .findComponent({ name: "ProjectMfaPolicySection" })
+        .props("editable"),
+    ).toBe(false);
+    expect(wrapper.find('button-stub[label="Настроить языки"]').exists()).toBe(
+      false,
+    );
+    expect(
+      voiceInstructionsInput(wrapper).attributes("disabled"),
+    ).toBeDefined();
+  });
+
+  it("renders speech settings read-only without project.speech.write", async () => {
+    mocks.permissions = ["project.settings.read", "project.speech.read"];
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    expect(
+      wrapper
+        .findComponent({ name: "SpeechSynthesisSection" })
+        .props("editable"),
+    ).toBe(false);
+  });
+
+  it("opens an independently permitted speech section without reading or rendering Project settings", async () => {
+    mocks.permissions = ["project.speech.read"];
+    mocks.authProject = {
+      id: "project-1",
+      name: "Lola",
+      slug: "lola",
+      status: "ACTIVE",
+      supportedLocales: ["ru"],
+    };
+
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    expect(mocks.getProject).not.toHaveBeenCalled();
+    expect(mocks.attributeWorkspace).not.toHaveBeenCalled();
+    expect(
+      wrapper.findComponent({ name: "SpeechSynthesisSection" }).exists(),
+    ).toBe(true);
+    expect(
+      wrapper
+        .findComponent({ name: "SpeechSynthesisSection" })
+        .props("supportedLocales"),
+    ).toEqual(["ru"]);
+    expect(wrapper.text()).not.toContain("Cannot read properties");
+    expect(
+      wrapper.findComponent({ name: "ActivitySettingsSection" }).exists(),
+    ).toBe(false);
+    expect(
+      wrapper.findComponent({ name: "ProjectMfaPolicySection" }).exists(),
+    ).toBe(false);
+    expect(wrapper.findComponent({ name: "AiUsageSection" }).exists()).toBe(
+      false,
+    );
+    expect(wrapper.find("#project-settings-form").exists()).toBe(false);
   });
 
   it("shows content languages as a Locale Attribute summary and does not patch legacy locale fields", async () => {
@@ -238,7 +340,10 @@ describe("ProjectPage voice instructions", () => {
     expect(mainChildren[activityIndex - 1]?.textContent).toContain(
       "Подключение продукта",
     );
-    expect(mainChildren[activityIndex + 1]?.textContent).toContain("Ассистент");
+    expect(mainChildren[activityIndex + 1]?.tagName).toBe(
+      "PROJECT-MFA-POLICY-SECTION-STUB",
+    );
+    expect(mainChildren[activityIndex + 2]?.textContent).toContain("Ассистент");
     expect(
       wrapper.find(".settings-main > speech-synthesis-section-stub").exists(),
     ).toBe(true);
@@ -359,6 +464,7 @@ describe("ProjectPage voice instructions", () => {
     wrapper
       .getComponent({ name: "ActivitySettingsSection" })
       .vm.$emit("change", {
+        projectVersion: 2,
         timezone: "Europe/Madrid",
         visitInactivitySeconds: 1800,
         reconnectGraceSeconds: 30,
@@ -378,6 +484,7 @@ describe("ProjectPage voice instructions", () => {
     expect(mocks.updateProject).toHaveBeenCalledWith(
       "project-1",
       expect.objectContaining({
+        version: 2,
         settings: expect.objectContaining({ timezone: "Europe/Madrid" }),
       }),
     );

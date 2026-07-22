@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/features/auth/auth.store', () => ({
-  useAuthStore: () => ({ project: { id: 'project-1' }, user: { role: 'OWNER' } }),
+  useAuthStore: () => ({ project: { id: 'project-1', effectivePermissionCodes: ['project.event_catalog.read', 'project.event_catalog.write'] } }),
 }))
 
 vi.mock('@/shared/api/repository', () => ({

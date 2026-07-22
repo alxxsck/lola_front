@@ -8,8 +8,10 @@ import {
   scenarioAudiencePublishRevision,
   scenarioAudienceRevision,
   scenarioAudienceSearch,
+  scenarioAuthoringArchiveScenario,
   scenarioAuthoringCatalog,
   scenarioAuthoringCreateScenario,
+  scenarioAuthoringListScenarios,
   scenarioAuthoringPreview,
   scenarioAuthoringPreviewGoal,
   scenarioAuthoringPublishScenario,
@@ -18,6 +20,7 @@ import {
   scenarioAuthoringScenarioDocument,
   scenarioAuthoringScenarioRevision,
   scenarioAuthoringScenarioRevisions,
+  scenarioAuthoringUpdateScenarioMetadata,
   scenarioAuthoringValidate,
   scenarioAuthoringValidateScenarioDraft,
   scenarioRunsExplain,
@@ -43,8 +46,10 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   scenarioAudiencePublishRevision: vi.fn(),
   scenarioAudienceRevision: vi.fn(),
   scenarioAudienceSearch: vi.fn(),
+  scenarioAuthoringArchiveScenario: vi.fn(),
   scenarioAuthoringCatalog: vi.fn(),
   scenarioAuthoringCreateScenario: vi.fn(),
+  scenarioAuthoringListScenarios: vi.fn(),
   scenarioAuthoringPreview: vi.fn(),
   scenarioAuthoringPreviewGoal: vi.fn(),
   scenarioAuthoringPublishScenario: vi.fn(),
@@ -53,6 +58,7 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   scenarioAuthoringScenarioDocument: vi.fn(),
   scenarioAuthoringScenarioRevision: vi.fn(),
   scenarioAuthoringScenarioRevisions: vi.fn(),
+  scenarioAuthoringUpdateScenarioMetadata: vi.fn(),
   scenarioAuthoringValidate: vi.fn(),
   scenarioAuthoringValidateScenarioDraft: vi.fn(),
   scenarioRunsExplain: vi.fn(),
@@ -240,6 +246,35 @@ describe("scenario authoring repository", () => {
       );
     },
   );
+
+  it("routes scenario collection, metadata and archive through generated target operations", async () => {
+    const scenario = { id: "scenario-1", updatedAt: "2026-07-20T10:00:00.000Z" };
+    vi.mocked(scenarioAuthoringListScenarios).mockResolvedValue([scenario] as never);
+    vi.mocked(scenarioAuthoringUpdateScenarioMetadata).mockResolvedValue(scenario as never);
+    vi.mocked(scenarioAuthoringArchiveScenario).mockResolvedValue(scenario as never);
+
+    await expect(scenarioAuthoringRepository.listScenarios("project-1")).resolves.toEqual([scenario]);
+    await scenarioAuthoringRepository.updateScenarioMetadata("project-1", "scenario-1", {
+      status: "PAUSED",
+      expectedUpdatedAt: scenario.updatedAt,
+      reason: "Pause scenario from CMS",
+    });
+    await scenarioAuthoringRepository.archiveScenario("project-1", "scenario-1", {
+      expectedUpdatedAt: scenario.updatedAt,
+      reason: "Archive scenario from CMS",
+    });
+
+    expect(scenarioAuthoringUpdateScenarioMetadata).toHaveBeenCalledWith(
+      "project-1",
+      "scenario-1",
+      { status: "PAUSED", expectedUpdatedAt: scenario.updatedAt, reason: "Pause scenario from CMS" },
+    );
+    expect(scenarioAuthoringArchiveScenario).toHaveBeenCalledWith(
+      "project-1",
+      "scenario-1",
+      { expectedUpdatedAt: scenario.updatedAt, reason: "Archive scenario from CMS" },
+    );
+  });
 
   it("validates a generated rule DTO", async () => {
     const response = {

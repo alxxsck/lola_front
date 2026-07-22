@@ -9,7 +9,10 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { useActionDefinitionsStore } from "@/features/actions/action-definitions.store";
 import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
-import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
+import {
+  hasProjectPermission,
+  PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS,
+} from "@/features/auth/permission-access";
 import { canReadProjectMemberships } from "@/features/project-memberships/model/project-membership-permissions";
 import { canReadProjectRoles } from "@/features/project-roles/model/project-role-permissions";
 import AIProposalBadge from "@/features/ai-proposals/ui/AIProposalBadge.vue";
@@ -36,7 +39,13 @@ const navigation = computed(() =>
       platformPermission: "platform.cms_users.read",
     },
     { label: "Обзор", icon: "pi pi-sparkles", to: "/overview", project: true },
-    { label: "Проект", icon: "pi pi-sliders-h", to: "/project", project: true },
+    {
+      label: "Проект",
+      icon: "pi pi-sliders-h",
+      to: "/project",
+      project: true,
+      projectPermissionsAny: [...PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS],
+    },
     {
       label: "Администраторы",
       icon: "pi pi-user-edit",
@@ -51,43 +60,121 @@ const navigation = computed(() =>
       project: true,
       projectRoles: true,
     },
-    { label: "Поля профиля", icon: "pi pi-id-card", to: "/profile-fields", project: true },
-    { label: "База знаний", icon: "pi pi-book", to: "/knowledge", project: true },
-    { label: "Интерфейс", icon: "pi pi-th-large", to: "/interface", project: true },
-    { label: "События", icon: "pi pi-bolt", to: "/events", project: true },
+    {
+      label: "Поля профиля",
+      icon: "pi pi-id-card",
+      to: "/profile-fields",
+      project: true,
+      projectPermission: "project.profile_contract.read",
+    },
+    {
+      label: "База знаний",
+      icon: "pi pi-book",
+      to: "/knowledge",
+      project: true,
+      projectPermission: "project.knowledge.read",
+    },
+    {
+      label: "Интерфейс",
+      icon: "pi pi-th-large",
+      to: "/interface",
+      project: true,
+      projectPermission: "project.ui_registry.read",
+    },
+    {
+      label: "События",
+      icon: "pi pi-bolt",
+      to: "/events",
+      project: true,
+      projectPermission: "project.event_catalog.read",
+    },
     {
       label: "Журнал событий",
       icon: "pi pi-list",
       to: "/event-logs",
-      adminOnly: true,
       project: true,
+      projectPermission: "project.event_logs.read",
     },
-    { label: "Действия", icon: "pi pi-directions-alt", to: "/actions", project: true },
+    {
+      label: "Действия",
+      icon: "pi pi-directions-alt",
+      to: "/actions",
+      project: true,
+      projectPermission: "project.actions.read",
+    },
     {
       label: "Предложения Lola",
       icon: "pi pi-inbox",
       to: "/ai-proposals",
-      adminOnly: true,
       proposals: true,
       project: true,
+      projectPermission: "project.ai_proposals.read",
     },
-    { label: "Сценарии", icon: "pi pi-sitemap", to: "/scenarios", project: true },
-    { label: "Сегменты", icon: "pi pi-filter-fill", to: "/segments", project: true },
-    { label: "Документация", icon: "pi pi-bookmark", to: "/docs", project: true },
-    { label: "Операции", icon: "pi pi-chart-bar", to: "/operations", project: true },
-    { label: "Пользователи", icon: "pi pi-users", to: "/users", project: true },
+    {
+      label: "Сценарии",
+      icon: "pi pi-sitemap",
+      to: "/scenarios",
+      project: true,
+      projectPermission: "project.scenarios.read",
+    },
+    {
+      label: "Сегменты",
+      icon: "pi pi-filter-fill",
+      to: "/segments",
+      project: true,
+      projectPermission: "project.segments.read",
+    },
+    {
+      label: "Документация",
+      icon: "pi pi-bookmark",
+      to: "/docs",
+      project: true,
+    },
+    {
+      label: "Операции",
+      icon: "pi pi-chart-bar",
+      to: "/operations",
+      project: true,
+      projectPermissionsAny: [
+        "project.event_logs.read",
+        "project.scenario_runs.read",
+        "project.audit.read",
+      ],
+    },
+    {
+      label: "Пользователи",
+      icon: "pi pi-users",
+      to: "/users",
+      project: true,
+      projectPermission: "project.profiles.read",
+    },
     {
       label: "Сейчас онлайн",
       icon: "pi pi-circle-fill",
       to: "/live",
       live: true,
       project: true,
+      projectPermission: "project.end_users.read",
     },
   ].filter(
     (item) =>
       (!item.project || Boolean(auth.project)) &&
       (!item.platformPermission ||
-        auth.user?.platformPermissionCodes?.includes(item.platformPermission)) &&
+        auth.user?.platformPermissionCodes?.includes(
+          item.platformPermission,
+        )) &&
+      (!item.projectPermission ||
+        hasProjectPermission(
+          auth.project?.effectivePermissionCodes ?? [],
+          item.projectPermission as Parameters<typeof hasProjectPermission>[1],
+        )) &&
+      (!Array.isArray(item.projectPermissionsAny) ||
+        item.projectPermissionsAny.some((permission) =>
+          hasProjectPermission(
+            auth.project?.effectivePermissionCodes ?? [],
+            permission as Parameters<typeof hasProjectPermission>[1],
+          ),
+        )) &&
       (!item.projectMemberships ||
         canReadProjectMemberships(
           auth.user?.platformPermissionCodes ?? [],
@@ -97,15 +184,18 @@ const navigation = computed(() =>
         canReadProjectRoles(
           auth.user?.platformPermissionCodes ?? [],
           auth.project?.effectivePermissionCodes ?? [],
-        )) &&
-      (!item.adminOnly || canReviewAIProposals(auth.user?.role)),
+        )),
   ),
 );
 
 const profileItems = [
   { label: auth.user?.email, disabled: true },
   { separator: true },
-  { label: "Безопасность", icon: "pi pi-lock", command: () => router.push("/settings/security") },
+  {
+    label: "Безопасность",
+    icon: "pi pi-lock",
+    command: () => router.push("/settings/security"),
+  },
   { label: "Выйти", icon: "pi pi-sign-out", command: () => logout(false) },
   { label: "Выйти везде", icon: "pi pi-shield", command: () => logout(true) },
 ];
@@ -123,13 +213,28 @@ async function logout(allDevices: boolean) {
 }
 
 watch(
-  () => ({ projectId: auth.project?.id, role: auth.user?.role }),
-  ({ projectId, role }) => {
+  () => ({
+    projectId: auth.project?.id,
+    permissions: auth.project?.effectivePermissionCodes?.join("\u0000") ?? "",
+  }),
+  ({ projectId }) => {
     if (projectId) {
-      if (conversationAISuspensionEnabled)
+      if (
+        conversationAISuspensionEnabled &&
+        hasProjectPermission(
+          auth.project?.effectivePermissionCodes ?? [],
+          "project.conversations.ai_suspend",
+        )
+      )
         void suspensions.activateProject(projectId);
       else suspensions.deactivate();
-      if (canReviewAIProposals(role)) void proposals.activateProject(projectId);
+      if (
+        hasProjectPermission(
+          auth.project?.effectivePermissionCodes ?? [],
+          "project.ai_proposals.read",
+        )
+      )
+        void proposals.activateProject(projectId);
       else proposals.deactivate();
     } else {
       proposals.deactivate();
@@ -158,7 +263,9 @@ onBeforeUnmount(() => {
 
         <div class="project-pill">
           <div class="project-avatar">
-            {{ auth.project ? auth.project.name.slice(0, 2).toUpperCase() : "CP" }}
+            {{
+              auth.project ? auth.project.name.slice(0, 2).toUpperCase() : "CP"
+            }}
           </div>
           <div class="project-copy">
             <strong>{{ auth.project?.name ?? "Управление платформой" }}</strong
@@ -229,7 +336,7 @@ onBeforeUnmount(() => {
             ><span>{{
               !auth.project && auth.user?.platformPermissionCodes?.length
                 ? "Platform Operator"
-                : auth.user?.role === "OWNER"
+                : auth.project?.roleKeys?.includes("PROJECT_OWNER")
                   ? "Владелец"
                   : "Администратор"
             }}</span>

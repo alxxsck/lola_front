@@ -10,6 +10,7 @@ import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { hasProjectPermission } from '@/features/auth/permission-access'
 import { RunExplainInspector } from '@/features/scenario-run-explain/ui'
 import { repository } from '@/shared/api/repository'
 import { formatDate, relativeTime } from '@/shared/lib/format'
@@ -32,11 +33,14 @@ const status = ref('ALL')
 const selectedEvent = ref<EventLog | null>(null)
 const selectedRun = ref<ScenarioRun | null>(null)
 
-const sections = [
+const canReadEvents = computed(() => hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.event_logs.read'))
+const canReadRuns = computed(() => hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.scenario_runs.read'))
+const canReadAudit = computed(() => hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.audit.read'))
+const sections = computed(() => [
   { value: 'events' as const, label: 'События', icon: 'pi pi-bolt' },
   { value: 'runs' as const, label: 'Запуски сценариев', icon: 'pi pi-sitemap' },
   { value: 'audit' as const, label: 'Аудит', icon: 'pi pi-shield' },
-]
+].filter(({ value }) => value === 'events' ? canReadEvents.value : value === 'runs' ? canReadRuns.value : canReadAudit.value))
 const statusOptions = computed(() => {
   const values = section.value === 'events' ? ['RECEIVED', 'PROCESSED', 'FAILED']
     : section.value === 'runs' ? ['RUNNING', 'COMPLETED', 'FAILED', 'SKIPPED', 'CANCELLED', 'EXPIRED']
@@ -78,7 +82,7 @@ function eventRequest(page = eventPagination.page, limit = eventPagination.limit
 
 async function loadEventPage(page = eventPagination.page, limit = eventPagination.limit) {
   const projectId = auth.project?.id
-  if (!projectId) return
+  if (!projectId || !canReadEvents.value) return
   const requestId = ++eventRequestId
   eventLoading.value = true
   errors.events = ''
@@ -108,31 +112,36 @@ async function load() {
   scenarioRuns.value = []
   runsNextCursor.value = null
   auditLogs.value = []
-  const results = await Promise.allSettled([
-    repository.getEventLogs(projectId, eventRequest(1)),
-    repository.getScenarioRunsPage(projectId, { limit: 50 }),
-    repository.getAuditLogs(projectId),
-  ] as const)
   const message = (cause: unknown) => cause instanceof Error ? cause.message : 'Не удалось загрузить раздел'
-  if (requestId !== loadRequestId) return
-  if (results[0].status === 'fulfilled' && currentEventRequestId === eventRequestId) {
-    eventLogs.value = results[0].value.items
-    Object.assign(eventPagination, results[0].value.pagination)
-  } else if (results[0].status === 'rejected' && currentEventRequestId === eventRequestId) errors.events = message(results[0].reason)
-  if (results[1].status === 'fulfilled' && currentRunsRequestId === runsRequestId) {
-    scenarioRuns.value = results[1].value.items
-    runsNextCursor.value = results[1].value.nextCursor
-  }
-  else if (results[1].status === 'rejected' && currentRunsRequestId === runsRequestId) errors.runs = message(results[1].reason)
-  if (results[2].status === 'fulfilled') auditLogs.value = results[2].value
-  else errors.audit = message(results[2].reason)
+  await Promise.all([
+    canReadEvents.value
+      ? repository.getEventLogs(projectId, eventRequest(1)).then((page) => {
+        if (requestId === loadRequestId && currentEventRequestId === eventRequestId) {
+          eventLogs.value = page.items
+          Object.assign(eventPagination, page.pagination)
+        }
+      }).catch((cause: unknown) => { if (requestId === loadRequestId) errors.events = message(cause) })
+      : Promise.resolve(),
+    canReadRuns.value
+      ? repository.getScenarioRunsPage(projectId, { limit: 50 }).then((page) => {
+        if (requestId === loadRequestId && currentRunsRequestId === runsRequestId) {
+          scenarioRuns.value = page.items
+          runsNextCursor.value = page.nextCursor
+        }
+      }).catch((cause: unknown) => { if (requestId === loadRequestId) errors.runs = message(cause) })
+      : Promise.resolve(),
+    canReadAudit.value
+      ? repository.getAuditLogs(projectId).then((logs) => { if (requestId === loadRequestId) auditLogs.value = logs })
+        .catch((cause: unknown) => { if (requestId === loadRequestId) errors.audit = message(cause) })
+      : Promise.resolve(),
+  ])
   if (currentEventRequestId === eventRequestId) eventLoading.value = false
   if (requestId === loadRequestId) loading.value = false
 }
 
 async function loadMoreRuns() {
   const projectId = auth.project?.id
-  if (!projectId || !runsNextCursor.value) return
+  if (!projectId || !runsNextCursor.value || !canReadRuns.value) return
   const requestId = ++runsRequestId
   loadingMoreRuns.value = true
   errors.runs = ''
@@ -169,7 +178,10 @@ watch([section, search, status], ([currentSection], [previousSection]) => {
 })
 
 onBeforeUnmount(() => clearTimeout(searchTimer))
-onMounted(load)
+onMounted(() => {
+  section.value = sections.value[0]?.value ?? 'events'
+  void load()
+})
 </script>
 
 <template>

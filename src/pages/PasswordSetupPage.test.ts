@@ -10,6 +10,7 @@ import PasswordSetupPage from './PasswordSetupPage.vue'
 vi.mock('@/features/auth/auth.api', () => ({
   authApi: {
     mode: 'api',
+    cancelMfa: vi.fn(),
     login: vi.fn(),
     restore: vi.fn(),
     logout: vi.fn(),

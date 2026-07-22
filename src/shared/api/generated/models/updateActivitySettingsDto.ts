@@ -7,6 +7,8 @@
  */
 
 export interface UpdateActivitySettingsDto {
+  /** @minimum 1 */
+  expectedVersion: number;
   /**
    * @minimum 1
    * @maximum 300

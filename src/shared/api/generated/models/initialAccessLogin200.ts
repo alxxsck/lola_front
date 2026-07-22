@@ -7,6 +7,11 @@
  */
 import type { CmsAuthenticatedResponseDto } from "./cmsAuthenticatedResponseDto";
 import type { PasswordSetupRequiredResponseDto } from "./passwordSetupRequiredResponseDto";
+import type { MfaEnrollmentRequiredResponseDto } from "./mfaEnrollmentRequiredResponseDto";
+import type { MfaRequiredResponseDto } from "./mfaRequiredResponseDto";
 
 export type InitialAccessLogin200 =
-  CmsAuthenticatedResponseDto | PasswordSetupRequiredResponseDto;
+  | CmsAuthenticatedResponseDto
+  | PasswordSetupRequiredResponseDto
+  | MfaEnrollmentRequiredResponseDto
+  | MfaRequiredResponseDto;

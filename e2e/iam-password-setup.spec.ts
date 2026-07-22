@@ -117,7 +117,7 @@ test('Initial Access requires password setup and a separate ordinary login', asy
   await page.getByLabel('Email', { exact: true }).fill(identifier)
   await page.getByLabel('Пароль или секрет первоначального доступа').fill(permanentPassword)
   await page.getByRole('button', { name: 'Продолжить' }).click()
-  await expect(page).toHaveURL(/\/overview$/)
+  await expect(page).toHaveURL(/\/settings\/security$/)
 })
 
 test('cancel and browser Back clear the memory-only setup capability', async ({ page }) => {

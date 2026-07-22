@@ -21,6 +21,7 @@ const props = defineProps<{
   recipientName?: string
   session: ActiveSession | null
   sessions?: ActiveSession[]
+  canReadTargets: boolean
 }>()
 const emit = defineEmits<{ 'update:visible': [value: boolean]; sent: [] }>()
 const toast = useToast()
@@ -87,7 +88,10 @@ watch(() => props.visible, async (value) => {
   form.target = ''
   selectedSessionId.value = props.session?.id ?? availableSessions.value[0]?.id ?? ''
   pendingIdempotency.value = null
-  if (!props.projectId) return
+  if (!props.projectId || !props.canReadTargets) {
+    elements.value = []
+    return
+  }
   targetsLoading.value = true
   try {
     elements.value = await repository.getElements(props.projectId)

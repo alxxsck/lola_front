@@ -15,6 +15,7 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import {
   defaultAIProposalFilters,
   type AIProposalFilters as AIProposalFiltersModel,
@@ -24,7 +25,6 @@ import {
   type AIProposalSort,
 } from "@/features/ai-proposals/model/ai-proposal";
 import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
-import { canReviewAIProposals } from "@/features/ai-proposals/model/ai-proposal-presentation";
 import AIProposalCard from "@/features/ai-proposals/ui/AIProposalCard.vue";
 import AIProposalDetail from "@/features/ai-proposals/ui/AIProposalDetail.vue";
 import AIProposalFilters from "@/features/ai-proposals/ui/AIProposalFilters.vue";
@@ -38,7 +38,18 @@ const isMobile = ref(false);
 const resolveDialogVisible = ref(false);
 const resolutionReason = ref("");
 
-const canAccess = computed(() => canReviewAIProposals(auth.user?.role));
+const canAccess = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.ai_proposals.read",
+  ),
+);
+const canDecide = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.ai_proposals.decide",
+  ),
+);
 const selectedVisible = computed(() => Boolean(store.selectedId));
 const countDescription = computed(() => {
   if (!store.summary) return "Загрузка сводки";
@@ -140,11 +151,13 @@ async function closeDetail(): Promise<void> {
 }
 
 function askToResolve(): void {
+  if (!canDecide.value) return;
   resolutionReason.value = "";
   resolveDialogVisible.value = true;
 }
 
 async function resolveProposal(): Promise<void> {
+  if (!canDecide.value) return;
   const proposal = store.selectedDetail;
   if (!proposal) return;
   const resolved = await store.resolveProposal(
@@ -231,7 +244,7 @@ watch(
     </header>
 
     <Message v-if="!canAccess" severity="warn" :closable="false">
-      Предложения Lola доступны владельцам и администраторам проекта.
+      Для просмотра предложений Lola требуется соответствующее разрешение проекта.
     </Message>
     <template v-else>
       <AIProposalFilters
@@ -307,6 +320,7 @@ watch(
             :proposal="store.selectedDetail"
             :loading="store.detailLoading"
             :deciding="store.deciding"
+            :can-decide="canDecide"
             :error="store.detailError"
             @retry="store.selectedId && store.open(store.selectedId)"
             @resolve="askToResolve"
@@ -328,6 +342,7 @@ watch(
       :proposal="store.selectedDetail"
       :loading="store.detailLoading"
       :deciding="store.deciding"
+      :can-decide="canDecide"
       :error="store.detailError"
       @retry="store.selectedId && store.open(store.selectedId)"
       @resolve="askToResolve"

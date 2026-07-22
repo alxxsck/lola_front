@@ -1,7 +1,6 @@
 import type {
   ActiveSession,
   ActivityItem,
-  CmsUser,
   Conversation,
   ConversationMessage,
   ConversationAISuspensionDetail,
@@ -28,6 +27,8 @@ import type {
   UpdateActivitySettings,
 } from '@/shared/types/domain'
 import type {
+  ArchiveEventDefinitionDto,
+  ArchiveScenarioAuthoringDto,
   ConversationAISuspensionHistoryItemResponseDto,
   ExtendConversationAISuspensionDto,
   ResumeConversationAIDto,
@@ -66,9 +67,11 @@ export type UpdateUiElement = Partial<Pick<UiElement, 'name' | 'code' | 'kind' |
   & { auditReason?: string }
 export type SaveEventDefinition = Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>
 export type SaveScenario = Partial<Scenario> & Pick<Scenario, 'name' | 'code' | 'eventDefinitionId' | 'actions'>
-export type UpdateScenarioMetadata = Partial<Pick<Scenario, 'name' | 'description' | 'eventDefinitionId' | 'status' | 'conversationPolicy' | 'priority' | 'conditions' | 'cooldownSeconds' | 'maxRunsPerUser' | 'activeFrom' | 'activeTo'>>
-export type CreateProjectMember = Pick<CmsUser, 'email' | 'role'> & { name?: string }
-
+export type UpdateScenarioMetadata = Partial<Pick<Scenario, 'name' | 'description' | 'eventDefinitionId' | 'conversationPolicy' | 'priority' | 'cooldownSeconds' | 'maxRunsPerUser' | 'activeFrom' | 'activeTo'>>
+  & { status?: Exclude<Scenario['status'], 'ARCHIVED'> }
+  & Pick<ArchiveScenarioAuthoringDto, 'expectedUpdatedAt' | 'reason'>
+export type ArchiveEventDefinitionCommand = ArchiveEventDefinitionDto
+export type ArchiveScenarioCommand = ArchiveScenarioAuthoringDto
 export interface CursorPageRequest {
   cursor?: string
   limit?: number
@@ -142,10 +145,10 @@ export interface LolaRepository {
   readonly mode: RepositoryMode
   readonly capabilities: RepositoryCapabilities
   getProject(projectId: string): Promise<Project>
-  updateProject(projectId: string, patch: Partial<Project>): Promise<Project>
-  getMembers(projectId: string): Promise<CmsUser[]>
-  createMember(projectId: string, member: CreateProjectMember): Promise<CmsUser>
-  deleteMember(projectId: string, memberId: string): Promise<void>
+  updateProject(
+    projectId: string,
+    patch: Partial<Project> & Pick<Project, 'version'>,
+  ): Promise<Project>
   getElements(projectId: string): Promise<UiElement[]>
   createElement(projectId: string, value: CreateUiElement): Promise<UiElement>
   updateElement(projectId: string, id: string, value: UpdateUiElement): Promise<UiElement>
@@ -154,7 +157,7 @@ export interface LolaRepository {
   getEventDefinitionRevisions(projectId: string, definitionKeyId: string, request?: CursorPageRequest): Promise<CursorPage<EventDefinitionRevision>>
   getEventDefinitionRevision(projectId: string, definitionKeyId: string, revisionId: string): Promise<EventDefinitionRevision>
   saveEvent(projectId: string, value: SaveEventDefinition): Promise<EventDefinition>
-  deleteEvent(projectId: string, id: string): Promise<void>
+  deleteEvent(projectId: string, id: string, command: ArchiveEventDefinitionCommand): Promise<void>
   getUserAttributeSchema(projectId: string): Promise<UserAttributeSchema>
   createUserAttributeDefinition(projectId: string, value: UserAttributeDefinitionInput): Promise<UserAttributeMutation>
   updateUserAttributeDefinition(projectId: string, id: string, value: UpdateUserAttributeDefinitionInput): Promise<UserAttributeMutation>
@@ -163,7 +166,7 @@ export interface LolaRepository {
   getActionDefinitions(projectId: string): Promise<ScenarioActionDefinition[]>
   saveScenario(projectId: string, value: SaveScenario): Promise<Scenario>
   updateScenarioMetadata(projectId: string, scenarioId: string, value: UpdateScenarioMetadata): Promise<Scenario>
-  deleteScenario(projectId: string, id: string): Promise<void>
+  deleteScenario(projectId: string, id: string, command: ArchiveScenarioCommand): Promise<void>
   getUsers(projectId: string): Promise<EndUser[]>
   getUsersPage(projectId: string, request?: CursorPageRequest): Promise<CursorPage<EndUser>>
   getSessions(projectId: string): Promise<ActiveSession[]>
@@ -186,7 +189,7 @@ export interface LolaRepository {
   updateActivitySettings(projectId: string, value: UpdateActivitySettings): Promise<ActivitySettings>
   getAuditLogs(projectId: string): Promise<AuditLog[]>
   sendAdminMessage(projectId: string, userId: string, message: AdminMessageRequest): Promise<AdminMessageResult>
-  getStats(projectId: string): Promise<DashboardStats>
+  getStats(projectId: string, effectivePermissionCodes?: readonly string[]): Promise<DashboardStats>
 }
 
 export class UnsupportedRepositoryCapabilityError extends Error {

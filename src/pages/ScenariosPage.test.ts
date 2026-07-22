@@ -7,13 +7,16 @@ import ScenariosPage from './ScenariosPage.vue'
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(), getScenarios: vi.fn(), getEvents: vi.fn(), saveScenario: vi.fn(),
-  ensureLoaded: vi.fn(), toast: vi.fn(),
+  ensureLoaded: vi.fn(), toast: vi.fn(), permissions: [
+    'project.scenarios.read', 'project.scenarios.write', 'project.scenarios.publish',
+    'project.event_catalog.read', 'project.actions.read',
+  ] as string[],
 }))
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }))
 vi.mock('primevue/usetoast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 vi.mock('primevue/useconfirm', () => ({ useConfirm: () => ({ require: vi.fn() }) }))
-vi.mock('@/features/auth/auth.store', () => ({ useAuthStore: () => ({ project: { id: 'project-1' } }) }))
+vi.mock('@/features/auth/auth.store', () => ({ useAuthStore: () => ({ project: { id: 'project-1', get effectivePermissionCodes() { return mocks.permissions } } }) }))
 vi.mock('@/features/actions/action-definitions.store', () => ({
   useActionDefinitionsStore: () => ({ forProject: () => [], ensureLoaded: mocks.ensureLoaded }),
 }))
@@ -24,12 +27,16 @@ vi.mock('@/shared/api/repository', () => ({ repository: {
 const scenario = {
   id: 'scenario-1', projectId: 'project-1', name: 'Welcome', code: 'welcome', description: '',
   eventDefinitionId: 'event-1', status: 'DRAFT', conversationPolicy: 'create_new', priority: 0,
-  conditions: [], actions: [],
+  conditions: [], actions: [], updatedAt: '2026-07-20T10:00:00.000Z',
 } as Scenario
 
 describe('ScenariosPage V2 activation boundary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.permissions = [
+      'project.scenarios.read', 'project.scenarios.write', 'project.scenarios.publish',
+      'project.event_catalog.read', 'project.actions.read',
+    ]
     mocks.getScenarios.mockResolvedValue([scenario])
     mocks.getEvents.mockResolvedValue([])
     mocks.ensureLoaded.mockResolvedValue([])
@@ -53,5 +60,33 @@ describe('ScenariosPage V2 activation boundary', () => {
     await (wrapper.vm as unknown as { toggleScenario: (value: Scenario) => Promise<void> }).toggleScenario({ ...scenario, status: 'ACTIVE' })
 
     expect(mocks.saveScenario).toHaveBeenCalledWith('project-1', expect.objectContaining({ status: 'PAUSED' }))
+  })
+
+  it('loads only the scenario collection for a scenarios-only reader and hides mutations', async () => {
+    mocks.permissions = ['project.scenarios.read']
+    const wrapper = shallowMount(ScenariosPage)
+    await flushPromises()
+
+    expect(mocks.getScenarios).toHaveBeenCalledWith('project-1')
+    expect(mocks.getEvents).not.toHaveBeenCalled()
+    expect(mocks.ensureLoaded).not.toHaveBeenCalled()
+    expect(wrapper.find('button-stub[label="Создать сценарий"]').exists()).toBe(false)
+    expect(wrapper.find('button-stub[aria-label="Удалить"]').exists()).toBe(false)
+
+    await (wrapper.vm as unknown as { toggleScenario: (value: Scenario) => Promise<void> })
+      .toggleScenario({ ...scenario, status: 'ACTIVE' })
+    expect(mocks.saveScenario).not.toHaveBeenCalled()
+  })
+
+  it('does not enter publication without the separate publish Permission', async () => {
+    mocks.permissions = ['project.scenarios.read', 'project.scenarios.write']
+    const wrapper = shallowMount(ScenariosPage)
+    await flushPromises()
+
+    await (wrapper.vm as unknown as { toggleScenario: (value: Scenario) => Promise<void> })
+      .toggleScenario(scenario)
+
+    expect(mocks.push).not.toHaveBeenCalled()
+    expect(mocks.saveScenario).not.toHaveBeenCalled()
   })
 })

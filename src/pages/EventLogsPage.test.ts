@@ -24,7 +24,7 @@ function updateModel(wrapper: ReturnType<typeof shallowMount>, selector: string,
 }
 
 const mocks = vi.hoisted(() => ({
-  role: 'OWNER' as 'OWNER' | 'VIEWER',
+  permissions: ['project.event_logs.read'] as string[],
   getEvents: vi.fn(),
   getEventLogPage: vi.fn(),
   getEventLog: vi.fn(),
@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/features/auth/auth.store', () => ({
-  useAuthStore: () => ({ project: { id: 'project-1' }, user: { role: mocks.role } }),
+  useAuthStore: () => ({ project: { id: 'project-1', get effectivePermissionCodes() { return mocks.permissions } } }),
 }))
 
 vi.mock('@/shared/api/repository', () => ({
@@ -50,7 +50,7 @@ vi.mock('vue-router', async (importOriginal) => ({
 describe('EventLogsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.role = 'OWNER'
+    mocks.permissions = ['project.event_logs.read']
     mocks.getEvents.mockResolvedValue([])
     mocks.getEventLogPage.mockResolvedValue({ items: [], nextCursor: null })
     mocks.routeQuery = {}
@@ -69,8 +69,8 @@ describe('EventLogsPage', () => {
     })
   })
 
-  it('does not request sensitive logs for a viewer', async () => {
-    mocks.role = 'VIEWER'
+  it('does not request sensitive logs without the read Permission', async () => {
+    mocks.permissions = []
     const wrapper = shallowMount(EventLogsPage)
     await flushPromises()
 

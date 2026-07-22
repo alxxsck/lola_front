@@ -3,7 +3,11 @@ import { computed } from "vue";
 import Button from "primevue/button";
 import type { AIProposalDetail } from "../model/ai-proposal";
 
-const props = defineProps<{ proposal: AIProposalDetail; deciding: boolean }>();
+const props = defineProps<{
+  proposal: AIProposalDetail;
+  deciding: boolean;
+  canDecide: boolean;
+}>();
 defineEmits<{ resolve: [] }>();
 
 const terminalPresentation = computed(() => {
@@ -52,15 +56,18 @@ const terminalPresentation = computed(() => {
       <span>Прочтение не закрывает предложение.</span>
     </div>
     <Button
-      v-if="proposal.decisionMode === 'ACKNOWLEDGE'"
+      v-if="proposal.decisionMode === 'ACKNOWLEDGE' && canDecide"
       label="Обработано"
       icon="pi pi-check"
       :loading="deciding"
       @click="$emit('resolve')"
     />
     <span v-else class="future-decision">
-      Этот тип запроса пока можно только просмотреть. Выполните нужное действие
-      вручную и оставьте запрос открытым.
+      {{
+        proposal.decisionMode === 'ACKNOWLEDGE'
+          ? 'Для завершения запроса требуется разрешение принимать решения.'
+          : 'Этот тип запроса пока можно только просмотреть. Выполните нужное действие вручную и оставьте запрос открытым.'
+      }}
     </span>
   </div>
   <div

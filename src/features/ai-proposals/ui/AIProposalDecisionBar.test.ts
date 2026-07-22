@@ -24,7 +24,7 @@ const proposal: AIProposalDetail = {
 describe("AIProposalDecisionBar", () => {
   it("does not present an accepted proposal as successfully completed", () => {
     const wrapper = mount(AIProposalDecisionBar, {
-      props: { proposal, deciding: false },
+      props: { proposal, deciding: false, canDecide: false },
     });
 
     expect(wrapper.text()).toContain("Принято администратором");

@@ -75,6 +75,7 @@ const cmsUserId = ref('')
 const roleIds = ref<string[]>([])
 const reason = ref('')
 const validationError = ref('')
+const stepUpPending = ref(false)
 
 const statusOptions: Array<{
   label: string
@@ -143,6 +144,23 @@ function closeDialog(): void {
   target.value = null
 }
 
+async function requireFreshLogin(): Promise<void> {
+  if (stepUpPending.value) return
+  stepUpPending.value = true
+  try {
+    await auth.logout()
+    directory.clear()
+    dialogAction.value = null
+    target.value = null
+    await router.replace({
+      name: 'login',
+      query: { redirect: '/project/memberships' },
+    })
+  } finally {
+    stepUpPending.value = false
+  }
+}
+
 async function submit(): Promise<void> {
   const projectId = auth.project?.id
   const action = dialogAction.value
@@ -192,11 +210,30 @@ async function submit(): Promise<void> {
   } else if (action === 'REMOVE' && membership) {
     await directory.remove(projectId, membership, normalizedReason)
   }
-  if (operation.value.kind === 'SUCCESS') closeDialog()
+  if (
+    operation.value.kind === 'SUCCESS' ||
+    operation.value.kind === 'STEP_UP_REQUIRED'
+  ) {
+    closeDialog()
+  }
 }
 
 function statusLabel(value: string): string {
   return value === 'ACTIVE' ? 'Активен' : 'Удалён'
+}
+
+function emailVerificationLabel(verified: boolean): string {
+  return verified ? 'Email подтверждён' : 'Email не подтверждён'
+}
+
+function lastLoginLabel(value: string | null): string {
+  if (!value) return 'Последний вход: ещё не было'
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return 'Последний вход: неизвестно'
+  return `Последний вход: ${new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)}`
 }
 
 watch(
@@ -273,6 +310,22 @@ watch(
       Недостаточно прав для этого изменения. Действие не повторялось.
     </Message>
     <Message
+      v-else-if="operation.kind === 'STEP_UP_REQUIRED'"
+      severity="warn"
+      :closable="false"
+    >
+      <div class="message-action">
+        <span><strong>Требуется свежий вход с MFA.</strong> Действие не повторялось.</span>
+        <Button
+          data-testid="membership-step-up"
+          label="Войти заново"
+          size="small"
+          :loading="stepUpPending"
+          @click="requireFreshLogin"
+        />
+      </div>
+    </Message>
+    <Message
       v-else-if="operation.kind === 'ERROR'"
       severity="error"
       :closable="false"
@@ -312,6 +365,8 @@ watch(
             <div class="identity">
               <strong>{{ data.cmsUser.displayName }}</strong>
               <small>{{ data.cmsUser.email }}</small>
+              <small>{{ emailVerificationLabel(data.cmsUser.emailVerified) }}</small>
+              <small>{{ lastLoginLabel(data.cmsUser.lastLoginAt) }}</small>
               <code>{{ data.cmsUser.id }}</code>
             </div>
           </template>

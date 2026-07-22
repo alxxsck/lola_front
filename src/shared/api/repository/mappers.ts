@@ -1,55 +1,42 @@
 import type {
-  CreateEventDefinitionDto,
   CreateUiElementDto,
   EndUserResponseDto,
-  EventDefinitionResponseDto,
-  EventDefinitionRevisionResponseDto,
-  ProjectMemberResponseDto,
+  EventCatalogDefinitionResponseDto,
+  EventCatalogRevisionResponseDto,
   ProjectResponseDto,
   UiElementResponseDto,
-  UpdateEventDefinitionDto,
-  UpdateProjectDto,
+  UpdateProjectSettingsDto,
   UpdateUiElementDto,
   AuditLogResponseDto,
   EventLogResponseDto,
   ScenarioRunResponseDto,
   ActiveUserResponseDto,
-  ScenarioActionDefinitionResponseDto,
   AdminConversationResponseDto,
   AdminConversationMessageResponseDto,
   ConversationAISuspensionResponseDto,
   ConversationAISuspensionSummaryResponseDto,
-  UserAttributeDefinitionResponseDto,
-  UserAttributeSchemaRevisionResponseDto,
-  UserAttributeSchemaResponseDto,
-  UserAttributeDefinitionMutationResponseDto,
+  ScenarioAuthoringSummaryResponseDto,
 } from '@/shared/api/generated/models'
 import type {
   ActiveSession,
   AuditLog,
-  CmsUser,
   Conversation,
   ConversationAISuspensionDetail,
   ConversationAISuspensionSummary,
   ConversationMessage,
   EndUser,
+  EventLog,
   EventDefinition,
   EventDefinitionRevision,
-  EventLog,
   Project,
+  Scenario,
   ScenarioRun,
   UiElement,
-  UserAttributeDefinition,
-  UserAttributeMutation,
-  UserAttributeSchema,
-  UserAttributeSchemaRevision,
 } from '@/shared/types/domain'
 import type {
   CreateUiElement,
-  SaveEventDefinition,
   UpdateUiElement,
 } from './contracts'
-import { parseActionDefinition } from '@/shared/lib/action-definition'
 
 const defined = <T extends object>(value: T): T =>
   Object.fromEntries(
@@ -59,13 +46,10 @@ const defined = <T extends object>(value: T): T =>
 const optionalString = (value: unknown): string | undefined =>
   typeof value === 'string' ? value : undefined
 
-export function mapActionDefinition(dto: ScenarioActionDefinitionResponseDto) {
-  return parseActionDefinition(dto)
-}
-
 export function mapProject(dto: ProjectResponseDto): Project {
   return {
     id: dto.id,
+    version: dto.version,
     name: dto.name,
     slug: dto.slug,
     status: dto.status,
@@ -81,12 +65,12 @@ export function mapProject(dto: ProjectResponseDto): Project {
   }
 }
 
-export function toUpdateProjectDto(patch: Partial<Project>): UpdateProjectDto {
+export function toUpdateProjectSettingsDto(
+  patch: Partial<Project> & Pick<Project, 'version'>,
+): UpdateProjectSettingsDto {
   return defined({
+    expectedVersion: patch.version,
     name: patch.name,
-    status: patch.status,
-    defaultLocale: patch.defaultLocale,
-    supportedLocales: patch.supportedLocales,
     assistantName: patch.assistantName,
     systemPrompt: patch.systemPrompt,
     voiceInstructions: patch.voiceInstructions,
@@ -94,12 +78,65 @@ export function toUpdateProjectDto(patch: Partial<Project>): UpdateProjectDto {
   })
 }
 
-export function mapProjectMember(dto: ProjectMemberResponseDto): CmsUser {
+export function mapEventDefinition(dto: EventCatalogDefinitionResponseDto | EventCatalogRevisionResponseDto): EventDefinition {
   return {
     id: dto.id,
-    email: dto.email,
-    name: optionalString(dto.name) ?? dto.email,
-    role: dto.role,
+    projectId: dto.projectId,
+    definitionKeyId: dto.definitionKeyId,
+    currentRevisionId: dto.currentRevisionId ?? null,
+    isCurrent: dto.isCurrent,
+    origin: dto.origin,
+    readOnly: dto.readOnly,
+    code: dto.code,
+    name: dto.name,
+    ...(dto.description == null ? {} : { description: dto.description }),
+    version: dto.version,
+    payloadSchema: dto.payloadSchema,
+    enabled: dto.enabled,
+    clientIngestible: dto.clientIngestible,
+    countsAsActivity: dto.countsAsActivity,
+    policyVersion: dto.policyVersion,
+    policyUpdatedAt: dto.policyUpdatedAt,
+    metadataUpdatedAt: dto.metadataUpdatedAt,
+    ...('lifecycle' in dto ? { lifecycle: dto.lifecycle } : {}),
+    ...('archivedAt' in dto ? { archivedAt: dto.archivedAt ?? null } : {}),
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+  }
+}
+
+export function mapEventDefinitionRevision(dto: EventCatalogRevisionResponseDto): EventDefinitionRevision {
+  return {
+    ...mapEventDefinition(dto),
+    definitionKeyId: dto.definitionKeyId,
+    currentRevisionId: dto.currentRevisionId ?? null,
+    isCurrent: dto.isCurrent,
+    origin: dto.origin,
+    readOnly: dto.readOnly,
+    pinnedScenarioRevisionCount: dto.pinnedScenarioRevisionCount,
+    compatibility: dto.compatibility,
+  }
+}
+
+export function mapScenario(dto: ScenarioAuthoringSummaryResponseDto): Scenario {
+  return {
+    id: dto.id,
+    projectId: dto.projectId,
+    code: dto.code,
+    name: dto.name,
+    ...(dto.description == null ? {} : { description: dto.description }),
+    eventDefinitionId: dto.eventDefinitionId,
+    status: dto.status,
+    conversationPolicy: dto.conversationPolicy,
+    priority: dto.priority,
+    conditions: [],
+    cooldownSeconds: dto.cooldownSeconds,
+    ...(dto.maxRunsPerUser == null ? {} : { maxRunsPerUser: dto.maxRunsPerUser }),
+    ...(dto.activeFrom == null ? {} : { activeFrom: dto.activeFrom }),
+    ...(dto.activeTo == null ? {} : { activeTo: dto.activeTo }),
+    actions: [],
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
   }
 }
 
@@ -263,125 +300,6 @@ export function toUpdateUiElementDto(
   return uiPayload(value)
 }
 
-export function mapEventDefinition(
-  dto: EventDefinitionResponseDto,
-): EventDefinition {
-  return {
-    id: dto.id,
-    definitionKeyId: dto.definitionKeyId,
-    currentRevisionId: optionalString(dto.currentRevisionId) ?? null,
-    isCurrent: dto.isCurrent,
-    origin: dto.origin,
-    readOnly: dto.readOnly,
-    projectId: dto.projectId,
-    code: dto.code,
-    name: dto.name,
-    description: optionalString(dto.description),
-    version: dto.version,
-    payloadSchema: dto.payloadSchema,
-    clientIngestible: dto.clientIngestible,
-    countsAsActivity: dto.countsAsActivity,
-    enabled: dto.enabled,
-    createdAt: dto.createdAt,
-    updatedAt: dto.updatedAt,
-  }
-}
-
-export function mapEventDefinitionRevision(
-  dto: EventDefinitionRevisionResponseDto,
-): EventDefinitionRevision {
-  return {
-    ...mapEventDefinition(dto as unknown as EventDefinitionResponseDto),
-    definitionKeyId: dto.definitionKeyId,
-    currentRevisionId: optionalString(dto.currentRevisionId) ?? null,
-    isCurrent: dto.isCurrent,
-    origin: dto.origin,
-    readOnly: dto.readOnly,
-    pinnedScenarioRevisionCount: dto.pinnedScenarioRevisionCount,
-    compatibility: dto.compatibility,
-  }
-}
-
-export function toCreateEventDefinitionDto(
-  value: SaveEventDefinition,
-): CreateEventDefinitionDto {
-  return defined({
-    code: value.code,
-    name: value.name,
-    description: value.description,
-    payloadSchema: value.payloadSchema,
-    clientIngestible: value.clientIngestible,
-    countsAsActivity: value.countsAsActivity,
-    enabled: value.enabled,
-  })
-}
-
-export function toUpdateEventDefinitionDto(
-  value: SaveEventDefinition,
-): UpdateEventDefinitionDto {
-  return defined({
-    name: value.name,
-    description: value.description,
-    payloadSchema: value.payloadSchema,
-    clientIngestible: value.clientIngestible,
-    countsAsActivity: value.countsAsActivity,
-    enabled: value.enabled,
-  })
-}
-
-export function mapUserAttributeDefinition(
-  dto: UserAttributeDefinitionResponseDto,
-): UserAttributeDefinition {
-  return {
-    id: dto.id,
-    projectId: dto.projectId,
-    key: dto.key,
-    label: dto.label,
-    description: optionalString(dto.description),
-    type: dto.type,
-    required: dto.required,
-    clientVisible: dto.clientVisible,
-    validation: dto.validation,
-    enabled: dto.enabled,
-    position: dto.position,
-    createdAt: dto.createdAt,
-    updatedAt: dto.updatedAt,
-  }
-}
-
-function mapUserAttributeRevision(
-  dto: UserAttributeSchemaRevisionResponseDto,
-): UserAttributeSchemaRevision {
-  return {
-    id: dto.id,
-    projectId: dto.projectId,
-    version: dto.version,
-    schema: dto.schema,
-    clientVisibleKeys: dto.clientVisibleKeys,
-    createdAt: dto.createdAt,
-  }
-}
-
-export function mapUserAttributeSchema(
-  dto: UserAttributeSchemaResponseDto,
-): UserAttributeSchema {
-  return {
-    definitions: dto.definitions.map(mapUserAttributeDefinition),
-    currentRevision: dto.currentRevision
-      ? mapUserAttributeRevision(dto.currentRevision)
-      : null,
-  }
-}
-
-export function mapUserAttributeMutation(
-  dto: UserAttributeDefinitionMutationResponseDto,
-): UserAttributeMutation {
-  return {
-    definition: mapUserAttributeDefinition(dto.definition),
-    currentRevision: mapUserAttributeRevision(dto.currentRevision),
-  }
-}
-
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
 
@@ -463,9 +381,9 @@ export function mapAuditLog(dto: AuditLogResponseDto): AuditLog {
   return {
     id: dto.id,
     actor: {
-      id: dto.adminUser?.id ?? dto.adminUserId ?? undefined,
-      email: dto.adminUser?.login,
-      name: dto.adminUser?.displayName ?? undefined,
+      id: dto.actorCmsUser?.id ?? dto.actorCmsUserId ?? undefined,
+      email: dto.actorCmsUser?.email,
+      name: dto.actorCmsUser?.displayName ?? undefined,
     },
     action: dto.action,
     status: dto.status,
