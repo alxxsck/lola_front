@@ -9,6 +9,13 @@ const log = {
   eventDefinitionId: "event-1",
   eventDefinitionKeyId: "event-key-1",
   eventVersion: 2,
+  ingestionPolicyVersion: 3,
+  ingestionPolicySnapshot: {
+    enabled: true,
+    clientIngestible: false,
+    countsAsActivity: true,
+    source: "SERVER",
+  },
   userId: "user-1",
   userExternalId: "customer-1",
   source: "SERVER" as const,
@@ -327,6 +334,15 @@ describe("EventLogsPage", () => {
 
     await wrapper.get(".timeline-item").trigger("click");
     expect(wrapper.find("drawer-stub").attributes()).toHaveProperty("visible");
+    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain(
+      "Приём включёнДа",
+    );
+    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain(
+      "Из браузераНет",
+    );
+    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain(
+      "ИсточникSERVER",
+    );
     await button(wrapper, "Открыть event").trigger("click");
     expect(mocks.push).toHaveBeenCalledWith({
       name: "event-definition-workspace",

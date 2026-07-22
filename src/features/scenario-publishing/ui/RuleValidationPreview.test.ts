@@ -142,6 +142,8 @@ const eventLog = {
   eventDefinitionId: "event-page",
   eventDefinitionKeyId: "event-page-key",
   eventVersion: 1,
+  ingestionPolicyVersion: 1,
+  ingestionPolicySnapshot: { enabled: true },
   userId: "user-1",
   userExternalId: "customer-1",
   source: "SERVER" as const,

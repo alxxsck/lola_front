@@ -21,4 +21,11 @@ export type {
   RestoreEventDefinitionCommand,
   DeleteEventDefinitionCommand,
   UpdateEventMetadataCommand,
+  EventSchemaDraft,
+  EventSchemaImpact,
+  EventSchemaPublishResult,
+  SaveEventSchemaDraftCommand,
+  AnalyzeEventSchemaDraftCommand,
+  PublishEventSchemaDraftCommand,
+  DiscardEventSchemaDraftCommand,
 } from "./event-catalog-contract";

@@ -8,6 +8,7 @@
 import type { LegacyEventLogResponseDtoContext } from "./legacyEventLogResponseDtoContext";
 import type { LegacyEventUserResponseDto } from "./legacyEventUserResponseDto";
 import type { LegacyEventDefinitionResponseDto } from "./legacyEventDefinitionResponseDto";
+import type { LegacyEventLogResponseDtoIngestionPolicySnapshot } from "./legacyEventLogResponseDtoIngestionPolicySnapshot";
 import type { LegacyEventLogResponseDtoPayload } from "./legacyEventLogResponseDtoPayload";
 import type { LegacyEventLogResponseDtoProcessingResult } from "./legacyEventLogResponseDtoProcessingResult";
 import type { EventSource } from "./eventSource";
@@ -25,6 +26,9 @@ export interface LegacyEventLogResponseDto {
   /** @nullable */
   externalEventId?: string | null;
   id: string;
+  ingestionPolicySnapshot: LegacyEventLogResponseDtoIngestionPolicySnapshot;
+  /** @minimum 1 */
+  ingestionPolicyVersion: number;
   /** @nullable */
   message?: string | null;
   occurredAt: string;

@@ -1,12 +1,18 @@
 import axios from "axios";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
+  eventCatalogAnalyzeSchemaDraft,
   eventCatalogArchive,
   eventCatalogCreate,
+  eventCatalogCreateSchemaSuccessor,
   eventCatalogDetail,
+  eventCatalogDiscardSchemaDraft,
   eventCatalogHardDelete,
   eventCatalogList,
+  eventCatalogPublishSchemaDraft,
   eventCatalogRestore,
+  eventCatalogSaveSchemaDraft,
+  eventCatalogSchemaDraft,
   eventCatalogRevision,
   eventCatalogRevisions,
   eventCatalogUpdateMetadata,
@@ -16,15 +22,23 @@ import {
 import {
   toEventCatalogDefinition,
   type ArchiveEventDefinitionCommand,
+  type AnalyzeEventSchemaDraftCommand,
   type CreateEventDefinitionCommand,
+  type CreateEventSchemaSuccessorCommand,
   type DeleteEventDefinitionCommand,
+  type DiscardEventSchemaDraftCommand,
   type EventCatalogDefinition,
   type EventDefinitionLifecycle,
   type EventDefinitionRevision,
   type EventDefinitionRevisionPage,
   type EventDefinitionUsage,
   type EventMetadataUpdateResult,
+  type EventSchemaDraft,
+  type EventSchemaImpact,
+  type EventSchemaPublishResult,
+  type PublishEventSchemaDraftCommand,
   type RestoreEventDefinitionCommand,
+  type SaveEventSchemaDraftCommand,
   type UpdateEventMetadataCommand,
   type UpdateEventPolicyCommand,
 } from "./event-catalog-contract";
@@ -38,6 +52,11 @@ export interface EventCatalogRepository {
     projectId: string,
     command: CreateEventDefinitionCommand,
   ): Promise<EventCatalogDefinition>;
+  createSchemaSuccessor(
+    projectId: string,
+    definitionKeyId: string,
+    command: CreateEventSchemaSuccessorCommand,
+  ): Promise<EventCatalogDefinition>;
   getDefinition(
     projectId: string,
     definitionKeyId: string,
@@ -46,6 +65,30 @@ export interface EventCatalogRepository {
     projectId: string,
     definitionKeyId: string,
   ): Promise<EventDefinitionUsage>;
+  getSchemaDraft(
+    projectId: string,
+    definitionKeyId: string,
+  ): Promise<EventSchemaDraft | null>;
+  saveSchemaDraft(
+    projectId: string,
+    definitionKeyId: string,
+    command: SaveEventSchemaDraftCommand,
+  ): Promise<EventSchemaDraft>;
+  analyzeSchemaDraft(
+    projectId: string,
+    definitionKeyId: string,
+    command: AnalyzeEventSchemaDraftCommand,
+  ): Promise<EventSchemaImpact>;
+  publishSchemaDraft(
+    projectId: string,
+    definitionKeyId: string,
+    command: PublishEventSchemaDraftCommand,
+  ): Promise<EventSchemaPublishResult>;
+  discardSchemaDraft(
+    projectId: string,
+    definitionKeyId: string,
+    command: DiscardEventSchemaDraftCommand,
+  ): Promise<void>;
   updateMetadata(
     projectId: string,
     definitionKeyId: string,
@@ -102,6 +145,14 @@ function isNotFound(error: unknown) {
   return errorStatus(error) === 404;
 }
 
+function isDraftNotFound(error: unknown) {
+  return (
+    error instanceof ApiError &&
+    error.status === 404 &&
+    error.code === "EVENT_SCHEMA_DRAFT_NOT_FOUND"
+  );
+}
+
 export const apiEventCatalogRepository: EventCatalogRepository = {
   async listDefinitions(projectId, lifecycle = "ACTIVE") {
     return (await eventCatalogList(projectId, { lifecycle })).map(
@@ -114,12 +165,34 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
       await eventCatalogDetail(projectId, created.definitionKeyId),
     );
   },
+  async createSchemaSuccessor(projectId, definitionKeyId, command) {
+    const created = await eventCatalogCreateSchemaSuccessor(
+      projectId,
+      definitionKeyId,
+      command,
+    );
+    return toEventCatalogDefinition(
+      await eventCatalogDetail(projectId, created.definitionKeyId),
+    );
+  },
   async getDefinition(projectId, definitionKeyId) {
     return toEventCatalogDefinition(
       await eventCatalogDetail(projectId, definitionKeyId),
     );
   },
   getUsage: eventCatalogUsage,
+  async getSchemaDraft(projectId, definitionKeyId) {
+    try {
+      return await eventCatalogSchemaDraft(projectId, definitionKeyId);
+    } catch (error) {
+      if (isDraftNotFound(error)) return null;
+      throw error;
+    }
+  },
+  saveSchemaDraft: eventCatalogSaveSchemaDraft,
+  analyzeSchemaDraft: eventCatalogAnalyzeSchemaDraft,
+  publishSchemaDraft: eventCatalogPublishSchemaDraft,
+  discardSchemaDraft: eventCatalogDiscardSchemaDraft,
   async updateMetadata(projectId, definitionKeyId, command) {
     const dto = await eventCatalogUpdateMetadata(
       projectId,
@@ -150,20 +223,12 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
   },
   async archive(projectId, definitionKeyId, command) {
     return toEventCatalogDefinition(
-      await eventCatalogArchive(
-        projectId,
-        definitionKeyId,
-        command,
-      ),
+      await eventCatalogArchive(projectId, definitionKeyId, command),
     );
   },
   async restore(projectId, definitionKeyId, command) {
     return toEventCatalogDefinition(
-      await eventCatalogRestore(
-        projectId,
-        definitionKeyId,
-        command,
-      ),
+      await eventCatalogRestore(projectId, definitionKeyId, command),
     );
   },
   async hardDelete(projectId, definitionKeyId, command) {
@@ -173,11 +238,7 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
       pendingDeleteIntents.get(intentKey) === fingerprint;
     pendingDeleteIntents.set(intentKey, fingerprint);
     try {
-      await eventCatalogHardDelete(
-        projectId,
-        definitionKeyId,
-        command,
-      );
+      await eventCatalogHardDelete(projectId, definitionKeyId, command);
     } catch (error) {
       if (!isNotFound(error) || !retryingSameIntent) {
         if ((errorStatus(error) ?? 0) > 0) {

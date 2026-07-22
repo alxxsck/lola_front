@@ -6,7 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AnalyzeEventSchemaDraftDto {
-  /** @minimum 1 */
+export type EventCatalogDiscardSchemaDraftParams = {
+  /**
+   * Optimistic concurrency token.
+   * @minimum 1
+   */
   expectedDraftVersion: number;
-}
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+};

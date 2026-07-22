@@ -20,8 +20,10 @@ export interface EventSchemaConsumerImpactResponseDto {
   exposures: EventSchemaConsumerImpactResponseDtoExposuresItem[];
   fieldDependencies: EventSchemaConsumerImpactResponseDtoFieldDependenciesItem[];
   matchingMode: EventSchemaConsumerImpactResponseDtoMatchingMode;
+  reasonCodes: string[];
   resolutionActions: EventSchemaConsumerImpactResponseDtoResolutionActionsItem[];
   scenarioId: string;
+  scenarioName: string;
   scenarioRevisionId: string;
   state: EventSchemaConsumerImpactResponseDtoState;
   type: string;

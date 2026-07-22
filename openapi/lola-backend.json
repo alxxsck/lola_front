@@ -1784,6 +1784,9 @@
             "type": "number"
           }
         },
+        "required": [
+          "expectedDraftVersion"
+        ],
         "type": "object"
       },
       "AnyRuleExplanationResponseDto": {
@@ -7067,6 +7070,34 @@
         ],
         "type": "object"
       },
+      "CreateEventSchemaSuccessorDto": {
+        "properties": {
+          "code": {
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "expectedBaseRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expectedDraftVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "expectedDraftVersion",
+          "expectedBaseRevisionId"
+        ],
+        "type": "object"
+      },
       "CreateGuestSessionDto": {
         "properties": {
           "context": {
@@ -8004,6 +8035,10 @@
           "readOnly": {
             "type": "boolean"
           },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "updatedAt": {
             "format": "date-time",
             "type": "string"
@@ -8015,6 +8050,7 @@
         },
         "required": [
           "id",
+          "revisionId",
           "projectId",
           "code",
           "name",
@@ -8855,6 +8891,14 @@
             "format": "uuid",
             "type": "string"
           },
+          "ingestionPolicySnapshot": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "ingestionPolicyVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
           "message": {
             "nullable": true,
             "type": "string"
@@ -8900,6 +8944,8 @@
           "projectId",
           "eventDefinitionId",
           "eventDefinitionKeyId",
+          "ingestionPolicyVersion",
+          "ingestionPolicySnapshot",
           "endUserId",
           "source",
           "payload",
@@ -9150,6 +9196,12 @@
             ],
             "type": "string"
           },
+          "reasonCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "resolutionActions": {
             "items": {
               "enum": [
@@ -9164,6 +9216,9 @@
           },
           "scenarioId": {
             "format": "uuid",
+            "type": "string"
+          },
+          "scenarioName": {
             "type": "string"
           },
           "scenarioRevisionId": {
@@ -9187,6 +9242,7 @@
           "type",
           "bindingId",
           "scenarioId",
+          "scenarioName",
           "scenarioRevisionId",
           "exposure",
           "exposures",
@@ -9194,6 +9250,7 @@
           "matchingMode",
           "acceptsCurrentRevision",
           "fieldDependencies",
+          "reasonCodes",
           "blocking",
           "resolutionActions"
         ],
@@ -10846,6 +10903,14 @@
             "format": "uuid",
             "type": "string"
           },
+          "ingestionPolicySnapshot": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "ingestionPolicyVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
           "message": {
             "nullable": true,
             "type": "string"
@@ -10891,6 +10956,8 @@
           "projectId",
           "eventDefinitionId",
           "eventDefinitionKeyId",
+          "ingestionPolicyVersion",
+          "ingestionPolicySnapshot",
           "endUserId",
           "source",
           "payload",
@@ -22449,6 +22516,169 @@
       }
     },
     "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/schema-draft": {
+      "delete": {
+        "operationId": "EventCatalog_discardSchemaDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optimistic concurrency token.",
+            "in": "query",
+            "name": "expectedDraftVersion",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "required": true,
+            "schema": {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The current Event Schema draft was discarded."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_catalog.write",
+          "scope": "PROJECT"
+        }
+      },
+      "get": {
+        "operationId": "EventCatalog_schemaDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSchemaDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_catalog.read",
+          "scope": "PROJECT"
+        }
+      },
       "put": {
         "operationId": "EventCatalog_saveSchemaDraft",
         "parameters": [
@@ -22705,6 +22935,93 @@
         ],
         "x-iam-permission": {
           "code": "project.event_catalog.publish",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-catalog/event-definitions/{definitionKeyId}/schema-draft/successor": {
+      "post": {
+        "operationId": "EventCatalog_createSchemaSuccessor",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventSchemaSuccessorDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventCatalogDefinitionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "event catalog"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_catalog.write",
           "scope": "PROJECT"
         }
       }

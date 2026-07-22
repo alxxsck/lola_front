@@ -34,6 +34,7 @@ export interface EventCatalogDefinitionResponseDto {
   policyVersion: number;
   projectId: string;
   readOnly: boolean;
+  revisionId: string;
   updatedAt: string;
   /** @minimum 1 */
   version: number;

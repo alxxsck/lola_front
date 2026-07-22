@@ -103,6 +103,11 @@ function mountWorkspace() {
         EventDefinitionHistory: {
           template: '<button type="button">История</button>',
         },
+        EventSchemaAuthoring: {
+          props: ["canEdit", "canPublish"],
+          template:
+            '<div data-test="schema-authoring-stub" :data-can-edit="canEdit" :data-can-publish="canPublish" />',
+        },
       },
     },
   });
@@ -121,12 +126,23 @@ function button(
   return found;
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 describe("EventDefinitionWorkspacePage Overview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.auth!.project = {
       id: "project-1",
-      effectivePermissionCodes: ["project.event_catalog.write"],
+      effectivePermissionCodes: [
+        "project.event_catalog.write",
+        "project.event_catalog.publish",
+      ],
     };
     mocks.auth!.user = { role: "OWNER" };
     mocks.route!.params.definitionKeyId = "event-key-1";
@@ -215,6 +231,21 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     expect(wrapper.get('[data-test="overview-section"]').isVisible()).toBe(
       true,
     );
+
+    const overviewTab = wrapper.get(
+      'button[role="tab"][data-section="overview"]',
+    );
+    expect(overviewTab.attributes("aria-controls")).toBe(
+      "event-panel-overview",
+    );
+    await overviewTab.trigger("keydown", { key: "ArrowRight" });
+    await flushPromises();
+    expect(wrapper.get('[data-test="policy-section"]').isVisible()).toBe(true);
+    expect(
+      wrapper
+        .get('button[role="tab"][data-section="policy"]')
+        .attributes("tabindex"),
+    ).toBe("0");
 
     await wrapper
       .get('button[role="tab"][data-section="policy"]')
@@ -432,12 +463,17 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     await wrapper
       .get('button[role="tab"][data-section="policy"]')
       .trigger("click");
-    await button(wrapper, "Выключить приём").trigger("click");
+    await wrapper.get("#event-policy-enabled").setValue(false);
+    await wrapper
+      .get("#event-policy-reason")
+      .setValue("Остановка producer на время миграции");
+    await button(wrapper, "Сохранить правила приёма").trigger("click");
     await flushPromises();
 
     expect(wrapper.get(".dialog-stub").text()).toContain(
       "Связано сценариев: 2",
     );
+    expect(wrapper.get(".dialog-stub").text()).toContain("deposit.succeeded");
     await button(wrapper, "Выключить приём", true).trigger("click");
     await flushPromises();
     expect(mocks.updatePolicy).toHaveBeenCalledWith(
@@ -445,7 +481,191 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       "event-key-1",
       expect.objectContaining({ enabled: false, expectedVersion: 3 }),
     );
-    expect(wrapper.get('[role="status"]').text()).toContain("выключен");
+    expect(wrapper.get('[role="status"]').text()).toContain(
+      "обновлены без новой версии схемы",
+    );
+  });
+
+  it("always confirms disabling ingestion even when no dependency exists", async () => {
+    const wrapper = mountWorkspace();
+    await flushPromises();
+    await wrapper
+      .get('button[role="tab"][data-section="policy"]')
+      .trigger("click");
+    await wrapper.get("#event-policy-enabled").setValue(false);
+    await wrapper
+      .get("#event-policy-reason")
+      .setValue("Плановая остановка producer");
+    await button(wrapper, "Сохранить правила приёма").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.get(".dialog-stub").text()).toContain("deposit.succeeded");
+    expect(wrapper.get(".dialog-stub").text()).toContain("будущий приём");
+    expect(mocks.updatePolicy).not.toHaveBeenCalled();
+  });
+
+  it("applies the immutable policy snapshot reviewed by the disable dialog", async () => {
+    const initialUsage = await mocks.getUsage();
+    const pendingUsage = deferred<typeof initialUsage>();
+    mocks.getUsage
+      .mockReset()
+      .mockResolvedValueOnce(initialUsage)
+      .mockReturnValueOnce(pendingUsage.promise);
+    mocks.getDefinition
+      .mockReset()
+      .mockResolvedValueOnce(workspace)
+      .mockResolvedValueOnce({
+        ...workspace,
+        policy: { ...workspace.policy, enabled: false, version: 4 },
+      });
+    const wrapper = mountWorkspace();
+    await flushPromises();
+    await wrapper
+      .get('button[role="tab"][data-section="policy"]')
+      .trigger("click");
+    await wrapper.get("#event-policy-enabled").setValue(false);
+    await wrapper
+      .get("#event-policy-reason")
+      .setValue("Подтверждённая остановка");
+    await button(wrapper, "Сохранить правила приёма").trigger("click");
+    await wrapper.vm.$nextTick();
+    expect(
+      wrapper.get("#event-policy-client-ingestible").attributes("disabled"),
+    ).toBeDefined();
+    pendingUsage.resolve(initialUsage);
+    await flushPromises();
+
+    await wrapper.get("#event-policy-client-ingestible").setValue(true);
+    await wrapper.get("#event-policy-counts-as-activity").setValue(false);
+    await wrapper
+      .get("#event-policy-reason")
+      .setValue("Не подтверждённая подмена");
+    await button(wrapper, "Выключить приём", true).trigger("click");
+    await flushPromises();
+
+    expect(mocks.updatePolicy).toHaveBeenCalledWith(
+      "project-1",
+      "event-key-1",
+      {
+        enabled: false,
+        clientIngestible: false,
+        countsAsActivity: true,
+        expectedVersion: 3,
+        reason: "Подтверждённая остановка",
+      },
+    );
+  });
+
+  it("edits every ingestion policy field without changing the schema revision", async () => {
+    mocks.getDefinition
+      .mockReset()
+      .mockResolvedValueOnce(workspace)
+      .mockResolvedValueOnce({
+        ...workspace,
+        policy: {
+          ...workspace.policy,
+          clientIngestible: true,
+          countsAsActivity: false,
+          version: 4,
+        },
+      });
+    const wrapper = mountWorkspace();
+    await flushPromises();
+    await wrapper
+      .get('button[role="tab"][data-section="policy"]')
+      .trigger("click");
+    await wrapper.get("#event-policy-client-ingestible").setValue(true);
+    await wrapper.get("#event-policy-counts-as-activity").setValue(false);
+    await wrapper
+      .get("#event-policy-reason")
+      .setValue("Разрешить browser producer без Activity Day");
+    await button(wrapper, "Сохранить правила приёма").trigger("click");
+    await flushPromises();
+
+    expect(mocks.updatePolicy).toHaveBeenCalledWith(
+      "project-1",
+      "event-key-1",
+      {
+        enabled: true,
+        clientIngestible: true,
+        countsAsActivity: false,
+        expectedVersion: 3,
+        reason: "Разрешить browser producer без Activity Day",
+      },
+    );
+    expect(workspace.currentSchema.revisionId).toBe("revision-4");
+  });
+
+  it("preserves local policy choices and reason after EVENT_POLICY_CONFLICT", async () => {
+    mocks.updatePolicy.mockRejectedValue(
+      new ApiError(
+        409,
+        "Policy changed",
+        undefined,
+        "request-1",
+        "EVENT_POLICY_CONFLICT",
+      ),
+    );
+    mocks.getDefinition
+      .mockReset()
+      .mockResolvedValueOnce(workspace)
+      .mockResolvedValueOnce({
+        ...workspace,
+        policy: {
+          ...workspace.policy,
+          version: 4,
+          clientIngestible: false,
+          countsAsActivity: true,
+        },
+      });
+    const wrapper = mountWorkspace();
+    await flushPromises();
+    await wrapper
+      .get('button[role="tab"][data-section="policy"]')
+      .trigger("click");
+    await wrapper.get("#event-policy-client-ingestible").setValue(true);
+    await wrapper.get("#event-policy-counts-as-activity").setValue(false);
+    await wrapper
+      .get("#event-policy-reason")
+      .setValue("Мои несохранённые настройки");
+    await button(wrapper, "Сохранить правила приёма").trigger("click");
+    await flushPromises();
+
+    expect(
+      wrapper.get("#event-policy-client-ingestible").element,
+    ).toHaveProperty("checked", true);
+    expect(
+      wrapper.get("#event-policy-counts-as-activity").element,
+    ).toHaveProperty("checked", false);
+    expect(wrapper.get("#event-policy-reason").element).toHaveProperty(
+      "value",
+      "Мои несохранённые настройки",
+    );
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "сервере уже обновлены до v4",
+    );
+    expect(
+      wrapper.get('[data-test="policy-conflict-server"]').text(),
+    ).toContain("браузер: запрещён");
+    expect(
+      button(wrapper, "Сохранить правила приёма").attributes("disabled"),
+    ).toBeUndefined();
+  });
+
+  it("passes publish permission independently from draft write permission", async () => {
+    mocks.auth!.project = {
+      id: "project-1",
+      effectivePermissionCodes: ["project.event_catalog.write"],
+    };
+    const wrapper = mountWorkspace();
+    await flushPromises();
+    await wrapper
+      .get('button[role="tab"][data-section="schema"]')
+      .trigger("click");
+
+    const schema = wrapper.get('[data-test="schema-authoring-stub"]');
+    expect(schema.attributes("data-can-edit")).toBe("true");
+    expect(schema.attributes("data-can-publish")).toBe("false");
   });
 
   it("refetches after a stale archive preflight conflict and never navigates", async () => {

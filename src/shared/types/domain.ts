@@ -426,6 +426,8 @@ export interface EventLog {
   eventDefinitionId: string;
   eventDefinitionKeyId: string;
   eventVersion: number;
+  ingestionPolicyVersion: number;
+  ingestionPolicySnapshot: Record<string, unknown>;
   userId: string;
   userExternalId: string;
   source: "SERVER" | "FRONTEND" | "INTERNAL";

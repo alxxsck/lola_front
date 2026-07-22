@@ -86,6 +86,7 @@ import type {
   CreateConversationDto,
   CreateCustomerDto,
   CreateEventCatalogDefinitionDto,
+  CreateEventSchemaSuccessorDto,
   CreateGuestSessionDto,
   CreateInteractionSessionDto,
   CreateKnowledgeTextDto,
@@ -104,6 +105,7 @@ import type {
   EndVoiceSessionDto,
   EvaluateAudienceUserDto,
   EventCatalogDefinitionResponseDto,
+  EventCatalogDiscardSchemaDraftParams,
   EventCatalogHardDeleteParams,
   EventCatalogHealthResponseDto,
   EventCatalogListParams,
@@ -1069,6 +1071,36 @@ export const eventCatalogRevision = (
   );
 };
 
+export const eventCatalogDiscardSchemaDraft = (
+  projectId: string,
+  definitionKeyId: string,
+  params: EventCatalogDiscardSchemaDraftParams,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/schema-draft`,
+      method: "DELETE",
+      params,
+    },
+    options,
+  );
+};
+
+export const eventCatalogSchemaDraft = (
+  projectId: string,
+  definitionKeyId: string,
+  options?: SecondParameter<typeof request<EventSchemaDraftResponseDto>>,
+) => {
+  return request<EventSchemaDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/schema-draft`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const eventCatalogSaveSchemaDraft = (
   projectId: string,
   definitionKeyId: string,
@@ -1115,6 +1147,23 @@ export const eventCatalogPublishSchemaDraft = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: publishEventSchemaDraftDto,
+    },
+    options,
+  );
+};
+
+export const eventCatalogCreateSchemaSuccessor = (
+  projectId: string,
+  definitionKeyId: string,
+  createEventSchemaSuccessorDto: BodyType<CreateEventSchemaSuccessorDto>,
+  options?: SecondParameter<typeof request<EventCatalogDefinitionResponseDto>>,
+) => {
+  return request<EventCatalogDefinitionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions/${definitionKeyId}/schema-draft/successor`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createEventSchemaSuccessorDto,
     },
     options,
   );
@@ -3594,6 +3643,12 @@ export type EventCatalogRevisionsResult = NonNullable<
 export type EventCatalogRevisionResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogRevision>>
 >;
+export type EventCatalogDiscardSchemaDraftResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogDiscardSchemaDraft>>
+>;
+export type EventCatalogSchemaDraftResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogSchemaDraft>>
+>;
 export type EventCatalogSaveSchemaDraftResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogSaveSchemaDraft>>
 >;
@@ -3602,6 +3657,9 @@ export type EventCatalogAnalyzeSchemaDraftResult = NonNullable<
 >;
 export type EventCatalogPublishSchemaDraftResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogPublishSchemaDraft>>
+>;
+export type EventCatalogCreateSchemaSuccessorResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogCreateSchemaSuccessor>>
 >;
 export type EventCatalogUsageResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogUsage>>

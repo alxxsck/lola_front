@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  eventCatalogAnalyzeSchemaDraft,
   eventCatalogArchive,
+  eventCatalogCreateSchemaSuccessor,
+  eventCatalogDiscardSchemaDraft,
   eventCatalogDetail,
   eventCatalogHardDelete,
   eventCatalogList,
+  eventCatalogPublishSchemaDraft,
   eventCatalogRestore,
+  eventCatalogSaveSchemaDraft,
+  eventCatalogSchemaDraft,
   eventCatalogUpdateMetadata,
   eventCatalogUpdatePolicy,
 } from "@/shared/api/generated/lola-backend";
@@ -13,12 +19,18 @@ import { ApiError } from "@/shared/api/http/api-error";
 import { apiEventCatalogRepository } from "./event-catalog-repository";
 
 vi.mock("@/shared/api/generated/lola-backend", () => ({
+  eventCatalogAnalyzeSchemaDraft: vi.fn(),
   eventCatalogArchive: vi.fn(),
+  eventCatalogDiscardSchemaDraft: vi.fn(),
   eventCatalogCreate: vi.fn(),
+  eventCatalogCreateSchemaSuccessor: vi.fn(),
   eventCatalogDetail: vi.fn(),
   eventCatalogHardDelete: vi.fn(),
   eventCatalogList: vi.fn(),
+  eventCatalogPublishSchemaDraft: vi.fn(),
   eventCatalogRestore: vi.fn(),
+  eventCatalogSaveSchemaDraft: vi.fn(),
+  eventCatalogSchemaDraft: vi.fn(),
   eventCatalogRevision: vi.fn(),
   eventCatalogRevisions: vi.fn(),
   eventCatalogUsage: vi.fn(),
@@ -60,9 +72,7 @@ describe("apiEventCatalogRepository", () => {
   });
 
   it("uses the canonical lifecycle-filtered stable list", async () => {
-    vi.mocked(eventCatalogList).mockResolvedValue([
-      definitionDto,
-    ]);
+    vi.mocked(eventCatalogList).mockResolvedValue([definitionDto]);
     const result = await apiEventCatalogRepository.listDefinitions(
       "project-1",
       "ARCHIVED",
@@ -96,10 +106,160 @@ describe("apiEventCatalogRepository", () => {
       "event-key-1",
       command,
     );
-    expect(eventCatalogDetail).toHaveBeenCalledWith(
+    expect(eventCatalogDetail).toHaveBeenCalledWith("project-1", "event-key-1");
+  });
+
+  it("creates a semantic successor through the OCC source-draft command", async () => {
+    vi.mocked(eventCatalogCreateSchemaSuccessor).mockResolvedValue({
+      definitionKeyId: "successor-key",
+    } as never);
+    const command = {
+      code: "deposit.completed",
+      name: "Deposit completed",
+      expectedDraftVersion: 2,
+      expectedBaseRevisionId: "revision-4",
+    };
+
+    await apiEventCatalogRepository.createSchemaSuccessor(
       "project-1",
       "event-key-1",
+      command,
     );
+
+    expect(eventCatalogCreateSchemaSuccessor).toHaveBeenCalledWith(
+      "project-1",
+      "event-key-1",
+      command,
+    );
+    expect(eventCatalogDetail).toHaveBeenCalledWith(
+      "project-1",
+      "successor-key",
+    );
+  });
+
+  it("owns the complete server-backed schema draft lifecycle", async () => {
+    const draft = {
+      id: "draft-1",
+      definitionKeyId: "event-key-1",
+      baseRevisionId: "revision-4",
+      draftVersion: 2,
+      payloadSchema: { type: "object", properties: {} },
+      schemaHash: "schema-hash",
+      validation: { valid: true },
+      updatedAt: "2026-07-22T10:00:00.000Z",
+      changed: false,
+    };
+    const impact = {
+      definitionKeyId: "event-key-1",
+      draftVersion: 2,
+      baseRevisionId: "revision-4",
+      validation: { valid: true },
+      compatibility: { classification: "FULL_TRANSITIVE_SAFE" },
+      impact: {
+        summary: { blockingConsumerCount: 0, blockingActiveWaitCount: 0 },
+      },
+    };
+    const published = {
+      status: "SAFELY_PUBLISHED",
+      definitionKeyId: "event-key-1",
+      previousRevisionId: "revision-4",
+      revisionId: "revision-5",
+      revisionNumber: 5,
+      schemaHash: "schema-hash",
+      compatibility: impact.compatibility,
+      impact: impact.impact,
+      automaticallyExtendedBindings: 1,
+      automaticallyExtendedWaits: 0,
+    };
+    vi.mocked(eventCatalogSchemaDraft).mockResolvedValue(draft);
+    vi.mocked(eventCatalogSaveSchemaDraft).mockResolvedValue({
+      ...draft,
+      changed: true,
+    });
+    vi.mocked(eventCatalogAnalyzeSchemaDraft).mockResolvedValue(
+      impact as never,
+    );
+    vi.mocked(eventCatalogPublishSchemaDraft).mockResolvedValue(
+      published as never,
+    );
+
+    await expect(
+      apiEventCatalogRepository.getSchemaDraft("project-1", "event-key-1"),
+    ).resolves.toEqual(draft);
+    await apiEventCatalogRepository.saveSchemaDraft(
+      "project-1",
+      "event-key-1",
+      {
+        payloadSchema: draft.payloadSchema,
+        expectedDraftVersion: 2,
+      },
+    );
+    await apiEventCatalogRepository.analyzeSchemaDraft(
+      "project-1",
+      "event-key-1",
+      { expectedDraftVersion: 2 },
+    );
+    await apiEventCatalogRepository.publishSchemaDraft(
+      "project-1",
+      "event-key-1",
+      {
+        expectedDraftVersion: 2,
+        expectedBaseRevisionId: "revision-4",
+        reason: "Add optional field",
+      },
+    );
+    await apiEventCatalogRepository.discardSchemaDraft(
+      "project-1",
+      "event-key-1",
+      { expectedDraftVersion: 2, reason: "Discard proposal" },
+    );
+
+    expect(eventCatalogSaveSchemaDraft).toHaveBeenCalledWith(
+      "project-1",
+      "event-key-1",
+      expect.objectContaining({ expectedDraftVersion: 2 }),
+    );
+    expect(eventCatalogAnalyzeSchemaDraft).toHaveBeenCalledWith(
+      "project-1",
+      "event-key-1",
+      { expectedDraftVersion: 2 },
+    );
+    expect(eventCatalogPublishSchemaDraft).toHaveBeenCalledWith(
+      "project-1",
+      "event-key-1",
+      expect.objectContaining({ expectedBaseRevisionId: "revision-4" }),
+    );
+    expect(eventCatalogDiscardSchemaDraft).toHaveBeenCalledWith(
+      "project-1",
+      "event-key-1",
+      { expectedDraftVersion: 2, reason: "Discard proposal" },
+    );
+
+    vi.mocked(eventCatalogSchemaDraft).mockRejectedValue(
+      new ApiError(
+        404,
+        "Event Schema draft not found",
+        undefined,
+        undefined,
+        "EVENT_SCHEMA_DRAFT_NOT_FOUND",
+      ),
+    );
+    await expect(
+      apiEventCatalogRepository.getSchemaDraft("project-1", "event-key-1"),
+    ).resolves.toBeNull();
+
+    vi.mocked(eventCatalogSchemaDraft).mockRejectedValue(
+      new ApiError(
+        404,
+        "Event Definition not found",
+        undefined,
+        undefined,
+        "EVENT_DEFINITION_NOT_FOUND",
+      ),
+    );
+    await expect(
+      apiEventCatalogRepository.getSchemaDraft("project-1", "event-key-1"),
+    ).rejects.toMatchObject({ code: "EVENT_DEFINITION_NOT_FOUND" });
   });
 
   it("passes lifecycle OCC commands to archive and restore", async () => {

@@ -3,6 +3,8 @@ import type { EventDefinition } from "@/shared/types/domain";
 import type {
   EventCatalogDefinition,
   EventMetadataUpdateResult,
+  EventSchemaDraft,
+  EventSchemaImpact,
 } from "./event-catalog-contract";
 import type { EventCatalogRepository } from "./event-catalog-repository";
 
@@ -22,6 +24,70 @@ const policyByKey = new Map<
   }
 >();
 let events = structuredClone(demoEvents);
+const schemaDrafts = new Map<string, EventSchemaDraft>();
+
+function schemaDraftKey(projectId: string, definitionKeyId: string) {
+  return `${projectId}:${definitionKeyId}`;
+}
+
+function staleSchemaDraft(): Error {
+  return new Error("Event Schema Draft уже изменён. Обновите workspace.");
+}
+
+function emptyImpact(
+  definitionKeyId: string,
+  draft: EventSchemaDraft,
+  publishedSchema: Record<string, unknown>,
+): EventSchemaImpact {
+  const publishedProperties = schemaProperties(publishedSchema);
+  const draftProperties = schemaProperties(draft.payloadSchema);
+  const existingFieldsUnchanged = Object.entries(publishedProperties).every(
+    ([key, value]) =>
+      JSON.stringify(draftProperties[key]) === JSON.stringify(value),
+  );
+  const publishedRequired = JSON.stringify(publishedSchema.required ?? []);
+  const draftRequired = JSON.stringify(draft.payloadSchema.required ?? []);
+  const safe = existingFieldsUnchanged && publishedRequired === draftRequired;
+  return {
+    definitionKeyId,
+    draftVersion: draft.draftVersion,
+    baseRevisionId: draft.baseRevisionId,
+    validation: { valid: true, validatedAt: new Date().toISOString() },
+    compatibility: {
+      classification: safe ? "FULL_TRANSITIVE_SAFE" : "PRODUCER_BREAKING",
+      producerCompatibility: safe ? "SAFE" : "BREAKING",
+      consumerCompatibility: "SAFE",
+      reasons: safe
+        ? []
+        : [
+            {
+              code: "UNSUPPORTED_VALIDATION_CHANGED",
+              path: "/",
+              severity: "BREAKING",
+            },
+          ],
+    },
+    impact: {
+      consumers: [],
+      activeWaits: [],
+      summary: {
+        consumerCount: 0,
+        activeWaitCount: 0,
+        blockingConsumerCount: 0,
+        blockingActiveWaitCount: 0,
+        legacyExactCount: 0,
+      },
+    },
+  };
+}
+
+function schemaProperties(schema: Record<string, unknown>) {
+  return schema.properties &&
+    typeof schema.properties === "object" &&
+    !Array.isArray(schema.properties)
+    ? (schema.properties as Record<string, unknown>)
+    : {};
+}
 
 function toMockDefinition(event: EventDefinition): EventCatalogDefinition {
   const definitionKeyId = event.definitionKeyId ?? event.id;
@@ -102,8 +168,126 @@ export const mockEventCatalogRepository: EventCatalogRepository = {
     events.push(event);
     return toMockDefinition(event);
   },
+  async createSchemaSuccessor(projectId, definitionKeyId, command) {
+    const key = schemaDraftKey(projectId, definitionKeyId);
+    const draft = schemaDrafts.get(key);
+    const source = await this.getDefinition(projectId, definitionKeyId);
+    if (
+      !draft ||
+      draft.draftVersion !== command.expectedDraftVersion ||
+      draft.baseRevisionId !== command.expectedBaseRevisionId
+    ) {
+      throw staleSchemaDraft();
+    }
+    const created = await this.createDefinition(projectId, {
+      code: command.code,
+      name: command.name,
+      description: `Created from semantic-breaking draft of ${source.code}`,
+      payloadSchema: draft.payloadSchema,
+      enabled: false,
+      clientIngestible: source.policy.clientIngestible,
+      countsAsActivity: source.policy.countsAsActivity,
+    });
+    schemaDrafts.delete(key);
+    return created;
+  },
   async getDefinition(projectId, definitionKeyId) {
     return toMockDefinition(await findEvent(projectId, definitionKeyId));
+  },
+  async getSchemaDraft(projectId, definitionKeyId) {
+    return schemaDrafts.get(schemaDraftKey(projectId, definitionKeyId)) ?? null;
+  },
+  async saveSchemaDraft(projectId, definitionKeyId, command) {
+    const key = schemaDraftKey(projectId, definitionKeyId);
+    const current = schemaDrafts.get(key);
+    if (current && command.expectedDraftVersion === undefined) {
+      throw staleSchemaDraft();
+    }
+    if (current && command.expectedDraftVersion !== current.draftVersion) {
+      throw staleSchemaDraft();
+    }
+    const definition = await this.getDefinition(projectId, definitionKeyId);
+    const changed =
+      JSON.stringify(current?.payloadSchema) !==
+      JSON.stringify(command.payloadSchema);
+    if (current && !changed) return { ...current, changed: false };
+    const next: EventSchemaDraft = {
+      id: current?.id ?? crypto.randomUUID(),
+      definitionKeyId,
+      baseRevisionId: definition.currentSchema.revisionId,
+      draftVersion: (current?.draftVersion ?? 0) + 1,
+      payloadSchema: command.payloadSchema,
+      schemaHash: `mock-${Date.now()}`,
+      validation: { valid: true, validatedAt: new Date().toISOString() },
+      updatedAt: new Date().toISOString(),
+      changed,
+    };
+    schemaDrafts.set(key, next);
+    return next;
+  },
+  async analyzeSchemaDraft(projectId, definitionKeyId, command) {
+    const draft = schemaDrafts.get(schemaDraftKey(projectId, definitionKeyId));
+    if (!draft || draft.draftVersion !== command.expectedDraftVersion) {
+      throw staleSchemaDraft();
+    }
+    const definition = await this.getDefinition(projectId, definitionKeyId);
+    return emptyImpact(
+      definitionKeyId,
+      draft,
+      definition.currentSchema.payloadSchema,
+    );
+  },
+  async publishSchemaDraft(projectId, definitionKeyId, command) {
+    const key = schemaDraftKey(projectId, definitionKeyId);
+    const draft = schemaDrafts.get(key);
+    const event = await findEvent(projectId, definitionKeyId);
+    const definition = toMockDefinition(event);
+    if (
+      !draft ||
+      draft.draftVersion !== command.expectedDraftVersion ||
+      draft.baseRevisionId !== command.expectedBaseRevisionId
+    ) {
+      throw staleSchemaDraft();
+    }
+    const analysis = emptyImpact(
+      definitionKeyId,
+      draft,
+      definition.currentSchema.payloadSchema,
+    );
+    if (
+      analysis.compatibility.classification !== "FULL_TRANSITIVE_SAFE" &&
+      (!command.confirmBreakingChange || !command.producerMigrationConfirmed)
+    ) {
+      throw new Error("Подтвердите breaking change и миграцию producers.");
+    }
+    event.payloadSchema = draft.payloadSchema;
+    event.version = definition.currentSchema.revisionNumber + 1;
+    event.currentRevisionId = crypto.randomUUID();
+    event.updatedAt = new Date().toISOString();
+    schemaDrafts.delete(key);
+    return {
+      status:
+        analysis.compatibility.classification === "FULL_TRANSITIVE_SAFE"
+          ? "SAFELY_PUBLISHED"
+          : "BREAKING_PUBLISHED",
+      definitionKeyId,
+      previousRevisionId: definition.currentSchema.revisionId,
+      revisionId: event.currentRevisionId,
+      revisionNumber: event.version,
+      schemaHash: draft.schemaHash,
+      compatibility: analysis.compatibility,
+      impact: analysis.impact,
+      automaticallyExtendedBindings: 0,
+      automaticallyExtendedWaits: 0,
+    };
+  },
+  async discardSchemaDraft(projectId, definitionKeyId, command) {
+    const key = schemaDraftKey(projectId, definitionKeyId);
+    const draft = schemaDrafts.get(key);
+    if (!draft || draft.draftVersion !== command.expectedDraftVersion) {
+      throw staleSchemaDraft();
+    }
+    schemaDrafts.delete(key);
   },
   async updateMetadata(
     projectId,

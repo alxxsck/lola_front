@@ -73,12 +73,11 @@ const filters = reactive({
 });
 const appliedFilters = ref<EventLogFilters>({});
 const failedRequest = ref<FailedPageRequest | null>(null);
-const canRead = computed(
-  () =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.event_logs.read",
-    ),
+const canRead = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.event_logs.read",
+  ),
 );
 const eventOptions = computed(() =>
   eventDefinitions.value.map((item) => ({
@@ -893,12 +892,66 @@ function json(value: unknown) {
               ><code>{{ selectedLog.eventDefinitionId }}</code>
             </div>
             <div>
+              <span>Schema revision</span
+              ><strong>v{{ selectedLog.eventVersion }}</strong>
+            </div>
+            <div>
+              <span>Ingestion policy</span
+              ><strong>v{{ selectedLog.ingestionPolicyVersion }}</strong>
+            </div>
+            <div>
               <span>Log ID</span><code>{{ selectedLog.id }}</code>
             </div>
             <div>
               <span>Idempotency</span
               ><code>{{ selectedLog.externalEventId || "—" }}</code>
             </div>
+          </div>
+          <div class="policy-snapshot" data-test="policy-snapshot">
+            <span>Фактические правила приёма</span>
+            <dl>
+              <div>
+                <dt>Приём включён</dt>
+                <dd>
+                  {{
+                    selectedLog.ingestionPolicySnapshot.enabled === true
+                      ? "Да"
+                      : "Нет"
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>Из браузера</dt>
+                <dd>
+                  {{
+                    selectedLog.ingestionPolicySnapshot.clientIngestible ===
+                    true
+                      ? "Да"
+                      : "Нет"
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>Считает активность</dt>
+                <dd>
+                  {{
+                    selectedLog.ingestionPolicySnapshot.countsAsActivity ===
+                    true
+                      ? "Да"
+                      : "Нет"
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>Источник</dt>
+                <dd>
+                  {{
+                    selectedLog.ingestionPolicySnapshot.source ??
+                    selectedLog.source
+                  }}
+                </dd>
+              </div>
+            </dl>
           </div>
         </section>
         <section class="detail-section">
@@ -1444,6 +1497,35 @@ function json(value: unknown) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.policy-snapshot {
+  border-top: 1px solid var(--line);
+  padding: 12px 14px;
+}
+.policy-snapshot > span {
+  color: var(--text-small-muted);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+.policy-snapshot dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.policy-snapshot dl > div {
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  padding: 8px;
+}
+.policy-snapshot dt {
+  color: var(--text-small-muted);
+  font-size: 0.58rem;
+}
+.policy-snapshot dd {
+  margin: 4px 0 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
 .timestamps {
   display: flex;
   justify-content: space-between;
@@ -1556,6 +1638,9 @@ function json(value: unknown) {
   }
   .identity-grid > div:last-child {
     border-bottom: 0;
+  }
+  .policy-snapshot dl {
+    grid-template-columns: 1fr 1fr;
   }
   .timestamps {
     flex-direction: column;

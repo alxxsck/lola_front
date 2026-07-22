@@ -17,7 +17,7 @@ import type {
   ConversationAISuspensionResponseDto,
   ConversationAISuspensionSummaryResponseDto,
   ScenarioAuthoringSummaryResponseDto,
-} from '@/shared/api/generated/models'
+} from "@/shared/api/generated/models";
 import type {
   ActiveSession,
   AuditLog,
@@ -33,19 +33,16 @@ import type {
   Scenario,
   ScenarioRun,
   UiElement,
-} from '@/shared/types/domain'
-import type {
-  CreateUiElement,
-  UpdateUiElement,
-} from './contracts'
+} from "@/shared/types/domain";
+import type { CreateUiElement, UpdateUiElement } from "./contracts";
 
 const defined = <T extends object>(value: T): T =>
   Object.fromEntries(
     Object.entries(value).filter(([, item]) => item !== undefined),
-  ) as T
+  ) as T;
 
 const optionalString = (value: unknown): string | undefined =>
-  typeof value === 'string' ? value : undefined
+  typeof value === "string" ? value : undefined;
 
 export function mapProject(dto: ProjectResponseDto): Project {
   return {
@@ -63,11 +60,11 @@ export function mapProject(dto: ProjectResponseDto): Project {
     settings: dto.settings,
     organization: dto.organization,
     _count: dto._count,
-  }
+  };
 }
 
 export function toUpdateProjectSettingsDto(
-  patch: Partial<Project> & Pick<Project, 'version'>,
+  patch: Partial<Project> & Pick<Project, "version">,
 ): UpdateProjectSettingsDto {
   return defined({
     expectedVersion: patch.version,
@@ -76,14 +73,14 @@ export function toUpdateProjectSettingsDto(
     systemPrompt: patch.systemPrompt,
     voiceInstructions: patch.voiceInstructions,
     settings: patch.settings,
-  })
+  });
 }
 
 export function mapEventDefinition(
   dto: EventCatalogDefinitionResponseDto | EventDefinitionCatalogResponseDto,
 ): EventDefinition {
-  if ('currentRevision' in dto) {
-    const revision = dto.currentRevision
+  if ("currentRevision" in dto) {
+    const revision = dto.currentRevision;
     return {
       id: revision?.id ?? dto.id,
       projectId: dto.projectId,
@@ -104,12 +101,12 @@ export function mapEventDefinition(
       policyUpdatedAt: dto.policy.updatedAt,
       metadataUpdatedAt: dto.metadataUpdatedAt,
       lifecycle: dto.lifecycle,
-      archivedAt: dto.lifecycle === 'ARCHIVED' ? dto.lifecycleUpdatedAt : null,
+      archivedAt: dto.lifecycle === "ARCHIVED" ? dto.lifecycleUpdatedAt : null,
       updatedAt: dto.lifecycleUpdatedAt,
-    }
+    };
   }
   return {
-    id: dto.id,
+    id: dto.revisionId,
     projectId: dto.projectId,
     definitionKeyId: dto.definitionKeyId,
     currentRevisionId: dto.currentRevisionId ?? null,
@@ -127,11 +124,11 @@ export function mapEventDefinition(
     policyVersion: dto.policyVersion,
     policyUpdatedAt: dto.policyUpdatedAt,
     metadataUpdatedAt: dto.metadataUpdatedAt,
-    ...('lifecycle' in dto ? { lifecycle: dto.lifecycle } : {}),
-    ...('archivedAt' in dto ? { archivedAt: dto.archivedAt ?? null } : {}),
+    ...("lifecycle" in dto ? { lifecycle: dto.lifecycle } : {}),
+    ...("archivedAt" in dto ? { archivedAt: dto.archivedAt ?? null } : {}),
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
-  }
+  };
 }
 
 export function mapEventDefinitionRevision(
@@ -140,7 +137,7 @@ export function mapEventDefinitionRevision(
 ): EventDefinitionRevision {
   return {
     ...definition,
-    origin: definition.origin ?? 'CUSTOM',
+    origin: definition.origin ?? "CUSTOM",
     readOnly: definition.readOnly ?? false,
     id: dto.id,
     projectId: dto.projectId,
@@ -154,10 +151,12 @@ export function mapEventDefinitionRevision(
     updatedAt: dto.publishedAt,
     pinnedScenarioRevisionCount: dto.pinnedScenarioRevisionCount,
     compatibility: dto.compatibility,
-  }
+  };
 }
 
-export function mapScenario(dto: ScenarioAuthoringSummaryResponseDto): Scenario {
+export function mapScenario(
+  dto: ScenarioAuthoringSummaryResponseDto,
+): Scenario {
   return {
     id: dto.id,
     projectId: dto.projectId,
@@ -170,13 +169,15 @@ export function mapScenario(dto: ScenarioAuthoringSummaryResponseDto): Scenario 
     priority: dto.priority,
     conditions: [],
     cooldownSeconds: dto.cooldownSeconds,
-    ...(dto.maxRunsPerUser == null ? {} : { maxRunsPerUser: dto.maxRunsPerUser }),
+    ...(dto.maxRunsPerUser == null
+      ? {}
+      : { maxRunsPerUser: dto.maxRunsPerUser }),
     ...(dto.activeFrom == null ? {} : { activeFrom: dto.activeFrom }),
     ...(dto.activeTo == null ? {} : { activeTo: dto.activeTo }),
     actions: [],
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
-  }
+  };
 }
 
 export function mapEndUser(dto: EndUserResponseDto): EndUser {
@@ -192,7 +193,7 @@ export function mapEndUser(dto: EndUserResponseDto): EndUser {
     preferences: dto.preferences,
     lastSeenAt: dto.lastSeenAt,
     createdAt: dto.createdAt,
-  }
+  };
 }
 
 export function mapConversation(
@@ -201,15 +202,15 @@ export function mapConversation(
   return {
     id: dto.id,
     userId: dto.endUserId,
-    title: dto.title?.trim() || 'Диалог без названия',
-    status: dto.status === 'OPEN' ? 'ACTIVE' : 'ARCHIVED',
+    title: dto.title?.trim() || "Диалог без названия",
+    status: dto.status === "OPEN" ? "ACTIVE" : "ARCHIVED",
     updatedAt: dto.updatedAt,
     lastMessageAt: dto.messages[0]?.createdAt ?? dto.updatedAt,
     messageCount: dto._count.messages,
     isCurrent: dto.isCurrent,
     currentInteractionSessionCount: dto.currentInteractionSessionCount,
     aiSuspension: mapConversationAISuspensionSummary(dto.aiSuspension),
-  }
+  };
 }
 
 export function mapConversationAISuspensionSummary(
@@ -221,7 +222,7 @@ export function mapConversationAISuspensionSummary(
     version: dto.version,
     suspendedUntil: dto.suspendedUntil,
     serverTime: dto.serverTime,
-  }
+  };
 }
 
 export function mapConversationAISuspensionDetail(
@@ -235,7 +236,7 @@ export function mapConversationAISuspensionDetail(
     note: dto.note,
     resumedAt: dto.resumedAt,
     resumedBy: dto.resumedBy,
-  }
+  };
 }
 
 export function mapConversationMessage(
@@ -249,39 +250,39 @@ export function mapConversationMessage(
     status: dto.status,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
-  }
+  };
 }
 
 export function mapActiveSessions(dto: ActiveUserResponseDto): ActiveSession[] {
-  const profile = record(dto.profile)
+  const profile = record(dto.profile);
   const userName =
-    typeof profile.name === 'string' && profile.name.trim()
+    typeof profile.name === "string" && profile.name.trim()
       ? profile.name
-      : dto.externalId
-  const sessions = new Map<string, ActiveSession>()
+      : dto.externalId;
+  const sessions = new Map<string, ActiveSession>();
 
   for (const connection of dto.connections) {
-    const existing = sessions.get(connection.sessionId)
-    if (existing && existing.lastSeenAt >= connection.lastHeartbeatAt) continue
+    const existing = sessions.get(connection.sessionId);
+    if (existing && existing.lastSeenAt >= connection.lastHeartbeatAt) continue;
     sessions.set(connection.sessionId, {
       id: connection.sessionId,
       userId: dto.id,
       externalId: dto.externalId,
       userName,
-      device: connection.transport === 'ANY_CABLE' ? 'AnyCable' : 'Socket.IO',
+      device: connection.transport === "ANY_CABLE" ? "AnyCable" : "Socket.IO",
       transport: connection.transport,
       connectionCount: dto.activeConnectionCount,
       sessionCount: dto.activeSessionCount,
       currentConversationId: null,
       startedAt: connection.connectedAt,
       lastSeenAt: connection.lastHeartbeatAt,
-      status: 'ONLINE',
-    })
+      status: "ONLINE",
+    });
   }
 
   return [...sessions.values()].sort((left, right) =>
     right.lastSeenAt.localeCompare(left.lastSeenAt),
-  )
+  );
 }
 
 export function mapUiElement(dto: UiElementResponseDto): UiElement {
@@ -302,7 +303,7 @@ export function mapUiElement(dto: UiElementResponseDto): UiElement {
     aiAliases: dto.aiAliases,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
-  }
+  };
 }
 
 const uiPayload = (value: UpdateUiElement) =>
@@ -319,7 +320,7 @@ const uiPayload = (value: UpdateUiElement) =>
     aiDescription: value.aiDescription,
     aiAliases: value.aiAliases,
     auditReason: value.auditReason,
-  })
+  });
 
 export function toCreateUiElementDto(
   value: CreateUiElement,
@@ -330,17 +331,17 @@ export function toCreateUiElementDto(
     name: value.name,
     kind: value.kind,
     aiDescription: value.aiDescription ?? undefined,
-  }
+  };
 }
 
 export function toUpdateUiElementDto(
   value: UpdateUiElement,
 ): UpdateUiElementDto {
-  return uiPayload(value)
+  return uiPayload(value);
 }
 
 const record = (value: unknown): Record<string, unknown> =>
-  value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 
 export function mapEventLog(dto: EventLogResponseDto): EventLog {
   return {
@@ -350,6 +351,8 @@ export function mapEventLog(dto: EventLogResponseDto): EventLog {
     eventDefinitionId: dto.eventDefinitionId,
     eventDefinitionKeyId: dto.eventDefinitionKeyId,
     eventVersion: dto.eventDefinition.version,
+    ingestionPolicyVersion: dto.ingestionPolicyVersion,
+    ingestionPolicySnapshot: record(dto.ingestionPolicySnapshot),
     userId: dto.endUserId,
     userExternalId: dto.endUser.externalId,
     source: dto.source,
@@ -364,7 +367,7 @@ export function mapEventLog(dto: EventLogResponseDto): EventLog {
       ? record(dto.processingResult)
       : undefined,
     error: dto.error ?? undefined,
-  }
+  };
 }
 
 export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
@@ -383,7 +386,7 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
     scenarioRevisionId: optionalString(dto.scenarioRevisionId),
     errorCode: optionalString(dto.errorCode),
     startedAt: dto.startedAt,
-    finishedAt: typeof dto.finishedAt === 'string' ? dto.finishedAt : undefined,
+    finishedAt: typeof dto.finishedAt === "string" ? dto.finishedAt : undefined,
     currentStep: dto.currentStep,
     steps: dto.steps.map((step) => ({
       id: step.id,
@@ -393,7 +396,7 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
       executor: step.executor,
       status: step.status,
       errorCode:
-        typeof step.errorCode === 'string' ? step.errorCode : undefined,
+        typeof step.errorCode === "string" ? step.errorCode : undefined,
       startedAt: optionalString(step.startedAt),
       finishedAt: optionalString(step.finishedAt),
       resumeAt: optionalString(step.resumeAt),
@@ -405,7 +408,7 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
             sequence: step.command.sequence,
             createdAt: step.command.createdAt,
             expiresAt:
-              typeof step.command.expiresAt === 'string'
+              typeof step.command.expiresAt === "string"
                 ? step.command.expiresAt
                 : undefined,
             sentAt: optionalString(step.command.sentAt),
@@ -414,7 +417,7 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
           }
         : undefined,
     })),
-  }
+  };
 }
 
 export function mapAuditLog(dto: AuditLogResponseDto): AuditLog {
@@ -432,5 +435,5 @@ export function mapAuditLog(dto: AuditLogResponseDto): AuditLog {
     requestId: dto.requestId ?? undefined,
     metadata: record(dto.metadata),
     createdAt: dto.createdAt,
-  }
+  };
 }

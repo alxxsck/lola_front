@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AnalyzeEventSchemaDraftDto {
-  /** @minimum 1 */
-  expectedDraftVersion: number;
-}
+export type EventLogResponseDtoIngestionPolicySnapshot = {
+  [key: string]: unknown;
+};

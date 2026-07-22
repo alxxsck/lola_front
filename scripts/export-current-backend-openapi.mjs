@@ -15,6 +15,7 @@ if (!process.argv[2] || !process.argv[3]) {
 // OpenAPI generation only needs the Nest dependency graph and controller metadata. Keep
 // provider construction deterministic and independent of a developer's production-like
 // shell configuration; these values live only in this short-lived exporter process.
+delete process.env.IAM_MASTER_SECRET;
 Object.assign(process.env, {
   NODE_ENV: "development",
   IAM_CMS_AUTH_ENABLED: "false",

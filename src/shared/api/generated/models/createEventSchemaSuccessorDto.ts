@@ -6,7 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AnalyzeEventSchemaDraftDto {
+export interface CreateEventSchemaSuccessorDto {
+  /** @pattern ^[a-z][a-z0-9_.-]*$ */
+  code: string;
+  expectedBaseRevisionId: string;
   /** @minimum 1 */
   expectedDraftVersion: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
 }

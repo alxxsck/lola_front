@@ -1,12 +1,20 @@
 import type {
   ArchiveEventDefinitionDto,
+  AnalyzeEventSchemaDraftDto,
   CreateEventCatalogDefinitionDto,
+  CreateEventSchemaSuccessorDto,
+  EventCatalogDiscardSchemaDraftParams,
   EventCatalogHardDeleteParams,
   EventDefinitionCatalogResponseDto,
   EventDefinitionRevisionPageResponseDto,
   EventDefinitionRevisionResponseDto,
   EventDefinitionUsageResponseDto,
+  EventSchemaDraftResponseDto,
+  EventSchemaImpactResponseDto,
+  EventSchemaPublishResponseDto,
+  PublishEventSchemaDraftDto,
   RestoreEventDefinitionDto,
+  SaveEventSchemaDraftDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
 } from "@/shared/api/generated/models";
@@ -47,12 +55,20 @@ export type EventDefinitionRevision = EventDefinitionRevisionResponseDto;
 export type EventDefinitionRevisionPage =
   EventDefinitionRevisionPageResponseDto;
 export type CreateEventDefinitionCommand = CreateEventCatalogDefinitionDto;
+export type CreateEventSchemaSuccessorCommand = CreateEventSchemaSuccessorDto;
 export type UpdateEventMetadataCommand = UpdateEventDefinitionMetadataDto;
 export type UpdateEventPolicyCommand = UpdateEventIngestionPolicyDto;
 export type ArchiveEventDefinitionCommand = ArchiveEventDefinitionDto;
 export type RestoreEventDefinitionCommand = RestoreEventDefinitionDto;
-export type DeleteEventDefinitionCommand =
-  EventCatalogHardDeleteParams;
+export type DeleteEventDefinitionCommand = EventCatalogHardDeleteParams;
+export type EventSchemaDraft = EventSchemaDraftResponseDto;
+export type EventSchemaImpact = EventSchemaImpactResponseDto;
+export type EventSchemaPublishResult = EventSchemaPublishResponseDto;
+export type SaveEventSchemaDraftCommand = SaveEventSchemaDraftDto;
+export type AnalyzeEventSchemaDraftCommand = AnalyzeEventSchemaDraftDto;
+export type PublishEventSchemaDraftCommand = PublishEventSchemaDraftDto;
+export type DiscardEventSchemaDraftCommand =
+  EventCatalogDiscardSchemaDraftParams;
 
 export interface EventMetadataUpdateResult {
   definitionKeyId: string;

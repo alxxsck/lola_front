@@ -6,6 +6,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import EventDefinitionHistory from "@/features/events/EventDefinitionHistory.vue";
+import EventSchemaAuthoring from "@/features/events/EventSchemaAuthoring.vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
   applyEventMetadataUpdate,
@@ -15,6 +16,12 @@ import {
 } from "@/shared/api/repository/event-catalog";
 
 type WorkspaceSection = "overview" | "policy" | "schema" | "usage";
+const workspaceSections: WorkspaceSection[] = [
+  "overview",
+  "policy",
+  "schema",
+  "usage",
+];
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -45,6 +52,22 @@ const disableDialogVisible = ref(false);
 const archiveReason = ref("");
 const deleteReason = ref("");
 const deleteConfirmation = ref("");
+const policyEnabled = ref(false);
+const policyClientIngestible = ref(false);
+const policyCountsAsActivity = ref(false);
+const policyReason = ref("");
+const policyConflictServer = ref<EventCatalogDefinition["policy"] | null>(null);
+interface PolicyCommandSnapshot {
+  projectId: string;
+  definitionKeyId: string;
+  generation: number;
+  enabled: boolean;
+  clientIngestible: boolean;
+  countsAsActivity: boolean;
+  expectedVersion: number;
+  reason: string;
+}
+const pendingDisablePolicy = ref<PolicyCommandSnapshot | null>(null);
 let definitionRequestId = 0;
 let usageRequestId = 0;
 let workspaceGeneration = 0;
@@ -57,16 +80,20 @@ const canEdit = computed(
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
       "project.event_catalog.write",
-    ) &&
-    !definition.value?.readOnly,
+    ) && !definition.value?.readOnly,
 );
 const canManageLifecycle = computed(
   () =>
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
       "project.event_catalog.write",
-    ) &&
-    definition.value?.origin === "CUSTOM",
+    ) && definition.value?.origin === "CUSTOM",
+);
+const canPublish = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.event_catalog.publish",
+  ),
 );
 const isArchived = computed(() => definition.value?.lifecycle === "ARCHIVED");
 const hasMetadataConcurrencyToken = computed(() =>
@@ -78,10 +105,15 @@ const isDirty = computed(
     (name.value !== definition.value?.metadata.name ||
       description.value !== (definition.value?.metadata.description ?? "")),
 );
-const formattedSchema = computed(() =>
-  JSON.stringify(definition.value?.currentSchema.payloadSchema ?? {}, null, 2),
+const isPolicyDirty = computed(
+  () =>
+    Boolean(definition.value) &&
+    (policyEnabled.value !== definition.value?.policy.enabled ||
+      policyClientIngestible.value !==
+        definition.value?.policy.clientIngestible ||
+      policyCountsAsActivity.value !==
+        definition.value?.policy.countsAsActivity),
 );
-
 onMounted(loadDefinition);
 watch(
   () => [auth.project?.id, definitionKeyId.value],
@@ -113,7 +145,17 @@ function resetWorkspace() {
   archiveReason.value = "";
   deleteReason.value = "";
   deleteConfirmation.value = "";
+  policyEnabled.value = false;
+  policyClientIngestible.value = false;
+  policyCountsAsActivity.value = false;
+  policyReason.value = "";
+  policyConflictServer.value = null;
+  pendingDisablePolicy.value = null;
 }
+
+watch(disableDialogVisible, (visible) => {
+  if (!visible && !mutationPending.value) pendingDisablePolicy.value = null;
+});
 
 async function loadDefinition() {
   const projectId = auth.project?.id;
@@ -127,6 +169,7 @@ async function loadDefinition() {
     if (!isCurrentRequest(projectId, key, requestId, definitionRequestId))
       return;
     definition.value = loaded;
+    syncPolicyForm(loaded);
     name.value = loaded.metadata.name;
     description.value = loaded.metadata.description ?? "";
     usage.value = null;
@@ -140,6 +183,25 @@ async function loadDefinition() {
       loading.value = false;
     }
   }
+}
+
+async function handleSchemaPublished() {
+  await loadDefinition();
+  activeSection.value = "schema";
+  success.value = "Опубликована новая версия схемы.";
+}
+
+async function handleSchemaPublicationUncertain(revisionNumber: number) {
+  await loadDefinition();
+  activeSection.value = "schema";
+  mutationError.value = `На сервере наблюдается схема v${revisionNumber}, совпадающая с отправленным черновиком, но потерянный ответ не позволяет приписать публикацию этой команде. Проверьте историю и audit log.`;
+}
+
+async function handleSchemaDefinitionCreated(created: EventCatalogDefinition) {
+  await router.push({
+    name: "event-definition-workspace",
+    params: { definitionKeyId: created.definitionKeyId },
+  });
 }
 
 async function saveMetadata() {
@@ -201,6 +263,28 @@ async function selectSection(section: WorkspaceSection) {
   activeSection.value = section;
   if (section !== "usage" || usage.value || usageLoading.value) return;
   await loadUsage();
+}
+
+function handleTabKeydown(event: KeyboardEvent, section: WorkspaceSection) {
+  const currentIndex = workspaceSections.indexOf(section);
+  let nextIndex: number | null = null;
+  if (event.key === "ArrowRight") {
+    nextIndex = (currentIndex + 1) % workspaceSections.length;
+  } else if (event.key === "ArrowLeft") {
+    nextIndex =
+      (currentIndex - 1 + workspaceSections.length) % workspaceSections.length;
+  } else if (event.key === "Home") {
+    nextIndex = 0;
+  } else if (event.key === "End") {
+    nextIndex = workspaceSections.length - 1;
+  }
+  if (nextIndex === null) return;
+  event.preventDefault();
+  const next = workspaceSections[nextIndex];
+  void selectSection(next);
+  requestAnimationFrame(() =>
+    document.getElementById(`event-tab-${next}`)?.focus(),
+  );
 }
 
 async function loadUsage() {
@@ -271,71 +355,149 @@ async function prepareDelete() {
   deleteDialogVisible.value = true;
 }
 
-async function requestPolicyChange() {
-  const current = definition.value;
-  if (!current || isArchived.value || mutationPending.value) return;
-  mutationError.value = "";
-  if (current.policy.enabled) {
-    const currentUsage = await loadUsage();
-    if (!currentUsage) return;
-    if (currentUsage.scenarios.total > 0 || currentUsage.activeWaitCount > 0) {
-      disableDialogVisible.value = true;
-      return;
-    }
-  }
-  await applyPolicyChange(!current.policy.enabled);
+function syncPolicyForm(current: EventCatalogDefinition) {
+  policyEnabled.value = current.policy.enabled;
+  policyClientIngestible.value = current.policy.clientIngestible;
+  policyCountsAsActivity.value = current.policy.countsAsActivity;
+  policyReason.value = "";
 }
 
-async function applyPolicyChange(enabled: boolean) {
-  const projectId = auth.project?.id;
+async function requestPolicyChange() {
   const current = definition.value;
-  const generation = workspaceGeneration;
-  if (!projectId || !current || mutationPending.value) return;
+  if (
+    !current ||
+    isArchived.value ||
+    mutationPending.value ||
+    !isPolicyDirty.value ||
+    !policyReason.value.trim()
+  )
+    return;
+  mutationError.value = "";
+  const command: PolicyCommandSnapshot = {
+    projectId: current.projectId,
+    definitionKeyId: current.definitionKeyId,
+    generation: workspaceGeneration,
+    enabled: policyEnabled.value,
+    clientIngestible: policyClientIngestible.value,
+    countsAsActivity: policyCountsAsActivity.value,
+    expectedVersion: current.policy.version,
+    reason: policyReason.value.trim(),
+  };
+  if (current.policy.enabled && !policyEnabled.value) {
+    mutationPending.value = true;
+    const currentUsage = await loadUsage();
+    mutationPending.value = false;
+    if (!currentUsage) return;
+    if (
+      !isCurrentWorkspace(
+        command.projectId,
+        command.definitionKeyId,
+        command.generation,
+      )
+    )
+      return;
+    pendingDisablePolicy.value = command;
+    disableDialogVisible.value = true;
+    return;
+  }
+  await executePolicyChange(command);
+}
+
+async function applyPolicyChange() {
+  const command = pendingDisablePolicy.value;
+  if (!command) return;
+  await executePolicyChange(command);
+}
+
+async function executePolicyChange(command: PolicyCommandSnapshot) {
+  const projectId = command.projectId;
+  const current = definition.value;
+  const generation = command.generation;
+  if (
+    !current ||
+    mutationPending.value ||
+    !isCurrentWorkspace(projectId, command.definitionKeyId, generation)
+  )
+    return;
+  const attemptedPolicy = {
+    enabled: command.enabled,
+    clientIngestible: command.clientIngestible,
+    countsAsActivity: command.countsAsActivity,
+    reason: command.reason,
+  };
   mutationPending.value = true;
   mutationError.value = "";
   success.value = "";
   try {
     await eventCatalogRepository.updatePolicy(
       projectId,
-      current.definitionKeyId,
+      command.definitionKeyId,
       {
-        enabled,
-        clientIngestible: current.policy.clientIngestible,
-        countsAsActivity: current.policy.countsAsActivity,
-        expectedVersion: current.policy.version,
-        reason: enabled
-          ? "Enabled from CMS workspace"
-          : "Disabled from CMS workspace",
+        enabled: command.enabled,
+        clientIngestible: command.clientIngestible,
+        countsAsActivity: command.countsAsActivity,
+        expectedVersion: command.expectedVersion,
+        reason: command.reason,
       },
     );
     if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
       return;
     const reloaded = await eventCatalogRepository.getDefinition(
       projectId,
-      current.definitionKeyId,
+      command.definitionKeyId,
     );
     if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
       return;
     if (
-      reloaded.policy.enabled !== enabled ||
-      reloaded.policy.version <= current.policy.version
+      reloaded.policy.enabled !== command.enabled ||
+      reloaded.policy.clientIngestible !== command.clientIngestible ||
+      reloaded.policy.countsAsActivity !== command.countsAsActivity ||
+      reloaded.policy.version <= command.expectedVersion
     ) {
       throw new Error("Сервер не подтвердил изменение приёма событий");
     }
     definition.value = reloaded;
+    syncPolicyForm(reloaded);
     usage.value = null;
     disableDialogVisible.value = false;
-    success.value = enabled
-      ? "Приём новых событий включён."
-      : "Приём новых событий выключен.";
+    pendingDisablePolicy.value = null;
+    success.value = "Правила приёма событий обновлены без новой версии схемы.";
+    policyConflictServer.value = null;
   } catch (cause) {
     if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
       return;
-    await recoverConflict(cause);
-    mutationError.value = errorMessage(
-      cause,
-      "Не удалось изменить приём событий",
-    );
+    if (cause instanceof ApiError && cause.code === "EVENT_POLICY_CONFLICT") {
+      try {
+        const reloaded = await eventCatalogRepository.getDefinition(
+          projectId,
+          current.definitionKeyId,
+        );
+        if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
+          return;
+        definition.value = reloaded;
+        policyConflictServer.value = reloaded.policy;
+        usage.value = null;
+        disableDialogVisible.value = false;
+        pendingDisablePolicy.value = null;
+        policyEnabled.value = attemptedPolicy.enabled;
+        policyClientIngestible.value = attemptedPolicy.clientIngestible;
+        policyCountsAsActivity.value = attemptedPolicy.countsAsActivity;
+        policyReason.value = attemptedPolicy.reason;
+        mutationError.value =
+          `Правила на сервере уже обновлены до v${reloaded.policy.version}. ` +
+          "Ваши значения и причина сохранены — проверьте их и повторите сохранение.";
+        void loadUsage();
+      } catch {
+        mutationError.value =
+          "Правила были изменены другим администратором. Ваши локальные значения сохранены, но актуальную версию сервера загрузить не удалось.";
+      }
+    } else {
+      await recoverConflict(cause);
+      mutationError.value = errorMessage(
+        cause,
+        "Не удалось изменить приём событий",
+      );
+    }
   } finally {
     if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
       mutationPending.value = false;
@@ -687,51 +849,69 @@ function errorMessage(cause: unknown, fallback: string) {
         role="tablist"
       >
         <button
+          id="event-tab-overview"
           type="button"
           role="tab"
           data-section="overview"
+          aria-controls="event-panel-overview"
           :aria-selected="activeSection === 'overview'"
+          :tabindex="activeSection === 'overview' ? 0 : -1"
           :class="{ active: activeSection === 'overview' }"
           @click="selectSection('overview')"
+          @keydown="handleTabKeydown($event, 'overview')"
         >
           <i class="pi pi-info-circle" /> Основное
         </button>
         <button
+          id="event-tab-policy"
           type="button"
           role="tab"
           data-section="policy"
+          aria-controls="event-panel-policy"
           :aria-selected="activeSection === 'policy'"
+          :tabindex="activeSection === 'policy' ? 0 : -1"
           :class="{ active: activeSection === 'policy' }"
           @click="selectSection('policy')"
+          @keydown="handleTabKeydown($event, 'policy')"
         >
           <i class="pi pi-shield" /> Приём событий
         </button>
         <button
+          id="event-tab-schema"
           type="button"
           role="tab"
           data-section="schema"
+          aria-controls="event-panel-schema"
           :aria-selected="activeSection === 'schema'"
+          :tabindex="activeSection === 'schema' ? 0 : -1"
           :class="{ active: activeSection === 'schema' }"
           @click="selectSection('schema')"
+          @keydown="handleTabKeydown($event, 'schema')"
         >
           <i class="pi pi-code" /> Схема данных
         </button>
         <button
+          id="event-tab-usage"
           type="button"
           role="tab"
           data-section="usage"
+          aria-controls="event-panel-usage"
           :aria-selected="activeSection === 'usage'"
+          :tabindex="activeSection === 'usage' ? 0 : -1"
           :class="{ active: activeSection === 'usage' }"
           @click="selectSection('usage')"
+          @keydown="handleTabKeydown($event, 'usage')"
         >
           <i class="pi pi-chart-bar" /> Использование
         </button>
       </nav>
 
       <main
+        id="event-panel-overview"
         v-if="activeSection === 'overview'"
         class="overview-layout"
         role="tabpanel"
+        aria-labelledby="event-tab-overview"
         data-test="overview-section"
       >
         <form class="overview-form card" @submit.prevent="saveMetadata">
@@ -821,9 +1001,11 @@ function errorMessage(cause: unknown, fallback: string) {
       </main>
 
       <section
+        id="event-panel-policy"
         v-else-if="activeSection === 'policy'"
         class="workspace-panel card"
         role="tabpanel"
+        aria-labelledby="event-tab-policy"
         data-test="policy-section"
       >
         <div class="section-heading">
@@ -839,50 +1021,122 @@ function errorMessage(cause: unknown, fallback: string) {
             ><i class="pi pi-check-circle" /> Без новой версии схемы</span
           >
         </div>
-        <dl class="settings-grid">
-          <div>
-            <dt>Приём событий</dt>
-            <dd>{{ definition.policy.enabled ? "Включён" : "Выключен" }}</dd>
+        <form class="policy-form" @submit.prevent="requestPolicyChange">
+          <div class="settings-grid">
+            <label class="policy-option" for="event-policy-enabled">
+              <input
+                id="event-policy-enabled"
+                v-model="policyEnabled"
+                type="checkbox"
+                :disabled="!canManageLifecycle || isArchived || mutationPending"
+              />
+              <span>
+                <strong>Принимать новые события</strong>
+                <small
+                  >Выключение останавливает новые trigger и wait-события.</small
+                >
+              </span>
+            </label>
+            <label class="policy-option" for="event-policy-client-ingestible">
+              <input
+                id="event-policy-client-ingestible"
+                v-model="policyClientIngestible"
+                type="checkbox"
+                :disabled="!canManageLifecycle || isArchived || mutationPending"
+              />
+              <span>
+                <strong>Разрешить приём из браузера</strong>
+                <small>Событие сможет отправлять доверенный web-клиент.</small>
+              </span>
+            </label>
+            <label class="policy-option" for="event-policy-counts-as-activity">
+              <input
+                id="event-policy-counts-as-activity"
+                v-model="policyCountsAsActivity"
+                type="checkbox"
+                :disabled="!canManageLifecycle || isArchived || mutationPending"
+              />
+              <span>
+                <strong>Учитывать как активность</strong>
+                <small
+                  >Только новые валидные события продлевают Visit и Activity
+                  Day.</small
+                >
+              </span>
+            </label>
           </div>
-          <div>
-            <dt>Приём из браузера</dt>
-            <dd>
-              {{ definition.policy.clientIngestible ? "Разрешён" : "Запрещён" }}
-            </dd>
-          </div>
-          <div>
-            <dt>Учитывать как активность</dt>
-            <dd>
-              {{
-                definition.policy.countsAsActivity
-                  ? "Да, для новых событий"
-                  : "Нет"
-              }}
-            </dd>
-          </div>
-        </dl>
-        <div v-if="canManageLifecycle" class="policy-actions">
-          <button
-            type="button"
-            class="secondary-button"
-            :disabled="isArchived || mutationPending"
-            @click="requestPolicyChange"
+          <label
+            v-if="canManageLifecycle"
+            class="field"
+            for="event-policy-reason"
           >
-            {{
-              definition.policy.enabled ? "Выключить приём" : "Включить приём"
-            }}
-          </button>
-          <p v-if="isArchived">
-            Сначала восстановите событие. Восстановление не включает ingestion
-            автоматически.
+            <span>Причина изменения</span>
+            <textarea
+              id="event-policy-reason"
+              v-model="policyReason"
+              rows="2"
+              maxlength="500"
+              :disabled="isArchived || mutationPending"
+              placeholder="Что меняется и почему"
+            />
+          </label>
+          <div v-if="canManageLifecycle" class="policy-actions">
+            <button
+              data-test="save-policy"
+              type="button"
+              class="primary-button"
+              :disabled="
+                isArchived ||
+                mutationPending ||
+                !isPolicyDirty ||
+                !policyReason.trim()
+              "
+              @click="requestPolicyChange"
+            >
+              {{ mutationPending ? "Сохраняем…" : "Сохранить правила приёма" }}
+            </button>
+            <p v-if="isArchived">
+              Сначала восстановите событие. Восстановление не включает ingestion
+              автоматически.
+            </p>
+          </div>
+          <p v-else class="read-only-note">
+            У вас нет права изменять правила приёма этого события.
           </p>
-        </div>
+        </form>
+        <aside
+          v-if="policyConflictServer"
+          class="policy-conflict"
+          data-test="policy-conflict-server"
+          role="note"
+        >
+          <strong
+            >Текущие правила на сервере — v{{
+              policyConflictServer.version
+            }}</strong
+          >
+          <p>
+            Приём: {{ policyConflictServer.enabled ? "включён" : "выключен" }};
+            браузер:
+            {{
+              policyConflictServer.clientIngestible ? "разрешён" : "запрещён"
+            }}; активность:
+            {{
+              policyConflictServer.countsAsActivity
+                ? "учитывается"
+                : "не учитывается"
+            }}.
+          </p>
+          <span>В форме выше сохранены ваши локальные значения.</span>
+        </aside>
       </section>
 
       <section
+        id="event-panel-schema"
         v-else-if="activeSection === 'schema'"
         class="workspace-panel card"
         role="tabpanel"
+        aria-labelledby="event-tab-schema"
         data-test="schema-section"
       >
         <div class="section-heading">
@@ -902,13 +1156,23 @@ function errorMessage(cause: unknown, fallback: string) {
             :initial-revision-id="linkedRevisionId"
           />
         </div>
-        <pre class="schema-preview"><code>{{ formattedSchema }}</code></pre>
+        <EventSchemaAuthoring
+          :project-id="definition.projectId"
+          :event="definition"
+          :can-edit="canEdit"
+          :can-publish="canPublish"
+          @published="handleSchemaPublished"
+          @publication-uncertain="handleSchemaPublicationUncertain"
+          @created="handleSchemaDefinitionCreated"
+        />
       </section>
 
       <section
+        id="event-panel-usage"
         v-else
         class="workspace-panel card"
         role="tabpanel"
+        aria-labelledby="event-tab-usage"
         data-test="usage-section"
       >
         <div class="section-heading">
@@ -985,8 +1249,9 @@ function errorMessage(cause: unknown, fallback: string) {
       :style="{ width: 'min(540px, 94vw)' }"
     >
       <p>
-        Новые события перестанут запускать и продвигать сценарии. Существующие
-        данные и само определение сохранятся.
+        Новые события <strong>{{ definition?.code }}</strong> перестанут
+        приниматься и запускать или продвигать сценарии. Изменение действует
+        только на будущий приём; существующие данные и определение сохранятся.
       </p>
       <p v-if="usage">
         <strong
@@ -1006,7 +1271,7 @@ function errorMessage(cause: unknown, fallback: string) {
           type="button"
           class="primary-button"
           :disabled="mutationPending"
-          @click="applyPolicyChange(false)"
+          @click="applyPolicyChange"
         >
           Выключить приём
         </button>
@@ -1140,7 +1405,9 @@ function errorMessage(cause: unknown, fallback: string) {
   background: transparent;
   color: var(--text-link);
   cursor: pointer;
-  font: 600 0.76rem var(--font-display), sans-serif;
+  font:
+    600 0.76rem var(--font-display),
+    sans-serif;
   padding: 2px 0;
 }
 .back-link i {
@@ -1217,6 +1484,21 @@ function errorMessage(cause: unknown, fallback: string) {
   font-size: 0.72rem;
   font-weight: 700;
 }
+.lifecycle-blocker-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+.lifecycle-blocker-summary strong {
+  color: var(--text-primary);
+}
+.lifecycle-blocker-summary a {
+  color: var(--text-link);
+  font-weight: 700;
+}
 .producer-contract {
   display: flex;
   gap: 13px;
@@ -1245,6 +1527,21 @@ function errorMessage(cause: unknown, fallback: string) {
 }
 .producer-contract code {
   font-weight: 700;
+}
+.policy-conflict {
+  margin-top: 14px;
+  border: 1px solid var(--status-warning);
+  border-radius: 10px;
+  background: var(--status-warning-soft);
+  padding: 12px;
+  color: var(--status-warning-text);
+  font-size: 0.74rem;
+}
+.policy-conflict p {
+  margin: 6px 0;
+}
+.policy-conflict span {
+  color: var(--text-secondary);
 }
 .workspace-navigation {
   display: grid;
@@ -1299,6 +1596,7 @@ function errorMessage(cause: unknown, fallback: string) {
   margin: 0;
 }
 .settings-grid > div,
+.settings-grid > label,
 .usage-summary > div {
   border-radius: 10px;
   background: var(--surface-subtle);
@@ -1313,13 +1611,42 @@ function errorMessage(cause: unknown, fallback: string) {
   margin: 6px 0 0;
   font-weight: 700;
 }
+.policy-form {
+  display: grid;
+  gap: 18px;
+}
+.policy-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  cursor: pointer;
+}
+.policy-option input {
+  margin-top: 3px;
+}
+.policy-option span,
+.policy-option strong,
+.policy-option small {
+  display: block;
+}
+.policy-option strong {
+  font-size: 0.76rem;
+}
+.policy-option small {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
 .usage-summary strong,
 .usage-summary span {
   display: block;
 }
 .usage-summary strong {
   margin-bottom: 5px;
-  font: 800 1.8rem var(--font-display), sans-serif;
+  font:
+    800 1.8rem var(--font-display),
+    sans-serif;
 }
 .usage-content {
   display: grid;
@@ -1363,17 +1690,6 @@ function errorMessage(cause: unknown, fallback: string) {
   margin: 0;
   color: var(--text-secondary);
   font-size: 0.7rem;
-}
-.schema-preview {
-  max-height: 480px;
-  overflow: auto;
-  margin: 0;
-  border-radius: 10px;
-  background: var(--surface-subtle);
-  padding: 16px;
-  color: var(--text-primary);
-  font-size: 0.74rem;
-  line-height: 1.55;
 }
 .panel-state {
   margin: 0;
@@ -1516,7 +1832,9 @@ function errorMessage(cause: unknown, fallback: string) {
   border: 0;
   border-radius: 9px;
   cursor: pointer;
-  font: 700 0.74rem var(--font-display), sans-serif;
+  font:
+    700 0.74rem var(--font-display),
+    sans-serif;
   padding: 10px 14px;
 }
 .primary-button {
@@ -1549,7 +1867,9 @@ function errorMessage(cause: unknown, fallback: string) {
   padding: 19px;
 }
 .revision-card strong {
-  font: 800 2.3rem var(--font-display), sans-serif;
+  font:
+    800 2.3rem var(--font-display),
+    sans-serif;
 }
 .revision-card code {
   overflow-wrap: anywhere;

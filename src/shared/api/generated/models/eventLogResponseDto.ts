@@ -8,6 +8,7 @@
 import type { EventLogResponseDtoContext } from "./eventLogResponseDtoContext";
 import type { EventLogUserRefResponseDto } from "./eventLogUserRefResponseDto";
 import type { EventLogDefinitionRefResponseDto } from "./eventLogDefinitionRefResponseDto";
+import type { EventLogResponseDtoIngestionPolicySnapshot } from "./eventLogResponseDtoIngestionPolicySnapshot";
 import type { EventLogResponseDtoPayload } from "./eventLogResponseDtoPayload";
 import type { EventLogResponseDtoProcessingResult } from "./eventLogResponseDtoProcessingResult";
 import type { EventSource } from "./eventSource";
@@ -25,6 +26,9 @@ export interface EventLogResponseDto {
   /** @nullable */
   externalEventId?: string | null;
   id: string;
+  ingestionPolicySnapshot: EventLogResponseDtoIngestionPolicySnapshot;
+  /** @minimum 1 */
+  ingestionPolicyVersion: number;
   /** @nullable */
   message?: string | null;
   occurredAt: string;
