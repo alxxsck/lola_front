@@ -16,6 +16,7 @@ import type {
 import {
   RealtimeVoice,
 } from '@/shared/api/generated/models'
+import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations'
 
 const ServerActionHandler = {
   START_VOICE_CONVERSATION: 'START_VOICE_CONVERSATION',
@@ -282,7 +283,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
     {
       animation: {
         type: 'string',
-        enum: ['greeting', 'excited', 'win_small', 'spin', 'pointing'],
+        enum: [...ASSISTANT_ANIMATIONS],
       },
     },
     ['animation'],
@@ -291,8 +292,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
         key: 'animation',
         label: 'Анимация',
         control: 'select',
-        allowCustom: true,
-        options: ['greeting', 'excited', 'win_small', 'spin', 'pointing'],
+        options: [...ASSISTANT_ANIMATIONS],
       },
     ],
   ),
@@ -568,7 +568,7 @@ export const demoScenarios: Scenario[] = [
         id: 'act_2',
         position: 1,
         type: 'PLAY_ANIMATION',
-        config: { animation: 'greeting' },
+        config: { animation: 'excited' },
       },
       {
         id: 'act_3',
@@ -755,7 +755,7 @@ export const demoActivity: ActivityItem[] = [
     userId: 'usr_2',
     type: 'COMMAND',
     title: 'PLAY_ANIMATION',
-    description: 'Анимация celebrating',
+    description: 'Анимация excited',
     timestamp: isoAgo(3),
     status: 'delivered',
   },

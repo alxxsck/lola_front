@@ -6,6 +6,7 @@ import type {
   ProjectAction,
 } from '../model/project-action'
 import type { ProjectActionsRepository } from './project-actions-repository'
+import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations'
 
 const STORAGE_KEY = 'lola-cms-demo-product-actions-v2'
 const DEMO_DATA_KEY = 'lola-cms-demo-data-v2'
@@ -28,7 +29,7 @@ const curatedDefinitions: DemoProductActionDefinition[] = [
   },
   {
     code: 'PLAY_ANIMATION', name: 'Проиграть анимацию', description: 'Запускает поддерживаемую клиентом анимацию Lola.',
-    surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ animation: { type: 'string', enum: ['greeting', 'excited', 'win_small'] } }, ['animation']), uiSchema: { fields: [{ key: 'animation', label: 'Анимация', control: 'select' }] }, ai: false,
+    surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ animation: { type: 'string', enum: [...ASSISTANT_ANIMATIONS] } }, ['animation']), uiSchema: { fields: [{ key: 'animation', label: 'Анимация', control: 'select', options: [...ASSISTANT_ANIMATIONS] }] }, ai: false,
   },
   {
     code: 'HIGHLIGHT_ELEMENT', name: 'Подсветить элемент', description: 'Визуально подсвечивает зарегистрированный элемент продукта.',

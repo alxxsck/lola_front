@@ -13,6 +13,7 @@ import type { ActiveSession, ManualAction, UiElement } from '@/shared/types/doma
 import { adminMessageError } from './admin-message'
 import { buildDirectActions, resolveIdempotencyAttempt } from './direct-action'
 import { relativeTime } from '@/shared/lib/format'
+import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations'
 
 const props = defineProps<{
   visible: boolean
@@ -31,7 +32,7 @@ const elements = ref<UiElement[]>([])
 const targetsLoading = ref(false)
 const pendingIdempotency = ref<{ fingerprint: string; key: string } | null>(null)
 const selectedSessionId = ref('')
-const form = reactive({ type: 'TEXT', text: '', policy: 'reuse_active', label: '', action: 'OPEN_PAGE', target: '', animation: 'greeting', voice: 'eve', integrationCode: 'welcome_bonus', amount: 10, currency: 'EUR' })
+const form = reactive({ type: 'TEXT', text: '', policy: 'reuse_active', label: '', action: 'OPEN_PAGE', target: '', animation: ASSISTANT_ANIMATIONS[0], voice: 'eve', integrationCode: 'welcome_bonus', amount: 10, currency: 'EUR' })
 
 const availableSessions = computed(() => props.sessions?.length ? props.sessions : props.session ? [props.session] : [])
 const selectedSession = computed(() => availableSessions.value.find((item) => item.id === selectedSessionId.value) ?? null)
@@ -63,7 +64,7 @@ const policies = [
   { label: 'Продолжить активный диалог', value: 'reuse_active' },
   { label: 'Создать новый диалог', value: 'create_new' },
 ]
-const animations = ['greeting', 'attention', 'celebrating', 'pointing', 'success', 'thinking'].map((value) => ({ label: value, value }))
+const animations = ASSISTANT_ANIMATIONS.map((value) => ({ label: value, value }))
 const recipient = computed(() => props.recipientName ?? props.session?.userName ?? '')
 const internalUserId = computed(() => props.userId ?? props.session?.userId)
 const targetKind = computed(() => form.action === 'OPEN_MODAL' ? 'MODAL' : form.action === 'HIGHLIGHT_ELEMENT' ? 'ELEMENT' : 'PAGE')
