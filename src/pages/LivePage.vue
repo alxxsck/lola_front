@@ -10,8 +10,15 @@ import type { ActiveSession } from '@/shared/types/domain'
 import SendActionDialog from '@/features/live/SendActionDialog.vue'
 import UserWorkspaceDialog from '@/features/end-user-workspace/UserWorkspaceDialog.vue'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { hasProjectPermission } from '@/features/auth/permission-access'
 
 const auth = useAuthStore()
+const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? [])
+const canReadProfiles = computed(() => hasProjectPermission(projectPermissions.value, 'project.profiles.read'))
+const canReadConversations = computed(() => hasProjectPermission(projectPermissions.value, 'project.conversations.read'))
+const canReply = computed(() => hasProjectPermission(projectPermissions.value, 'project.conversations.reply'))
+const canReadUiTargets = computed(() => hasProjectPermission(projectPermissions.value, 'project.ui_registry.read'))
+const canOpenWorkspace = computed(() => canReadProfiles.value || canReadConversations.value)
 const sessions = ref<ActiveSession[]>([])
 const selected = ref<ActiveSession | null>(null)
 const actionVisible = ref(false)
@@ -50,10 +57,12 @@ async function load(silent = false) {
   }
 }
 function openWorkspace(session: ActiveSession) {
+  if (!canOpenWorkspace.value) return
   selected.value = session
   workspaceVisible.value = true
 }
 function openActions(session: ActiveSession) {
+  if (!canReply.value) return
   selected.value = session
   actionVisible.value = true
 }
@@ -131,6 +140,7 @@ onUnmounted(() => window.clearInterval(timer))
         :class="{ idle: session.status === 'STALE' }"
       >
         <button
+          v-if="canOpenWorkspace"
           type="button"
           class="session-open-overlay"
           :aria-label="`Открыть диалог с ${session.userName}`"
@@ -163,6 +173,7 @@ onUnmounted(() => window.clearInterval(timer))
           <small>Активность {{ relativeTime(session.lastSeenAt) }}</small>
           <div class="session-actions">
             <Button
+              v-if="canReply"
               label="Действия"
               icon="pi pi-bolt"
               size="small"
@@ -170,6 +181,7 @@ onUnmounted(() => window.clearInterval(timer))
               text
               @click.stop="openActions(session)"
             /><Button
+              v-if="canOpenWorkspace"
               label="Открыть диалог"
               icon="pi pi-comments"
               size="small"
@@ -184,14 +196,16 @@ onUnmounted(() => window.clearInterval(timer))
     </div>
   </section>
   <SendActionDialog
+    v-if="canReply"
     v-model:visible="actionVisible"
     :project-id="auth.project?.id"
     :session="selected"
     :sessions="sessions.filter((item) => item.userId === selected?.userId)"
+    :can-read-targets="canReadUiTargets"
     @sent="load(true)"
   />
   <UserWorkspaceDialog
-    v-if="auth.project"
+    v-if="auth.project && canOpenWorkspace"
     v-model:visible="workspaceVisible"
     :project-id="auth.project.id"
     :end-user-id="selected?.userId ?? null"
@@ -334,7 +348,7 @@ onUnmounted(() => window.clearInterval(timer))
 }
 .summary-main > strong {
   flex: 0 0 auto;
-  font: 700 3.4rem/1 Manrope;
+  font: 700 3.4rem/1 var(--font-display);
   letter-spacing: -0.07em;
 }
 .summary-main > div {

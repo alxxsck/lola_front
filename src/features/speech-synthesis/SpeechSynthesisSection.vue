@@ -21,10 +21,11 @@ import {
   type SpeechVoiceOption,
 } from './speech-synthesis.model'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   projectId: string
   supportedLocales: string[]
-}>()
+  editable?: boolean
+}>(), { editable: false })
 
 const toast = useToast()
 const loading = ref(true)
@@ -178,6 +179,7 @@ async function load() {
 }
 
 async function save() {
+  if (!props.editable) return
   if (!response.value || !configured.value) return
   const projectId = props.projectId
   const generation = requestGeneration
@@ -277,7 +279,7 @@ onBeforeUnmount(() => {
             option-label="name"
             option-value="id"
             :loading="voicesLoading"
-            :disabled="saving || !configured"
+            :disabled="saving || !configured || !editable"
             placeholder="Выберите голос"
           >
             <template #option="{ option }">
@@ -295,12 +297,12 @@ onBeforeUnmount(() => {
       <div class="settings-grid">
         <div v-if="response.integration.capabilities.languageOverride" class="field setting-field">
           <label for="tts-language">Язык текста</label>
-          <Select id="tts-language" v-model="form.languageOverride" :options="languageOptions" option-label="label" option-value="value" :disabled="saving || !configured" />
+          <Select id="tts-language" v-model="form.languageOverride" :options="languageOptions" option-label="label" option-value="value" :disabled="saving || !configured || !editable" />
           <small>Auto-detection подходит для многоязычных сценариев.</small>
         </div>
         <div v-if="supportsSetting('stability')" class="field setting-field">
           <label for="tts-stability">Стабильность</label>
-          <InputNumber id="tts-stability" v-model="form.stability" :min="stabilityRange.min" :max="stabilityRange.max" :min-fraction-digits="2" :max-fraction-digits="2" :step="0.05" :disabled="saving || !configured" />
+          <InputNumber id="tts-stability" v-model="form.stability" :min="stabilityRange.min" :max="stabilityRange.max" :min-fraction-digits="2" :max-fraction-digits="2" :step="0.05" :disabled="saving || !configured || !editable" />
           <small>Ниже — эмоциональнее, выше — стабильнее. Темп и подачу задавайте audio tags в тексте.</small>
         </div>
       </div>
@@ -308,7 +310,7 @@ onBeforeUnmount(() => {
       <footer class="tts-save">
         <div><strong>{{ isDirty ? 'Есть несохранённые TTS-настройки' : 'Text-to-Speech настроен' }}</strong><span>Изменения относятся только к SPEAK_TEXT и не влияют на голосовой чат.</span></div>
         <Message v-if="validationError" severity="warn" size="small">{{ validationError }}</Message>
-        <Button type="submit" label="Сохранить Text-to-Speech" icon="pi pi-check" :loading="saving" :disabled="!isDirty || !configured" />
+        <Button v-if="editable" type="submit" label="Сохранить Text-to-Speech" icon="pi pi-check" :loading="saving" :disabled="!isDirty || !configured" />
       </footer>
       </form>
     </div>

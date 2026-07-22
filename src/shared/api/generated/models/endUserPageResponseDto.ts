@@ -6,10 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EndUserResponseDto } from "./endUserResponseDto";
-import type { EndUserPageResponseDtoNextCursor } from "./endUserPageResponseDtoNextCursor";
 
 export interface EndUserPageResponseDto {
   items: EndUserResponseDto[];
   /** @nullable */
-  nextCursor?: EndUserPageResponseDtoNextCursor;
+  nextCursor?: string | null;
 }

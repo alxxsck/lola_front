@@ -41,7 +41,3 @@ export function proposalWorkflowLabel(
     CANCELLED: "Отменено",
   }[status];
 }
-
-export function canReviewAIProposals(role: string | undefined): boolean {
-  return role === "OWNER" || role === "ADMIN";
-}

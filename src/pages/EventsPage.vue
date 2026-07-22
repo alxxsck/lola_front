@@ -11,6 +11,7 @@ import ToggleSwitch from "primevue/toggleswitch";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { DocumentationCallout } from "@/features/documentation/ui";
 import {
   eventDefinitionError,
@@ -82,7 +83,11 @@ const hasTechnicalDraft = ref(false);
 const codeTouched = ref(false);
 const form = ref<EventForm>(emptyForm());
 const canManage = computed(
-  () => auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.event_catalog.write",
+    ),
 );
 const lifecycle = computed<"ACTIVE" | "ARCHIVED">(() =>
   route.query.lifecycle === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
@@ -1248,7 +1253,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  font: 700 0.72rem Manrope;
+  font: 700 0.72rem var(--font-display), sans-serif;
   padding: 9px 15px;
 }
 .lifecycle-switch button.active {
@@ -1321,7 +1326,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   display: block;
 }
 .summary-card strong {
-  font: 700 1.35rem Manrope;
+  font: 700 1.35rem var(--font-display), sans-serif;
 }
 .summary-card small {
   color: var(--muted);
@@ -1597,7 +1602,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   display: block;
 }
 .event-stats strong {
-  font: 700 1.1rem Manrope;
+  font: 700 1.1rem var(--font-display), sans-serif;
 }
 .event-stats span {
   font-size: 0.67rem;

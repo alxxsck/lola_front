@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import EventDefinitionHistory from "@/features/events/EventDefinitionHistory.vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
@@ -53,12 +54,18 @@ const definitionKeyId = computed(() =>
 );
 const canEdit = computed(
   () =>
-    (auth.user?.role === "OWNER" || auth.user?.role === "ADMIN") &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.event_catalog.write",
+    ) &&
     !definition.value?.readOnly,
 );
 const canManageLifecycle = computed(
   () =>
-    (auth.user?.role === "OWNER" || auth.user?.role === "ADMIN") &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.event_catalog.write",
+    ) &&
     definition.value?.origin === "CUSTOM",
 );
 const isArchived = computed(() => definition.value?.lifecycle === "ARCHIVED");
@@ -1133,7 +1140,7 @@ function errorMessage(cause: unknown, fallback: string) {
   background: transparent;
   color: var(--text-link);
   cursor: pointer;
-  font: 600 0.76rem Manrope;
+  font: 600 0.76rem var(--font-display), sans-serif;
   padding: 2px 0;
 }
 .back-link i {
@@ -1312,7 +1319,7 @@ function errorMessage(cause: unknown, fallback: string) {
 }
 .usage-summary strong {
   margin-bottom: 5px;
-  font: 800 1.8rem Manrope;
+  font: 800 1.8rem var(--font-display), sans-serif;
 }
 .usage-content {
   display: grid;
@@ -1509,7 +1516,7 @@ function errorMessage(cause: unknown, fallback: string) {
   border: 0;
   border-radius: 9px;
   cursor: pointer;
-  font: 700 0.74rem Manrope;
+  font: 700 0.74rem var(--font-display), sans-serif;
   padding: 10px 14px;
 }
 .primary-button {
@@ -1542,7 +1549,7 @@ function errorMessage(cause: unknown, fallback: string) {
   padding: 19px;
 }
 .revision-card strong {
-  font: 800 2.3rem Manrope;
+  font: 800 2.3rem var(--font-display), sans-serif;
 }
 .revision-card code {
   overflow-wrap: anywhere;

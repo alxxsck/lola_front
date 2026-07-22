@@ -1,7 +1,7 @@
 import type {
   ArchiveEventDefinitionDto,
-  CreateEventDefinitionDto,
-  EventCatalogDeleteEventDefinitionParams,
+  CreateEventCatalogDefinitionDto,
+  EventCatalogHardDeleteParams,
   EventDefinitionCatalogResponseDto,
   EventDefinitionRevisionPageResponseDto,
   EventDefinitionRevisionResponseDto,
@@ -46,13 +46,13 @@ export type EventDefinitionUsage = EventDefinitionUsageResponseDto;
 export type EventDefinitionRevision = EventDefinitionRevisionResponseDto;
 export type EventDefinitionRevisionPage =
   EventDefinitionRevisionPageResponseDto;
-export type CreateEventDefinitionCommand = CreateEventDefinitionDto;
+export type CreateEventDefinitionCommand = CreateEventCatalogDefinitionDto;
 export type UpdateEventMetadataCommand = UpdateEventDefinitionMetadataDto;
 export type UpdateEventPolicyCommand = UpdateEventIngestionPolicyDto;
 export type ArchiveEventDefinitionCommand = ArchiveEventDefinitionDto;
 export type RestoreEventDefinitionCommand = RestoreEventDefinitionDto;
 export type DeleteEventDefinitionCommand =
-  EventCatalogDeleteEventDefinitionParams;
+  EventCatalogHardDeleteParams;
 
 export interface EventMetadataUpdateResult {
   definitionKeyId: string;

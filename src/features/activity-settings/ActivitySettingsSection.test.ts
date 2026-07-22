@@ -12,6 +12,7 @@ vi.mock('@/shared/api/repository', () => ({
 vi.mock('primevue/usetoast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 
 const settings = {
+  projectVersion: 7,
   timezone: 'Europe/Madrid', visitInactivitySeconds: 1800, reconnectGraceSeconds: 30,
   limits: { visitInactivitySeconds: { min: 60, max: 86400 }, reconnectGraceSeconds: { min: 1, max: 300 } },
   semantics: {
@@ -25,7 +26,7 @@ describe('ActivitySettingsSection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.get.mockResolvedValue(settings)
-    mocks.update.mockResolvedValue({ ...settings, timezone: 'UTC', visitInactivitySeconds: 900, reconnectGraceSeconds: 15 })
+    mocks.update.mockResolvedValue({ ...settings, projectVersion: 8, timezone: 'UTC', visitInactivitySeconds: 900, reconnectGraceSeconds: 15 })
   })
 
   it('loads limits and saves the three independent activity semantics', async () => {
@@ -44,7 +45,8 @@ describe('ActivitySettingsSection', () => {
     await flushPromises()
 
     expect(mocks.update).toHaveBeenCalledWith('project-1', {
-      timezone: 'UTC', visitInactivitySeconds: 900, reconnectGraceSeconds: 15,
+      expectedVersion: 7, timezone: 'UTC', visitInactivitySeconds: 900, reconnectGraceSeconds: 15,
     })
+    expect(wrapper.emitted('change')?.at(-1)?.[0]).toMatchObject({ projectVersion: 8 })
   })
 })

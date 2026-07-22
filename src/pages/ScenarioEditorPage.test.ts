@@ -36,7 +36,7 @@ const mocks = vi.hoisted(() => ({
   projectActions: [] as Array<import("@/features/project-actions/model/project-action").ProjectAction>,
   guardDirty: null as { value: boolean } | null,
   routeLeaveGuards: [] as Array<() => boolean>,
-  role: "OWNER" as "OWNER" | "ADMIN" | "EDITOR" | "VIEWER",
+  permissions: ["project.scenarios.read", "project.scenarios.write", "project.scenarios.publish"] as string[],
 }));
 
 vi.mock("vue-router", () => ({
@@ -48,9 +48,11 @@ vi.mock("vue-router", () => ({
 
 vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => ({
-    project: { id: "project-1" },
-    get user() {
-      return { role: mocks.role };
+    project: {
+      id: "project-1",
+      get effectivePermissionCodes() {
+        return mocks.permissions;
+      },
     },
   }),
 }));
@@ -139,6 +141,7 @@ const scenario = {
   priority: 0,
   conditions: [],
   actions: [],
+  updatedAt: "2026-07-20T10:00:00.000Z",
 };
 
 function projectAction(
@@ -266,7 +269,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     vi.clearAllMocks();
     mocks.routeLeaveGuards.length = 0;
     mocks.route.params.scenarioId = "scenario-1";
-    mocks.role = "OWNER";
+    mocks.permissions = ["project.scenarios.read", "project.scenarios.write", "project.scenarios.publish"];
     mocks.getScenarios.mockResolvedValue([scenario]);
     mocks.getEvents.mockResolvedValue([event]);
     mocks.getElements.mockResolvedValue([]);
@@ -1294,7 +1297,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   });
 
   it("keeps Audience and publish mutations read-only outside OWNER and ADMIN roles", async () => {
-    mocks.role = "VIEWER";
+    mocks.permissions = ["project.scenarios.read"];
     const wrapper = mountPage();
     await flushPromises();
 
@@ -1309,7 +1312,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     await stageButton(wrapper, "Доставка").trigger("click");
     expect(wrapper.findComponent(ScenarioPublishPanel).exists()).toBe(false);
     expect(wrapper.text()).toContain(
-      "Публикация доступна только владельцам и администраторам",
+      "У вас нет права публиковать сценарии",
     );
   });
 

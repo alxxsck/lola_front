@@ -9,10 +9,10 @@ import type { ActiveConnectionResponseDtoTransport } from "./activeConnectionRes
 
 export interface ActiveConnectionResponseDto {
   connectedAt: string;
-  id: string;
-  lastHeartbeatAt: string;
   /** @nullable */
   currentConversationId?: string | null;
+  id: string;
+  lastHeartbeatAt: string;
   sessionId: string;
   transport: ActiveConnectionResponseDtoTransport;
 }

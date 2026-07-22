@@ -47,7 +47,9 @@ function updateModel(
 }
 
 const mocks = vi.hoisted(() => ({
-  auth: null as unknown as { project?: { id: string } },
+  auth: null as unknown as {
+    project?: { id: string; effectivePermissionCodes: string[] };
+  },
   role: "OWNER" as "OWNER" | "VIEWER",
   getEvents: vi.fn(),
   getEventLogPage: vi.fn(),
@@ -59,7 +61,12 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/features/auth/auth.store", async () => {
   const { reactive } = await import("vue");
-  mocks.auth = reactive({ project: { id: "project-1" } });
+  mocks.auth = reactive({
+    project: {
+      id: "project-1",
+      effectivePermissionCodes: ["project.event_logs.read"],
+    },
+  });
   return {
     useAuthStore: () => ({
       get project() {
@@ -93,6 +100,10 @@ describe("EventLogsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.role = "OWNER";
+    mocks.auth.project = {
+      id: "project-1",
+      effectivePermissionCodes: ["project.event_logs.read"],
+    };
     mocks.getEvents.mockResolvedValue([]);
     mocks.getEventLogPage.mockResolvedValue({ items: [], nextCursor: null });
     mocks.routeQuery = {};
@@ -118,7 +129,10 @@ describe("EventLogsPage", () => {
     const wrapper = shallowMount(EventLogsPage);
     await flushPromises();
 
-    mocks.auth.project = { id: "project-2" };
+    mocks.auth.project = {
+      id: "project-2",
+      effectivePermissionCodes: ["project.event_logs.read"],
+    };
     await flushPromises();
     expect(mocks.getEventLogPage).toHaveBeenCalledWith("project-2", {
       limit: 25,
@@ -133,7 +147,10 @@ describe("EventLogsPage", () => {
     expect(wrapper.text()).toContain("New project event");
     expect(wrapper.text()).not.toContain("Old project event");
     wrapper.unmount();
-    mocks.auth.project = { id: "project-1" };
+    mocks.auth.project = {
+      id: "project-1",
+      effectivePermissionCodes: ["project.event_logs.read"],
+    };
   });
 
   it("loads the first snapshot page through the filtered CMS endpoint", async () => {
@@ -152,6 +169,10 @@ describe("EventLogsPage", () => {
 
   it("does not request sensitive logs for a viewer", async () => {
     mocks.role = "VIEWER";
+    mocks.auth.project = {
+      id: "project-1",
+      effectivePermissionCodes: [],
+    };
     const wrapper = shallowMount(EventLogsPage);
     await flushPromises();
 

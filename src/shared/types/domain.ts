@@ -88,18 +88,19 @@ export interface Organization {
   slug: string;
 }
 
-export interface Project {
+export interface AuthProject {
   id: string;
   name: string;
   slug: string;
   status: "ACTIVE" | "SUSPENDED" | "ARCHIVED";
-  publicKey: string;
-  defaultLocale: string;
-  supportedLocales: string[];
-  assistantName: string;
-  systemPrompt: string;
-  voiceInstructions: string;
-  settings: Record<string, unknown> & {
+  version?: number;
+  publicKey?: string;
+  defaultLocale?: string;
+  supportedLocales?: string[];
+  assistantName?: string;
+  systemPrompt?: string;
+  voiceInstructions?: string;
+  settings?: Record<string, unknown> & {
     description?: string;
     timezone?: string;
     voiceEnabled?: boolean;
@@ -108,14 +109,32 @@ export interface Project {
   };
   organization?: Organization;
   _count?: { users: number; scenarios: number; eventLogs: number };
-  memberRole?: CmsUser["role"];
+  membershipId?: string;
+  membershipStatus?: "ACTIVE" | "REMOVED";
+  membershipVersion?: number;
+  roleKeys?: string[];
+  effectivePermissionCodes?: string[];
+}
+
+export interface Project extends AuthProject {
+  version: number;
+  publicKey: string;
+  defaultLocale: string;
+  supportedLocales: string[];
+  assistantName: string;
+  systemPrompt: string;
+  voiceInstructions: string;
+  settings: NonNullable<AuthProject["settings"]>;
 }
 
 export interface CmsUser {
   id: string;
   email: string;
   name: string;
-  role: "OWNER" | "ADMIN" | "EDITOR" | "VIEWER";
+  emailVerifiedAt?: string | null;
+  pendingEmail?: string | null;
+  emailVerificationRetryAfterSeconds?: number;
+  platformPermissionCodes?: string[];
 }
 
 export interface UiElement {
@@ -145,6 +164,11 @@ export interface EventDefinition {
   isCurrent?: boolean;
   origin?: "CUSTOM" | "LOLA_MANAGED";
   readOnly?: boolean;
+  policyVersion?: number;
+  policyUpdatedAt?: string;
+  metadataUpdatedAt?: string;
+  lifecycle?: "ACTIVE" | "ARCHIVED";
+  archivedAt?: string | null;
   projectId: string;
   code: string;
   name: string;
@@ -174,6 +198,7 @@ export interface ActivitySettingLimit {
 }
 
 export interface ActivitySettings {
+  projectVersion: number;
   timezone: string;
   visitInactivitySeconds: number;
   reconnectGraceSeconds: number;
@@ -191,7 +216,7 @@ export interface ActivitySettings {
 export type UpdateActivitySettings = Pick<
   ActivitySettings,
   "timezone" | "visitInactivitySeconds" | "reconnectGraceSeconds"
->;
+> & { expectedVersion: number };
 
 export type UserAttributeType = "STRING" | "NUMBER" | "BOOLEAN" | "DATETIME";
 export type UserAttributeAllowedValue = string | number | boolean;

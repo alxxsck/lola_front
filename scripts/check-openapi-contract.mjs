@@ -14,30 +14,99 @@ if (unversionedPaths.length) {
 
 const requiredOperations = new Map([
   [
-    "CmsAuth_login",
+    "InitialAccess_login",
     {
-      label: "auth login",
-      request: "CmsLoginDto",
-      response: "CmsAuthResponseDto",
+      label: "CMS User login and Initial Access exchange",
+      request: "CmsLoginRequestDto",
+      responses: [
+        "CmsAuthenticatedResponseDto",
+        "PasswordSetupRequiredResponseDto",
+        "MfaEnrollmentRequiredResponseDto",
+        "MfaRequiredResponseDto",
+      ],
     },
   ],
   [
-    "CmsAuth_refresh",
+    "InitialAccess_setupPassword",
     {
-      label: "auth refresh",
-      request: "RefreshTokenDto",
-      response: "CmsAuthResponseDto",
+      label: "mandatory password setup",
+      request: "PasswordSetupRequestDto",
+      response: "PasswordEstablishedResponseDto",
     },
   ],
   [
-    "CmsAuth_logout",
+    "InitialAccess_refresh",
+    {
+      label: "CMS session refresh rotation",
+      requestAbsent: true,
+      response: "CmsAuthenticatedResponseDto",
+    },
+  ],
+  [
+    "CmsUserProvisioning_provision",
+    {
+      label: "CMS User provisioning",
+      request: "CmsUserProvisioningDto",
+      responses: [
+        "CmsUserProvisioningCreatedResponseDto",
+        "CmsUserProvisioningManualCreatedResponseDto",
+        "CmsUserProvisioningReplayResponseDto",
+      ],
+    },
+  ],
+  [
+    "CmsSecuritySettings_logout",
     {
       label: "auth logout",
-      request: "LogoutDto",
-      response: "SuccessResponseDto",
+      requestAbsent: true,
+      response: "CmsSecurityMutationResponseDto",
     },
   ],
-  ["CmsAuth_me", { label: "current admin", response: "AdminUserResponseDto" }],
+  [
+    "CmsSecuritySettings_logoutAll",
+    {
+      label: "auth logout all sessions",
+      requestAbsent: true,
+      response: "CmsSecurityMutationResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_list",
+    {
+      label: "CMS session inventory",
+      response: "CmsSessionListResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_revoke",
+    {
+      label: "CMS session revocation",
+      response: "CmsSecurityMutationResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_revokeOthers",
+    {
+      label: "CMS other-session revocation",
+      requestAbsent: true,
+      response: "CmsSecurityMutationResponseDto",
+    },
+  ],
+  [
+    "CmsSecuritySettings_changePassword",
+    {
+      label: "CMS password change",
+      request: "CmsPasswordChangeRequestDto",
+      response: "CmsPasswordChangedResponseDto",
+    },
+  ],
+  [
+    "CmsSessionContext_me",
+    {
+      label: "target CMS User session context",
+      response: "CmsSessionContextResponseDto",
+    },
+  ],
   [
     "Platform_createProject",
     {
@@ -51,22 +120,15 @@ const requiredOperations = new Map([
     { label: "projects", response: "ProjectResponseDto" },
   ],
   [
-    "Platform_createScenario",
-    {
-      label: "scenario creation",
-      request: "CreateScenarioDto",
-      response: "ScenarioResponseDto",
-    },
+    "PlatformOperations_projectSettings",
+    { label: "project-scoped settings", response: "ProjectResponseDto" },
   ],
   [
-    "Platform_scenarios",
-    { label: "scenarios", response: "ScenarioResponseDto" },
-  ],
-  [
-    "Platform_actionDefinitions",
+    "PlatformOperations_updateProjectSettings",
     {
-      label: "scenario action definitions",
-      response: "ScenarioActionDefinitionResponseDto",
+      label: "project-scoped settings update",
+      request: "UpdateProjectSettingsDto",
+      response: "ProjectResponseDto",
     },
   ],
   [
@@ -88,36 +150,6 @@ const requiredOperations = new Map([
     { label: "event log detail", response: "EventLogResponseDto" },
   ],
   [
-    "Platform_userAttributeDefinitions",
-    {
-      label: "user attribute schema",
-      response: "UserAttributeSchemaResponseDto",
-    },
-  ],
-  [
-    "Platform_createUserAttributeDefinition",
-    {
-      label: "user attribute creation",
-      request: "CreateUserAttributeDefinitionDto",
-      response: "UserAttributeDefinitionMutationResponseDto",
-    },
-  ],
-  [
-    "Platform_updateUserAttributeDefinition",
-    {
-      label: "user attribute update",
-      request: "UpdateUserAttributeDefinitionDto",
-      response: "UserAttributeDefinitionMutationResponseDto",
-    },
-  ],
-  [
-    "Platform_deleteUserAttributeDefinition",
-    {
-      label: "user attribute deletion",
-      response: "UserAttributeDefinitionMutationResponseDto",
-    },
-  ],
-  [
     "ScenarioRuns_list",
     { label: "scenario runs", response: "ScenarioRunResponseDto" },
   ],
@@ -129,71 +161,71 @@ const requiredOperations = new Map([
     },
   ],
   [
-    "Platform_usersPage",
+    "PlatformOperations_usersPage",
     { label: "cursor-paginated users", response: "EndUserPageResponseDto" },
   ],
   [
-    "EventCatalog_eventDefinitionRevisions",
+    "EventCatalog_list",
     {
-      label: "event definition revision history",
+      label: "event catalog definition collection",
+      response: "EventDefinitionCatalogResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_create",
+    {
+      label: "event catalog definition creation",
+      request: "CreateEventCatalogDefinitionDto",
+      response: "EventCatalogDefinitionResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_detail",
+    {
+      label: "event catalog definition detail",
+      response: "EventDefinitionCatalogResponseDto",
+    },
+  ],
+  [
+    "EventCatalog_revisions",
+    {
+      label: "event catalog revision collection",
       response: "EventDefinitionRevisionPageResponseDto",
     },
   ],
   [
-    "EventCatalog_eventDefinitionRevision",
+    "EventCatalog_revision",
     {
-      label: "event definition revision detail",
+      label: "event catalog revision detail",
       response: "EventDefinitionRevisionResponseDto",
     },
   ],
   [
-    "EventCatalog_listEventDefinitions",
+    "EventCatalog_archive",
     {
-      label: "stable event definition catalog",
-      response: "EventDefinitionCatalogResponseDto",
-    },
-  ],
-  [
-    "EventCatalog_createEventDefinition",
-    {
-      label: "stable event definition creation",
-      request: "CreateEventDefinitionDto",
-      response: "EventDefinitionCatalogResponseDto",
-    },
-  ],
-  [
-    "EventCatalog_getEventDefinition",
-    {
-      label: "stable event definition detail",
-      response: "EventDefinitionCatalogResponseDto",
-    },
-  ],
-  [
-    "EventCatalog_eventDefinitionUsage",
-    {
-      label: "event lifecycle usage",
-      response: "EventDefinitionUsageResponseDto",
-    },
-  ],
-  [
-    "EventCatalog_archiveEventDefinition",
-    {
-      label: "event definition archive",
+      label: "event catalog definition archive",
       request: "ArchiveEventDefinitionDto",
       response: "EventDefinitionCatalogResponseDto",
     },
   ],
   [
-    "EventCatalog_restoreEventDefinition",
+    "EventCatalog_restore",
     {
-      label: "event definition restore",
+      label: "event catalog definition restore",
       request: "RestoreEventDefinitionDto",
       response: "EventDefinitionCatalogResponseDto",
     },
   ],
   [
-    "EventCatalog_deleteEventDefinition",
-    { label: "event definition hard delete" },
+    "EventCatalog_hardDelete",
+    { label: "event catalog definition hard delete" },
+  ],
+  [
+    "EventCatalog_usage",
+    {
+      label: "event catalog definition usage",
+      response: "EventDefinitionUsageResponseDto",
+    },
   ],
   [
     "EventCatalog_updateMetadata",
@@ -243,11 +275,11 @@ const requiredOperations = new Map([
     },
   ],
   [
-    "Platform_activitySettings",
+    "PlatformOperations_activitySettings",
     { label: "activity settings", response: "ActivitySettingsResponseDto" },
   ],
   [
-    "Platform_updateActivitySettings",
+    "PlatformOperations_updateActivitySettings",
     {
       label: "activity settings update",
       request: "UpdateActivitySettingsDto",
@@ -255,9 +287,107 @@ const requiredOperations = new Map([
     },
   ],
   [
+    "IamMfa_enrollmentOptions",
+    {
+      label: "MFA passkey enrollment options",
+      request: "IamMfaCapabilityRequestDto",
+      response: "IamMfaEnrollmentOptionsResponseDto",
+    },
+  ],
+  [
+    "IamMfa_completeEnrollment",
+    {
+      label: "MFA passkey enrollment completion",
+      request: "IamMfaEnrollmentCompleteRequestDto",
+      response: "IamMfaEnrollmentCompleteResponseDto",
+    },
+  ],
+  [
+    "IamMfa_completeAuthentication",
+    {
+      label: "MFA passkey authentication completion",
+      request: "IamMfaAuthenticationCompleteRequestDto",
+      response: "IamMfaAuthenticatedResponseDto",
+    },
+  ],
+  [
+    "IamMfa_completeRecovery",
+    {
+      label: "MFA recovery and replacement enrollment",
+      request: "IamMfaRecoveryCompleteRequestDto",
+      response: "IamMfaRecoveryEnrollmentOptionsResponseDto",
+    },
+  ],
+  [
+    "IamMfaManagement_summary",
+    { label: "MFA factor summary", response: "IamMfaFactorSummaryResponseDto" },
+  ],
+  [
+    "IamMfaManagement_beginPasskeyEnrollment",
+    { label: "managed passkey enrollment", response: "IamMfaEnrollmentOptionsResponseDto" },
+  ],
+  [
+    "IamMfaManagement_removePasskey",
+    { label: "passkey removal", response: "IamMfaPasskeyRemovedResponseDto" },
+  ],
+  [
+    "IamMfaManagement_rotateRecoveryCodes",
+    { label: "recovery-code rotation", response: "IamMfaRecoveryCodesResponseDto" },
+  ],
+  [
+    "ProjectMfaPolicy_get",
+    { label: "Project MFA policy", response: "ProjectMfaPolicyResponseDto" },
+  ],
+  [
+    "ProjectMfaPolicy_update",
+    {
+      label: "versioned Project MFA policy update",
+      request: "UpdateProjectMfaPolicyDto",
+      response: "ProjectMfaPolicyResponseDto",
+    },
+  ],
+  [
     "ScenarioAuthoring_catalog",
     {
       label: "scenario authoring catalog",
+      response: "ConditionCatalogResponseDto",
+    },
+  ],
+  [
+    "ScenarioAuthoring_createScenario",
+    {
+      label: "atomic scenario and authoring draft creation",
+      request: "CreateScenarioAuthoringDto",
+      response: "CreateScenarioAuthoringResponseDto",
+    },
+  ],
+  [
+    "ScenarioAuthoring_listScenarios",
+    {
+      label: "scenario authoring summary collection",
+      response: "ScenarioAuthoringSummaryResponseDto",
+    },
+  ],
+  [
+    "ScenarioAuthoring_updateScenarioMetadata",
+    {
+      label: "scenario authoring metadata update",
+      request: "UpdateScenarioAuthoringMetadataDto",
+      response: "ScenarioAuthoringSummaryResponseDto",
+    },
+  ],
+  [
+    "ScenarioAuthoring_archiveScenario",
+    {
+      label: "scenario authoring archive",
+      request: "ArchiveScenarioAuthoringDto",
+      response: "ScenarioAuthoringSummaryResponseDto",
+    },
+  ],
+  [
+    "SegmentCatalog_catalog",
+    {
+      label: "segment-owned authoring catalog",
       response: "ConditionCatalogResponseDto",
     },
   ],
@@ -667,7 +797,10 @@ for (const [operationId, expectation] of requiredOperations) {
     throw new Error(`OpenAPI operation ${operationId} has no success response`);
   }
 
-  if (expectation.response && !responseSchema) {
+  const expectedResponses = expectation.responses ??
+    (expectation.response ? [expectation.response] : []);
+
+  if (expectedResponses.length && !responseSchema) {
     throw new Error(
       `OpenAPI operation ${operationId} has no typed JSON success response`,
     );
@@ -682,15 +815,211 @@ for (const [operationId, expectation] of requiredOperations) {
     );
   }
 
-  if (
-    expectation.response &&
-    !containsSchema(responseSchema, expectation.response)
-  ) {
+  if (expectation.requestAbsent && operation.requestBody) {
     throw new Error(
-      `OpenAPI operation ${operationId} does not return ${expectation.response}`,
+      `OpenAPI operation ${operationId} must authenticate with its HttpOnly cookie and accept no request body`,
     );
   }
+
+  for (const expectedResponse of expectedResponses) {
+    if (!containsSchema(responseSchema, expectedResponse)) {
+      throw new Error(
+        `OpenAPI operation ${operationId} does not return ${expectedResponse}`,
+      );
+    }
+  }
 }
+
+for (const deprecatedSchema of [
+  "CmsLoginDto",
+  "CmsAuthResponseDto",
+  "RefreshTokenDto",
+  "RefreshRequestDto",
+  "LogoutDto",
+  "SuccessResponseDto",
+  "CreateScenarioDto",
+  "ScenarioResponseDto",
+  "EventDefinitionResponseDto",
+  "CreateEventDefinitionDto",
+  "UpdateEventDefinitionDto",
+  "ScenarioActionDefinitionResponseDto",
+]) {
+  if (document.components?.schemas?.[deprecatedSchema]) {
+    throw new Error(`OpenAPI still exposes deprecated auth schema ${deprecatedSchema}`);
+  }
+}
+
+for (const deprecatedOperation of [
+  "Platform_scenarios",
+  "Platform_createScenario",
+  "Platform_updateScenario",
+  "Platform_deleteScenario",
+  "Platform_eventDefinitions",
+  "Platform_createEventDefinition",
+  "Platform_updateEventDefinition",
+  "Platform_deleteEventDefinition",
+  "Platform_actionDefinitions",
+  "Platform_uiElements",
+  "Platform_createUi",
+  "Platform_updateUi",
+  "Platform_deleteUi",
+  "Platform_users",
+  "Platform_usersPage",
+  "Platform_activitySettings",
+  "Platform_updateActivitySettings",
+]) {
+  if (operations.some((operation) => operation.operationId === deprecatedOperation)) {
+    throw new Error(`OpenAPI still exposes deprecated operation ${deprecatedOperation}`);
+  }
+}
+
+requireSchemaProperties("CmsLoginRequestDto", ["identifier", "secret"]);
+requireRequiredProperties("CmsLoginRequestDto", ["identifier", "secret"]);
+requireSchemaProperties("PasswordSetupRequestDto", [
+  "setupToken",
+  "newPassword",
+  "passwordConfirmation",
+]);
+requireRequiredProperties("PasswordSetupRequestDto", [
+  "setupToken",
+  "newPassword",
+  "passwordConfirmation",
+]);
+requireSchemaProperties("PasswordSetupRequiredResponseDto", [
+  "kind",
+  "setupToken",
+  "expiresAt",
+]);
+requireSchemaProperties("PasswordEstablishedResponseDto", [
+  "kind",
+  "cmsUserId",
+  "status",
+  "next",
+]);
+requireSchemaProperties("CmsAuthenticatedResponseDto", [
+  "kind",
+  "tokenType",
+  "accessToken",
+  "expiresIn",
+  "refreshExpiresIn",
+  "user",
+]);
+requireSchemaProperties("CmsPasswordChangeRequestDto", [
+  "currentPassword",
+  "newPassword",
+  "passwordConfirmation",
+]);
+requireRequiredProperties("CmsPasswordChangeRequestDto", [
+  "currentPassword",
+  "newPassword",
+  "passwordConfirmation",
+]);
+requireSchemaProperties("CmsPasswordChangedResponseDto", [
+  "kind",
+  "tokenType",
+  "accessToken",
+  "expiresIn",
+  "refreshExpiresIn",
+  "user",
+]);
+requireSchemaProperties("CmsSessionListResponseDto", ["sessions"]);
+requireRequiredProperties("CmsSessionListResponseDto", ["sessions"]);
+requireSchemaProperties("CmsSecurityMutationResponseDto", ["success"]);
+requireRequiredProperties("CmsSecurityMutationResponseDto", ["success"]);
+requireSchemaProperties("CmsSessionContextResponseDto", [
+  "user",
+  "platformPermissionCodes",
+  "projects",
+]);
+requireRequiredProperties("CmsSessionContextResponseDto", [
+  "user",
+  "platformPermissionCodes",
+  "projects",
+]);
+requireSchemaProperties("CmsSessionProjectContextDto", [
+  "membershipId",
+  "roleKeys",
+  "effectivePermissionCodes",
+]);
+requireRequiredProperties("CmsSessionProjectContextDto", [
+  "membershipId",
+  "roleKeys",
+  "effectivePermissionCodes",
+]);
+requireSchemaProperties("CmsUserProvisioningDto", [
+  "email",
+  "givenName",
+  "familyName",
+  "projectAssignments",
+]);
+requireRequiredProperties("CmsUserProvisioningDto", [
+  "email",
+  "givenName",
+  "familyName",
+]);
+const provisioningAssignments = contractSchema("CmsUserProvisioningDto")
+  .properties?.projectAssignments;
+if (
+  provisioningAssignments?.type !== "array" ||
+  !Array.isArray(provisioningAssignments.default) ||
+  provisioningAssignments.default.length !== 0
+) {
+  throw new Error(
+    "CmsUserProvisioningDto.projectAssignments must be an optional array with an empty default",
+  );
+}
+requireSchemaProperties("CmsUserProvisioningManualCreatedResponseDto", [
+  "cmsUserId",
+  "status",
+  "replayed",
+  "deliveryMode",
+  "initialAccessSecret",
+  "expiresAt",
+]);
+requireRequiredProperties("CmsUserProvisioningManualCreatedResponseDto", [
+  "cmsUserId",
+  "status",
+  "replayed",
+  "deliveryMode",
+  "initialAccessSecret",
+  "expiresAt",
+]);
+
+for (const schemaName of [
+  "MfaEnrollmentRequiredResponseDto",
+  "MfaRequiredResponseDto",
+  "IamMfaEnrollmentOptionsResponseDto",
+  "IamMfaRecoveryEnrollmentOptionsResponseDto",
+]) {
+  requireSchemaProperties(schemaName, ["kind", "ceremonyToken", "expiresAt"]);
+  requireRequiredProperties(schemaName, ["kind", "ceremonyToken", "expiresAt"]);
+}
+requireSchemaProperties("MfaRequiredResponseDto", [
+  "publicKey",
+  "recoveryAvailable",
+]);
+requireRequiredProperties("MfaRequiredResponseDto", [
+  "publicKey",
+  "recoveryAvailable",
+]);
+requireSchemaProperties("IamMfaEnrollmentOptionsResponseDto", ["publicKey"]);
+requireSchemaProperties("IamMfaRecoveryEnrollmentOptionsResponseDto", ["publicKey", "reason"]);
+for (const schemaName of [
+  "IamMfaEnrollmentOptionsResponseDto",
+  "IamMfaRecoveryEnrollmentOptionsResponseDto",
+]) {
+  if (contractSchema(schemaName).properties?.ceremonyToken?.writeOnly === true) {
+    throw new Error(`${schemaName}.ceremonyToken is a response value and cannot be writeOnly`);
+  }
+}
+requireSchemaProperties("AdminConversationResponseDto", [
+  "isCurrent",
+  "currentInteractionSessionCount",
+]);
+requireRequiredProperties("AdminConversationResponseDto", [
+  "isCurrent",
+  "currentInteractionSessionCount",
+]);
 
 for (const schemaName of ["CreateProjectDto", "UpdateProjectDto"]) {
   const properties =
@@ -1150,54 +1479,31 @@ requireRequiredProperties("ScenarioRunEligibilityRecheckResponseDto", [
   "decision",
   "fidelity",
 ]);
-requireSchemaProperties("EventDefinitionResponseDto", [
+requireSchemaProperties("EventCatalogDefinitionResponseDto", [
   "definitionKeyId",
   "currentRevisionId",
   "isCurrent",
   "origin",
   "readOnly",
 ]);
+requireSchemaProperties("EventDefinitionCatalogResponseDto", [
+  "id",
+  "currentRevision",
+  "lifecycle",
+  "lifecycleVersion",
+  "policy",
+  "origin",
+  "readOnly",
+]);
 requireSchemaProperties("EventDefinitionRevisionResponseDto", [
   "id",
-  "projectId",
   "definitionKeyId",
-  "code",
-  "number",
-  "payloadSchema",
-  "publishedAt",
   "isCurrent",
   "compatibility",
   "pinnedScenarioRevisionCount",
-]);
-requireSchemaProperties("EventDefinitionCatalogResponseDto", [
-  "id",
-  "projectId",
-  "code",
-  "name",
-  "description",
-  "origin",
-  "lifecycle",
-  "lifecycleVersion",
-  "lifecycleUpdatedAt",
-  "metadataUpdatedAt",
-  "policy",
-  "currentRevision",
-  "readOnly",
-]);
-requireSchemaProperties("EventDefinitionUsageResponseDto", [
-  "definitionKeyId",
-  "evaluatedAt",
-  "lifecycleVersion",
-  "policyVersion",
-  "eventLogs",
-  "scenarios",
-  "scenarioDraftDependencyCount",
-  "publishedScenarioRevisionCount",
-  "activeWaitCount",
-  "canArchive",
-  "canDelete",
-  "archiveBlockers",
-  "deleteBlockers",
+  "number",
+  "publishedAt",
+  "payloadSchema",
 ]);
 requireSchemaProperties("ActivitySettingsResponseDto", [
   "timezone",
@@ -1225,7 +1531,7 @@ requireDiscriminatedUnion("PublishScenarioDto", "deliveryPolicy", "kind", [
   "WaitUntilOnlineDeliveryPolicyDto",
 ]);
 
-requireSchemaProperties("CreateEventDefinitionDto", [
+requireSchemaProperties("CreateEventCatalogDefinitionDto", [
   "countsAsActivity",
   "payloadSchema",
 ]);

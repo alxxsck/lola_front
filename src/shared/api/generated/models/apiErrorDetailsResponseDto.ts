@@ -11,8 +11,13 @@ export interface ApiErrorDetailsResponseDto {
   currentCatalogRevision?: string;
   /** @nullable */
   currentRevisionId?: string | null;
+  /** @minimum 1 */
+  currentVersion?: number;
   expectedCatalogRevision?: string;
   /** @nullable */
   expectedCurrentRevisionId?: string | null;
   issues?: ApiErrorIssueResponseDto[];
+  reason?: string;
+  /** @minimum 1 */
+  retryAfterSeconds?: number;
 }

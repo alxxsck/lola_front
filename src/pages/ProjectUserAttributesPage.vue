@@ -13,6 +13,7 @@ import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { DocumentationCallout } from "@/features/documentation/ui";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import CodeBlock from "@/features/end-user-attributes/ui/CodeBlock.vue";
@@ -95,9 +96,24 @@ const aiBudget = ref(2000);
 const savedDraftSnapshot = ref("");
 
 const canManage = computed(
-  () => auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.profile_contract.write",
+    ),
 );
-const canManageAiContext = computed(() => auth.user?.role === "OWNER");
+const canManageAiContext = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.profile_contract.publish",
+  ),
+);
+const canPublishContract = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.profile_contract.publish",
+  ),
+);
 const fields = computed(() => workspace.value?.draft.document.fields ?? []);
 const orderedFields = computed(() =>
   [...fields.value].sort(
@@ -151,6 +167,7 @@ const securityAffectedDefinitionIds = computed(() => [
 const canPublish = computed(
   () =>
     canManage.value &&
+    canPublishContract.value &&
     dirty.value &&
     !hasUnsavedDraftEdits.value &&
     validation.value?.valid &&
@@ -971,8 +988,8 @@ function archiveImpactedField() {
     </nav>
 
     <Message v-if="!canManage" severity="info" :closable="false"
-      >Вы можете просматривать поля. Изменять и публиковать их могут владелец и
-      администратор проекта.</Message
+      >Вы можете просматривать поля. Для изменения и публикации нужны
+      соответствующие разрешения проекта.</Message
     >
     <Message v-if="error" severity="error" :closable="false"
       ><div class="message-row">
@@ -1470,6 +1487,7 @@ function archiveImpactedField() {
           :loading="validating"
           @click="validateDraft"
         /><Button
+          v-if="canPublishContract"
           label="3. Опубликовать"
           icon="pi pi-send"
           :disabled="
@@ -1480,7 +1498,7 @@ function archiveImpactedField() {
             validation.draftVersion !== workspace.draft.draftVersion
           "
           @click="publishingVisible = true"
-        />
+        /><Message v-else severity="info" :closable="false">У вас нет права публиковать контракт.</Message>
       </footer>
       <div id="profile-quality-slot" class="content-slot" />
       <div id="profile-tools-slot" class="content-slot" />
@@ -2086,7 +2104,7 @@ await fetch("/api/v1/interaction-sessions", {
   border-radius: 50%;
   background: var(--surface-card);
   color: var(--muted);
-  font: 700 0.66rem Manrope;
+  font: 700 0.66rem var(--font-display);
 }
 .setup-status li.done > span {
   background: var(--status-success-text);
@@ -2210,7 +2228,7 @@ await fetch("/api/v1/interaction-sessions", {
 }
 .fact-grid strong {
   margin-top: 5px;
-  font: 700 1rem Manrope;
+  font: 700 1rem var(--font-display);
 }
 .fact-grid small {
   margin-top: 3px;
@@ -2304,7 +2322,7 @@ await fetch("/api/v1/interaction-sessions", {
 }
 .metric strong {
   margin-top: 8px;
-  font: 700 1.35rem Manrope;
+  font: 700 1.35rem var(--font-display);
 }
 .metric small {
   margin-top: 5px;

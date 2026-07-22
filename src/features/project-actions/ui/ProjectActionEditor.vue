@@ -7,8 +7,8 @@ import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
-import type { CmsUser } from "@/shared/types/domain";
 import {
+  canManageProjectActionAiExposure,
   canConfigureProjectActions,
   createProjectActionDraft,
   requiresAiAuditReason,
@@ -38,7 +38,7 @@ import ProjectActionSchemaForm from "./ProjectActionSchemaForm.vue";
 
 const props = defineProps<{
   action: ProjectAction;
-  role: CmsUser["role"];
+  effectivePermissionCodes: readonly string[];
   preview?: AiCapabilityPreview;
   previewLoading?: boolean;
   previewError?: ProjectActionError | null;
@@ -57,8 +57,13 @@ const confirmSaveVisible = ref(false);
 const confirmArchiveVisible = ref(false);
 const canEdit = computed(
   () =>
-    canConfigureProjectActions(props.role) &&
+    canConfigureProjectActions(props.effectivePermissionCodes) &&
     props.action.lifecycle !== "ARCHIVED",
+);
+const canEditAiExposure = computed(
+  () =>
+    canEdit.value &&
+    canManageProjectActionAiExposure(props.effectivePermissionCodes),
 );
 const supportsScenario = computed(() =>
   props.action.actionTypeRevision.supportedSurfaces.includes("SCENARIO"),
@@ -107,7 +112,7 @@ function submit() {
   issues.value = validateProjectActionDraft(
     props.action,
     draft.value,
-    props.role,
+    props.effectivePermissionCodes,
   );
   if (schemaForm.value.blocked) {
     issues.value.push({
@@ -176,7 +181,7 @@ function confirmArchive() {
       {{
         action.lifecycle === "ARCHIVED"
           ? "Архивное действие доступно только для чтения."
-          : "Просматривать могут все участники проекта. Изменять и архивировать может только владелец проекта."
+          : "Для изменения и архивирования требуется разрешение управления действиями."
       }}
     </Message>
     <Message v-if="mutationError" severity="error" :closable="false"
@@ -245,7 +250,7 @@ function confirmArchive() {
           <ToggleSwitch
             v-model="draft.aiEnabled"
             aria-label="Разрешить помощнику Lola"
-            :disabled="!canEdit || !supportsAi"
+            :disabled="!canEditAiExposure || !supportsAi"
           />
         </label>
       </div>
@@ -271,7 +276,7 @@ function confirmArchive() {
         rows="4"
         minlength="20"
         maxlength="2000"
-        :disabled="!canEdit"
+        :disabled="!canEditAiExposure"
         placeholder="Используй, когда пользователь явно просит… Не используй, когда…"
       />
       <div class="effect-lock">
@@ -289,7 +294,7 @@ function confirmArchive() {
           v-model="draft.auditReason"
           minlength="10"
           maxlength="500"
-          :disabled="!canEdit"
+          :disabled="!canEditAiExposure"
           placeholder="Например: пользователи часто просят открыть окно пополнения"
         />
         <small

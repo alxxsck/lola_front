@@ -4,7 +4,7 @@ import type {
   ConfigureProjectActionDto,
   ProjectActionResponseDto,
 } from "@/shared/api/generated/models";
-import type { CmsUser } from "@/shared/types/domain";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 
 export type ActionTypeCatalogItem = ActionTypeResponseDto;
 export type ProjectAction = ProjectActionResponseDto;
@@ -39,8 +39,22 @@ export interface ProjectActionDraftIssue {
   message: string;
 }
 
-export function canConfigureProjectActions(role: CmsUser["role"]): boolean {
-  return role === "OWNER";
+export function canConfigureProjectActions(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    "project.actions.manage",
+  );
+}
+
+export function canManageProjectActionAiExposure(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    "project.actions.manage_ai_exposure",
+  );
 }
 
 export function createProjectActionDraft(
@@ -72,18 +86,32 @@ export function toConfigureProjectActionInput(
 export function validateProjectActionDraft(
   action: ProjectAction,
   draft: ProjectActionDraft,
-  _role: CmsUser["role"],
+  effectivePermissionCodes: readonly string[],
 ): ProjectActionDraftIssue[] {
   if (
-    !canConfigureProjectActions(_role) &&
+    !canConfigureProjectActions(effectivePermissionCodes) &&
     projectActionDraftChanged(action, draft)
   ) {
     return [
       {
         field: "form",
-        code: "PROJECT_ACTION_OWNER_REQUIRED",
+        code: "PROJECT_ACTION_MANAGE_PERMISSION_REQUIRED",
         message:
-          "Изменять и архивировать действия может только владелец проекта.",
+          "Для изменения и архивирования действий требуется разрешение управления действиями.",
+      },
+    ];
+  }
+
+  if (
+    !canManageProjectActionAiExposure(effectivePermissionCodes) &&
+    aiExposureChanged(action, draft)
+  ) {
+    return [
+      {
+        field: "form",
+        code: "PROJECT_ACTION_AI_EXPOSURE_PERMISSION_REQUIRED",
+        message:
+          "Для изменения доступа Lola к действию требуется отдельное разрешение.",
       },
     ];
   }
@@ -183,6 +211,17 @@ function projectActionDraftChanged(
     action.aiEnabled !== draft.aiEnabled ||
     (action.aiUsageDescription ?? "") !== draft.aiUsageDescription ||
     JSON.stringify(action.configuration) !== JSON.stringify(draft.configuration)
+  );
+}
+
+function aiExposureChanged(
+  action: ProjectAction,
+  draft: ProjectActionDraft,
+): boolean {
+  return (
+    action.aiEnabled !== draft.aiEnabled ||
+    (action.aiUsageDescription ?? "") !== draft.aiUsageDescription.trim() ||
+    requiresAiAuditReason(action, draft)
   );
 }
 

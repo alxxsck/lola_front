@@ -23,13 +23,17 @@ import type {
   AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
   AdminSpeechVoicesParams,
-  AdminUserResponseDto,
   AiCapabilityPreviewResponseDto,
   AiUsageReportParams,
   AiUsageReportResponseDto,
   AnalyzeEventSchemaDraftDto,
   ArchiveEventDefinitionDto,
+  ArchivePlatformRoleDto,
+  ArchiveProjectDto,
+  ArchiveProjectRoleDto,
+  ArchiveScenarioAuthoringDto,
   ArchivedSegmentResponseDto,
+  AssignableProjectRoleCatalogResponseDto,
   AttributeContractDraftResponseDto,
   AttributeContractRevisionPageResponseDto,
   AttributeContractRevisionResponseDto,
@@ -39,12 +43,34 @@ import type {
   AttributeDefinitionImpactResponseDto,
   AudienceEvaluationResponseDto,
   AuditLogResponseDto,
+  BreakGlassLoginDto,
+  BreakGlassLoginResponseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   ChatSend200,
-  CmsAuthResponseDto,
-  CmsLoginDto,
+  CmsAuthenticatedResponseDto,
+  CmsEmailChangeCancelledResponseDto,
+  CmsEmailChangeRequestDto,
+  CmsEmailChangeRequestedResponseDto,
+  CmsEmailChangedResponseDto,
+  CmsEmailVerificationRequestResponseDto,
+  CmsEmailVerifiedResponseDto,
+  CmsLoginRequestDto,
+  CmsPasswordChangeRequestDto,
+  CmsPasswordChangedResponseDto,
   CmsProfileListResponseDto,
+  CmsSecurityMutationResponseDto,
+  CmsSessionContextResponseDto,
+  CmsSessionListResponseDto,
+  CmsUserDetailDto,
+  CmsUserLifecycleListParams,
+  CmsUserLifecycleMutationDto,
+  CmsUserListResponseDto,
+  CmsUserPlatformRoleAssignmentResponseDto,
+  CmsUserProvisioningDto,
+  CmsUserProvisioningProvision201,
+  CmsUserReactivationResponseDto,
+  CmsUserResetResponseDto,
   CompatibilityCreateMessageDto,
   CompatibilityEndVoiceSessionDto,
   CompatibilityGetVoiceSessionDto,
@@ -59,30 +85,29 @@ import type {
   ConversationAISuspensionsHistoryParams,
   CreateConversationDto,
   CreateCustomerDto,
-  CreateEventDefinitionDto,
+  CreateEventCatalogDefinitionDto,
   CreateGuestSessionDto,
   CreateInteractionSessionDto,
   CreateKnowledgeTextDto,
-  CreateMemberDto,
+  CreatePlatformRoleDto,
   CreateProjectDto,
-  CreateProjectResponseDto,
-  CreateScenarioActionDefinitionDto,
+  CreateProjectMembershipDto,
+  CreateProjectRoleDto,
   CreateScenarioAuthoringDto,
   CreateScenarioAuthoringResponseDto,
-  CreateScenarioDto,
   CreateTranslationJobDto,
   CreateUiElementDto,
-  CreateUserAttributeDefinitionDto,
   DecideAIProposalDto,
   DeleteKnowledgeDocumentResponseDto,
   EndUserPageResponseDto,
   EndUserResponseDto,
   EndVoiceSessionDto,
   EvaluateAudienceUserDto,
-  EventCatalogDeleteEventDefinitionParams,
-  EventCatalogEventDefinitionRevisionsParams,
+  EventCatalogDefinitionResponseDto,
+  EventCatalogHardDeleteParams,
   EventCatalogHealthResponseDto,
-  EventCatalogListEventDefinitionsParams,
+  EventCatalogListParams,
+  EventCatalogRevisionsParams,
   EventDefinitionCatalogResponseDto,
   EventDefinitionMetadataMutationResponseDto,
   EventDefinitionRevisionPageResponseDto,
@@ -97,8 +122,31 @@ import type {
   EventSchemaPublishResponseDto,
   EventsListParams,
   ExtendConversationAISuspensionDto,
+  FirstPlatformOperatorDto,
+  FirstPlatformOperatorProvision201,
+  IamEmailCapabilityConsumeDto,
+  IamEmailFeedbackDto,
+  IamEmailFeedbackResponseDto,
+  IamEmailIdentityPrefetch200,
+  IamEmailInvitationConsumedResponseDto,
+  IamMfaAuthenticatedResponseDto,
+  IamMfaAuthenticationCompleteRequestDto,
+  IamMfaCapabilityRequestDto,
+  IamMfaEnrollmentCompleteRequestDto,
+  IamMfaEnrollmentCompleteResponseDto,
+  IamMfaEnrollmentOptionsResponseDto,
+  IamMfaFactorSummaryResponseDto,
+  IamMfaPasskeyRemovedResponseDto,
+  IamMfaRecoveryCodesResponseDto,
+  IamMfaRecoveryCompleteRequestDto,
+  IamMfaRecoveryEnrollmentOptionsResponseDto,
+  IamPasswordResetAcceptedResponseDto,
+  IamPasswordResetCompleteDto,
+  IamPasswordResetCompletedResponseDto,
+  IamPasswordResetRequestDto,
   IngestClientEventDto,
   IngestEventDto,
+  InitialAccessLogin200,
   IntegrationAttributeContractResponseDto,
   InteractionSessionResponseDto,
   KnowledgeDocumentDetailResponseDto,
@@ -109,9 +157,14 @@ import type {
   LegacyEventLogPageResponseDto,
   ListMessagesDto,
   ListThreadMessagesDto,
-  LogoutDto,
+  PasswordEstablishedResponseDto,
+  PasswordSetupRequestDto,
+  PlatformCreateProject201,
+  PlatformOperationsUsersPageParams,
+  PlatformPermissionCatalogResponseDto,
+  PlatformRoleListResponseDto,
+  PlatformRoleResponseDto,
   PlatformTranslationUsageUsageReportParams,
-  PlatformUsersPageParams,
   PreviewScenarioGoalDto,
   PreviewScenarioGoalResponseDto,
   PreviewScenarioRuleDto,
@@ -121,8 +174,14 @@ import type {
   ProfileProjectionResponseDto,
   ProfileSyncResponseDto,
   ProjectActionResponseDto,
-  ProjectMemberResponseDto,
+  ProjectMembershipListParams,
+  ProjectMembershipListResponseDto,
+  ProjectMembershipResponseDto,
+  ProjectMfaPolicyResponseDto,
+  ProjectPermissionCatalogResponseDto,
   ProjectResponseDto,
+  ProjectRoleListResponseDto,
+  ProjectRoleResponseDto,
   ProviderBillingSnapshotResponseDto,
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
@@ -131,21 +190,23 @@ import type {
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
   PublishedSegmentResponseDto,
-  RefreshTokenDto,
+  ReassignProjectRoleDto,
+  RemoveProjectMembershipDto,
   RenameConversationDto,
+  ReplaceCmsUserPlatformRolesDto,
   RestoreEventDefinitionDto,
   ResumeConversationAIDto,
+  RevokeCmsUserSessionDto,
   RollbackScenarioDto,
   RotateServerKeyResponseDto,
   SaveAttributeContractDraftDto,
   SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
-  ScenarioActionDefinitionResponseDto,
   ScenarioAudienceSearchParams,
   ScenarioAuthoringDocumentResponseDto,
   ScenarioAuthoringDraftResponseDto,
   ScenarioAuthoringScenarioRevisionsParams,
-  ScenarioResponseDto,
+  ScenarioAuthoringSummaryResponseDto,
   ScenarioRevisionDetailResponseDto,
   ScenarioRevisionPageResponseDto,
   ScenarioRunExplainResponseDto,
@@ -163,7 +224,6 @@ import type {
   StartAdminVoiceConversationDto,
   StartConversationAISuspensionDto,
   StartVoiceSessionDto,
-  SuccessResponseDto,
   SyncAttributeSnapshotDto,
   TranslationJobAcceptedResponseDto,
   TranslationJobResponseDto,
@@ -171,16 +231,19 @@ import type {
   TranslationUsageResponseDto,
   UiElementResponseDto,
   UpdateActivitySettingsDto,
+  UpdateCmsUserProfileDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
+  UpdatePlatformRoleDto,
   UpdateProjectDto,
-  UpdateScenarioActionDefinitionDto,
-  UpdateScenarioDto,
+  UpdateProjectMembershipDto,
+  UpdateProjectMfaPolicyDto,
+  UpdateProjectRoleDto,
+  UpdateProjectSettingsDto,
+  UpdateScenarioAuthoringMetadataDto,
   UpdateSpeechSettingsDto,
   UpdateUiElementDto,
-  UpdateUserAttributeDefinitionDto,
   UpsertUserDto,
-  UserAttributeDefinitionMutationResponseDto,
   UserAttributeSchemaResponseDto,
   ValidateAttributeContractDto,
   ValidateScenarioDraftDto,
@@ -193,6 +256,303 @@ import { request } from "../http/orval-mutator";
 import type { BodyType } from "../http/orval-mutator";
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Provision the first Platform Operator
+ */
+export const firstPlatformOperatorProvision = (
+  firstPlatformOperatorDto: BodyType<FirstPlatformOperatorDto>,
+  options?: SecondParameter<typeof request<FirstPlatformOperatorProvision201>>,
+) => {
+  return request<FirstPlatformOperatorProvision201>(
+    {
+      url: `/api/v1/admin/platform/bootstrap/first-operator`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: firstPlatformOperatorDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary List CMS Users using bounded cursor pagination
+ */
+export const cmsUserLifecycleList = (
+  params?: CmsUserLifecycleListParams,
+  options?: SecondParameter<typeof request<CmsUserListResponseDto>>,
+) => {
+  return request<CmsUserListResponseDto>(
+    { url: `/api/v1/admin/platform/cms-users`, method: "GET", params },
+    options,
+  );
+};
+
+/**
+ * @summary Provision a CMS User, optionally with Project Roles
+ */
+export const cmsUserProvisioningProvision = (
+  cmsUserProvisioningDto: BodyType<CmsUserProvisioningDto>,
+  options?: SecondParameter<typeof request<CmsUserProvisioningProvision201>>,
+) => {
+  return request<CmsUserProvisioningProvision201>(
+    {
+      url: `/api/v1/admin/platform/cms-users`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserProvisioningDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Get a CMS User without credential material
+ */
+export const cmsUserLifecycleGet = (
+  cmsUserId: string,
+  options?: SecondParameter<typeof request<CmsUserDetailDto>>,
+) => {
+  return request<CmsUserDetailDto>(
+    { url: `/api/v1/admin/platform/cms-users/${cmsUserId}`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary Update safe CMS User profile fields using optimistic versioning
+ */
+export const cmsUserLifecycleUpdate = (
+  cmsUserId: string,
+  updateCmsUserProfileDto: BodyType<UpdateCmsUserProfileDto>,
+  options?: SecondParameter<typeof request<CmsUserDetailDto>>,
+) => {
+  return request<CmsUserDetailDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateCmsUserProfileDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Deactivate CMS User while retaining stable audit attribution
+ */
+export const cmsUserLifecycleDeactivate = (
+  cmsUserId: string,
+  cmsUserLifecycleMutationDto: BodyType<CmsUserLifecycleMutationDto>,
+  options?: SecondParameter<typeof request<CmsUserDetailDto>>,
+) => {
+  return request<CmsUserDetailDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/deactivate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserLifecycleMutationDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Revoke CMS User credentials and issue one Initial Access Secret
+ */
+export const cmsUserLifecycleResetCredentials = (
+  cmsUserId: string,
+  cmsUserLifecycleMutationDto: BodyType<CmsUserLifecycleMutationDto>,
+  options?: SecondParameter<typeof request<CmsUserResetResponseDto>>,
+) => {
+  return request<CmsUserResetResponseDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/initial-access/reset`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserLifecycleMutationDto,
+    },
+    options,
+  );
+};
+
+export const platformRoleAssignmentGet = (
+  cmsUserId: string,
+  options?: SecondParameter<
+    typeof request<CmsUserPlatformRoleAssignmentResponseDto>
+  >,
+) => {
+  return request<CmsUserPlatformRoleAssignmentResponseDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/platform-roles`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const platformRoleAssignmentReplace = (
+  cmsUserId: string,
+  replaceCmsUserPlatformRolesDto: BodyType<ReplaceCmsUserPlatformRolesDto>,
+  options?: SecondParameter<
+    typeof request<CmsUserPlatformRoleAssignmentResponseDto>
+  >,
+) => {
+  return request<CmsUserPlatformRoleAssignmentResponseDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/platform-roles`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: replaceCmsUserPlatformRolesDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Reactivate CMS User according to current credential state
+ */
+export const cmsUserLifecycleReactivate = (
+  cmsUserId: string,
+  cmsUserLifecycleMutationDto: BodyType<CmsUserLifecycleMutationDto>,
+  options?: SecondParameter<typeof request<CmsUserReactivationResponseDto>>,
+) => {
+  return request<CmsUserReactivationResponseDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/reactivate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserLifecycleMutationDto,
+    },
+    options,
+  );
+};
+
+export const platformCmsUserSessionList = (
+  cmsUserId: string,
+  options?: SecondParameter<typeof request<CmsSessionListResponseDto>>,
+) => {
+  return request<CmsSessionListResponseDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/sessions`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const platformCmsUserSessionRevoke = (
+  cmsUserId: string,
+  sessionId: string,
+  revokeCmsUserSessionDto: BodyType<RevokeCmsUserSessionDto>,
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
+) => {
+  return request<CmsSecurityMutationResponseDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/sessions/${sessionId}`,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      data: revokeCmsUserSessionDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Suspend CMS User access and revoke active capabilities
+ */
+export const cmsUserLifecycleSuspend = (
+  cmsUserId: string,
+  cmsUserLifecycleMutationDto: BodyType<CmsUserLifecycleMutationDto>,
+  options?: SecondParameter<typeof request<CmsUserDetailDto>>,
+) => {
+  return request<CmsUserDetailDto>(
+    {
+      url: `/api/v1/admin/platform/cms-users/${cmsUserId}/suspend`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsUserLifecycleMutationDto,
+    },
+    options,
+  );
+};
+
+export const platformPermissionList = (
+  options?: SecondParameter<
+    typeof request<PlatformPermissionCatalogResponseDto>
+  >,
+) => {
+  return request<PlatformPermissionCatalogResponseDto>(
+    { url: `/api/v1/admin/platform/permissions`, method: "GET" },
+    options,
+  );
+};
+
+export const platformRoleList = (
+  options?: SecondParameter<typeof request<PlatformRoleListResponseDto>>,
+) => {
+  return request<PlatformRoleListResponseDto>(
+    { url: `/api/v1/admin/platform/roles`, method: "GET" },
+    options,
+  );
+};
+
+export const platformRoleCreate = (
+  createPlatformRoleDto: BodyType<CreatePlatformRoleDto>,
+  options?: SecondParameter<typeof request<PlatformRoleResponseDto>>,
+) => {
+  return request<PlatformRoleResponseDto>(
+    {
+      url: `/api/v1/admin/platform/roles`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createPlatformRoleDto,
+    },
+    options,
+  );
+};
+
+export const platformRoleGet = (
+  roleId: string,
+  options?: SecondParameter<typeof request<PlatformRoleResponseDto>>,
+) => {
+  return request<PlatformRoleResponseDto>(
+    { url: `/api/v1/admin/platform/roles/${roleId}`, method: "GET" },
+    options,
+  );
+};
+
+export const platformRoleUpdate = (
+  roleId: string,
+  updatePlatformRoleDto: BodyType<UpdatePlatformRoleDto>,
+  options?: SecondParameter<typeof request<PlatformRoleResponseDto>>,
+) => {
+  return request<PlatformRoleResponseDto>(
+    {
+      url: `/api/v1/admin/platform/roles/${roleId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updatePlatformRoleDto,
+    },
+    options,
+  );
+};
+
+export const platformRoleArchive = (
+  roleId: string,
+  archivePlatformRoleDto: BodyType<ArchivePlatformRoleDto>,
+  options?: SecondParameter<typeof request<PlatformRoleResponseDto>>,
+) => {
+  return request<PlatformRoleResponseDto>(
+    {
+      url: `/api/v1/admin/platform/roles/${roleId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archivePlatformRoleDto,
+    },
+    options,
+  );
+};
+
 export const platformListProjects = (
   options?: SecondParameter<typeof request<ProjectResponseDto[]>>,
 ) => {
@@ -204,9 +564,9 @@ export const platformListProjects = (
 
 export const platformCreateProject = (
   createProjectDto: BodyType<CreateProjectDto>,
-  options?: SecondParameter<typeof request<CreateProjectResponseDto>>,
+  options?: SecondParameter<typeof request<PlatformCreateProject201>>,
 ) => {
-  return request<CreateProjectResponseDto>(
+  return request<PlatformCreateProject201>(
     {
       url: `/api/v1/admin/projects`,
       method: "POST",
@@ -219,10 +579,16 @@ export const platformCreateProject = (
 
 export const platformArchiveProject = (
   projectId: string,
+  archiveProjectDto: BodyType<ArchiveProjectDto>,
   options?: SecondParameter<typeof request<ProjectResponseDto>>,
 ) => {
   return request<ProjectResponseDto>(
-    { url: `/api/v1/admin/projects/${projectId}`, method: "DELETE" },
+    {
+      url: `/api/v1/admin/projects/${projectId}`,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      data: archiveProjectDto,
+    },
     options,
   );
 };
@@ -248,90 +614,6 @@ export const platformUpdateProject = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateProjectDto,
-    },
-    options,
-  );
-};
-
-export const platformActionDefinitions = (
-  projectId: string,
-  options?: SecondParameter<
-    typeof request<ScenarioActionDefinitionResponseDto[]>
-  >,
-) => {
-  return request<ScenarioActionDefinitionResponseDto[]>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/action-definitions`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const platformCreateActionDefinition = (
-  projectId: string,
-  createScenarioActionDefinitionDto: BodyType<CreateScenarioActionDefinitionDto>,
-  options?: SecondParameter<
-    typeof request<ScenarioActionDefinitionResponseDto>
-  >,
-) => {
-  return request<ScenarioActionDefinitionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/action-definitions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createScenarioActionDefinitionDto,
-    },
-    options,
-  );
-};
-
-export const platformDeleteActionDefinition = (
-  projectId: string,
-  id: string,
-  options?: SecondParameter<
-    typeof request<ScenarioActionDefinitionResponseDto>
-  >,
-) => {
-  return request<ScenarioActionDefinitionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/action-definitions/${id}`,
-      method: "DELETE",
-    },
-    options,
-  );
-};
-
-export const platformActionDefinition = (
-  projectId: string,
-  id: string,
-  options?: SecondParameter<
-    typeof request<ScenarioActionDefinitionResponseDto>
-  >,
-) => {
-  return request<ScenarioActionDefinitionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/action-definitions/${id}`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const platformUpdateActionDefinition = (
-  projectId: string,
-  id: string,
-  updateScenarioActionDefinitionDto: BodyType<UpdateScenarioActionDefinitionDto>,
-  options?: SecondParameter<
-    typeof request<ScenarioActionDefinitionResponseDto>
-  >,
-) => {
-  return request<ScenarioActionDefinitionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/action-definitions/${id}`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: updateScenarioActionDefinitionDto,
     },
     options,
   );
@@ -619,9 +901,9 @@ export const adminEndUserProfilesProfile = (
   );
 };
 
-export const eventCatalogListEventDefinitions = (
+export const eventCatalogList = (
   projectId: string,
-  params?: EventCatalogListEventDefinitionsParams,
+  params?: EventCatalogListParams,
   options?: SecondParameter<
     typeof request<EventDefinitionCatalogResponseDto[]>
   >,
@@ -636,26 +918,26 @@ export const eventCatalogListEventDefinitions = (
   );
 };
 
-export const eventCatalogCreateEventDefinition = (
+export const eventCatalogCreate = (
   projectId: string,
-  createEventDefinitionDto: BodyType<CreateEventDefinitionDto>,
-  options?: SecondParameter<typeof request<EventDefinitionCatalogResponseDto>>,
+  createEventCatalogDefinitionDto: BodyType<CreateEventCatalogDefinitionDto>,
+  options?: SecondParameter<typeof request<EventCatalogDefinitionResponseDto>>,
 ) => {
-  return request<EventDefinitionCatalogResponseDto>(
+  return request<EventCatalogDefinitionResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/event-catalog/event-definitions`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: createEventDefinitionDto,
+      data: createEventCatalogDefinitionDto,
     },
     options,
   );
 };
 
-export const eventCatalogDeleteEventDefinition = (
+export const eventCatalogHardDelete = (
   projectId: string,
   definitionKeyId: string,
-  params: EventCatalogDeleteEventDefinitionParams,
+  params: EventCatalogHardDeleteParams,
   options?: SecondParameter<typeof request<void>>,
 ) => {
   return request<void>(
@@ -668,7 +950,7 @@ export const eventCatalogDeleteEventDefinition = (
   );
 };
 
-export const eventCatalogGetEventDefinition = (
+export const eventCatalogDetail = (
   projectId: string,
   definitionKeyId: string,
   options?: SecondParameter<typeof request<EventDefinitionCatalogResponseDto>>,
@@ -682,7 +964,7 @@ export const eventCatalogGetEventDefinition = (
   );
 };
 
-export const eventCatalogArchiveEventDefinition = (
+export const eventCatalogArchive = (
   projectId: string,
   definitionKeyId: string,
   archiveEventDefinitionDto: BodyType<ArchiveEventDefinitionDto>,
@@ -737,7 +1019,7 @@ export const eventCatalogUpdatePolicy = (
   );
 };
 
-export const eventCatalogRestoreEventDefinition = (
+export const eventCatalogRestore = (
   projectId: string,
   definitionKeyId: string,
   restoreEventDefinitionDto: BodyType<RestoreEventDefinitionDto>,
@@ -754,10 +1036,10 @@ export const eventCatalogRestoreEventDefinition = (
   );
 };
 
-export const eventCatalogEventDefinitionRevisions = (
+export const eventCatalogRevisions = (
   projectId: string,
   definitionKeyId: string,
-  params?: EventCatalogEventDefinitionRevisionsParams,
+  params?: EventCatalogRevisionsParams,
   options?: SecondParameter<
     typeof request<EventDefinitionRevisionPageResponseDto>
   >,
@@ -772,7 +1054,7 @@ export const eventCatalogEventDefinitionRevisions = (
   );
 };
 
-export const eventCatalogEventDefinitionRevision = (
+export const eventCatalogRevision = (
   projectId: string,
   definitionKeyId: string,
   revisionId: string,
@@ -838,7 +1120,7 @@ export const eventCatalogPublishSchemaDraft = (
   );
 };
 
-export const eventCatalogEventDefinitionUsage = (
+export const eventCatalogUsage = (
   projectId: string,
   definitionKeyId: string,
   options?: SecondParameter<typeof request<EventDefinitionUsageResponseDto>>,
@@ -1001,42 +1283,126 @@ export const knowledgeCreateText = (
   );
 };
 
-export const platformMembers = (
+/**
+ * @summary List safe Project Membership summaries
+ */
+export const projectMembershipList = (
   projectId: string,
-  options?: SecondParameter<typeof request<ProjectMemberResponseDto[]>>,
+  params?: ProjectMembershipListParams,
+  options?: SecondParameter<typeof request<ProjectMembershipListResponseDto>>,
 ) => {
-  return request<ProjectMemberResponseDto[]>(
-    { url: `/api/v1/admin/projects/${projectId}/members`, method: "GET" },
+  return request<ProjectMembershipListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships`,
+      method: "GET",
+      params,
+    },
     options,
   );
 };
 
-export const platformCreateMember = (
+/**
+ * @summary Add or reactivate a managed Project Membership
+ */
+export const projectMembershipCreate = (
   projectId: string,
-  createMemberDto: BodyType<CreateMemberDto>,
-  options?: SecondParameter<typeof request<ProjectMemberResponseDto>>,
+  createProjectMembershipDto: BodyType<CreateProjectMembershipDto>,
+  options?: SecondParameter<typeof request<ProjectMembershipResponseDto>>,
 ) => {
-  return request<ProjectMemberResponseDto>(
+  return request<ProjectMembershipResponseDto>(
     {
-      url: `/api/v1/admin/projects/${projectId}/members`,
+      url: `/api/v1/admin/projects/${projectId}/memberships`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: createMemberDto,
+      data: createProjectMembershipDto,
     },
     options,
   );
 };
 
-export const platformDeleteMember = (
+/**
+ * @summary Get one safe Project Membership summary
+ */
+export const projectMembershipGet = (
   projectId: string,
-  id: string,
-  options?: SecondParameter<typeof request<ProjectMemberResponseDto>>,
+  membershipId: string,
+  options?: SecondParameter<typeof request<ProjectMembershipResponseDto>>,
 ) => {
-  return request<ProjectMemberResponseDto>(
+  return request<ProjectMembershipResponseDto>(
     {
-      url: `/api/v1/admin/projects/${projectId}/members/${id}`,
-      method: "DELETE",
+      url: `/api/v1/admin/projects/${projectId}/memberships/${membershipId}`,
+      method: "GET",
     },
+    options,
+  );
+};
+
+/**
+ * @summary Replace managed roles using optimistic versioning
+ */
+export const projectMembershipUpdate = (
+  projectId: string,
+  membershipId: string,
+  updateProjectMembershipDto: BodyType<UpdateProjectMembershipDto>,
+  options?: SecondParameter<typeof request<ProjectMembershipResponseDto>>,
+) => {
+  return request<ProjectMembershipResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships/${membershipId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateProjectMembershipDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Remove Project Membership access without physical deletion
+ */
+export const projectMembershipRemove = (
+  projectId: string,
+  membershipId: string,
+  removeProjectMembershipDto: BodyType<RemoveProjectMembershipDto>,
+  options?: SecondParameter<typeof request<ProjectMembershipResponseDto>>,
+) => {
+  return request<ProjectMembershipResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships/${membershipId}/remove`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: removeProjectMembershipDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary List active Project Roles assignable through Membership management
+ */
+export const projectMembershipAssignableRoles = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<AssignableProjectRoleCatalogResponseDto>
+  >,
+) => {
+  return request<AssignableProjectRoleCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships/assignable-roles`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const projectPermissionList = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<ProjectPermissionCatalogResponseDto>
+  >,
+) => {
+  return request<ProjectPermissionCatalogResponseDto>(
+    { url: `/api/v1/admin/projects/${projectId}/permissions`, method: "GET" },
     options,
   );
 };
@@ -1063,6 +1429,23 @@ export const productActionsConfigureProjectAction = (
   return request<ProjectActionResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/project-actions/${id}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: configureProjectActionDto,
+    },
+    options,
+  );
+};
+
+export const productActionsConfigureAiExposure = (
+  projectId: string,
+  id: string,
+  configureProjectActionDto: BodyType<ConfigureProjectActionDto>,
+  options?: SecondParameter<typeof request<ProjectActionResponseDto>>,
+) => {
+  return request<ProjectActionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/project-actions/${id}/ai-exposure`,
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: configureProjectActionDto,
@@ -1099,7 +1482,101 @@ export const productActionsArchiveProjectAction = (
   );
 };
 
-export const platformRotate = (
+export const projectRoleList = (
+  projectId: string,
+  options?: SecondParameter<typeof request<ProjectRoleListResponseDto>>,
+) => {
+  return request<ProjectRoleListResponseDto>(
+    { url: `/api/v1/admin/projects/${projectId}/roles`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary Create a delegated custom Project Role
+ */
+export const projectRoleCreate = (
+  projectId: string,
+  createProjectRoleDto: BodyType<CreateProjectRoleDto>,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createProjectRoleDto,
+    },
+    options,
+  );
+};
+
+export const projectRoleGet = (
+  projectId: string,
+  roleId: string,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles/${roleId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const projectRoleUpdate = (
+  projectId: string,
+  roleId: string,
+  updateProjectRoleDto: BodyType<UpdateProjectRoleDto>,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles/${roleId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateProjectRoleDto,
+    },
+    options,
+  );
+};
+
+export const projectRoleArchive = (
+  projectId: string,
+  roleId: string,
+  archiveProjectRoleDto: BodyType<ArchiveProjectRoleDto>,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles/${roleId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archiveProjectRoleDto,
+    },
+    options,
+  );
+};
+
+export const projectRoleReassign = (
+  projectId: string,
+  roleId: string,
+  reassignProjectRoleDto: BodyType<ReassignProjectRoleDto>,
+  options?: SecondParameter<typeof request<ProjectRoleResponseDto>>,
+) => {
+  return request<ProjectRoleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/roles/${roleId}/reassign`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: reassignProjectRoleDto,
+    },
+    options,
+  );
+};
+
+export const platformOperationsRotate = (
   projectId: string,
   options?: SecondParameter<typeof request<RotateServerKeyResponseDto>>,
 ) => {
@@ -1173,6 +1650,21 @@ export const scenarioAuthoringPreview = (
   );
 };
 
+export const scenarioAuthoringListScenarios = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<ScenarioAuthoringSummaryResponseDto[]>
+  >,
+) => {
+  return request<ScenarioAuthoringSummaryResponseDto[]>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/scenarios`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const scenarioAuthoringCreateScenario = (
   projectId: string,
   createScenarioAuthoringDto: BodyType<CreateScenarioAuthoringDto>,
@@ -1205,6 +1697,25 @@ export const scenarioAuthoringScenarioDocument = (
   );
 };
 
+export const scenarioAuthoringArchiveScenario = (
+  projectId: string,
+  scenarioId: string,
+  archiveScenarioAuthoringDto: BodyType<ArchiveScenarioAuthoringDto>,
+  options?: SecondParameter<
+    typeof request<ScenarioAuthoringSummaryResponseDto>
+  >,
+) => {
+  return request<ScenarioAuthoringSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/scenarios/${scenarioId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archiveScenarioAuthoringDto,
+    },
+    options,
+  );
+};
+
 export const scenarioAuthoringSaveDraft = (
   projectId: string,
   scenarioId: string,
@@ -1217,6 +1728,25 @@ export const scenarioAuthoringSaveDraft = (
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       data: saveScenarioDraftDto,
+    },
+    options,
+  );
+};
+
+export const scenarioAuthoringUpdateScenarioMetadata = (
+  projectId: string,
+  scenarioId: string,
+  updateScenarioAuthoringMetadataDto: BodyType<UpdateScenarioAuthoringMetadataDto>,
+  options?: SecondParameter<
+    typeof request<ScenarioAuthoringSummaryResponseDto>
+  >,
+) => {
+  return request<ScenarioAuthoringSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-authoring/scenarios/${scenarioId}/metadata`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateScenarioAuthoringMetadataDto,
     },
     options,
   );
@@ -1412,7 +1942,7 @@ export const scenarioAuthoringValidate = (
   );
 };
 
-export const platformActivitySettings = (
+export const platformOperationsActivitySettings = (
   projectId: string,
   options?: SecondParameter<typeof request<ActivitySettingsResponseDto>>,
 ) => {
@@ -1425,7 +1955,7 @@ export const platformActivitySettings = (
   );
 };
 
-export const platformUpdateActivitySettings = (
+export const platformOperationsUpdateActivitySettings = (
   projectId: string,
   updateActivitySettingsDto: BodyType<UpdateActivitySettingsDto>,
   options?: SecondParameter<typeof request<ActivitySettingsResponseDto>>,
@@ -1484,58 +2014,69 @@ export const scenarioRunsPage = (
   );
 };
 
-export const platformScenarios = (
+export const projectMfaPolicyGet = (
   projectId: string,
-  options?: SecondParameter<typeof request<ScenarioResponseDto[]>>,
+  options?: SecondParameter<typeof request<ProjectMfaPolicyResponseDto>>,
 ) => {
-  return request<ScenarioResponseDto[]>(
-    { url: `/api/v1/admin/projects/${projectId}/scenarios`, method: "GET" },
-    options,
-  );
-};
-
-export const platformCreateScenario = (
-  projectId: string,
-  createScenarioDto: BodyType<CreateScenarioDto>,
-  options?: SecondParameter<typeof request<ScenarioResponseDto>>,
-) => {
-  return request<ScenarioResponseDto>(
+  return request<ProjectMfaPolicyResponseDto>(
     {
-      url: `/api/v1/admin/projects/${projectId}/scenarios`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createScenarioDto,
+      url: `/api/v1/admin/projects/${projectId}/security/mfa-policy`,
+      method: "GET",
     },
     options,
   );
 };
 
-export const platformDeleteScenario = (
+export const projectMfaPolicyUpdate = (
   projectId: string,
-  id: string,
-  options?: SecondParameter<typeof request<ScenarioResponseDto>>,
+  updateProjectMfaPolicyDto: BodyType<UpdateProjectMfaPolicyDto>,
+  options?: SecondParameter<typeof request<ProjectMfaPolicyResponseDto>>,
 ) => {
-  return request<ScenarioResponseDto>(
+  return request<ProjectMfaPolicyResponseDto>(
     {
-      url: `/api/v1/admin/projects/${projectId}/scenarios/${id}`,
-      method: "DELETE",
-    },
-    options,
-  );
-};
-
-export const platformUpdateScenario = (
-  projectId: string,
-  id: string,
-  updateScenarioDto: BodyType<UpdateScenarioDto>,
-  options?: SecondParameter<typeof request<ScenarioResponseDto>>,
-) => {
-  return request<ScenarioResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/scenarios/${id}`,
+      url: `/api/v1/admin/projects/${projectId}/security/mfa-policy`,
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      data: updateScenarioDto,
+      data: updateProjectMfaPolicyDto,
+    },
+    options,
+  );
+};
+
+export const segmentCatalogCatalog = (
+  projectId: string,
+  options?: SecondParameter<typeof request<ConditionCatalogResponseDto>>,
+) => {
+  return request<ConditionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/segments/catalog`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const platformOperationsProjectSettings = (
+  projectId: string,
+  options?: SecondParameter<typeof request<ProjectResponseDto>>,
+) => {
+  return request<ProjectResponseDto>(
+    { url: `/api/v1/admin/projects/${projectId}/settings`, method: "GET" },
+    options,
+  );
+};
+
+export const platformOperationsUpdateProjectSettings = (
+  projectId: string,
+  updateProjectSettingsDto: BodyType<UpdateProjectSettingsDto>,
+  options?: SecondParameter<typeof request<ProjectResponseDto>>,
+) => {
+  return request<ProjectResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/settings`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateProjectSettingsDto,
     },
     options,
   );
@@ -1659,7 +2200,7 @@ export const translationUsageReport = (
   );
 };
 
-export const platformUiElements = (
+export const uiRegistryList = (
   projectId: string,
   options?: SecondParameter<typeof request<UiElementResponseDto[]>>,
 ) => {
@@ -1669,7 +2210,7 @@ export const platformUiElements = (
   );
 };
 
-export const platformCreateUi = (
+export const uiRegistryCreate = (
   projectId: string,
   createUiElementDto: BodyType<CreateUiElementDto>,
   options?: SecondParameter<typeof request<UiElementResponseDto>>,
@@ -1685,7 +2226,7 @@ export const platformCreateUi = (
   );
 };
 
-export const platformDeleteUi = (
+export const uiRegistryRemove = (
   projectId: string,
   id: string,
   options?: SecondParameter<typeof request<UiElementResponseDto>>,
@@ -1699,7 +2240,7 @@ export const platformDeleteUi = (
   );
 };
 
-export const platformUpdateUi = (
+export const uiRegistryUpdate = (
   projectId: string,
   id: string,
   updateUiElementDto: BodyType<UpdateUiElementDto>,
@@ -1716,73 +2257,7 @@ export const platformUpdateUi = (
   );
 };
 
-export const platformUserAttributeDefinitions = (
-  projectId: string,
-  options?: SecondParameter<typeof request<UserAttributeSchemaResponseDto>>,
-) => {
-  return request<UserAttributeSchemaResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/user-attribute-definitions`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const platformCreateUserAttributeDefinition = (
-  projectId: string,
-  createUserAttributeDefinitionDto: BodyType<CreateUserAttributeDefinitionDto>,
-  options?: SecondParameter<
-    typeof request<UserAttributeDefinitionMutationResponseDto>
-  >,
-) => {
-  return request<UserAttributeDefinitionMutationResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/user-attribute-definitions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createUserAttributeDefinitionDto,
-    },
-    options,
-  );
-};
-
-export const platformDeleteUserAttributeDefinition = (
-  projectId: string,
-  id: string,
-  options?: SecondParameter<
-    typeof request<UserAttributeDefinitionMutationResponseDto>
-  >,
-) => {
-  return request<UserAttributeDefinitionMutationResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/user-attribute-definitions/${id}`,
-      method: "DELETE",
-    },
-    options,
-  );
-};
-
-export const platformUpdateUserAttributeDefinition = (
-  projectId: string,
-  id: string,
-  updateUserAttributeDefinitionDto: BodyType<UpdateUserAttributeDefinitionDto>,
-  options?: SecondParameter<
-    typeof request<UserAttributeDefinitionMutationResponseDto>
-  >,
-) => {
-  return request<UserAttributeDefinitionMutationResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/user-attribute-definitions/${id}`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: updateUserAttributeDefinitionDto,
-    },
-    options,
-  );
-};
-
-export const platformUsers = (
+export const platformOperationsUsers = (
   projectId: string,
   options?: SecondParameter<typeof request<EndUserResponseDto[]>>,
 ) => {
@@ -1792,7 +2267,7 @@ export const platformUsers = (
   );
 };
 
-export const platformUpsertUser = (
+export const platformOperationsUpsertUser = (
   projectId: string,
   upsertUserDto: BodyType<UpsertUserDto>,
   options?: SecondParameter<typeof request<EndUserResponseDto>>,
@@ -1998,9 +2473,9 @@ export const presenceList = (
   );
 };
 
-export const platformUsersPage = (
+export const platformOperationsUsersPage = (
   projectId: string,
-  params?: PlatformUsersPageParams,
+  params?: PlatformOperationsUsersPageParams,
   options?: SecondParameter<typeof request<EndUserPageResponseDto>>,
 ) => {
   return request<EndUserPageResponseDto>(
@@ -2086,65 +2561,418 @@ export const compatibilityVoiceStart = (
   );
 };
 
-export const cmsAuthLogin = (
-  cmsLoginDto: BodyType<CmsLoginDto>,
-  options?: SecondParameter<typeof request<CmsAuthResponseDto>>,
+/**
+ * @summary Authenticate the external Break-glass principal
+ */
+export const breakGlassAuthLogin = (
+  breakGlassLoginDto: BodyType<BreakGlassLoginDto>,
+  options?: SecondParameter<typeof request<BreakGlassLoginResponseDto>>,
 ) => {
-  return request<CmsAuthResponseDto>(
+  return request<BreakGlassLoginResponseDto>(
+    {
+      url: `/api/v1/auth/break-glass/login`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: breakGlassLoginDto,
+    },
+    options,
+  );
+};
+
+export const iamEmailIdentityConsumeChange = (
+  iamEmailCapabilityConsumeDto: BodyType<IamEmailCapabilityConsumeDto>,
+  options?: SecondParameter<typeof request<CmsEmailChangedResponseDto>>,
+) => {
+  return request<CmsEmailChangedResponseDto>(
+    {
+      url: `/api/v1/auth/email-change/consume`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamEmailCapabilityConsumeDto,
+    },
+    options,
+  );
+};
+
+export const iamEmailIdentityConsumeInvitation = (
+  iamEmailCapabilityConsumeDto: BodyType<IamEmailCapabilityConsumeDto>,
+  options?: SecondParameter<
+    typeof request<IamEmailInvitationConsumedResponseDto>
+  >,
+) => {
+  return request<IamEmailInvitationConsumedResponseDto>(
+    {
+      url: `/api/v1/auth/email-invitations/consume`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamEmailCapabilityConsumeDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Return a neutral, non-consuming email-link landing state
+ */
+export const iamEmailIdentityPrefetch = (
+  options?: SecondParameter<typeof request<IamEmailIdentityPrefetch200>>,
+) => {
+  return request<IamEmailIdentityPrefetch200>(
+    { url: `/api/v1/auth/email-links/prefetch`, method: "GET" },
+    options,
+  );
+};
+
+export const iamEmailIdentityConsumeVerification = (
+  iamEmailCapabilityConsumeDto: BodyType<IamEmailCapabilityConsumeDto>,
+  options?: SecondParameter<typeof request<CmsEmailVerifiedResponseDto>>,
+) => {
+  return request<CmsEmailVerifiedResponseDto>(
+    {
+      url: `/api/v1/auth/email-verifications/consume`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamEmailCapabilityConsumeDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Authenticate a CMS User or exchange an Initial Access Secret
+ */
+export const initialAccessLogin = (
+  cmsLoginRequestDto: BodyType<CmsLoginRequestDto>,
+  options?: SecondParameter<typeof request<InitialAccessLogin200>>,
+) => {
+  return request<InitialAccessLogin200>(
     {
       url: `/api/v1/auth/login`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: cmsLoginDto,
+      data: cmsLoginRequestDto,
     },
     options,
   );
 };
 
-export const cmsAuthLogout = (
-  logoutDto: BodyType<LogoutDto>,
-  options?: SecondParameter<typeof request<SuccessResponseDto>>,
+/**
+ * @summary Revoke the current CMS User session
+ */
+export const cmsSecuritySettingsLogout = (
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
 ) => {
-  return request<SuccessResponseDto>(
-    {
-      url: `/api/v1/auth/logout`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: logoutDto,
-    },
+  return request<CmsSecurityMutationResponseDto>(
+    { url: `/api/v1/auth/logout`, method: "POST" },
     options,
   );
 };
 
-export const cmsAuthLogoutAll = (
-  options?: SecondParameter<typeof request<SuccessResponseDto>>,
+/**
+ * @summary Revoke every CMS User session including the current session
+ */
+export const cmsSecuritySettingsLogoutAll = (
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
 ) => {
-  return request<SuccessResponseDto>(
+  return request<CmsSecurityMutationResponseDto>(
     { url: `/api/v1/auth/logout-all`, method: "POST" },
     options,
   );
 };
 
-export const cmsAuthMe = (
-  options?: SecondParameter<typeof request<AdminUserResponseDto>>,
+/**
+ * @summary Return the current CMS User target authorization context
+ */
+export const cmsSessionContextMe = (
+  options?: SecondParameter<typeof request<CmsSessionContextResponseDto>>,
 ) => {
-  return request<AdminUserResponseDto>(
+  return request<CmsSessionContextResponseDto>(
     { url: `/api/v1/auth/me`, method: "GET" },
     options,
   );
 };
 
-export const cmsAuthRefresh = (
-  refreshTokenDto: BodyType<RefreshTokenDto>,
-  options?: SecondParameter<typeof request<CmsAuthResponseDto>>,
+export const iamEmailIdentityCancelChange = (
+  options?: SecondParameter<typeof request<CmsEmailChangeCancelledResponseDto>>,
 ) => {
-  return request<CmsAuthResponseDto>(
+  return request<CmsEmailChangeCancelledResponseDto>(
+    { url: `/api/v1/auth/me/email-change`, method: "DELETE" },
+    options,
+  );
+};
+
+export const iamEmailIdentityRequestChange = (
+  cmsEmailChangeRequestDto: BodyType<CmsEmailChangeRequestDto>,
+  options?: SecondParameter<typeof request<CmsEmailChangeRequestedResponseDto>>,
+) => {
+  return request<CmsEmailChangeRequestedResponseDto>(
     {
-      url: `/api/v1/auth/refresh`,
+      url: `/api/v1/auth/me/email-change`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: refreshTokenDto,
+      data: cmsEmailChangeRequestDto,
     },
+    options,
+  );
+};
+
+export const iamEmailIdentityRequestVerification = (
+  options?: SecondParameter<
+    typeof request<CmsEmailVerificationRequestResponseDto>
+  >,
+) => {
+  return request<CmsEmailVerificationRequestResponseDto>(
+    { url: `/api/v1/auth/me/email-verification`, method: "POST" },
+    options,
+  );
+};
+
+/**
+ * @summary List active passkeys and remaining recovery-code count
+ */
+export const iamMfaManagementSummary = (
+  options?: SecondParameter<typeof request<IamMfaFactorSummaryResponseDto>>,
+) => {
+  return request<IamMfaFactorSummaryResponseDto>(
+    { url: `/api/v1/auth/me/mfa`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary Revoke a passkey while preserving at least one active factor
+ */
+export const iamMfaManagementRemovePasskey = (
+  passkeyId: string,
+  options?: SecondParameter<typeof request<IamMfaPasskeyRemovedResponseDto>>,
+) => {
+  return request<IamMfaPasskeyRemovedResponseDto>(
+    { url: `/api/v1/auth/me/mfa/passkeys/${passkeyId}`, method: "DELETE" },
+    options,
+  );
+};
+
+/**
+ * @summary Begin adding another passkey after fresh strong authentication
+ */
+export const iamMfaManagementBeginPasskeyEnrollment = (
+  options?: SecondParameter<typeof request<IamMfaEnrollmentOptionsResponseDto>>,
+) => {
+  return request<IamMfaEnrollmentOptionsResponseDto>(
+    { url: `/api/v1/auth/me/mfa/passkeys/enrollment/options`, method: "POST" },
+    options,
+  );
+};
+
+/**
+ * @summary Atomically replace all recovery codes and show them once
+ */
+export const iamMfaManagementRotateRecoveryCodes = (
+  options?: SecondParameter<typeof request<IamMfaRecoveryCodesResponseDto>>,
+) => {
+  return request<IamMfaRecoveryCodesResponseDto>(
+    { url: `/api/v1/auth/me/mfa/recovery-codes/rotate`, method: "POST" },
+    options,
+  );
+};
+
+/**
+ * @summary List active browser sessions owned by the current CMS User
+ */
+export const cmsSecuritySettingsList = (
+  options?: SecondParameter<typeof request<CmsSessionListResponseDto>>,
+) => {
+  return request<CmsSessionListResponseDto>(
+    { url: `/api/v1/auth/me/sessions`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary Revoke one active session owned by the current CMS User
+ */
+export const cmsSecuritySettingsRevoke = (
+  sessionId: string,
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
+) => {
+  return request<CmsSecurityMutationResponseDto>(
+    { url: `/api/v1/auth/me/sessions/${sessionId}`, method: "DELETE" },
+    options,
+  );
+};
+
+/**
+ * @summary Revoke all other sessions owned by the current CMS User
+ */
+export const cmsSecuritySettingsRevokeOthers = (
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
+) => {
+  return request<CmsSecurityMutationResponseDto>(
+    { url: `/api/v1/auth/me/sessions/revoke-others`, method: "POST" },
+    options,
+  );
+};
+
+/**
+ * @summary Verify a passkey assertion and create a phishing-resistant session
+ */
+export const iamMfaCompleteAuthentication = (
+  iamMfaAuthenticationCompleteRequestDto: BodyType<IamMfaAuthenticationCompleteRequestDto>,
+  options?: SecondParameter<typeof request<IamMfaAuthenticatedResponseDto>>,
+) => {
+  return request<IamMfaAuthenticatedResponseDto>(
+    {
+      url: `/api/v1/auth/mfa/passkeys/authentication/complete`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamMfaAuthenticationCompleteRequestDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Verify a passkey attestation and finish MFA enrollment
+ */
+export const iamMfaCompleteEnrollment = (
+  iamMfaEnrollmentCompleteRequestDto: BodyType<IamMfaEnrollmentCompleteRequestDto>,
+  options?: SecondParameter<
+    typeof request<IamMfaEnrollmentCompleteResponseDto>
+  >,
+) => {
+  return request<IamMfaEnrollmentCompleteResponseDto>(
+    {
+      url: `/api/v1/auth/mfa/passkeys/enrollment/complete`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamMfaEnrollmentCompleteRequestDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Exchange a verified-password capability for passkey enrollment options
+ */
+export const iamMfaEnrollmentOptions = (
+  iamMfaCapabilityRequestDto: BodyType<IamMfaCapabilityRequestDto>,
+  options?: SecondParameter<typeof request<IamMfaEnrollmentOptionsResponseDto>>,
+) => {
+  return request<IamMfaEnrollmentOptionsResponseDto>(
+    {
+      url: `/api/v1/auth/mfa/passkeys/enrollment/options`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamMfaCapabilityRequestDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Consume one recovery code and require replacement passkey enrollment
+ */
+export const iamMfaCompleteRecovery = (
+  iamMfaRecoveryCompleteRequestDto: BodyType<IamMfaRecoveryCompleteRequestDto>,
+  options?: SecondParameter<
+    typeof request<IamMfaRecoveryEnrollmentOptionsResponseDto>
+  >,
+) => {
+  return request<IamMfaRecoveryEnrollmentOptionsResponseDto>(
+    {
+      url: `/api/v1/auth/mfa/passkeys/recovery/complete`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamMfaRecoveryCompleteRequestDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Consume one password-reset capability and establish a new password
+ */
+export const iamPasswordRecoveryComplete = (
+  iamPasswordResetCompleteDto: BodyType<IamPasswordResetCompleteDto>,
+  options?: SecondParameter<
+    typeof request<IamPasswordResetCompletedResponseDto>
+  >,
+) => {
+  return request<IamPasswordResetCompletedResponseDto>(
+    {
+      url: `/api/v1/auth/password-reset/complete`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamPasswordResetCompleteDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Request password recovery without revealing account eligibility
+ */
+export const iamPasswordRecoveryRequest = (
+  iamPasswordResetRequestDto: BodyType<IamPasswordResetRequestDto>,
+  options?: SecondParameter<
+    typeof request<IamPasswordResetAcceptedResponseDto>
+  >,
+) => {
+  return request<IamPasswordResetAcceptedResponseDto>(
+    {
+      url: `/api/v1/auth/password-reset/requests`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamPasswordResetRequestDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Change the current CMS User password and replace the browser session
+ */
+export const cmsSecuritySettingsChangePassword = (
+  cmsPasswordChangeRequestDto: BodyType<CmsPasswordChangeRequestDto>,
+  options?: SecondParameter<typeof request<CmsPasswordChangedResponseDto>>,
+) => {
+  return request<CmsPasswordChangedResponseDto>(
+    {
+      url: `/api/v1/auth/password/change`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cmsPasswordChangeRequestDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Establish a permanent password using a setup capability
+ */
+export const initialAccessSetupPassword = (
+  passwordSetupRequestDto: BodyType<PasswordSetupRequestDto>,
+  options?: SecondParameter<typeof request<PasswordEstablishedResponseDto>>,
+) => {
+  return request<PasswordEstablishedResponseDto>(
+    {
+      url: `/api/v1/auth/password/setup`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: passwordSetupRequestDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Rotate a CMS refresh capability and issue a new session response
+ */
+export const initialAccessRefresh = (
+  options?: SecondParameter<typeof request<CmsAuthenticatedResponseDto>>,
+) => {
+  return request<CmsAuthenticatedResponseDto>(
+    { url: `/api/v1/auth/refresh`, method: "POST" },
     options,
   );
 };
@@ -2401,6 +3229,24 @@ export const interactionSessionsIdentifyGuest = (
   );
 };
 
+/**
+ * @summary Consume an authenticated, deduplicated provider delivery event
+ */
+export const iamEmailFeedbackConsume = (
+  iamEmailFeedbackDto: BodyType<IamEmailFeedbackDto>,
+  options?: SecondParameter<typeof request<IamEmailFeedbackResponseDto>>,
+) => {
+  return request<IamEmailFeedbackResponseDto>(
+    {
+      url: `/api/v1/internal/iam/email/feedback`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: iamEmailFeedbackDto,
+    },
+    options,
+  );
+};
+
 export const compatibilityMessengerCreate = (
   compatibilityCreateMessageDto: BodyType<CompatibilityCreateMessageDto>,
   options?: SecondParameter<typeof request<void>>,
@@ -2589,6 +3435,63 @@ export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
   return request<void>({ url: `/health`, method: "GET" }, options);
 };
 
+export type FirstPlatformOperatorProvisionResult = NonNullable<
+  Awaited<ReturnType<typeof firstPlatformOperatorProvision>>
+>;
+export type CmsUserLifecycleListResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleList>>
+>;
+export type CmsUserProvisioningProvisionResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserProvisioningProvision>>
+>;
+export type CmsUserLifecycleGetResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleGet>>
+>;
+export type CmsUserLifecycleUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleUpdate>>
+>;
+export type CmsUserLifecycleDeactivateResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleDeactivate>>
+>;
+export type CmsUserLifecycleResetCredentialsResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleResetCredentials>>
+>;
+export type PlatformRoleAssignmentGetResult = NonNullable<
+  Awaited<ReturnType<typeof platformRoleAssignmentGet>>
+>;
+export type PlatformRoleAssignmentReplaceResult = NonNullable<
+  Awaited<ReturnType<typeof platformRoleAssignmentReplace>>
+>;
+export type CmsUserLifecycleReactivateResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleReactivate>>
+>;
+export type PlatformCmsUserSessionListResult = NonNullable<
+  Awaited<ReturnType<typeof platformCmsUserSessionList>>
+>;
+export type PlatformCmsUserSessionRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof platformCmsUserSessionRevoke>>
+>;
+export type CmsUserLifecycleSuspendResult = NonNullable<
+  Awaited<ReturnType<typeof cmsUserLifecycleSuspend>>
+>;
+export type PlatformPermissionListResult = NonNullable<
+  Awaited<ReturnType<typeof platformPermissionList>>
+>;
+export type PlatformRoleListResult = NonNullable<
+  Awaited<ReturnType<typeof platformRoleList>>
+>;
+export type PlatformRoleCreateResult = NonNullable<
+  Awaited<ReturnType<typeof platformRoleCreate>>
+>;
+export type PlatformRoleGetResult = NonNullable<
+  Awaited<ReturnType<typeof platformRoleGet>>
+>;
+export type PlatformRoleUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof platformRoleUpdate>>
+>;
+export type PlatformRoleArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof platformRoleArchive>>
+>;
 export type PlatformListProjectsResult = NonNullable<
   Awaited<ReturnType<typeof platformListProjects>>
 >;
@@ -2603,21 +3506,6 @@ export type PlatformGetProjectResult = NonNullable<
 >;
 export type PlatformUpdateProjectResult = NonNullable<
   Awaited<ReturnType<typeof platformUpdateProject>>
->;
-export type PlatformActionDefinitionsResult = NonNullable<
-  Awaited<ReturnType<typeof platformActionDefinitions>>
->;
-export type PlatformCreateActionDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformCreateActionDefinition>>
->;
-export type PlatformDeleteActionDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformDeleteActionDefinition>>
->;
-export type PlatformActionDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformActionDefinition>>
->;
-export type PlatformUpdateActionDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformUpdateActionDefinition>>
 >;
 export type ProductActionsActionTypesResult = NonNullable<
   Awaited<ReturnType<typeof productActionsActionTypes>>
@@ -2676,20 +3564,20 @@ export type AdminEndUserProfilesListResult = NonNullable<
 export type AdminEndUserProfilesProfileResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesProfile>>
 >;
-export type EventCatalogListEventDefinitionsResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogListEventDefinitions>>
+export type EventCatalogListResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogList>>
 >;
-export type EventCatalogCreateEventDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogCreateEventDefinition>>
+export type EventCatalogCreateResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogCreate>>
 >;
-export type EventCatalogDeleteEventDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogDeleteEventDefinition>>
+export type EventCatalogHardDeleteResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogHardDelete>>
 >;
-export type EventCatalogGetEventDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogGetEventDefinition>>
+export type EventCatalogDetailResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogDetail>>
 >;
-export type EventCatalogArchiveEventDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogArchiveEventDefinition>>
+export type EventCatalogArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogArchive>>
 >;
 export type EventCatalogUpdateMetadataResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogUpdateMetadata>>
@@ -2697,14 +3585,14 @@ export type EventCatalogUpdateMetadataResult = NonNullable<
 export type EventCatalogUpdatePolicyResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogUpdatePolicy>>
 >;
-export type EventCatalogRestoreEventDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogRestoreEventDefinition>>
+export type EventCatalogRestoreResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogRestore>>
 >;
-export type EventCatalogEventDefinitionRevisionsResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogEventDefinitionRevisions>>
+export type EventCatalogRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogRevisions>>
 >;
-export type EventCatalogEventDefinitionRevisionResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogEventDefinitionRevision>>
+export type EventCatalogRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogRevision>>
 >;
 export type EventCatalogSaveSchemaDraftResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogSaveSchemaDraft>>
@@ -2715,8 +3603,8 @@ export type EventCatalogAnalyzeSchemaDraftResult = NonNullable<
 export type EventCatalogPublishSchemaDraftResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogPublishSchemaDraft>>
 >;
-export type EventCatalogEventDefinitionUsageResult = NonNullable<
-  Awaited<ReturnType<typeof eventCatalogEventDefinitionUsage>>
+export type EventCatalogUsageResult = NonNullable<
+  Awaited<ReturnType<typeof eventCatalogUsage>>
 >;
 export type EventCatalogProjectHealthResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogProjectHealth>>
@@ -2745,14 +3633,26 @@ export type KnowledgeUploadFileResult = NonNullable<
 export type KnowledgeCreateTextResult = NonNullable<
   Awaited<ReturnType<typeof knowledgeCreateText>>
 >;
-export type PlatformMembersResult = NonNullable<
-  Awaited<ReturnType<typeof platformMembers>>
+export type ProjectMembershipListResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipList>>
 >;
-export type PlatformCreateMemberResult = NonNullable<
-  Awaited<ReturnType<typeof platformCreateMember>>
+export type ProjectMembershipCreateResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipCreate>>
 >;
-export type PlatformDeleteMemberResult = NonNullable<
-  Awaited<ReturnType<typeof platformDeleteMember>>
+export type ProjectMembershipGetResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipGet>>
+>;
+export type ProjectMembershipUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipUpdate>>
+>;
+export type ProjectMembershipRemoveResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipRemove>>
+>;
+export type ProjectMembershipAssignableRolesResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipAssignableRoles>>
+>;
+export type ProjectPermissionListResult = NonNullable<
+  Awaited<ReturnType<typeof projectPermissionList>>
 >;
 export type ProductActionsProjectActionsResult = NonNullable<
   Awaited<ReturnType<typeof productActionsProjectActions>>
@@ -2760,14 +3660,35 @@ export type ProductActionsProjectActionsResult = NonNullable<
 export type ProductActionsConfigureProjectActionResult = NonNullable<
   Awaited<ReturnType<typeof productActionsConfigureProjectAction>>
 >;
+export type ProductActionsConfigureAiExposureResult = NonNullable<
+  Awaited<ReturnType<typeof productActionsConfigureAiExposure>>
+>;
 export type ProductActionsPreviewProjectActionResult = NonNullable<
   Awaited<ReturnType<typeof productActionsPreviewProjectAction>>
 >;
 export type ProductActionsArchiveProjectActionResult = NonNullable<
   Awaited<ReturnType<typeof productActionsArchiveProjectAction>>
 >;
-export type PlatformRotateResult = NonNullable<
-  Awaited<ReturnType<typeof platformRotate>>
+export type ProjectRoleListResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleList>>
+>;
+export type ProjectRoleCreateResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleCreate>>
+>;
+export type ProjectRoleGetResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleGet>>
+>;
+export type ProjectRoleUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleUpdate>>
+>;
+export type ProjectRoleArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleArchive>>
+>;
+export type ProjectRoleReassignResult = NonNullable<
+  Awaited<ReturnType<typeof projectRoleReassign>>
+>;
+export type PlatformOperationsRotateResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsRotate>>
 >;
 export type ScenarioAudienceEvaluationEvaluateUserResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAudienceEvaluationEvaluateUser>>
@@ -2781,14 +3702,23 @@ export type ScenarioAuthoringPreviewGoalResult = NonNullable<
 export type ScenarioAuthoringPreviewResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringPreview>>
 >;
+export type ScenarioAuthoringListScenariosResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringListScenarios>>
+>;
 export type ScenarioAuthoringCreateScenarioResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringCreateScenario>>
 >;
 export type ScenarioAuthoringScenarioDocumentResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringScenarioDocument>>
 >;
+export type ScenarioAuthoringArchiveScenarioResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringArchiveScenario>>
+>;
 export type ScenarioAuthoringSaveDraftResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringSaveDraft>>
+>;
+export type ScenarioAuthoringUpdateScenarioMetadataResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAuthoringUpdateScenarioMetadata>>
 >;
 export type ScenarioAuthoringPublishScenarioResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringPublishScenario>>
@@ -2826,11 +3756,11 @@ export type ScenarioAudienceRevisionResult = NonNullable<
 export type ScenarioAuthoringValidateResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAuthoringValidate>>
 >;
-export type PlatformActivitySettingsResult = NonNullable<
-  Awaited<ReturnType<typeof platformActivitySettings>>
+export type PlatformOperationsActivitySettingsResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsActivitySettings>>
 >;
-export type PlatformUpdateActivitySettingsResult = NonNullable<
-  Awaited<ReturnType<typeof platformUpdateActivitySettings>>
+export type PlatformOperationsUpdateActivitySettingsResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsUpdateActivitySettings>>
 >;
 export type ScenarioRunsListResult = NonNullable<
   Awaited<ReturnType<typeof scenarioRunsList>>
@@ -2841,17 +3771,20 @@ export type ScenarioRunsExplainResult = NonNullable<
 export type ScenarioRunsPageResult = NonNullable<
   Awaited<ReturnType<typeof scenarioRunsPage>>
 >;
-export type PlatformScenariosResult = NonNullable<
-  Awaited<ReturnType<typeof platformScenarios>>
+export type ProjectMfaPolicyGetResult = NonNullable<
+  Awaited<ReturnType<typeof projectMfaPolicyGet>>
 >;
-export type PlatformCreateScenarioResult = NonNullable<
-  Awaited<ReturnType<typeof platformCreateScenario>>
+export type ProjectMfaPolicyUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof projectMfaPolicyUpdate>>
 >;
-export type PlatformDeleteScenarioResult = NonNullable<
-  Awaited<ReturnType<typeof platformDeleteScenario>>
+export type SegmentCatalogCatalogResult = NonNullable<
+  Awaited<ReturnType<typeof segmentCatalogCatalog>>
 >;
-export type PlatformUpdateScenarioResult = NonNullable<
-  Awaited<ReturnType<typeof platformUpdateScenario>>
+export type PlatformOperationsProjectSettingsResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsProjectSettings>>
+>;
+export type PlatformOperationsUpdateProjectSettingsResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsUpdateProjectSettings>>
 >;
 export type AdminSpeechGetResult = NonNullable<
   Awaited<ReturnType<typeof adminSpeechGet>>
@@ -2877,35 +3810,23 @@ export type TranslationRetryTargetResult = NonNullable<
 export type TranslationUsageReportResult = NonNullable<
   Awaited<ReturnType<typeof translationUsageReport>>
 >;
-export type PlatformUiElementsResult = NonNullable<
-  Awaited<ReturnType<typeof platformUiElements>>
+export type UiRegistryListResult = NonNullable<
+  Awaited<ReturnType<typeof uiRegistryList>>
 >;
-export type PlatformCreateUiResult = NonNullable<
-  Awaited<ReturnType<typeof platformCreateUi>>
+export type UiRegistryCreateResult = NonNullable<
+  Awaited<ReturnType<typeof uiRegistryCreate>>
 >;
-export type PlatformDeleteUiResult = NonNullable<
-  Awaited<ReturnType<typeof platformDeleteUi>>
+export type UiRegistryRemoveResult = NonNullable<
+  Awaited<ReturnType<typeof uiRegistryRemove>>
 >;
-export type PlatformUpdateUiResult = NonNullable<
-  Awaited<ReturnType<typeof platformUpdateUi>>
+export type UiRegistryUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof uiRegistryUpdate>>
 >;
-export type PlatformUserAttributeDefinitionsResult = NonNullable<
-  Awaited<ReturnType<typeof platformUserAttributeDefinitions>>
+export type PlatformOperationsUsersResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsUsers>>
 >;
-export type PlatformCreateUserAttributeDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformCreateUserAttributeDefinition>>
->;
-export type PlatformDeleteUserAttributeDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformDeleteUserAttributeDefinition>>
->;
-export type PlatformUpdateUserAttributeDefinitionResult = NonNullable<
-  Awaited<ReturnType<typeof platformUpdateUserAttributeDefinition>>
->;
-export type PlatformUsersResult = NonNullable<
-  Awaited<ReturnType<typeof platformUsers>>
->;
-export type PlatformUpsertUserResult = NonNullable<
-  Awaited<ReturnType<typeof platformUpsertUser>>
+export type PlatformOperationsUpsertUserResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsUpsertUser>>
 >;
 export type ConversationAISuspensionsGetResult = NonNullable<
   Awaited<ReturnType<typeof conversationAISuspensionsGet>>
@@ -2940,8 +3861,8 @@ export type AdminVoiceStartResult = NonNullable<
 export type PresenceListResult = NonNullable<
   Awaited<ReturnType<typeof presenceList>>
 >;
-export type PlatformUsersPageResult = NonNullable<
-  Awaited<ReturnType<typeof platformUsersPage>>
+export type PlatformOperationsUsersPageResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsUsersPage>>
 >;
 export type ProviderBillingGetResult = NonNullable<
   Awaited<ReturnType<typeof providerBillingGet>>
@@ -2961,20 +3882,89 @@ export type CompatibilityVoiceGetResult = NonNullable<
 export type CompatibilityVoiceStartResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityVoiceStart>>
 >;
-export type CmsAuthLoginResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthLogin>>
+export type BreakGlassAuthLoginResult = NonNullable<
+  Awaited<ReturnType<typeof breakGlassAuthLogin>>
 >;
-export type CmsAuthLogoutResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthLogout>>
+export type IamEmailIdentityConsumeChangeResult = NonNullable<
+  Awaited<ReturnType<typeof iamEmailIdentityConsumeChange>>
 >;
-export type CmsAuthLogoutAllResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthLogoutAll>>
+export type IamEmailIdentityConsumeInvitationResult = NonNullable<
+  Awaited<ReturnType<typeof iamEmailIdentityConsumeInvitation>>
 >;
-export type CmsAuthMeResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthMe>>
+export type IamEmailIdentityPrefetchResult = NonNullable<
+  Awaited<ReturnType<typeof iamEmailIdentityPrefetch>>
 >;
-export type CmsAuthRefreshResult = NonNullable<
-  Awaited<ReturnType<typeof cmsAuthRefresh>>
+export type IamEmailIdentityConsumeVerificationResult = NonNullable<
+  Awaited<ReturnType<typeof iamEmailIdentityConsumeVerification>>
+>;
+export type InitialAccessLoginResult = NonNullable<
+  Awaited<ReturnType<typeof initialAccessLogin>>
+>;
+export type CmsSecuritySettingsLogoutResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsLogout>>
+>;
+export type CmsSecuritySettingsLogoutAllResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsLogoutAll>>
+>;
+export type CmsSessionContextMeResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSessionContextMe>>
+>;
+export type IamEmailIdentityCancelChangeResult = NonNullable<
+  Awaited<ReturnType<typeof iamEmailIdentityCancelChange>>
+>;
+export type IamEmailIdentityRequestChangeResult = NonNullable<
+  Awaited<ReturnType<typeof iamEmailIdentityRequestChange>>
+>;
+export type IamEmailIdentityRequestVerificationResult = NonNullable<
+  Awaited<ReturnType<typeof iamEmailIdentityRequestVerification>>
+>;
+export type IamMfaManagementSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaManagementSummary>>
+>;
+export type IamMfaManagementRemovePasskeyResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaManagementRemovePasskey>>
+>;
+export type IamMfaManagementBeginPasskeyEnrollmentResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaManagementBeginPasskeyEnrollment>>
+>;
+export type IamMfaManagementRotateRecoveryCodesResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaManagementRotateRecoveryCodes>>
+>;
+export type CmsSecuritySettingsListResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsList>>
+>;
+export type CmsSecuritySettingsRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsRevoke>>
+>;
+export type CmsSecuritySettingsRevokeOthersResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsRevokeOthers>>
+>;
+export type IamMfaCompleteAuthenticationResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaCompleteAuthentication>>
+>;
+export type IamMfaCompleteEnrollmentResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaCompleteEnrollment>>
+>;
+export type IamMfaEnrollmentOptionsResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaEnrollmentOptions>>
+>;
+export type IamMfaCompleteRecoveryResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaCompleteRecovery>>
+>;
+export type IamPasswordRecoveryCompleteResult = NonNullable<
+  Awaited<ReturnType<typeof iamPasswordRecoveryComplete>>
+>;
+export type IamPasswordRecoveryRequestResult = NonNullable<
+  Awaited<ReturnType<typeof iamPasswordRecoveryRequest>>
+>;
+export type CmsSecuritySettingsChangePasswordResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsChangePassword>>
+>;
+export type InitialAccessSetupPasswordResult = NonNullable<
+  Awaited<ReturnType<typeof initialAccessSetupPassword>>
+>;
+export type InitialAccessRefreshResult = NonNullable<
+  Awaited<ReturnType<typeof initialAccessRefresh>>
 >;
 export type ChatListConversationsResult = NonNullable<
   Awaited<ReturnType<typeof chatListConversations>>
@@ -3028,6 +4018,9 @@ export type InteractionSessionsCreateResult = NonNullable<
 >;
 export type InteractionSessionsIdentifyGuestResult = NonNullable<
   Awaited<ReturnType<typeof interactionSessionsIdentifyGuest>>
+>;
+export type IamEmailFeedbackConsumeResult = NonNullable<
+  Awaited<ReturnType<typeof iamEmailFeedbackConsume>>
 >;
 export type CompatibilityMessengerCreateResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityMessengerCreate>>

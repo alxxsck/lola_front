@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   guardDirty: null as { value: boolean } | null,
   auth: null as null | {
-    project: { id: string } | null;
+    project: { id: string; effectivePermissionCodes: string[] } | null;
     user: { role: "OWNER" };
   },
   routeQuery: null as null | Record<string, string>,
@@ -23,7 +23,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/features/auth/auth.store", async () => {
   const { reactive } = await import("vue");
   mocks.auth ??= reactive({
-    project: { id: "project-1" },
+    project: {
+      id: "project-1",
+      effectivePermissionCodes: ["project.event_catalog.write"],
+    },
     user: { role: "OWNER" as const },
   });
   return { useAuthStore: () => mocks.auth };
@@ -117,7 +120,10 @@ describe("EventsPage event editor journey", () => {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
     });
-    mocks.auth!.project = { id: "project-1" };
+    mocks.auth!.project = {
+      id: "project-1",
+      effectivePermissionCodes: ["project.event_catalog.write"],
+    };
     for (const key of Object.keys(mocks.routeQuery!))
       delete mocks.routeQuery![key];
     mocks.listDefinitions.mockResolvedValue([existingEvent]);
@@ -387,7 +393,10 @@ describe("EventsPage event editor journey", () => {
     const wrapper = mountPage();
     await flushPromises();
 
-    mocks.auth!.project = { id: "project-2" };
+    mocks.auth!.project = {
+      id: "project-2",
+      effectivePermissionCodes: ["project.event_catalog.write"],
+    };
     await flushPromises();
     resolveFirst([existingEvent]);
     await flushPromises();

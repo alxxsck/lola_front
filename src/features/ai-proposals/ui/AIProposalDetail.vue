@@ -12,6 +12,7 @@ const props = defineProps<{
   proposal: AIProposalDetail | null;
   loading: boolean;
   deciding: boolean;
+  canDecide?: boolean;
   error?: string | null;
 }>();
 defineEmits<{ resolve: []; retry: [] }>();
@@ -138,6 +139,7 @@ const evidence = computed(() =>
       <AIProposalDecisionBar
         :proposal="proposal"
         :deciding="deciding"
+        :can-decide="canDecide ?? false"
         @resolve="$emit('resolve')"
       />
 
@@ -296,7 +298,7 @@ const evidence = computed(() =>
 }
 .section-heading span {
   font:
-    700 0.88rem Manrope,
+    700 0.88rem var(--font-display),
     sans-serif;
 }
 .section-heading small {
@@ -361,7 +363,7 @@ blockquote p {
 .detail-placeholder strong {
   margin-top: 24px;
   font:
-    700 1rem Manrope,
+    700 1rem var(--font-display),
     sans-serif;
 }
 .detail-placeholder p {

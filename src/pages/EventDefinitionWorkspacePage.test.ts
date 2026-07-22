@@ -6,7 +6,7 @@ import EventDefinitionWorkspacePage from "./EventDefinitionWorkspacePage.vue";
 
 const mocks = vi.hoisted(() => ({
   auth: null as null | {
-    project: { id: string } | null;
+    project: { id: string; effectivePermissionCodes: string[] } | null;
     user: { role: "OWNER" | "ADMIN" } | null;
   },
   route: null as null | { params: { definitionKeyId: string } },
@@ -24,7 +24,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/features/auth/auth.store", async () => {
   const { reactive } = await import("vue");
   mocks.auth ??= reactive({
-    project: { id: "project-1" },
+    project: {
+      id: "project-1",
+      effectivePermissionCodes: ["project.event_catalog.write"],
+    },
     user: { role: "OWNER" as const },
   });
   return { useAuthStore: () => mocks.auth };
@@ -121,7 +124,10 @@ function button(
 describe("EventDefinitionWorkspacePage Overview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.auth!.project = { id: "project-1" };
+    mocks.auth!.project = {
+      id: "project-1",
+      effectivePermissionCodes: ["project.event_catalog.write"],
+    };
     mocks.auth!.user = { role: "OWNER" };
     mocks.route!.params.definitionKeyId = "event-key-1";
     mocks.getDefinition.mockResolvedValue(workspace);

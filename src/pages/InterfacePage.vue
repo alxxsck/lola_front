@@ -12,6 +12,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { hasProjectPermission } from '@/features/auth/permission-access'
 import {
   buildUiActionIntegrationGuide,
   isUiElementInSection,
@@ -155,7 +156,13 @@ const fieldMeta = computed(() => {
 const isLegacyUnboundModal = computed(
   () => form.value.kind === 'MODAL' && form.value.legacyUnboundModal,
 )
-const canManageAi = computed(() => auth.user?.role === 'OWNER')
+const canWrite = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    'project.ui_registry.write',
+  ),
+)
+const canManageAi = canWrite
 const editedElement = computed(() =>
   form.value.id
     ? (elements.value.find((item) => item.id === form.value.id) ?? null)
@@ -251,6 +258,7 @@ async function loadElements() {
 }
 
 function openCreate() {
+  if (!canWrite.value) return
   form.value = emptyForm(activeKind.value)
   codeTouched.value = false
   formError.value = ''
@@ -259,6 +267,7 @@ function openCreate() {
 }
 
 function openEdit(item: UiElement) {
+  if (!canWrite.value) return
   form.value = {
     id: item.id,
     name: item.name,
@@ -310,6 +319,7 @@ function parseConfig(): Record<string, unknown> | null {
 }
 
 async function saveElement() {
+  if (!canWrite.value) return
   const projectId = auth.project?.id
   const name = form.value.name.trim()
   const code = form.value.code.trim()
@@ -460,6 +470,7 @@ async function saveElement() {
 }
 
 async function toggleElement(item: UiElement, enabled: boolean) {
+  if (!canWrite.value) return
   const projectId = auth.project?.id
   if (!projectId) return
   togglingId.value = item.id
@@ -485,6 +496,7 @@ function aiExposureToggleDisabled(item: UiElement): boolean {
 }
 
 function askDelete(item: UiElement) {
+  if (!canWrite.value) return
   confirm.require({
     header: 'Удалить элемент?',
     message: `«${item.name}» станет недоступен в новых сценариях.`,
@@ -522,6 +534,7 @@ async function copyIntegrationGuide() {
 }
 
 async function deleteElement(item: UiElement) {
+  if (!canWrite.value) return
   const projectId = auth.project?.id
   if (!projectId) return
   try {
@@ -559,7 +572,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
           взаимодействовать.
         </p>
       </div>
-      <Button label="Добавить элемент" icon="pi pi-plus" @click="openCreate" />
+      <Button v-if="canWrite" label="Добавить элемент" icon="pi pi-plus" @click="openCreate" />
     </header>
 
     <div class="kind-tabs" role="tablist" aria-label="Тип элемента">
@@ -625,7 +638,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
           </div>
           <ToggleSwitch
             :model-value="item.enabled"
-            :disabled="aiExposureToggleDisabled(item)"
+            :disabled="!canWrite || aiExposureToggleDisabled(item)"
             :aria-label="`Включить ${item.name}`"
             @update:model-value="toggleElement(item, $event)"
           />
@@ -666,6 +679,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
               text
               @click="openIntegration(item)"
             /><Button
+              v-if="canWrite"
               label="Изменить"
               icon="pi pi-pencil"
               size="small"
@@ -674,6 +688,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
             />
           </div>
           <Button
+            v-if="canWrite"
             icon="pi pi-trash"
             severity="danger"
             size="small"
@@ -700,7 +715,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
         }}
       </p>
       <Button
-        v-if="!search"
+        v-if="!search && canWrite"
         label="Добавить"
         icon="pi pi-plus"
         size="small"
@@ -856,8 +871,8 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
             severity="info"
             size="small"
             :closable="false"
-            >Разрешать Lola новые элементы может только владелец
-            проекта.</Message
+            >Для изменения доступных Lola элементов требуется разрешение
+            управления интерфейсом.</Message
           >
           <Message
             v-else-if="!targetBound"

@@ -12,14 +12,20 @@ import ToggleSwitch from "primevue/toggleswitch";
 import AiUsageSection from "@/features/ai-usage/AiUsageSection.vue";
 import ActivitySettingsSection from "@/features/activity-settings/ActivitySettingsSection.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
+import ProjectMfaPolicySection from "@/features/project-security/ui/ProjectMfaPolicySection.vue";
 import SpeechSynthesisSection from "@/features/speech-synthesis/SpeechSynthesisSection.vue";
 import type {
   AttributeContractRevisionFieldResponseDto,
   RealtimeVoice,
 } from "@/shared/api/generated/models";
 import { repository } from "@/shared/api/repository";
-import type { ActivitySettings, Project } from "@/shared/types/domain";
+import type {
+  ActivitySettings,
+  AuthProject,
+  Project,
+} from "@/shared/types/domain";
 import { localeDisplayName } from "@/shared/lib/locale";
 
 interface ProjectForm {
@@ -49,13 +55,44 @@ function isRealtimeVoice(value: unknown): value is RealtimeVoice {
 }
 
 const auth = useAuthStore();
+const projectPermissions = computed(
+  () => auth.project?.effectivePermissionCodes ?? [],
+);
+const canEditSettings = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.settings.write"),
+);
+const canReadSettings = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.settings.read"),
+);
+const canReadProfileContract = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.profile_contract.read",
+  ),
+);
+const canWriteProfileContract = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.profile_contract.write",
+  ),
+);
+const canReadSpeech = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.speech.read"),
+);
+const canWriteSpeech = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.speech.write"),
+);
+const canReadAiUsage = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
+);
 const toast = useToast();
 const loading = ref(true);
 const saving = ref(false);
 const voiceSettingsExpanded = ref(false);
 const error = ref("");
 const validationError = ref("");
-const project = ref<Project | null>(null);
+const project = ref<AuthProject | null>(null);
+const settingsProject = ref<Project | null>(null);
 const localeField = ref<AttributeContractRevisionFieldResponseDto | null>(null);
 const activitySettings = ref<ActivitySettings | null>(null);
 const initialSnapshot = ref("");
@@ -99,6 +136,7 @@ const contentDefaultLocale = computed(
 );
 
 function fillForm(nextProject: Project) {
+  settingsProject.value = nextProject;
   project.value = nextProject;
   Object.assign(form, {
     name: nextProject.name,
@@ -128,21 +166,31 @@ function fillForm(nextProject: Project) {
 }
 
 async function loadProject() {
-  const projectId = auth.project?.id;
-  if (!projectId) {
+  const selectedProject = auth.project;
+  if (!selectedProject) {
     error.value = "Текущий проект не найден. Войдите заново.";
     loading.value = false;
     return;
   }
+  const projectId = selectedProject.id;
 
   loading.value = true;
   error.value = "";
   try {
     const [nextProject, workspace] = await Promise.all([
-      repository.getProject(projectId),
-      attributeContractRepository.workspace(projectId).catch(() => null),
+      canReadSettings.value
+        ? repository.getProject(projectId)
+        : Promise.resolve(null),
+      canReadProfileContract.value
+        ? attributeContractRepository.workspace(projectId).catch(() => null)
+        : Promise.resolve(null),
     ]);
-    fillForm(nextProject);
+    if (nextProject) fillForm(nextProject);
+    else {
+      settingsProject.value = null;
+      project.value = selectedProject;
+      initialSnapshot.value = "";
+    }
     localeField.value =
       workspace?.currentRevision?.fields.find(
         (field) =>
@@ -175,19 +223,33 @@ function validate() {
   return !validationError.value;
 }
 
+function handleActivitySettingsChange(value: ActivitySettings) {
+  activitySettings.value = value;
+  if (!settingsProject.value) return;
+  const nextProject = {
+    ...settingsProject.value,
+    version: value.projectVersion,
+  };
+  settingsProject.value = nextProject;
+  project.value = nextProject;
+  auth.updateProject(nextProject);
+}
+
 async function saveProject() {
-  if (!project.value || !validate()) return;
+  const currentProject = settingsProject.value;
+  if (!currentProject || !canEditSettings.value || !validate()) return;
 
   saving.value = true;
   error.value = "";
   try {
-    const savedProject = await repository.updateProject(project.value.id, {
+    const savedProject = await repository.updateProject(currentProject.id, {
+      version: currentProject.version,
       name: form.name.trim(),
       assistantName: form.assistantName.trim(),
       systemPrompt: form.systemPrompt.trim(),
       voiceInstructions: form.voiceInstructions,
       settings: {
-        ...project.value.settings,
+        ...currentProject.settings,
         ...(activitySettings.value
           ? { timezone: activitySettings.value.timezone }
           : {}),
@@ -376,8 +438,15 @@ onBeforeUnmount(() => {
 
     <div v-else-if="project" class="settings-layout">
       <div class="settings-main stack">
-        <form class="settings-main-form stack" @submit.prevent="saveProject">
-          <section class="card card-pad settings-section">
+        <form
+          v-if="canReadSettings || canReadProfileContract"
+          class="settings-main-form stack"
+          @submit.prevent="saveProject"
+        >
+          <section
+            v-if="canReadSettings"
+            class="card card-pad settings-section"
+          >
             <div class="section-title">
               <span class="section-icon lime"
                 ><i class="pi pi-building"
@@ -394,7 +463,7 @@ onBeforeUnmount(() => {
                   id="project-name"
                   v-model="form.name"
                   placeholder="Название продукта"
-                  :disabled="saving"
+                  :disabled="saving || !canEditSettings"
                 />
               </div>
               <div class="field full">
@@ -406,33 +475,48 @@ onBeforeUnmount(() => {
                   maxlength="500"
                   auto-resize
                   placeholder="Коротко опишите назначение проекта"
-                  :disabled="saving"
+                  :disabled="saving || !canEditSettings"
                 /><small>{{ form.description.length }}/500</small>
               </div>
             </div>
           </section>
 
-          <section class="card card-pad settings-section">
+          <section
+            v-if="canReadProfileContract"
+            class="card card-pad settings-section"
+          >
             <div class="section-title">
               <span class="section-icon violet"
                 ><i class="pi pi-language"
               /></span>
               <div>
                 <h2>Языки контента</h2>
-                <p>Языки настраиваются единым Locale Attribute в полях пользователя.</p>
+                <p>
+                  Языки настраиваются единым Locale Attribute в полях
+                  пользователя.
+                </p>
               </div>
             </div>
             <div v-if="localeField" class="content-locale-summary">
               <div>
                 <small>Основной язык</small>
-                <strong>{{ localeDisplayName(contentDefaultLocale) }} ({{ contentDefaultLocale }})</strong>
+                <strong
+                  >{{ localeDisplayName(contentDefaultLocale) }} ({{
+                    contentDefaultLocale
+                  }})</strong
+                >
               </div>
               <div class="content-locale-chips">
-                <span v-for="locale in contentLocales" :key="locale" :class="{ primary: locale === contentDefaultLocale }">
+                <span
+                  v-for="locale in contentLocales"
+                  :key="locale"
+                  :class="{ primary: locale === contentDefaultLocale }"
+                >
                   {{ localeDisplayName(locale) }} <code>{{ locale }}</code>
                 </span>
               </div>
               <Button
+                v-if="canWriteProfileContract"
                 label="Изменить в полях пользователя"
                 icon="pi pi-arrow-right"
                 severity="secondary"
@@ -445,18 +529,27 @@ onBeforeUnmount(() => {
               <i class="pi pi-language" />
               <div>
                 <strong>Языки контента ещё не настроены</strong>
-                <p>Создайте одно поле пользователя с назначением «Язык контента».</p>
+                <p>
+                  Создайте одно поле пользователя с назначением «Язык контента».
+                </p>
               </div>
               <Button
+                v-if="canWriteProfileContract"
                 label="Настроить языки"
                 icon="pi pi-plus"
                 as="router-link"
-                :to="{ name: 'profile-field-create', query: { semanticRole: 'LOCALE' } }"
+                :to="{
+                  name: 'profile-field-create',
+                  query: { semanticRole: 'LOCALE' },
+                }"
               />
             </div>
           </section>
 
-          <section class="card card-pad settings-section">
+          <section
+            v-if="canReadSettings"
+            class="card card-pad settings-section"
+          >
             <div class="section-title">
               <span class="section-icon green"><i class="pi pi-link" /></span>
               <div>
@@ -478,7 +571,7 @@ onBeforeUnmount(() => {
                   v-model="form.apiBaseUrl"
                   class="mono"
                   placeholder="https://api.example.com/api/v1"
-                  :disabled="saving"
+                  :disabled="saving || !canEditSettings"
                 />
               </div>
               <div class="field">
@@ -488,7 +581,7 @@ onBeforeUnmount(() => {
                   v-model="form.wsUrl"
                   class="mono"
                   placeholder="wss://api.example.com/assistant"
-                  :disabled="saving"
+                  :disabled="saving || !canEditSettings"
                 />
               </div>
               <div class="field">
@@ -500,7 +593,7 @@ onBeforeUnmount(() => {
                   rows="3"
                   class="mono"
                   placeholder="https://app.example.com"
-                  :disabled="saving"
+                  :disabled="saving || !canEditSettings"
                 />
               </div>
             </div>
@@ -520,13 +613,20 @@ onBeforeUnmount(() => {
         </form>
 
         <ActivitySettingsSection
-          v-if="project"
+          v-if="canReadSettings"
           :project-id="project.id"
-          :editable="auth.user?.role === 'OWNER' || auth.user?.role === 'ADMIN'"
-          @change="activitySettings = $event"
+          :editable="canEditSettings"
+          @change="handleActivitySettingsChange"
+        />
+
+        <ProjectMfaPolicySection
+          v-if="canReadSettings"
+          :project-id="project.id"
+          :editable="canEditSettings"
         />
 
         <form
+          v-if="canReadSettings"
           id="project-settings-form"
           class="settings-main-form stack"
           @submit.prevent="saveProject"
@@ -558,7 +658,7 @@ onBeforeUnmount(() => {
                     id="assistant-name"
                     v-model="form.assistantName"
                     placeholder="Lola"
-                    :disabled="saving"
+                    :disabled="saving || !canEditSettings"
                   />
                 </div>
                 <div class="field">
@@ -570,7 +670,7 @@ onBeforeUnmount(() => {
                       class="system-prompt-textarea"
                       rows="3"
                       placeholder="Как ассистент должен общаться и помогать пользователю?"
-                      :disabled="saving"
+                      :disabled="saving || !canEditSettings"
                     />
                     <button
                       type="button"
@@ -638,7 +738,7 @@ onBeforeUnmount(() => {
                 <ToggleSwitch
                   v-model="form.voiceEnabled"
                   input-id="voice-enabled"
-                  :disabled="saving"
+                  :disabled="saving || !canEditSettings"
                   aria-label="Разрешить голосовые диалоги"
                 />
               </div>
@@ -651,7 +751,7 @@ onBeforeUnmount(() => {
                     :options="voiceOptions"
                     option-label="label"
                     option-value="value"
-                    :disabled="saving || !form.voiceEnabled"
+                    :disabled="saving || !canEditSettings || !form.voiceEnabled"
                   />
                 </div>
                 <div
@@ -668,7 +768,7 @@ onBeforeUnmount(() => {
                   <ToggleSwitch
                     v-model="form.voiceTranscriptEnabled"
                     input-id="voice-transcripts"
-                    :disabled="saving || !form.voiceEnabled"
+                    :disabled="saving || !canEditSettings || !form.voiceEnabled"
                     aria-label="Сохранять транскрипты голосового чата"
                   />
                 </div>
@@ -684,7 +784,7 @@ onBeforeUnmount(() => {
                   maxlength="20000"
                   auto-resize
                   placeholder="Опишите тон, темп, эмоции и манеру речи"
-                  :disabled="saving"
+                  :disabled="saving || !canEditSettings"
                 />
                 <small
                   >{{ form.voiceInstructions.length }}/20 000 символов</small
@@ -695,9 +795,11 @@ onBeforeUnmount(() => {
         </form>
 
         <SpeechSynthesisSection
+          v-if="canReadSpeech"
           class="settings-main-tts"
           :project-id="project.id"
-          :supported-locales="project.supportedLocales"
+          :supported-locales="project.supportedLocales ?? []"
+          :editable="canWriteSpeech"
         />
       </div>
 
@@ -719,7 +821,7 @@ onBeforeUnmount(() => {
           </p>
         </section>
 
-        <section class="save-card">
+        <section v-if="canReadSettings" class="save-card">
           <div>
             <strong>{{
               isDirty
@@ -741,14 +843,17 @@ onBeforeUnmount(() => {
             label="Сохранить настройки"
             icon="pi pi-check"
             :loading="saving"
-            :disabled="!isDirty"
+            :disabled="!isDirty || !canEditSettings"
             fluid
           />
         </section>
       </aside>
     </div>
 
-    <AiUsageSection v-if="!loading && project" :project-id="project.id" />
+    <AiUsageSection
+      v-if="!loading && project && canReadAiUsage"
+      :project-id="project.id"
+    />
   </div>
 </template>
 
@@ -771,15 +876,44 @@ onBeforeUnmount(() => {
   border-radius: 14px;
   background: var(--surface-subtle);
 }
-.content-locale-summary > div:first-child { display: grid; gap: 3px; }
-.content-locale-summary small { color: var(--muted); }
-.content-locale-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.content-locale-chips span { padding: 5px 8px; border-radius: 999px; background: var(--surface-card); font-size: .7rem; }
-.content-locale-chips span.primary { background: var(--status-violet-soft); color: var(--status-violet-text); }
-.content-locale-chips code { margin-left: 3px; }
-.content-locale-empty { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
-.content-locale-empty > i { font-size: 1.3rem; color: var(--status-violet-text); }
-.content-locale-empty p { margin: 3px 0 0; color: var(--muted); font-size: .7rem; }
+.content-locale-summary > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+.content-locale-summary small {
+  color: var(--muted);
+}
+.content-locale-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.content-locale-chips span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--surface-card);
+  font-size: 0.7rem;
+}
+.content-locale-chips span.primary {
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+}
+.content-locale-chips code {
+  margin-left: 3px;
+}
+.content-locale-empty {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+.content-locale-empty > i {
+  font-size: 1.3rem;
+  color: var(--status-violet-text);
+}
+.content-locale-empty p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
 .project-status > span:last-child {
   display: flex;
   flex-direction: column;
@@ -905,7 +1039,7 @@ onBeforeUnmount(() => {
   margin: 8px 0 20px;
 }
 .assistant-orbit span {
-  font: 700 1.7rem Manrope;
+  font: 700 1.7rem var(--font-display);
   color: var(--project-assistant-on-orbit);
 }
 .assistant-preview small {

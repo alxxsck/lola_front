@@ -13,6 +13,7 @@ import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { repository } from "@/shared/api/repository";
 import type { EventLogFilters } from "@/shared/api/repository/contracts";
 import {
@@ -73,7 +74,11 @@ const filters = reactive({
 const appliedFilters = ref<EventLogFilters>({});
 const failedRequest = ref<FailedPageRequest | null>(null);
 const canRead = computed(
-  () => auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.event_logs.read",
+    ),
 );
 const eventOptions = computed(() =>
   eventDefinitions.value.map((item) => ({

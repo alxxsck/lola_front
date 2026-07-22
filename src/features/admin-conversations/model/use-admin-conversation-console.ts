@@ -12,6 +12,7 @@ interface AdminConversationConsoleOptions {
   endUserId(): string | undefined;
   updateRoute?(conversationId: string): unknown | Promise<unknown>;
   beforeLoadMessages?(conversationId: string): unknown | Promise<unknown>;
+  canReadPresence?(): boolean;
 }
 
 function orderedMessages(items: ConversationMessage[]): ConversationMessage[] {
@@ -93,6 +94,12 @@ export function useAdminConversationConsole(
     key: string;
   } | null = null;
   let newConversationAttempt: { text: string; key: string } | null = null;
+
+  function loadPresence(projectId: string): ReturnType<typeof repository.getSessions> {
+    return options.canReadPresence?.() === false
+      ? Promise.resolve([])
+      : repository.getSessions(projectId);
+  }
 
   function currentContext(
     projectId: string,
@@ -200,7 +207,7 @@ export function useAdminConversationConsole(
     const request = ++presenceRequestSequence;
     try {
       const [sessions, page] = await Promise.all([
-        repository.getSessions(projectId),
+        loadPresence(projectId),
         repository.getConversations(projectId, endUserId, { limit: 30 }),
       ]);
       if (
@@ -256,7 +263,7 @@ export function useAdminConversationConsole(
     try {
       const [page, sessions] = await Promise.all([
         repository.getConversations(projectId, endUserId, { limit: 30 }),
-        repository.getSessions(projectId),
+        loadPresence(projectId),
       ]);
       if (
         request !== conversationRequestSequence ||

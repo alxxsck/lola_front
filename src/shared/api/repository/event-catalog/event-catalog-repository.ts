@@ -1,17 +1,17 @@
 import axios from "axios";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
-  eventCatalogArchiveEventDefinition,
-  eventCatalogCreateEventDefinition,
-  eventCatalogDeleteEventDefinition,
-  eventCatalogEventDefinitionRevision,
-  eventCatalogEventDefinitionRevisions,
-  eventCatalogEventDefinitionUsage,
-  eventCatalogGetEventDefinition,
-  eventCatalogListEventDefinitions,
-  eventCatalogRestoreEventDefinition,
+  eventCatalogArchive,
+  eventCatalogCreate,
+  eventCatalogDetail,
+  eventCatalogHardDelete,
+  eventCatalogList,
+  eventCatalogRestore,
+  eventCatalogRevision,
+  eventCatalogRevisions,
   eventCatalogUpdateMetadata,
   eventCatalogUpdatePolicy,
+  eventCatalogUsage,
 } from "@/shared/api/generated/lola-backend";
 import {
   toEventCatalogDefinition,
@@ -104,21 +104,22 @@ function isNotFound(error: unknown) {
 
 export const apiEventCatalogRepository: EventCatalogRepository = {
   async listDefinitions(projectId, lifecycle = "ACTIVE") {
-    return (
-      await eventCatalogListEventDefinitions(projectId, { lifecycle })
-    ).map(toEventCatalogDefinition);
+    return (await eventCatalogList(projectId, { lifecycle })).map(
+      toEventCatalogDefinition,
+    );
   },
   async createDefinition(projectId, command) {
+    const created = await eventCatalogCreate(projectId, command);
     return toEventCatalogDefinition(
-      await eventCatalogCreateEventDefinition(projectId, command),
+      await eventCatalogDetail(projectId, created.definitionKeyId),
     );
   },
   async getDefinition(projectId, definitionKeyId) {
     return toEventCatalogDefinition(
-      await eventCatalogGetEventDefinition(projectId, definitionKeyId),
+      await eventCatalogDetail(projectId, definitionKeyId),
     );
   },
-  getUsage: eventCatalogEventDefinitionUsage,
+  getUsage: eventCatalogUsage,
   async updateMetadata(projectId, definitionKeyId, command) {
     const dto = await eventCatalogUpdateMetadata(
       projectId,
@@ -149,7 +150,7 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
   },
   async archive(projectId, definitionKeyId, command) {
     return toEventCatalogDefinition(
-      await eventCatalogArchiveEventDefinition(
+      await eventCatalogArchive(
         projectId,
         definitionKeyId,
         command,
@@ -158,7 +159,7 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
   },
   async restore(projectId, definitionKeyId, command) {
     return toEventCatalogDefinition(
-      await eventCatalogRestoreEventDefinition(
+      await eventCatalogRestore(
         projectId,
         definitionKeyId,
         command,
@@ -172,7 +173,7 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
       pendingDeleteIntents.get(intentKey) === fingerprint;
     pendingDeleteIntents.set(intentKey, fingerprint);
     try {
-      await eventCatalogDeleteEventDefinition(
+      await eventCatalogHardDelete(
         projectId,
         definitionKeyId,
         command,
@@ -186,7 +187,7 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
       }
     }
     try {
-      await eventCatalogGetEventDefinition(projectId, definitionKeyId);
+      await eventCatalogDetail(projectId, definitionKeyId);
     } catch (error) {
       if (isNotFound(error)) {
         pendingDeleteIntents.delete(intentKey);
@@ -197,6 +198,6 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
     pendingDeleteIntents.delete(intentKey);
     throw new Error("EVENT_DELETE_NOT_CONFIRMED");
   },
-  listRevisions: eventCatalogEventDefinitionRevisions,
-  getRevision: eventCatalogEventDefinitionRevision,
+  listRevisions: eventCatalogRevisions,
+  getRevision: eventCatalogRevision,
 };

@@ -2,43 +2,50 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   clearAuthSession,
   getAccessToken,
-  getRefreshToken,
   getSelectedProjectId,
+  storeAccessToken,
   storeSelectedProjectId,
-  storeTokens,
 } from './auth-session'
 
 describe('auth session', () => {
   beforeEach(() => {
     vi.useRealTimers()
     sessionStorage.clear()
+    localStorage.clear()
     clearAuthSession()
   })
 
-  it('keeps access token in memory and refresh token in session storage', () => {
-    storeTokens({ accessToken: 'access', expiresIn: 60, refreshToken: 'refresh', refreshExpiresIn: 120 })
+  it('keeps the access token in memory and writes no auth token to browser storage', () => {
+    storeAccessToken({ accessToken: 'access-secret', expiresIn: 60 })
 
-    expect(getAccessToken()).toBe('access')
-    expect(getRefreshToken()).toBe('refresh')
-    expect(sessionStorage.getItem('lola-cms-auth-v1')).not.toContain('access')
+    expect(getAccessToken()).toBe('access-secret')
+    expect(JSON.stringify(Object.values(sessionStorage))).not.toContain('access-secret')
+    expect(JSON.stringify(Object.values(localStorage))).not.toContain('access-secret')
   })
 
-  it('preserves the selected project when tokens rotate', () => {
-    storeTokens({ accessToken: 'a1', expiresIn: 60, refreshToken: 'r1', refreshExpiresIn: 120 })
+  it('persists only the non-secret selected Project', () => {
     storeSelectedProjectId('project-2')
-    storeTokens({ accessToken: 'a2', expiresIn: 60, refreshToken: 'r2', refreshExpiresIn: 120 })
+    storeAccessToken({ accessToken: 'access-secret', expiresIn: 60 })
 
     expect(getSelectedProjectId()).toBe('project-2')
-    expect(getRefreshToken()).toBe('r2')
+    expect(Object.values(sessionStorage)).toEqual(['project-2'])
   })
 
-  it('drops an expired refresh session', () => {
+  it('drops an expired in-memory access token', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-07-11T10:00:00Z'))
-    storeTokens({ accessToken: 'access', expiresIn: 1, refreshToken: 'refresh', refreshExpiresIn: 1 })
+    storeAccessToken({ accessToken: 'access', expiresIn: 1 })
     vi.advanceTimersByTime(1_100)
 
     expect(getAccessToken()).toBeNull()
-    expect(getRefreshToken()).toBeNull()
+  })
+
+  it('clears project selection and scoped background-job state on logout', () => {
+    storeSelectedProjectId('project-2')
+    sessionStorage.setItem('lola:translation-jobs:project-2:scenario-1', '[]')
+
+    clearAuthSession()
+
+    expect(sessionStorage.length).toBe(0)
   })
 })

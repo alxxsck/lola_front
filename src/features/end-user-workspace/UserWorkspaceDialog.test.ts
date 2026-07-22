@@ -16,10 +16,21 @@ const mocks = vi.hoisted(() => ({
   onState: vi.fn(),
   reconcile: vi.fn(),
   messageHandler: undefined as ((value: unknown) => void) | undefined,
+  permissions: [
+    "project.profiles.read",
+    "project.end_users.read",
+    "project.conversations.read",
+    "project.conversations.reply",
+    "project.conversations.ai_suspend",
+  ],
 }));
 
 vi.mock("@/features/auth/auth.store", () => ({
-  useAuthStore: () => ({ user: { role: "OWNER" } }),
+  useAuthStore: () => ({
+    project: {
+      effectivePermissionCodes: mocks.permissions,
+    },
+  }),
 }));
 vi.mock("@/features/end-user-profile/api/end-user-profile-repository", () => ({
   endUserProfileRepository: { profile: mocks.profile },
@@ -84,6 +95,15 @@ describe("единое рабочее пространство пользова�
       value: vi.fn(),
     });
     vi.clearAllMocks();
+    mocks.permissions.splice(
+      0,
+      mocks.permissions.length,
+      "project.profiles.read",
+      "project.end_users.read",
+      "project.conversations.read",
+      "project.conversations.reply",
+      "project.conversations.ai_suspend",
+    );
     mocks.messageHandler = undefined;
     mocks.subscribe.mockImplementation(
       (_events: string[], handler: (value: unknown) => void) => {
@@ -233,5 +253,45 @@ describe("единое рабочее пространство пользова�
     await flushPromises();
 
     expect(mocks.unwatchConversation).toHaveBeenCalledWith(current.id);
+  });
+
+  it("не запрашивает диалоги и realtime без project.conversations.read", async () => {
+    mocks.permissions.splice(0, mocks.permissions.length, "project.profiles.read");
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    expect(mocks.profile).toHaveBeenCalledWith("project-1", "user-1");
+    expect(mocks.getConversations).not.toHaveBeenCalled();
+    expect(mocks.activateProject).not.toHaveBeenCalled();
+    expect(mocks.subscribe).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("customer-1");
+  });
+
+  it("не показывает и не вызывает reply controls без project.conversations.reply", async () => {
+    mocks.permissions.splice(
+      0,
+      mocks.permissions.length,
+      "project.profiles.read",
+      "project.conversations.read",
+    );
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    expect(wrapper.find("form.composer").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Новый");
+    expect(mocks.sendAdminMessage).not.toHaveBeenCalled();
+  });
+
+  it("не запрашивает presence без project.end_users.read", async () => {
+    mocks.permissions.splice(
+      0,
+      mocks.permissions.length,
+      "project.conversations.read",
+    );
+    mountWorkspace();
+    await flushPromises();
+
+    expect(mocks.getConversations).toHaveBeenCalledWith("project-1", "user-1", { limit: 30 });
+    expect(mocks.getSessions).not.toHaveBeenCalled();
   });
 });

@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import InterfacePage from './InterfacePage.vue'
 
 const mocks = vi.hoisted(() => ({
-  role: 'OWNER' as 'OWNER' | 'EDITOR',
+  permissions: ['project.ui_registry.read', 'project.ui_registry.write'] as string[],
   getElements: vi.fn(),
   updateElement: vi.fn(),
   toast: vi.fn(),
@@ -28,8 +28,7 @@ const page = {
 
 vi.mock('@/features/auth/auth.store', () => ({
   useAuthStore: () => ({
-    project: { id: 'project-1' },
-    user: { role: mocks.role },
+    project: { id: 'project-1', get effectivePermissionCodes() { return mocks.permissions } },
   }),
 }))
 vi.mock('@/shared/api/repository', () => ({
@@ -71,7 +70,7 @@ function mountPage() {
 describe('InterfacePage AI target exposure', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.role = 'OWNER'
+    mocks.permissions = ['project.ui_registry.read', 'project.ui_registry.write']
     mocks.getElements.mockResolvedValue([{ ...page }])
     mocks.updateElement.mockImplementation(
       async (_projectId: string, _id: string, patch: object) => ({
@@ -81,7 +80,7 @@ describe('InterfacePage AI target exposure', () => {
     )
   })
 
-  it('requires description and audit reason before an OWNER exposes a bound target to AI', async () => {
+  it('requires description and audit reason before exposing a bound target to AI', async () => {
     const wrapper = mountPage()
     await flushPromises()
     await wrapper.find('button-stub[label="Изменить"]').trigger('click')
@@ -125,17 +124,21 @@ describe('InterfacePage AI target exposure', () => {
     })
   })
 
-  it('keeps AI exposure controls disabled for an EDITOR', async () => {
-    mocks.role = 'EDITOR'
+  it('removes every mutation control without the write Permission', async () => {
+    mocks.permissions = ['project.ui_registry.read']
     const wrapper = mountPage()
     await flushPromises()
-    await wrapper.find('button-stub[label="Изменить"]').trigger('click')
 
-    const aiToggle = wrapper
+    const enabledToggle = wrapper
       .findAllComponents(ToggleSwitch)
-      .find((item) => item.attributes('aria-label') === 'Разрешить Lola')!
-    expect(aiToggle.attributes('disabled')).toBe('true')
-    expect(wrapper.text()).toContain('только владелец проекта')
+      .find((item) => item.attributes('aria-label') === 'Включить Бонусы')!
+    expect(enabledToggle.attributes('disabled')).toBe('true')
+    expect(wrapper.find('button-stub[label="Добавить элемент"]').exists()).toBe(false)
+    expect(wrapper.find('button-stub[label="Изменить"]').exists()).toBe(false)
+    expect(wrapper.find('button-stub[icon="pi pi-trash"]').exists()).toBe(false)
+    enabledToggle.vm.$emit('update:modelValue', false)
+    await flushPromises()
+    expect(mocks.updateElement).not.toHaveBeenCalled()
   })
 
   it('requires an exposed target to be disabled through the audited editor flow', async () => {

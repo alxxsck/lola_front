@@ -84,8 +84,14 @@ const store = {
 
 vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => ({
-    project: { id: "project-1" },
-    user: { role: "OWNER" },
+    project: {
+      id: "project-1",
+      effectivePermissionCodes: [
+        "project.actions.read",
+        "project.actions.manage",
+        "project.actions.manage_ai_exposure",
+      ],
+    },
   }),
 }));
 vi.mock("@/features/project-actions/model/project-actions.store", () => ({

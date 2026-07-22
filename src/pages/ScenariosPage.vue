@@ -13,6 +13,7 @@ import { useRouter } from 'vue-router'
 import { DocumentationCallout } from '@/features/documentation/ui'
 import { useActionDefinitionsStore } from '@/features/actions/action-definitions.store'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { hasProjectPermission } from '@/features/auth/permission-access'
 import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
 import { repository } from '@/shared/api/repository'
 import { formatDate } from '@/shared/lib/format'
@@ -36,6 +37,11 @@ const search = ref('')
 const statusFilter = ref<ScenarioStatus | 'ALL'>('ALL')
 const pendingIds = ref(new Set<string>())
 const actionDefinitions = computed<ScenarioActionDefinition[]>(() => actionDefinitionsStore.forProject(auth.project?.id ?? ''))
+const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? [])
+const canWrite = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.write'))
+const canPublish = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.publish'))
+const canReadEvents = computed(() => hasProjectPermission(projectPermissions.value, 'project.event_catalog.read'))
+const canReadActions = computed(() => hasProjectPermission(projectPermissions.value, 'project.actions.read'))
 
 const statusOptions: { label: string; value: ScenarioStatus | 'ALL' }[] = [
   { label: 'Все статусы', value: 'ALL' },
@@ -69,8 +75,8 @@ async function load() {
   try {
     const [scenarioItems, eventItems] = await Promise.all([
       repository.getScenarios(projectId),
-      repository.getEvents(projectId),
-      actionDefinitionsStore.ensureLoaded(projectId),
+      canReadEvents.value ? repository.getEvents(projectId) : Promise.resolve([]),
+      canReadActions.value ? actionDefinitionsStore.ensureLoaded(projectId) : Promise.resolve(),
     ])
     scenarios.value = scenarioItems
     events.value = eventItems
@@ -82,6 +88,7 @@ async function load() {
 }
 
 function openCreate() {
+  if (!canWrite.value) return
   router.push({ name: 'scenario-create' })
 }
 
@@ -91,8 +98,9 @@ function openEdit(scenario: Scenario) {
 
 async function toggleScenario(scenario: Scenario) {
   const projectId = auth.project?.id
-  if (!projectId || pendingIds.value.has(scenario.id)) return
+  if (!projectId || pendingIds.value.has(scenario.id) || !canWrite.value) return
   if (scenario.status !== 'ACTIVE') {
+    if (!canPublish.value) return
     openEdit(scenario)
     toast.add({ severity: 'info', summary: 'Публикация выполняется в Studio', detail: 'Проверьте условия, Actions и Delivery перед запуском.', life: 4200 })
     return
@@ -116,6 +124,7 @@ async function toggleScenario(scenario: Scenario) {
 }
 
 function requestDelete(scenario: Scenario) {
+  if (!canWrite.value) return
   confirm.require({
     header: 'Удалить сценарий?',
     message: `«${scenario.name}» будет удалён без возможности восстановления.`,
@@ -129,10 +138,14 @@ function requestDelete(scenario: Scenario) {
 
 async function deleteScenario(scenario: Scenario) {
   const projectId = auth.project?.id
-  if (!projectId) return
+  if (!projectId || !canWrite.value) return
   pendingIds.value.add(scenario.id)
   try {
-    await repository.deleteScenario(projectId, scenario.id)
+    if (!scenario.updatedAt) throw new Error('Не удалось определить версию сценария')
+    await repository.deleteScenario(projectId, scenario.id, {
+      expectedUpdatedAt: scenario.updatedAt,
+      reason: 'Archive scenario from CMS list',
+    })
     scenarios.value = scenarios.value.filter((item) => item.id !== scenario.id)
     toast.add({ severity: 'success', summary: 'Сценарий удалён', detail: scenario.name, life: 2800 })
   } catch (cause) {
@@ -158,6 +171,7 @@ function toPayload(scenario: Scenario, status = scenario.status): ScenarioPayloa
     activeFrom: scenario.activeFrom,
     activeTo: scenario.activeTo,
     actions: scenario.actions,
+    updatedAt: scenario.updatedAt,
   }
 }
 
@@ -199,7 +213,7 @@ function errorMessage(cause: unknown) {
         <h1>Сценарии</h1>
         <p class="subtitle">Собирайте реакции Lola как наглядный граф: вопросы, условия, ветки и безопасные действия.</p>
       </div>
-      <Button label="Создать сценарий" icon="pi pi-plus" @click="openCreate" />
+      <Button v-if="canWrite" label="Создать сценарий" icon="pi pi-plus" @click="openCreate" />
     </header>
 
     <DocumentationCallout title="Как работают сценарии Lola" text="Trigger, Audience, Eligibility, действия, Goal, доставка, публикация и откат — в одном практическом руководстве." icon="pi pi-sitemap" />
@@ -239,7 +253,7 @@ function errorMessage(cause: unknown) {
             <i class="pi pi-sitemap" />
             <strong>{{ scenarios.length ? 'Ничего не найдено' : 'Создайте первый сценарий' }}</strong>
             <p>{{ scenarios.length ? 'Измените поиск или фильтр статуса.' : 'Выберите событие и добавьте действия Lola.' }}</p>
-            <Button v-if="!scenarios.length" label="Создать сценарий" icon="pi pi-plus" size="small" @click="openCreate" />
+            <Button v-if="!scenarios.length && canWrite" label="Создать сценарий" icon="pi pi-plus" size="small" @click="openCreate" />
           </div>
         </template>
 
@@ -273,9 +287,9 @@ function errorMessage(cause: unknown) {
         <Column style="width: 128px">
           <template #body="{ data }">
             <div class="row-actions" @click.stop>
-              <Button :icon="data.status === 'ACTIVE' ? 'pi pi-pause' : 'pi pi-send'" text rounded size="small" :severity="data.status === 'ACTIVE' ? 'warn' : 'success'" :loading="pendingIds.has(data.id)" :aria-label="data.status === 'ACTIVE' ? 'Поставить на паузу' : 'Настроить и опубликовать'" @click="toggleScenario(data)" />
-              <Button icon="pi pi-pencil" text rounded size="small" aria-label="Редактировать" @click="openEdit(data)" />
-              <Button icon="pi pi-trash" text rounded size="small" severity="danger" aria-label="Удалить" :disabled="pendingIds.has(data.id)" @click="requestDelete(data)" />
+              <Button v-if="canWrite && (data.status === 'ACTIVE' || canPublish)" :icon="data.status === 'ACTIVE' ? 'pi pi-pause' : 'pi pi-send'" text rounded size="small" :severity="data.status === 'ACTIVE' ? 'warn' : 'success'" :loading="pendingIds.has(data.id)" :aria-label="data.status === 'ACTIVE' ? 'Поставить на паузу' : 'Настроить и опубликовать'" @click="toggleScenario(data)" />
+              <Button :icon="canWrite ? 'pi pi-pencil' : 'pi pi-eye'" text rounded size="small" :aria-label="canWrite ? 'Редактировать' : 'Просмотреть'" @click="openEdit(data)" />
+              <Button v-if="canWrite" icon="pi pi-trash" text rounded size="small" severity="danger" aria-label="Удалить" :disabled="pendingIds.has(data.id)" @click="requestDelete(data)" />
             </div>
           </template>
         </Column>
@@ -286,7 +300,7 @@ function errorMessage(cause: unknown) {
 </template>
 
 <style scoped>
-.scenarios-page{display:flex;flex-direction:column;gap:20px}.page-header{margin-bottom:0}.metric-strip{display:flex;align-items:center;padding:15px 18px;gap:26px}.metric-strip>div{display:flex;align-items:center;gap:10px;padding-right:26px;border-right:1px solid var(--line)}.metric-strip strong,.metric-strip small{display:block}.metric-strip strong{font:700 1.15rem Manrope;line-height:1}.metric-strip small{font-size:.7rem;color:var(--muted);margin-top:4px}.metric-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;font-size:.75rem}.metric-icon.active{background:var(--status-success-soft);color:var(--status-success-text)}.metric-icon.draft{background:var(--status-violet-soft);color:var(--status-violet-text)}.metric-icon.actions{background:var(--status-danger-soft);color:var(--status-danger-text)}.metric-strip p{margin:0 0 0 auto;color:var(--muted);font-size:.76rem}.metric-strip p i{color:var(--violet);margin-right:5px}.load-error{margin:0}.table-card{overflow:hidden}.table-toolbar{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}.search-box{position:relative;width:min(390px,100%)}.search-box>i{position:absolute;z-index:2;left:13px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:.8rem}.search-box .p-inputtext{padding-left:36px}.status-filter{width:170px}.result-count{margin-left:auto;color:var(--muted);font-size:.75rem}.scenario-table{cursor:default}.scenario-name,.trigger-cell{display:flex;align-items:center;gap:10px}.scenario-name strong,.scenario-name small,.trigger-cell strong,.trigger-cell small,.flow-cell strong,.flow-cell small{display:block}.scenario-name strong,.trigger-cell strong{font-size:.84rem}.scenario-name small,.trigger-cell small{color:var(--muted);font-size:.67rem;margin-top:4px}.scenario-mark{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:11px;background:var(--surface-emphasis);color:var(--accent);font-size:.82rem}.trigger-cell>span{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:var(--status-violet-soft);color:var(--status-violet-text);font-size:.68rem}.flow-cell strong{font-size:.78rem}.flow-cell small{margin-top:4px;color:var(--muted);font-size:.69rem;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}.priority{display:inline-grid;place-items:center;min-width:32px;height:27px;padding:0 8px;border-radius:8px;background:var(--surface-subtle);font:700 .72rem Manrope}.updated-at{color:var(--muted);font-size:.75rem}.row-actions{display:flex;justify-content:flex-end}.empty strong{display:block;color:var(--ink);font-size:.95rem}.empty p{margin:6px 0 16px;font-size:.8rem}
+.scenarios-page{display:flex;flex-direction:column;gap:20px}.page-header{margin-bottom:0}.metric-strip{display:flex;align-items:center;padding:15px 18px;gap:26px}.metric-strip>div{display:flex;align-items:center;gap:10px;padding-right:26px;border-right:1px solid var(--line)}.metric-strip strong,.metric-strip small{display:block}.metric-strip strong{font:700 1.15rem var(--font-display);line-height:1}.metric-strip small{font-size:.7rem;color:var(--muted);margin-top:4px}.metric-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;font-size:.75rem}.metric-icon.active{background:var(--status-success-soft);color:var(--status-success-text)}.metric-icon.draft{background:var(--status-violet-soft);color:var(--status-violet-text)}.metric-icon.actions{background:var(--status-danger-soft);color:var(--status-danger-text)}.metric-strip p{margin:0 0 0 auto;color:var(--muted);font-size:.76rem}.metric-strip p i{color:var(--violet);margin-right:5px}.load-error{margin:0}.table-card{overflow:hidden}.table-toolbar{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}.search-box{position:relative;width:min(390px,100%)}.search-box>i{position:absolute;z-index:2;left:13px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:.8rem}.search-box .p-inputtext{padding-left:36px}.status-filter{width:170px}.result-count{margin-left:auto;color:var(--muted);font-size:.75rem}.scenario-table{cursor:default}.scenario-name,.trigger-cell{display:flex;align-items:center;gap:10px}.scenario-name strong,.scenario-name small,.trigger-cell strong,.trigger-cell small,.flow-cell strong,.flow-cell small{display:block}.scenario-name strong,.trigger-cell strong{font-size:.84rem}.scenario-name small,.trigger-cell small{color:var(--muted);font-size:.67rem;margin-top:4px}.scenario-mark{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:11px;background:var(--surface-emphasis);color:var(--accent);font-size:.82rem}.trigger-cell>span{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:var(--status-violet-soft);color:var(--status-violet-text);font-size:.68rem}.flow-cell strong{font-size:.78rem}.flow-cell small{margin-top:4px;color:var(--muted);font-size:.69rem;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}.priority{display:inline-grid;place-items:center;min-width:32px;height:27px;padding:0 8px;border-radius:8px;background:var(--surface-subtle);font:700 .72rem var(--font-display)}.updated-at{color:var(--muted);font-size:.75rem}.row-actions{display:flex;justify-content:flex-end}.empty strong{display:block;color:var(--ink);font-size:.95rem}.empty p{margin:6px 0 16px;font-size:.8rem}
 :deep(.scenario-table .p-datatable-tbody > tr){cursor:pointer}:deep(.scenario-table .p-datatable-tbody > tr > td){padding-top:14px;padding-bottom:14px}:deep(.p-paginator){border-top:1px solid var(--line)}
 @media(max-width:900px){.metric-strip{align-items:stretch;display:grid;grid-template-columns:repeat(3,1fr)}.metric-strip>div{border:0;padding:0}.metric-strip p{grid-column:1/-1;margin:0}.table-toolbar{flex-wrap:wrap}.search-box{width:100%}.status-filter{flex:1}.result-count{margin-left:0}}
 @media(max-width:560px){.metric-strip{grid-template-columns:1fr}.metric-strip p{grid-column:auto}.status-filter{width:100%}.result-count{width:100%}.page-header .p-button{width:100%}}

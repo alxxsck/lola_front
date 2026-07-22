@@ -5,11 +5,12 @@ import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { DocumentationCallout } from "@/features/documentation/ui";
 import SegmentManager from "@/features/scenario-audience/ui/SegmentManager.vue";
 import { repository } from "@/shared/api/repository";
 import {
-  scenarioAuthoringRepository,
+  segmentCatalogRepository,
   type ConditionCatalogResponseDtoAudience,
 } from "@/shared/api/repository/scenario-authoring";
 
@@ -20,7 +21,11 @@ const loading = ref(true);
 const error = ref("");
 const catalog = ref<ConditionCatalogResponseDtoAudience | null>(null);
 const canManage = computed(
-  () => auth.user?.role === "OWNER" || auth.user?.role === "ADMIN",
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.segments.write",
+    ),
 );
 const initialAction = computed<
   "create" | "detail" | "revision" | "exact" | undefined
@@ -109,7 +114,7 @@ async function load() {
     const nextCatalog =
       repository.mode === "mock"
         ? demoCatalog()
-        : (await scenarioAuthoringRepository.getContract(projectId)).audience;
+        : await segmentCatalogRepository.get(projectId);
     if (!nextCatalog)
       throw new Error(
         "Для проекта ещё не опубликованы поля для сегментов.",
@@ -128,8 +133,7 @@ async function load() {
 async function refreshCatalog() {
   const projectId = auth.project?.id;
   if (!projectId) throw new Error("Проект не выбран");
-  const next = (await scenarioAuthoringRepository.getContract(projectId))
-    .audience;
+  const next = await segmentCatalogRepository.get(projectId);
   if (!next) throw new Error("Поля для сегментов ещё не опубликованы");
   catalog.value = next;
   return next;

@@ -585,7 +585,7 @@ async function load() {
   height: 30px;
   border-radius: 10px;
   background: var(--surface-subtle);
-  font: 700 0.68rem Manrope;
+  font: 700 0.68rem var(--font-display);
 }
 .steps {
   display: grid;
@@ -606,7 +606,7 @@ async function load() {
   border-radius: 14px;
   background: var(--surface-emphasis);
   color: var(--accent);
-  font: 700 0.82rem Manrope;
+  font: 700 0.82rem var(--font-display);
 }
 .step-content {
   min-width: 0;

@@ -12,6 +12,7 @@ import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import {
   createContractField,
@@ -67,6 +68,12 @@ interface PresetSessionDraft {
 const presetDrafts = new Map<ProfileFieldKind, PresetSessionDraft>();
 
 const isEditing = computed(() => route.name === "profile-field-edit");
+const canEdit = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.profile_contract.write",
+  ),
+);
 const dirty = computed(
   () =>
     !loading.value &&
@@ -520,7 +527,7 @@ async function load() {
 
 async function save() {
   const projectId = auth.project?.id;
-  if (!projectId || !workspace.value) return;
+  if (!projectId || !workspace.value || !canEdit.value) return;
   error.value = "";
   try {
     if (isLocaleField.value) {
@@ -1206,7 +1213,7 @@ async function save() {
             :label="isEditing ? 'Сохранить изменения' : 'Добавить в черновик'"
             icon="pi pi-check"
             :loading="saving"
-            :disabled="!form.label.trim() || !form.key.trim()"
+            :disabled="!canEdit || !form.label.trim() || !form.key.trim()"
           />
           <Button
             type="button"
@@ -1295,7 +1302,7 @@ async function save() {
 .preset-title {
   display: block;
   color: var(--text-primary);
-  font: 750 1.05rem Manrope;
+  font: 750 1.05rem var(--font-display);
 }
 .preset-heading small {
   display: block;
@@ -1460,7 +1467,7 @@ async function save() {
 }
 :global(.preset-switch-dialog .p-dialog-title) {
   color: var(--text-primary);
-  font: 800 1.05rem/1.3 Manrope;
+  font: 800 1.05rem/1.3 var(--font-display);
 }
 :global(.preset-switch-dialog .p-dialog-content) {
   padding: 0 24px 6px;
@@ -1498,7 +1505,7 @@ async function save() {
   border-radius: 11px;
   background: var(--surface-emphasis);
   color: var(--accent);
-  font: 700 0.75rem Manrope;
+  font: 700 0.75rem var(--font-display);
 }
 .section-heading h2 {
   font-size: 1.05rem;

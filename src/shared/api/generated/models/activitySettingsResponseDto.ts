@@ -10,6 +10,8 @@ import type { ActivitySettingsSemanticsResponseDto } from "./activitySettingsSem
 
 export interface ActivitySettingsResponseDto {
   limits: ActivitySettingsLimitsResponseDto;
+  /** @minimum 1 */
+  projectVersion: number;
   reconnectGraceSeconds: number;
   semantics: ActivitySettingsSemanticsResponseDto;
   timezone: string;

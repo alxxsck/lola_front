@@ -28,7 +28,7 @@ const proposal: AIProposalDetailModel = {
 describe("AIProposalDetail", () => {
   it("shows resolve instead of approval actions for acknowledge proposals", () => {
     const wrapper = mount(AIProposalDetail, {
-      props: { proposal, loading: false, deciding: false },
+      props: { proposal, loading: false, deciding: false, canDecide: true },
       global: {
         stubs: {
           Button: {

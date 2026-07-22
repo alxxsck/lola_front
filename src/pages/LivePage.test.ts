@@ -1,11 +1,19 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import UserWorkspaceDialog from '@/features/end-user-workspace/UserWorkspaceDialog.vue'
 import LivePage from './LivePage.vue'
 
-const mocks = vi.hoisted(() => ({ getSessions: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  permissions: ['project.end_users.read'] as string[],
+  getSessions: vi.fn(),
+}))
+
 vi.mock('@/features/auth/auth.store', () => ({
-  useAuthStore: () => ({ project: { id: 'project-1' } }),
+  useAuthStore: () => ({
+    project: {
+      id: 'project-1',
+      get effectivePermissionCodes() { return mocks.permissions },
+    },
+  }),
 }))
 vi.mock('@/shared/api/repository', () => ({
   repository: {
@@ -18,42 +26,46 @@ const session = {
   id: 'session-1',
   userId: 'user-1',
   externalId: 'customer-1',
-  userName: 'Анна',
+  userName: 'Customer',
   device: 'Web',
   status: 'ONLINE' as const,
-  startedAt: '2026-07-20T12:00:00.000Z',
-  lastSeenAt: '2026-07-20T13:00:00.000Z',
-  connectionCount: 1,
+  startedAt: '2026-07-21T10:00:00.000Z',
+  lastSeenAt: '2026-07-21T10:00:00.000Z',
 }
 
-describe('страница активных сессий', () => {
+describe('LivePage permission composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.permissions = ['project.end_users.read']
     mocks.getSessions.mockResolvedValue([session])
   })
 
-  it('открывает общий workspace доступной кнопкой диалога', async () => {
+  it('shows presence but no conversation or reply controls to an end-users-only reader', async () => {
     const wrapper = shallowMount(LivePage)
     await flushPromises()
 
-    await wrapper.get('.session-open-overlay').trigger('click')
-
-    expect(wrapper.getComponent(UserWorkspaceDialog).props()).toMatchObject({
-      visible: true,
-      projectId: 'project-1',
-      endUserId: 'user-1',
-      externalUserId: 'customer-1',
-    })
+    expect(mocks.getSessions).toHaveBeenCalledWith('project-1')
+    expect(wrapper.find('.session-open-overlay').exists()).toBe(false)
+    expect(wrapper.find('button-stub[label="Открыть диалог"]').exists()).toBe(false)
+    expect(wrapper.find('button-stub[label="Действия"]').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'UserWorkspaceDialog' }).exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'SendActionDialog' }).exists()).toBe(false)
   })
 
-  it('оставляет отдельное меню действий и не открывает его вместо диалога', async () => {
+  it('enables each composed surface only when its exact authority exists', async () => {
+    mocks.permissions = [
+      'project.end_users.read',
+      'project.conversations.read',
+      'project.conversations.reply',
+      'project.ui_registry.read',
+    ]
     const wrapper = shallowMount(LivePage)
     await flushPromises()
-    const actions = wrapper.get('button-stub[label="Действия"]')
-    await actions.trigger('click')
-    await flushPromises()
-    expect(wrapper.getComponent(UserWorkspaceDialog).props('visible')).toBe(
-      false,
-    )
+
+    expect(wrapper.find('.session-open-overlay').exists()).toBe(true)
+    expect(wrapper.find('button-stub[label="Открыть диалог"]').exists()).toBe(true)
+    expect(wrapper.find('button-stub[label="Действия"]').exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'UserWorkspaceDialog' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'SendActionDialog' }).props('canReadTargets')).toBe(true)
   })
 })

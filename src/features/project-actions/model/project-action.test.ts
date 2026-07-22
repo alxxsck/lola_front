@@ -40,19 +40,25 @@ const action = {
   },
 } satisfies ProjectAction
 
+const managePermissions = ['project.actions.manage']
+const allPermissions = [
+  'project.actions.manage',
+  'project.actions.manage_ai_exposure',
+]
+
 describe('Project Action draft', () => {
   it('keeps surface switches independent and rejects an unsupported surface', () => {
     const draft = createProjectActionDraft(action)
     draft.scenarioEnabled = true
     draft.aiEnabled = true
 
-    expect(validateProjectActionDraft(action, draft, 'OWNER')).toEqual([
+    expect(validateProjectActionDraft(action, draft, allPermissions)).toEqual([
       expect.objectContaining({ field: 'aiEnabled', code: 'ACTION_SURFACE_UNSUPPORTED' }),
     ])
     expect(draft.scenarioEnabled).toBe(true)
   })
 
-  it('requires an effective description and audit reason when an OWNER enables AI', () => {
+  it('requires an effective description and audit reason when AI exposure is enabled', () => {
     const aiAction: ProjectAction = {
       ...action,
       actionTypeRevision: {
@@ -64,21 +70,20 @@ describe('Project Action draft', () => {
     draft.aiEnabled = true
     draft.aiUsageDescription = 'Open it'
 
-    expect(validateProjectActionDraft(aiAction, draft, 'OWNER')).toEqual([
+    expect(validateProjectActionDraft(aiAction, draft, allPermissions)).toEqual([
       expect.objectContaining({ field: 'aiUsageDescription', code: 'AI_ACTION_DESCRIPTION_INVALID' }),
       expect.objectContaining({ field: 'auditReason', code: 'AI_ACTION_AUDIT_REASON_REQUIRED' }),
     ])
   })
 
-  it('keeps every current backend mutation OWNER-only', () => {
+  it('uses the exact manage Permission without a role fallback', () => {
     const draft = createProjectActionDraft(action)
     draft.scenarioEnabled = true
 
-    expect(canConfigureProjectActions('OWNER')).toBe(true)
-    expect(canConfigureProjectActions('EDITOR')).toBe(false)
-    expect(canConfigureProjectActions('VIEWER')).toBe(false)
-    expect(validateProjectActionDraft(action, draft, 'EDITOR')).toEqual([
-      expect.objectContaining({ field: 'form', code: 'PROJECT_ACTION_OWNER_REQUIRED' }),
+    expect(canConfigureProjectActions(managePermissions)).toBe(true)
+    expect(canConfigureProjectActions([])).toBe(false)
+    expect(validateProjectActionDraft(action, draft, [])).toEqual([
+      expect.objectContaining({ field: 'form', code: 'PROJECT_ACTION_MANAGE_PERMISSION_REQUIRED' }),
     ])
   })
 
@@ -95,8 +100,8 @@ describe('Project Action draft', () => {
     const broadened = createProjectActionDraft(aiAction)
     broadened.configuration = { pageCodes: ['home', 'bonuses', 'support'] }
 
-    expect(validateProjectActionDraft(aiAction, narrowed, 'OWNER')).toEqual([])
-    expect(validateProjectActionDraft(aiAction, broadened, 'OWNER')).toEqual([
+    expect(validateProjectActionDraft(aiAction, narrowed, allPermissions)).toEqual([])
+    expect(validateProjectActionDraft(aiAction, broadened, allPermissions)).toEqual([
       expect.objectContaining({ field: 'auditReason', code: 'AI_ACTION_AUDIT_REASON_REQUIRED' }),
     ])
   })

@@ -7,9 +7,15 @@
  */
 
 export interface ArchiveEventDefinitionDto {
-  /** @minimum 1 */
+  /**
+   * @minimum 1
+   * @maximum 2147483647
+   */
   expectedLifecycleVersion: number;
-  /** @minimum 1 */
+  /**
+   * @minimum 1
+   * @maximum 2147483647
+   */
   expectedPolicyVersion: number;
   /** @maxLength 500 */
   reason?: string;

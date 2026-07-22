@@ -114,8 +114,8 @@ export function mapAIProposalDetail(
     ...(value.sourceInvocationId
       ? { sourceInvocationId: value.sourceInvocationId }
       : {}),
-    ...(value.decidedByAdminId
-      ? { decidedByAdminId: value.decidedByAdminId }
+    ...(value.decidedByActorId
+      ? { decidedByAdminId: value.decidedByActorId }
       : {}),
     ...(value.readAt ? { readAt: value.readAt } : {}),
     ...(value.decidedAt ? { decidedAt: value.decidedAt } : {}),

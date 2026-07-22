@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  eventCatalogArchiveEventDefinition,
-  eventCatalogDeleteEventDefinition,
-  eventCatalogGetEventDefinition,
-  eventCatalogListEventDefinitions,
-  eventCatalogRestoreEventDefinition,
+  eventCatalogArchive,
+  eventCatalogDetail,
+  eventCatalogHardDelete,
+  eventCatalogList,
+  eventCatalogRestore,
   eventCatalogUpdateMetadata,
   eventCatalogUpdatePolicy,
 } from "@/shared/api/generated/lola-backend";
@@ -13,15 +13,15 @@ import { ApiError } from "@/shared/api/http/api-error";
 import { apiEventCatalogRepository } from "./event-catalog-repository";
 
 vi.mock("@/shared/api/generated/lola-backend", () => ({
-  eventCatalogArchiveEventDefinition: vi.fn(),
-  eventCatalogCreateEventDefinition: vi.fn(),
-  eventCatalogDeleteEventDefinition: vi.fn(),
-  eventCatalogEventDefinitionRevision: vi.fn(),
-  eventCatalogEventDefinitionRevisions: vi.fn(),
-  eventCatalogEventDefinitionUsage: vi.fn(),
-  eventCatalogGetEventDefinition: vi.fn(),
-  eventCatalogListEventDefinitions: vi.fn(),
-  eventCatalogRestoreEventDefinition: vi.fn(),
+  eventCatalogArchive: vi.fn(),
+  eventCatalogCreate: vi.fn(),
+  eventCatalogDetail: vi.fn(),
+  eventCatalogHardDelete: vi.fn(),
+  eventCatalogList: vi.fn(),
+  eventCatalogRestore: vi.fn(),
+  eventCatalogRevision: vi.fn(),
+  eventCatalogRevisions: vi.fn(),
+  eventCatalogUsage: vi.fn(),
   eventCatalogUpdateMetadata: vi.fn(),
   eventCatalogUpdatePolicy: vi.fn(),
 }));
@@ -56,18 +56,18 @@ const definitionDto: EventDefinitionCatalogResponseDto = {
 describe("apiEventCatalogRepository", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(eventCatalogGetEventDefinition).mockResolvedValue(definitionDto);
+    vi.mocked(eventCatalogDetail).mockResolvedValue(definitionDto);
   });
 
   it("uses the canonical lifecycle-filtered stable list", async () => {
-    vi.mocked(eventCatalogListEventDefinitions).mockResolvedValue([
+    vi.mocked(eventCatalogList).mockResolvedValue([
       definitionDto,
     ]);
     const result = await apiEventCatalogRepository.listDefinitions(
       "project-1",
       "ARCHIVED",
     );
-    expect(eventCatalogListEventDefinitions).toHaveBeenCalledWith("project-1", {
+    expect(eventCatalogList).toHaveBeenCalledWith("project-1", {
       lifecycle: "ARCHIVED",
     });
     expect(result[0]?.definitionKeyId).toBe("event-key-1");
@@ -96,19 +96,19 @@ describe("apiEventCatalogRepository", () => {
       "event-key-1",
       command,
     );
-    expect(eventCatalogGetEventDefinition).toHaveBeenCalledWith(
+    expect(eventCatalogDetail).toHaveBeenCalledWith(
       "project-1",
       "event-key-1",
     );
   });
 
   it("passes lifecycle OCC commands to archive and restore", async () => {
-    vi.mocked(eventCatalogArchiveEventDefinition).mockResolvedValue({
+    vi.mocked(eventCatalogArchive).mockResolvedValue({
       ...definitionDto,
       lifecycle: "ARCHIVED",
       policy: { ...definitionDto.policy, enabled: false },
     });
-    vi.mocked(eventCatalogRestoreEventDefinition).mockResolvedValue({
+    vi.mocked(eventCatalogRestore).mockResolvedValue({
       ...definitionDto,
       policy: { ...definitionDto.policy, enabled: false },
     });
@@ -119,12 +119,12 @@ describe("apiEventCatalogRepository", () => {
     await apiEventCatalogRepository.restore("project-1", "event-key-1", {
       expectedLifecycleVersion: 3,
     });
-    expect(eventCatalogArchiveEventDefinition).toHaveBeenCalledWith(
+    expect(eventCatalogArchive).toHaveBeenCalledWith(
       "project-1",
       "event-key-1",
       { expectedLifecycleVersion: 2, expectedPolicyVersion: 3 },
     );
-    expect(eventCatalogRestoreEventDefinition).toHaveBeenCalledWith(
+    expect(eventCatalogRestore).toHaveBeenCalledWith(
       "project-1",
       "event-key-1",
       { expectedLifecycleVersion: 3 },
@@ -137,19 +137,19 @@ describe("apiEventCatalogRepository", () => {
       expectedPolicyVersion: 3,
       reason: "Created by mistake",
     };
-    vi.mocked(eventCatalogGetEventDefinition).mockRejectedValue(
+    vi.mocked(eventCatalogDetail).mockRejectedValue(
       new ApiError(404, "Event Definition not found"),
     );
     await expect(
       apiEventCatalogRepository.hardDelete("project-1", "event-key-1", command),
     ).resolves.toBeUndefined();
-    expect(eventCatalogDeleteEventDefinition).toHaveBeenCalledWith(
+    expect(eventCatalogHardDelete).toHaveBeenCalledWith(
       "project-1",
       "event-key-1",
       command,
     );
-    expect(eventCatalogGetEventDefinition).toHaveBeenCalledAfter(
-      vi.mocked(eventCatalogDeleteEventDefinition),
+    expect(eventCatalogDetail).toHaveBeenCalledAfter(
+      vi.mocked(eventCatalogHardDelete),
     );
   });
 
@@ -169,10 +169,10 @@ describe("apiEventCatalogRepository", () => {
       expectedPolicyVersion: 5,
       reason: "Retry after timeout",
     };
-    vi.mocked(eventCatalogDeleteEventDefinition)
+    vi.mocked(eventCatalogHardDelete)
       .mockRejectedValueOnce({ isAxiosError: true, request: {} })
       .mockRejectedValueOnce({ isAxiosError: true, response: { status: 404 } });
-    vi.mocked(eventCatalogGetEventDefinition).mockRejectedValue({
+    vi.mocked(eventCatalogDetail).mockRejectedValue({
       isAxiosError: true,
       response: { status: 404 },
     });
@@ -194,7 +194,7 @@ describe("apiEventCatalogRepository", () => {
   });
 
   it("rejects a first-attempt DELETE 404 without a retained local intent", async () => {
-    vi.mocked(eventCatalogDeleteEventDefinition).mockRejectedValue({
+    vi.mocked(eventCatalogHardDelete).mockRejectedValue({
       isAxiosError: true,
       response: { status: 404 },
     });
@@ -205,7 +205,7 @@ describe("apiEventCatalogRepository", () => {
         reason: "No prior attempt",
       }),
     ).rejects.toBeTruthy();
-    expect(eventCatalogGetEventDefinition).not.toHaveBeenCalled();
+    expect(eventCatalogDetail).not.toHaveBeenCalled();
   });
 
   it("keeps metadata OCC separate from schema evidence", async () => {

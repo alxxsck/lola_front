@@ -6,29 +6,26 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EndUserResponseDtoAttributes } from "./endUserResponseDtoAttributes";
-import type { EndUserResponseDtoAttributesSchemaRevisionId } from "./endUserResponseDtoAttributesSchemaRevisionId";
-import type { EndUserResponseDtoLocale } from "./endUserResponseDtoLocale";
 import type { EndUserResponseDtoPreferences } from "./endUserResponseDtoPreferences";
 import type { EndUserResponseDtoProfile } from "./endUserResponseDtoProfile";
-import type { EndUserResponseDtoSegment } from "./endUserResponseDtoSegment";
 
 export interface EndUserResponseDto {
   attributes: EndUserResponseDtoAttributes;
   /** @nullable */
-  attributesSchemaRevisionId?: EndUserResponseDtoAttributesSchemaRevisionId;
+  attributesSchemaRevisionId?: string | null;
   createdAt: string;
   externalId: string;
   id: string;
   isGuest: boolean;
   lastSeenAt: string;
   /** @nullable */
-  locale?: EndUserResponseDtoLocale;
+  locale?: string | null;
   preferences: EndUserResponseDtoPreferences;
   profile: EndUserResponseDtoProfile;
   /** @pattern ^\d+$ */
   profileVersion: string;
   projectId: string;
   /** @nullable */
-  segment?: EndUserResponseDtoSegment;
+  segment?: string | null;
   updatedAt: string;
 }
