@@ -179,7 +179,6 @@ import type {
   ProjectMembershipListParams,
   ProjectMembershipListResponseDto,
   ProjectMembershipResponseDto,
-  ProjectMfaPolicyResponseDto,
   ProjectPermissionCatalogResponseDto,
   ProjectResponseDto,
   ProjectRoleListResponseDto,
@@ -239,7 +238,6 @@ import type {
   UpdatePlatformRoleDto,
   UpdateProjectDto,
   UpdateProjectMembershipDto,
-  UpdateProjectMfaPolicyDto,
   UpdateProjectRoleDto,
   UpdateProjectSettingsDto,
   UpdateScenarioAuthoringMetadataDto,
@@ -2063,35 +2061,6 @@ export const scenarioRunsPage = (
   );
 };
 
-export const projectMfaPolicyGet = (
-  projectId: string,
-  options?: SecondParameter<typeof request<ProjectMfaPolicyResponseDto>>,
-) => {
-  return request<ProjectMfaPolicyResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/security/mfa-policy`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const projectMfaPolicyUpdate = (
-  projectId: string,
-  updateProjectMfaPolicyDto: BodyType<UpdateProjectMfaPolicyDto>,
-  options?: SecondParameter<typeof request<ProjectMfaPolicyResponseDto>>,
-) => {
-  return request<ProjectMfaPolicyResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/security/mfa-policy`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: updateProjectMfaPolicyDto,
-    },
-    options,
-  );
-};
-
 export const segmentCatalogCatalog = (
   projectId: string,
   options?: SecondParameter<typeof request<ConditionCatalogResponseDto>>,
@@ -3828,12 +3797,6 @@ export type ScenarioRunsExplainResult = NonNullable<
 >;
 export type ScenarioRunsPageResult = NonNullable<
   Awaited<ReturnType<typeof scenarioRunsPage>>
->;
-export type ProjectMfaPolicyGetResult = NonNullable<
-  Awaited<ReturnType<typeof projectMfaPolicyGet>>
->;
-export type ProjectMfaPolicyUpdateResult = NonNullable<
-  Awaited<ReturnType<typeof projectMfaPolicyUpdate>>
 >;
 export type SegmentCatalogCatalogResult = NonNullable<
   Awaited<ReturnType<typeof segmentCatalogCatalog>>

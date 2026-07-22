@@ -213,9 +213,7 @@ export const authApi = {
         identifier: login,
         secret: password,
       });
-      if (response.kind !== "AUTHENTICATED") return response as AuthLoginResult;
-      rememberAccess(response);
-      return { kind: "AUTHENTICATED", context: await loadContext() };
+      return response as AuthLoginResult;
     } catch (cause) {
       clearAuthSession();
       throw cause;

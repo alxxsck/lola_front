@@ -131,11 +131,6 @@ describe("ProjectPage voice instructions", () => {
     expect(wrapper.findComponent({ name: "AiUsageSection" }).exists()).toBe(
       false,
     );
-    expect(
-      wrapper
-        .findComponent({ name: "ProjectMfaPolicySection" })
-        .props("editable"),
-    ).toBe(false);
     expect(wrapper.find('button-stub[label="Настроить языки"]').exists()).toBe(
       false,
     );
@@ -182,9 +177,6 @@ describe("ProjectPage voice instructions", () => {
     expect(wrapper.text()).not.toContain("Cannot read properties");
     expect(
       wrapper.findComponent({ name: "ActivitySettingsSection" }).exists(),
-    ).toBe(false);
-    expect(
-      wrapper.findComponent({ name: "ProjectMfaPolicySection" }).exists(),
     ).toBe(false);
     expect(wrapper.findComponent({ name: "AiUsageSection" }).exists()).toBe(
       false,
@@ -340,10 +332,7 @@ describe("ProjectPage voice instructions", () => {
     expect(mainChildren[activityIndex - 1]?.textContent).toContain(
       "Подключение продукта",
     );
-    expect(mainChildren[activityIndex + 1]?.tagName).toBe(
-      "PROJECT-MFA-POLICY-SECTION-STUB",
-    );
-    expect(mainChildren[activityIndex + 2]?.textContent).toContain("Ассистент");
+    expect(mainChildren[activityIndex + 1]?.textContent).toContain("Ассистент");
     expect(
       wrapper.find(".settings-main > speech-synthesis-section-stub").exists(),
     ).toBe(true);

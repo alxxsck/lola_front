@@ -12460,37 +12460,6 @@
         ],
         "type": "object"
       },
-      "ProjectMfaPolicyResponseDto": {
-        "properties": {
-          "mode": {
-            "enum": [
-              "OPTIONAL",
-              "REQUIRED"
-            ],
-            "type": "string"
-          },
-          "projectId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "version": {
-            "minimum": 0,
-            "type": "number"
-          }
-        },
-        "required": [
-          "projectId",
-          "mode",
-          "version",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
       "ProjectPermissionCatalogResponseDto": {
         "properties": {
           "groups": {
@@ -17113,32 +17082,6 @@
           "roleIds",
           "reason",
           "version"
-        ],
-        "type": "object"
-      },
-      "UpdateProjectMfaPolicyDto": {
-        "properties": {
-          "expectedVersion": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "mode": {
-            "enum": [
-              "OPTIONAL",
-              "REQUIRED"
-            ],
-            "type": "string"
-          },
-          "reason": {
-            "maxLength": 500,
-            "minLength": 10,
-            "type": "string"
-          }
-        },
-        "required": [
-          "mode",
-          "expectedVersion",
-          "reason"
         ],
         "type": "object"
       },
@@ -27064,93 +27007,6 @@
         }
       }
     },
-    "/api/v1/admin/projects/{projectId}/security/mfa-policy": {
-      "get": {
-        "operationId": "ProjectMfaPolicy_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectMfaPolicyResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "IAM Project MFA Policy"
-        ],
-        "x-iam-permission": {
-          "code": "project.settings.read",
-          "scope": "PROJECT"
-        }
-      },
-      "patch": {
-        "operationId": "ProjectMfaPolicy_update",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProjectMfaPolicyDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectMfaPolicyResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "IAM Project MFA Policy"
-        ],
-        "x-iam-fresh-strong-authentication": true,
-        "x-iam-permission": {
-          "code": "project.settings.write",
-          "scope": "PROJECT"
-        }
-      }
-    },
     "/api/v1/admin/projects/{projectId}/segments/catalog": {
       "get": {
         "operationId": "SegmentCatalog_catalog",
@@ -29500,9 +29356,6 @@
                     "propertyName": "kind"
                   },
                   "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/CmsAuthenticatedResponseDto"
-                    },
                     {
                       "$ref": "#/components/schemas/PasswordSetupRequiredResponseDto"
                     },
