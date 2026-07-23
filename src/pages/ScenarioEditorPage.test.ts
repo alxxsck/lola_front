@@ -1472,6 +1472,68 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     ).toBe(true);
   });
 
+  it("creates and wires both WAIT_FOR_GOAL outcome actions", async () => {
+    mocks.projectActions = [
+      projectAction("WAIT_FOR_GOAL"),
+      projectAction("SAY"),
+      projectAction("CLOSE_CHAT"),
+    ];
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "wait_for_deposit",
+            type: "WAIT_FOR_GOAL",
+            config: {},
+          },
+        ],
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    await wrapper
+      .get('button[aria-label="Открыть узел wait_for_deposit"]')
+      .trigger("click");
+
+    wrapper
+      .getComponent(ScenarioNodeInspector)
+      .vm.$emit("createTarget", "SAY", "goal");
+    await wrapper.vm.$nextTick();
+    await wrapper
+      .get('button[aria-label="Открыть узел wait_for_deposit"]')
+      .trigger("click");
+    wrapper
+      .getComponent(ScenarioNodeInspector)
+      .vm.$emit("createTarget", "CLOSE_CHAT", "timeout");
+    await wrapper.vm.$nextTick();
+
+    const page = wrapper.vm as unknown as {
+      form: {
+        actions: Array<{
+          nodeKey?: string;
+          type: string;
+          config: Record<string, unknown>;
+        }>;
+      };
+    };
+    const source = page.form.actions.find(
+      (action) => action.nodeKey === "wait_for_deposit",
+    );
+    const goalAction = page.form.actions.find(
+      (action) => action.nodeKey === source?.config.onGoal,
+    );
+    const timeoutAction = page.form.actions.find(
+      (action) => action.nodeKey === source?.config.onTimeout,
+    );
+
+    expect(goalAction?.type).toBe("SAY");
+    expect(timeoutAction?.type).toBe("CLOSE_CHAT");
+    expect(page.form.actions).toHaveLength(3);
+  });
+
   it("opens the graph as a dedicated mobile overview only when requested", async () => {
     vi.stubGlobal(
       "matchMedia",

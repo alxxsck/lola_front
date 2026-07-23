@@ -58,7 +58,13 @@ const emit = defineEmits<{
   changeType: [type: string];
   createTarget: [
     type: string,
-    kind: "next" | "choice" | "timeout" | "condition" | "fallback",
+    kind:
+      | "next"
+      | "choice"
+      | "timeout"
+      | "condition"
+      | "fallback"
+      | "goal",
     index?: number,
   ];
   remove: [];
@@ -217,6 +223,12 @@ function selectTarget(
     );
   else if (kind === "fallback") setConfig("fallbackNodeKey", target);
 }
+function createGoalTarget(
+  type: string,
+  branch: "goal" | "timeout",
+) {
+  emit("createTarget", type, branch);
+}
 function addReminder() {
   const type = reminderActionOptions.value[0]?.value ?? "SAY";
   const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
@@ -370,9 +382,10 @@ function updateNodeKey(value: string | undefined) {
         v-else-if="action.type === 'WAIT_FOR_GOAL' && authoringContract"
         :model-value="action.config"
         :contract="authoringContract"
-        :targets="targets"
+        :targets="targetOptions"
         @update:model-value="updateAction({ config: $event })"
         @validity-change="emit('validity', $event)"
+        @create-target="createGoalTarget"
       />
       <ScenarioGoalPreview
         v-if="action.type === 'WAIT_FOR_GOAL' && authoringContract"

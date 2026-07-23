@@ -1487,7 +1487,13 @@ function toggleGraphExpanded() {
 
 function createTarget(
   type: string,
-  kind: "next" | "choice" | "timeout" | "condition" | "fallback",
+  kind:
+    | "next"
+    | "choice"
+    | "timeout"
+    | "condition"
+    | "fallback"
+    | "goal",
   index?: number,
 ) {
   const source = selectedAction.value;
@@ -1499,7 +1505,10 @@ function createTarget(
     source.config.options = choiceOptions(source).map((option, optionIndex) =>
       optionIndex === index ? { ...option, nextNodeKey: target } : option,
     );
-  else if (kind === "timeout") source.config.onTimeout = target;
+  else if (kind === "timeout")
+    source.config = { ...source.config, onTimeout: target };
+  else if (kind === "goal")
+    source.config = { ...source.config, onGoal: target };
   else if (kind === "condition" && index !== undefined)
     source.config.branches = conditionBranches(source).map(
       (branch, branchIndex) =>

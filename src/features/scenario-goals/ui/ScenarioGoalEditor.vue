@@ -25,8 +25,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: Record<string, unknown>]
   'validity-change': [valid: boolean]
+  'create-target': [type: string, branch: 'goal' | 'timeout']
 }>()
 
+const createTargetPrefix = '__create__:'
 const draft = reactive<GoalDraft>(createGoalDraft())
 const duration = ref(1)
 const durationUnit = ref<DurationUnit>('day')
@@ -99,6 +101,18 @@ function changeDuration() {
   const multiplier = unitOptions.find((unit) => unit.value === durationUnit.value)?.multiplier ?? 1_000
   draft.timeoutMs = Number(duration.value) * multiplier
   commit()
+}
+
+function changeBranch(branch: 'goal' | 'timeout') {
+  const value = branch === 'goal' ? draft.onGoal : draft.onTimeout
+  if (!value.startsWith(createTargetPrefix)) {
+    commit()
+    return
+  }
+
+  if (branch === 'goal') draft.onGoal = ''
+  else draft.onTimeout = ''
+  emit('create-target', value.slice(createTargetPrefix.length), branch)
 }
 
 function addFilter() {
@@ -212,8 +226,8 @@ function typedFilterValue(value: string, valueType?: string): string | number | 
       <div class="duration-grid"><input v-model.number="duration" type="number" min="1" aria-label="Срок цели" @input="changeDuration"><select v-model="durationUnit" aria-label="Единица срока цели" @change="changeDuration"><option v-for="unit in unitOptions" :key="unit.value" :value="unit.value">{{ unit.label }}</option></select></div>
     </div>
 
-    <div class="field"><label for="goal-branch">При достижении цели</label><select id="goal-branch" v-model="draft.onGoal" aria-label="Ветка при достижении цели" @change="commit"><option value="">Выберите действие</option><option v-for="target in targets" :key="target.value" :value="target.value">{{ target.label }}</option></select></div>
-    <div class="field"><label for="timeout-branch">По истечении срока</label><select id="timeout-branch" v-model="draft.onTimeout" aria-label="Ветка по истечении срока" @change="commit"><option value="">Выберите действие</option><option v-for="target in targets" :key="target.value" :value="target.value">{{ target.label }}</option></select></div>
+    <div class="field"><label for="goal-branch">При достижении цели</label><select id="goal-branch" v-model="draft.onGoal" aria-label="Ветка при достижении цели" @change="changeBranch('goal')"><option value="">Выберите действие</option><option v-for="target in targets" :key="target.value" :value="target.value">{{ target.label }}</option></select></div>
+    <div class="field"><label for="timeout-branch">По истечении срока</label><select id="timeout-branch" v-model="draft.onTimeout" aria-label="Ветка по истечении срока" @change="changeBranch('timeout')"><option value="">Выберите действие</option><option v-for="target in targets" :key="target.value" :value="target.value">{{ target.label }}</option></select></div>
 
     <div class="goal-summary"><strong>Как это работает</strong><span>{{ summary }}</span></div>
     <ul v-if="issues.length" class="goal-issues"><li v-for="item in issues" :key="`${item.code}:${item.field}`">{{ item.message }}</li></ul>
