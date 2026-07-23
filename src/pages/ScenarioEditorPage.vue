@@ -63,11 +63,10 @@ import {
   useScenarioAuthoringDocument,
 } from "@/features/scenario-authoring/model/use-scenario-authoring-document";
 import { scenarioApiErrorMessage } from "@/features/scenarios/scenario-api-error";
-import { useActionDefinitionsStore } from "@/features/actions/action-definitions.store";
 import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
 import {
-  scenarioActionDefinitionsForProject,
-  scenarioEligibleActionDefinitions,
+  projectScenarioActionCatalog,
+  scenarioAvailableActions,
   scenarioProjectActionAvailabilityIssue,
 } from "@/features/project-actions/model/scenario-project-actions";
 import {
@@ -106,9 +105,9 @@ import type {
 import type { ScenarioLocalizationPolicyDto } from "@/shared/api/generated/models";
 import {
   createActionConfig,
-  findActionDefinition,
+  findScenarioActionCatalogItem,
   validateScenarioActionConfig,
-} from "@/shared/lib/action-definition";
+} from "@/shared/lib/scenario-action-catalog";
 import { slugify } from "@/shared/lib/format";
 import { useUnsavedChangesGuard } from "@/shared/lib/use-unsaved-changes-guard";
 import {
@@ -119,8 +118,10 @@ import {
   normalizePositions,
   normalizeScenarioActions,
   renameScenarioNode,
+  rotateLinearScenarioStart,
   sortScenarioActions,
   toPlainScenarioAction,
+  usesExplicitTransitions,
   validateScenarioGraph,
 } from "@/features/scenarios/model/scenario-graph";
 
@@ -168,7 +169,6 @@ function russianCount(count: number, one: string, few: string, many: string) {
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const actionDefinitionsStore = useActionDefinitionsStore();
 const projectActionsStore = useProjectActionsStore();
 const loading = ref(true);
 const saving = ref(false);
@@ -176,7 +176,7 @@ const error = ref("");
 const saveError = ref("");
 const saveNotice = ref("");
 const authoringError = ref("");
-const actionsError = ref("");
+const actionsLoadError = ref("");
 const templatePolicyError = ref("");
 const templateAttributeKeys = ref<string[] | null>(null);
 const templateAttributes = ref<
@@ -370,29 +370,53 @@ function markTranslationManual(payload: { fieldPath: string; locale: string }) {
   };
 }
 
-const legacyActionDefinitions = computed(() =>
-  actionDefinitionsStore.forProject(auth.project?.id ?? ""),
+const canReadProjectActions = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.actions.read",
+  ),
 );
 const projectActions = computed(() =>
-  projectActionsStore.actionsForProject(auth.project?.id ?? ""),
+  canReadProjectActions.value
+    ? projectActionsStore.actionsForProject(auth.project?.id ?? "")
+    : [],
 );
-const actionDefinitions = computed(() =>
-  scenarioActionDefinitionsForProject(
-    projectActions.value,
-    legacyActionDefinitions.value,
-  ),
+const actionCatalogProjection = computed(() =>
+  projectScenarioActionCatalog(projectActions.value),
 );
-const scenarioPickerActionDefinitions = computed(() =>
-  scenarioEligibleActionDefinitions(
-    actionDefinitions.value,
-    projectActions.value,
-  ),
+const actionCatalog = computed(() => actionCatalogProjection.value.catalog);
+const scenarioPickerActions = computed(() =>
+  scenarioAvailableActions(actionCatalog.value),
+);
+const actionsError = computed(
+  () => actionsLoadError.value || actionCatalogProjection.value.error?.message || "",
 );
 const selectedAction = computed(
   () =>
     form.actions.find((action) => action.nodeKey === selectedNodeKey.value) ??
     null,
 );
+const firstAction = computed(() => form.actions[0] ?? null);
+const firstActionDefinition = computed(() =>
+  firstAction.value
+    ? findScenarioActionCatalogItem(actionCatalog.value, firstAction.value.type)
+    : undefined,
+);
+const firstActionOptions = computed(() =>
+  form.actions.map((action) => ({
+    label:
+      findScenarioActionCatalogItem(actionCatalog.value, action.type)?.name ??
+      action.type,
+    meta: action.nodeKey ?? `Шаг ${action.position + 1}`,
+    value: action.nodeKey ?? "",
+  })),
+);
+const canChooseFirstAction = computed(() => {
+  const alternative = form.actions[1]?.nodeKey;
+  return Boolean(
+    alternative && rotateLinearScenarioStart(form.actions, alternative),
+  );
+});
 const graphIssues = computed(() => validateScenarioGraph(form.actions));
 const goalIssues = computed(() =>
   form.actions.flatMap((action) => {
@@ -429,7 +453,7 @@ const actionConfigIssues = computed(() =>
     if (action.type === "WAIT_FOR_GOAL") return [];
     const message = validateScenarioActionConfig(
       action,
-      findActionDefinition(actionDefinitions.value, action.type),
+      findScenarioActionCatalogItem(actionCatalog.value, action.type),
       authoringContract.value?.localization,
     );
     return message ? [{ nodeKey: action.nodeKey, message }] : [];
@@ -715,7 +739,7 @@ const conversationPolicyOptions: {
 const flowNodeTypes = markRaw({ scenario: ScenarioFlowNode });
 
 const actionGroups = computed(() => {
-  const enabled = scenarioPickerActionDefinitions.value;
+  const enabled = scenarioPickerActions.value;
   return [
     {
       label: "Логика",
@@ -794,8 +818,8 @@ const flowNodes = computed<Node[]>(() => {
   ];
   for (const [level, actions] of levels) {
     actions.forEach((action, column) => {
-      const definition = findActionDefinition(
-        actionDefinitions.value,
+      const definition = findScenarioActionCatalogItem(
+        actionCatalog.value,
         action.type,
       );
       const totalWidth = (actions.length - 1) * 280;
@@ -901,7 +925,7 @@ async function load() {
   error.value = "";
   authoringError.value = "";
   audienceSegmentsError.value = "";
-  actionsError.value = "";
+  actionsLoadError.value = "";
   templatePolicyError.value = "";
   templateAttributeKeys.value = null;
   templateAttributes.value = [];
@@ -920,17 +944,17 @@ async function load() {
       repository.getElements(projectId).then((value) => {
         elements.value = value;
       }),
-      repository.capabilities.actionDefinitions
-        ? actionDefinitionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
-            actionsError.value = scenarioApiErrorMessage(cause);
+      canReadProjectActions.value
+        ? projectActionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
+            actionsLoadError.value = scenarioApiErrorMessage(
+              cause,
+              "Не удалось загрузить настройки действий проекта",
+            );
           })
-        : Promise.resolve(),
-      projectActionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
-        actionsError.value = scenarioApiErrorMessage(
-          cause,
-          "Не удалось загрузить настройки действий проекта",
-        );
-      }),
+        : Promise.resolve().then(() => {
+            actionsLoadError.value =
+              "У вас нет права читать Project Actions этого проекта.";
+          }),
       scenarioAuthoringRepository
         .getContract(projectId)
         .then(async (value) => {
@@ -1323,7 +1347,7 @@ function nodeSummary(action: ScenarioAction) {
 
 function appendNode(type: string, connectPrevious: boolean) {
   rememberActionViewFocus();
-  const definition = findActionDefinition(actionDefinitions.value, type);
+  const definition = findScenarioActionCatalogItem(actionCatalog.value, type);
   const node = createScenarioNode(
     type,
     form.actions.length,
@@ -1337,7 +1361,7 @@ function appendNode(type: string, connectPrevious: boolean) {
   if (
     connectPrevious &&
     previous &&
-    !["ASK_CHOICE", "CONDITION", "WAIT_FOR_GOAL"].includes(previous.type) &&
+    !usesExplicitTransitions(previous.type) &&
     !previous.nextNodeKey
   )
     previous.nextNodeKey = node.nodeKey;
@@ -1478,6 +1502,16 @@ function openNode(nodeKey: string) {
   focusActionInspector();
 }
 
+function openFirstAction() {
+  if (firstAction.value?.nodeKey) openNode(firstAction.value.nodeKey);
+}
+
+function changeFirstAction(nodeKey: string) {
+  const rotated = rotateLinearScenarioStart(form.actions, nodeKey);
+  if (!rotated) return;
+  form.actions.splice(0, form.actions.length, ...rotated);
+}
+
 function closeNodeInspector() {
   selectedNodeKey.value = null;
   inspectorMode.value = "settings";
@@ -1486,7 +1520,7 @@ function closeNodeInspector() {
 
 function changeType(type: string) {
   if (!selectedAction.value) return;
-  const definition = findActionDefinition(actionDefinitions.value, type);
+  const definition = findScenarioActionCatalogItem(actionCatalog.value, type);
   selectedAction.value.type = type;
   selectedAction.value.config = {
     ...(definition ? createActionConfig(definition) : {}),
@@ -1581,7 +1615,7 @@ async function save() {
   for (const action of form.actions) {
     const configError = validateScenarioActionConfig(
       action,
-      findActionDefinition(actionDefinitions.value, action.type),
+      findScenarioActionCatalogItem(actionCatalog.value, action.type),
       authoringContract.value?.localization,
     );
     if (configError) {
@@ -1913,12 +1947,12 @@ function leave() {
                 class="action-outline-item"
                 :data-action-node-key="action.nodeKey"
                 :class="{ active: selectedNodeKey === action.nodeKey && !graphExpanded }"
-                :aria-label="`Настроить действие ${findActionDefinition(actionDefinitions, action.type)?.name ?? action.type}`"
+                :aria-label="`Настроить действие ${findScenarioActionCatalogItem(actionCatalog, action.type)?.name ?? action.type}`"
                 @click="openNode(action.nodeKey ?? '')"
               >
                 <span><i :class="action.type === 'CONDITION' ? 'pi pi-code' : action.type === 'WAIT_FOR_GOAL' ? 'pi pi-clock' : 'pi pi-bolt'" /></span>
                 <div>
-                  <strong>{{ findActionDefinition(actionDefinitions, action.type)?.name ?? action.type }}</strong>
+                  <strong>{{ findScenarioActionCatalogItem(actionCatalog, action.type)?.name ?? action.type }}</strong>
                   <small>{{ action.nodeKey }} · {{ nodeSummary(action) }}</small>
                 </div>
                 <em v-if="actionIssues.filter((issue) => issue.nodeKey === action.nodeKey).length">
@@ -2075,7 +2109,7 @@ function leave() {
               /></span>
               <div>
                 <strong>{{
-                  findActionDefinition(actionDefinitions, action.type)?.name ??
+                  findScenarioActionCatalogItem(actionCatalog, action.type)?.name ??
                   action.type
                 }}</strong
                 ><small>{{ action.nodeKey }} · {{ nodeSummary(action) }}</small>
@@ -2441,7 +2475,7 @@ function leave() {
           :project-id="auth.project?.id ?? ''"
           :action="selectedAction"
           :actions="form.actions"
-          :action-definitions="actionDefinitions"
+          :action-catalog="actionCatalog"
           :events="events"
           :elements="elements"
           :template-variables="templateVariables"
@@ -2479,7 +2513,7 @@ function leave() {
             <div>
               <small>Режим просмотра</small>
               <h2>{{
-                findActionDefinition(actionDefinitions, selectedAction.type)
+                findScenarioActionCatalogItem(actionCatalog, selectedAction.type)
                   ?.name ?? selectedAction.type
               }}</h2>
             </div>
@@ -2591,6 +2625,60 @@ function leave() {
                     ><code>{{ option.code }}</code>
                   </div></template
                 ></Select
+              >
+            </div>
+            <div class="field">
+              <label>Первое действие</label>
+              <div
+                v-if="firstAction"
+                class="first-action-card"
+                data-testid="scenario-first-action"
+              >
+                <span><i class="pi pi-play" /></span>
+                <div>
+                  <strong>{{
+                    firstActionDefinition?.name ?? firstAction.type
+                  }}</strong>
+                  <small>{{ firstAction.nodeKey }}</small>
+                </div>
+                <Select
+                  v-if="canChooseFirstAction"
+                  input-id="scenario-first-action"
+                  :model-value="firstAction.nodeKey"
+                  :options="firstActionOptions"
+                  option-label="label"
+                  option-value="value"
+                  aria-label="Выбрать первое действие"
+                  @update:model-value="changeFirstAction"
+                >
+                  <template #option="{ option }">
+                    <div class="first-action-option">
+                      <span>{{ option.label }}</span>
+                      <code>{{ option.meta }}</code>
+                    </div>
+                  </template>
+                </Select>
+                <Button
+                  label="Настроить первое действие"
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  outlined
+                  @click="openFirstAction"
+                />
+              </div>
+              <small
+                v-if="
+                  firstAction &&
+                  form.actions.length > 1 &&
+                  !canChooseFirstAction
+                "
+              >
+                Для ветвящегося графа можно настроить текущий первый узел.
+                Смена корня отключена, чтобы не потерять ветки.
+              </small>
+              <small v-else-if="!firstAction"
+                >Добавьте действие на этапе «Действия» — оно станет первым
+                после события запуска.</small
               >
             </div>
             <div class="field">
@@ -3380,6 +3468,57 @@ function leave() {
 }
 .selected-trigger > span {
   font-size: 0.65rem;
+}
+.first-action-card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+.first-action-card > span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+  place-items: center;
+}
+.first-action-card > div {
+  min-width: 0;
+}
+.first-action-card strong,
+.first-action-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.first-action-card small {
+  margin-top: 3px;
+  color: var(--text-small-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.67rem;
+}
+.first-action-card > :deep(.p-select),
+.first-action-card > :deep(.p-button) {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.first-action-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.first-action-option code {
+  color: var(--text-small-muted);
+  font-size: 0.67rem;
 }
 .stage-empty {
   display: flex;

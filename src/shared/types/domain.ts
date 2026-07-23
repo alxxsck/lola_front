@@ -65,21 +65,15 @@ export interface ActionUiSchema extends Record<string, unknown> {
   fields: ActionUiField[];
 }
 
-export interface ScenarioActionDefinition {
+export interface ScenarioActionCatalogItem {
   id: string;
-  projectId: string;
   type: ActionType;
   name: string;
   description: string | null;
   executor: ActionExecutor;
-  serverHandler: string | null;
-  commandType: string | null;
   configSchema: ActionConfigSchema;
   uiSchema: ActionUiSchema;
   enabled: boolean;
-  builtIn: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Organization {

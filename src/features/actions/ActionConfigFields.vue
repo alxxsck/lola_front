@@ -20,11 +20,11 @@ import type {
 import {
   actionFieldOptions,
   isActionFieldVisible,
-} from "@/shared/lib/action-definition";
+} from "@/shared/lib/scenario-action-catalog";
 import type {
   ActionUiField,
   EventDefinition,
-  ScenarioActionDefinition,
+  ScenarioActionCatalogItem,
   UiElement,
 } from "@/shared/types/domain";
 
@@ -33,7 +33,7 @@ type TemplateVariable =
 
 const props = withDefaults(
   defineProps<{
-    definition: ScenarioActionDefinition;
+    definition: ScenarioActionCatalogItem;
     modelValue: Record<string, unknown>;
     events?: EventDefinition[];
     elements?: UiElement[];
@@ -209,14 +209,27 @@ function emitValidity() {
 }
 
 function insertVariable(field: ActionUiField, variable: string) {
+  const append = (current: string) =>
+    `${current}${current && !/\s$/.test(current) ? " " : ""}${variable}`;
+  const localization = props.localizationCatalog;
+  if (localizedDescriptor(field) && localization?.enabled) {
+    const current = localizedValue(
+      props.modelValue[field.key],
+      localization.defaultLocale,
+    );
+    updateField(field.key, {
+      ...current,
+      [localization.defaultLocale]: append(
+        current[localization.defaultLocale] ?? "",
+      ),
+    });
+    return;
+  }
   const current =
     typeof props.modelValue[field.key] === "string"
       ? (props.modelValue[field.key] as string)
       : "";
-  updateField(
-    field.key,
-    `${current}${current && !current.endsWith(" ") ? " " : ""}${variable}`,
-  );
+  updateField(field.key, append(current));
 }
 
 function fieldHint(field: ActionUiField) {

@@ -31,7 +31,7 @@ CMS хранит редактируемый сценарий как ориент
 - `nodeKey` стабилен и соответствует `^[a-z][a-z0-9_-]{0,63}$`;
 - `nextNodeKey` задаёт обычный переход и может быть `null`;
 - для `ASK_CHOICE` и `CONDITION` переходы находятся внутри `config`;
-- произвольный JavaScript не хранится и не исполняется: тип, JSON Schema и UI Schema приходят из каталога action definitions.
+- произвольный JavaScript не хранится и не исполняется: тип, JSON Schema и UI Schema приходят из закреплённой Action Type revision соответствующего Project Action.
 
 OpenAPI snapshot содержит `nodeKey` и `nextNodeKey`, поэтому Orval-клиент воспроизводимо генерирует актуальные DTO. `scenario-contract.ts` удаляет только domain-only `id`, сохраняет графовые поля и делает plain JSON copy конфигурации.
 

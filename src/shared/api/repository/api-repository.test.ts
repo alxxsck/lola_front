@@ -521,10 +521,7 @@ describe("api repository adapter", () => {
     expect(scenarioAuthoringUpdateScenarioMetadata).not.toHaveBeenCalled();
   });
 
-  it("fails closed only for authoring capabilities that still have no target endpoint", async () => {
-    await expect(
-      apiRepository.getActionDefinitions("project-1"),
-    ).rejects.toThrow("actionDefinitions");
+  it("fails closed for authoring capabilities that still have no target endpoint", async () => {
     await expect(
       apiRepository.getUserAttributeSchema("project-1"),
     ).rejects.toThrow("userAttributes");

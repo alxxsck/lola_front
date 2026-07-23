@@ -65,7 +65,6 @@ const capabilities: RepositoryCapabilities = {
   uiElements: true,
   eventDefinitions: true,
   scenarios: true,
-  actionDefinitions: false,
   presence: true,
   activity: false,
   conversations: true,
@@ -187,8 +186,6 @@ export const apiRepository: LolaRepository = {
   async getScenarios(projectId) {
     return (await scenarioAuthoringListScenarios(projectId)).map(mapScenario)
   },
-
-  async getActionDefinitions() { return unsupported('actionDefinitions') },
 
   async saveScenario(projectId, value) {
     if (!value.id || !value.updatedAt) {

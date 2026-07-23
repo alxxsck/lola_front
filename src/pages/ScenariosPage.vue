@@ -11,20 +11,20 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'
 import { DocumentationCallout } from '@/features/documentation/ui'
-import { useActionDefinitionsStore } from '@/features/actions/action-definitions.store'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { hasProjectPermission } from '@/features/auth/permission-access'
+import { useProjectActionsStore } from '@/features/project-actions/model/project-actions.store'
+import { projectScenarioActionCatalog } from '@/features/project-actions/model/scenario-project-actions'
 import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
 import { repository } from '@/shared/api/repository'
 import { formatDate } from '@/shared/lib/format'
-import { findActionDefinition } from '@/shared/lib/action-definition'
-import type { EventDefinition, Scenario, ScenarioAction, ScenarioActionDefinition, ScenarioStatus } from '@/shared/types/domain'
+import type { EventDefinition, Scenario, ScenarioAction, ScenarioStatus } from '@/shared/types/domain'
 
 type ScenarioPayload = Partial<Scenario> &
   Pick<Scenario, 'name' | 'code' | 'eventDefinitionId' | 'actions'>
 
 const auth = useAuthStore()
-const actionDefinitionsStore = useActionDefinitionsStore()
+const projectActionsStore = useProjectActionsStore()
 const toast = useToast()
 const confirm = useConfirm()
 const router = useRouter()
@@ -36,13 +36,17 @@ const loadError = ref('')
 const search = ref('')
 const statusFilter = ref<ScenarioStatus | 'ALL'>('ALL')
 const pendingIds = ref(new Set<string>())
-const actionDefinitions = computed<ScenarioActionDefinition[]>(() => actionDefinitionsStore.forProject(auth.project?.id ?? ''))
 const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? [])
 const canWrite = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.write'))
 const canPublish = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.publish'))
 const canReadEvents = computed(() => hasProjectPermission(projectPermissions.value, 'project.event_catalog.read'))
 const canReadActions = computed(() => hasProjectPermission(projectPermissions.value, 'project.actions.read'))
-const canLoadActionDefinitions = computed(() => canReadActions.value && repository.capabilities.actionDefinitions)
+const projectActions = computed(() =>
+  canReadActions.value
+    ? projectActionsStore.actionsForProject(auth.project?.id ?? '')
+    : [],
+)
+const actionCatalog = computed(() => projectScenarioActionCatalog(projectActions.value).catalog)
 
 const statusOptions: { label: string; value: ScenarioStatus | 'ALL' }[] = [
   { label: 'Все статусы', value: 'ALL' },
@@ -77,9 +81,9 @@ async function load() {
     const [scenarioItems, eventItems] = await Promise.all([
       repository.getScenarios(projectId),
       canReadEvents.value ? repository.getEvents(projectId) : Promise.resolve([]),
-      canLoadActionDefinitions.value
-        ? actionDefinitionsStore.ensureLoaded(projectId).catch(() => [])
-        : Promise.resolve([]),
+      canReadActions.value
+        ? projectActionsStore.ensureLoaded(projectId).catch(() => undefined)
+        : Promise.resolve(),
     ])
     scenarios.value = scenarioItems
     events.value = eventItems
@@ -200,7 +204,9 @@ function statusSeverity(status: ScenarioStatus): 'success' | 'secondary' | 'warn
 }
 
 function actionSummary(actions: ScenarioAction[]) {
-  return actions.slice(0, 3).map((action) => findActionDefinition(actionDefinitions.value, action.type)?.name ?? action.type).join(' · ')
+  return actions.slice(0, 3)
+    .map((action) => actionCatalog.value.find((item) => item.type === action.type)?.name ?? action.type)
+    .join(' · ')
 }
 
 function errorMessage(cause: unknown) {

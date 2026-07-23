@@ -1,57 +1,52 @@
-import type { ScenarioActionDefinition } from '@/shared/types/domain'
+import { parseScenarioActionCatalogItem } from '@/shared/lib/scenario-action-catalog'
+import type { ScenarioActionCatalogItem } from '@/shared/types/domain'
 import type { ProjectAction } from './project-action'
 
-export function scenarioActionDefinitionsForProject(
-  projectActions: readonly ProjectAction[],
-  legacyDefinitions: readonly ScenarioActionDefinition[],
-): ScenarioActionDefinition[] {
-  if (!projectActions.length) return [...legacyDefinitions]
-
-  const legacyByCode = new Map(legacyDefinitions.map((definition) => [definition.type, definition]))
-
-  return projectActions.map((action) => {
-    const revision = action.actionTypeRevision
-    const frontend = revision.executorAdapter === 'FRONTEND_COMMAND'
-    const projected: ScenarioActionDefinition = {
-      id: revision.id,
-      projectId: action.projectId,
-      type: action.code,
-      name: action.nameOverride ?? revision.name,
-      description: action.descriptionOverride ?? revision.description,
-      executor: frontend ? 'FRONTEND' : 'SERVER',
-      serverHandler: frontend ? null : action.code,
-      commandType: frontend ? action.code : null,
-      configSchema: revision.inputSchema as unknown as ScenarioActionDefinition['configSchema'],
-      uiSchema: revision.uiSchema as unknown as ScenarioActionDefinition['uiSchema'],
-      enabled: action.lifecycle === 'ACTIVE'
-        && action.scenarioEnabled
-        && revision.supportedSurfaces.includes('SCENARIO'),
-      builtIn: action.actionType.origin === 'SYSTEM',
-      createdAt: action.createdAt,
-      updatedAt: action.updatedAt,
-    }
-    const legacy = legacyByCode.get(action.code)
-    if (!legacy) return projected
-
-    return {
-      ...legacy,
-      id: projected.id,
-      projectId: projected.projectId,
-      type: projected.type,
-      enabled: projected.enabled,
-      builtIn: projected.builtIn,
-      createdAt: projected.createdAt,
-      updatedAt: projected.updatedAt,
-    }
-  })
+export interface ScenarioActionCatalogProjection {
+  catalog: ScenarioActionCatalogItem[]
+  error: Error | null
 }
 
-export function scenarioEligibleActionDefinitions(
-  definitions: readonly ScenarioActionDefinition[],
+function parseScenarioActionCatalog(
   projectActions: readonly ProjectAction[],
-): ScenarioActionDefinition[] {
-  return scenarioActionDefinitionsForProject(projectActions, definitions)
-    .filter((definition) => definition.enabled)
+): ScenarioActionCatalogItem[] {
+  return projectActions
+    .filter((action) => action.actionTypeRevision.supportedSurfaces.includes('SCENARIO'))
+    .map((action) => {
+      const revision = action.actionTypeRevision
+      return parseScenarioActionCatalogItem({
+        id: revision.id,
+        type: action.code,
+        name: action.nameOverride ?? revision.name,
+        description: action.descriptionOverride ?? revision.description,
+        executor: revision.executorAdapter === 'FRONTEND_COMMAND' ? 'FRONTEND' : 'SERVER',
+        configSchema: revision.inputSchema,
+        uiSchema: revision.uiSchema,
+        enabled: action.lifecycle === 'ACTIVE' && action.scenarioEnabled,
+      })
+    })
+}
+
+export function projectScenarioActionCatalog(
+  projectActions: readonly ProjectAction[],
+): ScenarioActionCatalogProjection {
+  try {
+    return {
+      catalog: parseScenarioActionCatalog(projectActions),
+      error: null,
+    }
+  } catch (cause: unknown) {
+    return {
+      catalog: [],
+      error: cause instanceof Error ? cause : new Error(String(cause)),
+    }
+  }
+}
+
+export function scenarioAvailableActions(
+  catalog: readonly ScenarioActionCatalogItem[],
+): ScenarioActionCatalogItem[] {
+  return catalog.filter((item) => item.enabled)
 }
 
 export function scenarioProjectActionAvailabilityIssue(

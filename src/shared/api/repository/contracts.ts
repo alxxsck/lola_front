@@ -14,7 +14,6 @@ import type {
   AuditLog,
   Project,
   Scenario,
-  ScenarioActionDefinition,
   ScenarioRun,
   EventLog,
   EventLogStatus,
@@ -44,7 +43,6 @@ export interface RepositoryCapabilities {
   uiElements: boolean
   eventDefinitions: boolean
   scenarios: boolean
-  actionDefinitions: boolean
   presence: boolean
   activity: boolean
   conversations: boolean
@@ -164,7 +162,6 @@ export interface LolaRepository {
   updateUserAttributeDefinition(projectId: string, id: string, value: UpdateUserAttributeDefinitionInput): Promise<UserAttributeMutation>
   deleteUserAttributeDefinition(projectId: string, id: string): Promise<UserAttributeMutation>
   getScenarios(projectId: string): Promise<Scenario[]>
-  getActionDefinitions(projectId: string): Promise<ScenarioActionDefinition[]>
   saveScenario(projectId: string, value: SaveScenario): Promise<Scenario>
   updateScenarioMetadata(projectId: string, scenarioId: string, value: UpdateScenarioMetadata): Promise<Scenario>
   deleteScenario(projectId: string, id: string, command: ArchiveScenarioCommand): Promise<void>

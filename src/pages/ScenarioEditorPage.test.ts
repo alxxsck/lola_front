@@ -1,4 +1,5 @@
 import { flushPromises, shallowMount } from "@vue/test-utils";
+import Select from "primevue/select";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ScenarioRuleBuilder } from "@/features/scenario-rules/ui";
@@ -13,6 +14,8 @@ import {
 import type { AudienceDraft } from "@/features/scenario-audience/model";
 import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
+import type { ProjectAction } from "@/features/project-actions/model/project-action";
+import type { ScenarioActionCatalogItem } from "@/shared/types/domain";
 import ScenarioEditorPage from "./ScenarioEditorPage.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -31,14 +34,16 @@ const mocks = vi.hoisted(() => ({
   getScenarioDocument: vi.fn(),
   saveScenarioDraft: vi.fn(),
   searchSegments: vi.fn(),
-  ensureLoaded: vi.fn(),
   ensureProjectActionsLoaded: vi.fn(),
-  actionDefinitionsCapability: true,
-  actionDefinitions: [] as Array<import("@/shared/types/domain").ScenarioActionDefinition>,
-  projectActions: [] as Array<import("@/features/project-actions/model/project-action").ProjectAction>,
+  projectActions: [] as ProjectAction[],
   guardDirty: null as { value: boolean } | null,
   routeLeaveGuards: [] as Array<() => boolean>,
-  permissions: ["project.scenarios.read", "project.scenarios.write", "project.scenarios.publish"] as string[],
+  permissions: [
+    "project.scenarios.read",
+    "project.scenarios.write",
+    "project.scenarios.publish",
+    "project.actions.read",
+  ] as string[],
 }));
 
 vi.mock("vue-router", () => ({
@@ -59,13 +64,6 @@ vi.mock("@/features/auth/auth.store", () => ({
   }),
 }));
 
-vi.mock("@/features/actions/action-definitions.store", () => ({
-  useActionDefinitionsStore: () => ({
-    forProject: () => mocks.actionDefinitions,
-    ensureLoaded: mocks.ensureLoaded,
-  }),
-}));
-
 vi.mock("@/features/project-actions/model/project-actions.store", () => ({
   useProjectActionsStore: () => ({
     actionsForProject: () => mocks.projectActions,
@@ -75,11 +73,6 @@ vi.mock("@/features/project-actions/model/project-actions.store", () => ({
 
 vi.mock("@/shared/api/repository", () => ({
   repository: {
-    capabilities: {
-      get actionDefinitions() {
-        return mocks.actionDefinitionsCapability;
-      },
-    },
     getScenarios: mocks.getScenarios,
     getEvents: mocks.getEvents,
     getElements: mocks.getElements,
@@ -153,8 +146,8 @@ const scenario = {
 
 function projectAction(
   code: string,
-  overrides: Partial<import("@/features/project-actions/model/project-action").ProjectAction> = {},
-): import("@/features/project-actions/model/project-action").ProjectAction {
+  overrides: Partial<ProjectAction> = {},
+): ProjectAction {
   return {
     id: `action-${code}`,
     projectId: "project-1",
@@ -193,6 +186,30 @@ function projectAction(
     },
     ...overrides,
   };
+}
+
+function projectActionFromCatalogItem(
+  item: Omit<ScenarioActionCatalogItem, "id" | "enabled"> & {
+    enabled?: boolean;
+    supportedSurfaces?: ProjectAction["actionTypeRevision"]["supportedSurfaces"];
+  },
+): ProjectAction {
+  const base = projectAction(item.type);
+  return projectAction(item.type, {
+    scenarioEnabled: item.enabled ?? true,
+    actionTypeRevision: {
+      ...base.actionTypeRevision,
+      name: item.name,
+      description: item.description ?? "",
+      executorAdapter:
+        item.executor === "FRONTEND"
+          ? "FRONTEND_COMMAND"
+          : "SERVER_HANDLER",
+      inputSchema: item.configSchema,
+      uiSchema: item.uiSchema,
+      supportedSurfaces: item.supportedSurfaces ?? ["SCENARIO"],
+    },
+  });
 }
 
 const contract: ScenarioAuthoringContract = {
@@ -255,7 +272,11 @@ function mountPage() {
   return shallowMount(ScenarioEditorPage, {
     global: {
       stubs: {
-        VueFlow: { template: '<div data-test="vue-flow"><slot /></div>' },
+        VueFlow: {
+          name: "VueFlow",
+          emits: ["node-click"],
+          template: '<div data-test="vue-flow"><slot /></div>',
+        },
         Background: true,
         Controls: true,
         Message: { template: '<div class="message-stub"><slot /></div>' },
@@ -281,14 +302,16 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     vi.clearAllMocks();
     mocks.routeLeaveGuards.length = 0;
     mocks.route.params.scenarioId = "scenario-1";
-    mocks.permissions = ["project.scenarios.read", "project.scenarios.write", "project.scenarios.publish"];
-    mocks.actionDefinitionsCapability = true;
+    mocks.permissions = [
+      "project.scenarios.read",
+      "project.scenarios.write",
+      "project.scenarios.publish",
+      "project.actions.read",
+    ];
     mocks.getScenarios.mockResolvedValue([scenario]);
     mocks.getEvents.mockResolvedValue([event]);
     mocks.getElements.mockResolvedValue([]);
-    mocks.ensureLoaded.mockResolvedValue([]);
     mocks.ensureProjectActionsLoaded.mockResolvedValue([]);
-    mocks.actionDefinitions = [];
     mocks.projectActions = [];
     mocks.getContract.mockResolvedValue(contract);
     mocks.getScenarioDocument.mockResolvedValue({
@@ -357,27 +380,19 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   it("preserves a new multilingual form after create failure and retries without legacy graph save", async () => {
     mocks.route.params.scenarioId = "new";
     mocks.getScenarios.mockResolvedValueOnce([]);
-    mocks.actionDefinitions = [
-      {
-        id: "say",
-        projectId: "project-1",
+    mocks.projectActions = [
+      projectActionFromCatalogItem({
         type: "SAY",
         name: "Сказать текст",
         description: null,
         executor: "SERVER",
-        serverHandler: "SAY",
-        commandType: null,
         configSchema: {
           type: "object",
           properties: { text: { type: "string", maxLength: 10_000 } },
           required: ["text"],
         },
         uiSchema: { fields: [{ key: "text", label: "Текст", control: "textarea" }] },
-        enabled: true,
-        builtIn: true,
-        createdAt: "now",
-        updatedAt: "now",
-      },
+      }),
     ];
     mocks.getContract.mockResolvedValueOnce({
       ...contract,
@@ -536,16 +551,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   });
 
   it("migrates localized scalar leaves to maps and saves the content locale policy", async () => {
-    mocks.actionDefinitions = [
-      {
-        id: "say",
-        projectId: "project-1",
+    mocks.projectActions = [
+      projectActionFromCatalogItem({
         type: "SAY",
         name: "Сказать текст",
         description: "Показывает полный приветственный текст пользователю.",
         executor: "SERVER",
-        serverHandler: "say",
-        commandType: null,
         configSchema: {
           type: "object",
           properties: { text: { type: "string", maxLength: 10_000 } },
@@ -554,11 +565,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
         uiSchema: {
           fields: [{ key: "text", label: "Текст", control: "textarea" }],
         },
-        enabled: true,
-        builtIn: true,
-        createdAt: "now",
-        updatedAt: "now",
-      },
+      }),
     ];
     mocks.getContract.mockResolvedValueOnce({
       ...contract,
@@ -778,6 +785,169 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     await stageButton(configuredWrapper, "Действия").trigger("click");
 
     expect(configuredWrapper.find('[data-test="vue-flow"]').exists()).toBe(true);
+  });
+
+  it("opens the Trigger stage from the graph and edits its first action", async () => {
+    mocks.projectActions = [
+      projectActionFromCatalogItem({
+        type: "SAY",
+        name: "Сказать текст",
+        description: null,
+        executor: "SERVER",
+        configSchema: {
+          type: "object",
+          properties: { text: { type: "string" } },
+          required: ["text"],
+        },
+        uiSchema: {
+          fields: [{ key: "text", label: "Текст", control: "textarea" }],
+        },
+      }),
+    ];
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "welcome_message",
+            nextNodeKey: null,
+            type: "SAY",
+            config: { text: "Добро пожаловать" },
+          },
+        ],
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    await stageButton(wrapper, "Действия").trigger("click");
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("node-click", {
+      node: { id: "trigger" },
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(stageButton(wrapper, "Запуск").classes()).toContain("active");
+    expect(wrapper.get('[data-testid="scenario-first-action"]').text())
+      .toContain("Сказать текст");
+    expect(wrapper.text()).not.toContain("Смена корня отключена");
+    await wrapper
+      .get('button-stub[label="Настроить первое действие"]')
+      .trigger("click");
+
+    expect(stageButton(wrapper, "Действия").classes()).toContain("active");
+    expect(wrapper.getComponent(ScenarioNodeInspector).props("action"))
+      .toMatchObject({ nodeKey: "welcome_message", type: "SAY" });
+  });
+
+  it("changes the first action of a linear scenario without deleting its steps", async () => {
+    mocks.projectActions = [
+      projectAction("OPEN_MODAL"),
+      projectAction("OPEN_CHAT"),
+      projectAction("SAY"),
+    ];
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "open_form",
+            nextNodeKey: "open_chat",
+            type: "OPEN_MODAL",
+            config: {},
+          },
+          {
+            position: 1,
+            nodeKey: "open_chat",
+            nextNodeKey: "say_hello",
+            type: "OPEN_CHAT",
+            config: {},
+          },
+          {
+            position: 2,
+            nodeKey: "say_hello",
+            nextNodeKey: null,
+            type: "SAY",
+            config: {},
+          },
+        ],
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    const firstActionSelect = wrapper
+      .findAllComponents(Select)
+      .find(
+        (component) =>
+          component.attributes("input-id") === "scenario-first-action",
+      )!;
+    firstActionSelect.vm.$emit("update:modelValue", "open_chat");
+    await wrapper.vm.$nextTick();
+
+    const page = wrapper.vm as unknown as {
+      form: { actions: Array<Record<string, unknown>> };
+    };
+    expect(page.form.actions).toMatchObject([
+      { position: 0, nodeKey: "open_chat", nextNodeKey: "say_hello" },
+      { position: 1, nodeKey: "say_hello", nextNodeKey: "open_form" },
+      { position: 2, nodeKey: "open_form", nextNodeKey: null },
+    ]);
+    expect(page.form.actions).toHaveLength(3);
+    expect(wrapper.get('[data-testid="scenario-first-action"]').text())
+      .toContain("OPEN_CHAT");
+  });
+
+  it("keeps first-action editing available without rewriting a branching graph", async () => {
+    mocks.projectActions = [
+      projectAction("ASK_CHOICE"),
+      projectAction("SAY"),
+    ];
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "question",
+            nextNodeKey: null,
+            type: "ASK_CHOICE",
+            config: {
+              message: "Продолжить?",
+              options: [
+                {
+                  id: "continue",
+                  label: "Да",
+                  nextNodeKey: "answer",
+                },
+              ],
+            },
+          },
+          {
+            position: 1,
+            nodeKey: "answer",
+            nextNodeKey: null,
+            type: "SAY",
+            config: { text: "Готово" },
+          },
+        ],
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(
+      wrapper.find('[input-id="scenario-first-action"]').exists(),
+    ).toBe(false);
+    expect(wrapper.text()).toContain(
+      "Смена корня отключена, чтобы не потерять ветки",
+    );
+    expect(
+      wrapper
+        .get('button-stub[label="Настроить первое действие"]')
+        .attributes("label"),
+    ).toBe("Настроить первое действие");
   });
 
   it("opens the Rule Builder only for the exact catalog Event revision", async () => {
@@ -1085,9 +1255,19 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   });
 
   it("keeps Trigger and Eligibility usable when the Actions catalog is incompatible", async () => {
-    mocks.ensureLoaded.mockRejectedValue(
-      new Error("unsupported action uiSchema"),
-    );
+    mocks.projectActions = [
+      projectAction("BROKEN", {
+        actionTypeRevision: {
+          ...projectAction("BROKEN").actionTypeRevision,
+          inputSchema: {
+            type: "object",
+            properties: { target: { type: "string" } },
+            required: ["target"],
+          },
+          uiSchema: { fields: [] },
+        },
+      }),
+    ];
     const wrapper = mountPage();
     await flushPromises();
 
@@ -1099,40 +1279,59 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.text()).toContain("Не удалось загрузить каталог действий");
   });
 
-  it("uses active scenario-enabled Project Actions as the action picker authority", async () => {
-    const definition = (
-      type: string,
-      name: string,
-    ): import("@/shared/types/domain").ScenarioActionDefinition => ({
-      id: type,
-      projectId: "project-1",
-      type,
-      name,
-      description: null,
-      executor: "FRONTEND" as const,
-      serverHandler: null,
-      commandType: type,
-      configSchema: { type: "object", properties: {}, required: [] },
-      uiSchema: { fields: [] },
-      enabled: true,
-      builtIn: true,
-      createdAt: "now",
-      updatedAt: "now",
-    });
-    mocks.actionDefinitions = [
-      definition("OPEN_PAGE", "Открыть страницу"),
-      definition("AI_ONLY", "Только для AI"),
-      definition("DISABLED", "Выключено"),
+  it("does not request Project Actions without catalog read permission", async () => {
+    mocks.permissions = [
+      "project.scenarios.read",
+      "project.scenarios.write",
+      "project.scenarios.publish",
     ];
     mocks.projectActions = [
-      projectAction("OPEN_PAGE"),
-      projectAction("AI_ONLY", {
-        actionTypeRevision: {
-          ...projectAction("AI_ONLY").actionTypeRevision,
-          supportedSurfaces: ["AI"],
-        },
+      projectActionFromCatalogItem({
+        type: "CACHED_ACTION",
+        name: "Секретное имя из старой сессии",
+        description: null,
+        executor: "FRONTEND",
+        configSchema: { type: "object", properties: {}, required: [] },
+        uiSchema: { fields: [] },
       }),
-      projectAction("DISABLED", { scenarioEnabled: false }),
+    ];
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(mocks.ensureProjectActionsLoaded).not.toHaveBeenCalled();
+    await stageButton(wrapper, "Действия").trigger("click");
+    expect(wrapper.text()).toContain("нет права читать Project Actions");
+    expect(wrapper.text()).not.toContain("Секретное имя из старой сессии");
+  });
+
+  it("uses active scenario-enabled Project Actions as the action picker authority", async () => {
+    mocks.projectActions = [
+      projectActionFromCatalogItem({
+        type: "OPEN_PAGE",
+        name: "Открыть страницу",
+        description: null,
+        executor: "FRONTEND",
+        configSchema: { type: "object", properties: {}, required: [] },
+        uiSchema: { fields: [] },
+      }),
+      projectActionFromCatalogItem({
+        type: "AI_ONLY",
+        name: "Только для AI",
+        description: null,
+        executor: "FRONTEND",
+        configSchema: { type: "object", properties: {}, required: [] },
+        uiSchema: { fields: [] },
+        supportedSurfaces: ["AI"],
+      }),
+      projectActionFromCatalogItem({
+        type: "DISABLED",
+        name: "Выключено",
+        description: null,
+        executor: "FRONTEND",
+        configSchema: { type: "object", properties: {}, required: [] },
+        uiSchema: { fields: [] },
+        enabled: false,
+      }),
     ];
 
     const wrapper = mountPage();
@@ -1146,8 +1345,6 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   });
 
   it("uses the pinned Project Action revision as the editor definition catalog", async () => {
-    mocks.actionDefinitionsCapability = false;
-    mocks.actionDefinitions = [];
     mocks.projectActions = [projectAction("SHOW_ASSISTANT")];
     mocks.getScenarios.mockResolvedValue([
       {
@@ -1175,7 +1372,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(
       wrapper
         .getComponent(ScenarioNodeInspector)
-        .props("actionDefinitions")
+        .props("actionCatalog")
         .map((definition: { type: string }) => definition.type),
     ).toContain("SHOW_ASSISTANT");
     expect(
@@ -1284,16 +1481,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   });
 
   it("uses the created-action list as the primary navigation and keeps full names visible", async () => {
-    mocks.actionDefinitions = [
-      {
-        id: "say",
-        projectId: "project-1",
+    mocks.projectActions = [
+      projectActionFromCatalogItem({
         type: "SAY",
         name: "Отправить пользователю приветственное сообщение",
         description: "Показывает полный приветственный текст пользователю.",
         executor: "SERVER",
-        serverHandler: "say",
-        commandType: null,
         configSchema: {
           type: "object",
           properties: { text: { type: "string" } },
@@ -1302,13 +1495,8 @@ describe("ScenarioEditorPage V2 rule journey", () => {
         uiSchema: {
           fields: [{ key: "text", label: "Текст", control: "textarea" }],
         },
-        enabled: true,
-        builtIn: true,
-        createdAt: "now",
-        updatedAt: "now",
-      },
+      }),
     ];
-    mocks.projectActions = [projectAction("SAY")];
     mocks.getScenarios.mockResolvedValue([
       {
         ...scenario,

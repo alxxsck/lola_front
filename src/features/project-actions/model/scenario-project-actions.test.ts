@@ -1,17 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { ScenarioActionDefinition } from '@/shared/types/domain'
 import type { ProjectAction } from './project-action'
 import {
-  scenarioActionDefinitionsForProject,
-  scenarioEligibleActionDefinitions,
+  projectScenarioActionCatalog,
+  scenarioAvailableActions,
   scenarioProjectActionAvailabilityIssue,
 } from './scenario-project-actions'
-
-const definition = (type: string): ScenarioActionDefinition => ({
-  id: type, projectId: 'project-1', type, name: type, description: null, executor: 'FRONTEND',
-  serverHandler: null, commandType: type, configSchema: { type: 'object', properties: {}, required: [] },
-  uiSchema: { fields: [] }, enabled: true, builtIn: true, createdAt: 'now', updatedAt: 'now',
-})
 
 const projectAction = (code: string, overrides: Partial<ProjectAction> = {}): ProjectAction => ({
   id: `action-${code}`, projectId: 'project-1', actionTypeId: `type-${code}`, actionTypeRevisionId: `revision-${code}`,
@@ -28,7 +21,7 @@ const projectAction = (code: string, overrides: Partial<ProjectAction> = {}): Pr
 })
 
 describe('Scenario Project Action projection', () => {
-  it('projects pinned Project Action revisions into editor definitions without the legacy catalog', () => {
+  it('projects pinned Project Action revisions into the scenario editor catalog', () => {
     const actions = [
       projectAction('SHOW_ASSISTANT', {
         nameOverride: 'Показать помощника',
@@ -50,14 +43,12 @@ describe('Scenario Project Action projection', () => {
       }),
     ]
 
-    expect(scenarioActionDefinitionsForProject(actions, [])).toEqual([
+    expect(projectScenarioActionCatalog(actions).catalog).toEqual([
       expect.objectContaining({
         id: 'revision-SHOW_ASSISTANT',
         type: 'SHOW_ASSISTANT',
         name: 'Показать помощника',
         executor: 'FRONTEND',
-        commandType: 'SHOW_ASSISTANT',
-        serverHandler: null,
         enabled: true,
         configSchema: expect.objectContaining({ properties: {} }),
         uiSchema: { fields: [] },
@@ -66,23 +57,56 @@ describe('Scenario Project Action projection', () => {
         id: 'revision-SAY',
         type: 'SAY',
         executor: 'SERVER',
-        commandType: null,
-        serverHandler: 'SAY',
         configSchema: expect.objectContaining({ required: ['text'] }),
       }),
     ])
   })
 
   it('admits only active scenario-enabled pinned actions and fails closed for unknown or AI-only types', () => {
-    const definitions = ['OPEN_PAGE', 'AI_ONLY', 'DISABLED', 'UNKNOWN'].map(definition)
     const actions = [
       projectAction('OPEN_PAGE'),
-      projectAction('AI_ONLY', { actionTypeRevision: { ...projectAction('AI_ONLY').actionTypeRevision, supportedSurfaces: ['AI'] } }),
+      projectAction('AI_ONLY', {
+        actionTypeRevision: {
+          ...projectAction('AI_ONLY').actionTypeRevision,
+          inputSchema: {
+            type: 'object',
+            properties: { prompt: { type: 'string' } },
+            required: ['prompt'],
+          },
+          supportedSurfaces: ['AI'],
+        },
+      }),
       projectAction('DISABLED', { scenarioEnabled: false }),
     ]
 
-    expect(scenarioEligibleActionDefinitions(definitions, actions).map((item) => item.type)).toEqual(['OPEN_PAGE'])
-    expect(definitions.map((item) => item.type)).toEqual(['OPEN_PAGE', 'AI_ONLY', 'DISABLED', 'UNKNOWN'])
+    const catalog = projectScenarioActionCatalog(actions).catalog
+    expect(catalog.map((item) => item.type))
+      .toEqual(['OPEN_PAGE', 'DISABLED'])
+    expect(scenarioAvailableActions(catalog).map((item) => item.type))
+      .toEqual(['OPEN_PAGE'])
+  })
+
+  it('returns an explicit projection error instead of throwing into page rendering', () => {
+    const actions = [
+      projectAction('BROKEN', {
+        actionTypeRevision: {
+          ...projectAction('BROKEN').actionTypeRevision,
+          inputSchema: {
+            type: 'object',
+            properties: { target: { type: 'string' } },
+            required: ['target'],
+          },
+          uiSchema: { fields: [] },
+        },
+      }),
+    ]
+
+    expect(projectScenarioActionCatalog(actions)).toMatchObject({
+      catalog: [],
+      error: expect.objectContaining({
+        message: expect.stringContaining('missing fields: target'),
+      }),
+    })
   })
 
   it('explains why an existing node is unavailable without deleting it', () => {

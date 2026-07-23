@@ -19,7 +19,7 @@ Frontend готов к демонстрации продукта и полнос
 | Interface map | Готов CRUD buttons/elements, pages и modals | Поддерживается общим `UiElement` CRUD |
 | CTA registry | CTA поддержан в сценариях и ручных действиях | Отдельной CTA entity/API пока нет |
 | Event definitions | Готов CRUD, unique code, field builder, strict JSON Schema preview | CRUD есть; schema validation/publish compatibility отсутствуют |
-| Scenario editor | Готов trigger, conditions, priority/frequency, ordered steps, linked targets, variables и graph preview | `SPEAK_TEXT` использует ElevenLabs; остальные action capabilities определяются backend action definitions |
+| Scenario editor | Готов trigger, conditions, priority/frequency, ordered steps, linked targets, variables и graph preview | `SPEAK_TEXT` использует ElevenLabs; остальные возможности действий определяются закреплёнными Action Type revisions в Project Actions |
 | Activation | Status toggle и frontend validation готовы | Нет отдельного validate endpoint/version snapshot |
 | Product users | Готовы search, segment, online/stale/offline, lastSeenAt | Список есть без server pagination/search |
 | User activity | Готов unified timeline | Aggregated activity endpoint отсутствует |

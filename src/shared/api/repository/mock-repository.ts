@@ -1,5 +1,4 @@
 import {
-  demoActionDefinitions,
   demoActivity,
   demoConversations,
   demoElements,
@@ -327,7 +326,6 @@ export const mockRepository: LolaRepository = {
     uiElements: true,
     eventDefinitions: true,
     scenarios: true,
-    actionDefinitions: true,
     presence: true,
     activity: true,
     conversations: true,
@@ -546,10 +544,6 @@ export const mockRepository: LolaRepository = {
   async getScenarios() {
     await pause();
     return readDemo().scenarios;
-  },
-  async getActionDefinitions() {
-    await pause();
-    return structuredClone(demoActionDefinitions);
   },
   async saveScenario(projectId, value) {
     const data = readDemo();

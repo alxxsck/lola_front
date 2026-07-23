@@ -6,9 +6,9 @@ import Avatar from "primevue/avatar";
 import Menu from "primevue/menu";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
-import { useActionDefinitionsStore } from "@/features/actions/action-definitions.store";
 import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
+import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
 import {
   hasProjectPermission,
   PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS,
@@ -24,7 +24,7 @@ import ThemeSwitch from "./ThemeSwitch.vue";
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
-const actionDefinitions = useActionDefinitionsStore();
+const projectActions = useProjectActionsStore();
 const proposals = useAIProposalsStore();
 const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
@@ -207,7 +207,7 @@ async function logout(allDevices: boolean) {
   try {
     await auth.logout(allDevices);
   } finally {
-    actionDefinitions.clear();
+    projectActions.clear();
     await router.push("/login");
   }
 }
