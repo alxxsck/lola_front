@@ -7,9 +7,13 @@
  */
 import type { NotificationDestinationResponseDtoChannel } from "./notificationDestinationResponseDtoChannel";
 import type { NotificationDestinationResponseDtoStatus } from "./notificationDestinationResponseDtoStatus";
+import type { NotificationDestinationResponseDtoTelegramInstallationStatus } from "./notificationDestinationResponseDtoTelegramInstallationStatus";
+import type { NotificationDestinationResponseDtoTelegramWebhookSetupStatus } from "./notificationDestinationResponseDtoTelegramWebhookSetupStatus";
 import type { NotificationDestinationResponseDtoTopic } from "./notificationDestinationResponseDtoTopic";
 
 export interface NotificationDestinationResponseDto {
+  /** @nullable */
+  botUsername?: string | null;
   channel: NotificationDestinationResponseDtoChannel;
   /**
    * Non-secret keyed fingerprint; never a webhook fragment.
@@ -17,6 +21,10 @@ export interface NotificationDestinationResponseDto {
    * @maxLength 16
    */
   credentialFingerprint: string;
+  /** @nullable */
+  destinationChatId?: string | null;
+  /** @nullable */
+  destinationTitle?: string | null;
   /**
    * @minLength 1
    * @maxLength 120
@@ -29,8 +37,21 @@ export interface NotificationDestinationResponseDto {
   lastSuccessfulTestAt: string | null;
   projectId: string;
   /** @minimum 1 */
+  routingRevision: number;
+  /** @minimum 1 */
   secretRevision: number;
   status: NotificationDestinationResponseDtoStatus;
+  /** @nullable */
+  telegramBotId?: string | null;
+  /** @nullable */
+  telegramInstallationStatus?: NotificationDestinationResponseDtoTelegramInstallationStatus;
+  /** @nullable */
+  telegramWebhookSetupStatus?: NotificationDestinationResponseDtoTelegramWebhookSetupStatus;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  testedRoutingRevision: number | null;
   /**
    * @minimum 1
    * @nullable

@@ -12,4 +12,5 @@ export type NotificationDestinationResponseDtoChannel =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const NotificationDestinationResponseDtoChannel = {
   SLACK_WEBHOOK: "SLACK_WEBHOOK",
+  TELEGRAM_OPERATIONAL: "TELEGRAM_OPERATIONAL",
 } as const;

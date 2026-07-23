@@ -7186,6 +7186,28 @@
         ],
         "type": "object"
       },
+      "CreateOperationalTelegramDestinationDto": {
+        "properties": {
+          "botToken": {
+            "description": "Write-only Telegram bot token. It is validated and never returned.",
+            "maxLength": 160,
+            "minLength": 27,
+            "type": "string",
+            "writeOnly": true
+          },
+          "displayName": {
+            "example": "Служебные уведомления",
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "botToken"
+        ],
+        "type": "object"
+      },
       "CreatePlatformRoleDto": {
         "properties": {
           "description": {
@@ -7574,6 +7596,18 @@
         "required": [
           "displayName",
           "webhookUrl"
+        ],
+        "type": "object"
+      },
+      "CreateTelegramBindingChallengeDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion"
         ],
         "type": "object"
       },
@@ -11277,9 +11311,14 @@
       },
       "NotificationDestinationResponseDto": {
         "properties": {
+          "botUsername": {
+            "nullable": true,
+            "type": "string"
+          },
           "channel": {
             "enum": [
-              "SLACK_WEBHOOK"
+              "SLACK_WEBHOOK",
+              "TELEGRAM_OPERATIONAL"
             ],
             "type": "string"
           },
@@ -11287,6 +11326,14 @@
             "description": "Non-secret keyed fingerprint; never a webhook fragment.",
             "maxLength": 16,
             "minLength": 16,
+            "type": "string"
+          },
+          "destinationChatId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "destinationTitle": {
+            "nullable": true,
             "type": "string"
           },
           "displayName": {
@@ -11311,6 +11358,10 @@
             "format": "uuid",
             "type": "string"
           },
+          "routingRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
           "secretRevision": {
             "minimum": 1,
             "type": "number"
@@ -11323,6 +11374,36 @@
               "INVALID"
             ],
             "type": "string"
+          },
+          "telegramBotId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "telegramInstallationStatus": {
+            "enum": [
+              "PENDING_BINDING",
+              "BOUND",
+              "DISABLED",
+              "INVALID"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "telegramWebhookSetupStatus": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "RETRY_WAIT",
+              "SUCCEEDED",
+              "FAILED"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "testedRoutingRevision": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
           },
           "testedSecretRevision": {
             "minimum": 1,
@@ -11359,7 +11440,9 @@
           "status",
           "credentialFingerprint",
           "secretRevision",
+          "routingRevision",
           "testedSecretRevision",
+          "testedRoutingRevision",
           "lastSuccessfulTestAt",
           "lastFailureCategory",
           "version",
@@ -16805,6 +16888,33 @@
         ],
         "type": "object"
       },
+      "TelegramBindingChallengeResponseDto": {
+        "properties": {
+          "botUsername": {
+            "example": "LolaOpsBot",
+            "type": "string"
+          },
+          "command": {
+            "example": "/connect AbCdEf1234567890",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "command",
+          "expiresAt",
+          "botUsername"
+        ],
+        "type": "object"
+      },
       "TestNotificationDestinationDto": {
         "properties": {
           "expectedVersion": {
@@ -17217,6 +17327,36 @@
           "enabled",
           "clientIngestible",
           "countsAsActivity",
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "UpdateOperationalTelegramDestinationDto": {
+        "properties": {
+          "botToken": {
+            "maxLength": 160,
+            "minLength": 27,
+            "type": "string",
+            "writeOnly": true
+          },
+          "desiredStatus": {
+            "enum": [
+              "ACTIVE",
+              "DISABLED"
+            ],
+            "type": "string"
+          },
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
           "expectedVersion"
         ],
         "type": "object"
@@ -24462,6 +24602,193 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/notification-destinations/{destinationId}/telegram-binding-challenges": {
+      "post": {
+        "operationId": "NotificationDestination_createTelegramBindingChallenge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "destinationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTelegramBindingChallengeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBindingChallengeResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Destinations"
+        ],
+        "x-iam-permission": {
+          "code": "project.notifications.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/notification-destinations/{destinationId}/telegram-operational": {
+      "patch": {
+        "operationId": "NotificationDestination_updateTelegram",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "destinationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOperationalTelegramDestinationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationDestinationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Destinations"
+        ],
+        "x-iam-permission": {
+          "code": "project.notifications.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/notification-destinations/{destinationId}/telegram-test": {
+      "post": {
+        "operationId": "NotificationDestination_testTelegram",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "destinationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestNotificationDestinationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationDestinationTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Destinations"
+        ],
+        "x-iam-permission": {
+          "code": "project.notifications.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/notification-destinations/{destinationId}/test": {
       "post": {
         "operationId": "NotificationDestination_test",
@@ -24511,6 +24838,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NotificationDestinationTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Destinations"
+        ],
+        "x-iam-permission": {
+          "code": "project.notifications.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/notification-destinations/telegram-operational": {
+      "post": {
+        "operationId": "NotificationDestination_createTelegram",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOperationalTelegramDestinationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationDestinationResponseDto"
                 }
               }
             },
@@ -32897,6 +33284,50 @@
         ],
         "tags": [
           "public sessions"
+        ]
+      }
+    },
+    "/api/v1/public/telegram/operational/{publicId}": {
+      "post": {
+        "operationId": "OperationalTelegramWebhook_ingest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publicId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Telegram-Bot-Api-Secret-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "accepted": {
+                      "type": "boolean"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": [
+          "Public Telegram webhooks"
         ]
       }
     },

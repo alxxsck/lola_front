@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
+import OperationalTelegramCard from "@/features/notification-destinations/OperationalTelegramCard.vue";
 import type { NotificationDestinationResponseDto } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 
@@ -591,19 +592,11 @@ onMounted(load);
       </p>
     </section>
 
-    <section class="integration-card upcoming" aria-labelledby="telegram-title">
-      <div class="card-heading">
-        <div class="provider-mark telegram" aria-hidden="true">T</div>
-        <div>
-          <h2 id="telegram-title">Telegram</h2>
-          <p>
-            Служебные уведомления и сообщения пользователям будут подключаться
-            независимо.
-          </p>
-        </div>
-        <span class="status">Следующий этап</span>
-      </div>
-    </section>
+    <OperationalTelegramCard
+      :project-id="projectId"
+      :can-read="canRead"
+      :can-manage="canManage"
+    />
   </main>
 </template>
 

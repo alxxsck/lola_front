@@ -38,6 +38,13 @@ vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => mocks.auth,
 }));
 
+vi.mock(
+  "@/features/notification-destinations/OperationalTelegramCard.vue",
+  () => ({
+    default: { template: '<section data-testid="telegram-card-stub" />' },
+  }),
+);
+
 const destination = (overrides: Record<string, unknown> = {}) => ({
   id: "destination-1",
   projectId: "project-1",

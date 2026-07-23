@@ -90,6 +90,7 @@ import type {
   CreateGuestSessionDto,
   CreateInteractionSessionDto,
   CreateKnowledgeTextDto,
+  CreateOperationalTelegramDestinationDto,
   CreatePlatformRoleDto,
   CreateProjectDto,
   CreateProjectMembershipDto,
@@ -97,6 +98,7 @@ import type {
   CreateScenarioAuthoringDto,
   CreateScenarioAuthoringResponseDto,
   CreateSlackNotificationDestinationDto,
+  CreateTelegramBindingChallengeDto,
   CreateTranslationJobDto,
   CreateUiElementDto,
   DecideAIProposalDto,
@@ -166,6 +168,7 @@ import type {
   NotificationDestinationResponseDto,
   NotificationDestinationTestResponseDto,
   NotificationUnsubscribeUnsubscribeParams,
+  OperationalTelegramWebhookIngest200,
   PasswordEstablishedResponseDto,
   PasswordSetupRequestDto,
   PlatformCreateProject201,
@@ -233,6 +236,7 @@ import type {
   StartConversationAISuspensionDto,
   StartVoiceSessionDto,
   SyncAttributeSnapshotDto,
+  TelegramBindingChallengeResponseDto,
   TestNotificationDestinationDto,
   TranslationJobAcceptedResponseDto,
   TranslationJobResponseDto,
@@ -244,6 +248,7 @@ import type {
   UpdateEmailAIProposalPreferenceDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
+  UpdateOperationalTelegramDestinationDto,
   UpdatePlatformRoleDto,
   UpdateProjectDto,
   UpdateProjectMembershipDto,
@@ -1500,6 +1505,61 @@ export const notificationDestinationUpdate = (
   );
 };
 
+export const notificationDestinationCreateTelegramBindingChallenge = (
+  projectId: string,
+  destinationId: string,
+  createTelegramBindingChallengeDto: BodyType<CreateTelegramBindingChallengeDto>,
+  options?: SecondParameter<
+    typeof request<TelegramBindingChallengeResponseDto>
+  >,
+) => {
+  return request<TelegramBindingChallengeResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations/${destinationId}/telegram-binding-challenges`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createTelegramBindingChallengeDto,
+    },
+    options,
+  );
+};
+
+export const notificationDestinationUpdateTelegram = (
+  projectId: string,
+  destinationId: string,
+  updateOperationalTelegramDestinationDto: BodyType<UpdateOperationalTelegramDestinationDto>,
+  options?: SecondParameter<typeof request<NotificationDestinationResponseDto>>,
+) => {
+  return request<NotificationDestinationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations/${destinationId}/telegram-operational`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateOperationalTelegramDestinationDto,
+    },
+    options,
+  );
+};
+
+export const notificationDestinationTestTelegram = (
+  projectId: string,
+  destinationId: string,
+  testNotificationDestinationDto: BodyType<TestNotificationDestinationDto>,
+  options?: SecondParameter<
+    typeof request<NotificationDestinationTestResponseDto>
+  >,
+) => {
+  return request<NotificationDestinationTestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations/${destinationId}/telegram-test`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: testNotificationDestinationDto,
+    },
+    options,
+  );
+};
+
 export const notificationDestinationTest = (
   projectId: string,
   destinationId: string,
@@ -1514,6 +1574,22 @@ export const notificationDestinationTest = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: testNotificationDestinationDto,
+    },
+    options,
+  );
+};
+
+export const notificationDestinationCreateTelegram = (
+  projectId: string,
+  createOperationalTelegramDestinationDto: BodyType<CreateOperationalTelegramDestinationDto>,
+  options?: SecondParameter<typeof request<NotificationDestinationResponseDto>>,
+) => {
+  return request<NotificationDestinationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations/telegram-operational`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createOperationalTelegramDestinationDto,
     },
     options,
   );
@@ -3467,6 +3543,18 @@ export const sessionsCreate = (
   );
 };
 
+export const operationalTelegramWebhookIngest = (
+  publicId: string,
+  options?: SecondParameter<
+    typeof request<OperationalTelegramWebhookIngest200>
+  >,
+) => {
+  return request<OperationalTelegramWebhookIngest200>(
+    { url: `/api/v1/public/telegram/operational/${publicId}`, method: "POST" },
+    options,
+  );
+};
+
 export const scenarioSpeechAudio = (
   commandId: string,
   options?: SecondParameter<typeof request<void>>,
@@ -3818,8 +3906,23 @@ export type NotificationDestinationCreateResult = NonNullable<
 export type NotificationDestinationUpdateResult = NonNullable<
   Awaited<ReturnType<typeof notificationDestinationUpdate>>
 >;
+export type NotificationDestinationCreateTelegramBindingChallengeResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof notificationDestinationCreateTelegramBindingChallenge>
+    >
+  >;
+export type NotificationDestinationUpdateTelegramResult = NonNullable<
+  Awaited<ReturnType<typeof notificationDestinationUpdateTelegram>>
+>;
+export type NotificationDestinationTestTelegramResult = NonNullable<
+  Awaited<ReturnType<typeof notificationDestinationTestTelegram>>
+>;
 export type NotificationDestinationTestResult = NonNullable<
   Awaited<ReturnType<typeof notificationDestinationTest>>
+>;
+export type NotificationDestinationCreateTelegramResult = NonNullable<
+  Awaited<ReturnType<typeof notificationDestinationCreateTelegram>>
 >;
 export type ProjectPermissionListResult = NonNullable<
   Awaited<ReturnType<typeof projectPermissionList>>
@@ -4209,6 +4312,9 @@ export type NotificationUnsubscribeUnsubscribeResult = NonNullable<
 >;
 export type SessionsCreateResult = NonNullable<
   Awaited<ReturnType<typeof sessionsCreate>>
+>;
+export type OperationalTelegramWebhookIngestResult = NonNullable<
+  Awaited<ReturnType<typeof operationalTelegramWebhookIngest>>
 >;
 export type ScenarioSpeechAudioResult = NonNullable<
   Awaited<ReturnType<typeof scenarioSpeechAudio>>
