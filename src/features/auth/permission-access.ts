@@ -63,6 +63,9 @@ export const PROJECT_PERMISSION_CODES = [
   "project.ai_usage.read",
   "project.notifications.read",
   "project.notifications.manage",
+  "project.integrations.read",
+  "project.integrations.manage",
+  "project.telegram.links.read",
   "project.audit.read",
 ] as const;
 

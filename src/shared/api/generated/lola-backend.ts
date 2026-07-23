@@ -78,6 +78,7 @@ import type {
   CompatibilityStartVoiceSessionDto,
   ConditionCatalogResponseDto,
   ConfigureProjectActionDto,
+  ConfigureTelegramChannelDto,
   ConnectVoiceSessionDto,
   ConversationAISuspensionHistoryPageResponseDto,
   ConversationAISuspensionMutationResponseDto,
@@ -103,6 +104,7 @@ import type {
   CreateUiElementDto,
   DecideAIProposalDto,
   DeleteKnowledgeDocumentResponseDto,
+  DisableTelegramChannelDto,
   EmailAIProposalPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
   EndUserPageResponseDto,
@@ -210,6 +212,7 @@ import type {
   RevokeCmsUserSessionDto,
   RollbackScenarioDto,
   RotateServerKeyResponseDto,
+  RotateTelegramChannelDto,
   SaveAttributeContractDraftDto,
   SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
@@ -236,8 +239,16 @@ import type {
   StartConversationAISuspensionDto,
   StartVoiceSessionDto,
   SyncAttributeSnapshotDto,
+  TelegramAdminLinkSummaryResponseDto,
   TelegramBindingChallengeResponseDto,
+  TelegramChannelAdminGet200,
+  TelegramChannelInstallationResponseDto,
+  TelegramChannelTestResponseDto,
+  TelegramChannelWebhookIngest200,
+  TelegramLinkChallengeResponseDto,
+  TelegramLinkStateResponseDto,
   TestNotificationDestinationDto,
+  TestTelegramChannelDto,
   TranslationJobAcceptedResponseDto,
   TranslationJobResponseDto,
   TranslationUsageReportParams,
@@ -910,6 +921,22 @@ export const adminEndUserProfilesProfile = (
   return request<ProfileProjectionResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/profile`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const telegramLinkAdminGet = (
+  projectId: string,
+  endUserId: string,
+  options?: SecondParameter<
+    typeof request<TelegramAdminLinkSummaryResponseDto>
+  >,
+) => {
+  return request<TelegramAdminLinkSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/telegram-link`,
       method: "GET",
     },
     options,
@@ -2297,6 +2324,90 @@ export const adminSpeechVoices = (
   );
 };
 
+export const telegramChannelAdminGet = (
+  projectId: string,
+  options?: SecondParameter<typeof request<TelegramChannelAdminGet200>>,
+) => {
+  return request<TelegramChannelAdminGet200>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-channel`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const telegramChannelAdminRotate = (
+  projectId: string,
+  rotateTelegramChannelDto: BodyType<RotateTelegramChannelDto>,
+  options?: SecondParameter<
+    typeof request<TelegramChannelInstallationResponseDto>
+  >,
+) => {
+  return request<TelegramChannelInstallationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-channel`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: rotateTelegramChannelDto,
+    },
+    options,
+  );
+};
+
+export const telegramChannelAdminCreate = (
+  projectId: string,
+  configureTelegramChannelDto: BodyType<ConfigureTelegramChannelDto>,
+  options?: SecondParameter<
+    typeof request<TelegramChannelInstallationResponseDto>
+  >,
+) => {
+  return request<TelegramChannelInstallationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-channel`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: configureTelegramChannelDto,
+    },
+    options,
+  );
+};
+
+export const telegramChannelAdminTest = (
+  projectId: string,
+  installationId: string,
+  testTelegramChannelDto: BodyType<TestTelegramChannelDto>,
+  options?: SecondParameter<typeof request<TelegramChannelTestResponseDto>>,
+) => {
+  return request<TelegramChannelTestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-channel/${installationId}/test`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: testTelegramChannelDto,
+    },
+    options,
+  );
+};
+
+export const telegramChannelAdminDisable = (
+  projectId: string,
+  disableTelegramChannelDto: BodyType<DisableTelegramChannelDto>,
+  options?: SecondParameter<
+    typeof request<TelegramChannelInstallationResponseDto>
+  >,
+) => {
+  return request<TelegramChannelInstallationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-channel/disable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: disableTelegramChannelDto,
+    },
+    options,
+  );
+};
+
 export const translationCreate = (
   projectId: string,
   createTranslationJobDto: BodyType<CreateTranslationJobDto>,
@@ -3321,6 +3432,72 @@ export const chatSend = (
   );
 };
 
+export const telegramLinkDisconnect = (
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    { url: `/api/v1/chat/telegram-link`, method: "DELETE" },
+    options,
+  );
+};
+
+export const telegramLinkCurrent = (
+  options?: SecondParameter<typeof request<TelegramLinkStateResponseDto>>,
+) => {
+  return request<TelegramLinkStateResponseDto>(
+    { url: `/api/v1/chat/telegram-link`, method: "GET" },
+    options,
+  );
+};
+
+export const telegramLinkCreate = (
+  options?: SecondParameter<typeof request<TelegramLinkChallengeResponseDto>>,
+) => {
+  return request<TelegramLinkChallengeResponseDto>(
+    { url: `/api/v1/chat/telegram-link/challenges`, method: "POST" },
+    options,
+  );
+};
+
+export const telegramLinkCancel = (
+  challengeId: string,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/chat/telegram-link/challenges/${challengeId}`,
+      method: "DELETE",
+    },
+    options,
+  );
+};
+
+export const telegramLinkChallenge = (
+  challengeId: string,
+  options?: SecondParameter<typeof request<TelegramLinkStateResponseDto>>,
+) => {
+  return request<TelegramLinkStateResponseDto>(
+    {
+      url: `/api/v1/chat/telegram-link/challenges/${challengeId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const telegramLinkConfirm = (
+  challengeId: string,
+  options?: SecondParameter<typeof request<TelegramLinkStateResponseDto>>,
+) => {
+  return request<TelegramLinkStateResponseDto>(
+    {
+      url: `/api/v1/chat/telegram-link/challenges/${challengeId}/confirm`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
 export const compatibilityCrmCreateCustomer = (
   createCustomerDto: BodyType<CreateCustomerDto>,
   options?: SecondParameter<typeof request<void>>,
@@ -3539,6 +3716,16 @@ export const sessionsCreate = (
       headers: { "Content-Type": "application/json" },
       data: createGuestSessionDto,
     },
+    options,
+  );
+};
+
+export const telegramChannelWebhookIngest = (
+  publicId: string,
+  options?: SecondParameter<typeof request<TelegramChannelWebhookIngest200>>,
+) => {
+  return request<TelegramChannelWebhookIngest200>(
+    { url: `/api/v1/public/telegram/channel/${publicId}`, method: "POST" },
     options,
   );
 };
@@ -3801,6 +3988,9 @@ export type AdminEndUserProfilesListResult = NonNullable<
 export type AdminEndUserProfilesProfileResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesProfile>>
 >;
+export type TelegramLinkAdminGetResult = NonNullable<
+  Awaited<ReturnType<typeof telegramLinkAdminGet>>
+>;
 export type EventCatalogListResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogList>>
 >;
@@ -4062,6 +4252,21 @@ export type AdminSpeechUpdateResult = NonNullable<
 export type AdminSpeechVoicesResult = NonNullable<
   Awaited<ReturnType<typeof adminSpeechVoices>>
 >;
+export type TelegramChannelAdminGetResult = NonNullable<
+  Awaited<ReturnType<typeof telegramChannelAdminGet>>
+>;
+export type TelegramChannelAdminRotateResult = NonNullable<
+  Awaited<ReturnType<typeof telegramChannelAdminRotate>>
+>;
+export type TelegramChannelAdminCreateResult = NonNullable<
+  Awaited<ReturnType<typeof telegramChannelAdminCreate>>
+>;
+export type TelegramChannelAdminTestResult = NonNullable<
+  Awaited<ReturnType<typeof telegramChannelAdminTest>>
+>;
+export type TelegramChannelAdminDisableResult = NonNullable<
+  Awaited<ReturnType<typeof telegramChannelAdminDisable>>
+>;
 export type TranslationCreateResult = NonNullable<
   Awaited<ReturnType<typeof translationCreate>>
 >;
@@ -4268,6 +4473,24 @@ export type ChatCurrentConversationResult = NonNullable<
 >;
 export type ChatListResult = NonNullable<Awaited<ReturnType<typeof chatList>>>;
 export type ChatSendResult = NonNullable<Awaited<ReturnType<typeof chatSend>>>;
+export type TelegramLinkDisconnectResult = NonNullable<
+  Awaited<ReturnType<typeof telegramLinkDisconnect>>
+>;
+export type TelegramLinkCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof telegramLinkCurrent>>
+>;
+export type TelegramLinkCreateResult = NonNullable<
+  Awaited<ReturnType<typeof telegramLinkCreate>>
+>;
+export type TelegramLinkCancelResult = NonNullable<
+  Awaited<ReturnType<typeof telegramLinkCancel>>
+>;
+export type TelegramLinkChallengeResult = NonNullable<
+  Awaited<ReturnType<typeof telegramLinkChallenge>>
+>;
+export type TelegramLinkConfirmResult = NonNullable<
+  Awaited<ReturnType<typeof telegramLinkConfirm>>
+>;
 export type CompatibilityCrmCreateCustomerResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityCrmCreateCustomer>>
 >;
@@ -4312,6 +4535,9 @@ export type NotificationUnsubscribeUnsubscribeResult = NonNullable<
 >;
 export type SessionsCreateResult = NonNullable<
   Awaited<ReturnType<typeof sessionsCreate>>
+>;
+export type TelegramChannelWebhookIngestResult = NonNullable<
+  Awaited<ReturnType<typeof telegramChannelWebhookIngest>>
 >;
 export type OperationalTelegramWebhookIngestResult = NonNullable<
   Awaited<ReturnType<typeof operationalTelegramWebhookIngest>>

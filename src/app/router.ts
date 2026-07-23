@@ -88,7 +88,12 @@ export const router = createRouter({
           path: "settings/integrations",
           name: "project-integrations",
           component: () => import("@/pages/ProjectIntegrationsPage.vue"),
-          meta: { projectPermission: "project.notifications.read" },
+          meta: {
+            projectPermissionsAny: [
+              "project.notifications.read",
+              "project.integrations.read",
+            ],
+          },
         },
         {
           path: "platform/cms-users/:cmsUserId?",

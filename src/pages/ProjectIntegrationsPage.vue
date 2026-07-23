@@ -4,6 +4,7 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
 import OperationalTelegramCard from "@/features/notification-destinations/OperationalTelegramCard.vue";
+import ProductTelegramCard from "@/features/telegram-product-installations/ProductTelegramCard.vue";
 import type { NotificationDestinationResponseDto } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 
@@ -17,6 +18,12 @@ const canRead = computed(() =>
 );
 const canManage = computed(() =>
   hasProjectPermission(permissions.value, "project.notifications.manage"),
+);
+const canReadProductTelegram = computed(() =>
+  hasProjectPermission(permissions.value, "project.integrations.read"),
+);
+const canManageProductTelegram = computed(() =>
+  hasProjectPermission(permissions.value, "project.integrations.manage"),
 );
 const destination = ref<NotificationDestinationResponseDto | null>(null);
 const loading = ref(true);
@@ -430,7 +437,11 @@ onMounted(load);
       {{ actionSuccess }}
     </p>
 
-    <section class="integration-card" aria-labelledby="slack-title">
+    <section
+      v-if="canRead"
+      class="integration-card"
+      aria-labelledby="slack-title"
+    >
       <div class="card-heading">
         <div class="provider-mark" aria-hidden="true">S</div>
         <div>
@@ -593,9 +604,16 @@ onMounted(load);
     </section>
 
     <OperationalTelegramCard
+      v-if="canRead"
       :project-id="projectId"
       :can-read="canRead"
       :can-manage="canManage"
+    />
+    <ProductTelegramCard
+      v-if="canReadProductTelegram"
+      :project-id="projectId"
+      :can-read="canReadProductTelegram"
+      :can-manage="canManageProductTelegram"
     />
   </main>
 </template>

@@ -45,6 +45,23 @@ vi.mock(
   }),
 );
 
+vi.mock(
+  "@/features/telegram-product-installations/ProductTelegramCard.vue",
+  () => ({
+    default: {
+      props: ["projectId", "canRead", "canManage"],
+      template: `
+        <section
+          data-testid="product-telegram-card-stub"
+          :data-project-id="projectId"
+          :data-can-read="String(canRead)"
+          :data-can-manage="String(canManage)"
+        />
+      `,
+    },
+  }),
+);
+
 const destination = (overrides: Record<string, unknown> = {}) => ({
   id: "destination-1",
   projectId: "project-1",
@@ -100,6 +117,30 @@ describe("ProjectIntegrationsPage", () => {
     expect(wrapper.text()).toContain("a1b2c3d4e5f60708");
     expect(wrapper.find('input[name="webhookUrl"]').exists()).toBe(false);
     expect(wrapper.find('button[data-action="disable"]').exists()).toBe(false);
+  });
+
+  it("renders the product Telegram card from its own integration permissions", async () => {
+    mocks.permissions = [
+      "project.integrations.read",
+      "project.integrations.manage",
+    ];
+    mocks.auth.project.effectivePermissionCodes = [...mocks.permissions];
+
+    const wrapper = mount(ProjectIntegrationsPage);
+    await flushPromises();
+
+    expect(mocks.list).not.toHaveBeenCalled();
+    expect(wrapper.find('[data-testid="telegram-card-stub"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.text()).not.toContain("Slack");
+    expect(
+      wrapper.get('[data-testid="product-telegram-card-stub"]').attributes(),
+    ).toMatchObject({
+      "data-project-id": "project-1",
+      "data-can-read": "true",
+      "data-can-manage": "true",
+    });
   });
 
   it("creates and tests a destination, then clears the write-only webhook input", async () => {

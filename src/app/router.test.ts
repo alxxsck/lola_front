@@ -173,7 +173,7 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("security-settings");
   });
 
-  it("guards Project integrations with the dedicated notification read Permission", async () => {
+  it("allows Project integrations through notification or integration read Permission", async () => {
     const auth = useAuthStore();
     const project = {
       id: "project-1",
@@ -201,6 +201,11 @@ describe("authentication routes", () => {
       projects: [project],
     });
 
+    await router.push("/settings/integrations");
+    expect(router.currentRoute.value.name).toBe("project-integrations");
+
+    auth.project!.effectivePermissionCodes = ["project.integrations.read"];
+    await router.push("/overview");
     await router.push("/settings/integrations");
     expect(router.currentRoute.value.name).toBe("project-integrations");
 

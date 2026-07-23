@@ -6710,6 +6710,21 @@
         },
         "type": "object"
       },
+      "ConfigureTelegramChannelDto": {
+        "properties": {
+          "botToken": {
+            "description": "Write-only token of the Project product bot.",
+            "maxLength": 160,
+            "minLength": 27,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "botToken"
+        ],
+        "type": "object"
+      },
       "ConnectVoiceSessionDto": {
         "properties": {
           "offerSdp": {
@@ -7788,6 +7803,18 @@
           "OPEN_MODAL"
         ],
         "type": "string"
+      },
+      "DisableTelegramChannelDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ],
+        "type": "object"
       },
       "EmailAIProposalPreferenceResponseDto": {
         "properties": {
@@ -13785,6 +13812,26 @@
         ],
         "type": "object"
       },
+      "RotateTelegramChannelDto": {
+        "properties": {
+          "botToken": {
+            "description": "Write-only token of the Project product bot.",
+            "maxLength": 160,
+            "minLength": 27,
+            "type": "string",
+            "writeOnly": true
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "botToken",
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
       "RuleCompareDto": {
         "additionalProperties": false,
         "properties": {
@@ -16888,6 +16935,158 @@
         ],
         "type": "object"
       },
+      "TelegramActiveLinkDto": {
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramLinkStatus"
+              }
+            ]
+          },
+          "telegramDisplayName": {
+            "type": "string"
+          },
+          "telegramUsername": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "telegramDisplayName"
+        ],
+        "type": "object"
+      },
+      "TelegramAdminActiveLinkDto": {
+        "properties": {
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "linkedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramLinkStatus"
+              }
+            ]
+          },
+          "username": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "linkedAt"
+        ],
+        "type": "object"
+      },
+      "TelegramAdminLinkEffectiveStatus": {
+        "enum": [
+          "UNLINKED",
+          "PENDING_CONFIRMATION",
+          "ACTIVE",
+          "BLOCKED",
+          "REVOKED"
+        ],
+        "type": "string"
+      },
+      "TelegramAdminLinkSummaryResponseDto": {
+        "properties": {
+          "activeLink": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramAdminActiveLinkDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "effectiveStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramAdminLinkEffectiveStatus"
+              }
+            ]
+          },
+          "linked": {
+            "type": "boolean"
+          },
+          "linkedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "pendingCandidate": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramAdminPendingCandidateDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "revokedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramLinkStatus"
+              }
+            ],
+            "nullable": true
+          },
+          "username": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "linked",
+          "effectiveStatus"
+        ],
+        "type": "object"
+      },
+      "TelegramAdminPendingCandidateDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramLinkChallengeStatus"
+              }
+            ]
+          },
+          "username": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "expiresAt",
+          "displayName"
+        ],
+        "type": "object"
+      },
       "TelegramBindingChallengeResponseDto": {
         "properties": {
           "botUsername": {
@@ -16915,7 +17114,325 @@
         ],
         "type": "object"
       },
+      "TelegramChannelHealthStatus": {
+        "enum": [
+          "NOT_TESTED",
+          "HEALTHY",
+          "UNHEALTHY"
+        ],
+        "type": "string"
+      },
+      "TelegramChannelInstallationResponseDto": {
+        "properties": {
+          "botUsername": {
+            "type": "string"
+          },
+          "credentialFingerprint": {
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "deepLinkBase": {
+            "format": "uri",
+            "type": "string"
+          },
+          "healthStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramChannelHealthStatus"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastTestedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastTestFailureCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "linkedUserCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramChannelInstallationStatus"
+              }
+            ]
+          },
+          "telegramBotId": {
+            "description": "Lossless decimal Telegram Bot ID.",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedByActorId": {
+            "type": "string"
+          },
+          "updatedByActorType": {
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "webhookSetupErrorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "webhookSetupStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramChannelSetupStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "botUsername",
+          "deepLinkBase",
+          "telegramBotId",
+          "credentialFingerprint",
+          "status",
+          "webhookSetupStatus",
+          "healthStatus",
+          "linkedUserCount",
+          "updatedByActorType",
+          "updatedByActorId",
+          "version",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "TelegramChannelInstallationStatus": {
+        "enum": [
+          "PENDING_SETUP",
+          "ACTIVE",
+          "DISABLED",
+          "INVALID"
+        ],
+        "type": "string"
+      },
+      "TelegramChannelSetupStatus": {
+        "enum": [
+          "PENDING",
+          "PROCESSING",
+          "RETRY_WAIT",
+          "SUCCEEDED",
+          "FAILED"
+        ],
+        "type": "string"
+      },
+      "TelegramChannelTestResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "installationVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramChannelTestStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "installationVersion",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "TelegramChannelTestStatus": {
+        "enum": [
+          "PENDING",
+          "PROCESSING",
+          "RETRY_WAIT",
+          "SUCCEEDED",
+          "FAILED"
+        ],
+        "type": "string"
+      },
+      "TelegramLinkChallengeResponseDto": {
+        "properties": {
+          "botUsername": {
+            "type": "string"
+          },
+          "deepLink": {
+            "description": "Telegram deep link. Token is returned once.",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "manualCommand": {
+            "description": "Manual /start command. Token is returned once.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "expiresAt",
+          "botUsername",
+          "deepLink",
+          "manualCommand"
+        ],
+        "type": "object"
+      },
+      "TelegramLinkChallengeStatus": {
+        "enum": [
+          "OPEN",
+          "PENDING_CONFIRMATION",
+          "CONFIRMED",
+          "EXPIRED",
+          "REVOKED",
+          "EXHAUSTED"
+        ],
+        "type": "string"
+      },
+      "TelegramLinkStateResponseDto": {
+        "properties": {
+          "activeLink": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramActiveLinkDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "challengeStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramLinkChallengeStatus"
+              }
+            ],
+            "nullable": true
+          },
+          "linked": {
+            "type": "boolean"
+          },
+          "pendingCandidate": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramPendingCandidateDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "pendingChallengeId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramLinkStatus"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "linked"
+        ],
+        "type": "object"
+      },
+      "TelegramLinkStatus": {
+        "enum": [
+          "ACTIVE",
+          "REVOKED",
+          "BLOCKED"
+        ],
+        "type": "string"
+      },
+      "TelegramPendingCandidateDto": {
+        "properties": {
+          "challengeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramLinkChallengeStatus"
+              }
+            ]
+          },
+          "telegramDisplayName": {
+            "type": "string"
+          },
+          "telegramUsername": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "challengeId",
+          "status",
+          "telegramDisplayName"
+        ],
+        "type": "object"
+      },
       "TestNotificationDestinationDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "TestTelegramChannelDto": {
         "properties": {
           "expectedVersion": {
             "minimum": 1,
@@ -22022,6 +22539,55 @@
         ],
         "x-iam-permission": {
           "code": "project.profiles.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/telegram-link": {
+      "get": {
+        "operationId": "TelegramLinkAdmin_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramAdminLinkSummaryResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Link Administration"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.links.read",
           "scope": "PROJECT"
         }
       }
@@ -28192,6 +28758,276 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/telegram-channel": {
+      "get": {
+        "operationId": "TelegramChannelAdmin_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/TelegramChannelInstallationResponseDto"
+                    }
+                  ],
+                  "nullable": true
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Channel"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      },
+      "patch": {
+        "operationId": "TelegramChannelAdmin_rotate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateTelegramChannelDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramChannelInstallationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Channel"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      },
+      "post": {
+        "operationId": "TelegramChannelAdmin_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigureTelegramChannelDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramChannelInstallationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Channel"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-channel/{installationId}/test": {
+      "post": {
+        "operationId": "TelegramChannelAdmin_test",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "installationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestTelegramChannelDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramChannelTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Channel"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-channel/disable": {
+      "post": {
+        "operationId": "TelegramChannelAdmin_disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisableTelegramChannelDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramChannelInstallationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Channel"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/translation-jobs": {
       "post": {
         "operationId": "Translation_create",
@@ -32644,6 +33480,181 @@
         ]
       }
     },
+    "/api/v1/chat/telegram-link": {
+      "delete": {
+        "operationId": "TelegramLink_disconnect",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Link"
+        ]
+      },
+      "get": {
+        "operationId": "TelegramLink_current",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramLinkStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Link"
+        ]
+      }
+    },
+    "/api/v1/chat/telegram-link/challenges": {
+      "post": {
+        "operationId": "TelegramLink_create",
+        "parameters": [
+          {
+            "description": "Retry key scoped to this authenticated chat session.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramLinkChallengeResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Link"
+        ]
+      }
+    },
+    "/api/v1/chat/telegram-link/challenges/{challengeId}": {
+      "delete": {
+        "operationId": "TelegramLink_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "challengeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Link"
+        ]
+      },
+      "get": {
+        "operationId": "TelegramLink_challenge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "challengeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramLinkStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Link"
+        ]
+      }
+    },
+    "/api/v1/chat/telegram-link/challenges/{challengeId}/confirm": {
+      "post": {
+        "operationId": "TelegramLink_confirm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "challengeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramLinkStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Link"
+        ]
+      }
+    },
     "/api/v1/crm.Crm/CreateCustomer": {
       "post": {
         "operationId": "CompatibilityCrm_createCustomer",
@@ -33284,6 +34295,50 @@
         ],
         "tags": [
           "public sessions"
+        ]
+      }
+    },
+    "/api/v1/public/telegram/channel/{publicId}": {
+      "post": {
+        "operationId": "TelegramChannelWebhook_ingest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publicId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Telegram-Bot-Api-Secret-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "accepted": {
+                      "type": "boolean"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": [
+          "Public Telegram webhooks"
         ]
       }
     },

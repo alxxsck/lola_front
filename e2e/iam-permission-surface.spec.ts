@@ -15,35 +15,18 @@ function json(route: Route, body: unknown, status = 200) {
   })
 }
 
-async function installReadOnlyFixtures(page: Page) {
+async function installReadOnlyFixtures(
+  page: Page,
+  effectivePermissionCodes = [
+    'project.knowledge.read',
+    'project.scenarios.read',
+  ],
+) {
   const mutations: string[] = []
-  let authenticated = false
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request()
     const path = new URL(request.url()).pathname
-    if (request.method() === 'POST' && path === '/api/v1/auth/login') {
-      authenticated = true
-      return json(route, {
-        kind: 'AUTHENTICATED',
-        tokenType: 'Bearer',
-        accessToken: 'cms_access_read_only',
-        expiresIn: 900,
-        refreshExpiresIn: 3600,
-        user: {
-          id: '00000000-0000-4000-8000-000000000101',
-          email: 'reader@example.com',
-          displayName: 'Reader',
-        },
-      })
-    }
     if (request.method() === 'POST' && path === '/api/v1/auth/refresh') {
-      if (!authenticated) {
-        return json(
-          route,
-          { error: { code: 'AUTHENTICATION_FAILED', message: 'Authentication failed' } },
-          401,
-        )
-      }
       return json(route, {
         kind: 'AUTHENTICATED',
         tokenType: 'Bearer',
@@ -87,10 +70,7 @@ async function installReadOnlyFixtures(page: Page) {
             membershipVersion: 1,
             // Deliberately owner-shaped: role labels must never grant authority.
             roleKeys: ['PROJECT_OWNER'],
-            effectivePermissionCodes: [
-              'project.knowledge.read',
-              'project.scenarios.read',
-            ],
+            effectivePermissionCodes,
           },
         ],
       })
@@ -106,6 +86,12 @@ async function installReadOnlyFixtures(page: Page) {
       path === `/api/v1/admin/projects/${projectId}/scenarios`
     ) {
       return json(route, [])
+    }
+    if (
+      request.method() === 'GET' &&
+      path === `/api/v1/admin/projects/${projectId}/telegram-channel`
+    ) {
+      return json(route, null)
     }
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) {
       mutations.push(`${request.method()} ${path}`)
@@ -124,13 +110,8 @@ async function installReadOnlyFixtures(page: Page) {
   return mutations
 }
 
-async function login(page: Page) {
-  await page.goto('/login')
-  await page.getByLabel('Email', { exact: true }).fill('reader@example.com')
-  await page
-    .getByLabel('Пароль или секрет первоначального доступа')
-    .fill('read only passphrase')
-  await page.getByRole('button', { name: 'Продолжить' }).click()
+async function restoreSession(page: Page) {
+  await page.goto('/overview')
   await expect(page).toHaveURL(/\/overview$/)
 }
 
@@ -138,7 +119,7 @@ test('exact Permissions control navigation, mutations and direct write URLs with
   page,
 }) => {
   const mutations = await installReadOnlyFixtures(page)
-  await login(page)
+  await restoreSession(page)
 
   const navigation = page.locator('aside.sidebar nav')
   await expect(navigation.getByRole('link', { name: 'База знаний' })).toBeVisible()
@@ -155,5 +136,36 @@ test('exact Permissions control navigation, mutations and direct write URLs with
 
   await page.goto('/scenarios/new')
   await expect(page).toHaveURL(/\/overview$/)
+  expect(mutations).toEqual([])
+})
+
+test('integration readers see only the read-only product Telegram surface', async ({
+  page,
+}) => {
+  const mutations = await installReadOnlyFixtures(page, [
+    'project.integrations.read',
+  ])
+  await restoreSession(page)
+
+  const navigation = page.locator('aside.sidebar nav')
+  const integrationsLink = navigation.getByRole('link', {
+    name: 'Интеграции',
+  })
+  await expect(integrationsLink).toBeVisible()
+  await integrationsLink.click()
+  await expect(page).toHaveURL(/\/settings\/integrations$/)
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Telegram · Пользователи продукта',
+    }),
+  ).toBeVisible()
+  await expect(page.getByText('Slack', { exact: true })).toHaveCount(0)
+  await expect(page.getByLabel('Bot token', { exact: true })).toHaveCount(0)
+  await expect(
+    page.getByText(
+      'Product Telegram пока не подключён. Для настройки нужны права управления интеграциями.',
+    ),
+  ).toBeVisible()
   expect(mutations).toEqual([])
 })

@@ -137,6 +137,57 @@ describe("AppShell", () => {
     });
   });
 
+  it("shows Integrations to a product-integration reader without notification access", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+      },
+      project: {
+        id: "project-1",
+        name: "Project One",
+        slug: "project-one",
+        status: "ACTIVE",
+        publicKey: "public",
+        defaultLocale: "ru",
+        supportedLocales: ["ru"],
+        assistantName: "Lola",
+        systemPrompt: "",
+        voiceInstructions: "",
+        settings: {},
+        effectivePermissionCodes: ["project.integrations.read"],
+      },
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: { template: "<div />" },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    expect(
+      wrapper
+        .findAll(".sidebar-scroll nav a")
+        .some((link) => link.text().includes("Интеграции")),
+    ).toBe(true);
+  });
+
   it("shows a projectless Platform Operator only the available control-plane navigation", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

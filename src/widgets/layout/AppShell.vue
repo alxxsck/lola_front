@@ -51,7 +51,10 @@ const navigation = computed(() =>
       icon: "pi pi-link",
       to: "/settings/integrations",
       project: true,
-      projectPermission: "project.notifications.read",
+      projectPermissionsAny: [
+        "project.notifications.read",
+        "project.integrations.read",
+      ],
     },
     {
       label: "Администраторы",

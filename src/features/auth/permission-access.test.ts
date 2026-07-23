@@ -64,4 +64,26 @@ describe("permission access", () => {
       ),
     ).toBe(false);
   });
+
+  it("keeps product Telegram installation and link-summary authority independent", () => {
+    const permissions = [
+      "project.integrations.read",
+      "project.telegram.links.read",
+    ];
+    expect(
+      hasProjectPermission(permissions, "project.integrations.read"),
+    ).toBe(true);
+    expect(
+      hasProjectPermission(permissions, "project.integrations.manage"),
+    ).toBe(false);
+    expect(
+      hasProjectPermission(permissions, "project.telegram.links.read"),
+    ).toBe(true);
+    expect(
+      hasProjectPermission(
+        ["project.notifications.read"],
+        "project.integrations.read",
+      ),
+    ).toBe(false);
+  });
 });

@@ -18,6 +18,7 @@ import { hasProjectPermission } from "@/features/auth/permission-access";
 import { useAdminConversationConsole } from "@/features/admin-conversations/model/use-admin-conversation-console";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import { formatProfileValue } from "@/features/end-user-profile/model/profile-value";
+import EndUserTelegramPanel from "@/features/telegram-product-installations/EndUserTelegramPanel.vue";
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
 import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
@@ -136,6 +137,12 @@ const projectPermissions = computed(
 );
 const canReadProfiles = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.profiles.read"),
+);
+const canReadTelegramLinks = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.telegram.links.read",
+  ),
 );
 const canReadConversations = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.read"),
@@ -943,6 +950,12 @@ function displayField(
             </article>
           </div>
         </template>
+        <EndUserTelegramPanel
+          :visible="visible"
+          :project-id="projectId"
+          :end-user-id="endUserId"
+          :can-read="canReadTelegramLinks"
+        />
       </aside>
     </div>
 
