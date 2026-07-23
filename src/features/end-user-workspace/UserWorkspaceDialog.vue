@@ -966,27 +966,27 @@ function displayField(
               }}</small>
             </article>
           </div>
-          <UserMemoryPanel
-            v-if="canReadUserMemory && endUserId"
-            :project-id="projectId"
-            :end-user-id="endUserId"
-            :user-label="displayName"
-            :editable="
-              hasProjectPermission(
-                projectPermissions,
-                'project.user_memory.manage',
-              )
-            "
-          />
-          <Button
-            v-if="canStartAIReview && endUserId"
-            label="Запросить AI-анализ событий"
-            icon="pi pi-sparkles"
-            severity="secondary"
-            fluid
-            @click="aiReviewVisible = true"
-          />
         </template>
+        <UserMemoryPanel
+          v-if="canReadUserMemory && endUserId"
+          :project-id="projectId"
+          :end-user-id="endUserId"
+          :user-label="displayName"
+          :editable="
+            hasProjectPermission(
+              projectPermissions,
+              'project.user_memory.manage',
+            )
+          "
+        />
+        <Button
+          v-if="canStartAIReview && endUserId"
+          label="Запросить AI-анализ событий"
+          icon="pi pi-sparkles"
+          severity="secondary"
+          fluid
+          @click="aiReviewVisible = true"
+        />
       </aside>
     </div>
 
