@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   subscribe: vi.fn(),
   onState: vi.fn(),
   reconcile: vi.fn(),
+  updateVisible: vi.fn(),
   messageHandler: undefined as ((value: unknown) => void) | undefined,
   permissions: [
     "project.profiles.read",
@@ -175,12 +176,14 @@ describe("единое рабочее пространство пользова�
         projectId: "project-1",
         endUserId: "user-1",
         externalUserId: "customer-1",
-        "onUpdate:visible": vi.fn(),
+        "onUpdate:visible": mocks.updateVisible,
       },
       global: {
         stubs: {
           Dialog: {
-            template: '<section><slot name="header"/><slot/></section>',
+            emits: ["update:visible"],
+            template:
+              '<section><button data-action="close-dialog" @click="$emit(\'update:visible\', false)">close</button><slot name="header"/><slot/></section>',
           },
           Button: {
             props: ["label"],
@@ -201,9 +204,10 @@ describe("единое рабочее пространство пользова�
           ConversationAISuspensionDialog: true,
           ConversationAISuspensionHistory: true,
           EndUserTelegramPanel: {
-            props: ["visible", "projectId", "endUserId", "canRead"],
+            props: ["visible", "projectId", "endUserId", "canRead", "canSend"],
+            emits: ["dirty-change"],
             template:
-              '<div v-if="canRead" data-testid="end-user-telegram-panel" :data-project-id="projectId" :data-end-user-id="endUserId" :data-visible="String(visible)" />',
+              '<div v-if="canRead" data-testid="end-user-telegram-panel" :data-project-id="projectId" :data-end-user-id="endUserId" :data-visible="String(visible)" :data-can-send="String(canSend)"><button data-action="telegram-draft-dirty" @click="$emit(\'dirty-change\', true)">dirty</button></div>',
           },
         },
       },
@@ -221,6 +225,44 @@ describe("единое рабочее пространство пользова�
       "data-end-user-id": "user-1",
       "data-visible": "true",
     });
+  });
+
+  it("passes the independent personal-send permission without using conversation reply authority", async () => {
+    mocks.permissions.push(
+      "project.telegram.links.read",
+      "project.telegram.personal_messages.send",
+    );
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    expect(
+      wrapper
+        .get('[data-testid="end-user-telegram-panel"]')
+        .attributes("data-can-send"),
+    ).toBe("true");
+  });
+
+  it("includes a Telegram composer draft in the workspace close guard", async () => {
+    mocks.permissions.push(
+      "project.telegram.links.read",
+      "project.telegram.personal_messages.send",
+    );
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const wrapper = mountWorkspace();
+    await flushPromises();
+    await wrapper
+      .get('button[data-action="telegram-draft-dirty"]')
+      .trigger("click");
+    await wrapper.get('button[data-action="close-dialog"]').trigger("click");
+
+    expect(confirm).toHaveBeenCalledWith(
+      "Закрыть рабочее пространство и потерять черновик?",
+    );
+    expect(mocks.updateVisible).not.toHaveBeenCalled();
+
+    confirm.mockReturnValue(true);
+    await wrapper.get('button[data-action="close-dialog"]').trigger("click");
+    expect(mocks.updateVisible).toHaveBeenCalledWith(false);
   });
 
   it("показывает текущий разговор, обе стороны переписки и включает watch только для него", async () => {
@@ -274,7 +316,11 @@ describe("единое рабочее пространство пользова�
   });
 
   it("не запрашивает диалоги и realtime без project.conversations.read", async () => {
-    mocks.permissions.splice(0, mocks.permissions.length, "project.profiles.read");
+    mocks.permissions.splice(
+      0,
+      mocks.permissions.length,
+      "project.profiles.read",
+    );
     const wrapper = mountWorkspace();
     await flushPromises();
 
@@ -309,7 +355,9 @@ describe("единое рабочее пространство пользова�
     mountWorkspace();
     await flushPromises();
 
-    expect(mocks.getConversations).toHaveBeenCalledWith("project-1", "user-1", { limit: 30 });
+    expect(mocks.getConversations).toHaveBeenCalledWith("project-1", "user-1", {
+      limit: 30,
+    });
     expect(mocks.getSessions).not.toHaveBeenCalled();
   });
 });

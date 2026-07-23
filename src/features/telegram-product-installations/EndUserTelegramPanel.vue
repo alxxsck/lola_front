@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import Button from "primevue/button";
 import type { TelegramAdminLinkSummaryResponseDto } from "@/shared/api/generated/models";
+import EndUserTelegramSendDialog from "@/features/telegram-personal-messages/EndUserTelegramSendDialog.vue";
+import type { TelegramPersonalLinkStatus } from "@/features/telegram-personal-messages/telegram-personal-message.model";
 import { telegramProductInstallationsApi } from "./telegram-product-installations.api";
 
 const props = defineProps<{
@@ -8,12 +11,18 @@ const props = defineProps<{
   projectId: string;
   endUserId: string | null;
   canRead: boolean;
+  canSend: boolean;
+}>();
+const emit = defineEmits<{
+  "dirty-change": [dirty: boolean];
 }>();
 
 const summary = ref<TelegramAdminLinkSummaryResponseDto | null>(null);
 const loading = ref(false);
 const error = ref("");
+const sendVisible = ref(false);
 let epoch = 0;
+let requestGeneration = 0;
 
 const statusLabel = computed(() => {
   switch (summary.value?.effectiveStatus) {
@@ -30,6 +39,7 @@ const statusLabel = computed(() => {
   }
 });
 const headerStatus = computed(() => {
+  if (!props.canRead) return { code: "UNKNOWN", label: "Проверит сервер" };
   if (loading.value) return { code: "LOADING", label: "Загрузка" };
   if (error.value) return { code: "UNAVAILABLE", label: "Недоступно" };
   return {
@@ -47,6 +57,15 @@ const username = computed(() =>
     ? summary.value.pendingCandidate?.username
     : (summary.value?.username ?? summary.value?.activeLink?.username),
 );
+const sendTargetLabel = computed(
+  () =>
+    displayName.value ||
+    (username.value ? `@${username.value}` : "Пользователь"),
+);
+const sendLinkStatus = computed<TelegramPersonalLinkStatus>(() => {
+  if (!props.canRead || loading.value || error.value) return "UNKNOWN";
+  return summary.value?.effectiveStatus ?? "UNLINKED";
+});
 
 function formatTimestamp(value: string | null | undefined): string {
   if (!value) return "—";
@@ -57,6 +76,7 @@ function formatTimestamp(value: string | null | undefined): string {
 }
 
 async function load(): Promise<void> {
+  const request = ++requestGeneration;
   const operation = {
     epoch,
     visible: props.visible,
@@ -83,6 +103,7 @@ async function load(): Promise<void> {
     );
     if (
       operation.epoch !== epoch ||
+      request !== requestGeneration ||
       !props.visible ||
       !props.canRead ||
       props.projectId !== operation.projectId ||
@@ -93,6 +114,7 @@ async function load(): Promise<void> {
   } catch {
     if (
       operation.epoch === epoch &&
+      request === requestGeneration &&
       props.visible &&
       props.canRead &&
       props.projectId === operation.projectId &&
@@ -104,6 +126,7 @@ async function load(): Promise<void> {
   } finally {
     if (
       operation.epoch === epoch &&
+      request === requestGeneration &&
       props.visible &&
       props.canRead &&
       props.projectId === operation.projectId &&
@@ -115,14 +138,10 @@ async function load(): Promise<void> {
 
 watch(
   () =>
-    [
-      props.visible,
-      props.projectId,
-      props.endUserId,
-      props.canRead,
-    ] as const,
+    [props.visible, props.projectId, props.endUserId, props.canRead] as const,
   () => {
     epoch += 1;
+    requestGeneration += 1;
     summary.value = null;
     error.value = "";
     loading.value =
@@ -134,13 +153,28 @@ watch(
   },
   { flush: "sync" },
 );
+watch(
+  () => [props.canSend, props.endUserId, props.projectId] as const,
+  ([canSend], previous) => {
+    if (
+      !canSend ||
+      !previous ||
+      previous[1] !== props.endUserId ||
+      previous[2] !== props.projectId
+    ) {
+      sendVisible.value = false;
+      emit("dirty-change", false);
+    }
+  },
+  { flush: "sync" },
+);
 
 onMounted(load);
 </script>
 
 <template>
   <section
-    v-if="canRead"
+    v-if="canRead || canSend"
     class="telegram-panel"
     aria-labelledby="end-user-telegram-title"
   >
@@ -158,11 +192,7 @@ onMounted(load);
     </p>
     <div v-else-if="error" class="error" role="alert">
       <p>{{ error }}</p>
-      <button
-        type="button"
-        data-action="retry-telegram-summary"
-        @click="load"
-      >
+      <button type="button" data-action="retry-telegram-summary" @click="load">
         Повторить
       </button>
     </div>
@@ -188,8 +218,29 @@ onMounted(load);
         <dd>{{ formatTimestamp(summary.revokedAt) }}</dd>
       </div>
     </dl>
+    <p v-else-if="!canRead" class="empty">
+      Статус связи скрыт вашими правами и будет проверен сервером при отправке.
+    </p>
     <p v-else class="empty">Пользователь ещё не подключил Telegram.</p>
+    <Button
+      v-if="canSend"
+      type="button"
+      label="Отправить в Telegram"
+      icon="pi pi-send"
+      size="small"
+      @click="sendVisible = true"
+    />
   </section>
+  <EndUserTelegramSendDialog
+    v-model:visible="sendVisible"
+    :project-id="projectId"
+    :end-user-id="endUserId"
+    :link-status="sendLinkStatus"
+    :can-send="canSend"
+    :target-label="sendTargetLabel"
+    @dirty-change="emit('dirty-change', $event)"
+    @link-state-stale="load"
+  />
 </template>
 
 <style scoped>

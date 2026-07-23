@@ -34,6 +34,7 @@ function mountPanel(
     projectId: string;
     endUserId: string | null;
     canRead: boolean;
+    canSend: boolean;
   }> = {},
 ) {
   return mount(EndUserTelegramPanel, {
@@ -42,7 +43,25 @@ function mountPanel(
       projectId: "project-1",
       endUserId: "end-user-1",
       canRead: true,
+      canSend: false,
       ...props,
+    },
+    global: {
+      stubs: {
+        EndUserTelegramSendDialog: {
+          props: [
+            "visible",
+            "projectId",
+            "endUserId",
+            "linkStatus",
+            "canSend",
+            "targetLabel",
+          ],
+          emits: ["update:visible", "dirty-change", "link-state-stale"],
+          template:
+            '<div v-if="visible" data-testid="telegram-send-dialog" :data-link-status="linkStatus"><button data-action="mark-telegram-dirty" @click="$emit(\'dirty-change\', true)">dirty</button><button data-action="refresh-telegram-summary" @click="$emit(\'link-state-stale\')">refresh</button></div>',
+        },
+      },
     },
   });
 }
@@ -59,33 +78,37 @@ describe("EndUserTelegramPanel", () => {
     ["ACTIVE", "Подключён"],
     ["BLOCKED", "Бот заблокирован"],
     ["REVOKED", "Отключён"],
-  ])("shows %s using only safe display snapshots", async (effectiveStatus, copy) => {
-    mocks.getEndUserSummary.mockResolvedValue(
-      summary({
-        linked: effectiveStatus === "ACTIVE",
-        effectiveStatus,
-        displayName: "Safe Name",
-        username: "safe_name",
-        activeLink: effectiveStatus === "UNLINKED" ? null : summary().activeLink,
-        pendingCandidate:
-          effectiveStatus === "PENDING_CONFIRMATION"
-            ? {
-                status: "PENDING_CONFIRMATION",
-                displayName: "Safe Name",
-                username: "safe_name",
-                expiresAt: "2026-07-23T12:05:00.000Z",
-              }
-            : null,
-      }),
-    );
-    const wrapper = mountPanel();
-    await flushPromises();
+  ])(
+    "shows %s using only safe display snapshots",
+    async (effectiveStatus, copy) => {
+      mocks.getEndUserSummary.mockResolvedValue(
+        summary({
+          linked: effectiveStatus === "ACTIVE",
+          effectiveStatus,
+          displayName: "Safe Name",
+          username: "safe_name",
+          activeLink:
+            effectiveStatus === "UNLINKED" ? null : summary().activeLink,
+          pendingCandidate:
+            effectiveStatus === "PENDING_CONFIRMATION"
+              ? {
+                  status: "PENDING_CONFIRMATION",
+                  displayName: "Safe Name",
+                  username: "safe_name",
+                  expiresAt: "2026-07-23T12:05:00.000Z",
+                }
+              : null,
+        }),
+      );
+      const wrapper = mountPanel();
+      await flushPromises();
 
-    expect(wrapper.text()).toContain(copy);
-    expect(wrapper.text()).toContain("Safe Name");
-    expect(wrapper.text()).toContain("@safe_name");
-    expect(wrapper.text()).not.toMatch(/\b7001\b/u);
-  });
+      expect(wrapper.text()).toContain(copy);
+      expect(wrapper.text()).toContain("Safe Name");
+      expect(wrapper.text()).toContain("@safe_name");
+      expect(wrapper.text()).not.toMatch(/\b7001\b/u);
+    },
+  );
 
   it("does not load without permission and clears immediately on permission loss", async () => {
     const wrapper = mountPanel({ canRead: false });
@@ -100,6 +123,21 @@ describe("EndUserTelegramPanel", () => {
     expect(wrapper.find("section").exists()).toBe(false);
   });
 
+  it("keeps the send-only surface usable while server-side link validation remains authoritative", async () => {
+    const wrapper = mountPanel({ canRead: false, canSend: true });
+    await flushPromises();
+
+    expect(mocks.getEndUserSummary).not.toHaveBeenCalled();
+    expect(wrapper.get("header strong").text()).toBe("Проверит сервер");
+    expect(wrapper.text()).toContain("Статус связи скрыт");
+    const button = wrapper.get('button[aria-label="Отправить в Telegram"]');
+    expect(button.attributes("disabled")).toBeUndefined();
+    await button.trigger("click");
+    expect(wrapper.find('[data-testid="telegram-send-dialog"]').exists()).toBe(
+      true,
+    );
+  });
+
   it("distinguishes loading and unavailable from an unlinked user and supports retry", async () => {
     let rejectLoad!: (cause: Error) => void;
     mocks.getEndUserSummary.mockReturnValueOnce(
@@ -107,13 +145,18 @@ describe("EndUserTelegramPanel", () => {
         rejectLoad = reject;
       }),
     );
-    const wrapper = mountPanel();
+    const wrapper = mountPanel({ canSend: true });
     await wrapper.vm.$nextTick();
 
     expect(wrapper.get("header strong").text()).toBe("Загрузка");
     expect(wrapper.get("header strong").attributes("data-status")).toBe(
       "LOADING",
     );
+    expect(
+      wrapper
+        .get('button[aria-label="Отправить в Telegram"]')
+        .attributes("disabled"),
+    ).toBeUndefined();
     expect(wrapper.text()).not.toContain("Не подключён");
 
     rejectLoad(new Error("provider raw details"));
@@ -124,11 +167,16 @@ describe("EndUserTelegramPanel", () => {
     );
     expect(wrapper.text()).not.toContain("Не подключён");
     expect(wrapper.text()).not.toContain("provider raw details");
+    expect(
+      wrapper
+        .get('button[aria-label="Отправить в Telegram"]')
+        .attributes("disabled"),
+    ).toBeUndefined();
 
     mocks.getEndUserSummary.mockResolvedValueOnce(summary());
-    await wrapper.get('button[data-action="retry-telegram-summary"]').trigger(
-      "click",
-    );
+    await wrapper
+      .get('button[data-action="retry-telegram-summary"]')
+      .trigger("click");
     await flushPromises();
     expect(wrapper.get("header strong").text()).toBe("Подключён");
   });
@@ -191,5 +239,104 @@ describe("EndUserTelegramPanel", () => {
 
     await wrapper.setProps({ visible: false });
     expect(wrapper.text()).not.toContain("Current User");
+  });
+
+  it("keeps the send dialog and history entry accessible for every known link state", async () => {
+    const wrapper = mountPanel({ canSend: true });
+    await flushPromises();
+
+    await wrapper
+      .get('button[aria-label="Отправить в Telegram"]')
+      .trigger("click");
+    expect(wrapper.find('[data-testid="telegram-send-dialog"]').exists()).toBe(
+      true,
+    );
+    await wrapper
+      .get('button[data-action="mark-telegram-dirty"]')
+      .trigger("click");
+    expect(wrapper.emitted("dirty-change")?.at(-1)).toEqual([true]);
+
+    mocks.getEndUserSummary.mockResolvedValueOnce(
+      summary({
+        linked: false,
+        status: "BLOCKED",
+        effectiveStatus: "BLOCKED",
+      }),
+    );
+    await wrapper.setProps({ endUserId: "end-user-2" });
+    await flushPromises();
+    expect(
+      wrapper
+        .get('button[aria-label="Отправить в Telegram"]')
+        .attributes("disabled"),
+    ).toBeUndefined();
+    await wrapper
+      .get('button[aria-label="Отправить в Telegram"]')
+      .trigger("click");
+    expect(
+      wrapper
+        .get('[data-testid="telegram-send-dialog"]')
+        .attributes("data-link-status"),
+    ).toBe("BLOCKED");
+  });
+
+  it("does not reduce send-only capability while links.read is added or unavailable", async () => {
+    let rejectSummary!: (cause: Error) => void;
+    mocks.getEndUserSummary.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectSummary = reject;
+        }),
+    );
+    const wrapper = mountPanel({ canRead: false, canSend: true });
+    await wrapper
+      .get('button[aria-label="Отправить в Telegram"]')
+      .trigger("click");
+
+    await wrapper.setProps({ canRead: true });
+    expect(
+      wrapper
+        .get('button[aria-label="Отправить в Telegram"]')
+        .attributes("disabled"),
+    ).toBeUndefined();
+    expect(
+      wrapper
+        .get('[data-testid="telegram-send-dialog"]')
+        .attributes("data-link-status"),
+    ).toBe("UNKNOWN");
+
+    rejectSummary(new Error("unavailable"));
+    await flushPromises();
+    expect(
+      wrapper
+        .get('[data-testid="telegram-send-dialog"]')
+        .attributes("data-link-status"),
+    ).toBe("UNKNOWN");
+  });
+
+  it("keeps the latest same-target summary request when an earlier request finishes last", async () => {
+    let resolveOld!: (value: ReturnType<typeof summary>) => void;
+    mocks.getEndUserSummary
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOld = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(summary({ displayName: "Latest User" }));
+    const wrapper = mountPanel({ canSend: true });
+    await wrapper
+      .get('button[aria-label="Отправить в Telegram"]')
+      .trigger("click");
+    await wrapper
+      .get('button[data-action="refresh-telegram-summary"]')
+      .trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("Latest User");
+
+    resolveOld(summary({ displayName: "Stale Same Target" }));
+    await flushPromises();
+    expect(wrapper.text()).toContain("Latest User");
+    expect(wrapper.text()).not.toContain("Stale Same Target");
   });
 });

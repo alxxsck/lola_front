@@ -17420,6 +17420,262 @@
         ],
         "type": "object"
       },
+      "TelegramPersonalAttemptOutcome": {
+        "enum": [
+          "ACCEPTED",
+          "RATE_LIMITED",
+          "TRANSIENT",
+          "PERMANENT_DESTINATION",
+          "PERMANENT_PAYLOAD",
+          "OUTCOME_UNKNOWN",
+          "INTERNAL_FAILURE",
+          "FENCE_LOST"
+        ],
+        "type": "string"
+      },
+      "TelegramPersonalMessageAttemptDto": {
+        "properties": {
+          "attemptNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outcome": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramPersonalAttemptOutcome"
+              }
+            ]
+          },
+          "providerMessageId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "retryAfterMs": {
+            "nullable": true,
+            "type": "number"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptNumber",
+          "outcome",
+          "startedAt",
+          "finishedAt"
+        ],
+        "type": "object"
+      },
+      "TelegramPersonalMessageDetailResponseDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/TelegramPersonalMessageAttemptDto"
+            },
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramPersonalMessageKind"
+              }
+            ]
+          },
+          "nextAttemptAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "providerMessageId": {
+            "description": "Telegram message_id represented losslessly as a decimal string.",
+            "nullable": true,
+            "type": "string"
+          },
+          "sentAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramPersonalMessageStatus"
+              }
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "endUserId",
+          "kind",
+          "status",
+          "attemptCount",
+          "createdAt",
+          "updatedAt",
+          "attempts"
+        ],
+        "type": "object"
+      },
+      "TelegramPersonalMessageKind": {
+        "enum": [
+          "TEXT",
+          "PHOTO",
+          "VIDEO",
+          "DOCUMENT"
+        ],
+        "type": "string"
+      },
+      "TelegramPersonalMessageListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TelegramPersonalMessageResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "TelegramPersonalMessageResponseDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramPersonalMessageKind"
+              }
+            ]
+          },
+          "nextAttemptAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "providerMessageId": {
+            "description": "Telegram message_id represented losslessly as a decimal string.",
+            "nullable": true,
+            "type": "string"
+          },
+          "sentAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramPersonalMessageStatus"
+              }
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "endUserId",
+          "kind",
+          "status",
+          "attemptCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "TelegramPersonalMessageStatus": {
+        "enum": [
+          "QUEUED",
+          "SENDING",
+          "RETRY_WAIT",
+          "SENT",
+          "FAILED_PERMANENT",
+          "OUTCOME_UNKNOWN",
+          "CANCELLED"
+        ],
+        "type": "string"
+      },
       "TestNotificationDestinationDto": {
         "properties": {
           "expectedVersion": {
@@ -22588,6 +22844,215 @@
         ],
         "x-iam-permission": {
           "code": "project.telegram.links.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/telegram-messages": {
+      "get": {
+        "operationId": "TelegramPersonalOutbound_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramPersonalMessageListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Personal Messages"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.personal_messages.send",
+          "scope": "PROJECT"
+        }
+      },
+      "post": {
+        "operationId": "TelegramPersonalOutbound_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "additionalProperties": false,
+                "description": "Provide text or a file. Without a file, text is required and limited to 4096 characters. With a file, text is an optional caption limited to 1024 characters.",
+                "minProperties": 1,
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "text": {
+                    "description": "Message text. When a file is present, this is a media caption limited to 1024 characters.",
+                    "maxLength": 4096,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramPersonalMessageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Personal Messages"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.personal_messages.send",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/telegram-messages/{messageId}": {
+      "get": {
+        "operationId": "TelegramPersonalOutbound_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "messageId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramPersonalMessageDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Personal Messages"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.personal_messages.send",
           "scope": "PROJECT"
         }
       }

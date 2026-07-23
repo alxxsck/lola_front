@@ -70,9 +70,9 @@ describe("permission access", () => {
       "project.integrations.read",
       "project.telegram.links.read",
     ];
-    expect(
-      hasProjectPermission(permissions, "project.integrations.read"),
-    ).toBe(true);
+    expect(hasProjectPermission(permissions, "project.integrations.read")).toBe(
+      true,
+    );
     expect(
       hasProjectPermission(permissions, "project.integrations.manage"),
     ).toBe(false);
@@ -83,6 +83,21 @@ describe("permission access", () => {
       hasProjectPermission(
         ["project.notifications.read"],
         "project.integrations.read",
+      ),
+    ).toBe(false);
+  });
+
+  it("does not infer personal Telegram send authority from link read or conversation reply", () => {
+    expect(
+      hasProjectPermission(
+        ["project.telegram.personal_messages.send"],
+        "project.telegram.personal_messages.send",
+      ),
+    ).toBe(true);
+    expect(
+      hasProjectPermission(
+        ["project.telegram.links.read", "project.conversations.reply"],
+        "project.telegram.personal_messages.send",
       ),
     ).toBe(false);
   });

@@ -83,6 +83,7 @@ const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
 const realtimeRecovered = ref(false);
 const profileCollapsed = ref(false);
 const liveMessageIds = ref<string[]>([]);
+const telegramDraftDirty = ref(false);
 let profileRequest = 0;
 let unsubscribeMessage: (() => void) | undefined;
 let unsubscribeReconcile: (() => void) | undefined;
@@ -96,10 +97,11 @@ const consoleState = useAdminConversationConsole({
   updateRoute: (conversationId) => emit("conversationSelected", conversationId),
   beforeLoadMessages: (conversationId) =>
     cmsRealtimeClient.watchConversation(conversationId),
-  canReadPresence: () => hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.end_users.read",
-  ),
+  canReadPresence: () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.end_users.read",
+    ),
 });
 const {
   conversations,
@@ -125,12 +127,11 @@ const selectedSuspensionEntry = computed(() =>
     ? suspensionStore.getEntry(selectedConversation.value.id)
     : undefined,
 );
-const canManageSuspension = computed(
-  () =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.conversations.ai_suspend",
-    ),
+const canManageSuspension = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.conversations.ai_suspend",
+  ),
 );
 const projectPermissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
@@ -139,9 +140,12 @@ const canReadProfiles = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.profiles.read"),
 );
 const canReadTelegramLinks = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.telegram.links.read"),
+);
+const canSendTelegramPersonalMessages = computed(() =>
   hasProjectPermission(
     projectPermissions.value,
-    "project.telegram.links.read",
+    "project.telegram.personal_messages.send",
   ),
 );
 const canReadConversations = computed(() =>
@@ -158,7 +162,10 @@ const displayName = computed(
     "Пользователь",
 );
 const hasUnsavedDraft = computed(
-  () => consoleState.hasAnyDraft() || Boolean(newChatText.value.trim()),
+  () =>
+    consoleState.hasAnyDraft() ||
+    Boolean(newChatText.value.trim()) ||
+    telegramDraftDirty.value,
 );
 
 watch(conversations, (value) => suspensionStore.ingestConversations(value), {
@@ -313,6 +320,7 @@ function closeWorkspace(): void {
   detailLoading.value = false;
   newChatOpen.value = false;
   liveMessageIds.value = [];
+  telegramDraftDirty.value = false;
 }
 
 function messageFromEvent(
@@ -955,6 +963,8 @@ function displayField(
           :project-id="projectId"
           :end-user-id="endUserId"
           :can-read="canReadTelegramLinks"
+          :can-send="canSendTelegramPersonalMessages"
+          @dirty-change="telegramDraftDirty = $event"
         />
       </aside>
     </div>

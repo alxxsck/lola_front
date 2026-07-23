@@ -247,6 +247,11 @@ import type {
   TelegramChannelWebhookIngest200,
   TelegramLinkChallengeResponseDto,
   TelegramLinkStateResponseDto,
+  TelegramPersonalMessageDetailResponseDto,
+  TelegramPersonalMessageListResponseDto,
+  TelegramPersonalMessageResponseDto,
+  TelegramPersonalOutboundCreateBody,
+  TelegramPersonalOutboundListParams,
   TestNotificationDestinationDto,
   TestTelegramChannelDto,
   TranslationJobAcceptedResponseDto,
@@ -937,6 +942,66 @@ export const telegramLinkAdminGet = (
   return request<TelegramAdminLinkSummaryResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/telegram-link`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const telegramPersonalOutboundList = (
+  projectId: string,
+  endUserId: string,
+  params?: TelegramPersonalOutboundListParams,
+  options?: SecondParameter<
+    typeof request<TelegramPersonalMessageListResponseDto>
+  >,
+) => {
+  return request<TelegramPersonalMessageListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/telegram-messages`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const telegramPersonalOutboundCreate = (
+  projectId: string,
+  endUserId: string,
+  telegramPersonalOutboundCreateBody: BodyType<TelegramPersonalOutboundCreateBody>,
+  options?: SecondParameter<typeof request<TelegramPersonalMessageResponseDto>>,
+) => {
+  const formData = new FormData();
+  if (telegramPersonalOutboundCreateBody.file !== undefined) {
+    formData.append(`file`, telegramPersonalOutboundCreateBody.file);
+  }
+  if (telegramPersonalOutboundCreateBody.text !== undefined) {
+    formData.append(`text`, telegramPersonalOutboundCreateBody.text);
+  }
+
+  return request<TelegramPersonalMessageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/telegram-messages`,
+      method: "POST",
+      headers: { "Content-Type": "multipart/form-data" },
+      data: formData,
+    },
+    options,
+  );
+};
+
+export const telegramPersonalOutboundGet = (
+  projectId: string,
+  endUserId: string,
+  messageId: string,
+  options?: SecondParameter<
+    typeof request<TelegramPersonalMessageDetailResponseDto>
+  >,
+) => {
+  return request<TelegramPersonalMessageDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/telegram-messages/${messageId}`,
       method: "GET",
     },
     options,
@@ -3990,6 +4055,15 @@ export type AdminEndUserProfilesProfileResult = NonNullable<
 >;
 export type TelegramLinkAdminGetResult = NonNullable<
   Awaited<ReturnType<typeof telegramLinkAdminGet>>
+>;
+export type TelegramPersonalOutboundListResult = NonNullable<
+  Awaited<ReturnType<typeof telegramPersonalOutboundList>>
+>;
+export type TelegramPersonalOutboundCreateResult = NonNullable<
+  Awaited<ReturnType<typeof telegramPersonalOutboundCreate>>
+>;
+export type TelegramPersonalOutboundGetResult = NonNullable<
+  Awaited<ReturnType<typeof telegramPersonalOutboundGet>>
 >;
 export type EventCatalogListResult = NonNullable<
   Awaited<ReturnType<typeof eventCatalogList>>
