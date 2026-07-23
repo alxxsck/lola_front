@@ -139,7 +139,7 @@ const quickLinks = computed(() =>
     },
     {
       title: "Проверить операции",
-      description: "События, запуски сценариев и журнал аудита",
+      description: "Запуски сценариев и журнал аудита",
       icon: "pi pi-chart-bar",
       to: "/operations",
       tone: "green",

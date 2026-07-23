@@ -1,8 +1,10 @@
-import { flushPromises, shallowMount } from '@vue/test-utils'
+import { config, flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AiUsageSection from './AiUsageSection.vue'
 import AiModelUsageChart from './components/AiModelUsageChart.vue'
 import AiModalityChart from './components/AiModalityChart.vue'
+
+config.global.stubs.ProjectSettingsSectionHeader = false
 
 const mocks = vi.hoisted(() => ({ fetchReport: vi.fn() }))
 
@@ -107,6 +109,22 @@ describe('AiUsageSection', () => {
 
     expect(wrapper.find('[aria-label="Загрузка статистики"]').exists()).toBe(true)
     expect(wrapper.find('.provider-stack').exists()).toBe(false)
+  })
+
+  it('starts collapsed and expands the report without reloading it', async () => {
+    const wrapper = shallowMount(AiUsageSection, { props: { projectId: 'project-1' } })
+    await flushPromises()
+
+    const toggle = wrapper.get('[aria-controls="ai-usage-content"]')
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.get('#ai-usage-content').attributes('style')).toContain('display: none')
+    expect(mocks.fetchReport).toHaveBeenCalledTimes(1)
+
+    await toggle.trigger('click')
+
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('#ai-usage-content').attributes('style')).not.toContain('display: none')
+    expect(mocks.fetchReport).toHaveBeenCalledTimes(1)
   })
 
   it('shows a load error and retries the request', async () => {

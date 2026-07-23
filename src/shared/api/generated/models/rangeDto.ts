@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AuditLogResponseDtoMetadata = { [key: string]: unknown };
+export interface RangeDto {
+  end: string;
+  start: string;
+}

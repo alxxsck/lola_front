@@ -26,6 +26,7 @@ import {
   scenarioRunsPage,
   platformOperationsActivitySettings,
   platformOperationsUpdateActivitySettings,
+  projectAuditEventsList,
   conversationAISuspensionsGet,
   conversationAISuspensionsStart,
   conversationAISuspensionsExtend,
@@ -58,7 +59,6 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   platformOperationsUsers: vi.fn(),
   platformOperationsUsersPage: vi.fn(),
   adminMessagingSend: vi.fn(),
-  auditList: vi.fn(),
   eventsList: vi.fn(),
   scenarioRunsList: vi.fn(),
   presenceList: vi.fn(),
@@ -69,6 +69,7 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   scenarioRunsPage: vi.fn(),
   platformOperationsActivitySettings: vi.fn(),
   platformOperationsUpdateActivitySettings: vi.fn(),
+  projectAuditEventsList: vi.fn(),
   conversationAISuspensionsGet: vi.fn(),
   conversationAISuspensionsStart: vi.fn(),
   conversationAISuspensionsExtend: vi.fn(),
@@ -180,6 +181,69 @@ describe("api repository adapter", () => {
         visitInactivitySeconds: 1800,
       }),
     );
+  });
+
+  it("returns canonical audit-event cursor pages with server-side filters", async () => {
+    vi.mocked(projectAuditEventsList).mockResolvedValue({
+      items: [
+        {
+          id: "audit-1",
+          eventType: "iam.project_resource.changed",
+          eventVersion: 1,
+          occurredAt: "2026-07-23T10:00:00.000Z",
+          actor: {
+            type: "CMS_USER",
+            id: "admin-1",
+            email: "owner@lola.dev",
+            displayName: "Owner",
+          },
+          target: { kind: "PROJECT", id: "project-1" },
+          requiredPermissionCode: "project.scenarios.write",
+          outcome: "SUCCESS",
+          authorizationEvidence: {},
+          reasonCode: null,
+          auditReason: "Save draft",
+          requestId: "request-1",
+          correlationId: null,
+          ipAddress: null,
+          userAgent: null,
+          before: null,
+          after: null,
+          metadata: {
+            details: {
+              operation: "SAVE_DRAFT",
+              resourceType: "SCENARIO",
+              resourceId: "scenario-1",
+            },
+          },
+        },
+      ],
+      nextCursor: "audit-1",
+    });
+
+    await expect(
+      apiRepository.getAuditEventsPage("project-1", {
+        cursor: "audit-2",
+        limit: 25,
+        search: "draft",
+        outcome: "SUCCESS",
+      }),
+    ).resolves.toMatchObject({
+      items: [
+        {
+          id: "audit-1",
+          operation: "SAVE_DRAFT",
+          resourceType: "SCENARIO",
+        },
+      ],
+      nextCursor: "audit-1",
+    });
+    expect(projectAuditEventsList).toHaveBeenCalledWith("project-1", {
+      cursor: "audit-2",
+      limit: 25,
+      search: "draft",
+      outcome: "SUCCESS",
+    });
   });
 
   it("sends only backend-editable project settings", async () => {
@@ -437,7 +501,7 @@ describe("api repository adapter", () => {
     );
   });
 
-  it("uses generated scenario list, metadata and archive endpoints without legacy scenario conditions", async () => {
+  it("uses generated Scenario Authoring list, metadata and archive endpoints", async () => {
     const scenario = {
       id: "scenario-1",
       projectId: "project-1",
@@ -448,7 +512,6 @@ describe("api repository adapter", () => {
       status: "ACTIVE",
       conversationPolicy: "create_new",
       priority: 0,
-      conditions: [{ path: "legacy", operator: "eq", value: true }],
       currentRevisionId: "scenario-revision-1",
       cooldownSeconds: 0,
       maxRunsPerUser: null,
@@ -471,7 +534,7 @@ describe("api repository adapter", () => {
     } as never);
 
     await expect(apiRepository.getScenarios("project-1")).resolves.toEqual([
-      expect.objectContaining({ id: "scenario-1", conditions: [] }),
+      expect.objectContaining({ id: "scenario-1" }),
     ]);
     await apiRepository.updateScenarioMetadata("project-1", "scenario-1", {
       status: "PAUSED",
@@ -502,29 +565,7 @@ describe("api repository adapter", () => {
     );
   });
 
-  it("fails closed when generic scenario save tries to bypass the audited archive operation", async () => {
-    await expect(
-      apiRepository.saveScenario("project-1", {
-        id: "scenario-1",
-        projectId: "project-1",
-        code: "welcome",
-        name: "Welcome",
-        eventDefinitionId: "event-revision-1",
-        status: "ARCHIVED",
-        conversationPolicy: "create_new",
-        priority: 0,
-        conditions: [],
-        actions: [],
-        updatedAt: "2026-07-20T11:00:00.000Z",
-      }),
-    ).rejects.toThrow("audited archive operation");
-    expect(scenarioAuthoringUpdateScenarioMetadata).not.toHaveBeenCalled();
-  });
-
-  it("fails closed only for authoring capabilities that still have no target endpoint", async () => {
-    await expect(
-      apiRepository.getActionDefinitions("project-1"),
-    ).rejects.toThrow("actionDefinitions");
+  it("fails closed for authoring capabilities that still have no target endpoint", async () => {
     await expect(
       apiRepository.getUserAttributeSchema("project-1"),
     ).rejects.toThrow("userAttributes");

@@ -6,10 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AuditStatus = (typeof AuditStatus)[keyof typeof AuditStatus];
+export type AIReviewRunResponseDtoStatus =
+  (typeof AIReviewRunResponseDtoStatus)[keyof typeof AIReviewRunResponseDtoStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AuditStatus = {
+export const AIReviewRunResponseDtoStatus = {
+  PENDING: "PENDING",
+  RUNNING: "RUNNING",
   SUCCEEDED: "SUCCEEDED",
   FAILED: "FAILED",
+  OUTCOME_UNKNOWN: "OUTCOME_UNKNOWN",
 } as const;

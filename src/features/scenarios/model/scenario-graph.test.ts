@@ -1,16 +1,53 @@
 import { isProxy, reactive } from 'vue'
 import { describe, expect, it } from 'vitest'
-import { availableTargets, graphTransitions, normalizeScenarioActions, renameScenarioNode, sortScenarioActions, toPlainScenarioAction, validateScenarioGraph } from './scenario-graph'
+import { availableTargets, graphTransitions, normalizeScenarioActions, renameScenarioNode, rotateLinearScenarioStart, sortScenarioActions, toPlainScenarioAction, usesExplicitTransitions, validateScenarioGraph } from './scenario-graph'
 
 describe('scenario graph model', () => {
-  it('upgrades legacy linear actions without losing their order', () => {
-    expect(normalizeScenarioActions([
+  it('identifies actions whose transitions live outside nextNodeKey', () => {
+    expect(usesExplicitTransitions('ASK_CHOICE')).toBe(true)
+    expect(usesExplicitTransitions('CONDITION')).toBe(true)
+    expect(usesExplicitTransitions('WAIT_FOR_GOAL')).toBe(true)
+    expect(usesExplicitTransitions('SAY')).toBe(false)
+  })
+
+  it('rotates a linear graph to a new first action without deleting nodes', () => {
+    const actions = [
+      { position: 0, nodeKey: 'open_form', nextNodeKey: 'open_chat', type: 'OPEN_MODAL', config: {} },
+      { position: 1, nodeKey: 'open_chat', nextNodeKey: 'say_hello', type: 'OPEN_CHAT', config: {} },
+      { position: 2, nodeKey: 'say_hello', nextNodeKey: null, type: 'SAY', config: { text: 'Привет' } },
+    ]
+
+    const rotated = rotateLinearScenarioStart(actions, 'open_chat')
+    expect(rotated).toEqual([
+      expect.objectContaining({ position: 0, nodeKey: 'open_chat', nextNodeKey: 'say_hello' }),
+      expect.objectContaining({ position: 1, nodeKey: 'say_hello', nextNodeKey: 'open_form' }),
+      expect.objectContaining({ position: 2, nodeKey: 'open_form', nextNodeKey: null }),
+    ])
+    expect(validateScenarioGraph(rotated!)).toEqual([])
+    expect(actions.map((action) => action.nodeKey)).toEqual([
+      'open_form',
+      'open_chat',
+      'say_hello',
+    ])
+  })
+
+  it('refuses to rewrite a branching graph when changing its first action', () => {
+    const actions = normalizeScenarioActions([
+      { position: 0, nodeKey: 'question', type: 'ASK_CHOICE', config: {
+        message: 'Куда дальше?', timeoutMs: 30_000, onTimeout: 'finish',
+        options: [{ id: 'finish', label: 'Дальше', nextNodeKey: 'finish' }],
+      } },
+      { position: 1, nodeKey: 'finish', type: 'SAY', config: { text: 'Готово' } },
+    ])
+
+    expect(rotateLinearScenarioStart(actions, 'finish')).toBeNull()
+  })
+
+  it('rejects graph actions without durable node identities', () => {
+    expect(() => normalizeScenarioActions([
       { position: 0, type: 'SAY', config: { text: 'Hi' } },
       { position: 1, type: 'COMPLETE_SCENARIO', config: {} },
-    ])).toMatchObject([
-      { nodeKey: 'step_0', nextNodeKey: 'step_1' },
-      { nodeKey: 'step_1', nextNodeKey: null },
-    ])
+    ])).toThrow('nodeKey')
   })
 
   it('derives labelled choice and timeout transitions', () => {

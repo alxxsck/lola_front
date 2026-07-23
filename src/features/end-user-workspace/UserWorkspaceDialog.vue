@@ -33,6 +33,8 @@ import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import { formatDate, relativeTime } from "@/shared/lib/format";
 import type { ConversationMessage } from "@/shared/types/domain";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
+import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
+import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
 
@@ -80,8 +82,8 @@ const suspensionHistoryVisible = ref(false);
 const suspensionDialogMode = ref<SuspensionMode>("START");
 const combinedSend = ref(false);
 const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
-const realtimeRecovered = ref(false);
 const profileCollapsed = ref(false);
+const aiReviewVisible = ref(false);
 const liveMessageIds = ref<string[]>([]);
 const telegramDraftDirty = ref(false);
 let profileRequest = 0;
@@ -89,7 +91,6 @@ let unsubscribeMessage: (() => void) | undefined;
 let unsubscribeReconcile: (() => void) | undefined;
 let unsubscribeRealtimeState: (() => void) | undefined;
 let presenceTimer: ReturnType<typeof setInterval> | undefined;
-let recoveredTimer: ReturnType<typeof setTimeout> | undefined;
 
 const consoleState = useAdminConversationConsole({
   projectId: () => props.projectId,
@@ -148,12 +149,33 @@ const canSendTelegramPersonalMessages = computed(() =>
     "project.telegram.personal_messages.send",
   ),
 );
+const canReadUserMemory = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.user_memory.read"),
+);
 const canReadConversations = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.read"),
 );
 const canReply = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.reply"),
 );
+const canStartAIReview = computed(
+  () =>
+    hasProjectPermission(projectPermissions.value, "project.ai_review.read") &&
+    hasProjectPermission(projectPermissions.value, "project.ai_review.run") &&
+    hasProjectPermission(projectPermissions.value, "project.settings.read") &&
+    hasProjectPermission(
+      projectPermissions.value,
+      "project.event_catalog.read",
+    ) &&
+    hasProjectPermission(projectPermissions.value, "project.ai_proposals.read"),
+);
+const projectTimezone = computed(() => {
+  const scenarioEngine = auth.project?.settings?.scenarioEngine as
+    { activity?: { timezone?: unknown } } | undefined;
+  return typeof scenarioEngine?.activity?.timezone === "string"
+    ? scenarioEngine.activity.timezone
+    : "UTC";
+});
 const displayName = computed(
   () =>
     props.externalUserId ||
@@ -161,6 +183,18 @@ const displayName = computed(
     props.endUserId ||
     "Пользователь",
 );
+const realtimeStatus = computed(() => {
+  if (realtimeState.value === "CONNECTED") {
+    return { label: "Live", state: "connected" };
+  }
+  if (realtimeState.value === "CONNECTING") {
+    return { label: "Подключение", state: "connecting" };
+  }
+  if (realtimeState.value === "DEGRADED") {
+    return { label: "Ошибка live", state: "error" };
+  }
+  return { label: "Нет live", state: "disconnected" };
+});
 const hasUnsavedDraft = computed(
   () =>
     consoleState.hasAnyDraft() ||
@@ -197,19 +231,7 @@ watch(
 
 onMounted(() => {
   unsubscribeRealtimeState = cmsRealtimeClient.onState((state) => {
-    const previous = realtimeState.value;
     realtimeState.value = state;
-    if (
-      state === "CONNECTED" &&
-      (previous === "CONNECTING" || previous === "DEGRADED")
-    ) {
-      realtimeRecovered.value = true;
-      if (recoveredTimer) clearTimeout(recoveredTimer);
-      recoveredTimer = setTimeout(
-        () => (realtimeRecovered.value = false),
-        3000,
-      );
-    }
   });
   if (canReadConversations.value) {
     unsubscribeMessage = cmsRealtimeClient.subscribe(
@@ -231,7 +253,6 @@ onBeforeUnmount(() => {
   unsubscribeMessage?.();
   unsubscribeReconcile?.();
   if (presenceTimer) clearInterval(presenceTimer);
-  if (recoveredTimer) clearTimeout(recoveredTimer);
   closeWorkspace();
 });
 
@@ -565,34 +586,28 @@ function displayField(
           <span class="eyebrow">Пользователь и live-диалоги</span>
           <h2>{{ displayName }}</h2>
         </div>
-        <Tag
-          :value="onlineSession ? 'Онлайн' : 'Офлайн'"
-          :severity="onlineSession ? 'success' : 'secondary'"
-          rounded
-        />
+        <div class="workspace-statuses">
+          <Tag
+            :value="onlineSession ? 'Онлайн' : 'Офлайн'"
+            :severity="onlineSession ? 'success' : 'secondary'"
+            rounded
+          />
+          <span
+            class="connection-status"
+            :data-state="realtimeStatus.state"
+            data-testid="live-connection-status"
+            :title="
+              realtimeStatus.state === 'error'
+                ? 'Live-обновления недоступны, история сверяется через API'
+                : undefined
+            "
+          >
+            <i class="connection-live-dot" />
+            {{ realtimeStatus.label }}
+          </span>
+        </div>
       </div>
     </template>
-
-    <Message
-      v-if="realtimeState === 'CONNECTING' || realtimeState === 'DEGRADED'"
-      :severity="realtimeState === 'DEGRADED' ? 'warn' : 'secondary'"
-      :closable="false"
-      class="realtime-message"
-    >
-      {{
-        realtimeState === "DEGRADED"
-          ? "Live-связь временно недоступна. История сверяется через API."
-          : "Подключаем live-обновления…"
-      }}
-    </Message>
-    <Message
-      v-else-if="realtimeRecovered"
-      severity="success"
-      :closable="false"
-      class="realtime-message"
-    >
-      Live-связь восстановлена.
-    </Message>
 
     <nav
       class="mobile-workspace-nav"
@@ -966,8 +981,48 @@ function displayField(
           :can-send="canSendTelegramPersonalMessages"
           @dirty-change="telegramDraftDirty = $event"
         />
+        <UserMemoryPanel
+          v-if="canReadUserMemory && endUserId"
+          :project-id="projectId"
+          :end-user-id="endUserId"
+          :user-label="displayName"
+          :editable="
+            hasProjectPermission(
+              projectPermissions,
+              'project.user_memory.manage',
+            )
+          "
+        />
+        <section
+          v-if="canStartAIReview && endUserId"
+          class="ai-review-entry"
+          data-testid="ai-review-entry"
+        >
+          <span class="ai-review-entry-icon"><i class="pi pi-sparkles" /></span>
+          <div>
+            <strong>AI-анализ событий</strong>
+            <span>Выберите события и сначала оцените объём запроса.</span>
+          </div>
+          <Button
+            label="Запросить анализ"
+            icon="pi pi-arrow-right"
+            icon-pos="right"
+            size="small"
+            severity="secondary"
+            outlined
+            @click="aiReviewVisible = true"
+          />
+        </section>
       </aside>
     </div>
+
+    <AIReviewDialog
+      v-if="aiReviewVisible && endUserId"
+      v-model:visible="aiReviewVisible"
+      :project-id="projectId"
+      :end-user-id="endUserId"
+      :timezone="projectTimezone"
+    />
 
     <Dialog
       v-model:visible="newChatOpen"
@@ -1052,6 +1107,44 @@ function displayField(
   gap: 12px;
   min-width: 0;
 }
+.workspace-statuses {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.connection-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.connection-status[data-state="connected"] {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.connection-status[data-state="connected"] .connection-live-dot {
+  box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 35%, transparent);
+  animation: live-pulse 2.2s ease-out infinite;
+}
+.connection-status[data-state="error"],
+.connection-status[data-state="disconnected"] {
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
 .workspace-title h2,
 .pane-header h3,
 .chat-header h3 {
@@ -1095,11 +1188,6 @@ function displayField(
   .workspace-grid.profile-collapsed .profile-pane {
     display: none;
   }
-}
-.realtime-message {
-  margin: 0;
-  border-radius: 0;
-  font-size: 0.72rem;
 }
 .conversation-pane,
 .chat-pane,
@@ -1359,6 +1447,49 @@ function displayField(
   overflow-wrap: anywhere;
   font-size: 0.75rem;
 }
+.ai-review-entry {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px 10px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 14px;
+  background: linear-gradient(
+    145deg,
+    var(--brand-soft),
+    var(--surface-card) 72%
+  );
+}
+.ai-review-entry-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--surface-card);
+  color: var(--accent);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.ai-review-entry > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.ai-review-entry strong {
+  font-size: 0.76rem;
+}
+.ai-review-entry > div span {
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+.ai-review-entry :deep(.p-button) {
+  grid-column: 1 / -1;
+  justify-content: center;
+  width: 100%;
+}
 .empty-state {
   display: grid;
   place-items: center;
@@ -1412,12 +1543,24 @@ function displayField(
     transform: none;
   }
 }
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 35%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .message-bubble {
     animation: none;
   }
   .conversation-list button {
     transition: none;
+  }
+  .connection-status[data-state="connected"] .connection-live-dot {
+    animation: none;
   }
 }
 @media (max-width: 1150px) {
@@ -1522,7 +1665,7 @@ function displayField(
   }
 }
 @media (max-width: 440px) {
-  .workspace-title .p-tag {
+  .workspace-statuses .p-tag {
     display: none;
   }
   .conversation-pane,

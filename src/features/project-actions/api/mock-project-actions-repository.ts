@@ -1,4 +1,4 @@
-import { demoActionDefinitions, demoElements, demoProject } from '@/shared/api/mock-data'
+import { demoElements, demoProject, demoScenarioActionCatalog } from '@/shared/api/mock-data'
 import type {
   ActionTypeCatalogItem,
   AiCapabilityPreview,
@@ -33,15 +33,15 @@ const curatedDefinitions: DemoProductActionDefinition[] = [
   },
   {
     code: 'HIGHLIGHT_ELEMENT', name: 'Подсветить элемент', description: 'Визуально подсвечивает зарегистрированный элемент продукта.',
-    surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ target: { type: 'string' } }, ['target']), uiSchema: { fields: [{ key: 'target', label: 'Элемент', control: 'target' }] }, ai: false,
+    surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ target: { type: 'string' } }, ['target']), uiSchema: { fields: [{ key: 'target', label: 'Элемент', control: 'target', targetKinds: ['ELEMENT', 'BUTTON'] }] }, ai: false,
   },
   {
     code: 'OPEN_PAGE', name: 'Открыть страницу', description: 'Переходит на зарегистрированную страницу продукта.',
-    surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ page_code: { type: 'string' } }, ['page_code']), uiSchema: { fields: [{ key: 'page_code', label: 'Страница', control: 'target' }] }, ai: false,
+    surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ page_code: { type: 'string' } }, ['page_code']), uiSchema: { fields: [{ key: 'page_code', label: 'Страница', control: 'target', targetKinds: ['PAGE'] }] }, ai: false,
   },
   {
     code: 'OPEN_MODAL', name: 'Открыть модальное окно', description: 'Открывает зарегистрированное модальное окно продукта.',
-    surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ modal_code: { type: 'string' } }, ['modal_code']), uiSchema: { fields: [{ key: 'modal_code', label: 'Модальное окно', control: 'target' }] }, ai: false,
+    surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ modal_code: { type: 'string' } }, ['modal_code']), uiSchema: { fields: [{ key: 'modal_code', label: 'Модальное окно', control: 'target', targetKinds: ['MODAL'] }] }, ai: false,
   },
   {
     code: 'SAY', name: 'Сказать текст', description: 'Добавляет реплику ассистента в сценарий.',
@@ -50,18 +50,18 @@ const curatedDefinitions: DemoProductActionDefinition[] = [
 ]
 
 const curatedCodes = new Set(curatedDefinitions.map((definition) => definition.code))
-const scenarioDefinitionByCode = new Map(demoActionDefinitions.map((definition) => [definition.type, definition]))
+const scenarioCatalogItemByCode = new Map(demoScenarioActionCatalog.map((item) => [item.type, item]))
 const definitions: DemoProductActionDefinition[] = [
   ...curatedDefinitions,
-  ...demoActionDefinitions
-    .filter((definition) => !curatedCodes.has(definition.type))
-    .map((definition) => ({
-      code: definition.type,
-      name: definition.name,
-      description: definition.description ?? `Системное действие ${definition.type}.`,
+  ...demoScenarioActionCatalog
+    .filter((item) => !curatedCodes.has(item.type))
+    .map((item) => ({
+      code: item.type,
+      name: item.name,
+      description: item.description ?? `Системное действие ${item.type}.`,
       surfaces: ['SCENARIO' as const],
-      inputSchema: definition.configSchema as unknown as Record<string, unknown>,
-      uiSchema: definition.uiSchema as unknown as Record<string, unknown>,
+      inputSchema: item.configSchema as unknown as Record<string, unknown>,
+      uiSchema: item.uiSchema as unknown as Record<string, unknown>,
       ai: false,
     })),
 ]
@@ -191,8 +191,8 @@ function persistedDemoElements(): typeof demoElements {
 }
 
 function revision(definition: DemoProductActionDefinition, index: number) {
-  const scenarioDefinition = scenarioDefinitionByCode.get(definition.code)
-  const serverAction = scenarioDefinition?.executor === 'SERVER'
+  const scenarioCatalogItem = scenarioCatalogItemByCode.get(definition.code)
+  const serverAction = scenarioCatalogItem?.executor === 'SERVER'
   return {
     id: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
     version: 1,

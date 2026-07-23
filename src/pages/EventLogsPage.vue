@@ -767,18 +767,25 @@ function json(value: unknown) {
                 ><code>{{ item.eventCode }}</code></span
               ><span class="timeline-user"
                 ><i
+                  class="timeline-source-icon"
                   :class="
                     item.source === 'FRONTEND'
                       ? 'pi pi-desktop'
                       : 'pi pi-server'
                   "
-                />
-                {{ item.userExternalId }} · {{ sourceLabel(item.source) }}</span
+                  aria-hidden="true"
+                /><span
+                  >{{ item.userExternalId }} ·
+                  {{ sourceLabel(item.source) }}</span
+                ></span
               ><span
                 v-if="eventPayloadHighlights(item.payload).length"
                 class="timeline-payload"
                 ><span
-                  v-for="entry in eventPayloadHighlights(item.payload, 2)"
+                  v-for="entry in eventPayloadHighlights(
+                    item.payload,
+                    Object.keys(item.payload).length,
+                  )"
                   :key="entry.key"
                   ><b>{{ entry.key }}</b> {{ entry.value }}</span
                 ></span
@@ -1332,13 +1339,27 @@ function json(value: unknown) {
   color: var(--text-small-muted);
 }
 .timeline-user {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.63rem;
   color: var(--text-small-muted);
   margin-top: 4px;
 }
+.timeline-source-icon {
+  flex: 0 0 14px;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  line-height: 1;
+}
+.timeline-user > span {
+  min-width: 0;
+}
 .timeline-payload {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
   margin-top: 7px;
 }
@@ -1611,7 +1632,7 @@ function json(value: unknown) {
     display: block;
     margin-top: 3px;
   }
-  .timeline-user {
+  .timeline-user > span {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -11,6 +11,8 @@ import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import AiUsageSection from "@/features/ai-usage/AiUsageSection.vue";
 import ActivitySettingsSection from "@/features/activity-settings/ActivitySettingsSection.vue";
+import UserMemorySettingsSection from "@/features/user-memory/ui/UserMemorySettingsSection.vue";
+import AIReviewSettingsSection from "@/features/ai-review/ui/AIReviewSettingsSection.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
@@ -26,6 +28,7 @@ import type {
   Project,
 } from "@/shared/types/domain";
 import { localeDisplayName } from "@/shared/lib/locale";
+import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
 
 interface ProjectForm {
   name: string;
@@ -87,6 +90,10 @@ const canReadAiUsage = computed(() =>
 const toast = useToast();
 const loading = ref(true);
 const saving = ref(false);
+const aboutSettingsExpanded = ref(false);
+const localeSettingsExpanded = ref(false);
+const connectionSettingsExpanded = ref(false);
+const assistantSettingsExpanded = ref(false);
 const voiceSettingsExpanded = ref(false);
 const error = ref("");
 const validationError = ref("");
@@ -229,6 +236,14 @@ function handleActivitySettingsChange(value: ActivitySettings) {
     ...settingsProject.value,
     version: value.projectVersion,
   };
+  settingsProject.value = nextProject;
+  project.value = nextProject;
+  auth.updateProject(nextProject);
+}
+
+function handleAISettingsVersion(projectVersion: number) {
+  if (!settingsProject.value) return;
+  const nextProject = { ...settingsProject.value, version: projectVersion };
   settingsProject.value = nextProject;
   project.value = nextProject;
   auth.updateProject(nextProject);
@@ -445,17 +460,21 @@ onBeforeUnmount(() => {
           <section
             v-if="canReadSettings"
             class="card card-pad settings-section"
+            :class="{ collapsed: !aboutSettingsExpanded }"
           >
-            <div class="section-title">
-              <span class="section-icon lime"
-                ><i class="pi pi-building"
-              /></span>
-              <div>
-                <h2>О проекте</h2>
-                <p>Эти данные видны только администраторам.</p>
-              </div>
-            </div>
-            <div class="form-grid">
+            <ProjectSettingsSectionHeader
+              v-model:expanded="aboutSettingsExpanded"
+              title="О проекте"
+              description="Эти данные видны только администраторам."
+              icon="pi pi-building"
+              tone="lime"
+              content-id="project-about-settings"
+            />
+            <div
+              id="project-about-settings"
+              v-show="aboutSettingsExpanded"
+              class="form-grid"
+            >
               <div class="field full">
                 <label for="project-name">Название проекта</label
                 ><InputText
@@ -483,131 +502,146 @@ onBeforeUnmount(() => {
           <section
             v-if="canReadProfileContract"
             class="card card-pad settings-section"
+            :class="{ collapsed: !localeSettingsExpanded }"
           >
-            <div class="section-title">
-              <span class="section-icon violet"
-                ><i class="pi pi-language"
-              /></span>
-              <div>
-                <h2>Языки контента</h2>
-                <p>
-                  Языки настраиваются единым Locale Attribute в полях
-                  пользователя.
-                </p>
+            <ProjectSettingsSectionHeader
+              v-model:expanded="localeSettingsExpanded"
+              title="Языки контента"
+              description="Языки настраиваются единым Locale Attribute в полях пользователя."
+              icon="pi pi-language"
+              tone="violet"
+              content-id="project-content-locales"
+            />
+            <div id="project-content-locales" v-show="localeSettingsExpanded">
+              <div v-if="localeField" class="content-locale-summary">
+                <div>
+                  <small>Основной язык</small>
+                  <strong
+                    >{{ localeDisplayName(contentDefaultLocale) }} ({{
+                      contentDefaultLocale
+                    }})</strong
+                  >
+                </div>
+                <div class="content-locale-chips">
+                  <span
+                    v-for="locale in contentLocales"
+                    :key="locale"
+                    :class="{ primary: locale === contentDefaultLocale }"
+                  >
+                    {{ localeDisplayName(locale) }} <code>{{ locale }}</code>
+                  </span>
+                </div>
+                <Button
+                  v-if="canWriteProfileContract"
+                  label="Изменить в полях пользователя"
+                  icon="pi pi-arrow-right"
+                  severity="secondary"
+                  outlined
+                  as="router-link"
+                  :to="`/profile-fields/${localeField.definitionId ?? localeField.key}`"
+                />
               </div>
-            </div>
-            <div v-if="localeField" class="content-locale-summary">
-              <div>
-                <small>Основной язык</small>
-                <strong
-                  >{{ localeDisplayName(contentDefaultLocale) }} ({{
-                    contentDefaultLocale
-                  }})</strong
-                >
+              <div v-else class="content-locale-empty">
+                <i class="pi pi-language" />
+                <div>
+                  <strong>Языки контента ещё не настроены</strong>
+                  <p>
+                    Создайте одно поле пользователя с назначением «Язык
+                    контента».
+                  </p>
+                </div>
+                <Button
+                  v-if="canWriteProfileContract"
+                  label="Настроить языки"
+                  icon="pi pi-plus"
+                  as="router-link"
+                  :to="{
+                    name: 'profile-field-create',
+                    query: { semanticRole: 'LOCALE' },
+                  }"
+                />
               </div>
-              <div class="content-locale-chips">
-                <span
-                  v-for="locale in contentLocales"
-                  :key="locale"
-                  :class="{ primary: locale === contentDefaultLocale }"
-                >
-                  {{ localeDisplayName(locale) }} <code>{{ locale }}</code>
-                </span>
-              </div>
-              <Button
-                v-if="canWriteProfileContract"
-                label="Изменить в полях пользователя"
-                icon="pi pi-arrow-right"
-                severity="secondary"
-                outlined
-                as="router-link"
-                :to="`/profile-fields/${localeField.definitionId ?? localeField.key}`"
-              />
-            </div>
-            <div v-else class="content-locale-empty">
-              <i class="pi pi-language" />
-              <div>
-                <strong>Языки контента ещё не настроены</strong>
-                <p>
-                  Создайте одно поле пользователя с назначением «Язык контента».
-                </p>
-              </div>
-              <Button
-                v-if="canWriteProfileContract"
-                label="Настроить языки"
-                icon="pi pi-plus"
-                as="router-link"
-                :to="{
-                  name: 'profile-field-create',
-                  query: { semanticRole: 'LOCALE' },
-                }"
-              />
             </div>
           </section>
 
           <section
             v-if="canReadSettings"
             class="card card-pad settings-section"
+            :class="{ collapsed: !connectionSettingsExpanded }"
           >
-            <div class="section-title">
-              <span class="section-icon green"><i class="pi pi-link" /></span>
-              <div>
-                <h2>Подключение продукта</h2>
-                <p>
-                  Публичные адреса SDK и разрешённые домены. Секреты здесь не
-                  отображаются.
-                </p>
+            <ProjectSettingsSectionHeader
+              v-model:expanded="connectionSettingsExpanded"
+              title="Подключение продукта"
+              description="Публичные адреса SDK и разрешённые домены. Секреты здесь не отображаются."
+              icon="pi pi-link"
+              tone="green"
+              content-id="project-connection-settings"
+            >
+              <template #actions>
+                <span class="integration-unknown"
+                  ><i class="pi pi-minus-circle" /> Не проверено</span
+                >
+              </template>
+            </ProjectSettingsSectionHeader>
+            <div
+              id="project-connection-settings"
+              v-show="connectionSettingsExpanded"
+              class="connection-settings"
+            >
+              <Message severity="info" :closable="false">
+                Функциональность подключения продукта пока не работает.
+              </Message>
+              <div class="form-grid columns">
+                <div class="field">
+                  <label for="api-url">Public API URL</label
+                  ><InputText
+                    id="api-url"
+                    v-model="form.apiBaseUrl"
+                    class="mono"
+                    placeholder="https://api.example.com/api/v1"
+                    :disabled="saving || !canEditSettings"
+                  />
+                </div>
+                <div class="field">
+                  <label for="ws-url">WebSocket URL</label
+                  ><InputText
+                    id="ws-url"
+                    v-model="form.wsUrl"
+                    class="mono"
+                    placeholder="wss://api.example.com/assistant"
+                    :disabled="saving || !canEditSettings"
+                  />
+                </div>
+                <div class="field">
+                  <label for="allowed-origins"
+                    >Разрешённые origins <span>по одному в строке</span></label
+                  ><Textarea
+                    id="allowed-origins"
+                    v-model="form.allowedOrigins"
+                    rows="3"
+                    class="mono"
+                    placeholder="https://app.example.com"
+                    :disabled="saving || !canEditSettings"
+                  />
+                </div>
               </div>
-              <span class="integration-unknown"
-                ><i class="pi pi-minus-circle" /> Не проверено</span
+              <RouterLink
+                to="/profile-fields"
+                class="contract-link surface-soft"
               >
+                <span class="contract-link-icon"
+                  ><i class="pi pi-id-card"
+                /></span>
+                <span
+                  ><strong>Поля профиля пользователей</strong
+                  ><small
+                    >Какие данные получает Lola и где их можно
+                    использовать</small
+                  ></span
+                >
+                <i class="pi pi-arrow-right" />
+              </RouterLink>
             </div>
-            <div class="form-grid columns">
-              <div class="field">
-                <label for="api-url">Public API URL</label
-                ><InputText
-                  id="api-url"
-                  v-model="form.apiBaseUrl"
-                  class="mono"
-                  placeholder="https://api.example.com/api/v1"
-                  :disabled="saving || !canEditSettings"
-                />
-              </div>
-              <div class="field">
-                <label for="ws-url">WebSocket URL</label
-                ><InputText
-                  id="ws-url"
-                  v-model="form.wsUrl"
-                  class="mono"
-                  placeholder="wss://api.example.com/assistant"
-                  :disabled="saving || !canEditSettings"
-                />
-              </div>
-              <div class="field">
-                <label for="allowed-origins"
-                  >Разрешённые origins <span>по одному в строке</span></label
-                ><Textarea
-                  id="allowed-origins"
-                  v-model="form.allowedOrigins"
-                  rows="3"
-                  class="mono"
-                  placeholder="https://app.example.com"
-                  :disabled="saving || !canEditSettings"
-                />
-              </div>
-            </div>
-            <RouterLink to="/profile-fields" class="contract-link surface-soft">
-              <span class="contract-link-icon"
-                ><i class="pi pi-id-card"
-              /></span>
-              <span
-                ><strong>Поля профиля пользователей</strong
-                ><small
-                  >Какие данные получает Lola и где их можно использовать</small
-                ></span
-              >
-              <i class="pi pi-arrow-right" />
-            </RouterLink>
           </section>
         </form>
 
@@ -624,19 +658,23 @@ onBeforeUnmount(() => {
           class="settings-main-form stack"
           @submit.prevent="saveProject"
         >
-          <section class="card card-pad settings-section">
-            <div class="section-title">
-              <span class="section-icon coral"
-                ><i class="pi pi-sparkles"
-              /></span>
-              <div>
-                <h2>Ассистент</h2>
-                <p>
-                  Имя и базовая инструкция определяют голос Lola в этом проекте.
-                </p>
-              </div>
-            </div>
-            <div class="assistant-fields">
+          <section
+            class="card card-pad settings-section"
+            :class="{ collapsed: !assistantSettingsExpanded }"
+          >
+            <ProjectSettingsSectionHeader
+              v-model:expanded="assistantSettingsExpanded"
+              title="Ассистент"
+              description="Имя и базовая инструкция определяют голос Lola в этом проекте."
+              icon="pi pi-sparkles"
+              tone="coral"
+              content-id="assistant-settings"
+            />
+            <div
+              id="assistant-settings"
+              v-show="assistantSettingsExpanded"
+              class="assistant-fields"
+            >
               <div class="assistant-preview">
                 <div class="assistant-orbit">
                   <span>{{ assistantInitial }}</span>
@@ -683,38 +721,32 @@ onBeforeUnmount(() => {
             </div>
           </section>
 
+          <UserMemorySettingsSection
+            :key="`memory-${project.version}`"
+            :project-id="project.id"
+            :editable="canEditSettings"
+            @changed="handleAISettingsVersion"
+          />
+
+          <AIReviewSettingsSection
+            :key="`review-${project.version}`"
+            :project-id="project.id"
+            :editable="canEditSettings"
+            @changed="handleAISettingsVersion"
+          />
+
           <section
             class="card card-pad settings-section"
             :class="{ collapsed: !voiceSettingsExpanded }"
           >
-            <div class="section-title">
-              <span class="section-icon blue"
-                ><i class="pi pi-microphone"
-              /></span>
-              <div>
-                <h2>Голосовой чат</h2>
-                <p>Настройте голосовые диалоги, голос Lola и манеру её речи.</p>
-              </div>
-              <Button
-                type="button"
-                :icon="
-                  voiceSettingsExpanded
-                    ? 'pi pi-chevron-up'
-                    : 'pi pi-chevron-down'
-                "
-                severity="secondary"
-                text
-                rounded
-                :aria-label="
-                  voiceSettingsExpanded
-                    ? 'Свернуть настройки голосового чата'
-                    : 'Развернуть настройки голосового чата'
-                "
-                :aria-expanded="voiceSettingsExpanded"
-                aria-controls="voice-chat-settings"
-                @click="voiceSettingsExpanded = !voiceSettingsExpanded"
-              />
-            </div>
+            <ProjectSettingsSectionHeader
+              v-model:expanded="voiceSettingsExpanded"
+              title="Голосовой чат"
+              description="Настройте голосовые диалоги, голос Lola и манеру её речи."
+              icon="pi pi-microphone"
+              tone="blue"
+              content-id="voice-chat-settings"
+            />
             <div
               id="voice-chat-settings"
               v-show="voiceSettingsExpanded"
@@ -941,54 +973,6 @@ onBeforeUnmount(() => {
 .settings-section {
   padding: 26px;
 }
-.section-title {
-  display: flex;
-  align-items: flex-start;
-  gap: 13px;
-  padding-bottom: 21px;
-  margin-bottom: 21px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.settings-section.collapsed .section-title {
-  padding-bottom: 0;
-  margin-bottom: 0;
-  border-bottom: 0;
-}
-.section-title > div {
-  min-width: 0;
-  flex: 1;
-}
-.section-title > button {
-  flex: 0 0 auto;
-}
-.section-title h2 {
-  font-size: 1.08rem;
-}
-.section-title p {
-  color: var(--muted);
-  font-size: 0.76rem;
-  margin: 4px 0 0;
-}
-.section-icon {
-  display: grid;
-  place-items: center;
-  width: 39px;
-  height: 39px;
-  border-radius: 12px;
-  flex: 0 0 auto;
-}
-.section-icon.lime {
-  background: var(--project-tone-lime-soft);
-  color: var(--project-tone-lime-foreground);
-}
-.section-icon.violet {
-  background: var(--project-tone-violet-soft);
-  color: var(--project-tone-violet-foreground);
-}
-.section-icon.coral {
-  background: var(--project-tone-coral-soft);
-  color: var(--project-tone-coral-foreground);
-}
 .form-grid {
   display: grid;
   gap: 18px;
@@ -1196,9 +1180,6 @@ onBeforeUnmount(() => {
   .assistant-preview strong {
     text-align: left;
   }
-  .section-title {
-    align-items: center;
-  }
   .project-status {
     width: 100%;
   }
@@ -1211,14 +1192,6 @@ onBeforeUnmount(() => {
     width: 42px;
     height: 42px;
   }
-}
-.section-icon.green {
-  background: var(--project-tone-green-soft);
-  color: var(--project-tone-green-foreground);
-}
-.section-icon.blue {
-  background: var(--project-tone-blue-soft);
-  color: var(--project-tone-blue-foreground);
 }
 .integration-unknown {
   margin-left: auto;
@@ -1262,6 +1235,13 @@ onBeforeUnmount(() => {
 }
 .setting-toggle.disabled {
   opacity: 0.6;
+}
+.connection-settings {
+  display: grid;
+  gap: 18px;
+}
+.connection-settings .contract-link {
+  margin-top: 0;
 }
 .contract-link {
   display: flex;

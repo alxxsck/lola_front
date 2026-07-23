@@ -1,5 +1,4 @@
 import {
-  demoActionDefinitions,
   demoActivity,
   demoConversations,
   demoElements,
@@ -10,13 +9,12 @@ import {
   demoSessions,
   demoUsers,
 } from "@/shared/api/mock-data";
-import { normalizeScenarioActions } from "@/shared/lib/domain";
 import { uid } from "@/shared/lib/format";
 import type {
   ActiveSession,
   ActivityItem,
   AdminMessageResult,
-  AuditLog,
+  AuditEvent,
   Conversation,
   ConversationAISuspensionDetail,
   ConversationMessage,
@@ -327,13 +325,12 @@ export const mockRepository: LolaRepository = {
     uiElements: true,
     eventDefinitions: true,
     scenarios: true,
-    actionDefinitions: true,
     presence: true,
     activity: true,
     conversations: true,
     manualActions: true,
     operations: true,
-    auditLogs: true,
+    auditEvents: true,
     adminMessaging: true,
     userAttributes: true,
   },
@@ -547,34 +544,22 @@ export const mockRepository: LolaRepository = {
     await pause();
     return readDemo().scenarios;
   },
-  async getActionDefinitions() {
-    await pause();
-    return structuredClone(demoActionDefinitions);
-  },
-  async saveScenario(projectId, value) {
-    const data = readDemo();
-    const saved = {
-      status: "DRAFT",
-      conversationPolicy: "create_new",
-      priority: 0,
-      conditions: [],
-      ...value,
-      id: value.id ?? uid("scn"),
-      projectId,
-    } as Scenario;
-    saved.actions = normalizeScenarioActions(saved.actions);
-    const index = data.scenarios.findIndex((item) => item.id === saved.id);
-    if (index >= 0) data.scenarios.splice(index, 1, saved);
-    else data.scenarios.push(saved);
-    writeDemo(data);
-    await pause();
-    return saved;
-  },
   async updateScenarioMetadata(_projectId, scenarioId, value) {
     const data = readDemo();
     const index = data.scenarios.findIndex((item) => item.id === scenarioId);
     if (index < 0) throw new Error("Scenario not found");
-    const saved = { ...data.scenarios[index]!, ...value } as Scenario;
+    const current = data.scenarios[index]!;
+    if (current.updatedAt !== value.expectedUpdatedAt) {
+      throw new Error("Scenario metadata conflict");
+    }
+    const patch = { ...value };
+    Reflect.deleteProperty(patch, "expectedUpdatedAt");
+    Reflect.deleteProperty(patch, "reason");
+    const saved = {
+      ...current,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    } as Scenario;
     data.scenarios.splice(index, 1, saved);
     writeDemo(data);
     await pause();
@@ -995,18 +980,18 @@ export const mockRepository: LolaRepository = {
           conversationPolicy: scenario.conversationPolicy,
           startedAt: item.timestamp,
           currentStep: 1,
-          steps: scenario.actions.slice(0, 3).map((action, index) => ({
+          steps: ["SHOW_ASSISTANT", "PLAY_ANIMATION", "SAY"].map((actionType, index) => ({
             id: `step_${index}`,
             position: index,
-            nodeKey: action.nodeKey ?? `step_${index}`,
-            actionType: action.type,
+            nodeKey: `step_${index}`,
+            actionType,
             executor: "FRONTEND",
             status: index === 2 ? "WAITING_ACK" : "SUCCEEDED",
             command:
               index === 2
                 ? {
                     id: "cmd_demo",
-                    type: action.type,
+                    type: actionType,
                     status: "SENT",
                     sequence: 3,
                     createdAt: item.timestamp,
@@ -1077,30 +1062,65 @@ export const mockRepository: LolaRepository = {
       },
     };
   },
-  async getAuditLogs() {
+  async getAuditEventsPage(_projectId, request) {
     await pause();
-    return [
+    const items = [
       {
         id: "audit_1",
-        actor: { id: "member_1", email: "admin@lola.demo", name: "Алексей" },
-        action: "scenario.update",
-        status: "SUCCEEDED",
-        resourceType: "Scenario",
+        actor: {
+          type: "CMS_USER",
+          id: "member_1",
+          email: "admin@lola.demo",
+          name: "Алексей",
+        },
+        target: { kind: "PROJECT", id: demoProject.id },
+        eventType: "iam.project_resource.changed",
+        eventVersion: 1,
+        outcome: "SUCCESS",
+        operation: "UPDATE",
+        resourceType: "SCENARIO",
         resourceId: "scn_1",
+        requiredPermissionCode: "project.scenarios.write",
+        authorizationEvidence: {},
         metadata: {},
-        createdAt: new Date().toISOString(),
+        occurredAt: new Date().toISOString(),
       },
       {
         id: "audit_2",
-        actor: { id: "member_1", email: "admin@lola.demo", name: "Алексей" },
-        action: "message.send",
-        status: "SUCCEEDED",
-        resourceType: "EndUser",
+        actor: {
+          type: "CMS_USER",
+          id: "member_1",
+          email: "admin@lola.demo",
+          name: "Алексей",
+        },
+        target: { kind: "PROJECT", id: demoProject.id },
+        eventType: "iam.project_resource.changed",
+        eventVersion: 1,
+        outcome: "SUCCESS",
+        operation: "SEND",
+        resourceType: "END_USER_MESSAGE",
         resourceId: "usr_1",
+        requiredPermissionCode: "project.messages.write",
+        authorizationEvidence: {},
         metadata: { channel: "admin" },
-        createdAt: new Date(Date.now() - 18 * 60_000).toISOString(),
+        occurredAt: new Date(Date.now() - 18 * 60_000).toISOString(),
       },
-    ] satisfies AuditLog[];
+    ] satisfies AuditEvent[];
+    const search = request?.search?.trim().toLowerCase();
+    const filtered = items.filter(
+      (item) =>
+        (!request?.outcome || item.outcome === request.outcome) &&
+        (!search ||
+          [
+            item.eventType,
+            item.operation,
+            item.resourceType,
+            item.resourceId,
+            item.actor.name,
+            item.actor.email,
+          ].some((value) => value?.toLowerCase().includes(search))),
+    );
+    return { items: filtered, nextCursor: null };
   },
   async sendAdminMessage(_projectId, userId, message) {
     const idempotencyKey = message.idempotencyKey ?? crypto.randomUUID();

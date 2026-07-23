@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { demoActionDefinitions } from '@/shared/api/mock-data'
+import { demoScenarioActionCatalog } from '@/shared/api/mock-data'
+import { projectScenarioActionCatalog } from '../model/scenario-project-actions'
 import { mockProjectActionsRepository } from './mock-project-actions-repository'
 
 describe('mock Project Actions repository', () => {
@@ -14,11 +15,21 @@ describe('mock Project Actions repository', () => {
       .filter((action) => action.lifecycle === 'ACTIVE' && action.scenarioEnabled && action.actionTypeRevision.supportedSurfaces.includes('SCENARIO'))
       .map((action) => action.code))
 
-    expect(demoActionDefinitions.filter((definition) => definition.enabled).map((definition) => definition.type))
+    expect(demoScenarioActionCatalog.filter((item) => item.enabled).map((item) => item.type))
       .toEqual(expect.arrayContaining([...scenarioCodes]))
     expect([...scenarioCodes]).toEqual(expect.arrayContaining(
-      demoActionDefinitions.filter((definition) => definition.enabled).map((definition) => definition.type),
+      demoScenarioActionCatalog.filter((item) => item.enabled).map((item) => item.type),
     ))
+  })
+
+  it('projects every demo Project Action revision into the editor catalog', async () => {
+    const actions = await mockProjectActionsRepository.listProjectActions('prj_lola_demo')
+
+    expect(projectScenarioActionCatalog(actions)).toMatchObject({
+      catalog: expect.any(Array),
+      error: null,
+    })
+    expect(projectScenarioActionCatalog(actions).catalog).toHaveLength(actions.length)
   })
 
   it('compiles preview targets from UI exposure changes persisted by the mock CMS', async () => {

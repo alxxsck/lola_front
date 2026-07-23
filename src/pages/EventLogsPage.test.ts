@@ -323,7 +323,21 @@ describe("EventLogsPage", () => {
   });
 
   it("switches to the timeline and opens a detail drawer", async () => {
-    mocks.getEventLogPage.mockResolvedValue({ items: [log], nextCursor: null });
+    mocks.getEventLogPage.mockResolvedValue({
+      items: [
+        {
+          ...log,
+          source: "FRONTEND",
+          payload: {
+            method: "real",
+            currency: "usdt",
+            provider: "plp",
+            game: "roulette",
+          },
+        },
+      ],
+      nextCursor: null,
+    });
     const wrapper = shallowMount(EventLogsPage, {
       global: { renderStubDefaultSlot: true },
     });
@@ -331,6 +345,10 @@ describe("EventLogsPage", () => {
 
     await wrapper.findAll(".view-switch button")[1]!.trigger("click");
     expect(wrapper.find(".timeline").exists()).toBe(true);
+    expect(wrapper.findAll(".timeline-payload > span")).toHaveLength(4);
+    expect(wrapper.get(".timeline-source-icon").classes()).toContain(
+      "pi-desktop",
+    );
 
     await wrapper.get(".timeline-item").trigger("click");
     expect(wrapper.find("drawer-stub").attributes()).toHaveProperty("visible");

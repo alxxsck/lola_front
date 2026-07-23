@@ -65,4 +65,61 @@ describe('Project Actions store', () => {
     await store.ensureLoaded('project-1')
     expect(projectActionsRepository.listProjectActions).toHaveBeenCalledTimes(2)
   })
+
+  it('clears authoritative Project Action caches on session teardown', async () => {
+    vi.mocked(projectActionsRepository.listActionTypes).mockResolvedValue([])
+    vi.mocked(projectActionsRepository.listProjectActions).mockResolvedValue([action])
+    vi.mocked(projectActionsRepository.preview).mockResolvedValue({ tool: null, issues: [] })
+    const store = useProjectActionsStore()
+    await store.ensureLoaded('project-1')
+    await store.loadPreview('project-1', 'action-1')
+
+    store.clear()
+
+    expect(store.actionsForProject('project-1')).toEqual([])
+    expect(store.catalogForProject('project-1')).toEqual([])
+    expect(store.previewByAction).toEqual({})
+    await store.ensureLoaded('project-1')
+    expect(projectActionsRepository.listProjectActions).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not repopulate a cleared session from an older in-flight request', async () => {
+    let resolveActions!: (value: ProjectAction[]) => void
+    vi.mocked(projectActionsRepository.listActionTypes).mockResolvedValue([])
+    vi.mocked(projectActionsRepository.listProjectActions).mockReturnValue(new Promise((resolve) => {
+      resolveActions = resolve
+    }))
+    const store = useProjectActionsStore()
+    const pending = store.ensureLoaded('project-1')
+
+    store.clear()
+    resolveActions([action])
+    await pending
+
+    expect(store.actionsForProject('project-1')).toEqual([])
+  })
+
+  it('does not repopulate preview or mutation state after session teardown', async () => {
+    let resolvePreview!: (value: { tool: null; issues: never[] }) => void
+    let resolveConfigure!: (value: ProjectAction) => void
+    vi.mocked(projectActionsRepository.preview).mockReturnValue(new Promise((resolve) => {
+      resolvePreview = resolve
+    }))
+    vi.mocked(projectActionsRepository.configure).mockReturnValue(new Promise((resolve) => {
+      resolveConfigure = resolve
+    }))
+    const store = useProjectActionsStore()
+    const preview = store.loadPreview('project-1', 'action-1')
+    const configure = store.configure('project-1', 'action-1', { aiEnabled: true })
+
+    store.clear()
+    resolvePreview({ tool: null, issues: [] })
+    resolveConfigure(action)
+    await Promise.all([preview, configure])
+
+    expect(store.previewByAction).toEqual({})
+    expect(store.previewLoadingByAction).toEqual({})
+    expect(store.actionsForProject('project-1')).toEqual([])
+    expect(store.mutatingByAction).toEqual({})
+  })
 })

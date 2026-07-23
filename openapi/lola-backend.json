@@ -1314,6 +1314,192 @@
         ],
         "type": "object"
       },
+      "AIReviewEstimateResponseDto": {
+        "properties": {
+          "blocked": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": "string"
+          },
+          "costLevel": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "type": "string"
+          },
+          "estimatedInputTokens": {
+            "type": "number"
+          },
+          "eventCount": {
+            "type": "number"
+          },
+          "range": {
+            "$ref": "#/components/schemas/RangeDto"
+          },
+          "redactedBytes": {
+            "type": "number"
+          },
+          "requiresConfirmation": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventCount",
+          "redactedBytes",
+          "estimatedInputTokens",
+          "costLevel",
+          "requiresConfirmation",
+          "blocked",
+          "timezone",
+          "range"
+        ],
+        "type": "object"
+      },
+      "AIReviewLimitResponseDto": {
+        "properties": {
+          "max": {
+            "type": "number"
+          },
+          "min": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ],
+        "type": "object"
+      },
+      "AIReviewRunResponseDto": {
+        "properties": {
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "costLevel": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "estimatedInputTokens": {
+            "type": "number"
+          },
+          "eventCount": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "proposalId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "redactedBytes": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED",
+              "OUTCOME_UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "costLevel",
+          "eventCount",
+          "redactedBytes",
+          "estimatedInputTokens",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "AIReviewScopeDto": {
+        "properties": {
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventCodes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "instruction": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "localDate": {
+            "example": "2026-07-23",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endUserId",
+          "localDate",
+          "eventCodes"
+        ],
+        "type": "object"
+      },
+      "AIReviewSettingsLimitsResponseDto": {
+        "properties": {
+          "dailyRunLimit": {
+            "$ref": "#/components/schemas/AIReviewLimitResponseDto"
+          }
+        },
+        "required": [
+          "dailyRunLimit"
+        ],
+        "type": "object"
+      },
+      "AIReviewSettingsResponseDto": {
+        "properties": {
+          "dailyRunLimit": {
+            "type": "number"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/AIReviewSettingsLimitsResponseDto"
+          },
+          "projectVersion": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "projectVersion",
+          "enabled",
+          "dailyRunLimit",
+          "limits"
+        ],
+        "type": "object"
+      },
       "AiUsageBreakdownResponseDto": {
         "properties": {
           "billedCost": {
@@ -4821,108 +5007,6 @@
           "definitionId"
         ],
         "type": "object"
-      },
-      "AuditCmsUserResponseDto": {
-        "properties": {
-          "displayName": {
-            "type": "string"
-          },
-          "email": {
-            "format": "email",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "email",
-          "displayName"
-        ],
-        "type": "object"
-      },
-      "AuditLogResponseDto": {
-        "properties": {
-          "action": {
-            "example": "PATCH /admin/projects/:projectId",
-            "type": "string"
-          },
-          "actorCmsUser": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AuditCmsUserResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "actorCmsUserId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "ipAddress": {
-            "nullable": true,
-            "type": "string"
-          },
-          "metadata": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "projectId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "requestId": {
-            "nullable": true,
-            "type": "string"
-          },
-          "resourceId": {
-            "nullable": true,
-            "type": "string"
-          },
-          "resourceType": {
-            "nullable": true,
-            "type": "string"
-          },
-          "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AuditStatus"
-              }
-            ]
-          },
-          "userAgent": {
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "action",
-          "status",
-          "metadata",
-          "createdAt"
-        ],
-        "type": "object"
-      },
-      "AuditStatus": {
-        "enum": [
-          "SUCCEEDED",
-          "FAILED"
-        ],
-        "type": "string"
       },
       "BreakGlassLoginDto": {
         "properties": {
@@ -13168,6 +13252,181 @@
         ],
         "type": "object"
       },
+      "ProjectAuditEventActorResponseDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CMS_USER",
+              "SYSTEM",
+              "BREAK_GLASS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ],
+        "type": "object"
+      },
+      "ProjectAuditEventPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAuditEventResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "ProjectAuditEventResponseDto": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/ProjectAuditEventActorResponseDto"
+          },
+          "after": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "auditReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "authorizationEvidence": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "before": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "correlationId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "eventVersion": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ipAddress": {
+            "nullable": true,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "SUCCESS",
+              "DENIED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "reasonCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "requestId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "requiredPermissionCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/ProjectAuditEventTargetResponseDto"
+          },
+          "userAgent": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "eventType",
+          "eventVersion",
+          "occurredAt",
+          "actor",
+          "target",
+          "requiredPermissionCode",
+          "outcome",
+          "authorizationEvidence",
+          "reasonCode",
+          "auditReason",
+          "requestId",
+          "correlationId",
+          "ipAddress",
+          "userAgent",
+          "before",
+          "after",
+          "metadata"
+        ],
+        "type": "object"
+      },
+      "ProjectAuditEventTargetResponseDto": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "CMS_USER",
+              "BREAK_GLASS_PRINCIPAL",
+              "PROJECT",
+              "PLATFORM_ROLE",
+              "PROJECT_ROLE",
+              "PROJECT_MEMBERSHIP",
+              "SESSION",
+              "CHALLENGE",
+              "PERMISSION",
+              "AUTHENTICATION_ATTEMPT",
+              "EMAIL_MESSAGE",
+              "EMAIL_ADDRESS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ],
+        "type": "object"
+      },
       "ProjectCountsResponseDto": {
         "properties": {
           "eventLogs": {
@@ -14152,6 +14411,23 @@
           "rule",
           "catalogRevision",
           "expectedCurrentRevisionId"
+        ],
+        "type": "object"
+      },
+      "RangeDto": {
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
         ],
         "type": "object"
       },
@@ -17410,6 +17686,45 @@
         ],
         "type": "object"
       },
+      "StartAIReviewDto": {
+        "properties": {
+          "confirmedExpensive": {
+            "type": "boolean"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventCodes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "instruction": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "localDate": {
+            "example": "2026-07-23",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endUserId",
+          "localDate",
+          "eventCodes",
+          "idempotencyKey",
+          "confirmedExpensive"
+        ],
+        "type": "object"
+      },
       "StartConversationAISuspensionDto": {
         "properties": {
           "durationSeconds": {
@@ -19231,6 +19546,28 @@
         ],
         "type": "object"
       },
+      "UpdateAIReviewSettingsDto": {
+        "properties": {
+          "dailyRunLimit": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "enabled",
+          "dailyRunLimit"
+        ],
+        "type": "object"
+      },
       "UpdateCmsUserProfileDto": {
         "properties": {
           "familyName": {
@@ -19775,6 +20112,34 @@
         },
         "type": "object"
       },
+      "UpdateUserMemorySettingsDto": {
+        "properties": {
+          "dailyExtractionCallLimit": {
+            "maximum": 100000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "factTtlDays": {
+            "maximum": 3650,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "enabled",
+          "dailyExtractionCallLimit",
+          "factTtlDays"
+        ],
+        "type": "object"
+      },
       "UpgradedGuestResponseDto": {
         "properties": {
           "externalId": {
@@ -19967,6 +20332,157 @@
           "DATETIME"
         ],
         "type": "string"
+      },
+      "UserMemoryClearResponseDto": {
+        "properties": {
+          "deletedCount": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "deletedCount"
+        ],
+        "type": "object"
+      },
+      "UserMemoryDeleteResponseDto": {
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "type": "object"
+      },
+      "UserMemoryFactListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UserMemoryFactResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "UserMemoryFactResponseDto": {
+        "properties": {
+          "category": {
+            "enum": [
+              "PREFERENCE",
+              "LOCATION",
+              "COMMUNICATION_PREFERENCE",
+              "INTEREST",
+              "PERSONAL_CONTEXT"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "sourceMessageId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceObservedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "key",
+          "value",
+          "sourceMessageId",
+          "sourceObservedAt",
+          "expiresAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "UserMemoryLimitResponseDto": {
+        "properties": {
+          "max": {
+            "type": "number"
+          },
+          "min": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ],
+        "type": "object"
+      },
+      "UserMemorySettingsLimitsResponseDto": {
+        "properties": {
+          "dailyExtractionCallLimit": {
+            "$ref": "#/components/schemas/UserMemoryLimitResponseDto"
+          },
+          "factTtlDays": {
+            "$ref": "#/components/schemas/UserMemoryLimitResponseDto"
+          }
+        },
+        "required": [
+          "dailyExtractionCallLimit",
+          "factTtlDays"
+        ],
+        "type": "object"
+      },
+      "UserMemorySettingsResponseDto": {
+        "properties": {
+          "dailyExtractionCallLimit": {
+            "type": "number"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "factTtlDays": {
+            "type": "number"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/UserMemorySettingsLimitsResponseDto"
+          },
+          "projectVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "projectVersion",
+          "enabled",
+          "dailyExtractionCallLimit",
+          "factTtlDays",
+          "limits"
+        ],
+        "type": "object"
       },
       "ValidateAttributeContractDto": {
         "additionalProperties": false,
@@ -22831,6 +23347,92 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/ai-memory/settings": {
+      "get": {
+        "operationId": "UserMemory_settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMemorySettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI user memory"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.read",
+          "scope": "PROJECT"
+        }
+      },
+      "patch": {
+        "operationId": "UserMemory_updateSettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserMemorySettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMemorySettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI user memory"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/ai-proposal-events/{eventId}/received": {
       "post": {
         "operationId": "AIProposalEvents_received",
@@ -23224,6 +23826,237 @@
         ],
         "x-iam-permission": {
           "code": "project.ai_proposals.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-review/estimate": {
+      "post": {
+        "operationId": "AIReview_estimate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AIReviewScopeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIReviewEstimateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Review"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_review.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-review/runs": {
+      "post": {
+        "operationId": "AIReview_start",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartAIReviewDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIReviewRunResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Review"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_review.run",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-review/runs/{runId}": {
+      "get": {
+        "operationId": "AIReview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIReviewRunResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Review"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_review.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-review/settings": {
+      "get": {
+        "operationId": "AIReview_settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIReviewSettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Review"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.read",
+          "scope": "PROJECT"
+        }
+      },
+      "patch": {
+        "operationId": "AIReview_updateSettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAIReviewSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIReviewSettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI Review"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.write",
           "scope": "PROJECT"
         }
       }
@@ -23983,14 +24816,55 @@
         }
       }
     },
-    "/api/v1/admin/projects/{projectId}/audit-logs": {
+    "/api/v1/admin/projects/{projectId}/audit-events": {
       "get": {
-        "operationId": "Audit_list",
+        "operationId": "ProjectAuditEvents_list",
         "parameters": [
           {
             "in": "path",
             "name": "projectId",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SUCCESS",
+                "DENIED",
+                "FAILED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
             "schema": {
               "format": "uuid",
               "type": "string"
@@ -24032,10 +24906,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AuditLogResponseDto"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ProjectAuditEventPageResponseDto"
                 }
               }
             },
@@ -24171,7 +25042,7 @@
           }
         ],
         "tags": [
-          "admin audit"
+          "project audit events"
         ],
         "x-iam-permission": {
           "code": "project.audit.read",
@@ -32998,6 +33869,153 @@
         ],
         "x-iam-permission": {
           "code": "project.conversations.ai_suspend",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{endUserId}/memory-facts": {
+      "delete": {
+        "operationId": "UserMemory_clearFacts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMemoryClearResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI user memory"
+        ],
+        "x-iam-permission": {
+          "code": "project.user_memory.manage",
+          "scope": "PROJECT"
+        }
+      },
+      "get": {
+        "operationId": "UserMemory_facts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMemoryFactListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI user memory"
+        ],
+        "x-iam-permission": {
+          "code": "project.user_memory.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{endUserId}/memory-facts/{factId}": {
+      "delete": {
+        "operationId": "UserMemory_deleteFact",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "factId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMemoryDeleteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI user memory"
+        ],
+        "x-iam-permission": {
+          "code": "project.user_memory.manage",
           "scope": "PROJECT"
         }
       }

@@ -7,7 +7,7 @@ import type {
   EntityKind,
   JsonValue,
   ScenarioAction,
-  ScenarioActionDefinition,
+  ScenarioActionCatalogItem,
 } from '@/shared/types/domain'
 import type { ScenarioLocalizationCatalogResponseDto } from '@/shared/api/generated/models'
 
@@ -78,21 +78,21 @@ function parseSchemaProperty(value: unknown, path: string): ActionConfigProperty
 
 function parseConfigSchema(value: unknown): ActionConfigSchema {
   if (!isRecord(value) || value.type !== 'object' || !isRecord(value.properties)) {
-    throw new Error('actionDefinition.configSchema must describe an object with properties')
+    throw new Error('scenarioActionCatalogItem.configSchema must describe an object with properties')
   }
   const properties = Object.fromEntries(Object.entries(value.properties).map(([key, property]) => [
     key,
-    parseSchemaProperty(property, `actionDefinition.configSchema.properties.${key}`),
+    parseSchemaProperty(property, `scenarioActionCatalogItem.configSchema.properties.${key}`),
   ]))
   const required = value.required === undefined ? [] : value.required
   if (!Array.isArray(required) || required.some((key) => typeof key !== 'string' || !(key in properties))) {
-    throw new Error('actionDefinition.configSchema.required must reference declared properties')
+    throw new Error('scenarioActionCatalogItem.configSchema.required must reference declared properties')
   }
   if (value.additionalProperties !== undefined && typeof value.additionalProperties !== 'boolean' && !isRecord(value.additionalProperties)) {
-    throw new Error('actionDefinition.configSchema.additionalProperties must be a boolean or schema object')
+    throw new Error('scenarioActionCatalogItem.configSchema.additionalProperties must be a boolean or schema object')
   }
   const additionalProperties = isRecord(value.additionalProperties)
-    ? parseSchemaProperty(value.additionalProperties, 'actionDefinition.configSchema.additionalProperties')
+    ? parseSchemaProperty(value.additionalProperties, 'scenarioActionCatalogItem.configSchema.additionalProperties')
     : value.additionalProperties
   return { ...value, type: 'object', properties, required, additionalProperties } as ActionConfigSchema
 }
@@ -142,35 +142,29 @@ function parseUiField(value: unknown, properties: ActionConfigSchema['properties
 }
 
 function parseUiSchema(value: unknown, configSchema: ActionConfigSchema) {
-  if (!isRecord(value) || !Array.isArray(value.fields)) throw new Error('actionDefinition.uiSchema.fields must be an array')
-  const fields = value.fields.map((field, index) => parseUiField(field, configSchema.properties, `actionDefinition.uiSchema.fields.${index}`))
+  if (!isRecord(value) || !Array.isArray(value.fields)) throw new Error('scenarioActionCatalogItem.uiSchema.fields must be an array')
+  const fields = value.fields.map((field, index) => parseUiField(field, configSchema.properties, `scenarioActionCatalogItem.uiSchema.fields.${index}`))
   const keys = fields.map((field) => field.key)
-  if (new Set(keys).size !== keys.length) throw new Error('actionDefinition.uiSchema contains duplicate fields')
+  if (new Set(keys).size !== keys.length) throw new Error('scenarioActionCatalogItem.uiSchema contains duplicate fields')
   const missing = Object.keys(configSchema.properties).filter((key) => !keys.includes(key))
-  if (missing.length) throw new Error(`actionDefinition.uiSchema is missing fields: ${missing.join(', ')}`)
+  if (missing.length) throw new Error(`scenarioActionCatalogItem.uiSchema is missing fields: ${missing.join(', ')}`)
   return { ...value, fields }
 }
 
-export function parseActionDefinition(value: unknown): ScenarioActionDefinition {
-  if (!isRecord(value)) throw new Error('actionDefinition must be an object')
+export function parseScenarioActionCatalogItem(value: unknown): ScenarioActionCatalogItem {
+  if (!isRecord(value)) throw new Error('scenarioActionCatalogItem must be an object')
   const configSchema = parseConfigSchema(value.configSchema)
   const executor = value.executor
-  if (executor !== 'SERVER' && executor !== 'FRONTEND') throw new Error('actionDefinition.executor is unsupported')
+  if (executor !== 'SERVER' && executor !== 'FRONTEND') throw new Error('scenarioActionCatalogItem.executor is unsupported')
   return {
-    id: requiredString(value.id, 'actionDefinition.id'),
-    projectId: requiredString(value.projectId, 'actionDefinition.projectId'),
-    type: requiredString(value.type, 'actionDefinition.type'),
-    name: requiredString(value.name, 'actionDefinition.name'),
-    description: nullableString(value.description, 'actionDefinition.description'),
+    id: requiredString(value.id, 'scenarioActionCatalogItem.id'),
+    type: requiredString(value.type, 'scenarioActionCatalogItem.type'),
+    name: requiredString(value.name, 'scenarioActionCatalogItem.name'),
+    description: nullableString(value.description, 'scenarioActionCatalogItem.description'),
     executor,
-    serverHandler: nullableString(value.serverHandler, 'actionDefinition.serverHandler'),
-    commandType: nullableString(value.commandType, 'actionDefinition.commandType'),
     configSchema,
     uiSchema: parseUiSchema(value.uiSchema, configSchema),
-    enabled: booleanValue(value.enabled, 'actionDefinition.enabled'),
-    builtIn: booleanValue(value.builtIn, 'actionDefinition.builtIn'),
-    createdAt: requiredString(value.createdAt, 'actionDefinition.createdAt'),
-    updatedAt: requiredString(value.updatedAt, 'actionDefinition.updatedAt'),
+    enabled: booleanValue(value.enabled, 'scenarioActionCatalogItem.enabled'),
   }
 }
 
@@ -180,7 +174,7 @@ function cloneJson<T>(value: T): T {
   return value
 }
 
-export function createActionConfig(definition: ScenarioActionDefinition): Record<string, unknown> {
+export function createActionConfig(definition: ScenarioActionCatalogItem): Record<string, unknown> {
   return Object.fromEntries(Object.entries(definition.configSchema.properties)
     .filter(([, schema]) => schema.default !== undefined)
     .map(([key, schema]) => [key, cloneJson(schema.default)]))
@@ -194,7 +188,7 @@ export function actionFieldOptions(field: ActionUiField, property?: ActionConfig
   return field.options ?? property?.enum ?? []
 }
 
-export function sanitizeActionConfig(definition: ScenarioActionDefinition, config: Record<string, unknown>): Record<string, unknown> {
+export function sanitizeActionConfig(definition: ScenarioActionCatalogItem, config: Record<string, unknown>): Record<string, unknown> {
   const visibleKeys = new Set(definition.uiSchema.fields.filter((field) => isActionFieldVisible(field, config)).map((field) => field.key))
   const entries = Object.entries(config).filter(([key, value]) => value !== undefined && (
     (key in definition.configSchema.properties && visibleKeys.has(key)) || definition.configSchema.additionalProperties === true || isRecord(definition.configSchema.additionalProperties)
@@ -258,7 +252,7 @@ function propertyError(schema: ActionConfigPropertySchema, value: unknown, allow
 }
 
 export function validateActionConfig(
-  definition: ScenarioActionDefinition,
+  definition: ScenarioActionCatalogItem,
   config: Record<string, unknown>,
   localizedKeys = new Set<string>(),
 ): string {
@@ -280,7 +274,7 @@ export function validateActionConfig(
 
 export function validateScenarioActionConfig(
   action: ScenarioAction,
-  definition?: ScenarioActionDefinition,
+  definition?: ScenarioActionCatalogItem,
   localization?: ScenarioLocalizationCatalogResponseDto,
 ): string {
   if (!definition) return `Действие ${action.type} отсутствует в каталоге проекта`
@@ -331,6 +325,9 @@ export function validateScenarioActionConfig(
   return validateActionConfig(definition, action.config, localizedKeys)
 }
 
-export function findActionDefinition(definitions: ScenarioActionDefinition[], type: string): ScenarioActionDefinition | undefined {
-  return definitions.find((definition) => definition.type === type)
+export function findScenarioActionCatalogItem(
+  catalog: ScenarioActionCatalogItem[],
+  type: string,
+): ScenarioActionCatalogItem | undefined {
+  return catalog.find((item) => item.type === type)
 }

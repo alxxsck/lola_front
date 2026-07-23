@@ -8,6 +8,7 @@ import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import type { SpeechSettingsResponseDto, SpeechVoiceResponseDto } from '@/shared/api/generated/models'
 import { useUnsavedChangesGuard } from '@/shared/lib/use-unsaved-changes-guard'
+import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue'
 import { fetchSpeechSettings, fetchSpeechVoices, updateSpeechSettings } from './speech-synthesis.api'
 import {
   AUTO_LANGUAGE_VALUE,
@@ -221,32 +222,22 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="tts-section card" :class="{ collapsed: !isExpanded }" aria-labelledby="tts-title">
-    <header class="tts-header">
-      <div class="tts-heading">
-        <span class="tts-icon"><i class="pi pi-volume-up" /></span>
-        <div>
-          <h2 id="tts-title">Озвучивание текста</h2>
-          <p>Команды SPEAK_TEXT озвучиваются через ElevenLabs. Настройте голос тут.</p>
-        </div>
-      </div>
-      <div class="tts-header-actions">
+    <ProjectSettingsSectionHeader
+      v-model:expanded="isExpanded"
+      title="Озвучивание текста"
+      description="Команды SPEAK_TEXT озвучиваются через ElevenLabs. Настройте голос тут."
+      icon="pi pi-volume-up"
+      tone="coral"
+      heading-id="tts-title"
+      content-id="tts-content"
+    >
+      <template #actions>
         <div v-if="integration" class="provider-state" :class="{ ready: configured }">
           <span class="provider-dot" />
           <span><strong>{{ integration.name }} · {{ integration.model }}</strong><small>{{ configured ? 'Провайдер подключён' : 'Провайдер не настроен' }}</small></span>
         </div>
-        <Button
-          type="button"
-          :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-          severity="secondary"
-          text
-          rounded
-          :aria-label="isExpanded ? 'Свернуть настройки озвучивания' : 'Развернуть настройки озвучивания'"
-          :aria-expanded="isExpanded"
-          aria-controls="tts-content"
-          @click="isExpanded = !isExpanded"
-        />
-      </div>
-    </header>
+      </template>
+    </ProjectSettingsSectionHeader>
 
     <div id="tts-content" v-show="isExpanded" class="tts-content">
       <Message v-if="error" severity="error" :closable="false">
@@ -318,7 +309,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.tts-section{margin-top:22px;padding:26px}.tts-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid var(--border-subtle)}.tts-section.collapsed .tts-header{padding-bottom:0;margin-bottom:0;border-bottom:0}.tts-heading{display:flex;align-items:flex-start;gap:14px}.tts-heading h2{font-size:1.18rem}.tts-heading p{max-width:680px;margin:5px 0 0;color:var(--muted);font-size:.76rem;line-height:1.5}.tts-icon{display:grid;place-items:center;width:43px;height:43px;flex:0 0 auto;border-radius:13px;background:var(--project-tone-coral-soft);color:var(--project-tone-coral-foreground);box-shadow:inset 0 0 0 1px var(--border-default)}.tts-header-actions{display:flex;align-items:center;gap:8px}.provider-state{display:flex;align-items:center;gap:9px;min-width:190px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--status-danger) 25%,var(--border-default));border-radius:13px;background:var(--status-danger-soft)}.provider-state.ready{border-color:color-mix(in srgb,var(--status-success) 25%,var(--border-default));background:var(--status-success-soft)}.provider-state>span:last-child{display:flex;flex-direction:column}.provider-state strong{font-size:.7rem}.provider-state small{margin-top:2px;color:var(--status-danger-text);font-size:.61rem}.provider-state.ready small{color:var(--status-success-text)}.provider-dot{width:8px;height:8px;border-radius:50%;background:var(--status-danger);box-shadow:0 0 0 4px var(--status-danger-soft)}.provider-state.ready .provider-dot{background:var(--status-success);box-shadow:0 0 0 4px var(--status-success-soft)}.tts-content{display:flex;flex-direction:column;gap:20px}.message-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}.tts-skeleton{display:flex;flex-direction:column;gap:18px}.tts-skeleton>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tts-form{display:flex;flex-direction:column;gap:20px}.tts-provider-note{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tts-provider-note span{display:flex;align-items:center;gap:9px;padding:12px 14px;border:1px solid var(--border-default);border-radius:12px;background:var(--surface-subtle);color:var(--text-small-muted);font-size:.7rem}.tts-provider-note i{color:var(--text-brand)}.voice-panel{padding:20px;border:1px solid var(--border-default);border-radius:17px;background:var(--surface-card)}.voice-option{display:flex;min-width:0;flex-direction:column}.voice-option strong{font-size:.75rem}.voice-option small{overflow:hidden;margin-top:2px;color:var(--muted);font-size:.62rem;text-overflow:ellipsis;white-space:nowrap}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.setting-field{min-height:106px;padding:16px;border:1px solid var(--border-default);border-radius:14px;background:var(--surface-subtle)}.setting-field small{min-height:1.9em;text-align:left;line-height:1.4}.tts-save{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-radius:16px;background:var(--surface-emphasis);color:var(--text-on-emphasis)}.tts-save>div{min-width:180px}.tts-save strong,.tts-save span{display:block}.tts-save strong{font-size:.8rem}.tts-save span{margin-top:4px;color:var(--text-on-emphasis-muted);font-size:.66rem}.tts-save :deep(.p-message){flex:1;margin:0}.tts-save :deep(.p-message-text){font-size:.69rem}
-@media(max-width:900px){.tts-header{flex-direction:column}.provider-state{width:100%}.settings-grid{grid-template-columns:1fr}.tts-save{align-items:stretch;flex-direction:column}.tts-save :deep(.p-button){width:100%}.tts-provider-note{grid-template-columns:1fr}}
-@media(max-width:650px){.tts-section{padding:20px}.tts-heading p{line-height:1.45}.tts-skeleton>div{grid-template-columns:1fr}}
+.tts-section{margin-top:22px;padding:26px}.provider-state{display:flex;align-items:center;gap:9px;min-width:190px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--status-danger) 25%,var(--border-default));border-radius:13px;background:var(--status-danger-soft)}.provider-state.ready{border-color:color-mix(in srgb,var(--status-success) 25%,var(--border-default));background:var(--status-success-soft)}.provider-state>span:last-child{display:flex;flex-direction:column}.provider-state strong{font-size:.7rem}.provider-state small{margin-top:2px;color:var(--status-danger-text);font-size:.61rem}.provider-state.ready small{color:var(--status-success-text)}.provider-dot{width:8px;height:8px;border-radius:50%;background:var(--status-danger);box-shadow:0 0 0 4px var(--status-danger-soft)}.provider-state.ready .provider-dot{background:var(--status-success);box-shadow:0 0 0 4px var(--status-success-soft)}.tts-content{display:flex;flex-direction:column;gap:20px}.message-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}.tts-skeleton{display:flex;flex-direction:column;gap:18px}.tts-skeleton>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tts-form{display:flex;flex-direction:column;gap:20px}.tts-provider-note{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tts-provider-note span{display:flex;align-items:center;gap:9px;padding:12px 14px;border:1px solid var(--border-default);border-radius:12px;background:var(--surface-subtle);color:var(--text-small-muted);font-size:.7rem}.tts-provider-note i{color:var(--text-brand)}.voice-panel{padding:20px;border:1px solid var(--border-default);border-radius:17px;background:var(--surface-card)}.voice-option{display:flex;min-width:0;flex-direction:column}.voice-option strong{font-size:.75rem}.voice-option small{overflow:hidden;margin-top:2px;color:var(--muted);font-size:.62rem;text-overflow:ellipsis;white-space:nowrap}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.setting-field{min-height:106px;padding:16px;border:1px solid var(--border-default);border-radius:14px;background:var(--surface-subtle)}.setting-field small{min-height:1.9em;text-align:left;line-height:1.4}.tts-save{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-radius:16px;background:var(--surface-emphasis);color:var(--text-on-emphasis)}.tts-save>div{min-width:180px}.tts-save strong,.tts-save span{display:block}.tts-save strong{font-size:.8rem}.tts-save span{margin-top:4px;color:var(--text-on-emphasis-muted);font-size:.66rem}.tts-save :deep(.p-message){flex:1;margin:0}.tts-save :deep(.p-message-text){font-size:.69rem}
+@media(max-width:900px){.provider-state{width:100%}.settings-grid{grid-template-columns:1fr}.tts-save{align-items:stretch;flex-direction:column}.tts-save :deep(.p-button){width:100%}.tts-provider-note{grid-template-columns:1fr}}
+@media(max-width:650px){.tts-section{padding:20px}.tts-skeleton>div{grid-template-columns:1fr}}
 </style>

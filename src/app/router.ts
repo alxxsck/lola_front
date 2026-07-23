@@ -310,7 +310,6 @@ export const router = createRouter({
           component: () => import("@/pages/OperationsPage.vue"),
           meta: {
             projectPermissionsAny: [
-              "project.event_logs.read",
               "project.scenario_runs.read",
               "project.audit.read",
             ],
@@ -413,7 +412,11 @@ router.beforeEach(async (to) => {
       ))
   )
     return auth.authenticatedLandingPath;
-  if (to.name === "login" && auth.isAuthenticated)
+  if (
+    to.name === "login" &&
+    auth.isAuthenticated &&
+    !auth.requiresProjectSelection
+  )
     return auth.authenticatedLandingPath;
 });
 

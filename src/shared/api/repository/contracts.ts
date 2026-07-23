@@ -11,10 +11,9 @@ import type {
   ManualAction,
   AdminMessageRequest,
   AdminMessageResult,
-  AuditLog,
+  AuditEvent,
   Project,
   Scenario,
-  ScenarioActionDefinition,
   ScenarioRun,
   EventLog,
   EventLogStatus,
@@ -44,13 +43,12 @@ export interface RepositoryCapabilities {
   uiElements: boolean
   eventDefinitions: boolean
   scenarios: boolean
-  actionDefinitions: boolean
   presence: boolean
   activity: boolean
   conversations: boolean
   manualActions: boolean
   operations: boolean
-  auditLogs: boolean
+  auditEvents: boolean
   adminMessaging: boolean
   userAttributes: boolean
 }
@@ -66,7 +64,6 @@ export type CreateUiElement = UiElementCreateBase & (
 export type UpdateUiElement = Partial<Pick<UiElement, 'name' | 'code' | 'kind' | 'selector' | 'route' | 'modalName' | 'config' | 'enabled' | 'aiEnabled' | 'aiDescription' | 'aiAliases'>>
   & { auditReason?: string }
 export type SaveEventDefinition = Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>
-export type SaveScenario = Partial<Scenario> & Pick<Scenario, 'name' | 'code' | 'eventDefinitionId' | 'actions'>
 export type UpdateScenarioMetadata = Partial<Pick<Scenario, 'name' | 'description' | 'eventDefinitionId' | 'conversationPolicy' | 'priority' | 'cooldownSeconds' | 'maxRunsPerUser' | 'activeFrom' | 'activeTo'>>
   & { status?: Exclude<Scenario['status'], 'ARCHIVED'> }
   & Pick<ArchiveScenarioAuthoringDto, 'expectedUpdatedAt' | 'reason'>
@@ -117,6 +114,13 @@ export interface EventLogsPageRequest extends PageRequest {
   status?: EventLogStatus
 }
 
+export interface AuditEventPageRequest {
+  cursor?: string
+  limit?: number
+  search?: string
+  outcome?: AuditEvent['outcome']
+}
+
 export interface UserAttributeDefinitionInput {
   key: string
   label: string
@@ -164,8 +168,6 @@ export interface LolaRepository {
   updateUserAttributeDefinition(projectId: string, id: string, value: UpdateUserAttributeDefinitionInput): Promise<UserAttributeMutation>
   deleteUserAttributeDefinition(projectId: string, id: string): Promise<UserAttributeMutation>
   getScenarios(projectId: string): Promise<Scenario[]>
-  getActionDefinitions(projectId: string): Promise<ScenarioActionDefinition[]>
-  saveScenario(projectId: string, value: SaveScenario): Promise<Scenario>
   updateScenarioMetadata(projectId: string, scenarioId: string, value: UpdateScenarioMetadata): Promise<Scenario>
   deleteScenario(projectId: string, id: string, command: ArchiveScenarioCommand): Promise<void>
   getUsers(projectId: string): Promise<EndUser[]>
@@ -188,7 +190,7 @@ export interface LolaRepository {
   getScenarioRunsPage(projectId: string, request?: CursorPageRequest): Promise<CursorPage<ScenarioRun>>
   getActivitySettings(projectId: string): Promise<ActivitySettings>
   updateActivitySettings(projectId: string, value: UpdateActivitySettings): Promise<ActivitySettings>
-  getAuditLogs(projectId: string): Promise<AuditLog[]>
+  getAuditEventsPage(projectId: string, request?: AuditEventPageRequest): Promise<CursorPage<AuditEvent>>
   sendAdminMessage(projectId: string, userId: string, message: AdminMessageRequest): Promise<AdminMessageResult>
   getStats(projectId: string, effectivePermissionCodes?: readonly string[]): Promise<DashboardStats>
 }

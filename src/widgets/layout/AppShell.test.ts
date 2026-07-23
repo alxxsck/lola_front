@@ -188,6 +188,70 @@ describe("AppShell", () => {
     ).toBe(true);
   });
 
+  it("groups project access pages under Project and highlights only the current page", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+      },
+      project: {
+        id: "project-1",
+        name: "Project One",
+        slug: "project-one",
+        status: "ACTIVE",
+        publicKey: "public",
+        defaultLocale: "ru",
+        supportedLocales: ["ru"],
+        assistantName: "Lola",
+        systemPrompt: "",
+        voiceInstructions: "",
+        settings: {},
+        effectivePermissionCodes: [
+          "project.settings.read",
+          "project.members.read",
+          "project.roles.read",
+        ],
+      },
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/project", component: { template: "<div />" } },
+        { path: "/project/memberships", component: { template: "<div />" } },
+        { path: "/project/roles", component: { template: "<div />" } },
+      ],
+    });
+    await router.push("/project/memberships");
+    await router.isReady();
+
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: { template: "<div />" },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    const projectLink = wrapper.get('a[href="/project"]');
+    const administratorsLink = wrapper.get('a[href="/project/memberships"]');
+    const rolesLink = wrapper.get('a[href="/project/roles"]');
+
+    expect(administratorsLink.classes()).toContain("nav-item--nested");
+    expect(rolesLink.classes()).toContain("nav-item--nested");
+    expect(projectLink.classes()).not.toContain("active");
+    expect(administratorsLink.classes()).toContain("active");
+    expect(rolesLink.classes()).not.toContain("active");
+  });
+
   it("shows a projectless Platform Operator only the available control-plane navigation", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -323,11 +387,20 @@ describe("AppShell", () => {
       },
     });
 
+    const navigation = wrapper.get(".sidebar-scroll nav");
+    expect(
+      navigation.find('[role="heading"][aria-label="Проект"]').exists(),
+    ).toBe(true);
+    expect(navigation.find('a[href="/project"]').exists()).toBe(false);
     expect(wrapper.text()).toContain("Администраторы");
     expect(wrapper.text()).not.toContain("Роли");
 
     auth.project!.effectivePermissionCodes = ["project.roles.read"];
     await wrapper.vm.$nextTick();
+    expect(
+      navigation.find('[role="heading"][aria-label="Проект"]').exists(),
+    ).toBe(true);
+    expect(navigation.find('a[href="/project"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain("Администраторы");
     expect(wrapper.text()).toContain("Роли");
   });

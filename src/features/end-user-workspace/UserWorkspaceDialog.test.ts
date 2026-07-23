@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   reconcile: vi.fn(),
   updateVisible: vi.fn(),
   messageHandler: undefined as ((value: unknown) => void) | undefined,
+  stateHandler: undefined as ((value: string) => void) | undefined,
   permissions: [
     "project.profiles.read",
     "project.end_users.read",
@@ -106,6 +107,7 @@ describe("единое рабочее пространство пользова�
       "project.conversations.ai_suspend",
     );
     mocks.messageHandler = undefined;
+    mocks.stateHandler = undefined;
     mocks.subscribe.mockImplementation(
       (_events: string[], handler: (value: unknown) => void) => {
         mocks.messageHandler = handler;
@@ -114,6 +116,7 @@ describe("единое рабочее пространство пользова�
     );
     mocks.reconcile.mockReturnValue(vi.fn());
     mocks.onState.mockImplementation((handler: (state: string) => void) => {
+      mocks.stateHandler = handler;
       handler("CONNECTED");
       return vi.fn();
     });
@@ -209,6 +212,10 @@ describe("единое рабочее пространство пользова�
             template:
               '<div v-if="canRead" data-testid="end-user-telegram-panel" :data-project-id="projectId" :data-end-user-id="endUserId" :data-visible="String(visible)" :data-can-send="String(canSend)"><button data-action="telegram-draft-dirty" @click="$emit(\'dirty-change\', true)">dirty</button></div>',
           },
+          UserMemoryPanel: {
+            template: '<div data-testid="user-memory-panel" />',
+          },
+          AIReviewDialog: true,
         },
       },
     });
@@ -278,6 +285,30 @@ describe("единое рабочее пространство пользова�
       ["conversation.message.upserted.v1"],
       expect.any(Function),
     );
+  });
+
+  it("показывает live-состояние компактным тегом без изменяющего высоту сообщения", async () => {
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    const status = wrapper.get('[data-testid="live-connection-status"]');
+    expect(status.text()).toContain("Live");
+    expect(status.find(".connection-live-dot").exists()).toBe(true);
+    expect(wrapper.find(".realtime-message").exists()).toBe(false);
+
+    mocks.stateHandler?.("CONNECTING");
+    await flushPromises();
+    expect(
+      wrapper.get('[data-testid="live-connection-status"]').text(),
+    ).toContain("Подключение");
+    expect(wrapper.find(".realtime-message").exists()).toBe(false);
+
+    mocks.stateHandler?.("DEGRADED");
+    await flushPromises();
+    expect(
+      wrapper.get('[data-testid="live-connection-status"]').text(),
+    ).toContain("Ошибка live");
+    expect(wrapper.find(".realtime-message").exists()).toBe(false);
   });
 
   it("игнорирует чужое realtime-событие и принимает событие выбранного диалога", async () => {
@@ -359,5 +390,31 @@ describe("единое рабочее пространство пользова�
       limit: 30,
     });
     expect(mocks.getSessions).not.toHaveBeenCalled();
+  });
+
+  it("показывает Memory и Review по их permissions без доступа к профилю", async () => {
+    mocks.permissions.splice(
+      0,
+      mocks.permissions.length,
+      "project.user_memory.read",
+      "project.ai_review.read",
+      "project.ai_review.run",
+      "project.settings.read",
+      "project.event_catalog.read",
+      "project.ai_proposals.read",
+    );
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    expect(mocks.profile).not.toHaveBeenCalled();
+    expect(wrapper.find('[data-testid="user-memory-panel"]').exists()).toBe(
+      true,
+    );
+    const review = wrapper.get('[data-testid="ai-review-entry"]');
+    expect(review.text()).toContain("AI-анализ событий");
+    expect(review.text()).toContain(
+      "Выберите события и сначала оцените объём запроса",
+    );
+    expect(review.find("button").text()).toContain("Запросить анализ");
   });
 });

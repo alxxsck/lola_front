@@ -277,6 +277,33 @@ describe("authentication routes", () => {
     expect(auth.project?.id).toBe("project-2");
   });
 
+  it("keeps an authenticated multi-Project user on login until a Project is selected", async () => {
+    const auth = useAuthStore();
+    const project = (id: string) => ({
+      id,
+      name: id,
+      slug: id,
+      status: "ACTIVE" as const,
+      effectivePermissionCodes: ["project.settings.read"],
+    });
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "owner-1",
+        email: "owner@example.com",
+        name: "Owner",
+      },
+      project: null,
+      projects: [project("project-1"), project("project-2")],
+    });
+
+    await router.push("/overview");
+
+    expect(auth.requiresProjectSelection).toBe(true);
+    expect(router.currentRoute.value.name).toBe("login");
+  });
+
   it("removes an email capability fragment and skips session restoration before rendering", async () => {
     const auth = useAuthStore();
     auth.$patch({ restored: false, phase: "ANONYMOUS" });
