@@ -252,6 +252,9 @@ const reviewResult = computed(() => {
 <style scoped>
 .proposal-detail {
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
   padding: 26px;
 }
 .detail-loading {
@@ -261,14 +264,16 @@ const reviewResult = computed(() => {
 }
 .review-result {
   display: grid;
-  gap: 12px;
-  margin-top: 22px;
+  gap: 14px;
+}
+.review-result .section-heading {
+  margin-bottom: 0;
 }
 .review-finding,
 .review-limitations {
   display: grid;
-  gap: 7px;
-  padding: 14px;
+  gap: 8px;
+  padding: 16px;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--surface-subtle);
@@ -324,14 +329,14 @@ const reviewResult = computed(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   display: grid;
   gap: 1px;
-  margin: 22px 0;
+  margin: 0;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   border-radius: 15px;
   background: var(--border-subtle);
 }
 .detail-meta > div {
-  padding: 13px 14px;
+  padding: 15px 16px;
   background: var(--surface-subtle);
 }
 .detail-meta span,
@@ -355,7 +360,7 @@ const reviewResult = computed(() => {
 .context-card {
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  padding: 16px;
   border: 1px solid var(--border-default);
   border-radius: 15px;
   background: var(--surface-card);
@@ -392,7 +397,11 @@ const reviewResult = computed(() => {
   font-weight: 700;
 }
 .evidence-section {
-  margin: 24px 0;
+  display: grid;
+  gap: 12px;
+}
+.evidence-section .section-heading {
+  margin-bottom: 0;
 }
 .section-heading {
   align-items: baseline;
@@ -430,7 +439,7 @@ blockquote p {
   white-space: pre-wrap;
 }
 .decision-history {
-  margin: 18px 0 0;
+  margin: 0;
   padding: 14px;
   border-top: 1px solid var(--border-subtle);
   color: var(--text-secondary);
@@ -478,7 +487,12 @@ blockquote p {
 }
 @media (max-width: 560px) {
   .proposal-detail {
+    gap: 18px;
     padding: 18px;
+  }
+  .review-finding,
+  .review-limitations {
+    padding: 14px;
   }
   .detail-meta {
     grid-template-columns: 1fr;

@@ -265,6 +265,11 @@ function formatRange(value: string) {
     modal
     header="AI Review событий"
     :style="{ width: 'min(680px, 94vw)' }"
+    :content-style="{
+      maxHeight: 'min(70vh, 640px)',
+      overflowX: 'hidden',
+      overflowY: 'auto',
+    }"
     class="ai-review-dialog"
   >
     <div class="review-form">
@@ -303,6 +308,13 @@ function formatRange(value: string) {
             placeholder="Выберите от 1 до 20 событий"
             :max-selected-labels="5"
             :selection-limit="20"
+            scroll-height="260px"
+            append-to="self"
+            :overlay-style="{
+              width: '100%',
+              minWidth: '100%',
+              maxWidth: '100%',
+            }"
             :disabled="running"
           />
         </label>
@@ -319,6 +331,7 @@ function formatRange(value: string) {
           />
         </label>
         <Button
+          class="review-action"
           label="Оценить объём"
           icon="pi pi-calculator"
           severity="secondary"
@@ -382,6 +395,7 @@ function formatRange(value: string) {
           <span>Lola анализирует события в фоне…</span>
         </div>
         <Button
+          class="review-action review-action-primary"
           label="Запустить AI Review"
           icon="pi pi-sparkles"
           :loading="starting"
@@ -397,10 +411,12 @@ function formatRange(value: string) {
 .review-form {
   display: grid;
   gap: 14px;
+  min-width: 0;
 }
 .review-form label {
   display: grid;
   gap: 7px;
+  min-width: 0;
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -415,9 +431,25 @@ function formatRange(value: string) {
   font-weight: 400;
   line-height: 1.45;
 }
-.review-form :deep(.p-inputtext),
-.review-form :deep(.p-multiselect) {
+.review-form :deep(.p-inputtext) {
   min-height: 44px;
+}
+.review-form :deep(.p-multiselect) {
+  width: 100%;
+  min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+}
+.review-form :deep(.p-multiselect-label-container) {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.review-form :deep(.p-multiselect-label) {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 .review-form :deep(.p-inputtext::placeholder),
 .review-form :deep(.p-multiselect-label.p-placeholder),
@@ -430,6 +462,14 @@ function formatRange(value: string) {
   min-height: 44px;
   font-size: 0.8rem;
   font-weight: 700;
+}
+.review-action {
+  width: auto;
+  min-width: 168px;
+  justify-self: end;
+}
+.review-action-primary {
+  min-width: 220px;
 }
 .loading,
 .running {
@@ -482,5 +522,13 @@ function formatRange(value: string) {
   border: 1px solid var(--status-red-border);
   border-radius: 12px;
   background: var(--status-red-soft);
+}
+
+@media (max-width: 640px) {
+  .review-action {
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+  }
 }
 </style>
