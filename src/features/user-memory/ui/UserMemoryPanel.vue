@@ -9,6 +9,7 @@ import type { UserMemoryCategory, UserMemoryFact } from "../model/user-memory";
 const props = defineProps<{
   projectId: string;
   endUserId: string;
+  userLabel: string;
   editable: boolean;
 }>();
 const loading = ref(true);
@@ -133,12 +134,12 @@ function date(value: string): string {
   <Dialog
     v-model:visible="clearVisible"
     modal
-    header="Очистить память Lola?"
+    :header="`Очистить память Lola для ${userLabel}?`"
     :style="{ width: 'min(440px, 94vw)' }"
   >
     <p>
-      Все сохранённые факты этого пользователя будут удалены без возможности
-      восстановления.
+      Все сохранённые факты пользователя «{{ userLabel }}» будут удалены без
+      возможности восстановления.
     </p>
     <template #footer>
       <Button

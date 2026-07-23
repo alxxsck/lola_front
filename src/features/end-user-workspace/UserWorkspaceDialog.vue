@@ -140,6 +140,9 @@ const projectPermissions = computed(
 const canReadProfiles = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.profiles.read"),
 );
+const canReadUserMemory = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.user_memory.read"),
+);
 const canReadConversations = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.read"),
 );
@@ -148,12 +151,22 @@ const canReply = computed(() =>
 );
 const canStartAIReview = computed(
   () =>
-    hasProjectPermission(projectPermissions.value, "project.event_logs.read") &&
+    hasProjectPermission(projectPermissions.value, "project.ai_review.read") &&
+    hasProjectPermission(projectPermissions.value, "project.ai_review.run") &&
+    hasProjectPermission(projectPermissions.value, "project.settings.read") &&
     hasProjectPermission(
       projectPermissions.value,
-      "project.ai_proposals.decide",
-    ),
+      "project.event_catalog.read",
+    ) &&
+    hasProjectPermission(projectPermissions.value, "project.ai_proposals.read"),
 );
+const projectTimezone = computed(() => {
+  const scenarioEngine = auth.project?.settings?.scenarioEngine as
+    { activity?: { timezone?: unknown } } | undefined;
+  return typeof scenarioEngine?.activity?.timezone === "string"
+    ? scenarioEngine.activity.timezone
+    : "UTC";
+});
 const displayName = computed(
   () =>
     props.externalUserId ||
@@ -954,13 +967,14 @@ function displayField(
             </article>
           </div>
           <UserMemoryPanel
-            v-if="canReadProfiles && endUserId"
+            v-if="canReadUserMemory && endUserId"
             :project-id="projectId"
             :end-user-id="endUserId"
+            :user-label="displayName"
             :editable="
               hasProjectPermission(
                 projectPermissions,
-                'project.end_users.write',
+                'project.user_memory.manage',
               )
             "
           />
@@ -981,6 +995,7 @@ function displayField(
       v-model:visible="aiReviewVisible"
       :project-id="projectId"
       :end-user-id="endUserId"
+      :timezone="projectTimezone"
     />
 
     <Dialog

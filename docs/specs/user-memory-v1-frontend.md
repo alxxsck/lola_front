@@ -10,7 +10,8 @@ facts, while operators need provenance before trusting or removing a fact.
 
 The Project page gains a compact AI Memory settings section. The existing End User workspace gains
 a Memory panel that lists active facts with provenance and expiry and supports deleting one fact or
-clearing the End User's memory. The UI uses generated backend contracts, existing permissions, and
+clearing the End User's memory. The UI uses generated backend contracts, dedicated
+`project.user_memory.read/manage` permissions, and
 current PrimeVue patterns.
 
 ## User Stories
@@ -43,8 +44,8 @@ current PrimeVue patterns.
 - Add one focused AI Memory feature with a typed repository, small presentation model, Project
   settings section, and End User memory panel. Do not introduce a new global store.
 - Place Project-level controls on the existing Project page near AI Usage because the setting
-  controls cost. Respect existing read/write Project permissions and render read-only state when
-  mutation permission is absent.
+  controls cost. Settings respect Project settings permissions; facts use the dedicated User Memory
+  permissions and render read-only state when mutation permission is absent.
 - Place End User facts inside the existing User Workspace profile area. Reuse the workspace opened
   from both Users and Live pages; do not add a separate memory route.
 - Show `enabled`, daily call limit, TTL, current status text, and the backend version used for

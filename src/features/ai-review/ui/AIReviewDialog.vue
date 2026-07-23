@@ -17,7 +17,11 @@ import type {
   AIReviewSettings,
 } from "../model/ai-review";
 
-const props = defineProps<{ projectId: string; endUserId: string }>();
+const props = defineProps<{
+  projectId: string;
+  endUserId: string;
+  timezone?: string;
+}>();
 const visible = defineModel<boolean>("visible", { required: true });
 const router = useRouter();
 const settings = ref<AIReviewSettings | null>(null);
@@ -29,12 +33,14 @@ const estimating = ref(false);
 const starting = ref(false);
 const error = ref("");
 const confirmedExpensive = ref(false);
+const submissionKey = ref("");
 const form = reactive({
-  localDate: new Date().toISOString().slice(0, 10),
+  localDate: localInputDate(new Date(), props.timezone ?? "UTC"),
   eventCodes: [] as string[],
   instruction: "",
 });
 let pollTimer: ReturnType<typeof setTimeout> | undefined;
+let pollFailures = 0;
 
 const scopeReady = computed(
   () => Boolean(form.localDate) && form.eventCodes.length > 0,
@@ -58,6 +64,8 @@ watch(
   () => {
     estimate.value = null;
     confirmedExpensive.value = false;
+    submissionKey.value = "";
+    pollFailures = 0;
   },
   { deep: true },
 );
@@ -68,6 +76,7 @@ async function load() {
   error.value = "";
   run.value = null;
   estimate.value = null;
+  pollFailures = 0;
   try {
     const [nextSettings, definitions] = await Promise.all([
       aiReviewRepository.getSettings(props.projectId),
@@ -118,13 +127,14 @@ async function calculateEstimate() {
 }
 
 async function start() {
-  if (!canStart.value) return;
+  if (!canStart.value || starting.value) return;
   starting.value = true;
   error.value = "";
   try {
+    submissionKey.value ||= crypto.randomUUID();
     run.value = await aiReviewRepository.start(props.projectId, {
       ...scope(),
-      idempotencyKey: crypto.randomUUID(),
+      idempotencyKey: submissionKey.value,
       confirmedExpensive: confirmedExpensive.value,
     });
     if (run.value.status === "SUCCEEDED") await openProposal(run.value);
@@ -139,18 +149,23 @@ async function start() {
 
 function schedulePoll() {
   stopPolling();
-  pollTimer = setTimeout(() => void poll(), 1500);
+  const delay = Math.min(1_500 * 2 ** pollFailures, 15_000);
+  pollTimer = setTimeout(() => void poll(), delay);
 }
 
 async function poll() {
   if (!visible.value || !run.value) return;
   try {
     run.value = await aiReviewRepository.get(props.projectId, run.value.id);
+    error.value = "";
+    pollFailures = 0;
     if (run.value.status === "SUCCEEDED") await openProposal(run.value);
     else if (running.value) schedulePoll();
   } catch (cause) {
     error.value =
       cause instanceof Error ? cause.message : "Не удалось обновить статус";
+    pollFailures += 1;
+    if (visible.value && running.value) schedulePoll();
   }
 }
 
@@ -171,6 +186,27 @@ function stopPolling() {
 
 function formatBytes(value: number) {
   return value < 1024 ? `${value} Б` : `${(value / 1024).toFixed(1)} КБ`;
+}
+
+function localInputDate(value: Date, timezone: string) {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(value);
+  } catch {
+    return value.toISOString().slice(0, 10);
+  }
+}
+
+function formatRange(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(value));
 }
 </script>
 
@@ -253,10 +289,13 @@ function formatBytes(value: number) {
             >
             <span
               >До
-              {{
-                estimate.estimatedInputTokens.toLocaleString("ru-RU")
-              }}
+              {{ estimate.estimatedInputTokens.toLocaleString("ru-RU") }}
               входных токенов</span
+            >
+            <span
+              >Часовой пояс проекта: {{ estimate.timezone }} · UTC
+              {{ formatRange(estimate.range.start) }} —
+              {{ formatRange(estimate.range.end) }}</span
             >
           </div>
           <span class="cost">{{ estimate.costLevel }}</span>

@@ -69,7 +69,9 @@ created AI Proposal on success.
 - On success, show a button that navigates to the existing AI Proposal detail route. Do not duplicate
   the full Proposal renderer in the dialog.
 - Project settings live near AI Usage and independently show `enabled` and daily Run limit.
-- Permission checks use existing project-permission helpers. Server responses remain authoritative.
+- Permission checks use existing project-permission helpers with dedicated
+  `project.ai_review.read/run` permissions plus the read permissions needed to load settings,
+  Event Definitions, and the resulting Proposal. Server responses remain authoritative.
 - API mode uses generated backend contracts; mock mode implements the same repository interface for
   local UI tests and demos.
 

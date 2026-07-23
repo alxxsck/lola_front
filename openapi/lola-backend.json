@@ -21009,7 +21009,7 @@
           "AI Review"
         ],
         "x-iam-permission": {
-          "code": "project.event_logs.read",
+          "code": "project.ai_review.read",
           "scope": "PROJECT"
         }
       }
@@ -21058,7 +21058,7 @@
           "AI Review"
         ],
         "x-iam-permission": {
-          "code": "project.ai_proposals.decide",
+          "code": "project.ai_review.run",
           "scope": "PROJECT"
         }
       }
@@ -21105,7 +21105,7 @@
           "AI Review"
         ],
         "x-iam-permission": {
-          "code": "project.event_logs.read",
+          "code": "project.ai_review.read",
           "scope": "PROJECT"
         }
       }
@@ -29081,7 +29081,7 @@
           "AI user memory"
         ],
         "x-iam-permission": {
-          "code": "project.end_users.write",
+          "code": "project.user_memory.manage",
           "scope": "PROJECT"
         }
       },
@@ -29126,7 +29126,7 @@
           "AI user memory"
         ],
         "x-iam-permission": {
-          "code": "project.profiles.read",
+          "code": "project.user_memory.read",
           "scope": "PROJECT"
         }
       }
@@ -29181,7 +29181,7 @@
           "AI user memory"
         ],
         "x-iam-permission": {
-          "code": "project.end_users.write",
+          "code": "project.user_memory.manage",
           "scope": "PROJECT"
         }
       }

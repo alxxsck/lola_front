@@ -24,6 +24,36 @@ vi.mock("@/shared/api/repository/event-catalog", () => ({
 }));
 vi.mock("vue-router", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
+function mountDialog() {
+  return mount(AIReviewDialog, {
+    props: {
+      projectId: "project-1",
+      endUserId: "user-1",
+      visible: true,
+      "onUpdate:visible": () => undefined,
+    },
+    global: {
+      stubs: {
+        Button: {
+          props: ["label", "disabled"],
+          template:
+            '<button :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
+        },
+        Checkbox: true,
+        Dialog: {
+          props: ["visible"],
+          template: '<div v-if="visible"><slot /></div>',
+        },
+        InputText: true,
+        Message: { template: "<div><slot /></div>" },
+        MultiSelect: true,
+        ProgressSpinner: true,
+        Textarea: true,
+      },
+    },
+  });
+}
+
 describe("типизированный AI Review", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,33 +86,7 @@ describe("типизированный AI Review", () => {
   });
 
   it("сначала показывает оценку токенов и требует подтверждение HIGH", async () => {
-    const wrapper = mount(AIReviewDialog, {
-      props: {
-        projectId: "project-1",
-        endUserId: "user-1",
-        visible: true,
-        "onUpdate:visible": () => undefined,
-      },
-      global: {
-        stubs: {
-          Button: {
-            props: ["label", "disabled"],
-            template:
-              '<button :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
-          },
-          Checkbox: true,
-          Dialog: {
-            props: ["visible"],
-            template: '<div v-if="visible"><slot /></div>',
-          },
-          InputText: true,
-          Message: { template: "<div><slot /></div>" },
-          MultiSelect: true,
-          ProgressSpinner: true,
-          Textarea: true,
-        },
-      },
-    });
+    const wrapper = mountDialog();
     await flushPromises();
     const vm = wrapper.vm as unknown as {
       form: { localDate: string; eventCodes: string[]; instruction: string };
@@ -104,5 +108,46 @@ describe("типизированный AI Review", () => {
       .findAll("button")
       .find((button) => button.text() === "Запустить AI Review");
     expect(start?.attributes("disabled")).toBeDefined();
+  });
+
+  it("повторяет неоднозначный start с тем же idempotency key", async () => {
+    mocks.estimate.mockResolvedValue({
+      eventCount: 1,
+      redactedBytes: 100,
+      estimatedInputTokens: 34,
+      costLevel: "LOW",
+      requiresConfirmation: false,
+      blocked: false,
+      timezone: "UTC",
+      range: {
+        start: "2026-07-23T00:00:00.000Z",
+        end: "2026-07-24T00:00:00.000Z",
+      },
+    });
+    mocks.start
+      .mockRejectedValueOnce(new Error("network timeout"))
+      .mockResolvedValueOnce({
+        id: "run-1",
+        status: "FAILED",
+        costLevel: "LOW",
+        proposalId: null,
+      });
+    const wrapper = mountDialog();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: { localDate: string; eventCodes: string[]; instruction: string };
+      calculateEstimate: () => Promise<void>;
+      start: () => Promise<void>;
+    };
+    vm.form.localDate = "2026-07-23";
+    vm.form.eventCodes = ["deposit.failed"];
+    await vm.calculateEstimate();
+    await vm.start();
+    await vm.start();
+
+    expect(mocks.start).toHaveBeenCalledTimes(2);
+    const first = mocks.start.mock.calls[0]?.[1] as { idempotencyKey: string };
+    const second = mocks.start.mock.calls[1]?.[1] as { idempotencyKey: string };
+    expect(first.idempotencyKey).toBe(second.idempotencyKey);
   });
 });

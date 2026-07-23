@@ -38,7 +38,12 @@ describe("панель User Memory", () => {
 
   it("показывает атомарный факт и provenance без исходного текста сообщения", async () => {
     const wrapper = mount(UserMemoryPanel, {
-      props: { projectId: "project-1", endUserId: "user-1", editable: false },
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        userLabel: "customer-42",
+        editable: false,
+      },
       global: {
         stubs: {
           Button: true,
