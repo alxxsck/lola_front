@@ -60,6 +60,45 @@ describe("OperationalTelegramCard", () => {
     );
   });
 
+  it("uses the shared card and field contract for the empty setup", async () => {
+    const wrapper = mount(OperationalTelegramCard, {
+      props: { projectId: "project-1", canRead: true, canManage: true },
+    });
+    await flushPromises();
+
+    expect(
+      wrapper.get('[data-integration="telegram-team"]').classes(),
+    ).toContain("integration-card");
+    expect(wrapper.text()).toContain("Telegram для команды");
+    expect(
+      wrapper.findAll('form[data-form="create-telegram"] .integration-field'),
+    ).toHaveLength(2);
+    expect(
+      wrapper.get('input[name="telegramDisplayName"]').element.closest("label"),
+    ).not.toBeNull();
+    expect(
+      wrapper.get('input[name="telegramBotToken"]').element.closest("label"),
+    ).not.toBeNull();
+  });
+
+  it("uses the error status tone when webhook setup fails", async () => {
+    mocks.list.mockResolvedValue({
+      items: [
+        telegramDestination({
+          status: "PENDING_TEST",
+          telegramWebhookSetupStatus: "FAILED",
+        }),
+      ],
+    });
+    const wrapper = mount(OperationalTelegramCard, {
+      props: { projectId: "project-1", canRead: true, canManage: true },
+    });
+    await flushPromises();
+
+    expect(wrapper.get(".status").text()).toContain("Webhook не подключён");
+    expect(wrapper.get(".status").attributes("data-status")).toBe("FAILED");
+  });
+
   it("validates a write-only token and shows a one-time chat binding command", async () => {
     const created = telegramDestination();
     mocks.createOperationalTelegram.mockResolvedValue(created);
@@ -288,7 +327,7 @@ describe("OperationalTelegramCard", () => {
       wrapper.get('[data-field="telegram-last-failure"]').text(),
     ).toContain("Чат недоступен или бот заблокирован");
     expect(wrapper.get('[data-field="telegram-updated-by"]').text()).toContain(
-      "Пользователь · operator-42",
+      "Администратор · operator-42",
     );
     expect(
       wrapper.get('[data-field="telegram-updated-at"]').text(),

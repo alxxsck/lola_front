@@ -72,11 +72,38 @@ describe("ProductTelegramCard", () => {
     await flushPromises();
 
     expect(mocks.get).toHaveBeenCalledWith("project-1");
-    expect(wrapper.text()).toContain("Telegram · Пользователи продукта");
+    expect(wrapper.text()).toContain("Telegram для пользователей");
     expect(wrapper.text()).toContain("Не подключено");
-    expect(wrapper.find('form[data-form="create-product-telegram"]').exists()).toBe(
-      true,
+    expect(
+      wrapper.find('form[data-form="create-product-telegram"]').exists(),
+    ).toBe(true);
+    expect(
+      wrapper.get('[data-integration="telegram-users"]').classes(),
+    ).toContain("integration-card");
+    expect(
+      wrapper.findAll(
+        'form[data-form="create-product-telegram"] .integration-field',
+      ),
+    ).toHaveLength(1);
+    expect(
+      wrapper
+        .get('input[name="productTelegramToken"]')
+        .element.closest("label"),
+    ).not.toBeNull();
+  });
+
+  it("uses the error status tone when webhook setup fails", async () => {
+    mocks.get.mockResolvedValue(
+      installation({
+        status: "PENDING_SETUP",
+        webhookSetupStatus: "FAILED",
+      }),
     );
+    const wrapper = mountCard();
+    await flushPromises();
+
+    expect(wrapper.get(".status").text()).toContain("Webhook не подключён");
+    expect(wrapper.get(".status").attributes("data-status")).toBe("FAILED");
   });
 
   it("creates with a durable idempotency key and never echoes the write-only token", async () => {
@@ -88,7 +115,9 @@ describe("ProductTelegramCard", () => {
 
     const input = wrapper.get('input[name="productTelegramToken"]');
     await input.setValue("123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-    await wrapper.get('form[data-form="create-product-telegram"]').trigger("submit");
+    await wrapper
+      .get('form[data-form="create-product-telegram"]')
+      .trigger("submit");
     await flushPromises();
 
     expect(mocks.create).toHaveBeenCalledWith(
@@ -100,8 +129,10 @@ describe("ProductTelegramCard", () => {
       "123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
     );
     expect(
-      (wrapper.get('input[name="productTelegramToken"]').element as HTMLInputElement)
-        .value,
+      (
+        wrapper.get('input[name="productTelegramToken"]')
+          .element as HTMLInputElement
+      ).value,
     ).toBe("");
   });
 
@@ -143,8 +174,8 @@ describe("ProductTelegramCard", () => {
     await flushPromises();
 
     expect(mocks.get).toHaveBeenCalledTimes(4);
-    expect(wrapper.text()).toContain("SUCCEEDED");
-    expect(wrapper.text()).toContain("HEALTHY");
+    expect(wrapper.text()).toContain("WebhookПодключён");
+    expect(wrapper.text()).toContain("РаботоспособностьРаботает");
   });
 
   it("clears an initial load error after create and webhook setup succeed", async () => {
@@ -212,9 +243,7 @@ describe("ProductTelegramCard", () => {
     expect(wrapper.text()).not.toContain(
       "Не удалось загрузить пользовательский Telegram.",
     );
-    expect(
-      wrapper.find(".feedback.error button").exists(),
-    ).toBe(false);
+    expect(wrapper.find(".feedback.error button").exists()).toBe(false);
 
     resolveOlder(
       installation({
@@ -222,7 +251,7 @@ describe("ProductTelegramCard", () => {
       }),
     );
     await flushPromises();
-    expect(wrapper.text()).toContain("Загружаем product Telegram…");
+    expect(wrapper.text()).toContain("Загружаем Telegram для пользователей…");
     expect(wrapper.text()).not.toContain("StaleRetryBot");
 
     resolveNewest(
@@ -260,9 +289,9 @@ describe("ProductTelegramCard", () => {
     await flushPromises();
 
     expect(mocks.get).toHaveBeenCalledTimes(2);
-    expect(wrapper.find('form[data-form="rotate-product-telegram"]').exists()).toBe(
-      false,
-    );
+    expect(
+      wrapper.find('form[data-form="rotate-product-telegram"]').exists(),
+    ).toBe(false);
   });
 
   it("uses OCC for rotate and disable and requires explicit disable confirmation", async () => {
@@ -292,7 +321,9 @@ describe("ProductTelegramCard", () => {
     });
 
     mocks.get.mockResolvedValue(current);
-    await wrapper.get('button[data-action="product-telegram-disable"]').trigger("click");
+    await wrapper
+      .get('button[data-action="product-telegram-disable"]')
+      .trigger("click");
     await flushPromises();
     expect(confirm).toHaveBeenNthCalledWith(
       2,
@@ -436,16 +467,14 @@ describe("ProductTelegramCard", () => {
 
   it("rejects a broadcast response after project switch and resets command state", async () => {
     let resolveBroadcasts!: (value: ReturnType<typeof installation>) => void;
-    mocks.get
-      .mockResolvedValueOnce(installation())
-      .mockResolvedValueOnce(
-        installation({
-          id: "installation-2",
-          projectId: "project-2",
-          botUsername: "ProjectTwoBot",
-          broadcastsVersion: 2,
-        }),
-      );
+    mocks.get.mockResolvedValueOnce(installation()).mockResolvedValueOnce(
+      installation({
+        id: "installation-2",
+        projectId: "project-2",
+        botUsername: "ProjectTwoBot",
+        broadcastsVersion: 2,
+      }),
+    );
     mocks.setBroadcastsEnabled.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
@@ -506,9 +535,9 @@ describe("ProductTelegramCard", () => {
     expect(wrapper.text()).toContain("только для просмотра");
     expect(wrapper.text()).not.toContain("Telegram-рассылки включены.");
     expect(
-      wrapper.find(
-        'button[data-action="product-telegram-broadcasts-enable"]',
-      ).exists(),
+      wrapper
+        .find('button[data-action="product-telegram-broadcasts-enable"]')
+        .exists(),
     ).toBe(false);
   });
 
@@ -558,8 +587,8 @@ describe("ProductTelegramCard", () => {
 
     expect(mocks.get).toHaveBeenCalledTimes(4);
     expect(maximumActiveReads).toBe(1);
-    expect(wrapper.text()).toContain("SUCCEEDED");
-    expect(wrapper.text()).toContain("HEALTHY");
+    expect(wrapper.text()).toContain("WebhookПодключён");
+    expect(wrapper.text()).toContain("РаботоспособностьРаботает");
   });
 
   it("polls a durable test with one idempotency key and displays safe failure copy", async () => {
@@ -605,14 +634,12 @@ describe("ProductTelegramCard", () => {
   });
 
   it("treats TELEGRAM_CHANNEL_DISABLED as an intentional terminal state", async () => {
-    mocks.get
-      .mockResolvedValueOnce(installation())
-      .mockResolvedValueOnce(
-        installation({
-          status: "DISABLED",
-          lastTestFailureCode: "TELEGRAM_CHANNEL_DISABLED",
-        }),
-      );
+    mocks.get.mockResolvedValueOnce(installation()).mockResolvedValueOnce(
+      installation({
+        status: "DISABLED",
+        lastTestFailureCode: "TELEGRAM_CHANNEL_DISABLED",
+      }),
+    );
     mocks.test.mockRejectedValue(
       new ApiError(
         409,
@@ -726,9 +753,7 @@ describe("ProductTelegramCard", () => {
   });
 
   it("does not let a stale action finally clear the current project's pending state", async () => {
-    let resolveStaleRefresh!: (
-      value: ReturnType<typeof installation>,
-    ) => void;
+    let resolveStaleRefresh!: (value: ReturnType<typeof installation>) => void;
     let resolveCurrentTest!: (value: {
       id: string;
       installationVersion: number;
@@ -804,15 +829,15 @@ describe("ProductTelegramCard", () => {
     mocks.get.mockResolvedValue(installation());
     const wrapper = mountCard();
     await flushPromises();
-    expect(wrapper.find('form[data-form="rotate-product-telegram"]').exists()).toBe(
-      true,
-    );
+    expect(
+      wrapper.find('form[data-form="rotate-product-telegram"]').exists(),
+    ).toBe(true);
 
     await wrapper.setProps({ canManage: false });
     await flushPromises();
-    expect(wrapper.find('form[data-form="rotate-product-telegram"]').exists()).toBe(
-      false,
-    );
+    expect(
+      wrapper.find('form[data-form="rotate-product-telegram"]').exists(),
+    ).toBe(false);
     expect(wrapper.text()).toContain("только для просмотра");
 
     await wrapper.setProps({ canRead: false });

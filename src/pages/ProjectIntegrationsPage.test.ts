@@ -131,6 +131,25 @@ describe("ProjectIntegrationsPage", () => {
     expect(wrapper.find('button[data-action="disable"]').exists()).toBe(false);
   });
 
+  it("renders Slack setup with the shared integration card and field contract", async () => {
+    const wrapper = mount(ProjectIntegrationsPage);
+    await flushPromises();
+
+    expect(wrapper.get('[data-integration="slack"]').classes()).toContain(
+      "integration-card",
+    );
+    expect(wrapper.text()).toContain("Slack для команды");
+    expect(
+      wrapper.findAll('form[data-form="create-slack"] .integration-field'),
+    ).toHaveLength(2);
+    expect(
+      wrapper.get('input[name="displayName"]').element.closest("label"),
+    ).not.toBeNull();
+    expect(
+      wrapper.get('input[name="webhookUrl"]').element.closest("label"),
+    ).not.toBeNull();
+  });
+
   it("renders the product Telegram card from its own integration permissions", async () => {
     mocks.permissions = [
       "project.integrations.read",

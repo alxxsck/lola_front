@@ -181,11 +181,11 @@ describe("AppShell", () => {
       },
     });
 
-    expect(
-      wrapper
-        .findAll(".sidebar-scroll nav a")
-        .some((link) => link.text().includes("Интеграции")),
-    ).toBe(true);
+    const projectSection = wrapper.get('[role="heading"][aria-label="Проект"]');
+    const integrationsLink = wrapper.get('a[href="/settings/integrations"]');
+
+    expect(projectSection.text()).toContain("Проект");
+    expect(integrationsLink.classes()).toContain("nav-item--nested");
   });
 
   it("groups project access pages under Project and highlights only the current page", async () => {
@@ -215,6 +215,7 @@ describe("AppShell", () => {
           "project.settings.read",
           "project.members.read",
           "project.roles.read",
+          "project.notifications.read",
         ],
       },
     });
@@ -222,6 +223,10 @@ describe("AppShell", () => {
       history: createMemoryHistory(),
       routes: [
         { path: "/project", component: { template: "<div />" } },
+        {
+          path: "/settings/integrations",
+          component: { template: "<div />" },
+        },
         { path: "/project/memberships", component: { template: "<div />" } },
         { path: "/project/roles", component: { template: "<div />" } },
       ],
@@ -242,9 +247,11 @@ describe("AppShell", () => {
     });
 
     const projectLink = wrapper.get('a[href="/project"]');
+    const integrationsLink = wrapper.get('a[href="/settings/integrations"]');
     const administratorsLink = wrapper.get('a[href="/project/memberships"]');
     const rolesLink = wrapper.get('a[href="/project/roles"]');
 
+    expect(integrationsLink.classes()).toContain("nav-item--nested");
     expect(administratorsLink.classes()).toContain("nav-item--nested");
     expect(rolesLink.classes()).toContain("nav-item--nested");
     expect(projectLink.classes()).not.toContain("active");

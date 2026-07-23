@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type {
+  TelegramChannelHealthStatus,
   TelegramChannelInstallationResponseDto,
+  TelegramChannelSetupStatus,
   TelegramChannelTestResponseDto,
 } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
+import { formatAuditActor } from "@/shared/lib/format";
 import { telegramProductInstallationsApi } from "./telegram-product-installations.api";
 
 const props = defineProps<{
@@ -37,15 +40,20 @@ const pollWaits = new Set<{
 
 type Operation = { projectId: string; epoch: number };
 
-const statusLabel = computed(() => {
+const statusView = computed(() => {
   const current = installation.value;
-  if (!current) return "Не подключено";
-  if (current.status === "DISABLED") return "Отключено";
-  if (current.status === "INVALID") return "Требуется переподключение";
-  if (current.webhookSetupStatus === "FAILED") return "Webhook не подключён";
+  if (!current) return { label: "Не подключено", tone: "EMPTY" };
+  if (current.status === "DISABLED")
+    return { label: "Отключено", tone: "DISABLED" };
+  if (current.status === "INVALID")
+    return { label: "Требуется переподключение", tone: "INVALID" };
+  if (current.webhookSetupStatus === "FAILED")
+    return { label: "Webhook не подключён", tone: "FAILED" };
   if (current.webhookSetupStatus !== "SUCCEEDED")
-    return "Регистрируем webhook";
-  return current.status === "ACTIVE" ? "Подключено" : "Настраивается";
+    return { label: "Регистрируем webhook", tone: "PROCESSING" };
+  return current.status === "ACTIVE"
+    ? { label: "Подключено", tone: "ACTIVE" }
+    : { label: "Настраивается", tone: "PENDING_SETUP" };
 });
 const broadcastsReady = computed(
   () =>
@@ -107,18 +115,6 @@ function formatTimestamp(value: string | null | undefined): string {
     : timestamp.toLocaleString("ru-RU");
 }
 
-function actorLabel(type: string, id: string): string {
-  const label =
-    type === "CMS_USER"
-      ? "Пользователь"
-      : type === "BREAK_GLASS"
-        ? "Аварийный оператор"
-        : type === "SYSTEM"
-          ? "Система"
-          : "Оператор";
-  return `${label} · ${id}`;
-}
-
 function failureLabel(code: string | null | undefined): string {
   switch (code) {
     case null:
@@ -139,13 +135,35 @@ function failureLabel(code: string | null | undefined): string {
   }
 }
 
+function webhookSetupLabel(status: TelegramChannelSetupStatus): string {
+  switch (status) {
+    case "SUCCEEDED":
+      return "Подключён";
+    case "FAILED":
+      return "Ошибка настройки";
+    case "PENDING":
+    case "PROCESSING":
+    case "RETRY_WAIT":
+      return "Настраивается";
+  }
+}
+
+function healthLabel(status: TelegramChannelHealthStatus): string {
+  switch (status) {
+    case "HEALTHY":
+      return "Работает";
+    case "UNHEALTHY":
+      return "Недоступен";
+    case "NOT_TESTED":
+      return "Не проверен";
+  }
+}
+
 function terminalTest(result: TelegramChannelTestResponseDto): boolean {
   return result.status === "SUCCEEDED" || result.status === "FAILED";
 }
 
-function setupPending(
-  value: TelegramChannelInstallationResponseDto,
-): boolean {
+function setupPending(value: TelegramChannelInstallationResponseDto): boolean {
   return (
     value.webhookSetupStatus === "PENDING" ||
     value.webhookSetupStatus === "PROCESSING" ||
@@ -450,15 +468,14 @@ async function setBroadcastsEnabled(enabled: boolean): Promise<void> {
   freshAuthRequired.value = false;
   pending.value = true;
   try {
-    const updated =
-      await telegramProductInstallationsApi.setBroadcastsEnabled(
-        operation.projectId,
-        {
-          enabled,
-          expectedVersion: current.broadcastsVersion,
-        },
-        durableBroadcastsKey(current, enabled),
-      );
+    const updated = await telegramProductInstallationsApi.setBroadcastsEnabled(
+      operation.projectId,
+      {
+        enabled,
+        expectedVersion: current.broadcastsVersion,
+      },
+      durableBroadcastsKey(current, enabled),
+    );
     if (!belongsToOperation(operation, updated)) return;
     installation.value = updated;
     broadcastsRetry.value = null;
@@ -551,18 +568,21 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="product-card" aria-labelledby="telegram-product-title">
-    <header class="heading">
-      <div class="mark" aria-hidden="true">T</div>
-      <div>
-        <h2 id="telegram-product-title">Telegram · Пользователи продукта</h2>
-        <p>
-          Отдельный product bot для личных связей пользователей. Служебные
-          уведомления настраиваются независимо.
-        </p>
+  <section
+    class="integration-card"
+    data-integration="telegram-users"
+    aria-labelledby="telegram-product-title"
+  >
+    <header class="card-heading">
+      <div class="provider-mark provider-mark--telegram" aria-hidden="true">
+        <i class="pi pi-send" />
       </div>
-      <span class="status" :data-status="installation?.status ?? 'EMPTY'">
-        {{ statusLabel }}
+      <div class="card-title">
+        <h2 id="telegram-product-title">Telegram для пользователей</h2>
+        <p>Подключает личные сообщения и рассылки пользователям продукта.</p>
+      </div>
+      <span class="status" :data-status="statusView.tone">
+        {{ statusView.label }}
       </span>
     </header>
 
@@ -592,26 +612,46 @@ onBeforeUnmount(() => {
     <p v-if="success" class="feedback success" role="status" aria-live="polite">
       {{ success }}
     </p>
-    <p v-if="loading" aria-live="polite">Загружаем product Telegram…</p>
+    <p v-if="loading" aria-live="polite">
+      Загружаем Telegram для пользователей…
+    </p>
 
     <template v-else-if="installation">
       <dl class="facts">
-        <div><dt>Бот</dt><dd>@{{ installation.botUsername }}</dd></div>
+        <div>
+          <dt>Бот</dt>
+          <dd>@{{ installation.botUsername }}</dd>
+        </div>
         <div>
           <dt>Ссылка на бота</dt>
           <dd>
-            <a :href="installation.deepLinkBase" target="_blank" rel="noreferrer">
+            <a
+              :href="installation.deepLinkBase"
+              target="_blank"
+              rel="noreferrer"
+            >
               {{ installation.deepLinkBase }}
             </a>
           </dd>
         </div>
         <div>
-          <dt>Credential fingerprint</dt>
-          <dd><code>{{ installation.credentialFingerprint }}</code></dd>
+          <dt>Идентификатор секрета</dt>
+          <dd>
+            <code>{{ installation.credentialFingerprint }}</code>
+          </dd>
         </div>
-        <div><dt>Статус</dt><dd>{{ installation.status }}</dd></div>
-        <div><dt>Webhook setup</dt><dd>{{ installation.webhookSetupStatus }}</dd></div>
-        <div><dt>Health</dt><dd>{{ installation.healthStatus }}</dd></div>
+        <div>
+          <dt>Состояние бота</dt>
+          <dd>{{ statusView.label }}</dd>
+        </div>
+        <div>
+          <dt>Webhook</dt>
+          <dd>{{ webhookSetupLabel(installation.webhookSetupStatus) }}</dd>
+        </div>
+        <div>
+          <dt>Работоспособность</dt>
+          <dd>{{ healthLabel(installation.healthStatus) }}</dd>
+        </div>
         <div>
           <dt>Связанные пользователи</dt>
           <dd>{{ installation.linkedUserCount }}</dd>
@@ -635,7 +675,7 @@ onBeforeUnmount(() => {
           <dt>Изменил</dt>
           <dd>
             {{
-              actorLabel(
+              formatAuditActor(
                 installation.updatedByActorType,
                 installation.updatedByActorId,
               )
@@ -708,7 +748,7 @@ onBeforeUnmount(() => {
           :disabled="pending || installation.status === 'DISABLED'"
           @click="testCurrent"
         >
-          Проверить bot identity
+          Проверить бота
         </button>
         <button
           v-if="installation.status !== 'DISABLED'"
@@ -724,167 +764,83 @@ onBeforeUnmount(() => {
 
       <form
         v-if="canManage"
-        class="secret-form"
+        class="secret-form secret-form--single"
         data-form="rotate-product-telegram"
         @submit.prevent="rotate"
       >
-        <label for="product-telegram-rotate-token">Новый bot token</label>
-        <input
-          id="product-telegram-rotate-token"
-          v-model="botToken"
-          name="productTelegramToken"
-          type="password"
-          autocomplete="off"
-          :disabled="pending"
-        />
+        <label class="integration-field" for="product-telegram-rotate-token">
+          <span>Новый токен бота</span>
+          <input
+            id="product-telegram-rotate-token"
+            v-model="botToken"
+            name="productTelegramToken"
+            type="password"
+            autocomplete="off"
+            placeholder="123456789:AA…"
+            :disabled="pending"
+          />
+        </label>
         <small>
-          Поле write-only: token очищается сразу после отправки и никогда не
-          отображается.
+          Токен очистится сразу после отправки и больше не будет отображаться.
         </small>
-        <button
-          type="submit"
-          class="secondary"
-          :disabled="pending || !botToken.trim()"
-        >
-          Заменить token
-        </button>
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="secondary"
+            :disabled="pending || !botToken.trim()"
+          >
+            Заменить токен
+          </button>
+        </div>
       </form>
       <p v-else class="read-only-note">
-        У вас есть доступ только для просмотра product Telegram.
+        У вас есть доступ только для просмотра Telegram для пользователей.
       </p>
     </template>
 
     <form
       v-else-if="canManage"
-      class="secret-form"
+      class="secret-form secret-form--single"
       data-form="create-product-telegram"
       @submit.prevent="create"
     >
-      <label for="product-telegram-create-token">Bot token</label>
-      <input
-        id="product-telegram-create-token"
-        v-model="botToken"
-        name="productTelegramToken"
-        type="password"
-        autocomplete="off"
-        :disabled="pending"
-      />
+      <label class="integration-field" for="product-telegram-create-token">
+        <span>Токен бота</span>
+        <input
+          id="product-telegram-create-token"
+          v-model="botToken"
+          name="productTelegramToken"
+          type="password"
+          autocomplete="off"
+          placeholder="123456789:AA…"
+          :disabled="pending"
+        />
+      </label>
       <small>
-        Создайте отдельного бота через BotFather. Lola сохранит token
+        Создайте отдельного бота через BotFather. Lola проверит и сохранит токен
         зашифрованным.
       </small>
-      <button type="submit" :disabled="pending || !botToken.trim()">
-        Подключить product bot
-      </button>
+      <div class="form-actions">
+        <button type="submit" :disabled="pending || !botToken.trim()">
+          Подключить бота
+        </button>
+      </div>
     </form>
 
     <p v-else class="read-only-note">
-      Product Telegram пока не подключён. Для настройки нужны права управления
-      интеграциями.
+      Telegram для пользователей пока не подключён. Для настройки нужны права
+      управления интеграциями.
     </p>
   </section>
 </template>
 
 <style scoped>
-.product-card {
-  display: grid;
-  gap: 18px;
-  padding: 22px;
-  border: 1px solid var(--border-color);
-  border-radius: 18px;
-  background: var(--surface-card);
-}
-.heading {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: start;
-  gap: 14px;
-}
-.heading h2,
-.heading p {
-  margin: 0;
-}
-.heading p,
-.read-only-note,
-.secret-form small {
-  color: var(--text-secondary);
-}
-.mark {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--status-info-soft);
-  color: var(--status-info-text);
-  font-weight: 800;
-}
-.status {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: var(--surface-ground);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-.facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 12px;
-  margin: 0;
-}
-.facts > div {
-  min-width: 0;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--surface-ground);
-}
-.facts dt {
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-}
-.facts dd {
-  margin: 5px 0 0;
-  overflow-wrap: anywhere;
-}
-.actions,
-.secret-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.secret-form {
-  flex-direction: column;
-  align-items: flex-start;
-}
-.secret-form input {
-  width: min(100%, 560px);
-}
-.feedback {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 10px;
-}
-.feedback.error {
-  background: var(--status-danger-soft);
-  color: var(--status-danger-text);
-}
-.feedback.success {
-  background: var(--status-success-soft);
-  color: var(--status-success-text);
-}
-.feedback.warning {
-  background: var(--status-warning-soft);
-  color: var(--status-warning-text);
-}
 .broadcasts-settings {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
   padding: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  background: var(--surface-ground);
 }
 .broadcasts-settings h3,
 .broadcasts-settings p {
@@ -900,13 +856,6 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 @media (max-width: 700px) {
-  .heading {
-    grid-template-columns: auto 1fr;
-  }
-  .status {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
   .broadcasts-settings {
     align-items: stretch;
     flex-direction: column;

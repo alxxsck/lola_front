@@ -49,6 +49,15 @@ const canReadRoles = computed(() =>
     auth.project?.effectivePermissionCodes ?? [],
   ),
 );
+const canReadProjectIntegrations = computed(() =>
+  ["project.notifications.read", "project.integrations.read"].some(
+    (permission) =>
+      hasProjectPermission(
+        auth.project?.effectivePermissionCodes ?? [],
+        permission as Parameters<typeof hasProjectPermission>[1],
+      ),
+  ),
+);
 
 const navigation = computed(() =>
   [
@@ -81,6 +90,7 @@ const navigation = computed(() =>
         "project.notifications.read",
         "project.integrations.read",
       ],
+      nested: true,
     },
     {
       label: "Администраторы",
@@ -207,7 +217,8 @@ const navigation = computed(() =>
       (!item.projectSectionRoot ||
         canReadProjectSettings.value ||
         canReadMemberships.value ||
-        canReadRoles.value) &&
+        canReadRoles.value ||
+        canReadProjectIntegrations.value) &&
       (!item.platformPermission ||
         auth.user?.platformPermissionCodes?.includes(
           item.platformPermission,

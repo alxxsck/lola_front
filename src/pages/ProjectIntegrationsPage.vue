@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import "@/app/styles/project-integrations.css";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
@@ -8,6 +9,7 @@ import OperationalTelegramCard from "@/features/notification-destinations/Operat
 import ProductTelegramCard from "@/features/telegram-product-installations/ProductTelegramCard.vue";
 import type { NotificationDestinationResponseDto } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
+import { formatAuditActor } from "@/shared/lib/format";
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -429,14 +431,14 @@ onMounted(load);
 </script>
 
 <template>
-  <main class="integration-page">
+  <main class="page integration-page">
     <header class="page-header">
       <div>
-        <span class="eyebrow">Настройки проекта</span>
+        <div class="eyebrow">Проект</div>
         <h1>Интеграции</h1>
-        <p>
-          Подключайте внешние каналы отдельно. Секреты после сохранения не
-          отображаются.
+        <p class="subtitle">
+          Настройте каналы для команды и пользователей. Токены и webhook
+          хранятся зашифрованными и не отображаются после сохранения.
         </p>
       </div>
     </header>
@@ -460,17 +462,20 @@ onMounted(load);
     <section
       v-if="canRead"
       class="integration-card"
+      data-integration="slack"
       aria-labelledby="slack-title"
     >
       <div class="card-heading">
-        <div class="provider-mark" aria-hidden="true">S</div>
-        <div>
-          <h2 id="slack-title">Slack</h2>
-          <p>Новые предложения Lola будут приходить в выбранный Slack-канал.</p>
+        <div class="provider-mark provider-mark--slack" aria-hidden="true">
+          <i class="pi pi-slack" />
         </div>
-        <span class="status" :data-status="destination?.status ?? 'EMPTY'">{{
-          statusLabel
-        }}</span>
+        <div class="card-title">
+          <h2 id="slack-title">Slack для команды</h2>
+          <p>Отправляет новые предложения Lola в выбранный канал команды.</p>
+        </div>
+        <span class="status" :data-status="destination?.status ?? 'EMPTY'">
+          {{ statusLabel }}
+        </span>
       </div>
 
       <div v-if="loading" class="skeleton" aria-live="polite">
@@ -484,7 +489,7 @@ onMounted(load);
             <dd>{{ destination.displayName }}</dd>
           </div>
           <div>
-            <dt>Credential fingerprint</dt>
+            <dt>Идентификатор секрета</dt>
             <dd>
               <code>{{ destination.credentialFingerprint }}</code>
             </dd>
@@ -514,10 +519,12 @@ onMounted(load);
           <div>
             <dt>Изменил</dt>
             <dd>
-              <code
-                >{{ destination.updatedByActorType }} ·
-                {{ destination.updatedByActorId }}</code
-              >
+              {{
+                formatAuditActor(
+                  destination.updatedByActorType,
+                  destination.updatedByActorId,
+                )
+              }}
             </dd>
           </div>
         </dl>
@@ -555,31 +562,35 @@ onMounted(load);
 
         <form
           v-if="canManage"
-          class="secret-form"
+          class="secret-form secret-form--single"
           data-form="rotate-slack"
           @submit.prevent="rotateAndTest"
         >
-          <label for="slack-webhook-rotate">Новый Incoming Webhook URL</label>
-          <input
-            id="slack-webhook-rotate"
-            v-model="webhookUrl"
-            name="webhookUrl"
-            type="password"
-            autocomplete="off"
-            placeholder="https://hooks.slack.com/services/…"
-            :disabled="pending"
-          />
+          <label class="integration-field" for="slack-webhook-rotate">
+            <span>Новый webhook URL</span>
+            <input
+              id="slack-webhook-rotate"
+              v-model="webhookUrl"
+              name="webhookUrl"
+              type="password"
+              autocomplete="off"
+              placeholder="https://hooks.slack.com/services/…"
+              :disabled="pending"
+            />
+          </label>
           <small
-            >Поле write-only: после отправки значение очищается и больше не
-            показывается.</small
+            >После замены Lola проверит подключение. URL очистится сразу после
+            отправки.</small
           >
-          <button
-            type="submit"
-            class="secondary"
-            :disabled="pending || !webhookUrl.trim()"
-          >
-            Заменить и проверить
-          </button>
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="secondary"
+              :disabled="pending || !webhookUrl.trim()"
+            >
+              Заменить и проверить
+            </button>
+          </div>
         </form>
       </template>
 
@@ -589,33 +600,40 @@ onMounted(load);
         data-form="create-slack"
         @submit.prevent="createAndTest"
       >
-        <label for="slack-name">Название подключения</label>
-        <input
-          id="slack-name"
-          v-model="displayName"
-          name="displayName"
-          maxlength="120"
-        />
-        <label for="slack-webhook-create">Incoming Webhook URL</label>
-        <input
-          id="slack-webhook-create"
-          v-model="webhookUrl"
-          name="webhookUrl"
-          type="password"
-          autocomplete="off"
-          placeholder="https://hooks.slack.com/services/…"
-          :disabled="pending"
-        />
+        <label class="integration-field" for="slack-name">
+          <span>Название подключения</span>
+          <input
+            id="slack-name"
+            v-model="displayName"
+            name="displayName"
+            maxlength="120"
+            placeholder="Например, предложения Lola"
+          />
+        </label>
+        <label class="integration-field" for="slack-webhook-create">
+          <span>Webhook URL</span>
+          <input
+            id="slack-webhook-create"
+            v-model="webhookUrl"
+            name="webhookUrl"
+            type="password"
+            autocomplete="off"
+            placeholder="https://hooks.slack.com/services/…"
+            :disabled="pending"
+          />
+        </label>
         <small
-          >Создайте Incoming Webhook в Slack и вставьте URL. Lola сохранит его в
-          зашифрованном виде.</small
+          >Создайте Incoming Webhook в Slack и вставьте URL. После сохранения
+          Lola сразу проверит подключение.</small
         >
-        <button
-          type="submit"
-          :disabled="pending || !displayName.trim() || !webhookUrl.trim()"
-        >
-          Сохранить и проверить
-        </button>
+        <div class="form-actions">
+          <button
+            type="submit"
+            :disabled="pending || !displayName.trim() || !webhookUrl.trim()"
+          >
+            Сохранить и проверить
+          </button>
+        </div>
       </form>
 
       <p v-else class="read-only-note">
@@ -638,185 +656,3 @@ onMounted(load);
     />
   </main>
 </template>
-
-<style scoped>
-.integration-page {
-  display: grid;
-  gap: 20px;
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 28px;
-}
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-.page-header h1 {
-  margin: 4px 0 8px;
-  font-size: clamp(1.75rem, 3vw, 2.4rem);
-}
-.page-header p,
-.card-heading p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-.eyebrow {
-  color: var(--primary-color);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.integration-card {
-  display: grid;
-  gap: 22px;
-  padding: 24px;
-  border: 1px solid var(--border-default);
-  border-radius: 18px;
-  background: var(--surface-card);
-  box-shadow: var(--shadow-card);
-}
-.card-heading {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 14px;
-}
-.card-heading h2 {
-  margin: 0 0 5px;
-}
-.provider-mark {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--status-violet);
-  color: var(--on-status-violet);
-  font-weight: 800;
-}
-.provider-mark.telegram {
-  background: var(--status-info);
-  color: var(--on-status-info);
-}
-.status {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: var(--surface-hover);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 650;
-}
-.status[data-status="ACTIVE"] {
-  background: var(--status-success-soft);
-  color: var(--status-success-text);
-}
-.status[data-status="INVALID"] {
-  background: var(--status-danger-soft);
-  color: var(--status-danger-text);
-}
-.integration-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-}
-.integration-facts > div {
-  padding: 13px;
-  border-radius: 12px;
-  background: var(--surface-ground);
-}
-.integration-facts dt {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-}
-.integration-facts dd {
-  margin: 5px 0 0;
-  overflow-wrap: anywhere;
-}
-.actions,
-.secret-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 10px;
-}
-.secret-form {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.55fr) minmax(260px, 1fr) auto;
-  padding-top: 18px;
-  border-top: 1px solid var(--border-default);
-}
-.secret-form label {
-  font-size: 0.82rem;
-  font-weight: 650;
-}
-.secret-form input {
-  width: 100%;
-  min-height: 42px;
-  padding: 9px 11px;
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-  background: var(--surface-ground);
-  color: var(--text-primary);
-}
-.secret-form small {
-  grid-column: 1 / -1;
-  color: var(--text-secondary);
-}
-button {
-  min-height: 40px;
-  padding: 9px 14px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--primary-color);
-  color: var(--primary-contrast-color);
-  cursor: pointer;
-  font-weight: 650;
-}
-button.secondary {
-  border: 1px solid var(--border-default);
-  background: transparent;
-  color: var(--text-primary);
-}
-button:disabled {
-  cursor: wait;
-  opacity: 0.55;
-}
-.feedback {
-  padding: 12px 14px;
-  border-radius: 12px;
-}
-.feedback.error {
-  background: var(--status-danger-soft);
-  color: var(--status-danger-text);
-}
-.feedback.success {
-  background: var(--status-success-soft);
-  color: var(--status-success-text);
-}
-.skeleton,
-.read-only-note {
-  color: var(--text-secondary);
-}
-.upcoming {
-  opacity: 0.78;
-}
-@media (max-width: 720px) {
-  .integration-page {
-    padding: 18px;
-  }
-  .card-heading {
-    grid-template-columns: auto 1fr;
-  }
-  .card-heading .status {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
-  .integration-facts,
-  .secret-form {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

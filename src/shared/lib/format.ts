@@ -28,3 +28,16 @@ export const relativeTime = (value: string) => {
 }
 
 export const uid = (prefix: string) => `${prefix}_${crypto.randomUUID().slice(0, 8)}`
+
+export const formatAuditActor = (type: string, id: string) => {
+  const actor =
+    type === 'CMS_USER'
+      ? 'Администратор'
+      : type === 'SYSTEM'
+        ? 'Система'
+        : type === 'BREAK_GLASS'
+          ? 'Аварийный оператор'
+          : 'Оператор'
+
+  return `${actor} · ${id}`
+}

@@ -1,0 +1,360 @@
+.integration-page {
+  display: grid;
+  gap: 20px;
+  max-width: 1180px;
+}
+
+.integration-page .page-header {
+  margin-bottom: 4px;
+}
+
+.integration-page .subtitle {
+  max-width: 760px;
+}
+
+.integration-page .integration-card {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  padding: 24px;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  background: var(--surface-card);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 3%, transparent);
+}
+
+.integration-page .card-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.integration-page .card-title {
+  min-width: 0;
+}
+
+.integration-page .card-title h2 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.integration-page .card-title p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-small);
+}
+
+.integration-page .provider-mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  font-size: 1.05rem;
+}
+
+.integration-page .provider-mark--slack {
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+}
+
+.integration-page .provider-mark--telegram {
+  background: var(--status-info-soft);
+  color: var(--status-info-text);
+}
+
+.integration-page .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.integration-page .status::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.integration-page .status[data-status="ACTIVE"] {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+
+.integration-page .status[data-status="INVALID"],
+.integration-page .status[data-status="FAILED"] {
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
+
+.integration-page .status[data-status="PENDING_TEST"],
+.integration-page .status[data-status="PENDING_SETUP"],
+.integration-page .status[data-status="PROCESSING"] {
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+
+.integration-page .integration-facts,
+.integration-page .facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.integration-page .integration-facts > div,
+.integration-page .facts > div {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+
+.integration-page .integration-facts dt,
+.integration-page .facts dt {
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.integration-page .integration-facts dd,
+.integration-page .facts dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.integration-page .integration-facts code,
+.integration-page .facts code {
+  font-size: var(--font-size-body-small);
+  font-weight: 500;
+}
+
+.integration-page .actions,
+.integration-page .form-actions,
+.integration-page .broadcast-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.integration-page .secret-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  padding: 18px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+
+.integration-page .secret-form--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.integration-page .integration-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.integration-page .integration-field > span {
+  color: var(--text-primary);
+  font-size: var(--font-size-body-small);
+  font-weight: 650;
+}
+
+.integration-page .integration-field input {
+  width: 100%;
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0 13px;
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  outline: none;
+  background: var(--input-background);
+  color: var(--text-primary);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.integration-page .integration-field input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.integration-page .integration-field input:hover:not(:disabled) {
+  border-color: var(--input-border-hover);
+}
+
+.integration-page .integration-field input:focus-visible {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.integration-page .integration-field input:disabled {
+  background: var(--input-background-disabled);
+  color: var(--text-disabled);
+}
+
+.integration-page .secret-form > small,
+.integration-page .form-actions {
+  grid-column: 1 / -1;
+}
+
+.integration-page .secret-form > small,
+.integration-page .read-only-note,
+.integration-page .skeleton {
+  color: var(--text-secondary);
+}
+
+.integration-page .secret-form > small {
+  line-height: 1.5;
+}
+
+.integration-page button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 0 16px;
+  border: 1px solid var(--action-primary);
+  border-radius: 12px;
+  background: var(--action-primary);
+  color: var(--on-action-primary);
+  cursor: pointer;
+  font-size: var(--font-size-control);
+  font-weight: 650;
+  line-height: 1.2;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.integration-page button:hover:not(:disabled) {
+  border-color: var(--action-primary-hover);
+  background: var(--action-primary-hover);
+}
+
+.integration-page button.secondary {
+  border-color: var(--border-strong);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.integration-page button.secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.integration-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.integration-page .feedback {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+
+.integration-page .feedback.error {
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
+
+.integration-page .feedback.success {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+
+.integration-page .feedback.warning {
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+
+.integration-page .binding,
+.integration-page .broadcasts-settings {
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+
+@media (max-width: 760px) {
+  .integration-page {
+    gap: 16px;
+  }
+
+  .integration-page .integration-card {
+    gap: 18px;
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .integration-page .card-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    padding-bottom: 18px;
+  }
+
+  .integration-page .status {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .integration-page .integration-facts,
+  .integration-page .facts,
+  .integration-page .secret-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .integration-page .actions,
+  .integration-page .form-actions,
+  .integration-page .broadcast-options {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .integration-page .actions button,
+  .integration-page .form-actions button,
+  .integration-page .broadcast-options button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .integration-page {
+    padding-inline: 14px;
+  }
+
+  .integration-page .integration-card {
+    padding: 16px;
+  }
+
+  .integration-page .provider-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .integration-page .secret-form {
+    padding: 14px;
+  }
+}

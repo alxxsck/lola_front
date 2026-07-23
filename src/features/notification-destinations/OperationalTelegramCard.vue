@@ -6,6 +6,7 @@ import type {
   TelegramBindingChallengeResponseDto,
 } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
+import { formatAuditActor } from "@/shared/lib/format";
 
 const props = defineProps<{
   projectId: string;
@@ -25,19 +26,30 @@ const createRetryKey = ref("");
 const testRetry = ref<{ signature: string; key: string } | null>(null);
 let epoch = 0;
 
-const statusLabel = computed(() => {
-  if (!destination.value) return "Не подключено";
-  if (destination.value.status === "ACTIVE") return "Подключено";
-  if (destination.value.status === "DISABLED") return "Отключено";
-  if (destination.value.status === "INVALID")
-    return "Требуется переподключение";
-  if (destination.value.telegramWebhookSetupStatus === "FAILED")
-    return "Webhook не подключён";
-  if (destination.value.telegramWebhookSetupStatus !== "SUCCEEDED")
-    return "Регистрируем webhook";
-  if (destination.value.telegramInstallationStatus === "PENDING_BINDING")
-    return "Ожидает привязки чата";
-  return "Требуется проверка";
+const statusView = computed(() => {
+  const current = destination.value;
+  if (!current) return { label: "Не подключено", tone: "EMPTY" };
+  if (current.status === "DISABLED")
+    return { label: "Отключено", tone: "DISABLED" };
+  if (
+    current.status === "INVALID" ||
+    current.telegramWebhookSetupStatus === "FAILED"
+  ) {
+    return {
+      label:
+        current.status === "INVALID"
+          ? "Требуется переподключение"
+          : "Webhook не подключён",
+      tone: "FAILED",
+    };
+  }
+  if (current.telegramWebhookSetupStatus !== "SUCCEEDED")
+    return { label: "Регистрируем webhook", tone: "PROCESSING" };
+  if (current.telegramInstallationStatus === "PENDING_BINDING")
+    return { label: "Ожидает привязки чата", tone: "PENDING_TEST" };
+  if (current.status === "ACTIVE")
+    return { label: "Подключено", tone: "ACTIVE" };
+  return { label: "Требуется проверка", tone: "PENDING_TEST" };
 });
 
 const setupReady = computed(
@@ -122,18 +134,6 @@ function failureLabel(category: string | null): string {
     default:
       return "Требуется проверка подключения";
   }
-}
-
-function actorLabel(type: string, id: string): string {
-  const kind =
-    type === "CMS_USER"
-      ? "Пользователь"
-      : type === "BREAK_GLASS"
-        ? "Аварийный оператор"
-        : type === "SYSTEM"
-          ? "Система"
-          : "Оператор";
-  return `${kind} · ${id}`;
 }
 
 async function load(): Promise<void> {
@@ -457,22 +457,23 @@ onMounted(load);
 <template>
   <section
     class="integration-card"
+    data-integration="telegram-team"
     aria-labelledby="telegram-operational-title"
   >
     <div class="card-heading">
-      <div class="provider-mark" aria-hidden="true">T</div>
-      <div>
-        <h2 id="telegram-operational-title">
-          Telegram · Служебные уведомления
-        </h2>
+      <div class="provider-mark provider-mark--telegram" aria-hidden="true">
+        <i class="pi pi-send" />
+      </div>
+      <div class="card-title">
+        <h2 id="telegram-operational-title">Telegram для команды</h2>
         <p>
-          Предложения Lola для команды проекта. Этот бот не пишет пользователям
-          продукта и не создаёт пользовательские Telegram-связи.
+          Отправляет новые предложения Lola в служебный чат команды и не пишет
+          пользователям продукта.
         </p>
       </div>
-      <span class="status" :data-status="destination?.status ?? 'EMPTY'">{{
-        statusLabel
-      }}</span>
+      <span class="status" :data-status="statusView.tone">
+        {{ statusView.label }}
+      </span>
     </div>
 
     <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
@@ -488,7 +489,7 @@ onMounted(load);
           <dd>@{{ destination.botUsername ?? "—" }}</dd>
         </div>
         <div data-field="telegram-bot-id">
-          <dt>Telegram bot ID</dt>
+          <dt>ID бота в Telegram</dt>
           <dd>
             <code>{{ destination.telegramBotId ?? "—" }}</code>
           </dd>
@@ -498,7 +499,7 @@ onMounted(load);
           <dd>{{ destination.destinationTitle ?? "Не привязан" }}</dd>
         </div>
         <div>
-          <dt>Credential fingerprint</dt>
+          <dt>Идентификатор секрета</dt>
           <dd>
             <code>{{ destination.credentialFingerprint }}</code>
           </dd>
@@ -515,7 +516,7 @@ onMounted(load);
           <dt>Последнее изменение</dt>
           <dd>
             {{
-              actorLabel(
+              formatAuditActor(
                 destination.updatedByActorType,
                 destination.updatedByActorId,
               )
@@ -614,29 +615,35 @@ onMounted(load);
 
       <form
         v-if="canManage"
-        class="secret-form"
+        class="secret-form secret-form--single"
         data-form="rotate-telegram"
         @submit.prevent="rotate"
       >
-        <label for="telegram-token-rotate">Новый bot token</label>
-        <input
-          id="telegram-token-rotate"
-          v-model="botToken"
-          name="telegramBotToken"
-          type="password"
-          autocomplete="off"
-          :disabled="pending"
-        />
+        <label class="integration-field" for="telegram-token-rotate">
+          <span>Новый токен бота</span>
+          <input
+            id="telegram-token-rotate"
+            v-model="botToken"
+            name="telegramBotToken"
+            type="password"
+            autocomplete="off"
+            placeholder="123456789:AA…"
+            :disabled="pending"
+          />
+        </label>
         <small
-          >Token write-only. При замене бот и чат проверяются заново.</small
+          >После замены бот и чат будут проверены заново. Токен очистится сразу
+          после отправки.</small
         >
-        <button
-          type="submit"
-          class="secondary"
-          :disabled="pending || !botToken.trim()"
-        >
-          Заменить token
-        </button>
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="secondary"
+            :disabled="pending || !botToken.trim()"
+          >
+            Заменить токен
+          </button>
+        </div>
       </form>
     </template>
 
@@ -646,32 +653,40 @@ onMounted(load);
       data-form="create-telegram"
       @submit.prevent="create"
     >
-      <label for="telegram-name">Название служебного подключения</label>
-      <input
-        id="telegram-name"
-        v-model="displayName"
-        name="telegramDisplayName"
-        maxlength="120"
-      />
-      <label for="telegram-token-create">Bot token от BotFather</label>
-      <input
-        id="telegram-token-create"
-        v-model="botToken"
-        name="telegramBotToken"
-        type="password"
-        autocomplete="off"
-        :disabled="pending"
-      />
+      <label class="integration-field" for="telegram-name">
+        <span>Название подключения</span>
+        <input
+          id="telegram-name"
+          v-model="displayName"
+          name="telegramDisplayName"
+          maxlength="120"
+          placeholder="Например, служебные уведомления"
+        />
+      </label>
+      <label class="integration-field" for="telegram-token-create">
+        <span>Токен бота</span>
+        <input
+          id="telegram-token-create"
+          v-model="botToken"
+          name="telegramBotToken"
+          type="password"
+          autocomplete="off"
+          placeholder="123456789:AA…"
+          :disabled="pending"
+        />
+      </label>
       <small
-        >Lola проверит бота, зашифрует token и выдаст одноразовую команду
+        >Скопируйте токен из BotFather. Lola проверит бота и выдаст команду
         привязки чата.</small
       >
-      <button
-        type="submit"
-        :disabled="pending || !displayName.trim() || !botToken.trim()"
-      >
-        Проверить бота
-      </button>
+      <div class="form-actions">
+        <button
+          type="submit"
+          :disabled="pending || !displayName.trim() || !botToken.trim()"
+        >
+          Подключить и проверить
+        </button>
+      </div>
     </form>
 
     <p v-else class="read-only-note">
@@ -681,73 +696,8 @@ onMounted(load);
 </template>
 
 <style scoped>
-.integration-card {
-  display: grid;
-  gap: 22px;
-  padding: 24px;
-  border: 1px solid var(--border-default);
-  border-radius: 18px;
-  background: var(--surface-card);
-  box-shadow: var(--shadow-card);
-}
-.card-heading {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 14px;
-}
-.card-heading h2 {
-  margin: 0 0 5px;
-}
-.card-heading p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-.provider-mark {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--status-info);
-  color: var(--on-status-info);
-  font-weight: 800;
-}
-.status {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: var(--surface-hover);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 650;
-}
-.status[data-status="ACTIVE"] {
-  background: var(--status-success-soft);
-  color: var(--status-success-text);
-}
-.status[data-status="INVALID"] {
-  background: var(--status-danger-soft);
-  color: var(--status-danger-text);
-}
-.facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-}
-.facts > div,
 .binding {
   padding: 13px;
-  border-radius: 12px;
-  background: var(--surface-ground);
-}
-.facts dt {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-}
-.facts dd {
-  margin: 5px 0 0;
-  overflow-wrap: anywhere;
 }
 .binding {
   display: grid;
@@ -765,79 +715,5 @@ onMounted(load);
   overflow-wrap: anywhere;
   border-radius: 8px;
   background: var(--surface-card);
-}
-.actions,
-.secret-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 10px;
-}
-.secret-form {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.55fr) minmax(260px, 1fr) auto;
-  padding-top: 18px;
-  border-top: 1px solid var(--border-default);
-}
-.secret-form label {
-  font-size: 0.82rem;
-  font-weight: 650;
-}
-.secret-form input {
-  width: 100%;
-  min-height: 42px;
-  padding: 9px 11px;
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-  background: var(--surface-ground);
-  color: var(--text-primary);
-}
-.secret-form small {
-  grid-column: 1 / -1;
-  color: var(--text-secondary);
-}
-button {
-  min-height: 40px;
-  padding: 9px 14px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--primary-color);
-  color: var(--primary-contrast-color);
-  cursor: pointer;
-  font-weight: 650;
-}
-button.secondary {
-  border: 1px solid var(--border-default);
-  background: transparent;
-  color: var(--text-primary);
-}
-button:disabled {
-  cursor: wait;
-  opacity: 0.55;
-}
-.feedback {
-  padding: 12px 14px;
-  border-radius: 12px;
-}
-.feedback.error {
-  background: var(--status-danger-soft);
-  color: var(--status-danger-text);
-}
-.feedback.success {
-  background: var(--status-success-soft);
-  color: var(--status-success-text);
-}
-.read-only-note {
-  color: var(--text-secondary);
-}
-@media (max-width: 760px) {
-  .card-heading,
-  .facts,
-  .secret-form {
-    grid-template-columns: 1fr;
-  }
-  .status {
-    justify-self: start;
-  }
 }
 </style>
