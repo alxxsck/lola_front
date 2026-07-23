@@ -962,14 +962,44 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       contract: { revision: "catalog-1" },
     });
     expect(wrapper.findComponent(RuleValidationPreview).exists()).toBe(false);
+    expect(
+      wrapper.find(".stage-section-header button-stub").exists(),
+    ).toBe(false);
+    const validationActions = wrapper.get(
+      '[data-testid="rule-validation-actions"]',
+    );
+    expect(validationActions.text()).toContain(
+      "Добавьте хотя бы одно условие",
+    );
+    expect(
+      validationActions
+        .get('button-stub[label="Проверить условия"]')
+        .attributes("label"),
+    ).toBe("Проверить условия");
+    builder.vm.$emit("update:modelValue", {
+      version: 1,
+      root: {
+        nodeId: "root",
+        kind: "all",
+        children: [
+          {
+            nodeId: "streak",
+            kind: "activityDayStreak",
+            compare: { operator: "gte", value: 3 },
+          },
+        ],
+      },
+    } satisfies RuleDraft);
+    await wrapper.vm.$nextTick();
+    expect(validationActions.text()).toContain("Условия готовы к проверке");
 
-    await wrapper
-      .find('button-stub[label="Проверить условия"]')
+    await validationActions
+      .get('button-stub[label="Проверить условия"]')
       .trigger("click");
     const preview = wrapper.getComponent(RuleValidationPreview);
     expect(preview.props()).toMatchObject({
       projectId: "project-1",
-      draftRevision: 0,
+      draftRevision: 1,
     });
 
     await wrapper

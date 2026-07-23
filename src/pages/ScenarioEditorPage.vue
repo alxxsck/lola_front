@@ -578,6 +578,34 @@ const ruleContext = computed<RuleDomainContext | null>(() =>
 const ruleSummary = computed(() =>
   ruleContext.value ? summarizeRule(ruleDraft.value, ruleContext.value) : null,
 );
+const ruleSerialization = computed(() =>
+  ruleContext.value
+    ? serializeRuleDraft(ruleDraft.value, ruleContext.value)
+    : null,
+);
+const ruleValidationStatus = computed(() => {
+  const leaves = ruleSummary.value?.leaves ?? 0;
+  if (!leaves) {
+    return {
+      ready: false,
+      title: "Добавьте хотя бы одно условие",
+      detail: "После этого можно проверить правило на тестовом пользователе.",
+    };
+  }
+  if (ruleSerialization.value?.ok) {
+    return {
+      ready: true,
+      title: "Условия готовы к проверке",
+      detail: `Настроено: ${russianCount(leaves, "условие", "условия", "условий")}.`,
+    };
+  }
+  const issueCount = ruleSerialization.value?.issues.length ?? 0;
+  return {
+    ready: false,
+    title: "Завершите настройку условий",
+    detail: `Нужно заполнить: ${russianCount(issueCount, "поле", "поля", "полей")}.`,
+  };
+});
 const audienceContext = computed<AudienceDomainContext | null>(() =>
   authoringContract.value?.audience
     ? {
@@ -2206,20 +2234,12 @@ function leave() {
           <header class="stage-section-header">
             <div>
               <span>Условия запуска</span>
-              <h1>Что должно произойти перед запуском</h1>
+              <h1 id="rule-builder-title">Что должно произойти перед запуском</h1>
               <p>
                 Добавьте проверки текущего события или недавних действий
                 пользователя.
               </p>
             </div>
-            <Button
-              v-if="ruleContext && canEdit"
-              label="Проверить условия"
-              icon="pi pi-check-circle"
-              severity="secondary"
-              outlined
-              @click="validationOpen = true"
-            />
           </header>
           <Message v-if="authoringError" severity="error" :closable="false"
             >Не удалось загрузить каталог условий. {{ authoringError }}</Message
@@ -2232,6 +2252,35 @@ function leave() {
             @update:model-value="updateRuleDraft"
             @editing-dirty="ruleEditorDirty = $event"
           />
+          <footer
+            v-if="ruleContext && canEdit"
+            class="rule-validation-actions"
+            data-testid="rule-validation-actions"
+          >
+            <div
+              class="rule-validation-status"
+              :class="{ ready: ruleValidationStatus.ready }"
+              role="status"
+            >
+              <i
+                :class="
+                  ruleValidationStatus.ready
+                    ? 'pi pi-check-circle'
+                    : 'pi pi-info-circle'
+                "
+                aria-hidden="true"
+              />
+              <span>
+                <strong>{{ ruleValidationStatus.title }}</strong>
+                <small>{{ ruleValidationStatus.detail }}</small>
+              </span>
+            </div>
+            <Button
+              label="Проверить условия"
+              icon="pi pi-check-circle"
+              @click="validationOpen = true"
+            />
+          </footer>
           <div v-else-if="ruleContext" class="stage-empty">
             <i class="pi pi-lock" />
             <h2>Условия только для просмотра</h2>
@@ -3266,6 +3315,49 @@ function leave() {
   color: var(--text-small-muted);
   font-size: var(--font-size-body-small);
 }
+.rule-validation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-card);
+}
+.rule-validation-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-secondary);
+}
+.rule-validation-status > i {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  color: var(--text-small-muted);
+}
+.rule-validation-status.ready > i {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.rule-validation-status strong,
+.rule-validation-status small {
+  display: block;
+}
+.rule-validation-status strong {
+  font-size: var(--font-size-body-small);
+}
+.rule-validation-status small {
+  margin-top: 3px;
+  color: var(--text-small-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.4;
+}
 .validation-drawer {
   position: absolute;
   z-index: 10;
@@ -4085,6 +4177,17 @@ function leave() {
   }
   .rule-canvas {
     min-height: 50vh;
+  }
+  .stage-section-header {
+    padding: 16px;
+  }
+  .rule-validation-actions {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 14px 16px 18px;
+  }
+  .rule-validation-actions > .p-button {
+    width: 100%;
   }
   .stage-overview {
     padding: 16px;
