@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ref, useId } from "vue";
 import Message from "primevue/message";
+import ProjectSettingsSectionHeader from "./ProjectSettingsSectionHeader.vue";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     title: string;
     description: string;
@@ -16,57 +18,38 @@ withDefaults(
     loadingLabel: "Загружаем настройки…",
   },
 );
+const expanded = ref(false);
+const contentId = `${useId()}-content`;
 </script>
 
 <template>
-  <section class="settings-section card ai-settings">
-    <header>
-      <span class="icon"><i :class="icon" /></span>
-      <div>
-        <h2>{{ title }}</h2>
-        <p>{{ description }}</p>
-      </div>
-    </header>
-    <Message v-if="error" severity="error" :closable="false">{{
-      error
-    }}</Message>
-    <p v-if="loading" class="loading">
-      <i class="pi pi-spin pi-spinner" /> {{ loadingLabel }}
-    </p>
-    <slot v-else />
+  <section
+    class="settings-section card ai-settings"
+    :class="{ collapsed: !expanded }"
+  >
+    <ProjectSettingsSectionHeader
+      v-model:expanded="expanded"
+      :title="props.title"
+      :description="props.description"
+      :icon="props.icon"
+      tone="violet"
+      :content-id="contentId"
+    />
+    <div v-show="expanded" :id="contentId">
+      <Message v-if="error" severity="error" :closable="false">{{
+        error
+      }}</Message>
+      <p v-if="loading" class="loading">
+        <i class="pi pi-spin pi-spinner" /> {{ loadingLabel }}
+      </p>
+      <slot v-else />
+    </div>
   </section>
 </template>
 
 <style scoped>
 .ai-settings {
   padding: 26px;
-}
-.ai-settings header {
-  display: flex;
-  gap: 13px;
-  align-items: flex-start;
-  padding-bottom: 18px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.ai-settings h2 {
-  font-size: 1.08rem;
-}
-.ai-settings p {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 0.76rem;
-  line-height: 1.5;
-}
-.icon {
-  display: grid;
-  place-items: center;
-  width: 39px;
-  height: 39px;
-  flex: 0 0 auto;
-  border-radius: 12px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
 }
 .ai-settings :deep(.settings-editor) {
   display: grid;

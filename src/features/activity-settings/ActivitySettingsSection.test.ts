@@ -1,8 +1,10 @@
-import { flushPromises, shallowMount } from '@vue/test-utils'
+import { config, flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import ActivitySettingsSection from './ActivitySettingsSection.vue'
+
+config.global.stubs.ProjectSettingsSectionHeader = false
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), toast: vi.fn() }))
 
@@ -48,5 +50,21 @@ describe('ActivitySettingsSection', () => {
       expectedVersion: 7, timezone: 'UTC', visitInactivitySeconds: 900, reconnectGraceSeconds: 15,
     })
     expect(wrapper.emitted('change')?.at(-1)?.[0]).toMatchObject({ projectVersion: 8 })
+  })
+
+  it('starts collapsed and expands from the shared project header', async () => {
+    const wrapper = shallowMount(ActivitySettingsSection, {
+      props: { projectId: 'project-1', editable: true },
+    })
+    await flushPromises()
+
+    const toggle = wrapper.get('[aria-controls="activity-settings-content"]')
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.get('#activity-settings-content').attributes('style')).toContain('display: none')
+
+    await toggle.trigger('click')
+
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('#activity-settings-content').attributes('style')).not.toContain('display: none')
   })
 })

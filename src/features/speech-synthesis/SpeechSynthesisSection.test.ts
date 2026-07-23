@@ -1,9 +1,11 @@
-import { flushPromises, shallowMount } from '@vue/test-utils'
+import { config, flushPromises, shallowMount } from '@vue/test-utils'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SpeechSettingsResponseDto } from '@/shared/api/generated/models'
 import SpeechSynthesisSection from './SpeechSynthesisSection.vue'
+
+config.global.stubs.ProjectSettingsSectionHeader = false
 
 const mocks = vi.hoisted(() => ({
   fetchSettings: vi.fn(),

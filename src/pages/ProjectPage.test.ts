@@ -1,4 +1,4 @@
-import { flushPromises, shallowMount } from "@vue/test-utils";
+import { config, flushPromises, shallowMount } from "@vue/test-utils";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
@@ -6,6 +6,8 @@ import ToggleSwitch from "primevue/toggleswitch";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Project } from "@/shared/types/domain";
 import ProjectPage from "./ProjectPage.vue";
+
+config.global.stubs.ProjectSettingsSectionHeader = false;
 
 const mocks = vi.hoisted(() => ({
   getProject: vi.fn(),
@@ -240,7 +242,7 @@ describe("ProjectPage voice instructions", () => {
     });
     await flushPromises();
 
-    expect(wrapper.find(".message-stub").exists()).toBe(true);
+    expect(wrapper.find(".page-message").exists()).toBe(true);
     expect(wrapper.find('button-stub[label="Повторить"]').exists()).toBe(true);
 
     await wrapper.find('button-stub[label="Повторить"]').trigger("click");
@@ -248,7 +250,7 @@ describe("ProjectPage voice instructions", () => {
 
     expect(mocks.getProject).toHaveBeenCalledTimes(2);
     expect(wrapper.find("#project-settings-form").exists()).toBe(true);
-    expect(wrapper.find(".message-stub").exists()).toBe(false);
+    expect(wrapper.find(".page-message").exists()).toBe(false);
   });
 
   it("loads and saves the voice instruction without changing its whitespace", async () => {
@@ -287,19 +289,47 @@ describe("ProjectPage voice instructions", () => {
     expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(true);
   });
 
-  it("starts voice chat collapsed and expands it from the section header", async () => {
-    const wrapper = shallowMount(ProjectPage);
+  it("starts every project section collapsed and explains that product connection is unavailable", async () => {
+    const wrapper = shallowMount(ProjectPage, {
+      global: { stubs: { Message: false } },
+    });
     await flushPromises();
 
-    const toggle = wrapper.find('[aria-controls="voice-chat-settings"]');
-    expect(toggle.attributes("aria-expanded")).toBe("false");
-    expect(wrapper.get("#voice-chat-settings").attributes("style")).toContain(
+    for (const contentId of [
+      "project-about-settings",
+      "project-content-locales",
+      "project-connection-settings",
+      "assistant-settings",
+      "voice-chat-settings",
+    ]) {
+      const toggle = wrapper.get(`[aria-controls="${contentId}"]`);
+      expect(toggle.attributes("aria-expanded")).toBe("false");
+      expect(wrapper.get(`#${contentId}`).attributes("style")).toContain(
+        "display: none",
+      );
+      expect(toggle.element.closest("section")?.classList).toContain(
+        "collapsed",
+      );
+    }
+
+    const connectionContent = wrapper.get("#project-connection-settings");
+    expect(connectionContent.text()).toContain(
+      "Функциональность подключения продукта пока не работает.",
+    );
+    const connectionToggle = wrapper.get(
+      '[aria-controls="project-connection-settings"]',
+    );
+    await connectionToggle.trigger("click");
+    expect(connectionToggle.attributes("aria-expanded")).toBe("true");
+    expect(connectionContent.attributes("style")).not.toContain(
       "display: none",
     );
-    expect(toggle.element.closest("section")?.classList).toContain("collapsed");
-    await toggle.trigger("click");
 
-    expect(toggle.attributes("aria-expanded")).toBe("true");
+    const voiceToggle = wrapper.get(
+      '[aria-controls="voice-chat-settings"]',
+    );
+    await voiceToggle.trigger("click");
+    expect(voiceToggle.attributes("aria-expanded")).toBe("true");
     expect(
       wrapper.get("#voice-chat-settings").attributes("style"),
     ).not.toContain("display: none");
