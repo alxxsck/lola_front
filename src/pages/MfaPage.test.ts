@@ -64,4 +64,39 @@ describe('MFA page', () => {
 
     expect(replace).toHaveBeenCalledWith('/platform/cms-users')
   })
+
+  it('opens Project selection instead of trapping a multi-Project user in security settings', async () => {
+    vi.mocked(authApi.completeMfaPasskey).mockResolvedValue({
+      kind: 'AUTHENTICATED',
+      context: {
+        user: {
+          id: 'owner-1',
+          email: 'owner@example.com',
+          name: 'Owner',
+        },
+        projects: [
+          { id: 'project-1', name: 'Project One', slug: 'project-one', status: 'ACTIVE' },
+          { id: 'project-2', name: 'Project Two', slug: 'project-two', status: 'ACTIVE' },
+        ],
+      },
+    })
+    const auth = useAuthStore()
+    auth.$patch({
+      phase: 'MFA_REQUIRED',
+      mfaChallenge: {
+        kind: 'MFA_REQUIRED',
+        ceremonyToken: 'lmf_memory-only',
+        expiresAt: '2026-07-21T21:10:00.000Z',
+        publicKey: { challenge: 'challenge' },
+        recoveryAvailable: false,
+      },
+    })
+    const wrapper = shallowMount(MfaPage)
+
+    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger('click')
+    await flushPromises()
+
+    expect(auth.requiresProjectSelection).toBe(true)
+    expect(replace).toHaveBeenCalledWith('/login')
+  })
 })

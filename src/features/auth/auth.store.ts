@@ -43,6 +43,7 @@ export const useAuthStore = defineStore("auth", () => {
     Boolean(user.value && projects.value.length > 1 && !project.value),
   );
   const authenticatedLandingPath = computed(() => {
+    if (requiresProjectSelection.value) return "/login";
     if (project.value) return "/overview";
     if (
       user.value?.platformPermissionCodes?.includes("platform.cms_users.read")
