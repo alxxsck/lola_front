@@ -42,6 +42,7 @@ const canWrite = computed(() => hasProjectPermission(projectPermissions.value, '
 const canPublish = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.publish'))
 const canReadEvents = computed(() => hasProjectPermission(projectPermissions.value, 'project.event_catalog.read'))
 const canReadActions = computed(() => hasProjectPermission(projectPermissions.value, 'project.actions.read'))
+const canLoadActionDefinitions = computed(() => canReadActions.value && repository.capabilities.actionDefinitions)
 
 const statusOptions: { label: string; value: ScenarioStatus | 'ALL' }[] = [
   { label: 'Все статусы', value: 'ALL' },
@@ -76,7 +77,9 @@ async function load() {
     const [scenarioItems, eventItems] = await Promise.all([
       repository.getScenarios(projectId),
       canReadEvents.value ? repository.getEvents(projectId) : Promise.resolve([]),
-      canReadActions.value ? actionDefinitionsStore.ensureLoaded(projectId) : Promise.resolve(),
+      canLoadActionDefinitions.value
+        ? actionDefinitionsStore.ensureLoaded(projectId).catch(() => [])
+        : Promise.resolve([]),
     ])
     scenarios.value = scenarioItems
     events.value = eventItems

@@ -7,7 +7,7 @@ import ScenariosPage from './ScenariosPage.vue'
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(), getScenarios: vi.fn(), getEvents: vi.fn(), saveScenario: vi.fn(),
-  ensureLoaded: vi.fn(), toast: vi.fn(), permissions: [
+  ensureLoaded: vi.fn(), toast: vi.fn(), actionDefinitionsCapability: true, permissions: [
     'project.scenarios.read', 'project.scenarios.write', 'project.scenarios.publish',
     'project.event_catalog.read', 'project.actions.read',
   ] as string[],
@@ -21,6 +21,7 @@ vi.mock('@/features/actions/action-definitions.store', () => ({
   useActionDefinitionsStore: () => ({ forProject: () => [], ensureLoaded: mocks.ensureLoaded }),
 }))
 vi.mock('@/shared/api/repository', () => ({ repository: {
+  capabilities: { get actionDefinitions() { return mocks.actionDefinitionsCapability } },
   getScenarios: mocks.getScenarios, getEvents: mocks.getEvents, saveScenario: mocks.saveScenario,
 } }))
 
@@ -37,6 +38,7 @@ describe('ScenariosPage V2 activation boundary', () => {
       'project.scenarios.read', 'project.scenarios.write', 'project.scenarios.publish',
       'project.event_catalog.read', 'project.actions.read',
     ]
+    mocks.actionDefinitionsCapability = true
     mocks.getScenarios.mockResolvedValue([scenario])
     mocks.getEvents.mockResolvedValue([])
     mocks.ensureLoaded.mockResolvedValue([])
@@ -76,6 +78,27 @@ describe('ScenariosPage V2 activation boundary', () => {
     await (wrapper.vm as unknown as { toggleScenario: (value: Scenario) => Promise<void> })
       .toggleScenario({ ...scenario, status: 'ACTIVE' })
     expect(mocks.saveScenario).not.toHaveBeenCalled()
+  })
+
+  it('keeps scenarios visible when the API repository has no action definitions capability', async () => {
+    mocks.actionDefinitionsCapability = false
+    mocks.ensureLoaded.mockRejectedValue(new Error('Backend capability "actionDefinitions" is not available'))
+    const wrapper = shallowMount(ScenariosPage)
+    await flushPromises()
+
+    expect(mocks.ensureLoaded).not.toHaveBeenCalled()
+    expect((wrapper.vm as unknown as { loadError: string }).loadError).toBe('')
+    expect(wrapper.text()).toContain('1 из 1')
+  })
+
+  it('keeps scenarios visible when the optional action definitions request fails', async () => {
+    mocks.ensureLoaded.mockRejectedValue(new Error('Action definitions request failed'))
+    const wrapper = shallowMount(ScenariosPage)
+    await flushPromises()
+
+    expect(mocks.ensureLoaded).toHaveBeenCalledWith('project-1')
+    expect((wrapper.vm as unknown as { loadError: string }).loadError).toBe('')
+    expect(wrapper.text()).toContain('1 из 1')
   })
 
   it('does not enter publication without the separate publish Permission', async () => {
