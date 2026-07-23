@@ -102,6 +102,15 @@ export const router = createRouter({
           meta: { platformPermission: "platform.cms_users.read" },
         },
         {
+          path: "platform/notification-operations",
+          name: "platform-notification-operations",
+          component: () =>
+            import("@/pages/PlatformNotificationOperationsPage.vue"),
+          meta: {
+            platformPermission: "platform.notifications.operations.read",
+          },
+        },
+        {
           path: "project",
           name: "project",
           component: () => import("@/pages/ProjectPage.vue"),
@@ -350,8 +359,13 @@ router.beforeEach(async (to) => {
   if (auth.mfaChallenge && to.name !== "mfa") return { name: "mfa" };
   if (!to.meta.public && !auth.isAuthenticated)
     return { name: "login", query: { redirect: to.fullPath } };
-  if (to.name === "ai-proposal-detail" && typeof to.query.projectId === "string") {
-    const target = auth.projects.find((project) => project.id === to.query.projectId);
+  if (
+    to.name === "ai-proposal-detail" &&
+    typeof to.query.projectId === "string"
+  ) {
+    const target = auth.projects.find(
+      (project) => project.id === to.query.projectId,
+    );
     if (!target) return auth.authenticatedLandingPath;
     if (auth.project?.id !== target.id) auth.selectProject(target.id);
   }

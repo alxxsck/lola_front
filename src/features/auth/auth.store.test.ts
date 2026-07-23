@@ -104,6 +104,28 @@ describe("CMS User authentication state", () => {
     expect(auth.authenticatedLandingPath).toBe("/platform/cms-users");
   });
 
+  it("lands an operations-only Platform Operator on delivery recovery", async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      kind: "AUTHENTICATED",
+      context: {
+        user: {
+          id: "operator-operations",
+          email: "operations@example.com",
+          name: "Operations",
+          platformPermissionCodes: ["platform.notifications.operations.read"],
+        },
+        projects: [],
+      },
+    });
+    const auth = useAuthStore();
+
+    await auth.login("operations@example.com", "permanent passphrase");
+
+    expect(auth.authenticatedLandingPath).toBe(
+      "/platform/notification-operations",
+    );
+  });
+
   it("keeps MFA capabilities and recovery codes in memory only", async () => {
     const storageWrite = vi.spyOn(Storage.prototype, "setItem");
     vi.mocked(authApi.login).mockResolvedValue({

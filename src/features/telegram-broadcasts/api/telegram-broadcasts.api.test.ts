@@ -56,6 +56,7 @@ const summaryDto: TelegramBroadcastResponseDto = {
     contentHash:
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     text: "Обновление доступно.",
+    contentAvailable: true,
     createdAt: "2026-07-23T10:00:00.000Z",
   },
   recipientCount: 0,
@@ -121,11 +122,9 @@ describe("telegram broadcasts generated adapter", () => {
       { limit: 25, cursor: "cursor-1" },
       { signal },
     );
-    const detail = await telegramBroadcastsApi.get(
-      "project-1",
-      "broadcast-1",
-      { signal },
-    );
+    const detail = await telegramBroadcastsApi.get("project-1", "broadcast-1", {
+      signal,
+    });
 
     expect(generated.list).toHaveBeenCalledWith(
       "project-1",
@@ -325,10 +324,9 @@ describe("telegram broadcasts generated adapter", () => {
       "AMBIGUOUS_PROVIDER_RESULT",
     ]);
     expect(
-      [
-        "END_USER_WITHDREW",
-        "TELEGRAM_BROADCAST_CONSENT_STALE",
-      ].map(mapTelegramBroadcastSafeFailureCategory),
+      ["END_USER_WITHDREW", "TELEGRAM_BROADCAST_CONSENT_STALE"].map(
+        mapTelegramBroadcastSafeFailureCategory,
+      ),
     ).toEqual(["CONSENT_REVOKED", "CONSENT_REVOKED"]);
     expect(
       ["PROVIDER_BLOCKED", "TELEGRAM_USER_BLOCKED"].map(
@@ -348,9 +346,7 @@ describe("telegram broadcasts generated adapter", () => {
       ].map(mapTelegramBroadcastSafeFailureCategory),
     ).toEqual(["RATE_LIMIT_EXHAUSTED", "RATE_LIMIT_EXHAUSTED"]);
     expect(
-      mapTelegramBroadcastSafeFailureCategory(
-        "TELEGRAM_BROADCAST_LINK_STALE",
-      ),
+      mapTelegramBroadcastSafeFailureCategory("TELEGRAM_BROADCAST_LINK_STALE"),
     ).toBe("LINK_NOT_ACTIVE");
     expect(
       mapTelegramBroadcastSafeFailureCategory(

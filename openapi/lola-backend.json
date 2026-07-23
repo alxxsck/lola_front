@@ -11573,6 +11573,459 @@
         ],
         "type": "object"
       },
+      "NotificationOperationsAdmissionHealthDto": {
+        "properties": {
+          "exhaustedBucketCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "maximumRetryDelaySeconds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "scope": {
+            "enum": [
+              "INSTALLATION",
+              "CHAT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "exhaustedBucketCount",
+          "maximumRetryDelaySeconds"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsDeliveryPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOperationsDeliveryResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsDeliveryResponseDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "channel": {
+            "enum": [
+              "SLACK_WEBHOOK",
+              "TELEGRAM_OPERATIONAL"
+            ],
+            "type": "string"
+          },
+          "contentAvailable": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorCategory": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "operationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayEligibility": {
+            "enum": [
+              "ELIGIBLE_KNOWN_NOT_ACCEPTED",
+              "INELIGIBLE_AMBIGUOUS",
+              "INELIGIBLE_ACCEPTED",
+              "INELIGIBLE_CHANNEL",
+              "INELIGIBLE_DESTINATION_CHANGED",
+              "INELIGIBLE_STATE"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "channel",
+          "status",
+          "errorCategory",
+          "attemptCount",
+          "operationsVersion",
+          "replayEligibility",
+          "contentAvailable",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsHealthResponseDto": {
+        "properties": {
+          "ambiguousCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "deadLetterCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "permanentCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOperationsProviderHealthDto"
+            },
+            "type": "array"
+          },
+          "queues": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOperationsQueueHealthDto"
+            },
+            "type": "array"
+          },
+          "retention": {
+            "$ref": "#/components/schemas/NotificationOperationsRetentionHealthDto"
+          },
+          "suppressedCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "telegramProductAdmission": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOperationsAdmissionHealthDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "observedAt",
+          "queues",
+          "permanentCount",
+          "ambiguousCount",
+          "suppressedCount",
+          "deadLetterCount",
+          "providers",
+          "telegramProductAdmission",
+          "retention"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsIntegrationPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOperationsIntegrationResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsIntegrationResponseDto": {
+        "properties": {
+          "integrationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "SLACK_DESTINATION",
+              "TELEGRAM_OPERATIONAL_DESTINATION",
+              "TELEGRAM_PRODUCT_INSTALLATION"
+            ],
+            "type": "string"
+          },
+          "maskedIdentity": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "quarantineAllowed": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "integrationId",
+          "kind",
+          "projectId",
+          "status",
+          "version",
+          "maskedIdentity",
+          "quarantineAllowed"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsProviderHealthDto": {
+        "properties": {
+          "channel": {
+            "enum": [
+              "SLACK_WEBHOOK",
+              "TELEGRAM_OPERATIONAL",
+              "TELEGRAM_PRODUCT"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "HEALTHY",
+              "DEGRADED",
+              "STOPPED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel",
+          "state"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsQuarantineResponseDto": {
+        "properties": {
+          "integrationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "SLACK_DESTINATION",
+              "TELEGRAM_OPERATIONAL_DESTINATION",
+              "TELEGRAM_PRODUCT_INSTALLATION"
+            ],
+            "type": "string"
+          },
+          "maskedIdentity": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "suppressedQueuedCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "integrationId",
+          "projectId",
+          "status",
+          "version",
+          "maskedIdentity",
+          "suppressedQueuedCount",
+          "replayed"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsQueueHealthDto": {
+        "properties": {
+          "attemptsInWindow": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "count": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "oldestAgeSeconds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "queueKind": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "queueKind",
+          "channel",
+          "status",
+          "count",
+          "oldestAgeSeconds",
+          "attemptsInWindow"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsReplayResponseDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "channel": {
+            "enum": [
+              "SLACK_WEBHOOK",
+              "TELEGRAM_OPERATIONAL"
+            ],
+            "type": "string"
+          },
+          "contentAvailable": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "operationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "PENDING"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "channel",
+          "status",
+          "operationsVersion",
+          "attemptCount",
+          "contentAvailable",
+          "replayed"
+        ],
+        "type": "object"
+      },
+      "NotificationOperationsRetentionHealthDto": {
+        "properties": {
+          "broadcastContentBacklog": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "lastSuccessfulBatchAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "linkSecretBacklog": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "notificationPayloadBacklog": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "operationalEvidenceBacklog": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "personalContentBacklog": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "notificationPayloadBacklog",
+          "personalContentBacklog",
+          "broadcastContentBacklog",
+          "linkSecretBacklog",
+          "operationalEvidenceBacklog"
+        ],
+        "type": "object"
+      },
+      "NotificationQuarantineDto": {
+        "properties": {
+          "confirmation": {
+            "maxLength": 160,
+            "minLength": 1,
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "CREDENTIAL_COMPROMISED",
+              "PROVIDER_ACCOUNT_COMPROMISED",
+              "INCIDENT_CONTAINMENT",
+              "OPERATOR_REQUEST"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "confirmation"
+        ],
+        "type": "object"
+      },
       "NotRuleExplanationResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -17709,6 +18162,9 @@
       },
       "TelegramBroadcastRevisionDto": {
         "properties": {
+          "contentAvailable": {
+            "type": "boolean"
+          },
           "contentHash": {
             "type": "string"
           },
@@ -17725,13 +18181,14 @@
             "type": "number"
           },
           "text": {
+            "nullable": true,
             "type": "string"
           }
         },
         "required": [
           "id",
           "revisionNumber",
-          "text",
+          "contentAvailable",
           "contentHash",
           "createdAt"
         ],
@@ -20772,6 +21229,349 @@
         "x-iam-fresh-strong-authentication": true,
         "x-iam-permission": {
           "code": "platform.cms_users.deactivate",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/notification-operations/deliveries": {
+      "get": {
+        "operationId": "NotificationOperations_deliveries",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 512,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channel",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SLACK_WEBHOOK",
+                "TELEGRAM_OPERATIONAL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "REJECTED",
+                "OUTCOME_UNKNOWN",
+                "DEAD_LETTER",
+                "CANCELLED",
+                "SUPPRESSED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationOperationsDeliveryPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Operations"
+        ],
+        "x-iam-permission": {
+          "code": "platform.notifications.operations.read",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/notification-operations/deliveries/{deliveryId}/replay": {
+      "post": {
+        "operationId": "NotificationOperations_replay",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "deliveryId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Expected-Version",
+            "required": true,
+            "schema": {
+              "pattern": "^(?:0|[1-9]\\d*)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationOperationsReplayResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Operations"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "platform.notifications.operations.operate",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/notification-operations/health": {
+      "get": {
+        "operationId": "NotificationOperations_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationOperationsHealthResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Operations"
+        ],
+        "x-iam-permission": {
+          "code": "platform.notifications.operations.read",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/notification-operations/integrations": {
+      "get": {
+        "operationId": "NotificationOperations_integrations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 512,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SLACK_DESTINATION",
+                "TELEGRAM_OPERATIONAL_DESTINATION",
+                "TELEGRAM_PRODUCT_INSTALLATION"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "maxLength": 40,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationOperationsIntegrationPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Operations"
+        ],
+        "x-iam-permission": {
+          "code": "platform.notifications.operations.read",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/notification-operations/integrations/{kind}/{integrationId}/quarantine": {
+      "post": {
+        "operationId": "NotificationOperations_quarantine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "SLACK_DESTINATION",
+                "TELEGRAM_OPERATIONAL_DESTINATION",
+                "TELEGRAM_PRODUCT_INSTALLATION"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "integrationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Expected-Version",
+            "required": true,
+            "schema": {
+              "pattern": "^(?:0|[1-9]\\d*)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationQuarantineDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationOperationsQuarantineResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Operations"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "platform.notifications.operations.operate",
           "scope": "PLATFORM"
         }
       }

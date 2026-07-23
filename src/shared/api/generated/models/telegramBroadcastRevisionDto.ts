@@ -7,10 +7,12 @@
  */
 
 export interface TelegramBroadcastRevisionDto {
+  contentAvailable: boolean;
   contentHash: string;
   createdAt: string;
   id: string;
   /** @minimum 1 */
   revisionNumber: number;
-  text: string;
+  /** @nullable */
+  text?: string | null;
 }

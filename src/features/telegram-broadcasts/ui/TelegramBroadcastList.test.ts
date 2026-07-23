@@ -25,6 +25,7 @@ const item: TelegramBroadcast = {
     contentHash:
       "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     text: "Обновление доступно.",
+    contentAvailable: true,
     createdAt: "2026-07-23T09:00:00.000Z",
   },
   content: { text: "Обновление доступно." },

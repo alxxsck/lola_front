@@ -171,6 +171,14 @@ import type {
   NotificationDestinationListResponseDto,
   NotificationDestinationResponseDto,
   NotificationDestinationTestResponseDto,
+  NotificationOperationsDeliveriesParams,
+  NotificationOperationsDeliveryPageResponseDto,
+  NotificationOperationsHealthResponseDto,
+  NotificationOperationsIntegrationPageResponseDto,
+  NotificationOperationsIntegrationsParams,
+  NotificationOperationsQuarantineResponseDto,
+  NotificationOperationsReplayResponseDto,
+  NotificationQuarantineDto,
   NotificationUnsubscribeUnsubscribeParams,
   OperateTelegramBroadcastDto,
   OperationalTelegramWebhookIngest200,
@@ -519,6 +527,89 @@ export const cmsUserLifecycleSuspend = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: cmsUserLifecycleMutationDto,
+    },
+    options,
+  );
+};
+
+export const notificationOperationsDeliveries = (
+  params?: NotificationOperationsDeliveriesParams,
+  options?: SecondParameter<
+    typeof request<NotificationOperationsDeliveryPageResponseDto>
+  >,
+) => {
+  return request<NotificationOperationsDeliveryPageResponseDto>(
+    {
+      url: `/api/v1/admin/platform/notification-operations/deliveries`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const notificationOperationsReplay = (
+  deliveryId: string,
+  options?: SecondParameter<
+    typeof request<NotificationOperationsReplayResponseDto>
+  >,
+) => {
+  return request<NotificationOperationsReplayResponseDto>(
+    {
+      url: `/api/v1/admin/platform/notification-operations/deliveries/${deliveryId}/replay`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const notificationOperationsHealth = (
+  options?: SecondParameter<
+    typeof request<NotificationOperationsHealthResponseDto>
+  >,
+) => {
+  return request<NotificationOperationsHealthResponseDto>(
+    {
+      url: `/api/v1/admin/platform/notification-operations/health`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const notificationOperationsIntegrations = (
+  params?: NotificationOperationsIntegrationsParams,
+  options?: SecondParameter<
+    typeof request<NotificationOperationsIntegrationPageResponseDto>
+  >,
+) => {
+  return request<NotificationOperationsIntegrationPageResponseDto>(
+    {
+      url: `/api/v1/admin/platform/notification-operations/integrations`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const notificationOperationsQuarantine = (
+  kind:
+    | "SLACK_DESTINATION"
+    | "TELEGRAM_OPERATIONAL_DESTINATION"
+    | "TELEGRAM_PRODUCT_INSTALLATION",
+  integrationId: string,
+  notificationQuarantineDto: BodyType<NotificationQuarantineDto>,
+  options?: SecondParameter<
+    typeof request<NotificationOperationsQuarantineResponseDto>
+  >,
+) => {
+  return request<NotificationOperationsQuarantineResponseDto>(
+    {
+      url: `/api/v1/admin/platform/notification-operations/integrations/${kind}/${integrationId}/quarantine`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: notificationQuarantineDto,
     },
     options,
   );
@@ -4248,6 +4339,21 @@ export type PlatformCmsUserSessionRevokeResult = NonNullable<
 >;
 export type CmsUserLifecycleSuspendResult = NonNullable<
   Awaited<ReturnType<typeof cmsUserLifecycleSuspend>>
+>;
+export type NotificationOperationsDeliveriesResult = NonNullable<
+  Awaited<ReturnType<typeof notificationOperationsDeliveries>>
+>;
+export type NotificationOperationsReplayResult = NonNullable<
+  Awaited<ReturnType<typeof notificationOperationsReplay>>
+>;
+export type NotificationOperationsHealthResult = NonNullable<
+  Awaited<ReturnType<typeof notificationOperationsHealth>>
+>;
+export type NotificationOperationsIntegrationsResult = NonNullable<
+  Awaited<ReturnType<typeof notificationOperationsIntegrations>>
+>;
+export type NotificationOperationsQuarantineResult = NonNullable<
+  Awaited<ReturnType<typeof notificationOperationsQuarantine>>
 >;
 export type PlatformPermissionListResult = NonNullable<
   Awaited<ReturnType<typeof platformPermissionList>>

@@ -119,6 +119,42 @@ const requiredOperations = new Map([
     { label: "projects", response: "ProjectResponseDto" },
   ],
   [
+    "NotificationOperations_health",
+    {
+      label: "notification operations health",
+      response: "NotificationOperationsHealthResponseDto",
+    },
+  ],
+  [
+    "NotificationOperations_deliveries",
+    {
+      label: "exceptional notification deliveries",
+      response: "NotificationOperationsDeliveryPageResponseDto",
+    },
+  ],
+  [
+    "NotificationOperations_integrations",
+    {
+      label: "notification integration quarantine candidates",
+      response: "NotificationOperationsIntegrationPageResponseDto",
+    },
+  ],
+  [
+    "NotificationOperations_replay",
+    {
+      label: "single notification delivery replay",
+      response: "NotificationOperationsReplayResponseDto",
+    },
+  ],
+  [
+    "NotificationOperations_quarantine",
+    {
+      label: "notification integration quarantine",
+      request: "NotificationQuarantineDto",
+      response: "NotificationOperationsQuarantineResponseDto",
+    },
+  ],
+  [
     "PlatformOperations_projectSettings",
     { label: "project-scoped settings", response: "ProjectResponseDto" },
   ],
@@ -323,7 +359,10 @@ const requiredOperations = new Map([
   ],
   [
     "IamMfaManagement_beginPasskeyEnrollment",
-    { label: "managed passkey enrollment", response: "IamMfaEnrollmentOptionsResponseDto" },
+    {
+      label: "managed passkey enrollment",
+      response: "IamMfaEnrollmentOptionsResponseDto",
+    },
   ],
   [
     "IamMfaManagement_removePasskey",
@@ -331,7 +370,10 @@ const requiredOperations = new Map([
   ],
   [
     "IamMfaManagement_rotateRecoveryCodes",
-    { label: "recovery-code rotation", response: "IamMfaRecoveryCodesResponseDto" },
+    {
+      label: "recovery-code rotation",
+      response: "IamMfaRecoveryCodesResponseDto",
+    },
   ],
   [
     "ScenarioAuthoring_catalog",
@@ -784,7 +826,8 @@ for (const [operationId, expectation] of requiredOperations) {
     throw new Error(`OpenAPI operation ${operationId} has no success response`);
   }
 
-  const expectedResponses = expectation.responses ??
+  const expectedResponses =
+    expectation.responses ??
     (expectation.response ? [expectation.response] : []);
 
   if (expectedResponses.length && !responseSchema) {
@@ -817,6 +860,38 @@ for (const [operationId, expectation] of requiredOperations) {
   }
 }
 
+function requireOperationParameters(operationId, parameterNames) {
+  const operation = operations.find(
+    (candidate) => candidate.operationId === operationId,
+  );
+  const parameters = new Map(
+    (operation?.parameters ?? []).map((parameter) => [
+      parameter.name,
+      parameter,
+    ]),
+  );
+  const missing = parameterNames.filter(
+    (parameterName) =>
+      !parameters.has(parameterName) ||
+      parameters.get(parameterName)?.required !== true,
+  );
+
+  if (missing.length) {
+    throw new Error(
+      `${operationId} no longer requires operation parameters: ${missing.join(", ")}`,
+    );
+  }
+}
+
+requireOperationParameters("NotificationOperations_replay", [
+  "Expected-Version",
+  "Idempotency-Key",
+]);
+requireOperationParameters("NotificationOperations_quarantine", [
+  "Expected-Version",
+  "Idempotency-Key",
+]);
+
 for (const deprecatedSchema of [
   "CmsLoginDto",
   "CmsAuthResponseDto",
@@ -832,7 +907,9 @@ for (const deprecatedSchema of [
   "ScenarioActionDefinitionResponseDto",
 ]) {
   if (document.components?.schemas?.[deprecatedSchema]) {
-    throw new Error(`OpenAPI still exposes deprecated auth schema ${deprecatedSchema}`);
+    throw new Error(
+      `OpenAPI still exposes deprecated auth schema ${deprecatedSchema}`,
+    );
   }
 }
 
@@ -855,8 +932,14 @@ for (const deprecatedOperation of [
   "Platform_activitySettings",
   "Platform_updateActivitySettings",
 ]) {
-  if (operations.some((operation) => operation.operationId === deprecatedOperation)) {
-    throw new Error(`OpenAPI still exposes deprecated operation ${deprecatedOperation}`);
+  if (
+    operations.some(
+      (operation) => operation.operationId === deprecatedOperation,
+    )
+  ) {
+    throw new Error(
+      `OpenAPI still exposes deprecated operation ${deprecatedOperation}`,
+    );
   }
 }
 
@@ -990,13 +1073,20 @@ requireRequiredProperties("MfaRequiredResponseDto", [
   "recoveryAvailable",
 ]);
 requireSchemaProperties("IamMfaEnrollmentOptionsResponseDto", ["publicKey"]);
-requireSchemaProperties("IamMfaRecoveryEnrollmentOptionsResponseDto", ["publicKey", "reason"]);
+requireSchemaProperties("IamMfaRecoveryEnrollmentOptionsResponseDto", [
+  "publicKey",
+  "reason",
+]);
 for (const schemaName of [
   "IamMfaEnrollmentOptionsResponseDto",
   "IamMfaRecoveryEnrollmentOptionsResponseDto",
 ]) {
-  if (contractSchema(schemaName).properties?.ceremonyToken?.writeOnly === true) {
-    throw new Error(`${schemaName}.ceremonyToken is a response value and cannot be writeOnly`);
+  if (
+    contractSchema(schemaName).properties?.ceremonyToken?.writeOnly === true
+  ) {
+    throw new Error(
+      `${schemaName}.ceremonyToken is a response value and cannot be writeOnly`,
+    );
   }
 }
 requireSchemaProperties("AdminConversationResponseDto", [
@@ -1522,6 +1612,101 @@ requireSchemaProperties("CreateEventCatalogDefinitionDto", [
   "countsAsActivity",
   "payloadSchema",
 ]);
+
+requireSchemaProperties("NotificationOperationsHealthResponseDto", [
+  "observedAt",
+  "queues",
+  "permanentCount",
+  "ambiguousCount",
+  "suppressedCount",
+  "deadLetterCount",
+  "providers",
+  "telegramProductAdmission",
+  "retention",
+]);
+requireRequiredProperties("NotificationOperationsHealthResponseDto", [
+  "observedAt",
+  "queues",
+  "permanentCount",
+  "ambiguousCount",
+  "suppressedCount",
+  "deadLetterCount",
+  "providers",
+  "telegramProductAdmission",
+  "retention",
+]);
+requireSchemaProperties("NotificationOperationsDeliveryResponseDto", [
+  "id",
+  "projectId",
+  "channel",
+  "status",
+  "errorCategory",
+  "attemptCount",
+  "operationsVersion",
+  "replayEligibility",
+  "contentAvailable",
+  "createdAt",
+  "updatedAt",
+]);
+requireRequiredProperties("NotificationOperationsDeliveryResponseDto", [
+  "id",
+  "projectId",
+  "channel",
+  "status",
+  "errorCategory",
+  "attemptCount",
+  "operationsVersion",
+  "replayEligibility",
+  "contentAvailable",
+]);
+requireSchemaProperties("NotificationOperationsIntegrationResponseDto", [
+  "integrationId",
+  "kind",
+  "projectId",
+  "status",
+  "version",
+  "maskedIdentity",
+  "quarantineAllowed",
+]);
+requireRequiredProperties("NotificationOperationsIntegrationResponseDto", [
+  "integrationId",
+  "kind",
+  "projectId",
+  "status",
+  "version",
+  "maskedIdentity",
+  "quarantineAllowed",
+]);
+requireSchemaProperties("NotificationQuarantineDto", [
+  "reason",
+  "confirmation",
+]);
+requireRequiredProperties("NotificationQuarantineDto", [
+  "reason",
+  "confirmation",
+]);
+
+for (const schemaName of [
+  "NotificationOperationsHealthResponseDto",
+  "NotificationOperationsDeliveryResponseDto",
+  "NotificationOperationsIntegrationResponseDto",
+  "NotificationOperationsReplayResponseDto",
+  "NotificationOperationsQuarantineResponseDto",
+]) {
+  const exposedProperties = Object.keys(
+    contractSchema(schemaName).properties ?? {},
+  );
+  const forbiddenProperties = exposedProperties.filter((propertyName) =>
+    /recipient|payload|content(?!Available)|webhook|token|secret|providerRef/i.test(
+      propertyName,
+    ),
+  );
+  if (forbiddenProperties.length) {
+    throw new Error(
+      `${schemaName} exposes forbidden notification operations data: ${forbiddenProperties.join(", ")}`,
+    );
+  }
+}
 
 console.log(
   `OpenAPI contract check passed (${requiredOperations.size} required operations)`,

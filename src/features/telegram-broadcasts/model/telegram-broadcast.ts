@@ -110,6 +110,7 @@ export interface TelegramBroadcast {
     revisionNumber: number;
     contentHash: string;
     text: string;
+    contentAvailable: boolean;
     createdAt: string;
   };
   content: TelegramBroadcastDraft["content"];
@@ -168,9 +169,7 @@ export function telegramBroadcastPermissions(
   effectivePermissionCodes: readonly string[],
 ): TelegramBroadcastPermissions {
   return {
-    read: effectivePermissionCodes.includes(
-      "project.telegram.broadcasts.read",
-    ),
+    read: effectivePermissionCodes.includes("project.telegram.broadcasts.read"),
     draft: effectivePermissionCodes.includes(
       "project.telegram.broadcasts.draft",
     ),
@@ -214,8 +213,7 @@ export function validBroadcastEndUserExternalId(value: string): boolean {
   const normalized = value.trim();
   return (
     normalized.length > 0 &&
-    normalized.length <=
-      TELEGRAM_BROADCAST_END_USER_EXTERNAL_ID_MAX_LENGTH
+    normalized.length <= TELEGRAM_BROADCAST_END_USER_EXTERNAL_ID_MAX_LENGTH
   );
 }
 
@@ -234,9 +232,7 @@ export function broadcastActionAvailability(
     schedule: permissions.operate && allows("SCHEDULE"),
     pause: permissions.operate && allows("PAUSE"),
     resume: permissions.operate && allows("RESUME"),
-    cancel:
-      allows("CANCEL") &&
-      permissions.operate,
+    cancel: allows("CANCEL") && permissions.operate,
   };
 }
 

@@ -34,9 +34,7 @@ const draft: TelegramBroadcastDraft = {
   audience: { kind: "ALL_EXPLICITLY_OPTED_IN" },
 };
 
-function record(
-  overrides: Partial<TelegramBroadcast> = {},
-): TelegramBroadcast {
+function record(overrides: Partial<TelegramBroadcast> = {}): TelegramBroadcast {
   return {
     id: "broadcast-1",
     projectId: "project-1",
@@ -48,6 +46,7 @@ function record(
       revisionNumber: 1,
       contentHash: "content-hash-1",
       text: draft.content.text,
+      contentAvailable: true,
       createdAt: "2026-07-23T10:00:00.000Z",
     },
     content: draft.content,
@@ -57,13 +56,7 @@ function record(
     recipientCount: 0,
     scheduledAt: null,
     progress: null,
-    allowedActions: [
-      "EDIT",
-      "PREVIEW",
-      "TEST_SEND",
-      "APPROVE",
-      "CANCEL",
-    ],
+    allowedActions: ["EDIT", "PREVIEW", "TEST_SEND", "APPROVE", "CANCEL"],
     createdAt: "2026-07-23T10:00:00.000Z",
     updatedAt: "2026-07-23T10:00:00.000Z",
     ...overrides,
@@ -486,7 +479,9 @@ describe("telegram broadcasts controller", () => {
     await expect(controller.retryLastMutation()).resolves.toBe(true);
 
     expect(
-      vi.mocked(repository.create).mock.calls.map((call) => call[2].idempotencyKey),
+      vi
+        .mocked(repository.create)
+        .mock.calls.map((call) => call[2].idempotencyKey),
     ).toEqual(["status-zero-key", "status-zero-key"]);
   });
 
@@ -504,7 +499,9 @@ describe("telegram broadcasts controller", () => {
         }),
       );
       vi.mocked(repository.start).mockRejectedValue(failure);
-      const controller = createTelegramBroadcastsController({ api: repository });
+      const controller = createTelegramBroadcastsController({
+        api: repository,
+      });
       activate(controller);
       await controller.open("broadcast-1");
 

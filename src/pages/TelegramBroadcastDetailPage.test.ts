@@ -31,6 +31,7 @@ const broadcast: TelegramBroadcast = {
     contentHash:
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     text: "Обновление доступно.",
+    contentAvailable: true,
     createdAt: "2026-07-23T09:00:00.000Z",
   },
   content: { text: "Обновление доступно." },
@@ -40,13 +41,7 @@ const broadcast: TelegramBroadcast = {
   recipientCount: 0,
   scheduledAt: null,
   progress: null,
-  allowedActions: [
-    "EDIT",
-    "PREVIEW",
-    "TEST_SEND",
-    "APPROVE",
-    "CANCEL",
-  ],
+  allowedActions: ["EDIT", "PREVIEW", "TEST_SEND", "APPROVE", "CANCEL"],
   createdAt: "2026-07-23T09:00:00.000Z",
   updatedAt: "2026-07-23T10:00:00.000Z",
 };
@@ -67,7 +62,9 @@ const preview: TelegramBroadcastPreview = {
 };
 
 function mountPage(
-  props: Partial<InstanceType<typeof TelegramBroadcastDetailPage>["$props"]> = {},
+  props: Partial<
+    InstanceType<typeof TelegramBroadcastDetailPage>["$props"]
+  > = {},
 ) {
   return mount(TelegramBroadcastDetailPage, {
     props: {
@@ -111,9 +108,7 @@ describe("TelegramBroadcastDetailPage", () => {
 
   it("emits a test-send for an explicit project external ID and label", async () => {
     const wrapper = mountPage();
-    await wrapper
-      .get("#broadcast-test-external-id")
-      .setValue("customer-anna");
+    await wrapper.get("#broadcast-test-external-id").setValue("customer-anna");
     await wrapper.get("#broadcast-test-label").setValue("Проверка Анны");
     await wrapper.get('[data-action="test-send"]').trigger("click");
 
@@ -173,9 +168,7 @@ describe("TelegramBroadcastDetailPage", () => {
       },
     });
 
-    expect(wrapper.text()).toContain(
-      "Получателей больше 10000",
-    );
+    expect(wrapper.text()).toContain("Получателей больше 10000");
     expect(
       wrapper.get('[data-action="ask-approve"]').attributes("disabled"),
     ).toBeDefined();

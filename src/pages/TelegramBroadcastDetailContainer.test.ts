@@ -22,10 +22,9 @@ const api = vi.hoisted(() => ({
   listDeliveries: vi.fn(),
 }));
 
-vi.mock(
-  "@/features/telegram-broadcasts/api/telegram-broadcasts.api",
-  () => ({ telegramBroadcastsApi: api }),
-);
+vi.mock("@/features/telegram-broadcasts/api/telegram-broadcasts.api", () => ({
+  telegramBroadcastsApi: api,
+}));
 
 const detail: TelegramBroadcast = {
   id: "broadcast-1",
@@ -39,6 +38,7 @@ const detail: TelegramBroadcast = {
     contentHash:
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     text: "Исходный текст",
+    contentAvailable: true,
     createdAt: "2026-07-23T09:00:00.000Z",
   },
   content: { text: "Исходный текст" },
@@ -165,9 +165,7 @@ describe("TelegramBroadcastDetailPage container", () => {
     await flushPromises();
     expect(
       (wrapper.get("#broadcast-text").element as HTMLTextAreaElement).value,
-    ).toBe(
-      "Несохранённый текст",
-    );
+    ).toBe("Несохранённый текст");
 
     Object.defineProperty(document, "visibilityState", {
       configurable: true,
@@ -177,9 +175,7 @@ describe("TelegramBroadcastDetailPage container", () => {
     await flushPromises();
     expect(
       (wrapper.get("#broadcast-text").element as HTMLTextAreaElement).value,
-    ).toBe(
-      "Несохранённый текст",
-    );
+    ).toBe("Несохранённый текст");
 
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     await router.push("/overview");
@@ -278,9 +274,7 @@ describe("TelegramBroadcastDetailPage container", () => {
 
     expect(wrapper.text()).toContain("Требуется свежий вход с MFA");
     expect(api.start).toHaveBeenCalledOnce();
-    await wrapper
-      .get('[data-action="broadcast-fresh-login"]')
-      .trigger("click");
+    await wrapper.get('[data-action="broadcast-fresh-login"]').trigger("click");
     await flushPromises();
 
     expect(logout).toHaveBeenCalledOnce();

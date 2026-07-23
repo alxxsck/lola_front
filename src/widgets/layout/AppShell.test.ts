@@ -230,6 +230,55 @@ describe("AppShell", () => {
     expect(wrapper.text()).toContain("Platform Operator");
   });
 
+  it("shows delivery recovery only to the exact Platform reader", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+        platformPermissionCodes: ["platform.notifications.operations.read"],
+      },
+      project: null,
+      projects: [],
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: "/platform/notification-operations",
+          component: { template: "<div />" },
+        },
+      ],
+    });
+    await router.push("/platform/notification-operations");
+    await router.isReady();
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: { template: "<div />" },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    expect(
+      wrapper.findAll(".sidebar-scroll nav a").map((link) => link.text()),
+    ).toEqual(["Доставка и восстановление"]);
+
+    auth.user!.platformPermissionCodes = [
+      "platform.notifications.operations.operate",
+    ];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).not.toContain("Доставка и восстановление");
+  });
+
   it("shows Project administrators only with the exact selected-Project read Permission", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

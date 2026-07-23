@@ -17,6 +17,8 @@ export const PLATFORM_PERMISSION_CODES = [
   "platform.provider_billing.read",
   "platform.provider_billing.sync",
   "platform.translation_usage.read",
+  "platform.notifications.operations.read",
+  "platform.notifications.operations.operate",
 ] as const;
 
 export const PROJECT_PERMISSION_CODES = [

@@ -48,6 +48,12 @@ export const useAuthStore = defineStore("auth", () => {
       user.value?.platformPermissionCodes?.includes("platform.cms_users.read")
     )
       return "/platform/cms-users";
+    if (
+      user.value?.platformPermissionCodes?.includes(
+        "platform.notifications.operations.read",
+      )
+    )
+      return "/platform/notification-operations";
     return "/settings/security";
   });
 

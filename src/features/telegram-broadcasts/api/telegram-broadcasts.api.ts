@@ -42,8 +42,15 @@ export function mapTelegramBroadcastSummary(
     title: value.title,
     status: value.status,
     version: value.version,
-    revision: { ...value.revision },
-    content: { text: value.revision.text },
+    revision: {
+      id: value.revision.id,
+      revisionNumber: value.revision.revisionNumber,
+      contentHash: value.revision.contentHash,
+      text: value.revision.text ?? "",
+      contentAvailable: value.revision.contentAvailable,
+      createdAt: value.revision.createdAt,
+    },
+    content: { text: value.revision.text ?? "" },
     audience: { kind: "ALL_EXPLICITLY_OPTED_IN" },
     approval: null,
     latestTest: null,
@@ -126,8 +133,8 @@ function mapTest(value: {
   label: string;
   revisionId: string;
   status: TelegramBroadcastTestSend["status"];
-    currentRevision: boolean;
-    sentAt?: string | null;
+  currentRevision: boolean;
+  sentAt?: string | null;
 }): TelegramBroadcastTestSend {
   return {
     id: value.id,

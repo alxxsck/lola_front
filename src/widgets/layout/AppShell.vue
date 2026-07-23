@@ -38,6 +38,12 @@ const navigation = computed(() =>
       to: "/platform/cms-users",
       platformPermission: "platform.cms_users.read",
     },
+    {
+      label: "Доставка и восстановление",
+      icon: "pi pi-heart-fill",
+      to: "/platform/notification-operations",
+      platformPermission: "platform.notifications.operations.read",
+    },
     { label: "Обзор", icon: "pi pi-sparkles", to: "/overview", project: true },
     {
       label: "Проект",

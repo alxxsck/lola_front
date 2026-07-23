@@ -156,6 +156,32 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("security-settings");
   });
 
+  it("allows notification recovery only with the exact Platform read Permission", async () => {
+    const auth = useAuthStore();
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+        platformPermissionCodes: ["platform.notifications.operations.read"],
+      },
+    });
+
+    await router.push("/platform/notification-operations");
+    expect(router.currentRoute.value.name).toBe(
+      "platform-notification-operations",
+    );
+
+    auth.user!.platformPermissionCodes = [
+      "platform.notifications.operations.operate",
+    ];
+    await router.push("/settings/security");
+    await router.push("/platform/notification-operations");
+    expect(router.currentRoute.value.name).toBe("security-settings");
+  });
+
   it("allows every authenticated CMS User to open personal security settings", async () => {
     const auth = useAuthStore();
     auth.$patch({
