@@ -6,7 +6,7 @@ import type { Scenario } from '@/shared/types/domain'
 import ScenariosPage from './ScenariosPage.vue'
 
 const mocks = vi.hoisted(() => ({
-  push: vi.fn(), getScenarios: vi.fn(), getEvents: vi.fn(), saveScenario: vi.fn(),
+  push: vi.fn(), getScenarios: vi.fn(), getEvents: vi.fn(), updateScenarioMetadata: vi.fn(),
   toast: vi.fn(), permissions: [
     'project.scenarios.read', 'project.scenarios.write', 'project.scenarios.publish',
     'project.event_catalog.read',
@@ -18,13 +18,13 @@ vi.mock('primevue/usetoast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 vi.mock('primevue/useconfirm', () => ({ useConfirm: () => ({ require: vi.fn() }) }))
 vi.mock('@/features/auth/auth.store', () => ({ useAuthStore: () => ({ project: { id: 'project-1', get effectivePermissionCodes() { return mocks.permissions } } }) }))
 vi.mock('@/shared/api/repository', () => ({ repository: {
-  getScenarios: mocks.getScenarios, getEvents: mocks.getEvents, saveScenario: mocks.saveScenario,
+  getScenarios: mocks.getScenarios, getEvents: mocks.getEvents, updateScenarioMetadata: mocks.updateScenarioMetadata,
 } }))
 
 const scenario = {
   id: 'scenario-1', projectId: 'project-1', name: 'Welcome', code: 'welcome', description: '',
   eventDefinitionId: 'event-1', status: 'DRAFT', conversationPolicy: 'create_new', priority: 0,
-  conditions: [], actions: [], updatedAt: '2026-07-20T10:00:00.000Z',
+  updatedAt: '2026-07-20T10:00:00.000Z',
 } as Scenario
 
 describe('ScenariosPage V2 activation boundary', () => {
@@ -36,16 +36,16 @@ describe('ScenariosPage V2 activation boundary', () => {
     ]
     mocks.getScenarios.mockResolvedValue([scenario])
     mocks.getEvents.mockResolvedValue([])
-    mocks.saveScenario.mockImplementation(async (_projectId, payload) => ({ ...scenario, ...payload }))
+    mocks.updateScenarioMetadata.mockImplementation(async (_projectId, _scenarioId, payload) => ({ ...scenario, ...payload }))
   })
 
-  it('routes inactive scenarios to Studio instead of activating through legacy save', async () => {
+  it('routes inactive scenarios to Studio for atomic publication', async () => {
     const wrapper = shallowMount(ScenariosPage)
     await flushPromises()
 
     await (wrapper.vm as unknown as { toggleScenario: (value: Scenario) => Promise<void> }).toggleScenario(scenario)
 
-    expect(mocks.saveScenario).not.toHaveBeenCalled()
+    expect(mocks.updateScenarioMetadata).not.toHaveBeenCalled()
     expect(mocks.push).toHaveBeenCalledWith({ name: 'scenario-edit', params: { scenarioId: 'scenario-1' } })
   })
 
@@ -55,7 +55,15 @@ describe('ScenariosPage V2 activation boundary', () => {
 
     await (wrapper.vm as unknown as { toggleScenario: (value: Scenario) => Promise<void> }).toggleScenario({ ...scenario, status: 'ACTIVE' })
 
-    expect(mocks.saveScenario).toHaveBeenCalledWith('project-1', expect.objectContaining({ status: 'PAUSED' }))
+    expect(mocks.updateScenarioMetadata).toHaveBeenCalledWith(
+      'project-1',
+      'scenario-1',
+      {
+        status: 'PAUSED',
+        expectedUpdatedAt: scenario.updatedAt,
+        reason: 'Pause scenario from CMS list',
+      },
+    )
   })
 
   it('does not present action counts that are absent from the scenario summary contract', async () => {
@@ -79,7 +87,7 @@ describe('ScenariosPage V2 activation boundary', () => {
 
     await (wrapper.vm as unknown as { toggleScenario: (value: Scenario) => Promise<void> })
       .toggleScenario({ ...scenario, status: 'ACTIVE' })
-    expect(mocks.saveScenario).not.toHaveBeenCalled()
+    expect(mocks.updateScenarioMetadata).not.toHaveBeenCalled()
   })
 
   it('does not enter publication without the separate publish Permission', async () => {
@@ -91,6 +99,6 @@ describe('ScenariosPage V2 activation boundary', () => {
       .toggleScenario(scenario)
 
     expect(mocks.push).not.toHaveBeenCalled()
-    expect(mocks.saveScenario).not.toHaveBeenCalled()
+    expect(mocks.updateScenarioMetadata).not.toHaveBeenCalled()
   })
 })

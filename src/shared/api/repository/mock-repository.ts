@@ -9,7 +9,6 @@ import {
   demoSessions,
   demoUsers,
 } from "@/shared/api/mock-data";
-import { normalizeScenarioActions } from "@/shared/lib/domain";
 import { uid } from "@/shared/lib/format";
 import type {
   ActiveSession,
@@ -545,30 +544,22 @@ export const mockRepository: LolaRepository = {
     await pause();
     return readDemo().scenarios;
   },
-  async saveScenario(projectId, value) {
-    const data = readDemo();
-    const saved = {
-      status: "DRAFT",
-      conversationPolicy: "create_new",
-      priority: 0,
-      conditions: [],
-      ...value,
-      id: value.id ?? uid("scn"),
-      projectId,
-    } as Scenario;
-    saved.actions = normalizeScenarioActions(saved.actions);
-    const index = data.scenarios.findIndex((item) => item.id === saved.id);
-    if (index >= 0) data.scenarios.splice(index, 1, saved);
-    else data.scenarios.push(saved);
-    writeDemo(data);
-    await pause();
-    return saved;
-  },
   async updateScenarioMetadata(_projectId, scenarioId, value) {
     const data = readDemo();
     const index = data.scenarios.findIndex((item) => item.id === scenarioId);
     if (index < 0) throw new Error("Scenario not found");
-    const saved = { ...data.scenarios[index]!, ...value } as Scenario;
+    const current = data.scenarios[index]!;
+    if (current.updatedAt !== value.expectedUpdatedAt) {
+      throw new Error("Scenario metadata conflict");
+    }
+    const patch = { ...value };
+    Reflect.deleteProperty(patch, "expectedUpdatedAt");
+    Reflect.deleteProperty(patch, "reason");
+    const saved = {
+      ...current,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    } as Scenario;
     data.scenarios.splice(index, 1, saved);
     writeDemo(data);
     await pause();
@@ -989,18 +980,18 @@ export const mockRepository: LolaRepository = {
           conversationPolicy: scenario.conversationPolicy,
           startedAt: item.timestamp,
           currentStep: 1,
-          steps: scenario.actions.slice(0, 3).map((action, index) => ({
+          steps: ["SHOW_ASSISTANT", "PLAY_ANIMATION", "SAY"].map((actionType, index) => ({
             id: `step_${index}`,
             position: index,
-            nodeKey: action.nodeKey ?? `step_${index}`,
-            actionType: action.type,
+            nodeKey: `step_${index}`,
+            actionType,
             executor: "FRONTEND",
             status: index === 2 ? "WAITING_ACK" : "SUCCEEDED",
             command:
               index === 2
                 ? {
                     id: "cmd_demo",
-                    type: action.type,
+                    type: actionType,
                     status: "SENT",
                     sequence: 3,
                     createdAt: item.timestamp,

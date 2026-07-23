@@ -7,6 +7,28 @@ describe("демонстрационное хранилище", () => {
     vi.useFakeTimers();
   });
 
+  it("updates scenario metadata with the same concurrency contract as the API", async () => {
+    const listPromise = mockRepository.getScenarios("prj_lola_demo");
+    await vi.runAllTimersAsync();
+    const [scenario] = await listPromise;
+    const updatePromise = mockRepository.updateScenarioMetadata(
+      "prj_lola_demo",
+      scenario!.id,
+      {
+        status: "PAUSED",
+        expectedUpdatedAt: scenario!.updatedAt!,
+        reason: "Pause scenario from CMS list",
+      },
+    );
+    await vi.runAllTimersAsync();
+    const updated = await updatePromise;
+
+    expect(updated.status).toBe("PAUSED");
+    expect(updated.updatedAt).not.toBe(scenario!.updatedAt);
+    expect(updated).not.toHaveProperty("reason");
+    expect(updated).not.toHaveProperty("expectedUpdatedAt");
+  });
+
   it("повторяет составную отправку целиком без второго сообщения", async () => {
     const request = {
       text: "Здравствуйте",

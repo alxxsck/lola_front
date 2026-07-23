@@ -27,7 +27,6 @@ const mocks = vi.hoisted(() => ({
   getScenarios: vi.fn(),
   getEvents: vi.fn(),
   getElements: vi.fn(),
-  saveScenario: vi.fn(),
   updateScenarioMetadata: vi.fn(),
   getContract: vi.fn(),
   createScenario: vi.fn(),
@@ -36,6 +35,7 @@ const mocks = vi.hoisted(() => ({
   searchSegments: vi.fn(),
   ensureProjectActionsLoaded: vi.fn(),
   projectActions: [] as ProjectAction[],
+  authoringActions: [] as Array<Record<string, unknown>>,
   guardDirty: null as { value: boolean } | null,
   routeLeaveGuards: [] as Array<() => boolean>,
   permissions: [
@@ -76,7 +76,6 @@ vi.mock("@/shared/api/repository", () => ({
     getScenarios: mocks.getScenarios,
     getEvents: mocks.getEvents,
     getElements: mocks.getElements,
-    saveScenario: mocks.saveScenario,
     updateScenarioMetadata: mocks.updateScenarioMetadata,
   },
 }));
@@ -139,8 +138,6 @@ const scenario = {
   status: "DRAFT",
   conversationPolicy: "create_new",
   priority: 0,
-  conditions: [],
-  actions: [],
   updatedAt: "2026-07-20T10:00:00.000Z",
 };
 
@@ -291,6 +288,10 @@ function stageButton(wrapper: ReturnType<typeof mountPage>, label: string) {
     .find((button) => button.find("strong").text() === label)!;
 }
 
+function setAuthoringActions(actions: Array<Record<string, unknown>>) {
+  mocks.authoringActions = actions;
+}
+
 async function openValidation(wrapper: ReturnType<typeof mountPage>) {
   await wrapper
     .find('button-stub[label="Проверить условия"]')
@@ -313,21 +314,26 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     mocks.getElements.mockResolvedValue([]);
     mocks.ensureProjectActionsLoaded.mockResolvedValue([]);
     mocks.projectActions = [];
+    mocks.authoringActions = [];
     mocks.getContract.mockResolvedValue(contract);
-    mocks.getScenarioDocument.mockResolvedValue({
-      scenarioId: scenario.id,
-      projectId: "project-1",
-      code: scenario.code,
-      name: scenario.name,
-      status: scenario.status,
-      triggerEventDefinitionRevisionId: event.id,
-      currentRevisionId: null,
-      editable: true,
-      source: undefined,
-      draft: undefined,
-      createdAt: "now",
-      updatedAt: "now",
-    });
+    mocks.getScenarioDocument.mockImplementation(async () => ({
+        scenarioId: scenario.id,
+        projectId: "project-1",
+        code: scenario.code,
+        name: scenario.name,
+        status: scenario.status,
+        triggerEventDefinitionRevisionId: event.id,
+        currentRevisionId: null,
+        editable: true,
+        source: {
+          graph: {
+            actions: mocks.authoringActions,
+          },
+        },
+        draft: undefined,
+        createdAt: "now",
+        updatedAt: "now",
+      }));
     mocks.saveScenarioDraft.mockResolvedValue({
       id: "draft-1",
       version: 1,
@@ -353,7 +359,6 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       },
     });
     mocks.searchSegments.mockResolvedValue({ items: [], nextCursor: null });
-    mocks.saveScenario.mockResolvedValue(scenario);
     mocks.updateScenarioMetadata.mockResolvedValue(scenario);
   });
 
@@ -377,7 +382,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     );
   });
 
-  it("preserves a new multilingual form after create failure and retries without legacy graph save", async () => {
+  it("preserves a new multilingual form after create failure and retries atomic creation", async () => {
     mocks.route.params.scenarioId = "new";
     mocks.getScenarios.mockResolvedValueOnce([]);
     mocks.projectActions = [
@@ -437,7 +442,6 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(mocks.createScenario).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(page.form)).toBe(formBeforeFailure);
     expect(mocks.replace).not.toHaveBeenCalled();
-    expect(mocks.saveScenario).not.toHaveBeenCalled();
     expect(mocks.saveScenarioDraft).not.toHaveBeenCalled();
     expect(mocks.updateScenarioMetadata).not.toHaveBeenCalled();
 
@@ -464,7 +468,6 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       }),
     );
     expect(mocks.createScenario).toHaveBeenCalledTimes(2);
-    expect(mocks.saveScenario).not.toHaveBeenCalled();
     expect(mocks.saveScenarioDraft).not.toHaveBeenCalled();
     expect(mocks.updateScenarioMetadata).not.toHaveBeenCalled();
     expect(mocks.replace).toHaveBeenCalledWith({
@@ -693,7 +696,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     });
   });
 
-  it("does not leave Studio after legacy save when Audience is the only V2 change", async () => {
+  it("does not leave Studio after saving an Audience-only draft change", async () => {
     const wrapper = mountPage();
     await flushPromises();
     await stageButton(wrapper, "Аудитория").trigger("click");
@@ -767,17 +770,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.find('[data-test="vue-flow"]').exists()).toBe(false);
     expect(wrapper.text()).toContain("Добавьте первое действие");
 
-    mocks.getScenarios.mockResolvedValueOnce([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "welcome_message",
-            type: "SAY",
-            config: { text: "Добро пожаловать" },
-          },
-        ],
+        position: 0,
+        nodeKey: "welcome_message",
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
       },
     ]);
     const configuredWrapper = mountPage();
@@ -804,18 +802,13 @@ describe("ScenarioEditorPage V2 rule journey", () => {
         },
       }),
     ];
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "welcome_message",
-            nextNodeKey: null,
-            type: "SAY",
-            config: { text: "Добро пожаловать" },
-          },
-        ],
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
       },
     ]);
     const wrapper = mountPage();
@@ -846,32 +839,27 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       projectAction("OPEN_CHAT"),
       projectAction("SAY"),
     ];
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "open_form",
-            nextNodeKey: "open_chat",
-            type: "OPEN_MODAL",
-            config: {},
-          },
-          {
-            position: 1,
-            nodeKey: "open_chat",
-            nextNodeKey: "say_hello",
-            type: "OPEN_CHAT",
-            config: {},
-          },
-          {
-            position: 2,
-            nodeKey: "say_hello",
-            nextNodeKey: null,
-            type: "SAY",
-            config: {},
-          },
-        ],
+        position: 0,
+        nodeKey: "open_form",
+        nextNodeKey: "open_chat",
+        type: "OPEN_MODAL",
+        config: {},
+      },
+      {
+        position: 1,
+        nodeKey: "open_chat",
+        nextNodeKey: "say_hello",
+        type: "OPEN_CHAT",
+        config: {},
+      },
+      {
+        position: 2,
+        nodeKey: "say_hello",
+        nextNodeKey: null,
+        type: "SAY",
+        config: {},
       },
     ]);
     const wrapper = mountPage();
@@ -904,34 +892,29 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       projectAction("ASK_CHOICE"),
       projectAction("SAY"),
     ];
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "question",
-            nextNodeKey: null,
-            type: "ASK_CHOICE",
-            config: {
-              message: "Продолжить?",
-              options: [
-                {
-                  id: "continue",
-                  label: "Да",
-                  nextNodeKey: "answer",
-                },
-              ],
+        position: 0,
+        nodeKey: "question",
+        nextNodeKey: null,
+        type: "ASK_CHOICE",
+        config: {
+          message: "Продолжить?",
+          options: [
+            {
+              id: "continue",
+              label: "Да",
+              nextNodeKey: "answer",
             },
-          },
-          {
-            position: 1,
-            nodeKey: "answer",
-            nextNodeKey: null,
-            type: "SAY",
-            config: { text: "Готово" },
-          },
-        ],
+          ],
+        },
+      },
+      {
+        position: 1,
+        nodeKey: "answer",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Готово" },
       },
     ]);
     const wrapper = mountPage();
@@ -1008,7 +991,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.findComponent(RuleValidationPreview).exists()).toBe(false);
   });
 
-  it("saves the durable document before legacy metadata and never sends actions through the legacy PATCH", async () => {
+  it("saves the durable document before updating scenario metadata", async () => {
     const wrapper = mountPage();
     await flushPromises();
     await stageButton(wrapper, "Условия").trigger("click");
@@ -1039,7 +1022,6 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     await wrapper.find('button-stub[label="Сохранить"]').trigger("click");
     await flushPromises();
 
-    expect(mocks.saveScenario).not.toHaveBeenCalled();
     expect(mocks.updateScenarioMetadata).toHaveBeenCalledWith(
       "project-1",
       "scenario-1",
@@ -1182,7 +1164,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(mocks.routeLeaveGuards.at(-1)?.()).toBe(false);
   });
 
-  it("does not offer legacy ACTIVE activation before atomic V2 publish", async () => {
+  it("does not offer ACTIVE activation before atomic publish", async () => {
     const wrapper = mountPage();
     await flushPromises();
 
@@ -1207,43 +1189,32 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     ).toBe(false);
   });
 
-  it("blocks legacy graph save when a persisted Goal config fails domain validation", async () => {
-    mocks.getScenarios.mockResolvedValue([
+  it("blocks draft save when a persisted Goal config fails domain validation", async () => {
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "wait",
-            type: "WAIT_FOR_GOAL",
-            config: { eventCode: "", onGoal: "done", onTimeout: "timeout" },
-          },
-          { position: 1, nodeKey: "done", type: "SAY", config: {} },
-          { position: 2, nodeKey: "timeout", type: "SAY", config: {} },
-        ],
+        position: 0,
+        nodeKey: "wait",
+        type: "WAIT_FOR_GOAL",
+        config: { eventCode: "", onGoal: "done", onTimeout: "timeout" },
       },
+      { position: 1, nodeKey: "done", type: "SAY", config: {} },
+      { position: 2, nodeKey: "timeout", type: "SAY", config: {} },
     ]);
     const wrapper = mountPage();
     await flushPromises();
 
     await wrapper.find('button-stub[label="Сохранить"]').trigger("click");
 
-    expect(mocks.saveScenario).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain("Цель в узле «wait»");
   });
 
   it("blocks atomic publish when the document graph or Goal is invalid", async () => {
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "wait",
-            type: "WAIT_FOR_GOAL",
-            config: { eventCode: "", onGoal: "", onTimeout: "" },
-          },
-        ],
+        position: 0,
+        nodeKey: "wait",
+        type: "WAIT_FOR_GOAL",
+        config: { eventCode: "", onGoal: "", onTimeout: "" },
       },
     ]);
     const wrapper = mountPage();
@@ -1273,15 +1244,30 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     confirm.mockRestore();
   });
 
-  it("keeps the legacy editor usable when the authoring catalog is temporarily unavailable", async () => {
+  it("fails closed when the authoring catalog is unavailable", async () => {
     mocks.getContract.mockRejectedValue(new Error("catalog offline"));
     const wrapper = mountPage();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Welcome");
-    await stageButton(wrapper, "Условия").trigger("click");
-    expect(wrapper.text()).toContain("Не удалось загрузить каталог условий");
-    expect(wrapper.findComponent(ScenarioRuleBuilder).exists()).toBe(false);
+    expect(wrapper.text()).toContain("catalog offline");
+    expect(wrapper.find(".studio-stages").exists()).toBe(false);
+    expect(wrapper.find('button-stub[label="Сохранить"]').exists()).toBe(false);
+  });
+
+  it("does not expose or retain scenario conditions from the removed editor", async () => {
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        conditions: [{ path: "user.segment", operator: "eq", value: "vip" }],
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Условия старого формата");
+    expect(
+      (wrapper.vm as unknown as { form: Record<string, unknown> }).form,
+    ).not.toHaveProperty("conditions");
   });
 
   it("keeps Trigger and Eligibility usable when the Actions catalog is incompatible", async () => {
@@ -1376,17 +1362,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
 
   it("uses the pinned Project Action revision as the editor definition catalog", async () => {
     mocks.projectActions = [projectAction("SHOW_ASSISTANT")];
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "show_assistant",
-            type: "SHOW_ASSISTANT",
-            config: {},
-          },
-        ],
+        position: 0,
+        nodeKey: "show_assistant",
+        type: "SHOW_ASSISTANT",
+        config: {},
       },
     ]);
 
@@ -1413,17 +1394,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   });
 
   it("keeps an unknown existing action as an opaque node and marks the graph invalid", async () => {
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "legacy_action",
-            type: "LEGACY_UNKNOWN",
-            config: { preserved: true },
-          },
-        ],
+        position: 0,
+        nodeKey: "custom_action",
+        type: "CUSTOM_UNKNOWN",
+        config: { preserved: true },
       },
     ]);
 
@@ -1431,23 +1407,18 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     await flushPromises();
     await stageButton(wrapper, "Действия").trigger("click");
 
-    expect(wrapper.get(".mobile-action-outline").text()).toContain("legacy_action");
+    expect(wrapper.get(".mobile-action-outline").text()).toContain("custom_action");
     expect(stageButton(wrapper, "Действия").classes()).toContain("active");
     expect(wrapper.text()).toContain("1 ошибка в действиях");
   });
 
   it("renders a mobile-safe action outline that can open a node without canvas gestures", async () => {
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "welcome_message",
-            type: "SAY",
-            config: { text: "Добро пожаловать" },
-          },
-        ],
+        position: 0,
+        nodeKey: "welcome_message",
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
       },
     ]);
     const wrapper = mountPage();
@@ -1478,17 +1449,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       projectAction("SAY"),
       projectAction("CLOSE_CHAT"),
     ];
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "wait_for_deposit",
-            type: "WAIT_FOR_GOAL",
-            config: {},
-          },
-        ],
+        position: 0,
+        nodeKey: "wait_for_deposit",
+        type: "WAIT_FOR_GOAL",
+        config: {},
       },
     ]);
     const wrapper = mountPage();
@@ -1543,17 +1509,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
         removeEventListener: vi.fn(),
       }),
     );
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "welcome_message",
-            type: "SAY",
-            config: { text: "Добро пожаловать" },
-          },
-        ],
+        position: 0,
+        nodeKey: "welcome_message",
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
       },
     ]);
     const wrapper = mountPage();
@@ -1589,17 +1550,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
         },
       }),
     ];
-    mocks.getScenarios.mockResolvedValue([
+    setAuthoringActions([
       {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "welcome_message",
-            type: "SAY",
-            config: { text: "Добро пожаловать" },
-          },
-        ],
+        position: 0,
+        nodeKey: "welcome_message",
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
       },
     ]);
     const wrapper = mountPage();
@@ -1678,19 +1634,6 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   });
 
   it("keeps stage navigation usable while the scenario is read-only", async () => {
-    mocks.getScenarios.mockResolvedValueOnce([
-      {
-        ...scenario,
-        actions: [
-          {
-            position: 0,
-            nodeKey: "welcome_message",
-            type: "SAY",
-            config: { text: "Добро пожаловать" },
-          },
-        ],
-      },
-    ]);
     mocks.getScenarioDocument.mockResolvedValueOnce({
       scenarioId: scenario.id,
       projectId: "project-1",
@@ -1721,12 +1664,8 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.findComponent(AudienceRuleBuilder).exists()).toBe(false);
 
     await stageButton(wrapper, "Действия").trigger("click");
-    await wrapper
-      .get('button[aria-label="Открыть узел welcome_message"]')
-      .trigger("click");
-    expect(wrapper.get(".readonly-action-panel").text()).toContain(
-      "Добро пожаловать",
-    );
+    expect(wrapper.text()).toContain("0 действий");
+    expect(wrapper.find(".readonly-action-panel").exists()).toBe(false);
 
     await stageButton(wrapper, "Доставка").trigger("click");
     expect(wrapper.text()).toContain("Настройки доставки только для просмотра");

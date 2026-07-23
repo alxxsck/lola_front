@@ -24,7 +24,6 @@ import "@vue-flow/controls/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
-import ScenarioConditionRows from "@/features/scenarios/ScenarioConditionRows.vue";
 import {
   createRuleDraft,
   mapBackendRuleIssues,
@@ -85,10 +84,7 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import { repository } from "@/shared/api/repository";
-import type {
-  SaveScenario,
-  UpdateScenarioMetadata,
-} from "@/shared/api/repository/contracts";
+import type { UpdateScenarioMetadata } from "@/shared/api/repository/contracts";
 import {
   scenarioAuthoringRepository,
   type ScenarioAuthoringContract,
@@ -97,7 +93,6 @@ import {
 import type {
   ConversationPolicy,
   EventDefinition,
-  Scenario,
   ScenarioAction,
   ScenarioStatus,
   UiElement,
@@ -116,7 +111,6 @@ import {
   createScenarioNode,
   graphTransitions,
   normalizePositions,
-  normalizeScenarioActions,
   renameScenarioNode,
   rotateLinearScenarioStart,
   sortScenarioActions,
@@ -135,7 +129,6 @@ interface ScenarioForm {
   status: ScenarioStatus;
   conversationPolicy: ConversationPolicy;
   priority: number;
-  conditions: Scenario["conditions"];
   cooldownSeconds?: number;
   maxRunsPerUser?: number;
   activeFrom?: string;
@@ -265,7 +258,6 @@ const form = reactive<ScenarioForm>({
   status: "DRAFT",
   priority: 0,
   conversationPolicy: "create_new",
-  conditions: [],
   cooldownSeconds: undefined,
   maxRunsPerUser: undefined,
   actions: [],
@@ -725,11 +717,6 @@ const conditionPaths = computed(() => {
     ]),
   ];
 });
-const triggerConditionPaths = computed(() =>
-  conditionPaths.value.filter(
-    (path) => !path.startsWith("answers.") && !path.startsWith("results."),
-  ),
-);
 const templateVariables = computed(() => {
   const typedByPath = new Map(
     templateAttributes.value.map((attribute) => [
@@ -988,9 +975,6 @@ async function load() {
         .then(async (value) => {
           authoringContract.value = value;
           if (value.audience) await refreshAudienceSegments();
-        })
-        .catch((cause: unknown) => {
-          authoringError.value = scenarioApiErrorMessage(cause);
         }),
       repository.mode === "api"
         ? attributeContractRepository
@@ -1055,12 +1039,10 @@ async function load() {
         status: scenario.status,
         conversationPolicy: scenario.conversationPolicy ?? "create_new",
         priority: scenario.priority,
-        conditions: structuredClone(scenario.conditions ?? []),
         cooldownSeconds: scenario.cooldownSeconds,
         maxRunsPerUser: scenario.maxRunsPerUser,
         activeFrom: scenario.activeFrom,
         activeTo: scenario.activeTo,
-        actions: normalizeScenarioActions(scenario.actions),
       });
       codeTouched.value = true;
       const document = await loadAuthoringDocument(projectId, scenario.id);
@@ -1705,17 +1687,20 @@ async function save() {
   saving.value = true;
   try {
     const existingScenarioId = form.id;
-    const payload: SaveScenario = {
-      ...form,
+    const payload = {
+      id: form.id,
+      updatedAt: form.updatedAt,
       name: form.name.trim(),
       code: form.code.trim(),
       description: form.description.trim() || undefined,
+      eventDefinitionId: form.eventDefinitionId,
+      status: form.status,
+      conversationPolicy: form.conversationPolicy,
+      priority: form.priority,
       cooldownSeconds: form.cooldownSeconds || undefined,
       maxRunsPerUser: form.maxRunsPerUser || undefined,
-      actions: form.actions.map((action, position) => ({
-        ...toPlainScenarioAction(action),
-        position,
-      })),
+      activeFrom: form.activeFrom,
+      activeTo: form.activeTo,
     };
     if (payload.status === 'ARCHIVED') {
       throw new Error('Архивный сценарий нельзя изменить из редактора');
@@ -1876,7 +1861,7 @@ function leave() {
           :disabled="publishPending"
           @click="leave"
         /><Button
-          v-if="authoringEditable"
+          v-if="authoringEditable && !error"
           label="Сохранить"
           icon="pi pi-check"
           :loading="saving"
@@ -2811,19 +2796,6 @@ function leave() {
                 placeholder="Без паузы"
               />
             </div>
-          </section>
-          <section v-if="form.conditions.length">
-            <div class="section-copy">
-              <h3>Условия старого формата</h3>
-              <p>
-                Эти условия нужны для совместимости со старыми версиями
-                сценария. Новые условия настраиваются в разделе «Условия».
-              </p>
-            </div>
-            <ScenarioConditionRows
-              v-model="form.conditions"
-              :paths="triggerConditionPaths"
-            />
           </section>
         </aside>
         <aside

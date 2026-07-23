@@ -167,14 +167,12 @@ export function mapScenario(
     status: dto.status,
     conversationPolicy: dto.conversationPolicy,
     priority: dto.priority,
-    conditions: [],
     cooldownSeconds: dto.cooldownSeconds,
     ...(dto.maxRunsPerUser == null
       ? {}
       : { maxRunsPerUser: dto.maxRunsPerUser }),
     ...(dto.activeFrom == null ? {} : { activeFrom: dto.activeFrom }),
     ...(dto.activeTo == null ? {} : { activeTo: dto.activeTo }),
-    actions: [],
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };

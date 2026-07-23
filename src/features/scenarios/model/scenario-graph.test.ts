@@ -43,14 +43,11 @@ describe('scenario graph model', () => {
     expect(rotateLinearScenarioStart(actions, 'finish')).toBeNull()
   })
 
-  it('upgrades legacy linear actions without losing their order', () => {
-    expect(normalizeScenarioActions([
+  it('rejects graph actions without durable node identities', () => {
+    expect(() => normalizeScenarioActions([
       { position: 0, type: 'SAY', config: { text: 'Hi' } },
       { position: 1, type: 'COMPLETE_SCENARIO', config: {} },
-    ])).toMatchObject([
-      { nodeKey: 'step_0', nextNodeKey: 'step_1' },
-      { nodeKey: 'step_1', nextNodeKey: null },
-    ])
+    ])).toThrow('nodeKey')
   })
 
   it('derives labelled choice and timeout transitions', () => {

@@ -18,9 +18,6 @@ import { repository } from '@/shared/api/repository'
 import { formatDate } from '@/shared/lib/format'
 import type { EventDefinition, Scenario, ScenarioStatus } from '@/shared/types/domain'
 
-type ScenarioPayload = Partial<Scenario> &
-  Pick<Scenario, 'name' | 'code' | 'eventDefinitionId' | 'actions'>
-
 const auth = useAuthStore()
 const toast = useToast()
 const confirm = useConfirm()
@@ -101,7 +98,12 @@ async function toggleScenario(scenario: Scenario) {
   const nextStatus: ScenarioStatus = 'PAUSED'
   pendingIds.value.add(scenario.id)
   try {
-    const saved = await repository.saveScenario(projectId, toPayload(scenario, nextStatus))
+    if (!scenario.updatedAt) throw new Error('Не удалось определить версию сценария')
+    const saved = await repository.updateScenarioMetadata(projectId, scenario.id, {
+      status: nextStatus,
+      expectedUpdatedAt: scenario.updatedAt,
+      reason: 'Pause scenario from CMS list',
+    })
     replaceScenario(saved)
     toast.add({
       severity: 'secondary',
@@ -145,26 +147,6 @@ async function deleteScenario(scenario: Scenario) {
     toast.add({ severity: 'error', summary: 'Не удалось удалить', detail: errorMessage(cause), life: 4500 })
   } finally {
     pendingIds.value.delete(scenario.id)
-  }
-}
-
-function toPayload(scenario: Scenario, status = scenario.status): ScenarioPayload {
-  return {
-    id: scenario.id,
-    name: scenario.name,
-    code: scenario.code,
-    description: scenario.description,
-    eventDefinitionId: scenario.eventDefinitionId,
-    status,
-    conversationPolicy: scenario.conversationPolicy,
-    priority: scenario.priority,
-    conditions: scenario.conditions,
-    cooldownSeconds: scenario.cooldownSeconds,
-    maxRunsPerUser: scenario.maxRunsPerUser,
-    activeFrom: scenario.activeFrom,
-    activeTo: scenario.activeTo,
-    actions: scenario.actions,
-    updatedAt: scenario.updatedAt,
   }
 }
 

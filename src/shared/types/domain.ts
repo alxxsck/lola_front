@@ -285,12 +285,10 @@ export interface Scenario {
   status: ScenarioStatus;
   conversationPolicy: ConversationPolicy;
   priority: number;
-  conditions: ScenarioCondition[];
   cooldownSeconds?: number;
   maxRunsPerUser?: number;
   activeFrom?: string;
   activeTo?: string;
-  actions: ScenarioAction[];
   createdAt?: string;
   updatedAt?: string;
 }

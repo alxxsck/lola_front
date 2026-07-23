@@ -501,7 +501,7 @@ describe("api repository adapter", () => {
     );
   });
 
-  it("uses generated scenario list, metadata and archive endpoints without legacy scenario conditions", async () => {
+  it("uses generated Scenario Authoring list, metadata and archive endpoints", async () => {
     const scenario = {
       id: "scenario-1",
       projectId: "project-1",
@@ -512,7 +512,6 @@ describe("api repository adapter", () => {
       status: "ACTIVE",
       conversationPolicy: "create_new",
       priority: 0,
-      conditions: [{ path: "legacy", operator: "eq", value: true }],
       currentRevisionId: "scenario-revision-1",
       cooldownSeconds: 0,
       maxRunsPerUser: null,
@@ -535,7 +534,7 @@ describe("api repository adapter", () => {
     } as never);
 
     await expect(apiRepository.getScenarios("project-1")).resolves.toEqual([
-      expect.objectContaining({ id: "scenario-1", conditions: [] }),
+      expect.objectContaining({ id: "scenario-1" }),
     ]);
     await apiRepository.updateScenarioMetadata("project-1", "scenario-1", {
       status: "PAUSED",
@@ -564,25 +563,6 @@ describe("api repository adapter", () => {
         reason: "Archive obsolete scenario",
       },
     );
-  });
-
-  it("fails closed when generic scenario save tries to bypass the audited archive operation", async () => {
-    await expect(
-      apiRepository.saveScenario("project-1", {
-        id: "scenario-1",
-        projectId: "project-1",
-        code: "welcome",
-        name: "Welcome",
-        eventDefinitionId: "event-revision-1",
-        status: "ARCHIVED",
-        conversationPolicy: "create_new",
-        priority: 0,
-        conditions: [],
-        actions: [],
-        updatedAt: "2026-07-20T11:00:00.000Z",
-      }),
-    ).rejects.toThrow("audited archive operation");
-    expect(scenarioAuthoringUpdateScenarioMetadata).not.toHaveBeenCalled();
   });
 
   it("fails closed for authoring capabilities that still have no target endpoint", async () => {

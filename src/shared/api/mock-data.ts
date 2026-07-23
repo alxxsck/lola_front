@@ -551,42 +551,10 @@ export const demoScenarios: Scenario[] = [
     status: 'ACTIVE',
     conversationPolicy: 'create_new',
     priority: 100,
-    conditions: [],
     cooldownSeconds: 86400,
     maxRunsPerUser: 1,
-    actions: [
-      { id: 'act_1', position: 0, type: 'SHOW_ASSISTANT', config: {} },
-      {
-        id: 'act_2',
-        position: 1,
-        type: 'PLAY_ANIMATION',
-        config: { animation: 'excited' },
-      },
-      {
-        id: 'act_3',
-        position: 2,
-        type: 'SAY',
-        config: {
-          text: 'Регистрация завершена. Давайте сделаем следующий шаг.',
-        },
-      },
-      {
-        id: 'act_4',
-        position: 3,
-        type: 'HIGHLIGHT_ELEMENT',
-        config: { target: 'deposit_button' },
-      },
-      {
-        id: 'act_5',
-        position: 4,
-        type: 'SHOW_CTA',
-        config: {
-          label: 'Пополнить баланс',
-          action: 'open_modal',
-          modalId: 'deposit_modal',
-        },
-      },
-    ],
+    createdAt: '2026-07-20T10:00:00.000Z',
+    updatedAt: '2026-07-23T08:00:00.000Z',
   },
   {
     id: 'scn_2',
@@ -598,23 +566,8 @@ export const demoScenarios: Scenario[] = [
     status: 'DRAFT',
     conversationPolicy: 'create_new',
     priority: 80,
-    conditions: [],
-    actions: [
-      {
-        position: 0,
-        type: 'SAY',
-        config: { text: 'Похоже, платеж не прошел. Помочь разобраться?' },
-      },
-      {
-        position: 1,
-        type: 'SHOW_CTA',
-        config: {
-          label: 'Посмотреть инструкцию',
-          action: 'open_page',
-          pageId: 'bonuses_page',
-        },
-      },
-    ],
+    createdAt: '2026-07-21T10:00:00.000Z',
+    updatedAt: '2026-07-23T09:00:00.000Z',
   },
 ]
 

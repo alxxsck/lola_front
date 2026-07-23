@@ -64,7 +64,6 @@ export type CreateUiElement = UiElementCreateBase & (
 export type UpdateUiElement = Partial<Pick<UiElement, 'name' | 'code' | 'kind' | 'selector' | 'route' | 'modalName' | 'config' | 'enabled' | 'aiEnabled' | 'aiDescription' | 'aiAliases'>>
   & { auditReason?: string }
 export type SaveEventDefinition = Partial<EventDefinition> & Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>
-export type SaveScenario = Partial<Scenario> & Pick<Scenario, 'name' | 'code' | 'eventDefinitionId' | 'actions'>
 export type UpdateScenarioMetadata = Partial<Pick<Scenario, 'name' | 'description' | 'eventDefinitionId' | 'conversationPolicy' | 'priority' | 'cooldownSeconds' | 'maxRunsPerUser' | 'activeFrom' | 'activeTo'>>
   & { status?: Exclude<Scenario['status'], 'ARCHIVED'> }
   & Pick<ArchiveScenarioAuthoringDto, 'expectedUpdatedAt' | 'reason'>
@@ -169,7 +168,6 @@ export interface LolaRepository {
   updateUserAttributeDefinition(projectId: string, id: string, value: UpdateUserAttributeDefinitionInput): Promise<UserAttributeMutation>
   deleteUserAttributeDefinition(projectId: string, id: string): Promise<UserAttributeMutation>
   getScenarios(projectId: string): Promise<Scenario[]>
-  saveScenario(projectId: string, value: SaveScenario): Promise<Scenario>
   updateScenarioMetadata(projectId: string, scenarioId: string, value: UpdateScenarioMetadata): Promise<Scenario>
   deleteScenario(projectId: string, id: string, command: ArchiveScenarioCommand): Promise<void>
   getUsers(projectId: string): Promise<EndUser[]>

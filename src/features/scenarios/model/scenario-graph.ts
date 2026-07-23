@@ -50,16 +50,16 @@ export function toPlainScenarioAction(action: ScenarioAction): ScenarioAction {
 
 export function normalizeScenarioActions(actions: ScenarioAction[]): ScenarioAction[] {
   const ordered = [...actions].sort((left, right) => left.position - right.position)
-  const legacy = ordered.every((action) => !action.nodeKey)
+  if (ordered.some((action) => !action.nodeKey)) {
+    throw new Error('Scenario graph action is missing nodeKey')
+  }
   return ordered.map((action, position) => ({
     ...action,
     position,
-    nodeKey: action.nodeKey || `step_${position}`,
+    nodeKey: action.nodeKey,
     nextNodeKey: action.type === 'WAIT_FOR_GOAL'
       ? null
-      : legacy
-        ? ordered[position + 1]?.nodeKey || (position + 1 < ordered.length ? `step_${position + 1}` : null)
-        : action.nextNodeKey ?? null,
+      : action.nextNodeKey ?? null,
     config: structuredClone(action.config),
   }))
 }
