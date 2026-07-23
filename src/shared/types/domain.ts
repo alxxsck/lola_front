@@ -65,21 +65,15 @@ export interface ActionUiSchema extends Record<string, unknown> {
   fields: ActionUiField[];
 }
 
-export interface ScenarioActionDefinition {
+export interface ScenarioActionCatalogItem {
   id: string;
-  projectId: string;
   type: ActionType;
   name: string;
   description: string | null;
   executor: ActionExecutor;
-  serverHandler: string | null;
-  commandType: string | null;
   configSchema: ActionConfigSchema;
   uiSchema: ActionUiSchema;
   enabled: boolean;
-  builtIn: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Organization {
@@ -291,12 +285,10 @@ export interface Scenario {
   status: ScenarioStatus;
   conversationPolicy: ConversationPolicy;
   priority: number;
-  conditions: ScenarioCondition[];
   cooldownSeconds?: number;
   maxRunsPerUser?: number;
   activeFrom?: string;
   activeTo?: string;
-  actions: ScenarioAction[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -499,16 +491,36 @@ export interface ScenarioRun {
   steps: ScenarioRunStep[];
 }
 
-export interface AuditLog {
+export interface AuditEvent {
   id: string;
-  actor: { id?: string; email?: string; name?: string };
-  action: string;
-  status: "SUCCEEDED" | "FAILED";
+  actor: {
+    type: "CMS_USER" | "SYSTEM" | "BREAK_GLASS";
+    id: string;
+    email?: string;
+    name?: string;
+  };
+  target: {
+    kind: string;
+    id: string;
+  };
+  eventType: string;
+  eventVersion: number;
+  outcome: "SUCCESS" | "DENIED" | "FAILED";
+  operation?: string;
   resourceType?: string;
   resourceId?: string;
+  requiredPermissionCode?: string;
+  reasonCode?: string;
+  auditReason?: string;
   requestId?: string;
+  correlationId?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  authorizationEvidence: Record<string, unknown>;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
   metadata: Record<string, unknown>;
-  createdAt: string;
+  occurredAt: string;
 }
 
 export type DirectAdminActionType =

@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useScenarioAuthoringDocument } from './use-scenario-authoring-document'
+import {
+  restoreScenarioAuthoringSource,
+  useScenarioAuthoringDocument,
+} from './use-scenario-authoring-document'
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), get: vi.fn(), save: vi.fn() }))
 vi.mock('@/shared/api/repository/scenario-authoring', () => ({
@@ -12,6 +15,14 @@ vi.mock('@/shared/api/repository/scenario-authoring', () => ({
 }))
 
 describe('useScenarioAuthoringDocument', () => {
+  it('rejects an authoring source whose graph has no durable nodeKey', () => {
+    expect(() => restoreScenarioAuthoringSource({
+      graph: {
+        actions: [{ position: 0, type: 'SAY', config: { text: 'Hi' } }],
+      },
+    }, null, null)).toThrow('nodeKey')
+  })
+
   it('adopts the Scenario identity and concurrency versions returned by atomic creation', async () => {
     mocks.create.mockResolvedValue({
       scenarioId: 'scenario-1', currentRevisionId: null, draft: { version: 1 },

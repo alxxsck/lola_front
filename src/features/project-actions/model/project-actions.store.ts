@@ -19,6 +19,7 @@ export const useProjectActionsStore = defineStore('project-actions', () => {
   const mutationErrorsByAction = ref<Record<string, ProjectActionError | null>>({})
   const mutatingByAction = ref<Record<string, boolean>>({})
   const inFlight = new Map<string, Promise<void>>()
+  let generation = 0
 
   function catalogForProject(projectId: string): ActionTypeCatalogItem[] {
     return catalogByProject.value[projectId] ?? []
@@ -38,18 +39,24 @@ export const useProjectActionsStore = defineStore('project-actions', () => {
 
     loadingByProject.value = { ...loadingByProject.value, [projectId]: true }
     errorsByProject.value = { ...errorsByProject.value, [projectId]: null }
+    const requestGeneration = generation
     const request = Promise.all([
       projectActionsRepository.listActionTypes(projectId),
       projectActionsRepository.listProjectActions(projectId),
     ]).then(([catalog, actions]) => {
+      if (requestGeneration !== generation) return
       catalogByProject.value = { ...catalogByProject.value, [projectId]: catalog }
       actionsByProject.value = { ...actionsByProject.value, [projectId]: actions }
       loadedAtByProject.value = { ...loadedAtByProject.value, [projectId]: Date.now() }
     }).catch((cause: unknown) => {
-      errorsByProject.value = { ...errorsByProject.value, [projectId]: toProjectActionError(cause) }
+      if (requestGeneration === generation) {
+        errorsByProject.value = { ...errorsByProject.value, [projectId]: toProjectActionError(cause) }
+      }
       throw cause
     }).finally(() => {
-      loadingByProject.value = { ...loadingByProject.value, [projectId]: false }
+      if (requestGeneration === generation) {
+        loadingByProject.value = { ...loadingByProject.value, [projectId]: false }
+      }
       if (inFlight.get(projectId) === request) inFlight.delete(projectId)
     })
     inFlight.set(projectId, request)
@@ -67,17 +74,24 @@ export const useProjectActionsStore = defineStore('project-actions', () => {
   async function loadPreview(projectId: string, actionId: string, force = false): Promise<AiCapabilityPreview> {
     const cached = previewByAction.value[actionId]
     if (cached && !force) return cached
+    const requestGeneration = generation
     previewLoadingByAction.value = { ...previewLoadingByAction.value, [actionId]: true }
     previewErrorsByAction.value = { ...previewErrorsByAction.value, [actionId]: null }
     try {
       const preview = await projectActionsRepository.preview(projectId, actionId)
-      previewByAction.value = { ...previewByAction.value, [actionId]: preview }
+      if (requestGeneration === generation) {
+        previewByAction.value = { ...previewByAction.value, [actionId]: preview }
+      }
       return preview
     } catch (cause: unknown) {
-      previewErrorsByAction.value = { ...previewErrorsByAction.value, [actionId]: toProjectActionError(cause) }
+      if (requestGeneration === generation) {
+        previewErrorsByAction.value = { ...previewErrorsByAction.value, [actionId]: toProjectActionError(cause) }
+      }
       throw cause
     } finally {
-      previewLoadingByAction.value = { ...previewLoadingByAction.value, [actionId]: false }
+      if (requestGeneration === generation) {
+        previewLoadingByAction.value = { ...previewLoadingByAction.value, [actionId]: false }
+      }
     }
   }
 
@@ -98,10 +112,12 @@ export const useProjectActionsStore = defineStore('project-actions', () => {
     actionId: string,
     request: () => Promise<ProjectAction>,
   ): Promise<ProjectAction> {
+    const requestGeneration = generation
     mutatingByAction.value = { ...mutatingByAction.value, [actionId]: true }
     mutationErrorsByAction.value = { ...mutationErrorsByAction.value, [actionId]: null }
     try {
       const authoritative = await request()
+      if (requestGeneration !== generation) return authoritative
       const current = actionsForProject(projectId)
       const index = current.findIndex((action) => action.id === authoritative.id)
       const actions = [...current]
@@ -114,11 +130,30 @@ export const useProjectActionsStore = defineStore('project-actions', () => {
       previewByAction.value = previews
       return authoritative
     } catch (cause: unknown) {
-      mutationErrorsByAction.value = { ...mutationErrorsByAction.value, [actionId]: toProjectActionError(cause) }
+      if (requestGeneration === generation) {
+        mutationErrorsByAction.value = { ...mutationErrorsByAction.value, [actionId]: toProjectActionError(cause) }
+      }
       throw cause
     } finally {
-      mutatingByAction.value = { ...mutatingByAction.value, [actionId]: false }
+      if (requestGeneration === generation) {
+        mutatingByAction.value = { ...mutatingByAction.value, [actionId]: false }
+      }
     }
+  }
+
+  function clear() {
+    generation += 1
+    catalogByProject.value = {}
+    actionsByProject.value = {}
+    loadingByProject.value = {}
+    errorsByProject.value = {}
+    loadedAtByProject.value = {}
+    previewByAction.value = {}
+    previewErrorsByAction.value = {}
+    previewLoadingByAction.value = {}
+    mutationErrorsByAction.value = {}
+    mutatingByAction.value = {}
+    inFlight.clear()
   }
 
   return {
@@ -138,5 +173,6 @@ export const useProjectActionsStore = defineStore('project-actions', () => {
     loadPreview,
     configure,
     archive,
+    clear,
   }
 })

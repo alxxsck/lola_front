@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { demoActionDefinitions } from '@/shared/api/mock-data'
+import { demoScenarioActionCatalog } from '@/shared/api/mock-data'
 import {
   actionFieldOptions,
   createActionConfig,
   isActionFieldVisible,
-  parseActionDefinition,
+  parseScenarioActionCatalogItem,
   sanitizeActionConfig,
   validateActionConfig,
   validateScenarioActionConfig,
-} from './action-definition'
+} from './scenario-action-catalog'
 
 const rawDefinition = {
-  id: 'definition-1', projectId: 'project-1', type: 'SHOW_CTA', name: 'Показать кнопку',
-  description: null, executor: 'FRONTEND', serverHandler: null, commandType: 'SHOW_CTA',
+  id: 'catalog-item-1', type: 'SHOW_CTA', name: 'Показать кнопку',
+  description: null, executor: 'FRONTEND',
   configSchema: {
     type: 'object', additionalProperties: false, required: ['label', 'action'],
     properties: {
@@ -28,15 +28,14 @@ const rawDefinition = {
     { key: 'pageId', label: 'Страница', control: 'target', targetKinds: ['PAGE'], visibleWhen: { action: 'open_page' } },
     { key: 'timeoutMs', label: 'Таймаут', control: 'number' },
   ] },
-  enabled: true, builtIn: true, createdAt: '2026-07-12T10:00:00.000Z', updatedAt: '2026-07-12T10:00:00.000Z',
+  enabled: true,
 }
 
-describe('action definition schema helpers', () => {
+describe('scenario action catalog schema helpers', () => {
   it('accepts the specialized controls used by WAIT_FOR_GOAL', () => {
-    expect(parseActionDefinition({
-      id: 'wait-goal', projectId: 'project-1', type: 'WAIT_FOR_GOAL', name: 'Ждать цель', description: null,
-      executor: 'SERVER', serverHandler: 'WAIT_FOR_GOAL', commandType: null, enabled: true, builtIn: true,
-      createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+    expect(parseScenarioActionCatalogItem({
+      id: 'wait-goal', type: 'WAIT_FOR_GOAL', name: 'Ждать цель', description: null,
+      executor: 'SERVER', enabled: true,
       configSchema: {
         type: 'object', additionalProperties: false,
         properties: {
@@ -54,22 +53,22 @@ describe('action definition schema helpers', () => {
     }).uiSchema.fields.map((field) => field.control)).toEqual(['goal-builder', 'duration', 'node', 'node'])
   })
 
-  it('parses the backend JSON blobs into a strict domain definition', () => {
-    const definition = parseActionDefinition(rawDefinition)
+  it('parses Project Action revision JSON blobs into a strict catalog item', () => {
+    const definition = parseScenarioActionCatalogItem(rawDefinition)
     expect(definition.uiSchema.fields[2]).toMatchObject({ control: 'target', targetKinds: ['PAGE'] })
     expect(actionFieldOptions(definition.uiSchema.fields[1]!, definition.configSchema.properties.action))
       .toEqual(['none', 'open_page'])
   })
 
   it('rejects UI fields that do not match the backend config schema', () => {
-    expect(() => parseActionDefinition({
+    expect(() => parseScenarioActionCatalogItem({
       ...rawDefinition,
       uiSchema: { fields: [...rawDefinition.uiSchema.fields, { key: 'unknown', label: 'Unknown', control: 'text' }] },
     })).toThrow('must reference a config property')
   })
 
   it('uses schema defaults and removes hidden or unknown config values', () => {
-    const definition = parseActionDefinition(rawDefinition)
+    const definition = parseScenarioActionCatalogItem(rawDefinition)
     expect(createActionConfig(definition)).toEqual({ timeoutMs: 30000 })
     expect(isActionFieldVisible(definition.uiSchema.fields[2]!, { action: 'none' })).toBe(false)
     expect(sanitizeActionConfig(definition, {
@@ -78,7 +77,7 @@ describe('action definition schema helpers', () => {
   })
 
   it('validates required, conditional target and numeric constraints generically', () => {
-    const definition = parseActionDefinition(rawDefinition)
+    const definition = parseScenarioActionCatalogItem(rawDefinition)
     expect(validateActionConfig(definition, { action: 'none', timeoutMs: 30000 })).toBe('Текст: обязательное поле')
     expect(validateActionConfig(definition, { label: 'Go', action: 'open_page', timeoutMs: 30000 })).toBe('Страница: обязательное поле')
     expect(validateActionConfig(definition, { label: 'Go', action: 'none', timeoutMs: 10 })).toBe('Таймаут: должно быть не меньше 1000')
@@ -88,7 +87,7 @@ describe('action definition schema helpers', () => {
   })
 
   it('accepts locale maps only for fields marked localizable by the catalog', () => {
-    const definition = parseActionDefinition(rawDefinition)
+    const definition = parseScenarioActionCatalogItem(rawDefinition)
     const localization = {
       version: 1 as const,
       enabled: true,
@@ -108,15 +107,12 @@ describe('action definition schema helpers', () => {
   })
 
   it('describes and validates the non-blocking voice conversation action', () => {
-    const definition = demoActionDefinitions.find((item) => item.type === 'START_VOICE_CONVERSATION')
+    const definition = demoScenarioActionCatalog.find((item) => item.type === 'START_VOICE_CONVERSATION')
 
     expect(definition).toMatchObject({
       name: 'Начать голосовой диалог',
       executor: 'SERVER',
-      serverHandler: 'START_VOICE_CONVERSATION',
-      commandType: null,
       enabled: true,
-      builtIn: true,
       configSchema: { required: ['text'] },
     })
     expect(definition?.uiSchema.fields.map((field) => field.key)).toEqual(['text', 'voice', 'onUnavailable'])
@@ -127,11 +123,10 @@ describe('action definition schema helpers', () => {
   })
 
   it('describes both SPEAK_TEXT playback modes and defaults to waiting', () => {
-    const definition = demoActionDefinitions.find((item) => item.type === 'SPEAK_TEXT')
+    const definition = demoScenarioActionCatalog.find((item) => item.type === 'SPEAK_TEXT')
 
     expect(definition).toMatchObject({
       executor: 'FRONTEND',
-      commandType: 'speak_text',
       configSchema: {
         properties: { waitForCompletion: { type: 'boolean', default: true } },
         required: ['text'],

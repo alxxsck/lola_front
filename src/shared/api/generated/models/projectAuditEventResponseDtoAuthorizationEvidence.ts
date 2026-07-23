@@ -6,8 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AuditCmsUserResponseDto {
-  displayName: string;
-  email: string;
-  id: string;
-}
+export type ProjectAuditEventResponseDtoAuthorizationEvidence = {
+  [key: string]: unknown;
+};

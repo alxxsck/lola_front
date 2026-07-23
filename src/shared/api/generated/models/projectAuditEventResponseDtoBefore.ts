@@ -5,9 +5,10 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AuditCmsUserResponseDto } from "./auditCmsUserResponseDto";
 
 /**
  * @nullable
  */
-export type AuditLogResponseDtoActorCmsUser = AuditCmsUserResponseDto | null;
+export type ProjectAuditEventResponseDtoBefore = {
+  [key: string]: unknown;
+} | null;

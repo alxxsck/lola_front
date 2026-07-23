@@ -18,7 +18,7 @@ import ScenarioConditionRows from "./ScenarioConditionRows.vue";
 import type {
   EventDefinition,
   ScenarioAction,
-  ScenarioActionDefinition,
+  ScenarioActionCatalogItem,
   UiElement,
 } from "@/shared/types/domain";
 import {
@@ -30,15 +30,15 @@ import {
 import type { ChoiceOption } from "./model/scenario-graph";
 import {
   createActionConfig,
-  findActionDefinition,
-} from "@/shared/lib/action-definition";
+  findScenarioActionCatalogItem,
+} from "@/shared/lib/scenario-action-catalog";
 import { slugify } from "@/shared/lib/format";
 
 const props = defineProps<{
   projectId: string;
   action: ScenarioAction;
   actions: ScenarioAction[];
-  actionDefinitions: ScenarioActionDefinition[];
+  actionCatalog: ScenarioActionCatalogItem[];
   events: EventDefinition[];
   elements: UiElement[];
   templateVariables: Array<
@@ -58,7 +58,13 @@ const emit = defineEmits<{
   changeType: [type: string];
   createTarget: [
     type: string,
-    kind: "next" | "choice" | "timeout" | "condition" | "fallback",
+    kind:
+      | "next"
+      | "choice"
+      | "timeout"
+      | "condition"
+      | "fallback"
+      | "goal",
     index?: number,
   ];
   remove: [];
@@ -80,13 +86,13 @@ defineExpose({
 
 const createTargetPrefix = "__create__:";
 const definition = computed(() =>
-  findActionDefinition(props.actionDefinitions, props.action.type),
+  findScenarioActionCatalogItem(props.actionCatalog, props.action.type),
 );
 const targets = computed(() =>
   availableTargets(props.actions, props.action).map((target) => {
     const action = props.actions.find((item) => item.nodeKey === target.value);
     const targetDefinition = action
-      ? findActionDefinition(props.actionDefinitions, action.type)
+      ? findScenarioActionCatalogItem(props.actionCatalog, action.type)
       : undefined;
     return {
       ...target,
@@ -95,7 +101,7 @@ const targets = computed(() =>
   }),
 );
 const actionOptions = computed(() =>
-  props.actionDefinitions
+  props.actionCatalog
     .filter((item) => item.enabled)
     .map((item) => ({ label: item.name, value: item.type })),
 );
@@ -107,7 +113,7 @@ const targetOptions = computed(() => [
   })),
 ]);
 const reminderActionOptions = computed(() =>
-  props.actionDefinitions
+  props.actionCatalog
     .filter(
       (item) =>
         item.enabled && (item.type === "SAY" || item.executor === "FRONTEND"),
@@ -217,9 +223,15 @@ function selectTarget(
     );
   else if (kind === "fallback") setConfig("fallbackNodeKey", target);
 }
+function createGoalTarget(
+  type: string,
+  branch: "goal" | "timeout",
+) {
+  emit("createTarget", type, branch);
+}
 function addReminder() {
   const type = reminderActionOptions.value[0]?.value ?? "SAY";
-  const actionDefinition = findActionDefinition(props.actionDefinitions, type);
+  const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
   setReminders([
     ...choiceReminders(props.action),
     {
@@ -236,7 +248,7 @@ function addReminder() {
 function addReminderAction(reminderIndex: number) {
   const reminders = choiceReminders(props.action);
   const type = reminderActionOptions.value[0]?.value ?? "SAY";
-  const actionDefinition = findActionDefinition(props.actionDefinitions, type);
+  const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
   reminders[reminderIndex].actions.push({
     type,
     config: actionDefinition ? createActionConfig(actionDefinition) : {},
@@ -249,7 +261,7 @@ function changeReminderType(
   type: string,
 ) {
   const reminders = choiceReminders(props.action);
-  const actionDefinition = findActionDefinition(props.actionDefinitions, type);
+  const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
   reminders[reminderIndex].actions[actionIndex] = {
     type,
     config: actionDefinition ? createActionConfig(actionDefinition) : {},
@@ -370,9 +382,10 @@ function updateNodeKey(value: string | undefined) {
         v-else-if="action.type === 'WAIT_FOR_GOAL' && authoringContract"
         :model-value="action.config"
         :contract="authoringContract"
-        :targets="targets"
+        :targets="targetOptions"
         @update:model-value="updateAction({ config: $event })"
         @validity-change="emit('validity', $event)"
+        @create-target="createGoalTarget"
       />
       <ScenarioGoalPreview
         v-if="action.type === 'WAIT_FOR_GOAL' && authoringContract"
@@ -641,10 +654,10 @@ function updateNodeKey(value: string | undefined) {
             "
           />
           <ActionConfigFields
-            v-if="findActionDefinition(actionDefinitions, reminderAction.type)"
+            v-if="findScenarioActionCatalogItem(actionCatalog, reminderAction.type)"
             :model-value="reminderAction.config"
             :definition="
-              findActionDefinition(actionDefinitions, reminderAction.type)!
+              findScenarioActionCatalogItem(actionCatalog, reminderAction.type)!
             "
             :elements="elements"
             :events="events"

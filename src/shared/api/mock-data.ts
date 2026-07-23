@@ -10,7 +10,7 @@ import type {
   EventDefinition,
   Project,
   Scenario,
-  ScenarioActionDefinition,
+  ScenarioActionCatalogItem,
   UiElement,
 } from '@/shared/types/domain'
 import {
@@ -60,7 +60,6 @@ export const demoProject: Project = {
   _count: { users: 1284, scenarios: 4, eventLogs: 18742 },
 }
 
-const definitionDate = '2026-07-12T12:00:00.000Z'
 const realtimeVoices = Object.values(RealtimeVoice)
 const speechVoiceIds = [
   '21m00Tcm4TlvDq8ikWAM',
@@ -78,7 +77,7 @@ const timeoutField: ActionUiField = {
   control: 'number',
 }
 
-function demoActionDefinition(
+function demoScenarioActionCatalogItem(
   type: string,
   name: string,
   executor: ActionExecutor,
@@ -86,17 +85,14 @@ function demoActionDefinition(
   required: string[] = [],
   fields: ActionUiField[] = [],
   description: string | null = null,
-): ScenarioActionDefinition {
+): ScenarioActionCatalogItem {
   const frontend = executor === 'FRONTEND'
   return {
-    id: `action_definition_${type.toLowerCase()}`,
-    projectId: demoProject.id,
+    id: `scenario_action_${type.toLowerCase()}`,
     type,
     name,
     description,
     executor,
-    serverHandler: executor === 'SERVER' ? type : null,
-    commandType: frontend ? type : null,
     configSchema: {
       type: 'object',
       properties: frontend
@@ -107,14 +103,11 @@ function demoActionDefinition(
     },
     uiSchema: { fields: frontend ? [...fields, timeoutField] : fields },
     enabled: true,
-    builtIn: true,
-    createdAt: definitionDate,
-    updatedAt: definitionDate,
   }
 }
 
-export const demoActionDefinitions: ScenarioActionDefinition[] = [
-  demoActionDefinition(
+export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
+  demoScenarioActionCatalogItem(
     'ASK_CHOICE',
     'Задать вопрос с вариантами',
     'SERVER',
@@ -155,7 +148,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
     ],
     'Показывает вопрос и переводит сценарий в выбранную ветку.',
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'CONDITION',
     'Условие',
     'SERVER',
@@ -175,7 +168,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
     ],
     'Выбирает первую совпавшую runtime-ветку.',
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'SHOW_ASSISTANT',
     'Показать Lola',
     'FRONTEND',
@@ -184,7 +177,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
     [],
     'Показывает виджет ассистента.',
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'HIDE_ASSISTANT',
     'Скрыть Lola',
     'FRONTEND',
@@ -193,9 +186,9 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
     [],
     'Скрывает виджет ассистента.',
   ),
-  demoActionDefinition('OPEN_CHAT', 'Открыть чат', 'FRONTEND'),
-  demoActionDefinition('CLOSE_CHAT', 'Закрыть чат', 'FRONTEND'),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem('OPEN_CHAT', 'Открыть чат', 'FRONTEND'),
+  demoScenarioActionCatalogItem('CLOSE_CHAT', 'Закрыть чат', 'FRONTEND'),
+  demoScenarioActionCatalogItem(
     'SAY',
     'Сказать текст',
     'SERVER',
@@ -211,7 +204,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
     ],
   ),
   {
-    ...demoActionDefinition(
+    ...demoScenarioActionCatalogItem(
       'SPEAK_TEXT',
       'Озвучить текст',
       'FRONTEND',
@@ -242,9 +235,8 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
       ],
       'Генерирует речь через ElevenLabs и может дождаться окончания воспроизведения.',
     ),
-    commandType: 'speak_text',
   },
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     ServerActionHandler.START_VOICE_CONVERSATION,
     'Начать голосовой диалог',
     'SERVER',
@@ -276,7 +268,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
     ],
     'Неблокирующе приглашает пользователя в голосовой диалог и произносит первую реплику.',
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'PLAY_ANIMATION',
     'Проиграть анимацию',
     'FRONTEND',
@@ -296,7 +288,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
       },
     ],
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'HIGHLIGHT_ELEMENT',
     'Подсветить элемент',
     'FRONTEND',
@@ -317,7 +309,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
       { key: 'durationMs', label: 'Длительность, мс', control: 'number' },
     ],
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'REMOVE_HIGHLIGHT',
     'Убрать подсветку',
     'FRONTEND',
@@ -332,7 +324,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
       },
     ],
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'SHOW_CTA',
     'Показать кнопку',
     'FRONTEND',
@@ -367,7 +359,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
       },
     ],
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'OPEN_PAGE',
     'Открыть страницу',
     'FRONTEND',
@@ -382,7 +374,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
       },
     ],
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'OPEN_MODAL',
     'Открыть модальное окно',
     'FRONTEND',
@@ -397,7 +389,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
       },
     ],
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'WAIT_FOR',
     'Подождать',
     'SERVER',
@@ -405,7 +397,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
     ['durationMs'],
     [{ key: 'durationMs', label: 'Длительность, мс', control: 'number' }],
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'TRACK',
     'Записать событие',
     'SERVER',
@@ -419,7 +411,7 @@ export const demoActionDefinitions: ScenarioActionDefinition[] = [
       { key: 'payload', label: 'Данные', control: 'json' },
     ],
   ),
-  demoActionDefinition(
+  demoScenarioActionCatalogItem(
     'COMPLETE_SCENARIO',
     'Завершить сценарий',
     'SERVER',
@@ -559,42 +551,10 @@ export const demoScenarios: Scenario[] = [
     status: 'ACTIVE',
     conversationPolicy: 'create_new',
     priority: 100,
-    conditions: [],
     cooldownSeconds: 86400,
     maxRunsPerUser: 1,
-    actions: [
-      { id: 'act_1', position: 0, type: 'SHOW_ASSISTANT', config: {} },
-      {
-        id: 'act_2',
-        position: 1,
-        type: 'PLAY_ANIMATION',
-        config: { animation: 'excited' },
-      },
-      {
-        id: 'act_3',
-        position: 2,
-        type: 'SAY',
-        config: {
-          text: 'Регистрация завершена. Давайте сделаем следующий шаг.',
-        },
-      },
-      {
-        id: 'act_4',
-        position: 3,
-        type: 'HIGHLIGHT_ELEMENT',
-        config: { target: 'deposit_button' },
-      },
-      {
-        id: 'act_5',
-        position: 4,
-        type: 'SHOW_CTA',
-        config: {
-          label: 'Пополнить баланс',
-          action: 'open_modal',
-          modalId: 'deposit_modal',
-        },
-      },
-    ],
+    createdAt: '2026-07-20T10:00:00.000Z',
+    updatedAt: '2026-07-23T08:00:00.000Z',
   },
   {
     id: 'scn_2',
@@ -606,23 +566,8 @@ export const demoScenarios: Scenario[] = [
     status: 'DRAFT',
     conversationPolicy: 'create_new',
     priority: 80,
-    conditions: [],
-    actions: [
-      {
-        position: 0,
-        type: 'SAY',
-        config: { text: 'Похоже, платеж не прошел. Помочь разобраться?' },
-      },
-      {
-        position: 1,
-        type: 'SHOW_CTA',
-        config: {
-          label: 'Посмотреть инструкцию',
-          action: 'open_page',
-          pageId: 'bonuses_page',
-        },
-      },
-    ],
+    createdAt: '2026-07-21T10:00:00.000Z',
+    updatedAt: '2026-07-23T09:00:00.000Z',
   },
 ]
 

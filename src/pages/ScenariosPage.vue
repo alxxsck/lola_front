@@ -11,20 +11,14 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'
 import { DocumentationCallout } from '@/features/documentation/ui'
-import { useActionDefinitionsStore } from '@/features/actions/action-definitions.store'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { hasProjectPermission } from '@/features/auth/permission-access'
 import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error'
 import { repository } from '@/shared/api/repository'
 import { formatDate } from '@/shared/lib/format'
-import { findActionDefinition } from '@/shared/lib/action-definition'
-import type { EventDefinition, Scenario, ScenarioAction, ScenarioActionDefinition, ScenarioStatus } from '@/shared/types/domain'
-
-type ScenarioPayload = Partial<Scenario> &
-  Pick<Scenario, 'name' | 'code' | 'eventDefinitionId' | 'actions'>
+import type { EventDefinition, Scenario, ScenarioStatus } from '@/shared/types/domain'
 
 const auth = useAuthStore()
-const actionDefinitionsStore = useActionDefinitionsStore()
 const toast = useToast()
 const confirm = useConfirm()
 const router = useRouter()
@@ -36,12 +30,10 @@ const loadError = ref('')
 const search = ref('')
 const statusFilter = ref<ScenarioStatus | 'ALL'>('ALL')
 const pendingIds = ref(new Set<string>())
-const actionDefinitions = computed<ScenarioActionDefinition[]>(() => actionDefinitionsStore.forProject(auth.project?.id ?? ''))
 const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? [])
 const canWrite = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.write'))
 const canPublish = computed(() => hasProjectPermission(projectPermissions.value, 'project.scenarios.publish'))
 const canReadEvents = computed(() => hasProjectPermission(projectPermissions.value, 'project.event_catalog.read'))
-const canReadActions = computed(() => hasProjectPermission(projectPermissions.value, 'project.actions.read'))
 
 const statusOptions: { label: string; value: ScenarioStatus | 'ALL' }[] = [
   { label: 'Все статусы', value: 'ALL' },
@@ -63,7 +55,6 @@ const filteredScenarios = computed(() => {
 
 const activeCount = computed(() => scenarios.value.filter((scenario) => scenario.status === 'ACTIVE').length)
 const draftCount = computed(() => scenarios.value.filter((scenario) => scenario.status === 'DRAFT').length)
-const totalActions = computed(() => scenarios.value.reduce((total, scenario) => total + scenario.actions.length, 0))
 
 onMounted(load)
 
@@ -76,7 +67,6 @@ async function load() {
     const [scenarioItems, eventItems] = await Promise.all([
       repository.getScenarios(projectId),
       canReadEvents.value ? repository.getEvents(projectId) : Promise.resolve([]),
-      canReadActions.value ? actionDefinitionsStore.ensureLoaded(projectId) : Promise.resolve(),
     ])
     scenarios.value = scenarioItems
     events.value = eventItems
@@ -108,7 +98,12 @@ async function toggleScenario(scenario: Scenario) {
   const nextStatus: ScenarioStatus = 'PAUSED'
   pendingIds.value.add(scenario.id)
   try {
-    const saved = await repository.saveScenario(projectId, toPayload(scenario, nextStatus))
+    if (!scenario.updatedAt) throw new Error('Не удалось определить версию сценария')
+    const saved = await repository.updateScenarioMetadata(projectId, scenario.id, {
+      status: nextStatus,
+      expectedUpdatedAt: scenario.updatedAt,
+      reason: 'Pause scenario from CMS list',
+    })
     replaceScenario(saved)
     toast.add({
       severity: 'secondary',
@@ -155,26 +150,6 @@ async function deleteScenario(scenario: Scenario) {
   }
 }
 
-function toPayload(scenario: Scenario, status = scenario.status): ScenarioPayload {
-  return {
-    id: scenario.id,
-    name: scenario.name,
-    code: scenario.code,
-    description: scenario.description,
-    eventDefinitionId: scenario.eventDefinitionId,
-    status,
-    conversationPolicy: scenario.conversationPolicy,
-    priority: scenario.priority,
-    conditions: scenario.conditions,
-    cooldownSeconds: scenario.cooldownSeconds,
-    maxRunsPerUser: scenario.maxRunsPerUser,
-    activeFrom: scenario.activeFrom,
-    activeTo: scenario.activeTo,
-    actions: scenario.actions,
-    updatedAt: scenario.updatedAt,
-  }
-}
-
 function replaceScenario(saved: Scenario) {
   const index = scenarios.value.findIndex((scenario) => scenario.id === saved.id)
   if (index >= 0) scenarios.value.splice(index, 1, saved)
@@ -194,10 +169,6 @@ function statusLabel(status: ScenarioStatus) {
 
 function statusSeverity(status: ScenarioStatus): 'success' | 'secondary' | 'warn' | 'contrast' {
   return { DRAFT: 'secondary', ACTIVE: 'success', PAUSED: 'warn', ARCHIVED: 'contrast' }[status] as 'success' | 'secondary' | 'warn' | 'contrast'
-}
-
-function actionSummary(actions: ScenarioAction[]) {
-  return actions.slice(0, 3).map((action) => findActionDefinition(actionDefinitions.value, action.type)?.name ?? action.type).join(' · ')
 }
 
 function errorMessage(cause: unknown) {
@@ -221,7 +192,6 @@ function errorMessage(cause: unknown) {
     <section class="metric-strip card">
       <div><span class="metric-icon active"><i class="pi pi-play" /></span><div><strong>{{ activeCount }}</strong><small>активных</small></div></div>
       <div><span class="metric-icon draft"><i class="pi pi-pencil" /></span><div><strong>{{ draftCount }}</strong><small>черновиков</small></div></div>
-      <div><span class="metric-icon actions"><i class="pi pi-bolt" /></span><div><strong>{{ totalActions }}</strong><small>действий настроено</small></div></div>
       <p><i class="pi pi-info-circle" /> Граф начинается с события; переходы идут вперёд, а вопросы и условия выбирают ветку во время выполнения.</p>
     </section>
 
@@ -270,11 +240,6 @@ function errorMessage(cause: unknown) {
             <div class="trigger-cell"><span><i class="pi pi-bolt" /></span><div><strong>{{ eventName(data) }}</strong><small class="mono">{{ eventCode(data) }}</small></div></div>
           </template>
         </Column>
-        <Column header="Поток" style="min-width: 220px">
-          <template #body="{ data }">
-            <div class="flow-cell"><strong>{{ data.actions.length }} {{ data.actions.length === 1 ? 'шаг' : 'шагов' }}</strong><small>{{ actionSummary(data.actions) || 'Без действий' }}</small></div>
-          </template>
-        </Column>
         <Column header="Приоритет" style="width: 100px">
           <template #body="{ data }"><span class="priority">{{ data.priority }}</span></template>
         </Column>
@@ -300,8 +265,8 @@ function errorMessage(cause: unknown) {
 </template>
 
 <style scoped>
-.scenarios-page{display:flex;flex-direction:column;gap:20px}.page-header{margin-bottom:0}.metric-strip{display:flex;align-items:center;padding:15px 18px;gap:26px}.metric-strip>div{display:flex;align-items:center;gap:10px;padding-right:26px;border-right:1px solid var(--line)}.metric-strip strong,.metric-strip small{display:block}.metric-strip strong{font:700 1.15rem var(--font-display);line-height:1}.metric-strip small{font-size:.7rem;color:var(--muted);margin-top:4px}.metric-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;font-size:.75rem}.metric-icon.active{background:var(--status-success-soft);color:var(--status-success-text)}.metric-icon.draft{background:var(--status-violet-soft);color:var(--status-violet-text)}.metric-icon.actions{background:var(--status-danger-soft);color:var(--status-danger-text)}.metric-strip p{margin:0 0 0 auto;color:var(--muted);font-size:.76rem}.metric-strip p i{color:var(--violet);margin-right:5px}.load-error{margin:0}.table-card{overflow:hidden}.table-toolbar{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}.search-box{position:relative;width:min(390px,100%)}.search-box>i{position:absolute;z-index:2;left:13px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:.8rem}.search-box .p-inputtext{padding-left:36px}.status-filter{width:170px}.result-count{margin-left:auto;color:var(--muted);font-size:.75rem}.scenario-table{cursor:default}.scenario-name,.trigger-cell{display:flex;align-items:center;gap:10px}.scenario-name strong,.scenario-name small,.trigger-cell strong,.trigger-cell small,.flow-cell strong,.flow-cell small{display:block}.scenario-name strong,.trigger-cell strong{font-size:.84rem}.scenario-name small,.trigger-cell small{color:var(--muted);font-size:.67rem;margin-top:4px}.scenario-mark{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:11px;background:var(--surface-emphasis);color:var(--accent);font-size:.82rem}.trigger-cell>span{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:var(--status-violet-soft);color:var(--status-violet-text);font-size:.68rem}.flow-cell strong{font-size:.78rem}.flow-cell small{margin-top:4px;color:var(--muted);font-size:.69rem;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}.priority{display:inline-grid;place-items:center;min-width:32px;height:27px;padding:0 8px;border-radius:8px;background:var(--surface-subtle);font:700 .72rem var(--font-display)}.updated-at{color:var(--muted);font-size:.75rem}.row-actions{display:flex;justify-content:flex-end}.empty strong{display:block;color:var(--ink);font-size:.95rem}.empty p{margin:6px 0 16px;font-size:.8rem}
+.scenarios-page{display:flex;flex-direction:column;gap:20px}.page-header{margin-bottom:0}.metric-strip{display:flex;align-items:center;padding:15px 18px;gap:26px}.metric-strip>div{display:flex;align-items:center;gap:10px;padding-right:26px;border-right:1px solid var(--line)}.metric-strip strong,.metric-strip small{display:block}.metric-strip strong{font:700 1.15rem var(--font-display);line-height:1}.metric-strip small{font-size:.7rem;color:var(--muted);margin-top:4px}.metric-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;font-size:.75rem}.metric-icon.active{background:var(--status-success-soft);color:var(--status-success-text)}.metric-icon.draft{background:var(--status-violet-soft);color:var(--status-violet-text)}.metric-strip p{margin:0 0 0 auto;color:var(--muted);font-size:.76rem}.metric-strip p i{color:var(--violet);margin-right:5px}.load-error{margin:0}.table-card{overflow:hidden}.table-toolbar{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}.search-box{position:relative;width:min(390px,100%)}.search-box>i{position:absolute;z-index:2;left:13px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:.8rem}.search-box .p-inputtext{padding-left:36px}.status-filter{width:170px}.result-count{margin-left:auto;color:var(--muted);font-size:.75rem}.scenario-table{cursor:default}.scenario-name,.trigger-cell{display:flex;align-items:center;gap:10px}.scenario-name strong,.scenario-name small,.trigger-cell strong,.trigger-cell small{display:block}.scenario-name strong,.trigger-cell strong{font-size:.84rem}.scenario-name small,.trigger-cell small{color:var(--muted);font-size:.67rem;margin-top:4px}.scenario-mark{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:11px;background:var(--surface-emphasis);color:var(--accent);font-size:.82rem}.trigger-cell>span{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:var(--status-violet-soft);color:var(--status-violet-text);font-size:.68rem}.priority{display:inline-grid;place-items:center;min-width:32px;height:27px;padding:0 8px;border-radius:8px;background:var(--surface-subtle);font:700 .72rem var(--font-display)}.updated-at{color:var(--muted);font-size:.75rem}.row-actions{display:flex;justify-content:flex-end}.empty strong{display:block;color:var(--ink);font-size:.95rem}.empty p{margin:6px 0 16px;font-size:.8rem}
 :deep(.scenario-table .p-datatable-tbody > tr){cursor:pointer}:deep(.scenario-table .p-datatable-tbody > tr > td){padding-top:14px;padding-bottom:14px}:deep(.p-paginator){border-top:1px solid var(--line)}
-@media(max-width:900px){.metric-strip{align-items:stretch;display:grid;grid-template-columns:repeat(3,1fr)}.metric-strip>div{border:0;padding:0}.metric-strip p{grid-column:1/-1;margin:0}.table-toolbar{flex-wrap:wrap}.search-box{width:100%}.status-filter{flex:1}.result-count{margin-left:0}}
+@media(max-width:900px){.metric-strip{align-items:stretch;display:grid;grid-template-columns:repeat(2,1fr)}.metric-strip>div{border:0;padding:0}.metric-strip p{grid-column:1/-1;margin:0}.table-toolbar{flex-wrap:wrap}.search-box{width:100%}.status-filter{flex:1}.result-count{margin-left:0}}
 @media(max-width:560px){.metric-strip{grid-template-columns:1fr}.metric-strip p{grid-column:auto}.status-filter{width:100%}.result-count{width:100%}.page-header .p-button{width:100%}}
 </style>

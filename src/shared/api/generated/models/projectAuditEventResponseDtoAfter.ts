@@ -6,4 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AuditLogResponseDtoMetadata = { [key: string]: unknown };
+/**
+ * @nullable
+ */
+export type ProjectAuditEventResponseDtoAfter = {
+  [key: string]: unknown;
+} | null;

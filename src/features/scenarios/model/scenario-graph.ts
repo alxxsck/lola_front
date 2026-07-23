@@ -50,16 +50,16 @@ export function toPlainScenarioAction(action: ScenarioAction): ScenarioAction {
 
 export function normalizeScenarioActions(actions: ScenarioAction[]): ScenarioAction[] {
   const ordered = [...actions].sort((left, right) => left.position - right.position)
-  const legacy = ordered.every((action) => !action.nodeKey)
+  if (ordered.some((action) => !action.nodeKey)) {
+    throw new Error('Scenario graph action is missing nodeKey')
+  }
   return ordered.map((action, position) => ({
     ...action,
     position,
-    nodeKey: action.nodeKey || `step_${position}`,
+    nodeKey: action.nodeKey,
     nextNodeKey: action.type === 'WAIT_FOR_GOAL'
       ? null
-      : legacy
-        ? ordered[position + 1]?.nodeKey || (position + 1 < ordered.length ? `step_${position + 1}` : null)
-        : action.nextNodeKey ?? null,
+      : action.nextNodeKey ?? null,
     config: structuredClone(action.config),
   }))
 }
@@ -219,6 +219,39 @@ export function sortScenarioActions(actions: ScenarioAction[]): ScenarioAction[]
   }
   const validOrder = result.length === ordered.length ? result : ordered
   return validOrder.map((action, position) => ({ ...action, position }))
+}
+
+export function usesExplicitTransitions(type: string): boolean {
+  return ['ASK_CHOICE', 'CONDITION', 'WAIT_FOR_GOAL'].includes(type)
+}
+
+export function rotateLinearScenarioStart(
+  actions: readonly ScenarioAction[],
+  nodeKey: string,
+): ScenarioAction[] | null {
+  const ordered = [...actions].sort((left, right) => left.position - right.position)
+  const selectedIndex = ordered.findIndex((action) => action.nodeKey === nodeKey)
+  if (selectedIndex < 0) return null
+  const keys = ordered.map((action) => action.nodeKey ?? '')
+  if (
+    keys.some((key) => !key) ||
+    new Set(keys).size !== keys.length ||
+    ordered.some((action, index) =>
+      usesExplicitTransitions(action.type) ||
+      (action.nextNodeKey ?? null) !== (ordered[index + 1]?.nodeKey ?? null),
+    )
+  ) {
+    return null
+  }
+  const rotated = [
+    ...ordered.slice(selectedIndex),
+    ...ordered.slice(0, selectedIndex),
+  ]
+  return rotated.map((action, position) => ({
+    ...action,
+    position,
+    nextNodeKey: rotated[position + 1]?.nodeKey ?? null,
+  }))
 }
 
 export function validateScenarioGraph(actions: ScenarioAction[]): GraphValidationIssue[] {

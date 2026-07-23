@@ -21,7 +21,7 @@ import {
   eventsList,
   scenarioRunsList,
   scenarioRunsPage,
-  auditList,
+  projectAuditEventsList,
   adminMessagingSend,
   presenceList,
   adminConversationsList,
@@ -48,7 +48,7 @@ import {
   toCreateUiElementDto,
   toUpdateProjectSettingsDto,
   toUpdateUiElementDto,
-  mapAuditLog,
+  mapAuditEvent,
   mapEventLog,
   mapScenarioRun,
   mapScenario,
@@ -65,13 +65,12 @@ const capabilities: RepositoryCapabilities = {
   uiElements: true,
   eventDefinitions: true,
   scenarios: true,
-  actionDefinitions: false,
   presence: true,
   activity: false,
   conversations: true,
   manualActions: false,
   operations: true,
-  auditLogs: true,
+  auditEvents: true,
   adminMessaging: true,
   userAttributes: false,
 }
@@ -188,31 +187,6 @@ export const apiRepository: LolaRepository = {
     return (await scenarioAuthoringListScenarios(projectId)).map(mapScenario)
   },
 
-  async getActionDefinitions() { return unsupported('actionDefinitions') },
-
-  async saveScenario(projectId, value) {
-    if (!value.id || !value.updatedAt) {
-      throw new Error('Scenario updates require stable identity and concurrency evidence')
-    }
-    if (value.status === 'ARCHIVED') {
-      throw new Error('Scenario archival must use the audited archive operation')
-    }
-    return mapScenario(await scenarioAuthoringUpdateScenarioMetadata(projectId, value.id, {
-      name: value.name,
-      ...(value.description === undefined ? {} : { description: value.description }),
-      eventDefinitionId: value.eventDefinitionId,
-      ...(value.status === undefined ? {} : { status: value.status }),
-      ...(value.conversationPolicy === undefined ? {} : { conversationPolicy: value.conversationPolicy }),
-      ...(value.priority === undefined ? {} : { priority: value.priority }),
-      ...(value.cooldownSeconds === undefined ? {} : { cooldownSeconds: value.cooldownSeconds }),
-      ...(value.maxRunsPerUser === undefined ? {} : { maxRunsPerUser: value.maxRunsPerUser }),
-      ...(value.activeFrom === undefined ? {} : { activeFrom: value.activeFrom }),
-      ...(value.activeTo === undefined ? {} : { activeTo: value.activeTo }),
-      expectedUpdatedAt: value.updatedAt,
-      reason: 'Scenario metadata updated from CMS',
-    }))
-  },
-
   async updateScenarioMetadata(projectId, scenarioId, value) {
     return mapScenario(await scenarioAuthoringUpdateScenarioMetadata(projectId, scenarioId, value))
   },
@@ -317,8 +291,12 @@ export const apiRepository: LolaRepository = {
     return platformOperationsUpdateActivitySettings(projectId, value)
   },
 
-  async getAuditLogs(projectId) {
-    return (await auditList(projectId)).map(mapAuditLog)
+  async getAuditEventsPage(projectId, request) {
+    const response = await projectAuditEventsList(projectId, request)
+    return {
+      items: response.items.map(mapAuditEvent),
+      nextCursor: response.nextCursor ?? null,
+    }
   },
 
   async sendAdminMessage(projectId, userId, message) {

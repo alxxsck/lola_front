@@ -24,7 +24,6 @@ import "@vue-flow/controls/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
-import ScenarioConditionRows from "@/features/scenarios/ScenarioConditionRows.vue";
 import {
   createRuleDraft,
   mapBackendRuleIssues,
@@ -63,10 +62,10 @@ import {
   useScenarioAuthoringDocument,
 } from "@/features/scenario-authoring/model/use-scenario-authoring-document";
 import { scenarioApiErrorMessage } from "@/features/scenarios/scenario-api-error";
-import { useActionDefinitionsStore } from "@/features/actions/action-definitions.store";
 import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
 import {
-  scenarioEligibleActionDefinitions,
+  projectScenarioActionCatalog,
+  scenarioAvailableActions,
   scenarioProjectActionAvailabilityIssue,
 } from "@/features/project-actions/model/scenario-project-actions";
 import {
@@ -85,10 +84,7 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import { repository } from "@/shared/api/repository";
-import type {
-  SaveScenario,
-  UpdateScenarioMetadata,
-} from "@/shared/api/repository/contracts";
+import type { UpdateScenarioMetadata } from "@/shared/api/repository/contracts";
 import {
   scenarioAuthoringRepository,
   type ScenarioAuthoringContract,
@@ -97,7 +93,6 @@ import {
 import type {
   ConversationPolicy,
   EventDefinition,
-  Scenario,
   ScenarioAction,
   ScenarioStatus,
   UiElement,
@@ -105,9 +100,9 @@ import type {
 import type { ScenarioLocalizationPolicyDto } from "@/shared/api/generated/models";
 import {
   createActionConfig,
-  findActionDefinition,
+  findScenarioActionCatalogItem,
   validateScenarioActionConfig,
-} from "@/shared/lib/action-definition";
+} from "@/shared/lib/scenario-action-catalog";
 import { slugify } from "@/shared/lib/format";
 import { useUnsavedChangesGuard } from "@/shared/lib/use-unsaved-changes-guard";
 import {
@@ -116,10 +111,11 @@ import {
   createScenarioNode,
   graphTransitions,
   normalizePositions,
-  normalizeScenarioActions,
   renameScenarioNode,
+  rotateLinearScenarioStart,
   sortScenarioActions,
   toPlainScenarioAction,
+  usesExplicitTransitions,
   validateScenarioGraph,
 } from "@/features/scenarios/model/scenario-graph";
 
@@ -133,7 +129,6 @@ interface ScenarioForm {
   status: ScenarioStatus;
   conversationPolicy: ConversationPolicy;
   priority: number;
-  conditions: Scenario["conditions"];
   cooldownSeconds?: number;
   maxRunsPerUser?: number;
   activeFrom?: string;
@@ -167,7 +162,6 @@ function russianCount(count: number, one: string, few: string, many: string) {
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const actionDefinitionsStore = useActionDefinitionsStore();
 const projectActionsStore = useProjectActionsStore();
 const loading = ref(true);
 const saving = ref(false);
@@ -175,7 +169,7 @@ const error = ref("");
 const saveError = ref("");
 const saveNotice = ref("");
 const authoringError = ref("");
-const actionsError = ref("");
+const actionsLoadError = ref("");
 const templatePolicyError = ref("");
 const templateAttributeKeys = ref<string[] | null>(null);
 const templateAttributes = ref<
@@ -264,7 +258,6 @@ const form = reactive<ScenarioForm>({
   status: "DRAFT",
   priority: 0,
   conversationPolicy: "create_new",
-  conditions: [],
   cooldownSeconds: undefined,
   maxRunsPerUser: undefined,
   actions: [],
@@ -369,23 +362,53 @@ function markTranslationManual(payload: { fieldPath: string; locale: string }) {
   };
 }
 
-const actionDefinitions = computed(() =>
-  actionDefinitionsStore.forProject(auth.project?.id ?? ""),
+const canReadProjectActions = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.actions.read",
+  ),
 );
 const projectActions = computed(() =>
-  projectActionsStore.actionsForProject(auth.project?.id ?? ""),
+  canReadProjectActions.value
+    ? projectActionsStore.actionsForProject(auth.project?.id ?? "")
+    : [],
 );
-const scenarioPickerActionDefinitions = computed(() =>
-  scenarioEligibleActionDefinitions(
-    actionDefinitions.value,
-    projectActions.value,
-  ),
+const actionCatalogProjection = computed(() =>
+  projectScenarioActionCatalog(projectActions.value),
+);
+const actionCatalog = computed(() => actionCatalogProjection.value.catalog);
+const scenarioPickerActions = computed(() =>
+  scenarioAvailableActions(actionCatalog.value),
+);
+const actionsError = computed(
+  () => actionsLoadError.value || actionCatalogProjection.value.error?.message || "",
 );
 const selectedAction = computed(
   () =>
     form.actions.find((action) => action.nodeKey === selectedNodeKey.value) ??
     null,
 );
+const firstAction = computed(() => form.actions[0] ?? null);
+const firstActionDefinition = computed(() =>
+  firstAction.value
+    ? findScenarioActionCatalogItem(actionCatalog.value, firstAction.value.type)
+    : undefined,
+);
+const firstActionOptions = computed(() =>
+  form.actions.map((action) => ({
+    label:
+      findScenarioActionCatalogItem(actionCatalog.value, action.type)?.name ??
+      action.type,
+    meta: action.nodeKey ?? `Шаг ${action.position + 1}`,
+    value: action.nodeKey ?? "",
+  })),
+);
+const canChooseFirstAction = computed(() => {
+  const alternative = form.actions[1]?.nodeKey;
+  return Boolean(
+    alternative && rotateLinearScenarioStart(form.actions, alternative),
+  );
+});
 const graphIssues = computed(() => validateScenarioGraph(form.actions));
 const goalIssues = computed(() =>
   form.actions.flatMap((action) => {
@@ -422,7 +445,7 @@ const actionConfigIssues = computed(() =>
     if (action.type === "WAIT_FOR_GOAL") return [];
     const message = validateScenarioActionConfig(
       action,
-      findActionDefinition(actionDefinitions.value, action.type),
+      findScenarioActionCatalogItem(actionCatalog.value, action.type),
       authoringContract.value?.localization,
     );
     return message ? [{ nodeKey: action.nodeKey, message }] : [];
@@ -547,6 +570,34 @@ const ruleContext = computed<RuleDomainContext | null>(() =>
 const ruleSummary = computed(() =>
   ruleContext.value ? summarizeRule(ruleDraft.value, ruleContext.value) : null,
 );
+const ruleSerialization = computed(() =>
+  ruleContext.value
+    ? serializeRuleDraft(ruleDraft.value, ruleContext.value)
+    : null,
+);
+const ruleValidationStatus = computed(() => {
+  const leaves = ruleSummary.value?.leaves ?? 0;
+  if (!leaves) {
+    return {
+      ready: false,
+      title: "Добавьте хотя бы одно условие",
+      detail: "После этого можно проверить правило на тестовом пользователе.",
+    };
+  }
+  if (ruleSerialization.value?.ok) {
+    return {
+      ready: true,
+      title: "Условия готовы к проверке",
+      detail: `Настроено: ${russianCount(leaves, "условие", "условия", "условий")}.`,
+    };
+  }
+  const issueCount = ruleSerialization.value?.issues.length ?? 0;
+  return {
+    ready: false,
+    title: "Завершите настройку условий",
+    detail: `Нужно заполнить: ${russianCount(issueCount, "поле", "поля", "полей")}.`,
+  };
+});
 const audienceContext = computed<AudienceDomainContext | null>(() =>
   authoringContract.value?.audience
     ? {
@@ -666,11 +717,6 @@ const conditionPaths = computed(() => {
     ]),
   ];
 });
-const triggerConditionPaths = computed(() =>
-  conditionPaths.value.filter(
-    (path) => !path.startsWith("answers.") && !path.startsWith("results."),
-  ),
-);
 const templateVariables = computed(() => {
   const typedByPath = new Map(
     templateAttributes.value.map((attribute) => [
@@ -708,7 +754,7 @@ const conversationPolicyOptions: {
 const flowNodeTypes = markRaw({ scenario: ScenarioFlowNode });
 
 const actionGroups = computed(() => {
-  const enabled = scenarioPickerActionDefinitions.value;
+  const enabled = scenarioPickerActions.value;
   return [
     {
       label: "Логика",
@@ -787,8 +833,8 @@ const flowNodes = computed<Node[]>(() => {
   ];
   for (const [level, actions] of levels) {
     actions.forEach((action, column) => {
-      const definition = findActionDefinition(
-        actionDefinitions.value,
+      const definition = findScenarioActionCatalogItem(
+        actionCatalog.value,
         action.type,
       );
       const totalWidth = (actions.length - 1) * 280;
@@ -894,7 +940,7 @@ async function load() {
   error.value = "";
   authoringError.value = "";
   audienceSegmentsError.value = "";
-  actionsError.value = "";
+  actionsLoadError.value = "";
   templatePolicyError.value = "";
   templateAttributeKeys.value = null;
   templateAttributes.value = [];
@@ -913,23 +959,22 @@ async function load() {
       repository.getElements(projectId).then((value) => {
         elements.value = value;
       }),
-      actionDefinitionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
-        actionsError.value = scenarioApiErrorMessage(cause);
-      }),
-      projectActionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
-        actionsError.value = scenarioApiErrorMessage(
-          cause,
-          "Не удалось загрузить настройки действий проекта",
-        );
-      }),
+      canReadProjectActions.value
+        ? projectActionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
+            actionsLoadError.value = scenarioApiErrorMessage(
+              cause,
+              "Не удалось загрузить настройки действий проекта",
+            );
+          })
+        : Promise.resolve().then(() => {
+            actionsLoadError.value =
+              "У вас нет права читать Project Actions этого проекта.";
+          }),
       scenarioAuthoringRepository
         .getContract(projectId)
         .then(async (value) => {
           authoringContract.value = value;
           if (value.audience) await refreshAudienceSegments();
-        })
-        .catch((cause: unknown) => {
-          authoringError.value = scenarioApiErrorMessage(cause);
         }),
       repository.mode === "api"
         ? attributeContractRepository
@@ -994,12 +1039,10 @@ async function load() {
         status: scenario.status,
         conversationPolicy: scenario.conversationPolicy ?? "create_new",
         priority: scenario.priority,
-        conditions: structuredClone(scenario.conditions ?? []),
         cooldownSeconds: scenario.cooldownSeconds,
         maxRunsPerUser: scenario.maxRunsPerUser,
         activeFrom: scenario.activeFrom,
         activeTo: scenario.activeTo,
-        actions: normalizeScenarioActions(scenario.actions),
       });
       codeTouched.value = true;
       const document = await loadAuthoringDocument(projectId, scenario.id);
@@ -1314,7 +1357,7 @@ function nodeSummary(action: ScenarioAction) {
 
 function appendNode(type: string, connectPrevious: boolean) {
   rememberActionViewFocus();
-  const definition = findActionDefinition(actionDefinitions.value, type);
+  const definition = findScenarioActionCatalogItem(actionCatalog.value, type);
   const node = createScenarioNode(
     type,
     form.actions.length,
@@ -1328,7 +1371,7 @@ function appendNode(type: string, connectPrevious: boolean) {
   if (
     connectPrevious &&
     previous &&
-    !["ASK_CHOICE", "CONDITION", "WAIT_FOR_GOAL"].includes(previous.type) &&
+    !usesExplicitTransitions(previous.type) &&
     !previous.nextNodeKey
   )
     previous.nextNodeKey = node.nodeKey;
@@ -1426,7 +1469,13 @@ function toggleGraphExpanded() {
 
 function createTarget(
   type: string,
-  kind: "next" | "choice" | "timeout" | "condition" | "fallback",
+  kind:
+    | "next"
+    | "choice"
+    | "timeout"
+    | "condition"
+    | "fallback"
+    | "goal",
   index?: number,
 ) {
   const source = selectedAction.value;
@@ -1438,7 +1487,10 @@ function createTarget(
     source.config.options = choiceOptions(source).map((option, optionIndex) =>
       optionIndex === index ? { ...option, nextNodeKey: target } : option,
     );
-  else if (kind === "timeout") source.config.onTimeout = target;
+  else if (kind === "timeout")
+    source.config = { ...source.config, onTimeout: target };
+  else if (kind === "goal")
+    source.config = { ...source.config, onGoal: target };
   else if (kind === "condition" && index !== undefined)
     source.config.branches = conditionBranches(source).map(
       (branch, branchIndex) =>
@@ -1469,6 +1521,16 @@ function openNode(nodeKey: string) {
   focusActionInspector();
 }
 
+function openFirstAction() {
+  if (firstAction.value?.nodeKey) openNode(firstAction.value.nodeKey);
+}
+
+function changeFirstAction(nodeKey: string) {
+  const rotated = rotateLinearScenarioStart(form.actions, nodeKey);
+  if (!rotated) return;
+  form.actions.splice(0, form.actions.length, ...rotated);
+}
+
 function closeNodeInspector() {
   selectedNodeKey.value = null;
   inspectorMode.value = "settings";
@@ -1477,7 +1539,7 @@ function closeNodeInspector() {
 
 function changeType(type: string) {
   if (!selectedAction.value) return;
-  const definition = findActionDefinition(actionDefinitions.value, type);
+  const definition = findScenarioActionCatalogItem(actionCatalog.value, type);
   selectedAction.value.type = type;
   selectedAction.value.config = {
     ...(definition ? createActionConfig(definition) : {}),
@@ -1572,7 +1634,7 @@ async function save() {
   for (const action of form.actions) {
     const configError = validateScenarioActionConfig(
       action,
-      findActionDefinition(actionDefinitions.value, action.type),
+      findScenarioActionCatalogItem(actionCatalog.value, action.type),
       authoringContract.value?.localization,
     );
     if (configError) {
@@ -1625,17 +1687,20 @@ async function save() {
   saving.value = true;
   try {
     const existingScenarioId = form.id;
-    const payload: SaveScenario = {
-      ...form,
+    const payload = {
+      id: form.id,
+      updatedAt: form.updatedAt,
       name: form.name.trim(),
       code: form.code.trim(),
       description: form.description.trim() || undefined,
+      eventDefinitionId: form.eventDefinitionId,
+      status: form.status,
+      conversationPolicy: form.conversationPolicy,
+      priority: form.priority,
       cooldownSeconds: form.cooldownSeconds || undefined,
       maxRunsPerUser: form.maxRunsPerUser || undefined,
-      actions: form.actions.map((action, position) => ({
-        ...toPlainScenarioAction(action),
-        position,
-      })),
+      activeFrom: form.activeFrom,
+      activeTo: form.activeTo,
     };
     if (payload.status === 'ARCHIVED') {
       throw new Error('Архивный сценарий нельзя изменить из редактора');
@@ -1796,7 +1861,7 @@ function leave() {
           :disabled="publishPending"
           @click="leave"
         /><Button
-          v-if="authoringEditable"
+          v-if="authoringEditable && !error"
           label="Сохранить"
           icon="pi pi-check"
           :loading="saving"
@@ -1904,12 +1969,12 @@ function leave() {
                 class="action-outline-item"
                 :data-action-node-key="action.nodeKey"
                 :class="{ active: selectedNodeKey === action.nodeKey && !graphExpanded }"
-                :aria-label="`Настроить действие ${findActionDefinition(actionDefinitions, action.type)?.name ?? action.type}`"
+                :aria-label="`Настроить действие ${findScenarioActionCatalogItem(actionCatalog, action.type)?.name ?? action.type}`"
                 @click="openNode(action.nodeKey ?? '')"
               >
                 <span><i :class="action.type === 'CONDITION' ? 'pi pi-code' : action.type === 'WAIT_FOR_GOAL' ? 'pi pi-clock' : 'pi pi-bolt'" /></span>
                 <div>
-                  <strong>{{ findActionDefinition(actionDefinitions, action.type)?.name ?? action.type }}</strong>
+                  <strong>{{ findScenarioActionCatalogItem(actionCatalog, action.type)?.name ?? action.type }}</strong>
                   <small>{{ action.nodeKey }} · {{ nodeSummary(action) }}</small>
                 </div>
                 <em v-if="actionIssues.filter((issue) => issue.nodeKey === action.nodeKey).length">
@@ -2066,7 +2131,7 @@ function leave() {
               /></span>
               <div>
                 <strong>{{
-                  findActionDefinition(actionDefinitions, action.type)?.name ??
+                  findScenarioActionCatalogItem(actionCatalog, action.type)?.name ??
                   action.type
                 }}</strong
                 ><small>{{ action.nodeKey }} · {{ nodeSummary(action) }}</small>
@@ -2163,20 +2228,12 @@ function leave() {
           <header class="stage-section-header">
             <div>
               <span>Условия запуска</span>
-              <h1>Что должно произойти перед запуском</h1>
+              <h1 id="rule-builder-title">Что должно произойти перед запуском</h1>
               <p>
                 Добавьте проверки текущего события или недавних действий
                 пользователя.
               </p>
             </div>
-            <Button
-              v-if="ruleContext && canEdit"
-              label="Проверить условия"
-              icon="pi pi-check-circle"
-              severity="secondary"
-              outlined
-              @click="validationOpen = true"
-            />
           </header>
           <Message v-if="authoringError" severity="error" :closable="false"
             >Не удалось загрузить каталог условий. {{ authoringError }}</Message
@@ -2189,6 +2246,35 @@ function leave() {
             @update:model-value="updateRuleDraft"
             @editing-dirty="ruleEditorDirty = $event"
           />
+          <footer
+            v-if="ruleContext && canEdit"
+            class="rule-validation-actions"
+            data-testid="rule-validation-actions"
+          >
+            <div
+              class="rule-validation-status"
+              :class="{ ready: ruleValidationStatus.ready }"
+              role="status"
+            >
+              <i
+                :class="
+                  ruleValidationStatus.ready
+                    ? 'pi pi-check-circle'
+                    : 'pi pi-info-circle'
+                "
+                aria-hidden="true"
+              />
+              <span>
+                <strong>{{ ruleValidationStatus.title }}</strong>
+                <small>{{ ruleValidationStatus.detail }}</small>
+              </span>
+            </div>
+            <Button
+              label="Проверить условия"
+              icon="pi pi-check-circle"
+              @click="validationOpen = true"
+            />
+          </footer>
           <div v-else-if="ruleContext" class="stage-empty">
             <i class="pi pi-lock" />
             <h2>Условия только для просмотра</h2>
@@ -2432,7 +2518,7 @@ function leave() {
           :project-id="auth.project?.id ?? ''"
           :action="selectedAction"
           :actions="form.actions"
-          :action-definitions="actionDefinitions"
+          :action-catalog="actionCatalog"
           :events="events"
           :elements="elements"
           :template-variables="templateVariables"
@@ -2470,7 +2556,7 @@ function leave() {
             <div>
               <small>Режим просмотра</small>
               <h2>{{
-                findActionDefinition(actionDefinitions, selectedAction.type)
+                findScenarioActionCatalogItem(actionCatalog, selectedAction.type)
                   ?.name ?? selectedAction.type
               }}</h2>
             </div>
@@ -2585,6 +2671,60 @@ function leave() {
               >
             </div>
             <div class="field">
+              <label>Первое действие</label>
+              <div
+                v-if="firstAction"
+                class="first-action-card"
+                data-testid="scenario-first-action"
+              >
+                <span><i class="pi pi-play" /></span>
+                <div>
+                  <strong>{{
+                    firstActionDefinition?.name ?? firstAction.type
+                  }}</strong>
+                  <small>{{ firstAction.nodeKey }}</small>
+                </div>
+                <Select
+                  v-if="canChooseFirstAction"
+                  input-id="scenario-first-action"
+                  :model-value="firstAction.nodeKey"
+                  :options="firstActionOptions"
+                  option-label="label"
+                  option-value="value"
+                  aria-label="Выбрать первое действие"
+                  @update:model-value="changeFirstAction"
+                >
+                  <template #option="{ option }">
+                    <div class="first-action-option">
+                      <span>{{ option.label }}</span>
+                      <code>{{ option.meta }}</code>
+                    </div>
+                  </template>
+                </Select>
+                <Button
+                  label="Настроить первое действие"
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  outlined
+                  @click="openFirstAction"
+                />
+              </div>
+              <small
+                v-if="
+                  firstAction &&
+                  form.actions.length > 1 &&
+                  !canChooseFirstAction
+                "
+              >
+                Для ветвящегося графа можно настроить текущий первый узел.
+                Смена корня отключена, чтобы не потерять ветки.
+              </small>
+              <small v-else-if="!firstAction"
+                >Добавьте действие на этапе «Действия» — оно станет первым
+                после события запуска.</small
+              >
+            </div>
+            <div class="field">
               <label for="scenario-status">Статус</label>
               <div
                 v-if="form.status === 'ACTIVE'"
@@ -2656,19 +2796,6 @@ function leave() {
                 placeholder="Без паузы"
               />
             </div>
-          </section>
-          <section v-if="form.conditions.length">
-            <div class="section-copy">
-              <h3>Условия старого формата</h3>
-              <p>
-                Эти условия нужны для совместимости со старыми версиями
-                сценария. Новые условия настраиваются в разделе «Условия».
-              </p>
-            </div>
-            <ScenarioConditionRows
-              v-model="form.conditions"
-              :paths="triggerConditionPaths"
-            />
           </section>
         </aside>
         <aside
@@ -3169,6 +3296,49 @@ function leave() {
   color: var(--text-small-muted);
   font-size: var(--font-size-body-small);
 }
+.rule-validation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-card);
+}
+.rule-validation-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-secondary);
+}
+.rule-validation-status > i {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  color: var(--text-small-muted);
+}
+.rule-validation-status.ready > i {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.rule-validation-status strong,
+.rule-validation-status small {
+  display: block;
+}
+.rule-validation-status strong {
+  font-size: var(--font-size-body-small);
+}
+.rule-validation-status small {
+  margin-top: 3px;
+  color: var(--text-small-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.4;
+}
 .validation-drawer {
   position: absolute;
   z-index: 10;
@@ -3371,6 +3541,57 @@ function leave() {
 }
 .selected-trigger > span {
   font-size: 0.65rem;
+}
+.first-action-card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+.first-action-card > span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+  place-items: center;
+}
+.first-action-card > div {
+  min-width: 0;
+}
+.first-action-card strong,
+.first-action-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.first-action-card small {
+  margin-top: 3px;
+  color: var(--text-small-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.67rem;
+}
+.first-action-card > :deep(.p-select),
+.first-action-card > :deep(.p-button) {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.first-action-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.first-action-option code {
+  color: var(--text-small-muted);
+  font-size: 0.67rem;
 }
 .stage-empty {
   display: flex;
@@ -3937,6 +4158,17 @@ function leave() {
   }
   .rule-canvas {
     min-height: 50vh;
+  }
+  .stage-section-header {
+    padding: 16px;
+  }
+  .rule-validation-actions {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 14px 16px 18px;
+  }
+  .rule-validation-actions > .p-button {
+    width: 100%;
   }
   .stage-overview {
     padding: 16px;

@@ -6,10 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AuditStatus = (typeof AuditStatus)[keyof typeof AuditStatus];
+export type ProjectAuditEventsListOutcome =
+  (typeof ProjectAuditEventsListOutcome)[keyof typeof ProjectAuditEventsListOutcome];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AuditStatus = {
-  SUCCEEDED: "SUCCEEDED",
+export const ProjectAuditEventsListOutcome = {
+  SUCCESS: "SUCCESS",
+  DENIED: "DENIED",
   FAILED: "FAILED",
 } as const;
