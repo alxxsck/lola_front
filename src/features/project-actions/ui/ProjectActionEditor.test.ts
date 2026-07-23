@@ -5,6 +5,7 @@ import ToggleSwitch from "primevue/toggleswitch";
 import { describe, expect, it } from "vitest";
 import type { ProjectAction } from "../model/project-action";
 import ProjectActionEditor from "./ProjectActionEditor.vue";
+import ProjectActionSchemaForm from "./ProjectActionSchemaForm.vue";
 
 const action = {
   id: "action-1",
@@ -120,6 +121,72 @@ describe("ProjectActionEditor", () => {
     ).toBeDefined();
     expect(wrapper.find('[data-test="archive-project-action"]').exists()).toBe(
       false,
+    );
+  });
+
+  it("lets a Project Admin edit standard settings while keeping AI exposure owner-only", async () => {
+    const wrapper = shallowMount(ProjectActionEditor, {
+      props: {
+        action,
+        effectivePermissionCodes: ["project.actions.manage"],
+      },
+      global: { stubs: { Dialog: dialogStub, Message: messageStub } },
+    });
+    const scenarioToggle = wrapper
+      .findAllComponents(ToggleSwitch)
+      .find(
+        (item) => item.attributes("aria-label") === "Использовать в сценариях",
+      )!;
+    const aiToggle = wrapper
+      .findAllComponents(ToggleSwitch)
+      .find(
+        (item) => item.attributes("aria-label") === "Разрешить помощнику Lola",
+      )!;
+
+    expect(scenarioToggle.attributes("disabled")).toBe("false");
+    expect(aiToggle.attributes("disabled")).toBe("true");
+    expect(wrapper.getComponent(Textarea).attributes("disabled")).toBe("true");
+    expect(wrapper.getComponent(ProjectActionSchemaForm).props("disabled")).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-test="archive-project-action"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.text()).toContain(
+      "Настройки доступа Lola может изменять только владелец проекта",
+    );
+
+    scenarioToggle.vm.$emit("update:modelValue", true);
+    await wrapper.vm.$nextTick();
+    await wrapper.get("form").trigger("submit");
+    await wrapper
+      .get('[data-test="confirm-project-action-save"]')
+      .trigger("click");
+
+    expect(wrapper.emitted("save")?.[0]?.[0]).toEqual({
+      scenarioEnabled: true,
+    });
+  });
+
+  it("keeps shared configuration owner-only while the action is exposed to AI", () => {
+    const wrapper = shallowMount(ProjectActionEditor, {
+      props: {
+        action: {
+          ...action,
+          aiEnabled: true,
+          aiUsageDescription:
+            "Use when the user explicitly asks to open the bonuses page.",
+        },
+        effectivePermissionCodes: ["project.actions.manage"],
+      },
+      global: { stubs: { Message: messageStub } },
+    });
+
+    expect(wrapper.getComponent(ProjectActionSchemaForm).props("disabled")).toBe(
+      true,
+    );
+    expect(wrapper.text()).toContain(
+      "Конфигурацию AI-enabled действия может изменять только владелец",
     );
   });
 

@@ -65,6 +65,11 @@ const canEditAiExposure = computed(
     canEdit.value &&
     canManageProjectActionAiExposure(props.effectivePermissionCodes),
 );
+const canEditConfiguration = computed(
+  () =>
+    canEdit.value &&
+    (!props.action.aiEnabled || canEditAiExposure.value),
+);
 const supportsScenario = computed(() =>
   props.action.actionTypeRevision.supportedSurfaces.includes("SCENARIO"),
 );
@@ -183,6 +188,18 @@ function confirmArchive() {
           ? "Архивное действие доступно только для чтения."
           : "Для изменения и архивирования требуется разрешение управления действиями."
       }}
+    </Message>
+    <Message
+      v-if="supportsAi && canEdit && !canEditAiExposure"
+      severity="info"
+      :closable="false"
+    >
+      <p>Настройки доступа Lola может изменять только владелец проекта.</p>
+      <p v-if="action.aiEnabled">
+        Конфигурацию AI-enabled действия может изменять только владелец.
+        Сценарии и архивирование доступны администратору.
+      </p>
+      <p v-else>Остальные настройки действия доступны для редактирования.</p>
     </Message>
     <Message v-if="mutationError" severity="error" :closable="false"
       >{{ mutationError.message
@@ -329,7 +346,7 @@ function confirmArchive() {
         v-model="draft.configuration"
         :schema="action.actionTypeRevision.projectConfigSchema"
         :ui-schema="action.actionTypeRevision.uiSchema"
-        :disabled="!canEdit"
+        :disabled="!canEditConfiguration"
       />
     </section>
 
