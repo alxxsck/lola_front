@@ -360,6 +360,22 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
     ],
   ),
   demoScenarioActionCatalogItem(
+    'CONNECT_TELEGRAM',
+    'Подключить Telegram',
+    'FRONTEND',
+    {
+      label: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 200,
+        default: 'Подключить Telegram',
+      },
+    },
+    ['label'],
+    [{ key: 'label', label: 'Текст кнопки', control: 'text' }],
+    'Показывает системную кнопку безопасной привязки Telegram-аккаунта пользователя.',
+  ),
+  demoScenarioActionCatalogItem(
     'OPEN_PAGE',
     'Открыть страницу',
     'FRONTEND',
