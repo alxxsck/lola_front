@@ -3,6 +3,8 @@ import { computed, nextTick, ref } from 'vue'
 import Message from 'primevue/message'
 import {
   applyRuleCommand,
+  applyRuleQuickStartRecipe,
+  createRuleQuickStartRecipes,
   RULE_LIMITS,
   serializeRuleDraft,
   summarizeRule,
@@ -12,6 +14,7 @@ import {
   type RuleDraft,
   type RuleDraftNode,
   type RuleLeafInput,
+  type RuleQuickStartRecipe,
 } from '../model'
 import RuleLeafEditor from './RuleLeafEditor.vue'
 import RuleNodeCard from './RuleNodeCard.vue'
@@ -47,11 +50,11 @@ const summary = computed(() => summarizeRule(props.modelValue, props.context))
 const serialization = computed(() => serializeRuleDraft(props.modelValue, props.context))
 const groupTargets = computed(() => collectGroups(props.modelValue.root))
 const editedNode = computed(() => editorSession.value?.nodeId ? findNode(props.modelValue.root, editorSession.value.nodeId) : undefined)
-const historyRecipeEvent = computed(() => props.context.contract.events.find((event) => event.aggregateMeasures.some((measure) => measure.measure === 'count')))
 const recipeLimitReached = computed(() => summary.value.nodes >= RULE_LIMITS.maxNodes
   || summary.value.leaves >= RULE_LIMITS.maxLeaves
   || summary.value.aggregateLeaves >= RULE_LIMITS.maxAggregateLeaves
   || ((props.modelValue.root.kind === 'all' || props.modelValue.root.kind === 'any') && props.modelValue.root.children.length >= RULE_LIMITS.maxGroupChildren))
+const recipes = computed(() => createRuleQuickStartRecipes(props.context))
 
 function collectGroups(node: RuleDraftNode, result: Array<{ nodeId: string; label: string; childCount: number }> = []) {
   if (node.kind === 'all' || node.kind === 'any') {
@@ -161,30 +164,21 @@ function closeSources() {
   void nextTick(() => opener?.focus())
 }
 
-function addRecipe(kind: 'history' | 'streak') {
+function addRecipe(recipe: RuleQuickStartRecipe) {
   const root = props.modelValue.root
   if (root.kind !== 'all' && root.kind !== 'any') {
     commandError.value = 'Готовый пример можно добавить только в корневую группу.'
     return
   }
-  if (kind === 'streak') {
-    runCommand({ type: 'add', parentNodeId: root.nodeId, node: { kind: 'activityDayStreak', compare: { operator: 'gte', value: 3 } } })
+  const result = applyRuleQuickStartRecipe(props.modelValue, root.nodeId, recipe, props.context)
+  if (!result.ok) {
+    commandError.value = result.error.message
+    focusNode(result.error.nodeId)
     return
   }
-  const event = historyRecipeEvent.value
-  if (!event) {
-    commandError.value = 'В каталоге нет события, для которого доступен подсчёт истории.'
-    return
-  }
-  runCommand({
-    type: 'add',
-    parentNodeId: root.nodeId,
-    node: {
-      kind: 'eventAggregate', eventCode: event.code, measure: 'count', filters: [],
-      window: { kind: 'last', durationMs: 7 * 86_400_000, boundary: 'beforeTrigger' },
-      compare: { operator: 'gte', value: 1 },
-    },
-  })
+  commandError.value = ''
+  emit('update:modelValue', result.draft)
+  void nextTick(() => focusNode(result.focusNodeId))
 }
 
 function issueControlSelector(fieldPath?: string) {
@@ -224,21 +218,33 @@ defineExpose({ focusIssue })
 
 <template>
   <section class="rule-builder" aria-labelledby="rule-builder-title">
-    <header class="builder-header">
-      <div><span class="eyebrow">Условия запуска</span><h2 id="rule-builder-title">Кто подходит для сценария</h2><p>Соберите понятные условия из данных проекта. Формулы и JSON не нужны.</p></div>
-      <div class="health" :class="summary.status"><strong>{{ summary.leaves }} {{ summary.leaves === 1 ? 'условие' : 'условий' }}</strong><span>{{ serialization.ok ? 'Готово к проверке' : `${serialization.issues.length} нужно заполнить` }}</span></div>
-    </header>
-
     <Message v-if="commandError" severity="error" :closable="false" role="alert">{{ commandError }}</Message>
     <p class="sr-live" aria-live="polite">{{ commandError || (serialization.ok ? 'Условия заполнены' : 'Черновик условий изменён') }}</p>
 
-    <section class="recipe-panel" aria-labelledby="recipe-title">
-      <div><span class="eyebrow">Быстрый старт</span><h3 id="recipe-title">Добавить готовый пример</h3><p>Пример появится в дереве как обычное условие — его можно сразу изменить.</p></div>
+    <details class="recipe-panel">
+      <summary>
+        <span class="recipe-heading">
+          <strong>Быстрый старт</strong>
+          <small>Пример появится в дереве как обычное условие — его можно сразу изменить.</small>
+        </span>
+        <i class="pi pi-chevron-down recipe-chevron" aria-hidden="true" />
+      </summary>
       <div class="recipe-actions">
-        <button type="button" data-recipe="history" :disabled="recipeLimitReached || !historyRecipeEvent" @click="addRecipe('history')"><i class="pi pi-history" /> Событие было за 7 дней</button>
-        <button type="button" data-recipe="streak" :disabled="recipeLimitReached" @click="addRecipe('streak')"><i class="pi pi-calendar" /> Активен 3 дня подряд</button>
+        <button
+          v-for="recipe in recipes"
+          :key="recipe.id"
+          type="button"
+          :data-recipe="recipe.id"
+          :disabled="recipeLimitReached || !recipe.nodes"
+          :title="!recipe.nodes ? recipe.description : undefined"
+          @click="addRecipe(recipe)"
+        >
+          <i :class="recipe.icon" aria-hidden="true" />
+          <span><strong>{{ recipe.label }}</strong><small>{{ recipe.description }}</small></span>
+          <i class="pi pi-plus" aria-hidden="true" />
+        </button>
       </div>
-    </section>
+    </details>
 
     <details class="glossary"><summary>Как работают группы условий?</summary><dl><div><dt>Должны выполняться все условия</dt><dd>Пользователь подходит, только если выполнено каждое условие группы.</dd></div><div><dt>Достаточно одного условия</dt><dd>Пользователь подходит, если выполнено хотя бы одно условие группы.</dd></div><div><dt>Исключение</dt><dd>Пользователь подходит, если выбранное условие не выполнено.</dd></div></dl></details>
 
@@ -259,9 +265,9 @@ defineExpose({ focusIssue })
 </template>
 
 <style scoped>
-.rule-builder{container:rule-builder / inline-size;display:flex;flex-direction:column;gap:14px;min-width:0;padding:20px;background:var(--surface-subtle);color:var(--ink)}.builder-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.builder-header h2{font-size:1.1rem}.builder-header p{margin:5px 0 0;color:var(--text-small-muted);font-size:.72rem}.health{flex:0 0 auto;padding:9px 11px;border:1px solid var(--border-default);border-radius:12px;background:var(--surface-card);text-align:right}.health strong,.health span{display:block}.health strong{font-size:.71rem}.health span{margin-top:3px;color:var(--text-small-muted);font-size:.62rem}.health.valid{border-color:var(--status-success);background:var(--status-success-soft)}.health.invalid{border-color:var(--status-danger);background:var(--status-danger-soft)}.recipe-panel{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 14px;border:1px solid var(--status-violet);border-radius:14px;background:var(--status-violet-soft)}.recipe-panel h3{margin:2px 0 0;font-size:.78rem}.recipe-panel p{margin:4px 0 0;color:var(--text-small-muted);font-size:.64rem}.recipe-actions{display:flex;gap:7px}.recipe-actions button{padding:8px 10px;border:1px solid var(--status-violet);border-radius:10px;background:var(--surface-card);color:var(--status-violet-text);font-size:.65rem;font-weight:700;cursor:pointer}.recipe-actions button:disabled{opacity:.45;cursor:not-allowed}.glossary{padding:0 3px;color:var(--text-secondary);font-size:.67rem}.glossary summary{cursor:pointer;font-weight:700}.glossary dl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:9px 0 0}.glossary dl div{padding:9px;border-radius:10px;background:var(--surface-card)}.glossary dt{font-weight:800}.glossary dd{margin:3px 0 0;line-height:1.4}.rule-tree{margin:0;padding:0}.builder-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:14px;border:1px solid var(--border-default);border-radius:15px;background:var(--surface-emphasis);color:var(--text-on-emphasis)}.builder-summary>div>span{display:block;color:var(--text-on-emphasis-muted);font-size:.61rem;text-transform:uppercase;letter-spacing:.08em}.builder-summary>div>strong{display:block;margin-top:5px;font-size:.72rem;line-height:1.45}.builder-summary dl{display:flex;gap:14px;margin:0}.builder-summary dl div{text-align:right}.builder-summary dt{color:var(--text-on-emphasis-muted);font-size:.58rem}.builder-summary dd{margin:3px 0 0;font-size:.7rem;font-weight:700}.builder-summary details{grid-column:1/3;color:var(--text-on-emphasis-muted);font-size:.63rem}.builder-summary details summary{cursor:pointer}.builder-summary details p{margin:7px 0 0}.builder-summary code{color:var(--brand)}.sr-live{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-@container rule-builder (max-width:1024px){.rule-builder{padding:18px}.builder-summary{grid-template-columns:1fr}.builder-summary dl{justify-content:space-between}.builder-summary details{grid-column:1}}
-@container rule-builder (max-width:768px){.rule-builder{padding:16px}.builder-header{align-items:stretch}.health{align-self:flex-start}.recipe-panel{align-items:flex-start;flex-direction:column}.recipe-actions{width:100%}.recipe-actions button{flex:1}.glossary dl{grid-template-columns:1fr}}
-@container rule-builder (max-width:390px){.rule-builder{padding:12px;gap:11px}.builder-header{flex-direction:column}.health{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left}.recipe-actions{flex-direction:column}.builder-summary dl{display:grid;grid-template-columns:repeat(3,1fr)}.builder-summary dl div{text-align:left}}
+.rule-builder{container:rule-builder / inline-size;display:flex;flex-direction:column;gap:14px;min-width:0;padding:20px;background:var(--surface-subtle);color:var(--ink)}.recipe-panel{border:1px solid var(--status-violet);border-radius:14px;background:var(--status-violet-soft);overflow:hidden}.recipe-panel>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px;cursor:pointer;list-style:none}.recipe-panel>summary::-webkit-details-marker{display:none}.recipe-heading{min-width:0}.recipe-heading strong,.recipe-heading small{display:block}.recipe-heading strong{color:var(--text-secondary);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}.recipe-heading small{margin-top:4px;color:var(--text-small-muted);font-size:.64rem;line-height:1.4}.recipe-chevron{flex:0 0 auto;color:var(--status-violet-text);transition:transform .2s ease}.recipe-panel[open] .recipe-chevron{transform:rotate(180deg)}.recipe-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 14px 14px}.recipe-actions button{display:grid;grid-template-columns:26px minmax(0,1fr) 14px;align-items:center;gap:8px;min-width:0;padding:10px;border:1px solid var(--status-violet);border-radius:11px;background:var(--surface-card);color:var(--status-violet-text);text-align:left;cursor:pointer}.recipe-actions button>i:first-child{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--status-violet-soft)}.recipe-actions button>span{min-width:0}.recipe-actions button strong,.recipe-actions button small{display:block}.recipe-actions button strong{font-size:.65rem;line-height:1.3}.recipe-actions button small{margin-top:3px;color:var(--text-small-muted);font-size:.58rem;line-height:1.35}.recipe-actions button>.pi-plus{font-size:.62rem}.recipe-actions button:disabled{opacity:.45;cursor:not-allowed}.glossary{padding:0 3px;color:var(--text-secondary);font-size:.67rem}.glossary summary{cursor:pointer;font-weight:700}.glossary dl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:9px 0 0}.glossary dl div{padding:9px;border-radius:10px;background:var(--surface-card)}.glossary dt{font-weight:800}.glossary dd{margin:3px 0 0;line-height:1.4}.rule-tree{margin:0;padding:0}.builder-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:14px;border:1px solid var(--border-default);border-radius:15px;background:var(--surface-emphasis);color:var(--text-on-emphasis)}.builder-summary>div>span{display:block;color:var(--text-on-emphasis-muted);font-size:.61rem;text-transform:uppercase;letter-spacing:.08em}.builder-summary>div>strong{display:block;margin-top:5px;font-size:.72rem;line-height:1.45}.builder-summary dl{display:flex;gap:14px;margin:0}.builder-summary dl div{text-align:right}.builder-summary dt{color:var(--text-on-emphasis-muted);font-size:.58rem}.builder-summary dd{margin:3px 0 0;font-size:.7rem;font-weight:700}.builder-summary details{grid-column:1/3;color:var(--text-on-emphasis-muted);font-size:.63rem}.builder-summary details summary{cursor:pointer}.builder-summary details p{margin:7px 0 0}.builder-summary code{color:var(--brand)}.sr-live{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@container rule-builder (max-width:1024px){.rule-builder{padding:18px}.recipe-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.builder-summary{grid-template-columns:1fr}.builder-summary dl{justify-content:space-between}.builder-summary details{grid-column:1}}
+@container rule-builder (max-width:768px){.rule-builder{padding:16px}.recipe-actions{grid-template-columns:1fr}.glossary dl{grid-template-columns:1fr}}
+@container rule-builder (max-width:390px){.rule-builder{padding:12px;gap:11px}.recipe-panel>summary{padding:12px}.recipe-actions{padding:0 12px 12px}.builder-summary dl{display:grid;grid-template-columns:repeat(3,1fr)}.builder-summary dl div{text-align:left}}
 @container rule-builder (max-width:320px){.rule-builder{padding:10px}.builder-summary{padding:12px}.builder-summary dl{gap:7px}}
 </style>

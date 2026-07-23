@@ -2,6 +2,11 @@ export { RULE_LIMITS } from './rule-contract'
 export { applyRuleCommand } from './rule-commands'
 export { createRuleDraft } from './rule-draft'
 export { mapBackendRuleIssues } from './rule-issues'
+export {
+  applyRuleQuickStartRecipe,
+  createRuleQuickStartRecipes,
+  type RuleQuickStartRecipe,
+} from './rule-recipes'
 export { deserializeRule, serializeRuleDraft } from './rule-serialization'
 export { summarizeRule } from './rule-summary'
 export type {

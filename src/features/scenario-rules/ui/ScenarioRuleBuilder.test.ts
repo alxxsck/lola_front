@@ -36,6 +36,12 @@ const contract: ScenarioAuthoringContract = {
       control: { type: 'select', options: ['EUR', 'USD'] }, allowedValues: ['EUR', 'USD'],
       capabilities: { eventField: { operators: ['eq', 'in'] }, aggregateFilter: { operators: ['eq', 'in'] }, aggregateMeasure: { measures: [] } },
     }],
+  }, {
+    code: 'registration.completed', definitionId: 'event-registration', definitionKeyId: 'key-registration', name: 'Регистрация завершена', schemaVersion: 1,
+    aggregateMeasures: [
+      { measure: 'count', field: 'none', resultType: 'integer', compareValueType: 'integer', compareOperators: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte'] },
+    ],
+    fields: [],
   }],
 }
 
@@ -79,6 +85,64 @@ describe('ScenarioRuleBuilder', () => {
     expect(wrapper.get('button[aria-label="Должны выполняться все условия"]').text()).toBe('Должны выполняться все условия')
     expect(wrapper.get('button[aria-label="Достаточно одного условия"]').text()).toBe('Достаточно одного условия')
     expect(wrapper.text()).toContain('Как работают группы условий?')
+  })
+
+  it('keeps quick start collapsed with six catalog-compatible examples and no duplicate heading', () => {
+    const wrapper = mountBuilder()
+
+    const quickStart = wrapper.get('details.recipe-panel')
+    expect(quickStart.attributes()).not.toHaveProperty('open')
+    expect(quickStart.get('summary').text()).toContain('Быстрый старт')
+    expect(wrapper.text()).not.toContain('Добавить готовый пример')
+    expect(wrapper.text()).not.toContain('Кто подходит для сценария')
+    expect(wrapper.text()).not.toContain('Формулы и JSON')
+    expect(quickStart.findAll('.recipe-actions button')).toHaveLength(6)
+  })
+
+  it.each([
+    'history-7d',
+    'streak',
+    'registration-no-deposit-5m',
+    'frequent-24h',
+    'sum-30d',
+    'filtered-30d',
+  ])('creates a serializable rule from the %s quick-start example', async (recipeId) => {
+    const wrapper = mountBuilder()
+
+    await wrapper.get(`[data-recipe="${recipeId}"]`).trigger('click')
+    await flushPromises()
+
+    const draft = (wrapper.vm as unknown as { draft: RuleDraft }).draft
+    expect(serializeRuleDraft(draft, context)).toMatchObject({ ok: true })
+    wrapper.unmount()
+  })
+
+  it('combines recent registration with the absence of a positive deposit', async () => {
+    const wrapper = mountBuilder()
+
+    await wrapper.get('[data-recipe="registration-no-deposit-5m"]').trigger('click')
+    await flushPromises()
+
+    const draft = (wrapper.vm as unknown as { draft: RuleDraft }).draft
+    expect(draft.root).toMatchObject({
+      kind: 'all',
+      children: [{
+        kind: 'all',
+        children: [{
+          kind: 'eventAggregate',
+          eventCode: 'registration.completed',
+          measure: 'count',
+          window: { kind: 'last', durationMs: 300_000, boundary: 'beforeTrigger' },
+          compare: { operator: 'gte', value: 1 },
+        }, {
+          kind: 'eventAggregate',
+          eventCode: 'deposit.succeeded',
+          measure: 'count',
+          window: { kind: 'last', durationMs: 300_000, boundary: 'beforeTrigger' },
+          compare: { operator: 'eq', value: 0 },
+        }],
+      }],
+    })
   })
 
   it('creates a current Event condition from catalog controls without exposing raw paths', async () => {
