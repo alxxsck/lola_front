@@ -66,6 +66,7 @@ import { scenarioApiErrorMessage } from "@/features/scenarios/scenario-api-error
 import { useActionDefinitionsStore } from "@/features/actions/action-definitions.store";
 import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
 import {
+  scenarioActionDefinitionsForProject,
   scenarioEligibleActionDefinitions,
   scenarioProjectActionAvailabilityIssue,
 } from "@/features/project-actions/model/scenario-project-actions";
@@ -369,11 +370,17 @@ function markTranslationManual(payload: { fieldPath: string; locale: string }) {
   };
 }
 
-const actionDefinitions = computed(() =>
+const legacyActionDefinitions = computed(() =>
   actionDefinitionsStore.forProject(auth.project?.id ?? ""),
 );
 const projectActions = computed(() =>
   projectActionsStore.actionsForProject(auth.project?.id ?? ""),
+);
+const actionDefinitions = computed(() =>
+  scenarioActionDefinitionsForProject(
+    projectActions.value,
+    legacyActionDefinitions.value,
+  ),
 );
 const scenarioPickerActionDefinitions = computed(() =>
   scenarioEligibleActionDefinitions(
@@ -913,9 +920,11 @@ async function load() {
       repository.getElements(projectId).then((value) => {
         elements.value = value;
       }),
-      actionDefinitionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
-        actionsError.value = scenarioApiErrorMessage(cause);
-      }),
+      repository.capabilities.actionDefinitions
+        ? actionDefinitionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
+            actionsError.value = scenarioApiErrorMessage(cause);
+          })
+        : Promise.resolve(),
       projectActionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
         actionsError.value = scenarioApiErrorMessage(
           cause,

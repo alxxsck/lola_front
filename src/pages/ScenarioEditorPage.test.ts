@@ -12,6 +12,7 @@ import {
 } from "@/features/scenario-audience/ui";
 import type { AudienceDraft } from "@/features/scenario-audience/model";
 import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
+import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
 import ScenarioEditorPage from "./ScenarioEditorPage.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -32,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   searchSegments: vi.fn(),
   ensureLoaded: vi.fn(),
   ensureProjectActionsLoaded: vi.fn(),
+  actionDefinitionsCapability: true,
   actionDefinitions: [] as Array<import("@/shared/types/domain").ScenarioActionDefinition>,
   projectActions: [] as Array<import("@/features/project-actions/model/project-action").ProjectAction>,
   guardDirty: null as { value: boolean } | null,
@@ -73,6 +75,11 @@ vi.mock("@/features/project-actions/model/project-actions.store", () => ({
 
 vi.mock("@/shared/api/repository", () => ({
   repository: {
+    capabilities: {
+      get actionDefinitions() {
+        return mocks.actionDefinitionsCapability;
+      },
+    },
     getScenarios: mocks.getScenarios,
     getEvents: mocks.getEvents,
     getElements: mocks.getElements,
@@ -170,10 +177,15 @@ function projectAction(
       name: code,
       description: code,
       executorAdapter: "FRONTEND_COMMAND",
-      inputSchema: {},
+      inputSchema: {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
       resultSchema: {},
       projectConfigSchema: {},
-      uiSchema: {},
+      uiSchema: { fields: [] },
       supportedSurfaces: ["SCENARIO"],
       risk: "UI_EFFECT",
       confirmationPolicy: "NEVER",
@@ -270,6 +282,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     mocks.routeLeaveGuards.length = 0;
     mocks.route.params.scenarioId = "scenario-1";
     mocks.permissions = ["project.scenarios.read", "project.scenarios.write", "project.scenarios.publish"];
+    mocks.actionDefinitionsCapability = true;
     mocks.getScenarios.mockResolvedValue([scenario]);
     mocks.getEvents.mockResolvedValue([event]);
     mocks.getElements.mockResolvedValue([]);
@@ -1130,6 +1143,46 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.get(".action-library").text()).toContain("Открыть страницу");
     expect(wrapper.get(".action-library").text()).not.toContain("Только для AI");
     expect(wrapper.get(".action-library").text()).not.toContain("Выключено");
+  });
+
+  it("uses the pinned Project Action revision as the editor definition catalog", async () => {
+    mocks.actionDefinitionsCapability = false;
+    mocks.actionDefinitions = [];
+    mocks.projectActions = [projectAction("SHOW_ASSISTANT")];
+    mocks.getScenarios.mockResolvedValue([
+      {
+        ...scenario,
+        actions: [
+          {
+            position: 0,
+            nodeKey: "show_assistant",
+            type: "SHOW_ASSISTANT",
+            config: {},
+          },
+        ],
+      },
+    ]);
+
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+
+    expect(wrapper.text()).not.toContain(
+      "Действие SHOW_ASSISTANT отсутствует в каталоге проекта",
+    );
+    expect(wrapper.get(".action-library").text()).toContain("SHOW_ASSISTANT");
+    await wrapper.get(".action-outline-item").trigger("click");
+    expect(
+      wrapper
+        .getComponent(ScenarioNodeInspector)
+        .props("actionDefinitions")
+        .map((definition: { type: string }) => definition.type),
+    ).toContain("SHOW_ASSISTANT");
+    expect(
+      wrapper.getComponent(ScenarioNodeInspector).props("issues"),
+    ).not.toContain(
+      "Действие SHOW_ASSISTANT отсутствует в каталоге проекта",
+    );
   });
 
   it("keeps an unknown existing action as an opaque node and marks the graph invalid", async () => {
