@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  watch,
-} from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import Button from "primevue/button";
 import Column from "primevue/column";
@@ -21,9 +14,9 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { RunExplainInspector } from "@/features/scenario-run-explain/ui";
 import { repository } from "@/shared/api/repository";
 import { formatDate, relativeTime } from "@/shared/lib/format";
-import type { AuditEvent, EventLog, ScenarioRun } from "@/shared/types/domain";
+import type { AuditEvent, ScenarioRun } from "@/shared/types/domain";
 
-type Section = "events" | "runs" | "audit";
+type Section = "runs" | "audit";
 const auth = useAuthStore();
 const route = useRoute();
 const activeWaitDefinitionKeyId = computed(() =>
@@ -32,19 +25,10 @@ const activeWaitDefinitionKeyId = computed(() =>
     : undefined,
 );
 const section = ref<Section>(
-  route.query.section === "runs" || activeWaitDefinitionKeyId.value
-    ? "runs"
-    : "events",
+  route.query.section === "audit" && !activeWaitDefinitionKeyId.value
+    ? "audit"
+    : "runs",
 );
-const eventLogs = ref<EventLog[]>([]);
-const eventPagination = reactive({
-  page: 1,
-  limit: 12,
-  total: 0,
-  totalPages: 0,
-  hasNextPage: false,
-  hasPreviousPage: false,
-});
 const scenarioRuns = ref<ScenarioRun[]>([]);
 const runsNextCursor = ref<string | null>(null);
 const loadingMoreRuns = ref(false);
@@ -54,36 +38,30 @@ const auditLoadedFilterKey = ref<string | null>(null);
 const auditLoading = ref(false);
 const loadingMoreAudit = ref(false);
 const loading = ref(true);
-const eventLoading = ref(false);
-const errors = reactive<Record<Section, string>>({
-  events: "",
+const errors = ref<Record<Section, string>>({
   runs: "",
   audit: "",
 });
 const search = ref("");
 const status = ref("ALL");
-const selectedEvent = ref<EventLog | null>(null);
 const selectedRun = ref<ScenarioRun | null>(null);
 const selectedAudit = ref<AuditEvent | null>(null);
 
 const sections = [
-  { value: "events" as const, label: "События", icon: "pi pi-bolt" },
   { value: "runs" as const, label: "Запуски сценариев", icon: "pi pi-sitemap" },
   { value: "audit" as const, label: "Аудит", icon: "pi pi-shield" },
 ];
 const statusOptions = computed(() => {
   const values =
-    section.value === "events"
-      ? ["RECEIVED", "PROCESSED", "FAILED"]
-      : section.value === "runs"
-        ? ["RUNNING", "COMPLETED", "FAILED", "SKIPPED", "CANCELLED", "EXPIRED"]
-        : ["SUCCESS", "DENIED", "FAILED"];
+    section.value === "runs"
+      ? ["RUNNING", "COMPLETED", "FAILED", "SKIPPED", "CANCELLED", "EXPIRED"]
+      : ["SUCCESS", "DENIED", "FAILED"];
   return [
     { label: "Все статусы", value: "ALL" },
     ...values.map((value) => ({ label: value, value })),
   ];
 });
-const sectionError = computed(() => errors[section.value]);
+const sectionError = computed(() => errors.value[section.value]);
 
 const query = computed(() => search.value.trim().toLowerCase());
 const filteredRuns = computed(() =>
@@ -102,41 +80,20 @@ const filteredRuns = computed(() =>
 const severity = (
   value: string,
 ): "success" | "danger" | "warn" | "info" | "secondary" => {
-  if (["PROCESSED", "COMPLETED", "SUCCESS"].includes(value)) return "success";
+  if (["COMPLETED", "SUCCESS"].includes(value)) return "success";
   if (["FAILED", "EXPIRED", "CANCELLED"].includes(value)) return "danger";
   if (value === "DENIED") return "warn";
   if (
-    [
-      "RUNNING",
-      "WAITING_ACK",
-      "WAITING_INPUT",
-      "WAITING_TIME",
-      "RECEIVED",
-    ].includes(value)
+    ["RUNNING", "WAITING_ACK", "WAITING_INPUT", "WAITING_TIME"].includes(value)
   )
     return "warn";
   return "secondary";
 };
 const json = (value: unknown) => JSON.stringify(value, null, 2);
-let eventRequestId = 0;
 let loadRequestId = 0;
 let runsRequestId = 0;
 let auditRequestId = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
-
-function eventRequest(
-  page = eventPagination.page,
-  limit = eventPagination.limit,
-) {
-  return {
-    page,
-    limit,
-    ...(search.value.trim() ? { search: search.value.trim() } : {}),
-    ...(status.value !== "ALL"
-      ? { status: status.value as EventLog["status"] }
-      : {}),
-  };
-}
 
 function auditRequest(cursor?: string) {
   return {
@@ -153,45 +110,15 @@ function auditFilterKey() {
   return `${search.value.trim()}\u0000${status.value}`;
 }
 
-async function loadEventPage(
-  page = eventPagination.page,
-  limit = eventPagination.limit,
-) {
-  const projectId = auth.project?.id;
-  if (!projectId) return;
-  const requestId = ++eventRequestId;
-  eventLoading.value = true;
-  errors.events = "";
-  try {
-    const response = await repository.getEventLogs(
-      projectId,
-      eventRequest(page, limit),
-    );
-    if (requestId !== eventRequestId || auth.project?.id !== projectId) return;
-    eventLogs.value = response.items;
-    Object.assign(eventPagination, response.pagination);
-  } catch (cause) {
-    if (requestId === eventRequestId && auth.project?.id === projectId)
-      errors.events =
-        cause instanceof Error ? cause.message : "Не удалось загрузить события";
-  } finally {
-    if (requestId === eventRequestId && auth.project?.id === projectId)
-      eventLoading.value = false;
-  }
-}
-
 async function load() {
   const projectId = auth.project?.id;
   if (!projectId) return;
   const requestId = ++loadRequestId;
-  const currentEventRequestId = ++eventRequestId;
   const currentRunsRequestId = ++runsRequestId;
   const currentAuditRequestId = ++auditRequestId;
   loading.value = true;
-  errors.events = "";
-  errors.runs = "";
-  errors.audit = "";
-  eventLogs.value = [];
+  errors.value.runs = "";
+  errors.value.audit = "";
   scenarioRuns.value = [];
   runsNextCursor.value = null;
   auditEvents.value = [];
@@ -200,7 +127,6 @@ async function load() {
   auditLoading.value = false;
   loadingMoreAudit.value = false;
   const results = await Promise.allSettled([
-    repository.getEventLogs(projectId, eventRequest(1)),
     repository.getScenarioRunsPage(projectId, {
       limit: 50,
       ...(activeWaitDefinitionKeyId.value
@@ -214,39 +140,27 @@ async function load() {
   if (requestId !== loadRequestId || auth.project?.id !== projectId) return;
   if (
     results[0].status === "fulfilled" &&
-    currentEventRequestId === eventRequestId
+    currentRunsRequestId === runsRequestId
   ) {
-    eventLogs.value = results[0].value.items;
-    Object.assign(eventPagination, results[0].value.pagination);
+    scenarioRuns.value = results[0].value.items;
+    runsNextCursor.value = results[0].value.nextCursor;
   } else if (
     results[0].status === "rejected" &&
-    currentEventRequestId === eventRequestId
+    currentRunsRequestId === runsRequestId
   )
-    errors.events = message(results[0].reason);
+    errors.value.runs = message(results[0].reason);
   if (
     results[1].status === "fulfilled" &&
-    currentRunsRequestId === runsRequestId
-  ) {
-    scenarioRuns.value = results[1].value.items;
-    runsNextCursor.value = results[1].value.nextCursor;
-  } else if (
-    results[1].status === "rejected" &&
-    currentRunsRequestId === runsRequestId
-  )
-    errors.runs = message(results[1].reason);
-  if (
-    results[2].status === "fulfilled" &&
     currentAuditRequestId === auditRequestId
   ) {
-    auditEvents.value = results[2].value.items;
-    auditNextCursor.value = results[2].value.nextCursor;
+    auditEvents.value = results[1].value.items;
+    auditNextCursor.value = results[1].value.nextCursor;
     auditLoadedFilterKey.value = auditFilterKey();
   } else if (
-    results[2].status === "rejected" &&
+    results[1].status === "rejected" &&
     currentAuditRequestId === auditRequestId
   )
-    errors.audit = message(results[2].reason);
-  if (currentEventRequestId === eventRequestId) eventLoading.value = false;
+    errors.value.audit = message(results[1].reason);
   if (currentAuditRequestId === auditRequestId) auditLoading.value = false;
   if (requestId === loadRequestId) loading.value = false;
 }
@@ -256,7 +170,7 @@ async function loadAuditPage() {
   if (!projectId) return;
   const requestId = ++auditRequestId;
   auditLoading.value = true;
-  errors.audit = "";
+  errors.value.audit = "";
   try {
     const page = await repository.getAuditEventsPage(projectId, auditRequest());
     if (requestId === auditRequestId && auth.project?.id === projectId) {
@@ -266,7 +180,7 @@ async function loadAuditPage() {
     }
   } catch (cause) {
     if (requestId === auditRequestId && auth.project?.id === projectId)
-      errors.audit =
+      errors.value.audit =
         cause instanceof Error
           ? cause.message
           : "Не удалось загрузить события аудита";
@@ -281,7 +195,7 @@ async function loadMoreAuditEvents() {
   if (!projectId || !auditNextCursor.value) return;
   const requestId = ++auditRequestId;
   loadingMoreAudit.value = true;
-  errors.audit = "";
+  errors.value.audit = "";
   try {
     const page = await repository.getAuditEventsPage(
       projectId,
@@ -293,7 +207,7 @@ async function loadMoreAuditEvents() {
     }
   } catch (cause) {
     if (requestId === auditRequestId && auth.project?.id === projectId)
-      errors.audit =
+      errors.value.audit =
         cause instanceof Error
           ? cause.message
           : "Не удалось загрузить следующую страницу аудита";
@@ -308,7 +222,7 @@ async function loadMoreRuns() {
   if (!projectId || !runsNextCursor.value) return;
   const requestId = ++runsRequestId;
   loadingMoreRuns.value = true;
-  errors.runs = "";
+  errors.value.runs = "";
   try {
     const page = await repository.getScenarioRunsPage(projectId, {
       limit: 50,
@@ -323,7 +237,7 @@ async function loadMoreRuns() {
     }
   } catch (cause) {
     if (requestId === runsRequestId && auth.project?.id === projectId)
-      errors.runs =
+      errors.value.runs =
         cause instanceof Error
           ? cause.message
           : "Не удалось загрузить следующую страницу запусков";
@@ -335,35 +249,22 @@ async function loadMoreRuns() {
 
 function resetProjectState() {
   loadRequestId += 1;
-  eventRequestId += 1;
   runsRequestId += 1;
   auditRequestId += 1;
   clearTimeout(searchTimer);
-  eventLogs.value = [];
   scenarioRuns.value = [];
   auditEvents.value = [];
   auditNextCursor.value = null;
   auditLoadedFilterKey.value = null;
   runsNextCursor.value = null;
-  selectedEvent.value = null;
   selectedRun.value = null;
   selectedAudit.value = null;
   loading.value = false;
-  eventLoading.value = false;
   loadingMoreRuns.value = false;
   auditLoading.value = false;
   loadingMoreAudit.value = false;
-  Object.assign(eventPagination, {
-    page: 1,
-    limit: 12,
-    total: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPreviousPage: false,
-  });
-  errors.events = "";
-  errors.runs = "";
-  errors.audit = "";
+  errors.value.runs = "";
+  errors.value.audit = "";
 }
 
 function changeSection(value: Section) {
@@ -372,18 +273,9 @@ function changeSection(value: Section) {
   search.value = "";
 }
 
-function changeEventPage(event: { page: number; rows: number }) {
-  void loadEventPage(event.page + 1, event.rows);
-}
-
 watch([section, search, status], ([currentSection], [previousSection]) => {
   clearTimeout(searchTimer);
-  if (currentSection === "events") {
-    searchTimer = setTimeout(
-      () => void loadEventPage(1),
-      previousSection === "events" ? 300 : 0,
-    );
-  } else if (currentSection === "audit") {
+  if (currentSection === "audit") {
     if (
       previousSection === "audit" ||
       auditLoadedFilterKey.value !== auditFilterKey()
@@ -414,8 +306,7 @@ onMounted(load);
         <div class="eyebrow">Наблюдаемость</div>
         <h1>Операционный центр</h1>
         <p class="subtitle">
-          События, выполнение сценариев и действия администраторов в одном
-          потоке.
+          Выполнение сценариев и действия администраторов в одном потоке.
         </p>
       </div>
       <Button
@@ -423,7 +314,7 @@ onMounted(load);
         icon="pi pi-refresh"
         severity="secondary"
         outlined
-        :loading="loading || eventLoading"
+        :loading="loading"
         @click="load"
       />
     </header>
@@ -458,11 +349,9 @@ onMounted(load);
       >
         <i :class="item.icon" /><span>{{ item.label }}</span>
         <strong>{{
-          item.value === "events"
-            ? eventPagination.total
-            : item.value === "runs"
-              ? `${scenarioRuns.length}${runsNextCursor ? "+" : ""}`
-              : `${auditEvents.length}${auditNextCursor ? "+" : ""}`
+          item.value === "runs"
+            ? `${scenarioRuns.length}${runsNextCursor ? "+" : ""}`
+            : `${auditEvents.length}${auditNextCursor ? "+" : ""}`
         }}</strong>
       </button>
     </div>
@@ -474,9 +363,7 @@ onMounted(load);
           :placeholder="
             section === 'audit'
               ? 'Действие, актор или ресурс'
-              : section === 'events'
-                ? 'Код, пользователь или полный ID'
-                : 'Код, пользователь или ID'
+              : 'Код, пользователь или ID'
           "
       /></span>
       <Select
@@ -499,70 +386,6 @@ onMounted(load);
       <div v-if="loading" class="loading-list">
         <Skeleton v-for="item in 7" :key="item" height="58px" />
       </div>
-      <DataTable
-        v-else-if="section === 'events'"
-        :value="eventLogs"
-        lazy
-        paginator
-        :first="(eventPagination.page - 1) * eventPagination.limit"
-        :rows="eventPagination.limit"
-        :rows-per-page-options="[12, 25, 50]"
-        :total-records="eventPagination.total"
-        :loading="eventLoading"
-        paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
-        current-page-report-template="Показано {first}–{last} из {totalRecords}"
-        :pt="{
-          tableContainer: {
-            tabindex: 0,
-            role: 'region',
-            'aria-label': 'Журнал событий',
-          },
-        }"
-        row-hover
-        data-key="id"
-        @page="changeEventPage"
-        @row-click="selectedEvent = $event.data"
-      >
-        <template #empty
-          ><div class="empty">
-            <i class="pi pi-bolt" />Событий по выбранным фильтрам нет.
-          </div></template
-        >
-        <Column header="Событие"
-          ><template #body="{ data }"
-            ><div class="primary-cell">
-              <strong>{{ data.eventName }}</strong
-              ><small class="mono">{{ data.eventCode }}</small>
-            </div></template
-          ></Column
-        >
-        <Column header="Пользователь"
-          ><template #body="{ data }"
-            ><span class="mono compact">{{
-              data.userExternalId
-            }}</span></template
-          ></Column
-        >
-        <Column field="source" header="Источник" class="mobile-hide" />
-        <Column header="Статус"
-          ><template #body="{ data }"
-            ><Tag
-              :value="data.status"
-              :severity="severity(data.status)"
-              rounded /></template
-        ></Column>
-        <Column header="Получено"
-          ><template #body="{ data }"
-            ><span :title="formatDate(data.receivedAt)">{{
-              relativeTime(data.receivedAt)
-            }}</span></template
-          ></Column
-        >
-        <Column
-          ><template #body><i class="pi pi-chevron-right muted" /></template
-        ></Column>
-      </DataTable>
-
       <DataTable
         v-else-if="section === 'runs'"
         :value="filteredRuns"
@@ -711,50 +534,6 @@ onMounted(load);
       </div>
     </div>
   </section>
-
-  <Drawer
-    :visible="Boolean(selectedEvent)"
-    position="right"
-    :style="{ width: 'min(620px, 100vw)' }"
-    @update:visible="!$event && (selectedEvent = null)"
-  >
-    <template #header
-      ><div>
-        <div class="eyebrow">Event log</div>
-        <h2>{{ selectedEvent?.eventName }}</h2>
-      </div></template
-    >
-    <div v-if="selectedEvent" class="detail-stack">
-      <div class="detail-hero">
-        <div>
-          <span>Статус</span
-          ><Tag
-            :value="selectedEvent.status"
-            :severity="severity(selectedEvent.status)"
-          />
-        </div>
-        <div>
-          <span>Источник</span><strong>{{ selectedEvent.source }}</strong>
-        </div>
-        <div>
-          <span>Пользователь</span
-          ><strong class="mono">{{ selectedEvent.userExternalId }}</strong>
-        </div>
-      </div>
-      <div>
-        <h3>Payload</h3>
-        <pre>{{ json(selectedEvent.payload) }}</pre>
-      </div>
-      <div>
-        <h3>Context</h3>
-        <pre>{{ json(selectedEvent.context) }}</pre>
-      </div>
-      <Message v-if="selectedEvent.error" severity="error">
-        <pre>{{ json(selectedEvent.error) }}</pre>
-      </Message>
-      <small class="mono muted">{{ selectedEvent.id }}</small>
-    </div>
-  </Drawer>
 
   <Drawer
     :visible="Boolean(selectedRun)"
@@ -1088,20 +867,6 @@ onMounted(load);
   font-size: 0.9rem;
   margin: 0 0 9px;
 }
-.detail-stack pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  margin: 0;
-  padding: 12px;
-  border: 1px solid var(--line);
-  background: var(--surface-emphasis);
-  color: var(--status-success);
-  border-radius: 12px;
-  font:
-    500 0.69rem/1.55 "SFMono-Regular",
-    Consolas,
-    monospace;
-}
 .steps {
   display: flex;
   flex-direction: column;
@@ -1138,9 +903,6 @@ onMounted(load);
 }
 .step-copy strong {
   font-size: 0.78rem;
-}
-.step-copy pre {
-  font-size: 0.65rem;
 }
 .error-code {
   display: block;

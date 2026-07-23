@@ -274,7 +274,6 @@ export const router = createRouter({
           component: () => import("@/pages/OperationsPage.vue"),
           meta: {
             projectPermissionsAny: [
-              "project.event_logs.read",
               "project.scenario_runs.read",
               "project.audit.read",
             ],

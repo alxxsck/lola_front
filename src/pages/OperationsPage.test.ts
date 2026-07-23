@@ -5,7 +5,6 @@ import OperationsPage from "./OperationsPage.vue";
 
 const mocks = vi.hoisted(() => ({
   auth: null as unknown as { project?: { id: string } },
-  getEventLogs: vi.fn(),
   getScenarioRunsPage: vi.fn(),
   getAuditEventsPage: vi.fn(),
   routeQuery: {} as Record<string, string>,
@@ -38,27 +37,15 @@ vi.mock("@/features/auth/auth.store", async () => {
 vi.mock("@/shared/api/repository", () => ({
   repository: {
     mode: "api",
-    getEventLogs: mocks.getEventLogs,
     getScenarioRunsPage: mocks.getScenarioRunsPage,
     getAuditEventsPage: mocks.getAuditEventsPage,
   },
 }));
 
-describe("OperationsPage event pagination", () => {
+describe("OperationsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.routeQuery = {};
-    mocks.getEventLogs.mockResolvedValue({
-      items: [],
-      pagination: {
-        page: 1,
-        limit: 12,
-        total: 37,
-        totalPages: 4,
-        hasNextPage: true,
-        hasPreviousPage: false,
-      },
-    });
     mocks.getScenarioRunsPage.mockResolvedValue({
       items: [],
       nextCursor: null,
@@ -69,36 +56,22 @@ describe("OperationsPage event pagination", () => {
     });
   });
 
-  it("loads numbered event pages and exposes the server total to the paginator", async () => {
-    const wrapper = shallowMount(OperationsPage, {
-      global: {
-        stubs: {
-          Drawer: { template: '<aside><slot name="header" /><slot /></aside>' },
-        },
-      },
-    });
+  it("opens on scenario runs and does not expose an events section", async () => {
+    const wrapper = shallowMount(OperationsPage);
     await flushPromises();
 
-    expect(mocks.getEventLogs).toHaveBeenCalledWith("project-1", {
-      page: 1,
-      limit: 12,
+    expect(
+      wrapper.findAll(".section-tabs button").map((tab) => tab.text()),
+    ).toEqual(["Запуски сценариев0", "Аудит0"]);
+    expect(
+      wrapper.findAll(".section-tabs button")[0]!.attributes("aria-selected"),
+    ).toBe("true");
+    expect(wrapper.text()).not.toContain("События, выполнение сценариев");
+    expect(mocks.getScenarioRunsPage).toHaveBeenCalledWith("project-1", {
+      limit: 50,
     });
-    const table = wrapper.findComponent("data-table-stub") as unknown as {
-      attributes: (name?: string) => string | Record<string, string>;
-      vm: { $emit: (event: string, value: unknown) => void };
-    };
-    expect(table.attributes()).toHaveProperty("lazy");
-    expect(table.attributes("total-records")).toBe("37");
-    expect(table.attributes("current-page-report-template")).toContain(
-      "{totalRecords}",
-    );
-
-    table.vm.$emit("page", { page: 2, rows: 12 });
-    await flushPromises();
-
-    expect(mocks.getEventLogs).toHaveBeenLastCalledWith("project-1", {
-      page: 3,
-      limit: 12,
+    expect(mocks.getAuditEventsPage).toHaveBeenCalledWith("project-1", {
+      limit: 50,
     });
   });
 
@@ -111,7 +84,7 @@ describe("OperationsPage event pagination", () => {
     await flushPromises();
 
     expect(
-      wrapper.findAll(".section-tabs button")[1]!.attributes("aria-selected"),
+      wrapper.findAll(".section-tabs button")[0]!.attributes("aria-selected"),
     ).toBe("true");
     expect(mocks.getScenarioRunsPage).toHaveBeenCalledWith("project-1", {
       limit: 50,
@@ -124,100 +97,34 @@ describe("OperationsPage event pagination", () => {
 
   it("reloads on Project switch and rejects a late response from the old tenant", async () => {
     const old = deferred<{
-      items: never[];
-      pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-        hasNextPage: boolean;
-        hasPreviousPage: boolean;
-      };
+      items: Array<{ id: string }>;
+      nextCursor: string | null;
     }>();
-    mocks.getEventLogs.mockImplementation((projectId: string) =>
+    mocks.getScenarioRunsPage.mockImplementation((projectId: string) =>
       projectId === "project-1"
         ? old.promise
-        : Promise.resolve({
-            items: [],
-            pagination: {
-              page: 1,
-              limit: 12,
-              total: 2,
-              totalPages: 1,
-              hasNextPage: false,
-              hasPreviousPage: false,
-            },
-          }),
+        : Promise.resolve({ items: [], nextCursor: null }),
     );
     const wrapper = shallowMount(OperationsPage);
     await flushPromises();
 
     mocks.auth.project = { id: "project-2" };
     await flushPromises();
-    expect(mocks.getEventLogs).toHaveBeenCalledWith("project-2", {
-      page: 1,
-      limit: 12,
+    expect(mocks.getScenarioRunsPage).toHaveBeenCalledWith("project-2", {
+      limit: 50,
     });
 
     old.resolve({
-      items: [],
-      pagination: {
-        page: 1,
-        limit: 12,
-        total: 99,
-        totalPages: 9,
-        hasNextPage: true,
-        hasPreviousPage: false,
-      },
+      items: [{ id: "stale-run" }],
+      nextCursor: "stale-cursor",
     });
     await flushPromises();
-    expect(
-      wrapper.findComponent("data-table-stub").attributes("total-records"),
-    ).toBe("2");
+    const runsTable = wrapper.findComponent("data-table-stub") as unknown as {
+      vm: { $attrs: { value: Array<{ id: string }> } };
+    };
+    expect(runsTable.vm.$attrs.value).toEqual([]);
     wrapper.unmount();
     mocks.auth.project = { id: "project-1" };
-  });
-
-  it("resets to page one and sends filters to the backend", async () => {
-    vi.useFakeTimers();
-    const wrapper = shallowMount(OperationsPage, {
-      global: {
-        stubs: {
-          Drawer: { template: '<aside><slot name="header" /><slot /></aside>' },
-        },
-      },
-    });
-    await flushPromises();
-
-    const search = wrapper.findComponent("input-text-stub") as unknown as {
-      vm: { $emit: (event: string, value: unknown) => void };
-    };
-    const status = wrapper.findComponent("select-stub") as unknown as {
-      vm: { $emit: (event: string, value: unknown) => void };
-    };
-    search.vm.$emit("update:modelValue", " deposit ");
-    status.vm.$emit("update:modelValue", "FAILED");
-    await vi.advanceTimersByTimeAsync(300);
-    await flushPromises();
-
-    expect(mocks.getEventLogs).toHaveBeenLastCalledWith("project-1", {
-      page: 1,
-      limit: 12,
-      search: "deposit",
-      status: "FAILED",
-    });
-
-    const tabs = wrapper.findAll(".section-tabs button");
-    await tabs[1]!.trigger("click");
-    await tabs[0]!.trigger("click");
-    await vi.advanceTimersByTimeAsync(0);
-    await flushPromises();
-
-    expect(mocks.getEventLogs).toHaveBeenLastCalledWith("project-1", {
-      page: 1,
-      limit: 12,
-    });
-    vi.useRealTimers();
   });
 
   it("opens the strict Run Explain inspector for a selected project-scoped Run", async () => {
@@ -246,7 +153,6 @@ describe("OperationsPage event pagination", () => {
       },
     });
     await flushPromises();
-    await wrapper.findAll(".section-tabs button")[1]!.trigger("click");
 
     const table = wrapper.findComponent("data-table-stub") as unknown as {
       vm: { $emit: (event: string, value: unknown) => void };
@@ -282,7 +188,6 @@ describe("OperationsPage event pagination", () => {
       });
     const wrapper = shallowMount(OperationsPage);
     await flushPromises();
-    await wrapper.findAll(".section-tabs button")[1]!.trigger("click");
     await wrapper
       .find('button-stub[label="Загрузить ещё запусков"]')
       .trigger("click");
@@ -343,7 +248,7 @@ describe("OperationsPage event pagination", () => {
       },
     });
     await flushPromises();
-    await wrapper.findAll(".section-tabs button")[2]!.trigger("click");
+    await wrapper.findAll(".section-tabs button")[1]!.trigger("click");
 
     const search = wrapper.findComponent("input-text-stub") as unknown as {
       vm: { $emit: (event: string, value: unknown) => void };
@@ -389,8 +294,8 @@ describe("OperationsPage event pagination", () => {
       "audit-2",
     ]);
 
+    await wrapper.findAll(".section-tabs button")[0]!.trigger("click");
     await wrapper.findAll(".section-tabs button")[1]!.trigger("click");
-    await wrapper.findAll(".section-tabs button")[2]!.trigger("click");
     await vi.advanceTimersByTimeAsync(0);
     await flushPromises();
     expect(mocks.getAuditEventsPage).toHaveBeenLastCalledWith("project-1", {
@@ -400,8 +305,6 @@ describe("OperationsPage event pagination", () => {
   });
 
   it("keeps the newest Runs and Audit snapshot when a slower reload finishes last", async () => {
-    const oldEvents =
-      deferred<Awaited<ReturnType<typeof mocks.getEventLogs>>>();
     const oldRuns =
       deferred<Awaited<ReturnType<typeof mocks.getScenarioRunsPage>>>();
     const oldAudit =
@@ -419,19 +322,6 @@ describe("OperationsPage event pagination", () => {
       startedAt: "2026-07-18T10:00:00.000Z",
       steps: [],
     });
-    mocks.getEventLogs
-      .mockReturnValueOnce(oldEvents.promise)
-      .mockResolvedValueOnce({
-        items: [],
-        pagination: {
-          page: 1,
-          limit: 12,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      });
     mocks.getScenarioRunsPage
       .mockReturnValueOnce(oldRuns.promise)
       .mockResolvedValueOnce({ items: [run("run-new")], nextCursor: null });
@@ -467,17 +357,6 @@ describe("OperationsPage event pagination", () => {
     await wrapper.find('button-stub[label="Обновить"]').trigger("click");
     await flushPromises();
 
-    oldEvents.resolve({
-      items: [],
-      pagination: {
-        page: 1,
-        limit: 12,
-        total: 1,
-        totalPages: 1,
-        hasNextPage: false,
-        hasPreviousPage: false,
-      },
-    });
     oldRuns.resolve({ items: [run("run-old")], nextCursor: "stale-cursor" });
     oldAudit.resolve({
       items: [
@@ -505,14 +384,13 @@ describe("OperationsPage event pagination", () => {
     });
     await flushPromises();
 
-    await wrapper.findAll(".section-tabs button")[1]!.trigger("click");
     const runsTable = wrapper.findComponent("data-table-stub") as unknown as {
       vm: { $attrs: { value: Array<{ id: string }> } };
     };
     expect(runsTable.vm.$attrs.value.map((item) => item.id)).toEqual([
       "run-new",
     ]);
-    await wrapper.findAll(".section-tabs button")[2]!.trigger("click");
+    await wrapper.findAll(".section-tabs button")[1]!.trigger("click");
     const auditTable = wrapper.findComponent("data-table-stub") as unknown as {
       vm: { $attrs: { value: Array<{ id: string }> } };
     };
