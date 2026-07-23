@@ -693,6 +693,20 @@ onBeforeUnmount(() => {
             </div>
           </section>
 
+          <UserMemorySettingsSection
+            :key="`memory-${project.version}`"
+            :project-id="project.id"
+            :editable="canEditSettings"
+            @changed="handleAISettingsVersion"
+          />
+
+          <AIReviewSettingsSection
+            :key="`review-${project.version}`"
+            :project-id="project.id"
+            :editable="canEditSettings"
+            @changed="handleAISettingsVersion"
+          />
+
           <section
             class="card card-pad settings-section"
             :class="{ collapsed: !voiceSettingsExpanded }"
@@ -856,20 +870,6 @@ onBeforeUnmount(() => {
     <AiUsageSection
       v-if="!loading && project && canReadAiUsage"
       :project-id="project.id"
-    />
-    <UserMemorySettingsSection
-      v-if="!loading && project && canReadSettings"
-      :key="`memory-${project.version}`"
-      :project-id="project.id"
-      :editable="canEditSettings"
-      @changed="handleAISettingsVersion"
-    />
-    <AIReviewSettingsSection
-      v-if="!loading && project && canReadSettings"
-      :key="`review-${project.version}`"
-      :project-id="project.id"
-      :editable="canEditSettings"
-      @changed="handleAISettingsVersion"
     />
   </div>
 </template>

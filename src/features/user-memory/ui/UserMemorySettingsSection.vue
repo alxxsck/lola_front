@@ -67,45 +67,61 @@ async function save() {
     :loading="loading"
     :error="error"
     loading-label="Загружаем настройки памяти…"
-    columns="minmax(240px, 1.4fr) repeat(2, minmax(180px, 1fr)) auto"
+    icon="pi pi-book"
   >
-    <form v-if="settings" @submit.prevent="save">
-      <label class="switch-row">
-        <span>
-          <strong>{{
-            form.enabled ? "Память включена" : "Память приостановлена"
-          }}</strong>
-          <small>Сохранённые факты не удаляются при выключении.</small>
+    <div v-if="settings" class="settings-editor">
+      <div class="settings-fields">
+        <label class="setting-card feature-toggle">
+          <span>
+            <strong>{{
+              form.enabled ? "Память включена" : "Память приостановлена"
+            }}</strong>
+            <small>Сохранённые факты не удаляются при выключении.</small>
+          </span>
+          <ToggleSwitch v-model="form.enabled" :disabled="!editable" />
+        </label>
+        <label class="setting-card field-card">
+          <span>Вызовов извлечения в день</span>
+          <InputNumber
+            v-model="form.dailyExtractionCallLimit"
+            :min="settings.limits.dailyExtractionCallLimit.min"
+            :max="settings.limits.dailyExtractionCallLimit.max"
+            :use-grouping="false"
+            :disabled="!editable"
+          />
+          <small class="field-hint"
+            >Максимальное число AI-извлечений за сутки.</small
+          >
+        </label>
+        <label class="setting-card field-card">
+          <span>Срок хранения факта</span>
+          <InputNumber
+            v-model="form.factTtlDays"
+            :min="settings.limits.factTtlDays.min"
+            :max="settings.limits.factTtlDays.max"
+            :use-grouping="false"
+            suffix=" дней"
+            :disabled="!editable"
+          />
+          <small class="field-hint"
+            >После этого срока факт перестанет использоваться.</small
+          >
+        </label>
+      </div>
+      <footer class="settings-actions">
+        <span class="settings-actions-copy">
+          <strong>Настройки применяются ко всему проекту</strong>
+          <small>Изменения вступят в силу после сохранения.</small>
         </span>
-        <ToggleSwitch v-model="form.enabled" :disabled="!editable" />
-      </label>
-      <label>
-        <span>Вызовов извлечения в день</span>
-        <InputNumber
-          v-model="form.dailyExtractionCallLimit"
-          :min="settings.limits.dailyExtractionCallLimit.min"
-          :max="settings.limits.dailyExtractionCallLimit.max"
-          :use-grouping="false"
-          :disabled="!editable"
+        <Button
+          v-if="editable"
+          type="button"
+          label="Сохранить настройки"
+          icon="pi pi-check"
+          :loading="saving"
+          @click="save"
         />
-      </label>
-      <label>
-        <span>Хранить факт, дней</span>
-        <InputNumber
-          v-model="form.factTtlDays"
-          :min="settings.limits.factTtlDays.min"
-          :max="settings.limits.factTtlDays.max"
-          :use-grouping="false"
-          :disabled="!editable"
-        />
-      </label>
-      <Button
-        v-if="editable"
-        type="submit"
-        label="Сохранить память"
-        icon="pi pi-check"
-        :loading="saving"
-      />
-    </form>
+      </footer>
+    </div>
   </AISettingsSectionCard>
 </template>

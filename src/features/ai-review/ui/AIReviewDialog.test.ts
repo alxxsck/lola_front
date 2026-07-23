@@ -46,7 +46,11 @@ function mountDialog() {
         },
         InputText: true,
         Message: { template: "<div><slot /></div>" },
-        MultiSelect: true,
+        MultiSelect: {
+          name: "MultiSelect",
+          props: ["modelValue", "options"],
+          template: "<div />",
+        },
         ProgressSpinner: true,
         Textarea: true,
       },
@@ -110,6 +114,29 @@ describe("типизированный AI Review", () => {
       .findAll("button")
       .find((button) => button.text() === "Запустить AI Review");
     expect(start?.attributes("disabled")).toBeDefined();
+  });
+
+  it("показывает активные события, даже если приём новых событий выключен", async () => {
+    mocks.definitions.mockResolvedValue([
+      {
+        code: "deposit.failed",
+        metadata: { name: "Ошибка депозита" },
+        policy: { enabled: false },
+      },
+    ]);
+
+    const wrapper = mountDialog();
+    await flushPromises();
+
+    expect(mocks.definitions).toHaveBeenCalledWith("project-1", "ACTIVE");
+    expect(
+      wrapper.getComponent({ name: "MultiSelect" }).props("options"),
+    ).toEqual([
+      {
+        label: "Ошибка депозита · deposit.failed",
+        value: "deposit.failed",
+      },
+    ]);
   });
 
   it("повторяет неоднозначный start с тем же idempotency key", async () => {

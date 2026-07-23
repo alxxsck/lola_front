@@ -48,35 +48,47 @@ async function save() {
     description="Отдельный лимит для ручного анализа выбранных событий. Функция выключена по умолчанию."
     :loading="loading"
     :error="error"
-    columns="minmax(260px, 1.5fr) minmax(190px, 1fr) auto"
+    icon="pi pi-sparkles"
   >
-    <form v-if="settings" @submit.prevent="save">
-      <label class="switch-row">
-        <span>
-          <strong>{{
-            form.enabled ? "AI Review включён" : "AI Review выключен"
-          }}</strong>
-          <small>При выключении новые платные запуски недоступны.</small>
+    <div v-if="settings" class="settings-editor">
+      <div class="settings-fields single-column">
+        <label class="setting-card feature-toggle">
+          <span>
+            <strong>{{
+              form.enabled ? "AI Review включён" : "AI Review выключен"
+            }}</strong>
+            <small>При выключении новые платные запуски недоступны.</small>
+          </span>
+          <ToggleSwitch v-model="form.enabled" :disabled="!editable" />
+        </label>
+        <label class="setting-card field-card">
+          <span>Запусков в день</span>
+          <InputNumber
+            v-model="form.dailyRunLimit"
+            :min="settings.limits.dailyRunLimit.min"
+            :max="settings.limits.dailyRunLimit.max"
+            :use-grouping="false"
+            :disabled="!editable"
+          />
+          <small class="field-hint"
+            >Общий суточный лимит ручных AI-анализов событий.</small
+          >
+        </label>
+      </div>
+      <footer class="settings-actions">
+        <span class="settings-actions-copy">
+          <strong>Контроль платных запусков</strong>
+          <small>Лимит применяется сразу после сохранения.</small>
         </span>
-        <ToggleSwitch v-model="form.enabled" :disabled="!editable" />
-      </label>
-      <label>
-        <span>Запусков в день</span>
-        <InputNumber
-          v-model="form.dailyRunLimit"
-          :min="settings.limits.dailyRunLimit.min"
-          :max="settings.limits.dailyRunLimit.max"
-          :use-grouping="false"
-          :disabled="!editable"
+        <Button
+          v-if="editable"
+          type="button"
+          label="Сохранить настройки"
+          icon="pi pi-check"
+          :loading="saving"
+          @click="save"
         />
-      </label>
-      <Button
-        v-if="editable"
-        type="submit"
-        label="Сохранить AI Review"
-        icon="pi pi-check"
-        :loading="saving"
-      />
-    </form>
+      </footer>
+    </div>
   </AISettingsSectionCard>
 </template>

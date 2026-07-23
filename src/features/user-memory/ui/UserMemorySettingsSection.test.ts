@@ -43,5 +43,43 @@ describe("настройки User Memory", () => {
 
     expect(wrapper.text()).toContain("Память приостановлена");
     expect(wrapper.text()).toContain("Сохранённые факты не удаляются");
+    expect(wrapper.find(".settings-editor").exists()).toBe(true);
+    expect(wrapper.find(".settings-fields").exists()).toBe(true);
+    expect(wrapper.find(".settings-actions").exists()).toBe(true);
+  });
+
+  it("сохраняет настройки из отдельного action-footer", async () => {
+    mocks.update.mockResolvedValue({
+      projectVersion: 4,
+      enabled: false,
+      dailyExtractionCallLimit: 1000,
+      factTtlDays: 365,
+      limits: {
+        dailyExtractionCallLimit: { min: 1, max: 100000 },
+        factTtlDays: { min: 1, max: 3650 },
+      },
+    });
+    const wrapper = mount(UserMemorySettingsSection, {
+      props: { projectId: "project-1", editable: true },
+      global: {
+        stubs: {
+          Button: true,
+          InputNumber: true,
+          Message: { template: "<div><slot /></div>" },
+          ToggleSwitch: true,
+        },
+      },
+    });
+    await flushPromises();
+
+    await wrapper.get(".settings-actions button-stub").trigger("click");
+    await flushPromises();
+
+    expect(mocks.update).toHaveBeenCalledWith("project-1", {
+      expectedVersion: 3,
+      enabled: false,
+      dailyExtractionCallLimit: 1000,
+      factTtlDays: 365,
+    });
   });
 });

@@ -51,6 +51,11 @@ describe("TranslationUsagePanel", () => {
     expect(wrapper.text()).toContain("Расчётная стоимость");
     expect(wrapper.text()).toContain("Не выполнено · 1");
     expect(wrapper.text()).not.toContain("FAILED");
+    expect(wrapper.get(".budget-track").attributes("role")).toBe("progressbar");
+    expect(wrapper.get(".budget-track-fill").attributes("style")).toContain(
+      "width: 100%",
+    );
+    expect(wrapper.find("progress").exists()).toBe(false);
   });
 
   it("shows a neutral empty state", async () => {

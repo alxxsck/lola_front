@@ -12,10 +12,7 @@ import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import UserAISuspensionIndicator from "@/features/conversation-ai-suspension/ui/UserAISuspensionIndicator.vue";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
-import {
-  formatProfileValue,
-  profileValueStateLabel,
-} from "@/features/end-user-profile/model/profile-value";
+import { formatProfileValue } from "@/features/end-user-profile/model/profile-value";
 import UserWorkspaceDialog from "@/features/end-user-workspace/UserWorkspaceDialog.vue";
 import type {
   CmsProfileSummaryResponseDto,
@@ -125,6 +122,7 @@ function mockField(
   key: string,
   label: string,
   value: string | number | boolean | undefined,
+  semanticRole?: string,
 ): ProfileProjectionFieldResponseDto {
   const type =
     typeof value === "boolean"
@@ -142,6 +140,7 @@ function mockField(
     classification: "INTERNAL",
     access: "ALLOWED",
     availability: value === undefined ? "MISSING" : "AVAILABLE",
+    ...(semanticRole ? { semanticRole } : {}),
     ...(value === undefined ? {} : { value: { type, value } }),
   };
 }
@@ -185,7 +184,13 @@ async function loadMockProfiles(
           serverTime: new Date().toISOString(),
         },
         fields: [
-          mockField("mock-name", "displayName", "Имя", user.profile.name),
+          mockField(
+            "mock-name",
+            "displayName",
+            "Имя",
+            user.profile.name,
+            "DISPLAY_NAME",
+          ),
           mockField("mock-email", "email", "Email", user.profile.email),
           mockField("mock-country", "country", "Страна", user.profile.country),
           mockField("mock-segment", "segment", "Сегмент", user.segment),
@@ -256,14 +261,20 @@ function scheduleReload(): void {
   reloadTimer = setTimeout(() => void load(), 250);
 }
 
-function displayField(field: ProfileProjectionFieldResponseDto): string {
-  return field.availability === "AVAILABLE" &&
-    field.access === "ALLOWED" &&
-    field.value
-    ? formatProfileValue(field.value)
-    : profileValueStateLabel(
-        field.access === "ALLOWED" ? field.availability : "DENIED",
-      );
+function userDisplayName(profile: CmsProfileSummaryResponseDto): string {
+  const displayName = profile.fields.find(
+    (field) =>
+      field.semanticRole === "DISPLAY_NAME" &&
+      field.availability === "AVAILABLE" &&
+      field.access === "ALLOWED" &&
+      field.value,
+  );
+  if (!displayName?.value) return profile.externalUserId;
+  return formatProfileValue(displayName.value).trim() || profile.externalUserId;
+}
+
+function userProductId(profile: CmsProfileSummaryResponseDto): string {
+  return profile.externalUserId;
 }
 
 function syncSeverity(
@@ -292,7 +303,7 @@ function syncStatusLabel(status: string): string {
 onMounted(async () => {
   await load();
   const endUserId = route.params.endUserId;
-  if (typeof endUserId !== "string") return;
+  if (typeof endUserId !== "string" || !endUserId.trim()) return;
   let profile = items.value.find((item) => item.endUserId === endUserId);
   if (!profile && auth.project?.id) {
     try {
@@ -450,8 +461,8 @@ onBeforeUnmount(() => {
                 data.externalUserId.slice(0, 1).toUpperCase()
               }}</span>
               <div>
-                <strong>{{ data.externalUserId }}</strong
-                ><small>ID {{ data.endUserId }}</small>
+                <strong>{{ userDisplayName(data) }}</strong
+                ><small>{{ userProductId(data) }}</small>
               </div>
               <UserAISuspensionIndicator
                 v-if="conversationAISuspensionEnabled"
@@ -459,20 +470,6 @@ onBeforeUnmount(() => {
                 @expired="scheduleReload"
               /></div></template
         ></Column>
-        <Column header="Данные профиля"
-          ><template #body="{ data }"
-            ><div class="preview-fields">
-              <span
-                v-for="field in data.fields.slice(0, 2)"
-                :key="field.definitionId"
-                ><b>{{ field.label }}</b
-                >{{ displayField(field) }}</span
-              ><small v-if="data.fields.length > 2"
-                >+{{ data.fields.length - 2 }} полей</small
-              >
-            </div></template
-          ></Column
-        >
         <Column header="Состояние"
           ><template #body="{ data }"
             ><Tag
@@ -577,8 +574,18 @@ onBeforeUnmount(() => {
   color: var(--status-violet-text);
 }
 .callout-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   font-weight: 700;
   font-size: 0.76rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+.callout-action i {
+  display: inline-grid;
+  place-items: center;
 }
 .error-row {
   justify-content: space-between;
@@ -645,18 +652,6 @@ onBeforeUnmount(() => {
   color: var(--status-violet-text);
   font-weight: 800;
 }
-.preview-fields {
-  display: grid;
-  gap: 3px;
-  font-size: 0.72rem;
-}
-.preview-fields span {
-  display: flex;
-  gap: 5px;
-}
-.preview-fields b {
-  color: var(--muted);
-}
 .load-more {
   display: flex;
   justify-content: center;
@@ -696,9 +691,6 @@ onBeforeUnmount(() => {
   }
   .mobile-hide {
     display: none;
-  }
-  .preview-fields {
-    max-width: 180px;
   }
 }
 @media (max-width: 480px) {

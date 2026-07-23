@@ -347,6 +347,34 @@ describe("ProjectPage voice instructions", () => {
     ).toBe(true);
   });
 
+  it("keeps memory and AI Review directly after the assistant inside the settings column", async () => {
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    const form = wrapper.get("#project-settings-form");
+    const assistantSection = form
+      .findAll("section")
+      .find((section) => section.text().includes("Ассистент"))!;
+    const memory = form.getComponent({ name: "UserMemorySettingsSection" });
+    const review = form.getComponent({ name: "AIReviewSettingsSection" });
+    const voiceSection = form
+      .findAll("section")
+      .find((section) => section.text().includes("Голосовой чат"))!;
+
+    expect(
+      assistantSection.element.compareDocumentPosition(memory.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      memory.element.compareDocumentPosition(review.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      review.element.compareDocumentPosition(voiceSection.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("keeps project connection and Grok voice settings editable in API mode", async () => {
     mocks.getProject.mockResolvedValue(
       project({

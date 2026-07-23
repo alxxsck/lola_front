@@ -57,6 +57,16 @@ const cost = computed(() => {
 const maximumDay = computed(() =>
   Math.max(1, ...(report.value?.series.map((item) => item.billableCharacters) ?? [])),
 );
+const budgetPercent = computed(() =>
+  Math.min(Math.max(report.value?.budget?.hardPercent ?? 0, 0), 100),
+);
+const budgetStatus = computed(() => {
+  const budget = report.value?.budget;
+  if (!budget) return "";
+  if (budget.hardExhausted) return "Лимит исчерпан";
+  if ((budget.hardPercent ?? 0) >= 80) return "Бюджет почти исчерпан";
+  return "В пределах лимита";
+});
 
 function selectedRange() {
   const now = new Date();
@@ -122,18 +132,24 @@ onMounted(load);
 
 <template>
   <section class="translation-usage" aria-labelledby="translation-usage-title">
-    <header>
-      <div>
-        <span>xAI · Grok</span>
-        <h3 id="translation-usage-title">Автоматические переводы</h3>
-        <p>Сводные данные серверной части без текста сценариев.</p>
+    <header class="translation-header">
+      <div class="translation-heading">
+        <span class="translation-icon"><i class="pi pi-language" /></span>
+        <div>
+          <span class="provider-label">xAI · Grok</span>
+          <h3 id="translation-usage-title">Автоматические переводы</h3>
+          <p>Расход, качество и стоимость переводов без текста сценариев.</p>
+        </div>
       </div>
       <Button icon="pi pi-refresh" text rounded aria-label="Обновить статистику переводов" :loading="loading" @click="load(true)" />
     </header>
-    <div class="usage-ranges" aria-label="Период статистики переводов">
-      <button v-for="option in rangeOptions" :key="option.value" type="button" :class="{ active: range === option.value }" @click="selectRange(option.value)">
-        {{ option.label }}
-      </button>
+    <div class="range-toolbar">
+      <span>Период</span>
+      <div class="usage-ranges" aria-label="Период статистики переводов">
+        <button v-for="option in rangeOptions" :key="option.value" type="button" :class="{ active: range === option.value }" @click="selectRange(option.value)">
+          {{ option.label }}
+        </button>
+      </div>
     </div>
     <form v-if="range === 'custom'" class="custom-range" @submit.prevent="load()">
       <label>С <input v-model="customFrom" type="date" required /></label>
@@ -159,59 +175,116 @@ onMounted(load);
         <article><span>{{ report.totals.actualCostMicros ? 'Фактическая стоимость' : 'Расчётная стоимость' }}</span><strong>{{ cost }}</strong><small>{{ report.totals.billingCurrency }}</small></article>
       </div>
       <div v-if="report.budget" class="budget-meter">
-        <span><strong>Бюджет переводов</strong><small>{{ report.budget.hardPercent ?? 0 }}% жёсткого лимита · {{ report.budget.softPercent ?? 0 }}% предупредительного лимита</small></span>
-        <progress :value="Math.min(report.budget.hardPercent ?? 0, 100)" max="100">{{ report.budget.hardPercent ?? 0 }}%</progress>
+        <div class="budget-heading">
+          <span>
+            <strong>Бюджет переводов</strong>
+            <small>{{ budgetStatus }}</small>
+          </span>
+          <strong class="budget-value">{{ report.budget.hardPercent ?? 0 }}%</strong>
+        </div>
+        <div
+          class="budget-track"
+          role="progressbar"
+          aria-label="Использовано бюджета переводов"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="budgetPercent"
+        >
+          <span
+            class="budget-track-fill"
+            :class="{ exhausted: report.budget.hardExhausted }"
+            :style="{ width: `${budgetPercent}%` }"
+          />
+        </div>
+        <small class="budget-caption"
+          >Предупреждение: {{ report.budget.softPercent ?? 0 }}% · жёсткий
+          лимит: {{ report.budget.hardPercent ?? 0 }}%</small
+        >
       </div>
-      <div v-if="report.series.length" class="translation-chart" aria-label="Переводы по дням">
-        <div v-for="item in report.series" :key="item.day" :title="`${item.day}: ${item.billableCharacters}`">
-          <span :style="{ height: `${Math.max(4, item.billableCharacters / maximumDay * 100)}%` }" />
-          <small>{{ item.day.slice(5) }}</small>
+      <section v-if="report.series.length" class="chart-panel">
+        <div class="chart-heading">
+          <strong>Оплачиваемые символы по дням</strong>
+          <small>Динамика за выбранный период</small>
+        </div>
+        <div class="translation-chart" aria-label="Переводы по дням">
+          <div v-for="item in report.series" :key="item.day" :title="`${item.day}: ${item.billableCharacters}`">
+            <span :style="{ height: `${Math.max(4, item.billableCharacters / maximumDay * 100)}%` }" />
+            <small>{{ item.day.slice(5) }}</small>
+          </div>
+        </div>
+      </section>
+      <div class="translation-details">
+        <div v-if="report.targetLocales.length" class="target-breakdown">
+          <span v-for="item in report.targetLocales" :key="item.targetLocale"><strong>{{ item.targetLocale }}</strong>{{ item.billableCharacters.toLocaleString('ru-RU') }}</span>
+        </div>
+        <div v-if="report.statuses.some((item) => item.errors)" class="status-breakdown">
+          <strong>Ошибки по категориям</strong>
+          <span v-for="item in report.statuses.filter((status) => status.errors)" :key="item.status">{{ statusLabel(item.status) }} · {{ item.errors }}</span>
+        </div>
+        <div class="translation-meta">
+          <small v-if="report.totals.latencyP50Ms !== null" class="latency-note">
+            Время ответа p50 {{ report.totals.latencyP50Ms }} мс · p95 {{ report.totals.latencyP95Ms ?? '—' }} мс
+          </small>
+          <small v-if="loadedAt" class="loaded-at">Обновлено {{ loadedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }}</small>
         </div>
       </div>
-      <div v-if="report.targetLocales.length" class="target-breakdown">
-        <span v-for="item in report.targetLocales" :key="item.targetLocale"><strong>{{ item.targetLocale }}</strong>{{ item.billableCharacters.toLocaleString('ru-RU') }}</span>
-      </div>
-      <div v-if="report.statuses.some((item) => item.errors)" class="status-breakdown">
-        <strong>Ошибки по категориям</strong>
-        <span v-for="item in report.statuses.filter((status) => status.errors)" :key="item.status">{{ statusLabel(item.status) }} · {{ item.errors }}</span>
-      </div>
-      <small v-if="report.totals.latencyP50Ms !== null" class="latency-note">
-        Время ответа p50 {{ report.totals.latencyP50Ms }} мс · p95 {{ report.totals.latencyP95Ms ?? '—' }} мс
-      </small>
-      <small v-if="loadedAt" class="loaded-at">Обновлено {{ loadedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }}</small>
     </template>
   </section>
 </template>
 
 <style scoped>
-.translation-usage { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border-default); border-radius: 16px; background: var(--surface-subtle); }
-header { display: flex; justify-content: space-between; gap: 12px; }
-header span { color: var(--status-violet-text); font-size: .65rem; font-weight: 750; text-transform: uppercase; }
-header h3 { margin: 3px 0; }
-header p, .translation-empty p { margin: 0; color: var(--muted); font-size: .7rem; }
+.translation-usage { display: grid; gap: 18px; margin-top: 22px; padding: 22px; border: 1px solid var(--border-default); border-radius: 20px; background: var(--surface-card); }
+.translation-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--border-subtle); }
+.translation-heading { display: flex; align-items: flex-start; gap: 13px; }
+.translation-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; background: var(--status-violet-soft); color: var(--status-violet-text); }
+.provider-label { color: var(--status-violet-text); font-size: .62rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.translation-header h3 { margin: 3px 0; font-size: 1rem; }
+.translation-header p, .translation-empty p { margin: 0; color: var(--muted); font-size: .7rem; line-height: 1.45; }
+.range-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.range-toolbar > span { color: var(--text-small-muted); font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .usage-ranges { display: flex; flex-wrap: wrap; gap: 5px; }
-.usage-ranges button { padding: 6px 9px; border: 1px solid var(--border-default); border-radius: 999px; background: var(--surface-card); color: var(--text-secondary); font: inherit; font-size: .68rem; cursor: pointer; }
-.usage-ranges button.active { border-color: var(--status-violet); background: var(--status-violet-soft); color: var(--status-violet-text); }
+.usage-ranges button { padding: 7px 11px; border: 1px solid var(--border-default); border-radius: 999px; background: var(--surface-subtle); color: var(--text-secondary); font: inherit; font-size: .68rem; cursor: pointer; }
+.usage-ranges button.active { border-color: var(--status-violet); background: var(--status-violet-soft); color: var(--status-violet-text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-violet) 12%, transparent); }
 .custom-range { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
 .custom-range label { display: grid; gap: 4px; color: var(--muted); font-size: .65rem; }
 .custom-range input { min-height: 34px; border: 1px solid var(--border-default); border-radius: 8px; padding: 5px 8px; background: var(--surface-card); color: var(--text-primary); }
 .translation-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.translation-summary article { display: grid; gap: 3px; padding: 11px; border-radius: 12px; background: var(--surface-card); }
+.translation-summary article { display: grid; gap: 4px; min-width: 0; padding: 14px; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--surface-subtle); }
 .translation-summary span, .translation-summary small { color: var(--muted); font-size: .65rem; }
 .translation-summary strong { font-size: 1.05rem; }
-.translation-empty { display: flex; align-items: center; gap: 10px; padding: 14px; }
+.translation-empty { display: flex; align-items: center; gap: 10px; padding: 18px; border-radius: 14px; background: var(--surface-subtle); }
 .budget-warning { padding: 10px 12px; border-radius: 10px; background: var(--status-warning-soft); color: var(--status-warning-text); font-size: .72rem; }
-.budget-meter { display: grid; grid-template-columns: minmax(0, 1fr) minmax(130px, .6fr); align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-card); }
-.budget-meter span { display: grid; gap: 2px; }
-.budget-meter small, .latency-note, .loaded-at { color: var(--muted); font-size: .63rem; }
-.budget-meter progress { width: 100%; accent-color: var(--status-violet); }
-.translation-chart { display: flex; align-items: end; gap: 5px; height: 130px; padding-top: 8px; }
+.budget-meter { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--surface-subtle); }
+.budget-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.budget-heading > span { display: grid; gap: 2px; }
+.budget-heading small, .budget-caption, .latency-note, .loaded-at { color: var(--muted); font-size: .63rem; }
+.budget-value { font-size: 1rem; }
+.budget-track { height: 10px; overflow: hidden; border-radius: 999px; background: var(--border-subtle); box-shadow: inset 0 1px 2px color-mix(in srgb, var(--text-primary) 9%, transparent); }
+.budget-track-fill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--status-violet), var(--action-primary)); transition: width .25s ease; }
+.budget-track-fill.exhausted { background: var(--status-danger); }
+.chart-panel { padding: 16px; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-subtle); }
+.chart-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.chart-heading strong { font-size: .75rem; }
+.chart-heading small { color: var(--muted); font-size: .62rem; }
+.translation-chart { display: flex; align-items: end; gap: 6px; height: 145px; padding: 14px 10px 0; border-radius: 12px; background: linear-gradient(to bottom, transparent 24%, var(--border-subtle) 25%, transparent 26%, transparent 49%, var(--border-subtle) 50%, transparent 51%, transparent 74%, var(--border-subtle) 75%, transparent 76%), var(--surface-card); }
 .translation-chart > div { display: grid; grid-template-rows: 1fr auto; align-items: end; flex: 1; height: 100%; gap: 4px; }
 .translation-chart span { display: block; min-width: 5px; border-radius: 5px 5px 2px 2px; background: var(--status-violet); }
 .translation-chart small { color: var(--muted); font-size: .55rem; text-align: center; }
+.translation-details { display: grid; gap: 12px; }
 .target-breakdown { display: flex; flex-wrap: wrap; gap: 6px; }
-.target-breakdown span { display: flex; gap: 6px; padding: 5px 8px; border-radius: 999px; background: var(--surface-card); font-size: .68rem; }
+.target-breakdown span { display: flex; gap: 6px; padding: 6px 9px; border: 1px solid var(--border-subtle); border-radius: 999px; background: var(--surface-subtle); font-size: .68rem; }
 .status-breakdown { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .68rem; }
 .status-breakdown span { padding: 5px 8px; border-radius: 999px; background: var(--status-danger-soft); color: var(--status-danger-text); }
-@media (max-width: 760px) { .translation-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.translation-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+@media (max-width: 760px) {
+  .translation-usage { padding: 17px; }
+  .range-toolbar { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .translation-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-heading, .translation-meta { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 480px) {
+  .translation-summary { grid-template-columns: 1fr; }
+  .usage-ranges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .usage-ranges button { white-space: nowrap; }
+}
 </style>

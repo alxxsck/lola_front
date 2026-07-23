@@ -57,10 +57,14 @@ const running = computed(
   () => run.value?.status === "PENDING" || run.value?.status === "RUNNING",
 );
 
-watch(visible, (isVisible) => {
-  if (isVisible) void load();
-  else stopPolling();
-});
+watch(
+  visible,
+  (isVisible) => {
+    if (isVisible) void load();
+    else stopPolling();
+  },
+  { immediate: true },
+);
 watch(
   () => [props.projectId, props.endUserId],
   () => {
@@ -105,12 +109,10 @@ async function load() {
     ]);
     if (generation !== loadGeneration || projectId !== props.projectId) return;
     settings.value = nextSettings;
-    options.value = definitions
-      .filter((item) => item.policy.enabled)
-      .map((item) => ({
-        label: `${item.metadata.name} · ${item.code}`,
-        value: item.code,
-      }));
+    options.value = definitions.map((item) => ({
+      label: `${item.metadata.name} · ${item.code}`,
+      value: item.code,
+    }));
   } catch (cause) {
     if (generation !== loadGeneration) return;
     error.value =
@@ -263,6 +265,7 @@ function formatRange(value: string) {
     modal
     header="AI Review событий"
     :style="{ width: 'min(680px, 94vw)' }"
+    class="ai-review-dialog"
   >
     <div class="review-form">
       <Message severity="warn" :closable="false">
@@ -404,6 +407,29 @@ function formatRange(value: string) {
 .review-form label small {
   color: var(--text-small-muted);
   font-weight: 400;
+}
+.review-form :deep(.p-inputtext),
+.review-form :deep(.p-multiselect-label),
+.review-form :deep(.p-textarea) {
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.review-form :deep(.p-inputtext),
+.review-form :deep(.p-multiselect) {
+  min-height: 44px;
+}
+.review-form :deep(.p-inputtext::placeholder),
+.review-form :deep(.p-multiselect-label.p-placeholder),
+.review-form :deep(.p-textarea::placeholder) {
+  color: var(--text-secondary);
+  font-weight: 400;
+  opacity: 1;
+}
+.review-form :deep(.p-button) {
+  min-height: 44px;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 .loading,
 .running {
