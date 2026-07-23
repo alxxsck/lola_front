@@ -367,7 +367,11 @@ router.beforeEach(async (to) => {
       ))
   )
     return auth.authenticatedLandingPath;
-  if (to.name === "login" && auth.isAuthenticated)
+  if (
+    to.name === "login" &&
+    auth.isAuthenticated &&
+    !auth.requiresProjectSelection
+  )
     return auth.authenticatedLandingPath;
 });
 
