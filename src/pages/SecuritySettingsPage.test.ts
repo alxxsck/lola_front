@@ -170,6 +170,30 @@ describe('SecuritySettingsPage', () => {
     }))
   })
 
+  it('keeps every settings action in a predictable responsive action area', async () => {
+    const wrapper = await mountPage()
+
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['page', 'security-page']))
+    expect(wrapper.get('.security-header').classes()).toContain('page-header')
+    expect(wrapper.get('h1').text()).toBe('Безопасность аккаунта')
+    expect(wrapper.find('.security-header [data-testid="revoke-other-sessions"]').exists()).toBe(false)
+    expect(wrapper.get('[aria-labelledby="sessions-heading"] [data-testid="revoke-other-sessions"]')).toBeDefined()
+    expect(wrapper.get('.identity-summary .identity-actions [data-testid="email-verification-action"]')).toBeDefined()
+
+    for (const selector of ['.email-change-form', '.password-form', '.passkey-add']) {
+      const form = wrapper.get(selector)
+      expect(form.get('.settings-form__fields')).toBeDefined()
+      expect(form.get('.settings-form__actions')).toBeDefined()
+    }
+
+    const passkeyAction = wrapper.get('[data-passkey-id="passkey-1"] .item-actions button')
+    const currentSessionAction = wrapper.get(`[data-session-id="${sessions[0]!.id}"] .item-actions button`)
+    expect(passkeyAction.text()).toBe('Удалить')
+    expect(passkeyAction.attributes('aria-label')).toBe('Удалить passkey Рабочий MacBook, номер 1')
+    expect(currentSessionAction.text()).toBe('Выйти')
+    expect(currentSessionAction.attributes('aria-label')).toBe('Завершить текущую сессию Chrome, номер 1')
+  })
+
   it('lists safe session metadata and revokes the selected stable family id', async () => {
     const wrapper = await mountPage()
 
@@ -192,7 +216,9 @@ describe('SecuritySettingsPage', () => {
     await inputs[2]!.setValue('different passphrase')
     await passwordForm.trigger('submit')
 
-    expect(wrapper.text()).toContain('Новый пароль и подтверждение не совпадают.')
+    expect(wrapper.text()).toContain('Пароли не совпадают. Проверьте повтор нового пароля.')
+    expect(inputs[2]!.attributes('aria-invalid')).toBe('true')
+    expect(inputs[2]!.attributes('aria-describedby')).toBe('security-password-confirmation-error')
     expect(securitySettingsApi.changePassword).not.toHaveBeenCalled()
 
     await inputs[2]!.setValue('new secure passphrase')
@@ -205,6 +231,58 @@ describe('SecuritySettingsPage', () => {
       passwordConfirmation: 'new secure passphrase',
     })
     expect(wrapper.text()).toContain('Пароль изменён. Остальные сессии завершены.')
+  })
+
+  it('lets each password field be revealed independently with an accessible action', async () => {
+    const wrapper = await mountPage()
+    const passwordForm = wrapper.get('.password-form')
+    const currentPasswordInput = passwordForm.get('#security-current-password')
+    const revealCurrentPassword = passwordForm.get('[aria-label="Показать текущий пароль"]')
+
+    expect(currentPasswordInput.attributes('type')).toBe('password')
+    await revealCurrentPassword.trigger('click')
+
+    expect(currentPasswordInput.attributes('type')).toBe('text')
+    expect(passwordForm.get('[aria-label="Скрыть текущий пароль"]')).toBeDefined()
+    expect(passwordForm.get('[aria-label="Показать новый пароль"]')).toBeDefined()
+    expect(passwordForm.get('[aria-label="Показать повтор нового пароля"]')).toBeDefined()
+    expect(wrapper.get('[aria-label="Показать пароль для смены email"]')).toBeDefined()
+  })
+
+  it('associates rejected credentials with the password field that needs correction', async () => {
+    vi.mocked(emailIdentityApi.requestEmailChange).mockRejectedValue({
+      status: 401,
+      code: 'EMAIL_CHANGE_REAUTHENTICATION_FAILED',
+      message: 'invalid password',
+    })
+    vi.mocked(securitySettingsApi.changePassword).mockRejectedValue({
+      status: 401,
+      code: 'CURRENT_PASSWORD_INVALID',
+      message: 'invalid password',
+    })
+    const wrapper = await mountPage()
+    const emailForm = wrapper.get('.email-change-form')
+    const emailInputs = emailForm.findAll('input')
+    await emailInputs[0]!.setValue('new@example.com')
+    await emailInputs[1]!.setValue('wrong password')
+    await emailForm.trigger('submit')
+    await flushPromises()
+
+    expect(emailInputs[1]!.attributes('aria-invalid')).toBe('true')
+    expect(emailInputs[1]!.attributes('aria-describedby')).toBe('security-email-password-error')
+    expect(wrapper.get('#security-email-password-error').text()).toBe('Текущий пароль указан неверно.')
+
+    const passwordForm = wrapper.get('.password-form')
+    const passwordInputs = passwordForm.findAll('input')
+    await passwordInputs[0]!.setValue('wrong password')
+    await passwordInputs[1]!.setValue('new secure passphrase')
+    await passwordInputs[2]!.setValue('new secure passphrase')
+    await passwordForm.trigger('submit')
+    await flushPromises()
+
+    expect(passwordInputs[0]!.attributes('aria-invalid')).toBe('true')
+    expect(passwordInputs[0]!.attributes('aria-describedby')).toBe('security-current-password-error')
+    expect(wrapper.get('#security-current-password-error').text()).toBe('Текущий пароль указан неверно.')
   })
 
   it('shows the canonical email, verification badge and server resend countdown', async () => {
