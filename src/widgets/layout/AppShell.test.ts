@@ -81,6 +81,7 @@ describe("AppShell", () => {
         settings: {},
         effectivePermissionCodes: [
           "project.settings.read",
+          "project.notifications.read",
           "project.profile_contract.read",
           "project.profiles.read",
           "project.knowledge.read",
@@ -128,7 +129,7 @@ describe("AppShell", () => {
         .exists(),
       modeInFooter: wrapper.find(".sidebar-footer .sidebar-note").exists(),
     }).toEqual({
-      navigationLinks: 16,
+      navigationLinks: 17,
       profileFieldsLink: "/profile-fields",
       themeSwitchVisible: true,
       profileInFooter: true,
@@ -279,5 +280,6 @@ describe("AppShell", () => {
     expect(wrapper.text()).not.toContain("База знаний");
     expect(wrapper.text()).not.toContain("Предложения Lola");
     expect(wrapper.text()).not.toContain("Журнал событий");
+    expect(wrapper.text()).not.toContain("Интеграции");
   });
 });

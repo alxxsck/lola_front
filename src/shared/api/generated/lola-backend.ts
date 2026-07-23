@@ -96,6 +96,7 @@ import type {
   CreateProjectRoleDto,
   CreateScenarioAuthoringDto,
   CreateScenarioAuthoringResponseDto,
+  CreateSlackNotificationDestinationDto,
   CreateTranslationJobDto,
   CreateUiElementDto,
   DecideAIProposalDto,
@@ -161,6 +162,9 @@ import type {
   LegacyEventLogPageResponseDto,
   ListMessagesDto,
   ListThreadMessagesDto,
+  NotificationDestinationListResponseDto,
+  NotificationDestinationResponseDto,
+  NotificationDestinationTestResponseDto,
   NotificationUnsubscribeUnsubscribeParams,
   PasswordEstablishedResponseDto,
   PasswordSetupRequestDto,
@@ -229,6 +233,7 @@ import type {
   StartConversationAISuspensionDto,
   StartVoiceSessionDto,
   SyncAttributeSnapshotDto,
+  TestNotificationDestinationDto,
   TranslationJobAcceptedResponseDto,
   TranslationJobResponseDto,
   TranslationUsageReportParams,
@@ -245,6 +250,7 @@ import type {
   UpdateProjectRoleDto,
   UpdateProjectSettingsDto,
   UpdateScenarioAuthoringMetadataDto,
+  UpdateSlackNotificationDestinationDto,
   UpdateSpeechSettingsDto,
   UpdateUiElementDto,
   UpsertUserDto,
@@ -1441,6 +1447,73 @@ export const projectMembershipAssignableRoles = (
     {
       url: `/api/v1/admin/projects/${projectId}/memberships/assignable-roles`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const notificationDestinationList = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<NotificationDestinationListResponseDto>
+  >,
+) => {
+  return request<NotificationDestinationListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const notificationDestinationCreate = (
+  projectId: string,
+  createSlackNotificationDestinationDto: BodyType<CreateSlackNotificationDestinationDto>,
+  options?: SecondParameter<typeof request<NotificationDestinationResponseDto>>,
+) => {
+  return request<NotificationDestinationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSlackNotificationDestinationDto,
+    },
+    options,
+  );
+};
+
+export const notificationDestinationUpdate = (
+  projectId: string,
+  destinationId: string,
+  updateSlackNotificationDestinationDto: BodyType<UpdateSlackNotificationDestinationDto>,
+  options?: SecondParameter<typeof request<NotificationDestinationResponseDto>>,
+) => {
+  return request<NotificationDestinationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations/${destinationId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateSlackNotificationDestinationDto,
+    },
+    options,
+  );
+};
+
+export const notificationDestinationTest = (
+  projectId: string,
+  destinationId: string,
+  testNotificationDestinationDto: BodyType<TestNotificationDestinationDto>,
+  options?: SecondParameter<
+    typeof request<NotificationDestinationTestResponseDto>
+  >,
+) => {
+  return request<NotificationDestinationTestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations/${destinationId}/test`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: testNotificationDestinationDto,
     },
     options,
   );
@@ -3735,6 +3808,18 @@ export type ProjectMembershipRemoveResult = NonNullable<
 >;
 export type ProjectMembershipAssignableRolesResult = NonNullable<
   Awaited<ReturnType<typeof projectMembershipAssignableRoles>>
+>;
+export type NotificationDestinationListResult = NonNullable<
+  Awaited<ReturnType<typeof notificationDestinationList>>
+>;
+export type NotificationDestinationCreateResult = NonNullable<
+  Awaited<ReturnType<typeof notificationDestinationCreate>>
+>;
+export type NotificationDestinationUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof notificationDestinationUpdate>>
+>;
+export type NotificationDestinationTestResult = NonNullable<
+  Awaited<ReturnType<typeof notificationDestinationTest>>
 >;
 export type ProjectPermissionListResult = NonNullable<
   Awaited<ReturnType<typeof projectPermissionList>>

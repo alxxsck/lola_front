@@ -47,6 +47,13 @@ const navigation = computed(() =>
       projectPermissionsAny: [...PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS],
     },
     {
+      label: "Интеграции",
+      icon: "pi pi-link",
+      to: "/settings/integrations",
+      project: true,
+      projectPermission: "project.notifications.read",
+    },
+    {
       label: "Администраторы",
       icon: "pi pi-user-edit",
       to: "/project/memberships",

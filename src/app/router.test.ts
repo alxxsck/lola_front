@@ -173,6 +173,79 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("security-settings");
   });
 
+  it("guards Project integrations with the dedicated notification read Permission", async () => {
+    const auth = useAuthStore();
+    const project = {
+      id: "project-1",
+      name: "Project One",
+      slug: "project-one",
+      status: "ACTIVE" as const,
+      publicKey: "public",
+      defaultLocale: "ru",
+      supportedLocales: ["ru"],
+      assistantName: "Lola",
+      systemPrompt: "",
+      voiceInstructions: "",
+      settings: {},
+      effectivePermissionCodes: ["project.notifications.read"],
+    };
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
+      project,
+      projects: [project],
+    });
+
+    await router.push("/settings/integrations");
+    expect(router.currentRoute.value.name).toBe("project-integrations");
+
+    auth.project!.effectivePermissionCodes = ["project.settings.read"];
+    await router.push("/overview");
+    await router.push("/settings/integrations");
+    expect(router.currentRoute.value.name).toBe("overview");
+  });
+
+  it("selects the Project encoded by an AI Proposal deep link before checking access", async () => {
+    const auth = useAuthStore();
+    const makeProject = (id: string, permissions: string[]) => ({
+      id,
+      name: id,
+      slug: id,
+      status: "ACTIVE" as const,
+      publicKey: `public-${id}`,
+      defaultLocale: "ru",
+      supportedLocales: ["ru"],
+      assistantName: "Lola",
+      systemPrompt: "",
+      voiceInstructions: "",
+      settings: {},
+      effectivePermissionCodes: permissions,
+    });
+    const current = makeProject("project-1", []);
+    const target = makeProject("project-2", ["project.ai_proposals.read"]);
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
+      project: current,
+      projects: [current, target],
+    });
+
+    await router.push("/ai-proposals/proposal-1?projectId=project-2");
+
+    expect(router.currentRoute.value.name).toBe("ai-proposal-detail");
+    expect(auth.project?.id).toBe("project-2");
+  });
+
   it("removes an email capability fragment and skips session restoration before rendering", async () => {
     const auth = useAuthStore();
     auth.$patch({ restored: false, phase: "ANONYMOUS" });

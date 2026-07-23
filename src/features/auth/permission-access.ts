@@ -61,6 +61,8 @@ export const PROJECT_PERMISSION_CODES = [
   "project.translation.read",
   "project.translation.cancel",
   "project.ai_usage.read",
+  "project.notifications.read",
+  "project.notifications.manage",
   "project.audit.read",
 ] as const;
 

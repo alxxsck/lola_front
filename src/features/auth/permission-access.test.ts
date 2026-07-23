@@ -49,4 +49,19 @@ describe("permission access", () => {
     ).toBe(true);
     expect(hasProjectPermission(project, "project.members.read")).toBe(false);
   });
+
+  it("keeps notification read and manage authority independent", () => {
+    expect(
+      hasProjectPermission(
+        ["project.notifications.read"],
+        "project.notifications.read",
+      ),
+    ).toBe(true);
+    expect(
+      hasProjectPermission(
+        ["project.notifications.read"],
+        "project.notifications.manage",
+      ),
+    ).toBe(false);
+  });
 });

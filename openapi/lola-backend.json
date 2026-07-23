@@ -7554,6 +7554,29 @@
         ],
         "type": "object"
       },
+      "CreateSlackNotificationDestinationDto": {
+        "properties": {
+          "displayName": {
+            "example": "Предложения Lola",
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "webhookUrl": {
+            "description": "Write-only Slack Incoming Webhook URL. It is never returned.",
+            "example": "https://hooks.slack.com/services/T00000000/B00000000/secret",
+            "maxLength": 4096,
+            "minLength": 20,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "displayName",
+          "webhookUrl"
+        ],
+        "type": "object"
+      },
       "CreateTranslationJobDto": {
         "properties": {
           "sourceLocale": {
@@ -11237,6 +11260,159 @@
           "SUSPENDED"
         ],
         "type": "string"
+      },
+      "NotificationDestinationListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationDestinationResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "NotificationDestinationResponseDto": {
+        "properties": {
+          "channel": {
+            "enum": [
+              "SLACK_WEBHOOK"
+            ],
+            "type": "string"
+          },
+          "credentialFingerprint": {
+            "description": "Non-secret keyed fingerprint; never a webhook fragment.",
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastFailureCategory": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lastSuccessfulTestAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "secretRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "PENDING_TEST",
+              "ACTIVE",
+              "DISABLED",
+              "INVALID"
+            ],
+            "type": "string"
+          },
+          "testedSecretRevision": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "topic": {
+            "enum": [
+              "AI_PROPOSALS"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedByActorId": {
+            "type": "string"
+          },
+          "updatedByActorType": {
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "topic",
+          "channel",
+          "displayName",
+          "status",
+          "credentialFingerprint",
+          "secretRevision",
+          "testedSecretRevision",
+          "lastSuccessfulTestAt",
+          "lastFailureCategory",
+          "version",
+          "updatedByActorType",
+          "updatedByActorId",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "NotificationDestinationTestResponseDto": {
+        "properties": {
+          "destinationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "destinationVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "RETRY_WAIT",
+              "SUCCEEDED",
+              "FAILED",
+              "OUTCOME_UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "destinationId",
+          "status",
+          "errorCode",
+          "finishedAt",
+          "destinationVersion"
+        ],
+        "type": "object"
       },
       "NotRuleExplanationResponseDto": {
         "additionalProperties": false,
@@ -16629,6 +16805,18 @@
         ],
         "type": "object"
       },
+      "TestNotificationDestinationDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
       "ThreadStatus": {
         "enum": [
           "OPEN",
@@ -17306,6 +17494,38 @@
         "required": [
           "expectedUpdatedAt",
           "reason"
+        ],
+        "type": "object"
+      },
+      "UpdateSlackNotificationDestinationDto": {
+        "properties": {
+          "desiredStatus": {
+            "enum": [
+              "ACTIVE",
+              "DISABLED"
+            ],
+            "type": "string"
+          },
+          "displayName": {
+            "example": "Предложения Lola",
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "webhookUrl": {
+            "description": "Write-only replacement Slack Incoming Webhook URL.",
+            "maxLength": 4096,
+            "minLength": 20,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "expectedVersion"
         ],
         "type": "object"
       },
@@ -24083,6 +24303,232 @@
             "scope": "PROJECT"
           }
         ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/notification-destinations": {
+      "get": {
+        "operationId": "NotificationDestination_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationDestinationListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Destinations"
+        ],
+        "x-iam-permission": {
+          "code": "project.notifications.read",
+          "scope": "PROJECT"
+        }
+      },
+      "post": {
+        "operationId": "NotificationDestination_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSlackNotificationDestinationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationDestinationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Destinations"
+        ],
+        "x-iam-permission": {
+          "code": "project.notifications.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/notification-destinations/{destinationId}": {
+      "patch": {
+        "operationId": "NotificationDestination_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "destinationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSlackNotificationDestinationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationDestinationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Destinations"
+        ],
+        "x-iam-permission": {
+          "code": "project.notifications.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/notification-destinations/{destinationId}/test": {
+      "post": {
+        "operationId": "NotificationDestination_test",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "destinationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestNotificationDestinationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationDestinationTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notification Destinations"
+        ],
+        "x-iam-permission": {
+          "code": "project.notifications.manage",
+          "scope": "PROJECT"
+        }
       }
     },
     "/api/v1/admin/projects/{projectId}/permissions": {
