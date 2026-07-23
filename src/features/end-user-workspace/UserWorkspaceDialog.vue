@@ -32,6 +32,8 @@ import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import { formatDate, relativeTime } from "@/shared/lib/format";
 import type { ConversationMessage } from "@/shared/types/domain";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
+import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
+import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
 
@@ -81,6 +83,7 @@ const combinedSend = ref(false);
 const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
 const realtimeRecovered = ref(false);
 const profileCollapsed = ref(false);
+const aiReviewVisible = ref(false);
 const liveMessageIds = ref<string[]>([]);
 let profileRequest = 0;
 let unsubscribeMessage: (() => void) | undefined;
@@ -95,10 +98,11 @@ const consoleState = useAdminConversationConsole({
   updateRoute: (conversationId) => emit("conversationSelected", conversationId),
   beforeLoadMessages: (conversationId) =>
     cmsRealtimeClient.watchConversation(conversationId),
-  canReadPresence: () => hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.end_users.read",
-  ),
+  canReadPresence: () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.end_users.read",
+    ),
 });
 const {
   conversations,
@@ -124,12 +128,11 @@ const selectedSuspensionEntry = computed(() =>
     ? suspensionStore.getEntry(selectedConversation.value.id)
     : undefined,
 );
-const canManageSuspension = computed(
-  () =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.conversations.ai_suspend",
-    ),
+const canManageSuspension = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.conversations.ai_suspend",
+  ),
 );
 const projectPermissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
@@ -137,12 +140,33 @@ const projectPermissions = computed(
 const canReadProfiles = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.profiles.read"),
 );
+const canReadUserMemory = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.user_memory.read"),
+);
 const canReadConversations = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.read"),
 );
 const canReply = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.reply"),
 );
+const canStartAIReview = computed(
+  () =>
+    hasProjectPermission(projectPermissions.value, "project.ai_review.read") &&
+    hasProjectPermission(projectPermissions.value, "project.ai_review.run") &&
+    hasProjectPermission(projectPermissions.value, "project.settings.read") &&
+    hasProjectPermission(
+      projectPermissions.value,
+      "project.event_catalog.read",
+    ) &&
+    hasProjectPermission(projectPermissions.value, "project.ai_proposals.read"),
+);
+const projectTimezone = computed(() => {
+  const scenarioEngine = auth.project?.settings?.scenarioEngine as
+    { activity?: { timezone?: unknown } } | undefined;
+  return typeof scenarioEngine?.activity?.timezone === "string"
+    ? scenarioEngine.activity.timezone
+    : "UTC";
+});
 const displayName = computed(
   () =>
     props.externalUserId ||
@@ -943,8 +967,36 @@ function displayField(
             </article>
           </div>
         </template>
+        <UserMemoryPanel
+          v-if="canReadUserMemory && endUserId"
+          :project-id="projectId"
+          :end-user-id="endUserId"
+          :user-label="displayName"
+          :editable="
+            hasProjectPermission(
+              projectPermissions,
+              'project.user_memory.manage',
+            )
+          "
+        />
+        <Button
+          v-if="canStartAIReview && endUserId"
+          label="Запросить AI-анализ событий"
+          icon="pi pi-sparkles"
+          severity="secondary"
+          fluid
+          @click="aiReviewVisible = true"
+        />
       </aside>
     </div>
+
+    <AIReviewDialog
+      v-if="aiReviewVisible && endUserId"
+      v-model:visible="aiReviewVisible"
+      :project-id="projectId"
+      :end-user-id="endUserId"
+      :timezone="projectTimezone"
+    />
 
     <Dialog
       v-model:visible="newChatOpen"

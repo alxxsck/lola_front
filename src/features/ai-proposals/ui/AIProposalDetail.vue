@@ -43,6 +43,47 @@ const evidence = computed(() =>
     ];
   }),
 );
+
+interface AIReviewFinding {
+  title: string;
+  detail: string;
+  eventIds: string[];
+}
+
+const reviewResult = computed(() => {
+  if (props.proposal?.kind !== "INSIGHT") return null;
+  const content = props.proposal.content;
+  const findings = Array.isArray(content.findings)
+    ? content.findings.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const value = item as Record<string, unknown>;
+        if (
+          typeof value.title !== "string" ||
+          typeof value.detail !== "string" ||
+          !Array.isArray(value.eventIds)
+        )
+          return [];
+        const eventIds = value.eventIds.filter(
+          (eventId): eventId is string => typeof eventId === "string",
+        );
+        return [
+          {
+            title: value.title,
+            detail: value.detail,
+            eventIds,
+          } satisfies AIReviewFinding,
+        ];
+      })
+    : [];
+  const limitations = Array.isArray(content.limitations)
+    ? content.limitations.filter(
+        (item): item is string => typeof item === "string",
+      )
+    : [];
+  return findings.length || limitations.length
+    ? { findings, limitations }
+    : null;
+});
 </script>
 
 <template>
@@ -119,7 +160,39 @@ const evidence = computed(() =>
         </RouterLink>
       </section>
 
-      <section v-if="evidence.length" class="evidence-section">
+      <section v-if="reviewResult" class="review-result">
+        <div class="section-heading">
+          <span>Результаты AI Review</span>
+          <small>Каждый вывод связан с исходными Events</small>
+        </div>
+        <article
+          v-for="(finding, index) in reviewResult.findings"
+          :key="`${finding.title}-${index}`"
+          class="review-finding"
+        >
+          <strong>{{ finding.title }}</strong>
+          <p>{{ finding.detail }}</p>
+          <div class="event-links">
+            <RouterLink
+              v-for="eventId in finding.eventIds"
+              :key="eventId"
+              :to="{ name: 'event-logs', query: { eventId } }"
+            >
+              Event {{ eventId }} <i class="pi pi-arrow-up-right" />
+            </RouterLink>
+          </div>
+        </article>
+        <div v-if="reviewResult.limitations.length" class="review-limitations">
+          <strong>Ограничения анализа</strong>
+          <ul>
+            <li v-for="item in reviewResult.limitations" :key="item">
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section v-if="evidence.length && !reviewResult" class="evidence-section">
         <div class="section-heading">
           <span>Основание</span>
           <small>Безопасная выдержка из обращения</small>
@@ -185,6 +258,37 @@ const evidence = computed(() =>
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+.review-result {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+.review-finding,
+.review-limitations {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+.review-finding p,
+.review-limitations ul {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.event-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.event-links a {
+  color: var(--primary);
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
 }
 .detail-kicker,
 .section-heading,
