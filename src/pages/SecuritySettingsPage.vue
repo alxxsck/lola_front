@@ -10,6 +10,8 @@ import { useAuthStore } from '@/features/auth/auth.store'
 import { normalizeApiError } from '@/shared/api/http/api-error'
 import { emailIdentityApi } from '@/features/email-identity/email-identity.api'
 import { mfaManagementApi, type MfaPasskeySummary } from '@/features/auth/mfa.api'
+import { notificationPreferencesApi } from '@/features/notification-preferences/notification-preferences.api'
+import type { EmailAIProposalPreferenceResponseDto } from '@/shared/api/generated/models'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -49,6 +51,54 @@ const factorPending = ref(false)
 const passkeyLabel = ref('')
 const oneTimeRecoveryCodes = ref<string[]>([])
 const recoveryCodesSaved = ref(false)
+const emailPreference = ref<EmailAIProposalPreferenceResponseDto | null>(null)
+const emailPreferenceLoading = ref(true)
+const emailPreferenceSaving = ref(false)
+const emailPreferenceError = ref('')
+const emailPreferenceBlocked = computed(() => {
+  const reason = emailPreference.value?.ineligibilityReason
+  return !emailPreference.value || reason === 'EMAIL_UNVERIFIED' || reason === 'USER_INACTIVE'
+})
+const emailPreferenceStatus = computed(() => {
+  if (emailPreferenceError.value) return emailPreferenceError.value
+  const preference = emailPreference.value
+  if (!preference) return 'Загружаем настройку…'
+  if (preference.ineligibilityReason === 'EMAIL_UNVERIFIED') return 'Сначала подтвердите текущий email.'
+  if (preference.ineligibilityReason === 'EMAIL_CHANGED') return 'Email изменён. Включите подписку для нового подтверждённого адреса.'
+  if (preference.ineligibilityReason === 'USER_INACTIVE') return 'Подписка недоступна для неактивного аккаунта.'
+  return preference.subscribed ? 'Подписка включена' : 'Подписка выключена'
+})
+
+async function loadEmailPreference() {
+  emailPreferenceLoading.value = true
+  emailPreferenceError.value = ''
+  try {
+    emailPreference.value = await notificationPreferencesApi.getEmailAIProposals()
+  } catch {
+    emailPreference.value = null
+    emailPreferenceError.value = 'Не удалось загрузить настройку email-уведомлений.'
+  } finally {
+    emailPreferenceLoading.value = false
+  }
+}
+
+async function toggleEmailPreference() {
+  if (!emailPreference.value || emailPreferenceBlocked.value) return
+  clearFeedback()
+  emailPreferenceSaving.value = true
+  try {
+    emailPreference.value = await notificationPreferencesApi.setEmailAIProposals(
+      !emailPreference.value.subscribed,
+    )
+    actionSuccess.value = emailPreference.value.subscribed
+      ? 'Подписка на предложения Lola включена.'
+      : 'Подписка на предложения Lola отключена.'
+  } catch {
+    actionError.value = 'Не удалось изменить подписку. Обновите страницу и повторите.'
+  } finally {
+    emailPreferenceSaving.value = false
+  }
+}
 
 async function loadMfaSummary() {
   factorsLoading.value = true
@@ -295,6 +345,7 @@ function formatDate(value: string) {
 onMounted(() => {
   void loadSessions()
   void loadMfaSummary()
+  void loadEmailPreference()
   countdownTimer = setInterval(() => {
     if (verificationSeconds.value > 0) verificationSeconds.value -= 1
   }, 1_000)
@@ -385,6 +436,34 @@ onBeforeUnmount(() => {
           :disabled="!canSubmitEmailChange"
         />
       </form>
+
+      <div class="notification-preference" aria-labelledby="ai-proposal-email-heading">
+        <div>
+          <strong id="ai-proposal-email-heading">Предложения Lola по email</strong>
+          <span>Получайте новые запросы внимания по текущему подтверждённому адресу.</span>
+          <small :class="emailPreferenceBlocked ? 'preference-warning' : ''">{{ emailPreferenceStatus }}</small>
+        </div>
+        <Button
+          v-if="!emailPreferenceError"
+          data-testid="ai-proposal-email-toggle"
+          :label="emailPreference?.subscribed ? 'Отключить' : 'Подписаться'"
+          :icon="emailPreference?.subscribed ? 'pi pi-bell-slash' : 'pi pi-bell'"
+          :severity="emailPreference?.subscribed ? 'secondary' : 'primary'"
+          :outlined="Boolean(emailPreference?.subscribed)"
+          :loading="emailPreferenceLoading || emailPreferenceSaving"
+          :disabled="emailPreferenceLoading || emailPreferenceSaving || emailPreferenceBlocked"
+          @click="toggleEmailPreference"
+        />
+        <Button
+          v-else
+          data-testid="ai-proposal-email-retry"
+          label="Повторить"
+          icon="pi pi-refresh"
+          outlined
+          :loading="emailPreferenceLoading"
+          @click="loadEmailPreference"
+        />
+      </div>
     </section>
 
     <section class="security-card" aria-labelledby="password-heading">
@@ -465,5 +544,6 @@ onBeforeUnmount(() => {
 <style scoped>
 .security-page{display:flex;flex-direction:column;gap:22px;max-width:1040px;margin:0 auto}.security-page>header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}.security-page h1{margin:6px 0 8px;font-size:2rem}.security-page header p,.section-heading p{margin:0;color:var(--muted)}.security-card{padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--surface-card);box-shadow:var(--shadow-card)}.section-heading{display:flex;align-items:flex-start;gap:13px;margin-bottom:20px}.section-heading>i,.device-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--status-violet);color:var(--on-status-violet)}.section-heading h2{margin:0 0 4px;font-size:1.12rem}.identity-summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:14px}.identity-avatar{display:grid;width:48px;height:48px;place-items:center;border-radius:15px;background:var(--brand-soft);color:var(--text-brand);font-family:var(--font-display);font-size:1.1rem;font-weight:800}.identity-copy{display:flex;min-width:0;flex-direction:column;gap:3px}.identity-copy span{overflow:hidden;color:var(--muted);text-overflow:ellipsis}.verification-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;font-size:.7rem;font-weight:700}.verification-badge.verified{background:var(--status-success-soft);color:var(--status-success-text)}.verification-badge.unverified{background:var(--status-warning-soft);color:var(--status-warning-text)}.pending-email{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:15px;border:1px solid var(--status-violet);border-radius:15px;background:var(--status-violet-soft)}.pending-email small,.pending-email strong,.pending-email span{display:block}.pending-email small{color:var(--status-violet-text);font-weight:800;text-transform:uppercase;letter-spacing:.08em}.pending-email strong{margin-top:4px}.pending-email span{margin-top:4px;color:var(--muted);font-size:.72rem}.pending-actions{display:flex;align-items:center;gap:4px}.email-change-form,.password-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end}.email-change-form{margin-top:18px;padding-top:18px;border-top:1px solid var(--border-subtle)}.email-change-form label,.password-form label{display:flex;flex-direction:column;gap:7px;font-size:.76rem;font-weight:700}.email-change-form :deep(.p-button),.password-form :deep(.p-button){grid-column:3}.session-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}.session-list li{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--border-subtle);border-radius:15px;background:var(--surface-subtle)}.device-icon{flex:0 0 auto;background:var(--surface-card);color:var(--status-violet-text)}.session-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}.session-copy strong span{margin-left:6px;padding:3px 7px;border-radius:999px;background:var(--status-success-soft);color:var(--status-success-text);font-size:.62rem}.session-copy small{color:var(--muted)}.state{display:flex;align-items:center;gap:8px;color:var(--muted)}.state-error{justify-content:space-between;color:var(--status-danger-text)}
 .passkey-list{display:flex;flex-direction:column;gap:9px;margin:0;padding:0;list-style:none}.passkey-list li{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--border-subtle);border-radius:14px}.passkey-list li>div{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}.passkey-list small,.recovery-summary small{color:var(--muted)}.passkey-add{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;margin-top:14px}.passkey-add label{display:flex;flex-direction:column;gap:7px;font-size:.76rem;font-weight:700}.recovery-summary{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border-subtle)}.recovery-summary div{display:flex;flex-direction:column;gap:4px}.rotated-codes{display:flex;flex-direction:column;gap:12px;margin-top:14px;padding:15px;border:1px solid var(--status-warning);border-radius:14px}.rotated-codes ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0;padding:0;list-style:none}.rotated-codes li{padding:8px;border-radius:8px;background:var(--surface-subtle);text-align:center}
-@media(max-width:760px){.security-page>header{align-items:stretch;flex-direction:column}.identity-summary{grid-template-columns:auto minmax(0,1fr)}.identity-summary :deep(.p-button),.verification-badge{grid-column:2;justify-self:start}.pending-email{align-items:flex-start;flex-direction:column}.pending-actions{flex-wrap:wrap}.email-change-form,.password-form,.passkey-add{grid-template-columns:1fr}.email-change-form :deep(.p-button),.password-form :deep(.p-button){grid-column:auto}.passkey-list li,.recovery-summary{align-items:flex-start;flex-wrap:wrap}.session-list li{align-items:flex-start;flex-wrap:wrap}.session-copy{min-width:calc(100% - 58px)}.rotated-codes ol{grid-template-columns:1fr}}
+.notification-preference{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border-subtle)}.notification-preference>div{display:flex;flex-direction:column;gap:4px}.notification-preference span,.notification-preference small{color:var(--muted)}.notification-preference .preference-warning{color:var(--status-warning-text)}
+@media(max-width:760px){.security-page>header{align-items:stretch;flex-direction:column}.identity-summary{grid-template-columns:auto minmax(0,1fr)}.identity-summary :deep(.p-button),.verification-badge{grid-column:2;justify-self:start}.pending-email,.notification-preference{align-items:flex-start;flex-direction:column}.pending-actions{flex-wrap:wrap}.email-change-form,.password-form,.passkey-add{grid-template-columns:1fr}.email-change-form :deep(.p-button),.password-form :deep(.p-button){grid-column:auto}.passkey-list li,.recovery-summary{align-items:flex-start;flex-wrap:wrap}.session-list li{align-items:flex-start;flex-wrap:wrap}.session-copy{min-width:calc(100% - 58px)}.rotated-codes ol{grid-template-columns:1fr}}
 </style>

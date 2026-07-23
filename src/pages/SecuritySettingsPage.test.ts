@@ -7,6 +7,7 @@ import { securitySettingsApi } from '@/features/security-settings/security-setti
 import { emailIdentityApi } from '@/features/email-identity/email-identity.api'
 import SecuritySettingsPage from './SecuritySettingsPage.vue'
 import { mfaManagementApi } from '@/features/auth/mfa.api'
+import { notificationPreferencesApi } from '@/features/notification-preferences/notification-preferences.api'
 
 vi.mock('@/features/security-settings/security-settings.api', () => ({
   securitySettingsApi: {
@@ -31,6 +32,13 @@ vi.mock('@/features/auth/mfa.api', () => ({
     addPasskey: vi.fn(),
     removePasskey: vi.fn(),
     rotateRecoveryCodes: vi.fn(),
+  },
+}))
+
+vi.mock('@/features/notification-preferences/notification-preferences.api', () => ({
+  notificationPreferencesApi: {
+    getEmailAIProposals: vi.fn(),
+    setEmailAIProposals: vi.fn(),
   },
 }))
 
@@ -144,6 +152,22 @@ describe('SecuritySettingsPage', () => {
     vi.mocked(mfaManagementApi.rotateRecoveryCodes).mockResolvedValue({
       recoveryCodes: ['lrc_one', 'lrc_two'],
     })
+    vi.mocked(notificationPreferencesApi.getEmailAIProposals).mockResolvedValue({
+      topic: 'AI_PROPOSALS',
+      channel: 'EMAIL',
+      subscribed: false,
+      effectiveStatus: 'INELIGIBLE',
+      ineligibilityReason: 'EMAIL_UNVERIFIED',
+      emailVersion: 0,
+    })
+    vi.mocked(notificationPreferencesApi.setEmailAIProposals).mockImplementation(async (subscribed) => ({
+      topic: 'AI_PROPOSALS',
+      channel: 'EMAIL',
+      subscribed,
+      effectiveStatus: subscribed ? 'SUBSCRIBED' : 'UNSUBSCRIBED',
+      ineligibilityReason: null,
+      emailVersion: 0,
+    }))
   })
 
   it('lists safe session metadata and revokes the selected stable family id', async () => {
@@ -203,6 +227,73 @@ describe('SecuritySettingsPage', () => {
     expect(emailIdentityApi.requestVerification).toHaveBeenCalledOnce()
     expect(wrapper.get('[data-testid="email-verification-action"]').text()).toContain('Повторить через 45 с')
     expect(wrapper.text()).toContain('Письмо для подтверждения отправлено.')
+  })
+
+  it('keeps AI Proposal email opt-in disabled until the current address is verified', async () => {
+    const wrapper = await mountPage()
+
+    expect(notificationPreferencesApi.getEmailAIProposals).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('Предложения Lola по email')
+    expect(wrapper.text()).toContain('Сначала подтвердите текущий email')
+    expect(wrapper.get('[data-testid="ai-proposal-email-toggle"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('explicitly subscribes a verified CMS User without coupling consent to verification', async () => {
+    vi.mocked(notificationPreferencesApi.getEmailAIProposals).mockResolvedValue({
+      topic: 'AI_PROPOSALS',
+      channel: 'EMAIL',
+      subscribed: false,
+      effectiveStatus: 'UNSUBSCRIBED',
+      ineligibilityReason: null,
+      emailVersion: 2,
+    })
+    const wrapper = await mountPage({ emailVerifiedAt: '2026-07-23T10:00:00.000Z' })
+
+    await wrapper.get('[data-testid="ai-proposal-email-toggle"]').trigger('click')
+    await flushPromises()
+
+    expect(notificationPreferencesApi.setEmailAIProposals).toHaveBeenCalledWith(true)
+    expect(wrapper.text()).toContain('Подписка включена')
+  })
+
+  it('allows explicit reconfirmation after a verified email address changes', async () => {
+    vi.mocked(notificationPreferencesApi.getEmailAIProposals).mockResolvedValue({
+      topic: 'AI_PROPOSALS',
+      channel: 'EMAIL',
+      subscribed: false,
+      effectiveStatus: 'SUSPENDED',
+      ineligibilityReason: 'EMAIL_CHANGED',
+      emailVersion: 3,
+    })
+    const wrapper = await mountPage({ emailVerifiedAt: '2026-07-23T10:00:00.000Z' })
+
+    const toggle = wrapper.get('[data-testid="ai-proposal-email-toggle"]')
+    expect(toggle.attributes('disabled')).toBeUndefined()
+    await toggle.trigger('click')
+    await flushPromises()
+
+    expect(notificationPreferencesApi.setEmailAIProposals).toHaveBeenCalledWith(true)
+  })
+
+  it('keeps a failed preference load non-actionable and exposes retry', async () => {
+    vi.mocked(notificationPreferencesApi.getEmailAIProposals)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({
+        topic: 'AI_PROPOSALS',
+        channel: 'EMAIL',
+        subscribed: false,
+        effectiveStatus: 'UNSUBSCRIBED',
+        ineligibilityReason: null,
+        emailVersion: 2,
+      })
+    const wrapper = await mountPage({ emailVerifiedAt: '2026-07-23T10:00:00.000Z' })
+
+    expect(wrapper.find('[data-testid="ai-proposal-email-toggle"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="ai-proposal-email-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(notificationPreferencesApi.getEmailAIProposals).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-testid="ai-proposal-email-toggle"]').exists()).toBe(true)
   })
 
   it('starts, cancels and allows restarting a password-proved email change', async () => {

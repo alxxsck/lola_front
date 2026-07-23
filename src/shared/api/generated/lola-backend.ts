@@ -100,6 +100,8 @@ import type {
   CreateUiElementDto,
   DecideAIProposalDto,
   DeleteKnowledgeDocumentResponseDto,
+  EmailAIProposalPreferenceResponseDto,
+  EmailUnsubscribeResponseDto,
   EndUserPageResponseDto,
   EndUserResponseDto,
   EndVoiceSessionDto,
@@ -159,6 +161,7 @@ import type {
   LegacyEventLogPageResponseDto,
   ListMessagesDto,
   ListThreadMessagesDto,
+  NotificationUnsubscribeUnsubscribeParams,
   PasswordEstablishedResponseDto,
   PasswordSetupRequestDto,
   PlatformCreateProject201,
@@ -233,6 +236,7 @@ import type {
   UiElementResponseDto,
   UpdateActivitySettingsDto,
   UpdateCmsUserProfileDto,
+  UpdateEmailAIProposalPreferenceDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
   UpdatePlatformRoleDto,
@@ -2795,6 +2799,43 @@ export const iamMfaManagementRotateRecoveryCodes = (
 };
 
 /**
+ * @summary Read effective AI Proposal email subscription for current CMS User
+ */
+export const notificationPreferencesGetEmailAIProposals = (
+  options?: SecondParameter<
+    typeof request<EmailAIProposalPreferenceResponseDto>
+  >,
+) => {
+  return request<EmailAIProposalPreferenceResponseDto>(
+    {
+      url: `/api/v1/auth/me/notification-preferences/ai-proposals/email`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Explicitly subscribe or unsubscribe current verified email
+ */
+export const notificationPreferencesSetEmailAIProposals = (
+  updateEmailAIProposalPreferenceDto: BodyType<UpdateEmailAIProposalPreferenceDto>,
+  options?: SecondParameter<
+    typeof request<EmailAIProposalPreferenceResponseDto>
+  >,
+) => {
+  return request<EmailAIProposalPreferenceResponseDto>(
+    {
+      url: `/api/v1/auth/me/notification-preferences/ai-proposals/email`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateEmailAIProposalPreferenceDto,
+    },
+    options,
+  );
+};
+
+/**
  * @summary List active browser sessions owned by the current CMS User
  */
 export const cmsSecuritySettingsList = (
@@ -3317,6 +3358,23 @@ export const profileContractGet = (
 ) => {
   return request<IntegrationAttributeContractResponseDto>(
     { url: `/api/v1/profile-contract`, method: "GET" },
+    options,
+  );
+};
+
+/**
+ * @summary Unsubscribe the email version bound to a one-click capability
+ */
+export const notificationUnsubscribeUnsubscribe = (
+  params: NotificationUnsubscribeUnsubscribeParams,
+  options?: SecondParameter<typeof request<EmailUnsubscribeResponseDto>>,
+) => {
+  return request<EmailUnsubscribeResponseDto>(
+    {
+      url: `/api/v1/public/notification-preferences/email/unsubscribe`,
+      method: "POST",
+      params,
+    },
     options,
   );
 };
@@ -3951,6 +4009,12 @@ export type IamMfaManagementBeginPasskeyEnrollmentResult = NonNullable<
 export type IamMfaManagementRotateRecoveryCodesResult = NonNullable<
   Awaited<ReturnType<typeof iamMfaManagementRotateRecoveryCodes>>
 >;
+export type NotificationPreferencesGetEmailAIProposalsResult = NonNullable<
+  Awaited<ReturnType<typeof notificationPreferencesGetEmailAIProposals>>
+>;
+export type NotificationPreferencesSetEmailAIProposalsResult = NonNullable<
+  Awaited<ReturnType<typeof notificationPreferencesSetEmailAIProposals>>
+>;
 export type CmsSecuritySettingsListResult = NonNullable<
   Awaited<ReturnType<typeof cmsSecuritySettingsList>>
 >;
@@ -4054,6 +4118,9 @@ export type CompatibilityMessengerListThreadsResult = NonNullable<
 >;
 export type ProfileContractGetResult = NonNullable<
   Awaited<ReturnType<typeof profileContractGet>>
+>;
+export type NotificationUnsubscribeUnsubscribeResult = NonNullable<
+  Awaited<ReturnType<typeof notificationUnsubscribeUnsubscribe>>
 >;
 export type SessionsCreateResult = NonNullable<
   Awaited<ReturnType<typeof sessionsCreate>>

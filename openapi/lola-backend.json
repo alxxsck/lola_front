@@ -7732,6 +7732,68 @@
         ],
         "type": "string"
       },
+      "EmailAIProposalPreferenceResponseDto": {
+        "properties": {
+          "channel": {
+            "enum": [
+              "EMAIL"
+            ],
+            "type": "string"
+          },
+          "effectiveStatus": {
+            "enum": [
+              "SUBSCRIBED",
+              "UNSUBSCRIBED",
+              "SUSPENDED",
+              "INELIGIBLE"
+            ],
+            "type": "string"
+          },
+          "emailVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "ineligibilityReason": {
+            "enum": [
+              "EMAIL_UNVERIFIED",
+              "EMAIL_CHANGED",
+              "USER_INACTIVE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "subscribed": {
+            "type": "boolean"
+          },
+          "topic": {
+            "enum": [
+              "AI_PROPOSALS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "topic",
+          "channel",
+          "subscribed",
+          "effectiveStatus",
+          "ineligibilityReason",
+          "emailVersion"
+        ],
+        "type": "object"
+      },
+      "EmailUnsubscribeResponseDto": {
+        "properties": {
+          "unsubscribed": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "unsubscribed"
+        ],
+        "type": "object"
+      },
       "EndUserPageResponseDto": {
         "properties": {
           "items": {
@@ -16900,6 +16962,17 @@
           "givenName",
           "familyName",
           "version"
+        ],
+        "type": "object"
+      },
+      "UpdateEmailAIProposalPreferenceDto": {
+        "properties": {
+          "subscribed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "subscribed"
         ],
         "type": "object"
       },
@@ -30008,6 +30081,88 @@
         "x-iam-fresh-strong-authentication": true
       }
     },
+    "/api/v1/auth/me/notification-preferences/ai-proposals/email": {
+      "get": {
+        "operationId": "NotificationPreferences_getEmailAIProposals",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailAIProposalPreferenceResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read effective AI Proposal email subscription for current CMS User",
+        "tags": [
+          "CMS notification preferences"
+        ],
+        "x-iam-authenticated": true
+      },
+      "patch": {
+        "operationId": "NotificationPreferences_setEmailAIProposals",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmailAIProposalPreferenceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailAIProposalPreferenceResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Explicitly subscribe or unsubscribe current verified email",
+        "tags": [
+          "CMS notification preferences"
+        ],
+        "x-iam-authenticated": true
+      }
+    },
     "/api/v1/auth/me/sessions": {
       "get": {
         "operationId": "CmsSecuritySettings_list",
@@ -32209,6 +32364,48 @@
         ],
         "tags": [
           "integration attribute contract"
+        ]
+      }
+    },
+    "/api/v1/public/notification-preferences/email/unsubscribe": {
+      "post": {
+        "operationId": "NotificationUnsubscribe_unsubscribe",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "maxLength": 43,
+              "minLength": 43,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailUnsubscribeResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Unsubscribe the email version bound to a one-click capability",
+        "tags": [
+          "Public notification preferences"
         ]
       }
     },
