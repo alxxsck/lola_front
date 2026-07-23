@@ -32,6 +32,8 @@ import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import { formatDate, relativeTime } from "@/shared/lib/format";
 import type { ConversationMessage } from "@/shared/types/domain";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
+import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
+import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
 
@@ -81,6 +83,7 @@ const combinedSend = ref(false);
 const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
 const realtimeRecovered = ref(false);
 const profileCollapsed = ref(false);
+const aiReviewVisible = ref(false);
 const liveMessageIds = ref<string[]>([]);
 let profileRequest = 0;
 let unsubscribeMessage: (() => void) | undefined;
@@ -95,10 +98,11 @@ const consoleState = useAdminConversationConsole({
   updateRoute: (conversationId) => emit("conversationSelected", conversationId),
   beforeLoadMessages: (conversationId) =>
     cmsRealtimeClient.watchConversation(conversationId),
-  canReadPresence: () => hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.end_users.read",
-  ),
+  canReadPresence: () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.end_users.read",
+    ),
 });
 const {
   conversations,
@@ -124,12 +128,11 @@ const selectedSuspensionEntry = computed(() =>
     ? suspensionStore.getEntry(selectedConversation.value.id)
     : undefined,
 );
-const canManageSuspension = computed(
-  () =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.conversations.ai_suspend",
-    ),
+const canManageSuspension = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.conversations.ai_suspend",
+  ),
 );
 const projectPermissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
@@ -142,6 +145,14 @@ const canReadConversations = computed(() =>
 );
 const canReply = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.reply"),
+);
+const canStartAIReview = computed(
+  () =>
+    hasProjectPermission(projectPermissions.value, "project.event_logs.read") &&
+    hasProjectPermission(
+      projectPermissions.value,
+      "project.ai_proposals.decide",
+    ),
 );
 const displayName = computed(
   () =>
@@ -942,9 +953,35 @@ function displayField(
               }}</small>
             </article>
           </div>
+          <UserMemoryPanel
+            v-if="canReadProfiles && endUserId"
+            :project-id="projectId"
+            :end-user-id="endUserId"
+            :editable="
+              hasProjectPermission(
+                projectPermissions,
+                'project.end_users.write',
+              )
+            "
+          />
+          <Button
+            v-if="canStartAIReview && endUserId"
+            label="Запросить AI-анализ событий"
+            icon="pi pi-sparkles"
+            severity="secondary"
+            fluid
+            @click="aiReviewVisible = true"
+          />
         </template>
       </aside>
     </div>
+
+    <AIReviewDialog
+      v-if="aiReviewVisible && endUserId"
+      v-model:visible="aiReviewVisible"
+      :project-id="projectId"
+      :end-user-id="endUserId"
+    />
 
     <Dialog
       v-model:visible="newChatOpen"

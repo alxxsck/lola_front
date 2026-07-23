@@ -11,6 +11,8 @@ import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import AiUsageSection from "@/features/ai-usage/AiUsageSection.vue";
 import ActivitySettingsSection from "@/features/activity-settings/ActivitySettingsSection.vue";
+import UserMemorySettingsSection from "@/features/user-memory/ui/UserMemorySettingsSection.vue";
+import AIReviewSettingsSection from "@/features/ai-review/ui/AIReviewSettingsSection.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
@@ -229,6 +231,14 @@ function handleActivitySettingsChange(value: ActivitySettings) {
     ...settingsProject.value,
     version: value.projectVersion,
   };
+  settingsProject.value = nextProject;
+  project.value = nextProject;
+  auth.updateProject(nextProject);
+}
+
+function handleAISettingsVersion(projectVersion: number) {
+  if (!settingsProject.value) return;
+  const nextProject = { ...settingsProject.value, version: projectVersion };
   settingsProject.value = nextProject;
   project.value = nextProject;
   auth.updateProject(nextProject);
@@ -846,6 +856,20 @@ onBeforeUnmount(() => {
     <AiUsageSection
       v-if="!loading && project && canReadAiUsage"
       :project-id="project.id"
+    />
+    <UserMemorySettingsSection
+      v-if="!loading && project && canReadSettings"
+      :key="`memory-${project.version}`"
+      :project-id="project.id"
+      :editable="canEditSettings"
+      @changed="handleAISettingsVersion"
+    />
+    <AIReviewSettingsSection
+      v-if="!loading && project && canReadSettings"
+      :key="`review-${project.version}`"
+      :project-id="project.id"
+      :editable="canEditSettings"
+      @changed="handleAISettingsVersion"
     />
   </div>
 </template>

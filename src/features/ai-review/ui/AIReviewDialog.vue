@@ -1,0 +1,374 @@
+<script setup lang="ts">
+import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+import Button from "primevue/button";
+import Checkbox from "primevue/checkbox";
+import Dialog from "primevue/dialog";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import MultiSelect from "primevue/multiselect";
+import ProgressSpinner from "primevue/progressspinner";
+import Textarea from "primevue/textarea";
+import { eventCatalogRepository } from "@/shared/api/repository/event-catalog";
+import { aiReviewRepository } from "../api/ai-review-repository";
+import type {
+  AIReviewEstimate,
+  AIReviewRun,
+  AIReviewSettings,
+} from "../model/ai-review";
+
+const props = defineProps<{ projectId: string; endUserId: string }>();
+const visible = defineModel<boolean>("visible", { required: true });
+const router = useRouter();
+const settings = ref<AIReviewSettings | null>(null);
+const options = ref<Array<{ label: string; value: string }>>([]);
+const estimate = ref<AIReviewEstimate | null>(null);
+const run = ref<AIReviewRun | null>(null);
+const loading = ref(false);
+const estimating = ref(false);
+const starting = ref(false);
+const error = ref("");
+const confirmedExpensive = ref(false);
+const form = reactive({
+  localDate: new Date().toISOString().slice(0, 10),
+  eventCodes: [] as string[],
+  instruction: "",
+});
+let pollTimer: ReturnType<typeof setTimeout> | undefined;
+
+const scopeReady = computed(
+  () => Boolean(form.localDate) && form.eventCodes.length > 0,
+);
+const canStart = computed(
+  () =>
+    Boolean(estimate.value) &&
+    !estimate.value?.blocked &&
+    (!estimate.value?.requiresConfirmation || confirmedExpensive.value),
+);
+const running = computed(
+  () => run.value?.status === "PENDING" || run.value?.status === "RUNNING",
+);
+
+watch(visible, (isVisible) => {
+  if (isVisible) void load();
+  else stopPolling();
+});
+watch(
+  () => [form.localDate, form.eventCodes, form.instruction],
+  () => {
+    estimate.value = null;
+    confirmedExpensive.value = false;
+  },
+  { deep: true },
+);
+onBeforeUnmount(stopPolling);
+
+async function load() {
+  loading.value = true;
+  error.value = "";
+  run.value = null;
+  estimate.value = null;
+  try {
+    const [nextSettings, definitions] = await Promise.all([
+      aiReviewRepository.getSettings(props.projectId),
+      eventCatalogRepository.listDefinitions(props.projectId, "ACTIVE"),
+    ]);
+    settings.value = nextSettings;
+    options.value = definitions
+      .filter((item) => item.policy.enabled)
+      .map((item) => ({
+        label: `${item.metadata.name} · ${item.code}`,
+        value: item.code,
+      }));
+  } catch (cause) {
+    error.value =
+      cause instanceof Error ? cause.message : "Не удалось открыть AI Review";
+  } finally {
+    loading.value = false;
+  }
+}
+
+function scope() {
+  return {
+    endUserId: props.endUserId,
+    localDate: form.localDate,
+    eventCodes: [...form.eventCodes].sort(),
+    ...(form.instruction.trim()
+      ? { instruction: form.instruction.trim() }
+      : {}),
+  };
+}
+
+async function calculateEstimate() {
+  if (!scopeReady.value) return;
+  estimating.value = true;
+  error.value = "";
+  run.value = null;
+  try {
+    estimate.value = await aiReviewRepository.estimate(
+      props.projectId,
+      scope(),
+    );
+  } catch (cause) {
+    error.value =
+      cause instanceof Error ? cause.message : "Не удалось оценить запрос";
+  } finally {
+    estimating.value = false;
+  }
+}
+
+async function start() {
+  if (!canStart.value) return;
+  starting.value = true;
+  error.value = "";
+  try {
+    run.value = await aiReviewRepository.start(props.projectId, {
+      ...scope(),
+      idempotencyKey: crypto.randomUUID(),
+      confirmedExpensive: confirmedExpensive.value,
+    });
+    if (run.value.status === "SUCCEEDED") await openProposal(run.value);
+    else if (running.value) schedulePoll();
+  } catch (cause) {
+    error.value =
+      cause instanceof Error ? cause.message : "Не удалось запустить AI Review";
+  } finally {
+    starting.value = false;
+  }
+}
+
+function schedulePoll() {
+  stopPolling();
+  pollTimer = setTimeout(() => void poll(), 1500);
+}
+
+async function poll() {
+  if (!visible.value || !run.value) return;
+  try {
+    run.value = await aiReviewRepository.get(props.projectId, run.value.id);
+    if (run.value.status === "SUCCEEDED") await openProposal(run.value);
+    else if (running.value) schedulePoll();
+  } catch (cause) {
+    error.value =
+      cause instanceof Error ? cause.message : "Не удалось обновить статус";
+  }
+}
+
+async function openProposal(value: AIReviewRun) {
+  stopPolling();
+  if (!value.proposalId) return;
+  visible.value = false;
+  await router.push({
+    name: "ai-proposal-detail",
+    params: { proposalId: value.proposalId },
+  });
+}
+
+function stopPolling() {
+  if (pollTimer) clearTimeout(pollTimer);
+  pollTimer = undefined;
+}
+
+function formatBytes(value: number) {
+  return value < 1024 ? `${value} Б` : `${(value / 1024).toFixed(1)} КБ`;
+}
+</script>
+
+<template>
+  <Dialog
+    v-model:visible="visible"
+    modal
+    header="AI Review событий"
+    :style="{ width: 'min(680px, 94vw)' }"
+  >
+    <div class="review-form">
+      <Message severity="warn" :closable="false">
+        Анализ использует токены. Сначала Lola посчитает объём без обращения к
+        модели; дорогой запрос потребует отдельного подтверждения.
+      </Message>
+      <Message v-if="error" severity="error" :closable="false">{{
+        error
+      }}</Message>
+      <div v-if="loading" class="loading">
+        <ProgressSpinner stroke-width="4" />
+      </div>
+      <template v-else>
+        <Message
+          v-if="settings && !settings.enabled"
+          severity="secondary"
+          :closable="false"
+        >
+          AI Review выключен в настройках проекта. Включите его, чтобы запускать
+          анализ.
+        </Message>
+        <label>
+          <span>Дата в часовом поясе проекта</span>
+          <InputText v-model="form.localDate" type="date" :disabled="running" />
+        </label>
+        <label>
+          <span>События</span>
+          <MultiSelect
+            v-model="form.eventCodes"
+            :options="options"
+            option-label="label"
+            option-value="value"
+            display="chip"
+            filter
+            placeholder="Выберите от 1 до 20 событий"
+            :max-selected-labels="5"
+            :selection-limit="20"
+            :disabled="running"
+          />
+        </label>
+        <label>
+          <span
+            >Что проверить <small>необязательно, до 500 символов</small></span
+          >
+          <Textarea
+            v-model="form.instruction"
+            rows="3"
+            maxlength="500"
+            placeholder="Например: проверь, почему не прошли попытки депозита"
+            :disabled="running"
+          />
+        </label>
+        <Button
+          label="Оценить объём"
+          icon="pi pi-calculator"
+          severity="secondary"
+          :loading="estimating"
+          :disabled="!scopeReady || running || !settings?.enabled"
+          @click="calculateEstimate"
+        />
+
+        <section
+          v-if="estimate"
+          class="estimate"
+          :data-cost="estimate.costLevel"
+        >
+          <div>
+            <strong
+              >{{ estimate.eventCount }} событий ·
+              {{ formatBytes(estimate.redactedBytes) }}</strong
+            >
+            <span
+              >До
+              {{
+                estimate.estimatedInputTokens.toLocaleString("ru-RU")
+              }}
+              входных токенов</span
+            >
+          </div>
+          <span class="cost">{{ estimate.costLevel }}</span>
+        </section>
+        <Message v-if="estimate?.blocked" severity="error" :closable="false">
+          {{ estimate.blockedReason }}. Выберите меньше событий.
+        </Message>
+        <label
+          v-if="estimate?.requiresConfirmation && !estimate.blocked"
+          class="confirm"
+        >
+          <Checkbox
+            v-model="confirmedExpensive"
+            binary
+            input-id="confirm-ai-review"
+          />
+          <span>Подтверждаю запуск дорогого AI Review</span>
+        </label>
+        <Message
+          v-if="
+            run && (run.status === 'FAILED' || run.status === 'OUTCOME_UNKNOWN')
+          "
+          :severity="run.status === 'OUTCOME_UNKNOWN' ? 'warn' : 'error'"
+          :closable="false"
+        >
+          {{
+            run.status === "OUTCOME_UNKNOWN"
+              ? "Ответ провайдера потерян. Автоматический повтор отключён, чтобы не списать токены дважды."
+              : `Анализ завершился с ошибкой: ${run.errorCode ?? "UNKNOWN"}`
+          }}
+        </Message>
+        <div v-if="running" class="running">
+          <ProgressSpinner stroke-width="5" />
+          <span>Lola анализирует события в фоне…</span>
+        </div>
+        <Button
+          label="Запустить AI Review"
+          icon="pi pi-sparkles"
+          :loading="starting"
+          :disabled="!canStart || running || !settings?.enabled"
+          @click="start"
+        />
+      </template>
+    </div>
+  </Dialog>
+</template>
+
+<style scoped>
+.review-form {
+  display: grid;
+  gap: 14px;
+}
+.review-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.review-form label small {
+  color: var(--text-small-muted);
+  font-weight: 400;
+}
+.loading,
+.running {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 90px;
+  color: var(--muted);
+}
+.loading :deep(.p-progressspinner),
+.running :deep(.p-progressspinner) {
+  width: 28px;
+  height: 28px;
+}
+.estimate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+.estimate > div {
+  display: grid;
+  gap: 4px;
+}
+.estimate span {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.estimate .cost {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+  font-weight: 800;
+}
+.estimate[data-cost="HIGH"] .cost {
+  background: var(--status-red-soft);
+  color: var(--status-red-text);
+}
+.confirm {
+  display: flex !important;
+  grid-template-columns: auto 1fr !important;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--status-red-border);
+  border-radius: 12px;
+  background: var(--status-red-soft);
+}
+</style>

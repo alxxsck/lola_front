@@ -12,6 +12,10 @@ import type {
   AIProposalSummaryResponseDto,
   AIProposalsListParams,
   AIProposalsPageResponseDto,
+  AIReviewEstimateResponseDto,
+  AIReviewRunResponseDto,
+  AIReviewScopeDto,
+  AIReviewSettingsResponseDto,
   ActionTypeResponseDto,
   ActiveUserResponseDto,
   ActivitySettingsResponseDto,
@@ -222,6 +226,7 @@ import type {
   SendChatMessageDto,
   SpeechSettingsResponseDto,
   SpeechVoicePageResponseDto,
+  StartAIReviewDto,
   StartAdminVoiceConversationDto,
   StartConversationAISuspensionDto,
   StartVoiceSessionDto,
@@ -231,6 +236,7 @@ import type {
   TranslationUsageReportParams,
   TranslationUsageResponseDto,
   UiElementResponseDto,
+  UpdateAIReviewSettingsDto,
   UpdateActivitySettingsDto,
   UpdateCmsUserProfileDto,
   UpdateEventDefinitionMetadataDto,
@@ -243,8 +249,13 @@ import type {
   UpdateScenarioAuthoringMetadataDto,
   UpdateSpeechSettingsDto,
   UpdateUiElementDto,
+  UpdateUserMemorySettingsDto,
   UpsertUserDto,
   UserAttributeSchemaResponseDto,
+  UserMemoryClearResponseDto,
+  UserMemoryDeleteResponseDto,
+  UserMemoryFactListResponseDto,
+  UserMemorySettingsResponseDto,
   ValidateAttributeContractDto,
   ValidateScenarioDraftDto,
   ValidateScenarioDraftResponseDto,
@@ -629,6 +640,35 @@ export const productActionsActionTypes = (
   );
 };
 
+export const userMemorySettings = (
+  projectId: string,
+  options?: SecondParameter<typeof request<UserMemorySettingsResponseDto>>,
+) => {
+  return request<UserMemorySettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-memory/settings`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const userMemoryUpdateSettings = (
+  projectId: string,
+  updateUserMemorySettingsDto: BodyType<UpdateUserMemorySettingsDto>,
+  options?: SecondParameter<typeof request<UserMemorySettingsResponseDto>>,
+) => {
+  return request<UserMemorySettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-memory/settings`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateUserMemorySettingsDto,
+    },
+    options,
+  );
+};
+
 export const aIProposalEventsReceived = (
   projectId: string,
   eventId: string,
@@ -711,6 +751,81 @@ export const aIProposalsSummary = (
     {
       url: `/api/v1/admin/projects/${projectId}/ai-proposals/summary`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const aIReviewEstimate = (
+  projectId: string,
+  aIReviewScopeDto: BodyType<AIReviewScopeDto>,
+  options?: SecondParameter<typeof request<AIReviewEstimateResponseDto>>,
+) => {
+  return request<AIReviewEstimateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-review/estimate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: aIReviewScopeDto,
+    },
+    options,
+  );
+};
+
+export const aIReviewStart = (
+  projectId: string,
+  startAIReviewDto: BodyType<StartAIReviewDto>,
+  options?: SecondParameter<typeof request<AIReviewRunResponseDto>>,
+) => {
+  return request<AIReviewRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-review/runs`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: startAIReviewDto,
+    },
+    options,
+  );
+};
+
+export const aIReviewGet = (
+  projectId: string,
+  runId: string,
+  options?: SecondParameter<typeof request<AIReviewRunResponseDto>>,
+) => {
+  return request<AIReviewRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-review/runs/${runId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const aIReviewSettings = (
+  projectId: string,
+  options?: SecondParameter<typeof request<AIReviewSettingsResponseDto>>,
+) => {
+  return request<AIReviewSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-review/settings`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const aIReviewUpdateSettings = (
+  projectId: string,
+  updateAIReviewSettingsDto: BodyType<UpdateAIReviewSettingsDto>,
+  options?: SecondParameter<typeof request<AIReviewSettingsResponseDto>>,
+) => {
+  return request<AIReviewSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-review/settings`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateAIReviewSettingsDto,
     },
     options,
   );
@@ -2397,6 +2512,49 @@ export const conversationAISuspensionsStart = (
   );
 };
 
+export const userMemoryClearFacts = (
+  projectId: string,
+  endUserId: string,
+  options?: SecondParameter<typeof request<UserMemoryClearResponseDto>>,
+) => {
+  return request<UserMemoryClearResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${endUserId}/memory-facts`,
+      method: "DELETE",
+    },
+    options,
+  );
+};
+
+export const userMemoryFacts = (
+  projectId: string,
+  endUserId: string,
+  options?: SecondParameter<typeof request<UserMemoryFactListResponseDto>>,
+) => {
+  return request<UserMemoryFactListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${endUserId}/memory-facts`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const userMemoryDeleteFact = (
+  projectId: string,
+  endUserId: string,
+  factId: string,
+  options?: SecondParameter<typeof request<UserMemoryDeleteResponseDto>>,
+) => {
+  return request<UserMemoryDeleteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${endUserId}/memory-facts/${factId}`,
+      method: "DELETE",
+    },
+    options,
+  );
+};
+
 export const adminConversationsList = (
   projectId: string,
   userId: string,
@@ -3528,6 +3686,12 @@ export type PlatformUpdateProjectResult = NonNullable<
 export type ProductActionsActionTypesResult = NonNullable<
   Awaited<ReturnType<typeof productActionsActionTypes>>
 >;
+export type UserMemorySettingsResult = NonNullable<
+  Awaited<ReturnType<typeof userMemorySettings>>
+>;
+export type UserMemoryUpdateSettingsResult = NonNullable<
+  Awaited<ReturnType<typeof userMemoryUpdateSettings>>
+>;
 export type AIProposalEventsReceivedResult = NonNullable<
   Awaited<ReturnType<typeof aIProposalEventsReceived>>
 >;
@@ -3545,6 +3709,21 @@ export type AIProposalsMarkReadResult = NonNullable<
 >;
 export type AIProposalsSummaryResult = NonNullable<
   Awaited<ReturnType<typeof aIProposalsSummary>>
+>;
+export type AIReviewEstimateResult = NonNullable<
+  Awaited<ReturnType<typeof aIReviewEstimate>>
+>;
+export type AIReviewStartResult = NonNullable<
+  Awaited<ReturnType<typeof aIReviewStart>>
+>;
+export type AIReviewGetResult = NonNullable<
+  Awaited<ReturnType<typeof aIReviewGet>>
+>;
+export type AIReviewSettingsResult = NonNullable<
+  Awaited<ReturnType<typeof aIReviewSettings>>
+>;
+export type AIReviewUpdateSettingsResult = NonNullable<
+  Awaited<ReturnType<typeof aIReviewUpdateSettings>>
 >;
 export type AiUsageReportResult = NonNullable<
   Awaited<ReturnType<typeof aiUsageReport>>
@@ -3863,6 +4042,15 @@ export type ConversationAISuspensionsResumeResult = NonNullable<
 >;
 export type ConversationAISuspensionsStartResult = NonNullable<
   Awaited<ReturnType<typeof conversationAISuspensionsStart>>
+>;
+export type UserMemoryClearFactsResult = NonNullable<
+  Awaited<ReturnType<typeof userMemoryClearFacts>>
+>;
+export type UserMemoryFactsResult = NonNullable<
+  Awaited<ReturnType<typeof userMemoryFacts>>
+>;
+export type UserMemoryDeleteFactResult = NonNullable<
+  Awaited<ReturnType<typeof userMemoryDeleteFact>>
 >;
 export type AdminConversationsListResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationsList>>
