@@ -11,6 +11,12 @@ import type { TelegramChannelSetupStatus } from "./telegramChannelSetupStatus";
 
 export interface TelegramChannelInstallationResponseDto {
   botUsername: string;
+  broadcastsEnabled: boolean;
+  /**
+   * OCC version for broadcasts settings only.
+   * @minimum 1
+   */
+  broadcastsVersion: number;
   /**
    * @minLength 16
    * @maxLength 16

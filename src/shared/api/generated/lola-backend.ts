@@ -27,6 +27,7 @@ import type {
   AiUsageReportParams,
   AiUsageReportResponseDto,
   AnalyzeEventSchemaDraftDto,
+  ApproveTelegramBroadcastDto,
   ArchiveEventDefinitionDto,
   ArchivePlatformRoleDto,
   ArchiveProjectDto,
@@ -100,6 +101,7 @@ import type {
   CreateScenarioAuthoringResponseDto,
   CreateSlackNotificationDestinationDto,
   CreateTelegramBindingChallengeDto,
+  CreateTelegramBroadcastDto,
   CreateTranslationJobDto,
   CreateUiElementDto,
   DecideAIProposalDto,
@@ -170,6 +172,7 @@ import type {
   NotificationDestinationResponseDto,
   NotificationDestinationTestResponseDto,
   NotificationUnsubscribeUnsubscribeParams,
+  OperateTelegramBroadcastDto,
   OperationalTelegramWebhookIngest200,
   PasswordEstablishedResponseDto,
   PasswordSetupRequestDto,
@@ -183,6 +186,7 @@ import type {
   PreviewScenarioGoalResponseDto,
   PreviewScenarioRuleDto,
   PreviewScenarioRuleResponseDto,
+  PreviewTelegramBroadcastDto,
   ProfileHealthHealthParams,
   ProfileHealthResponseDto,
   ProfileProjectionResponseDto,
@@ -227,12 +231,14 @@ import type {
   ScenarioRunPageResponseDto,
   ScenarioRunResponseDto,
   ScenarioRunsPageParams,
+  ScheduleTelegramBroadcastDto,
   SegmentDetailResponseDto,
   SegmentRevisionDetailResponseDto,
   SegmentSearchResponseDto,
   SendAdminMessageDto,
   SendAdminMessageResponseDto,
   SendChatMessageDto,
+  SetTelegramBroadcastsEnabledDto,
   SpeechSettingsResponseDto,
   SpeechVoicePageResponseDto,
   StartAdminVoiceConversationDto,
@@ -241,6 +247,15 @@ import type {
   SyncAttributeSnapshotDto,
   TelegramAdminLinkSummaryResponseDto,
   TelegramBindingChallengeResponseDto,
+  TelegramBroadcastConsentResponseDto,
+  TelegramBroadcastDetailResponseDto,
+  TelegramBroadcastListParams,
+  TelegramBroadcastListResponseDto,
+  TelegramBroadcastOutcomeListResponseDto,
+  TelegramBroadcastOutcomesParams,
+  TelegramBroadcastPreviewResponseDto,
+  TelegramBroadcastResponseDto,
+  TelegramBroadcastTestResponseDto,
   TelegramChannelAdminGet200,
   TelegramChannelInstallationResponseDto,
   TelegramChannelTestResponseDto,
@@ -253,6 +268,7 @@ import type {
   TelegramPersonalOutboundCreateBody,
   TelegramPersonalOutboundListParams,
   TestNotificationDestinationDto,
+  TestTelegramBroadcastDto,
   TestTelegramChannelDto,
   TranslationJobAcceptedResponseDto,
   TranslationJobResponseDto,
@@ -273,6 +289,7 @@ import type {
   UpdateScenarioAuthoringMetadataDto,
   UpdateSlackNotificationDestinationDto,
   UpdateSpeechSettingsDto,
+  UpdateTelegramBroadcastDto,
   UpdateUiElementDto,
   UpsertUserDto,
   UserAttributeSchemaResponseDto,
@@ -2389,6 +2406,224 @@ export const adminSpeechVoices = (
   );
 };
 
+export const telegramBroadcastList = (
+  projectId: string,
+  params?: TelegramBroadcastListParams,
+  options?: SecondParameter<typeof request<TelegramBroadcastListResponseDto>>,
+) => {
+  return request<TelegramBroadcastListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastCreate = (
+  projectId: string,
+  createTelegramBroadcastDto: BodyType<CreateTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastResponseDto>>,
+) => {
+  return request<TelegramBroadcastResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastGet = (
+  projectId: string,
+  broadcastId: string,
+  options?: SecondParameter<typeof request<TelegramBroadcastDetailResponseDto>>,
+) => {
+  return request<TelegramBroadcastDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastUpdate = (
+  projectId: string,
+  broadcastId: string,
+  updateTelegramBroadcastDto: BodyType<UpdateTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastResponseDto>>,
+) => {
+  return request<TelegramBroadcastResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastApprove = (
+  projectId: string,
+  broadcastId: string,
+  approveTelegramBroadcastDto: BodyType<ApproveTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastResponseDto>>,
+) => {
+  return request<TelegramBroadcastResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/approve`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: approveTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastCancel = (
+  projectId: string,
+  broadcastId: string,
+  operateTelegramBroadcastDto: BodyType<OperateTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastResponseDto>>,
+) => {
+  return request<TelegramBroadcastResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/cancel`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: operateTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastOutcomes = (
+  projectId: string,
+  broadcastId: string,
+  params?: TelegramBroadcastOutcomesParams,
+  options?: SecondParameter<
+    typeof request<TelegramBroadcastOutcomeListResponseDto>
+  >,
+) => {
+  return request<TelegramBroadcastOutcomeListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/outcomes`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastPause = (
+  projectId: string,
+  broadcastId: string,
+  operateTelegramBroadcastDto: BodyType<OperateTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastResponseDto>>,
+) => {
+  return request<TelegramBroadcastResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/pause`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: operateTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastPreview = (
+  projectId: string,
+  broadcastId: string,
+  previewTelegramBroadcastDto: BodyType<PreviewTelegramBroadcastDto>,
+  options?: SecondParameter<
+    typeof request<TelegramBroadcastPreviewResponseDto>
+  >,
+) => {
+  return request<TelegramBroadcastPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: previewTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastResume = (
+  projectId: string,
+  broadcastId: string,
+  operateTelegramBroadcastDto: BodyType<OperateTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastResponseDto>>,
+) => {
+  return request<TelegramBroadcastResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/resume`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: operateTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastSchedule = (
+  projectId: string,
+  broadcastId: string,
+  scheduleTelegramBroadcastDto: BodyType<ScheduleTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastResponseDto>>,
+) => {
+  return request<TelegramBroadcastResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/schedule`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: scheduleTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastStart = (
+  projectId: string,
+  broadcastId: string,
+  operateTelegramBroadcastDto: BodyType<OperateTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastResponseDto>>,
+) => {
+  return request<TelegramBroadcastResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/start`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: operateTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
+export const telegramBroadcastTest = (
+  projectId: string,
+  broadcastId: string,
+  testTelegramBroadcastDto: BodyType<TestTelegramBroadcastDto>,
+  options?: SecondParameter<typeof request<TelegramBroadcastTestResponseDto>>,
+) => {
+  return request<TelegramBroadcastTestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-broadcasts/${broadcastId}/tests`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: testTelegramBroadcastDto,
+    },
+    options,
+  );
+};
+
 export const telegramChannelAdminGet = (
   projectId: string,
   options?: SecondParameter<typeof request<TelegramChannelAdminGet200>>,
@@ -2450,6 +2685,24 @@ export const telegramChannelAdminTest = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: testTelegramChannelDto,
+    },
+    options,
+  );
+};
+
+export const telegramChannelAdminSetBroadcastsEnabled = (
+  projectId: string,
+  setTelegramBroadcastsEnabledDto: BodyType<SetTelegramBroadcastsEnabledDto>,
+  options?: SecondParameter<
+    typeof request<TelegramChannelInstallationResponseDto>
+  >,
+) => {
+  return request<TelegramChannelInstallationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-channel/broadcasts`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: setTelegramBroadcastsEnabledDto,
     },
     options,
   );
@@ -3497,6 +3750,39 @@ export const chatSend = (
   );
 };
 
+export const telegramBroadcastConsentWithdraw = (
+  options?: SecondParameter<
+    typeof request<TelegramBroadcastConsentResponseDto>
+  >,
+) => {
+  return request<TelegramBroadcastConsentResponseDto>(
+    { url: `/api/v1/chat/telegram-broadcast-consent`, method: "DELETE" },
+    options,
+  );
+};
+
+export const telegramBroadcastConsentGet = (
+  options?: SecondParameter<
+    typeof request<TelegramBroadcastConsentResponseDto>
+  >,
+) => {
+  return request<TelegramBroadcastConsentResponseDto>(
+    { url: `/api/v1/chat/telegram-broadcast-consent`, method: "GET" },
+    options,
+  );
+};
+
+export const telegramBroadcastConsentOptIn = (
+  options?: SecondParameter<
+    typeof request<TelegramBroadcastConsentResponseDto>
+  >,
+) => {
+  return request<TelegramBroadcastConsentResponseDto>(
+    { url: `/api/v1/chat/telegram-broadcast-consent`, method: "PUT" },
+    options,
+  );
+};
+
 export const telegramLinkDisconnect = (
   options?: SecondParameter<typeof request<void>>,
 ) => {
@@ -4326,6 +4612,45 @@ export type AdminSpeechUpdateResult = NonNullable<
 export type AdminSpeechVoicesResult = NonNullable<
   Awaited<ReturnType<typeof adminSpeechVoices>>
 >;
+export type TelegramBroadcastListResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastList>>
+>;
+export type TelegramBroadcastCreateResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastCreate>>
+>;
+export type TelegramBroadcastGetResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastGet>>
+>;
+export type TelegramBroadcastUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastUpdate>>
+>;
+export type TelegramBroadcastApproveResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastApprove>>
+>;
+export type TelegramBroadcastCancelResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastCancel>>
+>;
+export type TelegramBroadcastOutcomesResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastOutcomes>>
+>;
+export type TelegramBroadcastPauseResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastPause>>
+>;
+export type TelegramBroadcastPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastPreview>>
+>;
+export type TelegramBroadcastResumeResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastResume>>
+>;
+export type TelegramBroadcastScheduleResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastSchedule>>
+>;
+export type TelegramBroadcastStartResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastStart>>
+>;
+export type TelegramBroadcastTestResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastTest>>
+>;
 export type TelegramChannelAdminGetResult = NonNullable<
   Awaited<ReturnType<typeof telegramChannelAdminGet>>
 >;
@@ -4337,6 +4662,9 @@ export type TelegramChannelAdminCreateResult = NonNullable<
 >;
 export type TelegramChannelAdminTestResult = NonNullable<
   Awaited<ReturnType<typeof telegramChannelAdminTest>>
+>;
+export type TelegramChannelAdminSetBroadcastsEnabledResult = NonNullable<
+  Awaited<ReturnType<typeof telegramChannelAdminSetBroadcastsEnabled>>
 >;
 export type TelegramChannelAdminDisableResult = NonNullable<
   Awaited<ReturnType<typeof telegramChannelAdminDisable>>
@@ -4547,6 +4875,15 @@ export type ChatCurrentConversationResult = NonNullable<
 >;
 export type ChatListResult = NonNullable<Awaited<ReturnType<typeof chatList>>>;
 export type ChatSendResult = NonNullable<Awaited<ReturnType<typeof chatSend>>>;
+export type TelegramBroadcastConsentWithdrawResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastConsentWithdraw>>
+>;
+export type TelegramBroadcastConsentGetResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastConsentGet>>
+>;
+export type TelegramBroadcastConsentOptInResult = NonNullable<
+  Awaited<ReturnType<typeof telegramBroadcastConsentOptIn>>
+>;
 export type TelegramLinkDisconnectResult = NonNullable<
   Awaited<ReturnType<typeof telegramLinkDisconnect>>
 >;

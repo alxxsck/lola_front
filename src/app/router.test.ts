@@ -519,4 +519,44 @@ describe("authentication routes", () => {
     await router.push("/users");
     expect(router.currentRoute.value.name).toBe("overview");
   });
+
+  it("gates both Telegram broadcast routes by the exact read permission", async () => {
+    const auth = useAuthStore();
+    const project = {
+      id: "project-1",
+      name: "Project One",
+      slug: "project-one",
+      status: "ACTIVE" as const,
+      publicKey: "public",
+      defaultLocale: "ru",
+      supportedLocales: ["ru"],
+      assistantName: "Lola",
+      systemPrompt: "",
+      voiceInstructions: "",
+      settings: {},
+      effectivePermissionCodes: ["project.telegram.broadcasts.draft"],
+    };
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
+      project,
+      projects: [project],
+    });
+
+    await router.push("/telegram/broadcasts");
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    auth.project!.effectivePermissionCodes = [
+      "project.telegram.broadcasts.read",
+    ];
+    await router.push("/telegram/broadcasts");
+    expect(router.currentRoute.value.name).toBe("telegram-broadcasts");
+    await router.push("/telegram/broadcasts/broadcast-1");
+    expect(router.currentRoute.value.name).toBe("telegram-broadcast-detail");
+  });
 });

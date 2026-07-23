@@ -1982,6 +1982,36 @@
         ],
         "type": "object"
       },
+      "ApproveTelegramBroadcastDto": {
+        "properties": {
+          "expectedContentHash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "expectedRecipientCount": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "successfulTestId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "expectedContentHash",
+          "successfulTestId",
+          "expectedRecipientCount"
+        ],
+        "type": "object"
+      },
       "ArchivedSegmentResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -7626,6 +7656,25 @@
         ],
         "type": "object"
       },
+      "CreateTelegramBroadcastDto": {
+        "properties": {
+          "text": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "text"
+        ],
+        "type": "object"
+      },
       "CreateTranslationJobDto": {
         "properties": {
           "sourceLocale": {
@@ -11644,6 +11693,18 @@
         ],
         "type": "object"
       },
+      "OperateTelegramBroadcastDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
       "OrganizationResponseDto": {
         "properties": {
           "createdAt": {
@@ -12117,6 +12178,18 @@
         "required": [
           "kind",
           "eventLogId"
+        ],
+        "type": "object"
+      },
+      "PreviewTelegramBroadcastDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion"
         ],
         "type": "object"
       },
@@ -16315,6 +16388,23 @@
         ],
         "type": "object"
       },
+      "ScheduleTelegramBroadcastDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "scheduledAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "scheduledAt"
+        ],
+        "type": "object"
+      },
       "SegmentDetailResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -16626,6 +16716,23 @@
           "observedAt",
           "attributes",
           "idempotencyKey"
+        ],
+        "type": "object"
+      },
+      "SetTelegramBroadcastsEnabledDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "description": "Expected broadcasts settings version, independent of bot credential version.",
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "enabled"
         ],
         "type": "object"
       },
@@ -17114,6 +17221,626 @@
         ],
         "type": "object"
       },
+      "TelegramBroadcastAllowedAction": {
+        "enum": [
+          "EDIT",
+          "PREVIEW",
+          "TEST_SEND",
+          "APPROVE",
+          "SCHEDULE",
+          "START",
+          "PAUSE",
+          "RESUME",
+          "CANCEL"
+        ],
+        "type": "string"
+      },
+      "TelegramBroadcastApprovalEvidenceDto": {
+        "properties": {
+          "approvedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "approvedByActorId": {
+            "type": "string"
+          },
+          "approvedByActorType": {
+            "type": "string"
+          },
+          "audiencePolicy": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "recipientCount": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "successfulTestId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revisionId",
+          "successfulTestId",
+          "contentHash",
+          "audiencePolicy",
+          "recipientCount",
+          "approvedByActorType",
+          "approvedByActorId",
+          "approvedAt"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastConsentResponseDto": {
+        "properties": {
+          "consentedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "ineligibleReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "policyVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "WITHDRAWN",
+              "NOT_CONFIGURED"
+            ],
+            "type": "string"
+          },
+          "subscribed": {
+            "type": "boolean"
+          },
+          "version": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "withdrawnAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "subscribed",
+          "status",
+          "version",
+          "policyVersion"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastDeliveryStatus": {
+        "enum": [
+          "PENDING",
+          "SENDING",
+          "RETRY_WAIT",
+          "SENT",
+          "FAILED_PERMANENT",
+          "OUTCOME_UNKNOWN",
+          "SUPPRESSED_LINK",
+          "SUPPRESSED_CONSENT",
+          "SUPPRESSED_INSTALLATION",
+          "CANCELLED"
+        ],
+        "type": "string"
+      },
+      "TelegramBroadcastDetailResponseDto": {
+        "properties": {
+          "allowedActions": {
+            "items": {
+              "$ref": "#/components/schemas/TelegramBroadcastAllowedAction"
+            },
+            "type": "array"
+          },
+          "approval": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramBroadcastApprovalEvidenceDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "latestTest": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramBroadcastTestEvidenceDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/TelegramBroadcastProgressDto"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "recipientCount": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/TelegramBroadcastRevisionDto"
+          },
+          "scheduledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramBroadcastStatus"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "status",
+          "version",
+          "revision",
+          "recipientCount",
+          "allowedActions",
+          "createdAt",
+          "updatedAt",
+          "progress"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastOutcomeDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramBroadcastDeliveryStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastOutcomeListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TelegramBroadcastOutcomeDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastPreviewExclusionsDto": {
+        "properties": {
+          "consentNotActive": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "installationUnavailable": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "noActiveLink": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "staleConsent": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "noActiveLink",
+          "consentNotActive",
+          "staleConsent",
+          "installationUnavailable"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastPreviewResponseDto": {
+        "properties": {
+          "contentHash": {
+            "type": "string"
+          },
+          "eligibleRecipientCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "exclusions": {
+            "$ref": "#/components/schemas/TelegramBroadcastPreviewExclusionsDto"
+          },
+          "renderedText": {
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "totalEvaluated": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "revisionId",
+          "contentHash",
+          "renderedText",
+          "eligibleRecipientCount",
+          "totalEvaluated",
+          "exclusions"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastProgressDto": {
+        "properties": {
+          "cancelled": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "failedPermanent": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "outcomeUnknown": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "pending": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "retryWait": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "sending": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "sent": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "suppressedConsent": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "suppressedInstallation": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "suppressedLink": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "pending",
+          "sending",
+          "retryWait",
+          "sent",
+          "failedPermanent",
+          "outcomeUnknown",
+          "suppressedLink",
+          "suppressedConsent",
+          "suppressedInstallation",
+          "cancelled"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastResponseDto": {
+        "properties": {
+          "allowedActions": {
+            "items": {
+              "$ref": "#/components/schemas/TelegramBroadcastAllowedAction"
+            },
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "recipientCount": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/TelegramBroadcastRevisionDto"
+          },
+          "scheduledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TelegramBroadcastStatus"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "status",
+          "version",
+          "revision",
+          "recipientCount",
+          "allowedActions",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastRevisionDto": {
+        "properties": {
+          "contentHash": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revisionNumber",
+          "text",
+          "contentHash",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastStatus": {
+        "enum": [
+          "DRAFT",
+          "APPROVED",
+          "SCHEDULED",
+          "RUNNING",
+          "PAUSED",
+          "COMPLETED",
+          "COMPLETED_WITH_FAILURES",
+          "CANCELLED"
+        ],
+        "type": "string"
+      },
+      "TelegramBroadcastTestEvidenceDto": {
+        "properties": {
+          "currentRevision": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sentAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "SENDING",
+              "RETRY_WAIT",
+              "SENT",
+              "FAILED_PERMANENT",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revisionId",
+          "label",
+          "status",
+          "currentRevision"
+        ],
+        "type": "object"
+      },
+      "TelegramBroadcastTestResponseDto": {
+        "properties": {
+          "currentRevision": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sentAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "SENDING",
+              "RETRY_WAIT",
+              "SENT",
+              "FAILED_PERMANENT",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "revisionId",
+          "label",
+          "status",
+          "currentRevision",
+          "version"
+        ],
+        "type": "object"
+      },
       "TelegramChannelHealthStatus": {
         "enum": [
           "NOT_TESTED",
@@ -17126,6 +17853,14 @@
         "properties": {
           "botUsername": {
             "type": "string"
+          },
+          "broadcastsEnabled": {
+            "type": "boolean"
+          },
+          "broadcastsVersion": {
+            "description": "OCC version for broadcasts settings only.",
+            "minimum": 1,
+            "type": "number"
           },
           "credentialFingerprint": {
             "maxLength": 16,
@@ -17210,6 +17945,8 @@
           "credentialFingerprint",
           "status",
           "webhookSetupStatus",
+          "broadcastsEnabled",
+          "broadcastsVersion",
           "healthStatus",
           "linkedUserCount",
           "updatedByActorType",
@@ -17685,6 +18422,31 @@
         },
         "required": [
           "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "TestTelegramBroadcastDto": {
+        "properties": {
+          "endUserExternalId": {
+            "description": "Project-scoped external End User identifier used only for this test send.",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "endUserExternalId",
+          "label"
         ],
         "type": "object"
       },
@@ -18462,6 +19224,30 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpdateTelegramBroadcastDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "text": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "text",
+          "expectedVersion"
+        ],
         "type": "object"
       },
       "UpdateUiElementDto": {
@@ -29223,6 +30009,875 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts": {
+      "get": {
+        "operationId": "TelegramBroadcast_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.read",
+          "scope": "PROJECT"
+        }
+      },
+      "post": {
+        "operationId": "TelegramBroadcast_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.draft",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}": {
+      "get": {
+        "operationId": "TelegramBroadcast_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.read",
+          "scope": "PROJECT"
+        }
+      },
+      "patch": {
+        "operationId": "TelegramBroadcast_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.draft",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/approve": {
+      "post": {
+        "operationId": "TelegramBroadcast_approve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.approve",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/cancel": {
+      "post": {
+        "operationId": "TelegramBroadcast_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperateTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.operate",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/outcomes": {
+      "get": {
+        "operationId": "TelegramBroadcast_outcomes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TelegramBroadcastDeliveryStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastOutcomeListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/pause": {
+      "post": {
+        "operationId": "TelegramBroadcast_pause",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperateTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.operate",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/preview": {
+      "post": {
+        "operationId": "TelegramBroadcast_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastPreviewResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.draft",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/resume": {
+      "post": {
+        "operationId": "TelegramBroadcast_resume",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperateTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.operate",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/schedule": {
+      "post": {
+        "operationId": "TelegramBroadcast_schedule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.operate",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/start": {
+      "post": {
+        "operationId": "TelegramBroadcast_start",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperateTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.operate",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-broadcasts/{broadcastId}/tests": {
+      "post": {
+        "operationId": "TelegramBroadcast_test",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "broadcastId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestTelegramBroadcastDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcasts"
+        ],
+        "x-iam-permission": {
+          "code": "project.telegram.broadcasts.draft",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/telegram-channel": {
       "get": {
         "operationId": "TelegramChannelAdmin_get",
@@ -29437,6 +31092,67 @@
         "tags": [
           "Telegram Channel"
         ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/telegram-channel/broadcasts": {
+      "patch": {
+        "operationId": "TelegramChannelAdmin_setBroadcastsEnabled",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTelegramBroadcastsEnabledDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramChannelInstallationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Channel"
+        ],
+        "x-iam-fresh-strong-authentication": true,
         "x-iam-permission": {
           "code": "project.integrations.manage",
           "scope": "PROJECT"
@@ -33942,6 +35658,116 @@
         ],
         "tags": [
           "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/telegram-broadcast-consent": {
+      "delete": {
+        "operationId": "TelegramBroadcastConsent_withdraw",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Expected-Version",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastConsentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcast Consent"
+        ]
+      },
+      "get": {
+        "operationId": "TelegramBroadcastConsent_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastConsentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcast Consent"
+        ]
+      },
+      "put": {
+        "operationId": "TelegramBroadcastConsent_optIn",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Expected-Version",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramBroadcastConsentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Telegram Broadcast Consent"
         ]
       }
     },

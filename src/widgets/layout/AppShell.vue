@@ -121,6 +121,13 @@ const navigation = computed(() =>
       projectPermission: "project.ai_proposals.read",
     },
     {
+      label: "Telegram-рассылки",
+      icon: "pi pi-send",
+      to: "/telegram/broadcasts",
+      project: true,
+      projectPermission: "project.telegram.broadcasts.read",
+    },
+    {
       label: "Сценарии",
       icon: "pi pi-sitemap",
       to: "/scenarios",

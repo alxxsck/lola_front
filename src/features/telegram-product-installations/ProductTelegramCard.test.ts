@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   rotate: vi.fn(),
   disable: vi.fn(),
+  setBroadcastsEnabled: vi.fn(),
   test: vi.fn(),
 }));
 
@@ -29,6 +30,8 @@ const installation = (overrides: Record<string, unknown> = {}) => ({
   lastTestedAt: "2026-07-23T12:00:00.000Z",
   lastTestFailureCode: null,
   linkedUserCount: 12,
+  broadcastsEnabled: false,
+  broadcastsVersion: 7,
   updatedByActorType: "CMS_USER",
   updatedByActorId: "operator-1",
   version: 3,
@@ -298,6 +301,215 @@ describe("ProductTelegramCard", () => {
     expect(mocks.disable).toHaveBeenCalledWith("project-1", {
       expectedVersion: 4,
     });
+  });
+
+  it("changes broadcast delivery with its independent OCC version and idempotency key", async () => {
+    const current = installation();
+    mocks.get.mockResolvedValue(current);
+    mocks.setBroadcastsEnabled.mockResolvedValue(
+      installation({ broadcastsEnabled: true, broadcastsVersion: 8 }),
+    );
+    const wrapper = mountCard();
+    await flushPromises();
+
+    const disabledOption = wrapper.get(
+      'button[data-action="product-telegram-broadcasts-disable"]',
+    );
+    const enabledOption = wrapper.get(
+      'button[data-action="product-telegram-broadcasts-enable"]',
+    );
+    expect(disabledOption.attributes("disabled")).toBeDefined();
+    expect(enabledOption.attributes("disabled")).toBeUndefined();
+
+    await disabledOption.trigger("click");
+    expect(mocks.setBroadcastsEnabled).not.toHaveBeenCalled();
+
+    await enabledOption.trigger("click");
+    await flushPromises();
+
+    expect(mocks.setBroadcastsEnabled).toHaveBeenCalledWith(
+      "project-1",
+      { enabled: true, expectedVersion: 7 },
+      expect.any(String),
+    );
+    expect(wrapper.text()).toContain("Telegram-рассылки включены");
+    expect(
+      wrapper
+        .get('button[data-action="product-telegram-broadcasts-enable"]')
+        .attributes("disabled"),
+    ).toBeDefined();
+  });
+
+  it("requires confirmation before disabling broadcasts and never sends after rejection", async () => {
+    mocks.get.mockResolvedValue(
+      installation({ broadcastsEnabled: true, broadcastsVersion: 9 }),
+    );
+    vi.mocked(confirm).mockReturnValue(false);
+    const wrapper = mountCard();
+    await flushPromises();
+
+    await wrapper
+      .get('button[data-action="product-telegram-broadcasts-disable"]')
+      .trigger("click");
+
+    expect(confirm).toHaveBeenCalledWith(
+      "Отключить Telegram-рассылки? Неотправленные сообщения этой инсталляции будут остановлены.",
+    );
+    expect(mocks.setBroadcastsEnabled).not.toHaveBeenCalled();
+  });
+
+  it("explains readiness and blocks enabling before the product bot is active", async () => {
+    mocks.get.mockResolvedValue(
+      installation({
+        status: "PENDING_SETUP",
+        webhookSetupStatus: "PROCESSING",
+      }),
+    );
+    const wrapper = mountCard();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(
+      "Рассылки можно включить после активации бота и завершения настройки webhook.",
+    );
+    expect(
+      wrapper
+        .get('button[data-action="product-telegram-broadcasts-enable"]')
+        .attributes("disabled"),
+    ).toBeDefined();
+  });
+
+  it("offers fresh login after 428 without replaying the broadcast command", async () => {
+    mocks.get.mockResolvedValue(installation());
+    mocks.setBroadcastsEnabled.mockRejectedValue(
+      new ApiError(
+        428,
+        "unsafe backend text",
+        undefined,
+        "step-up-request",
+        "MFA_REQUIRED",
+      ),
+    );
+    const wrapper = mountCard();
+    await flushPromises();
+
+    await wrapper
+      .get('button[data-action="product-telegram-broadcasts-enable"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Требуется свежий вход с MFA");
+    expect(wrapper.text()).not.toContain("unsafe backend text");
+    expect(mocks.setBroadcastsEnabled).toHaveBeenCalledOnce();
+
+    await wrapper
+      .get('button[data-action="product-telegram-broadcasts-fresh-login"]')
+      .trigger("click");
+    expect(wrapper.emitted("fresh-login-requested")).toHaveLength(1);
+    expect(mocks.setBroadcastsEnabled).toHaveBeenCalledOnce();
+  });
+
+  it("reuses the command key after an ambiguous failure while the server state is unchanged", async () => {
+    const current = installation();
+    mocks.get.mockResolvedValue(current);
+    mocks.setBroadcastsEnabled
+      .mockRejectedValueOnce(new Error("connection lost"))
+      .mockResolvedValueOnce(
+        installation({ broadcastsEnabled: true, broadcastsVersion: 8 }),
+      );
+    const wrapper = mountCard();
+    await flushPromises();
+
+    await wrapper
+      .get('button[data-action="product-telegram-broadcasts-enable"]')
+      .trigger("click");
+    await flushPromises();
+    await wrapper
+      .get('button[data-action="product-telegram-broadcasts-enable"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.setBroadcastsEnabled).toHaveBeenCalledTimes(2);
+    expect(mocks.setBroadcastsEnabled.mock.calls[0]?.[2]).toBe(
+      mocks.setBroadcastsEnabled.mock.calls[1]?.[2],
+    );
+  });
+
+  it("rejects a broadcast response after project switch and resets command state", async () => {
+    let resolveBroadcasts!: (value: ReturnType<typeof installation>) => void;
+    mocks.get
+      .mockResolvedValueOnce(installation())
+      .mockResolvedValueOnce(
+        installation({
+          id: "installation-2",
+          projectId: "project-2",
+          botUsername: "ProjectTwoBot",
+          broadcastsVersion: 2,
+        }),
+      );
+    mocks.setBroadcastsEnabled.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveBroadcasts = resolve;
+        }),
+    );
+    const wrapper = mountCard();
+    await flushPromises();
+
+    void wrapper
+      .get('button[data-action="product-telegram-broadcasts-enable"]')
+      .trigger("click");
+    await flushPromises();
+    await wrapper.setProps({ projectId: "project-2" });
+    await flushPromises();
+    resolveBroadcasts(
+      installation({
+        broadcastsEnabled: true,
+        broadcastsVersion: 8,
+        botUsername: "StaleProjectOneBot",
+      }),
+    );
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("ProjectTwoBot");
+    expect(wrapper.text()).not.toContain("StaleProjectOneBot");
+    expect(wrapper.text()).not.toContain("Telegram-рассылки включены");
+    expect(
+      wrapper
+        .get('button[data-action="product-telegram-broadcasts-enable"]')
+        .attributes("disabled"),
+    ).toBeUndefined();
+  });
+
+  it("rejects a broadcast response after manage permission is lost", async () => {
+    let resolveBroadcasts!: (value: ReturnType<typeof installation>) => void;
+    mocks.get.mockResolvedValue(installation());
+    mocks.setBroadcastsEnabled.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveBroadcasts = resolve;
+        }),
+    );
+    const wrapper = mountCard();
+    await flushPromises();
+
+    void wrapper
+      .get('button[data-action="product-telegram-broadcasts-enable"]')
+      .trigger("click");
+    await flushPromises();
+    await wrapper.setProps({ canManage: false });
+    await flushPromises();
+    resolveBroadcasts(
+      installation({ broadcastsEnabled: true, broadcastsVersion: 8 }),
+    );
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("только для просмотра");
+    expect(wrapper.text()).not.toContain("Telegram-рассылки включены.");
+    expect(
+      wrapper.find(
+        'button[data-action="product-telegram-broadcasts-enable"]',
+      ).exists(),
+    ).toBe(false);
   });
 
   it("polls background webhook setup after rotation without overlapping refreshes", async () => {

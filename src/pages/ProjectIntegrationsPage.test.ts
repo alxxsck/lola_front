@@ -19,7 +19,9 @@ const mocks = vi.hoisted(() => ({
       name: string;
       effectivePermissionCodes: string[];
     };
+    logout: ReturnType<typeof vi.fn>;
   },
+  replace: vi.fn(),
 }));
 
 vi.mock(
@@ -38,6 +40,10 @@ vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => mocks.auth,
 }));
 
+vi.mock("vue-router", () => ({
+  useRouter: () => ({ replace: mocks.replace }),
+}));
+
 vi.mock(
   "@/features/notification-destinations/OperationalTelegramCard.vue",
   () => ({
@@ -49,6 +55,7 @@ vi.mock(
   "@/features/telegram-product-installations/ProductTelegramCard.vue",
   () => ({
     default: {
+      emits: ["fresh-login-requested"],
       props: ["projectId", "canRead", "canManage"],
       template: `
         <section
@@ -56,7 +63,11 @@ vi.mock(
           :data-project-id="projectId"
           :data-can-read="String(canRead)"
           :data-can-manage="String(canManage)"
-        />
+        >
+          <button data-action="request-product-telegram-fresh-login" @click="$emit('fresh-login-requested')">
+            fresh login
+          </button>
+        </section>
       `,
     },
   }),
@@ -95,6 +106,7 @@ describe("ProjectIntegrationsPage", () => {
         name: "Project One",
         effectivePermissionCodes: [...mocks.permissions],
       },
+      logout: vi.fn(),
     });
     mocks.list.mockResolvedValue({ items: [] });
     vi.stubGlobal(
@@ -140,6 +152,27 @@ describe("ProjectIntegrationsPage", () => {
       "data-project-id": "project-1",
       "data-can-read": "true",
       "data-can-manage": "true",
+    });
+  });
+
+  it("uses the existing logout redirect flow for product Telegram step-up", async () => {
+    mocks.permissions = [
+      "project.integrations.read",
+      "project.integrations.manage",
+    ];
+    mocks.auth.project.effectivePermissionCodes = [...mocks.permissions];
+    const wrapper = mount(ProjectIntegrationsPage);
+    await flushPromises();
+
+    await wrapper
+      .get('button[data-action="request-product-telegram-fresh-login"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: { redirect: "/settings/integrations" },
     });
   });
 

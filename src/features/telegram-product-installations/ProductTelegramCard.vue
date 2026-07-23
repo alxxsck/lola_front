@@ -12,6 +12,9 @@ const props = defineProps<{
   canRead: boolean;
   canManage: boolean;
 }>();
+const emit = defineEmits<{
+  "fresh-login-requested": [];
+}>();
 
 const installation = ref<TelegramChannelInstallationResponseDto | null>(null);
 const loading = ref(true);
@@ -22,6 +25,8 @@ const success = ref("");
 const botToken = ref("");
 const createRetryKey = ref("");
 const testRetry = ref<{ signature: string; key: string } | null>(null);
+const broadcastsRetry = ref<{ signature: string; key: string } | null>(null);
+const freshAuthRequired = ref(false);
 let epoch = 0;
 let disposed = false;
 let loadRequest = 0;
@@ -42,6 +47,11 @@ const statusLabel = computed(() => {
     return "Регистрируем webhook";
   return current.status === "ACTIVE" ? "Подключено" : "Настраивается";
 });
+const broadcastsReady = computed(
+  () =>
+    installation.value?.status === "ACTIVE" &&
+    installation.value.webhookSetupStatus === "SUCCEEDED",
+);
 
 function beginOperation(): Operation | null {
   return props.projectId ? { projectId: props.projectId, epoch } : null;
@@ -148,6 +158,18 @@ function durableTestKey(id: string, version: number): string {
   if (testRetry.value?.signature === signature) return testRetry.value.key;
   const key = crypto.randomUUID();
   testRetry.value = { signature, key };
+  return key;
+}
+
+function durableBroadcastsKey(
+  current: TelegramChannelInstallationResponseDto,
+  enabled: boolean,
+): string {
+  const signature = `${current.id}:${current.broadcastsVersion}:${enabled}`;
+  if (broadcastsRetry.value?.signature === signature)
+    return broadcastsRetry.value.key;
+  const key = crypto.randomUUID();
+  broadcastsRetry.value = { signature, key };
   return key;
 }
 
@@ -403,6 +425,76 @@ async function disable(): Promise<void> {
   }
 }
 
+async function setBroadcastsEnabled(enabled: boolean): Promise<void> {
+  const current = installation.value;
+  const operation = beginOperation();
+  if (
+    !current ||
+    !operation ||
+    !belongsToOperation(operation, current) ||
+    !props.canManage ||
+    pending.value ||
+    current.broadcastsEnabled === enabled ||
+    (enabled && !broadcastsReady.value)
+  )
+    return;
+  if (
+    !enabled &&
+    !window.confirm(
+      "Отключить Telegram-рассылки? Неотправленные сообщения этой инсталляции будут остановлены.",
+    )
+  )
+    return;
+
+  clearFeedback();
+  freshAuthRequired.value = false;
+  pending.value = true;
+  try {
+    const updated =
+      await telegramProductInstallationsApi.setBroadcastsEnabled(
+        operation.projectId,
+        {
+          enabled,
+          expectedVersion: current.broadcastsVersion,
+        },
+        durableBroadcastsKey(current, enabled),
+      );
+    if (!belongsToOperation(operation, updated)) return;
+    installation.value = updated;
+    broadcastsRetry.value = null;
+    success.value = enabled
+      ? "Telegram-рассылки включены."
+      : "Telegram-рассылки выключены.";
+  } catch (cause) {
+    if (!isCurrent(operation)) return;
+    const apiError = normalizeApiError(cause);
+    freshAuthRequired.value =
+      apiError.status === 428 ||
+      apiError.code === "REAUTHENTICATION_REQUIRED" ||
+      apiError.code === "MFA_REQUIRED";
+    if (freshAuthRequired.value) {
+      actionError.value =
+        "Требуется свежий вход с MFA. Действие не повторялось.";
+    } else if (apiError.code === "TELEGRAM_BROADCASTS_VERSION_CONFLICT") {
+      actionError.value =
+        "Настройки рассылок изменились в другой вкладке. Данные обновлены.";
+      await load();
+    } else if (apiError.code === "TELEGRAM_CHANNEL_NOT_READY") {
+      actionError.value =
+        "Сначала активируйте бота и дождитесь завершения настройки webhook.";
+      await load();
+    } else if (apiError.status === 403) {
+      actionError.value = "Недостаточно прав для изменения интеграции.";
+    } else {
+      actionError.value =
+        "Не удалось подтвердить изменение Telegram-рассылок. Актуальное состояние обновлено.";
+      await load();
+    }
+  } finally {
+    if (isCurrent(operation)) pending.value = false;
+  }
+}
+
 function safeError(cause: unknown): string {
   const apiError = normalizeApiError(cause);
   if (apiError.code === "TELEGRAM_CHANNEL_VERSION_CONFLICT") {
@@ -436,6 +528,8 @@ watch(
     botToken.value = "";
     createRetryKey.value = "";
     testRetry.value = null;
+    broadcastsRetry.value = null;
+    freshAuthRequired.value = false;
     loadError.value = "";
     clearFeedback();
     if (props.canRead) void load();
@@ -451,6 +545,8 @@ onBeforeUnmount(() => {
   botToken.value = "";
   createRetryKey.value = "";
   testRetry.value = null;
+  broadcastsRetry.value = null;
+  freshAuthRequired.value = false;
 });
 </script>
 
@@ -476,6 +572,22 @@ onBeforeUnmount(() => {
     </p>
     <p v-if="actionError" class="feedback error" role="alert">
       {{ actionError }}
+    </p>
+    <p
+      v-if="freshAuthRequired"
+      class="feedback warning"
+      role="status"
+      aria-live="polite"
+    >
+      Действие не отправлялось повторно.
+      <button
+        type="button"
+        class="secondary"
+        data-action="product-telegram-broadcasts-fresh-login"
+        @click="emit('fresh-login-requested')"
+      >
+        Войти заново
+      </button>
     </p>
     <p v-if="success" class="feedback success" role="status" aria-live="polite">
       {{ success }}
@@ -535,6 +647,59 @@ onBeforeUnmount(() => {
           <dd>{{ formatTimestamp(installation.updatedAt) }}</dd>
         </div>
       </dl>
+
+      <section
+        class="broadcasts-settings"
+        aria-labelledby="product-telegram-broadcasts-title"
+      >
+        <div>
+          <h3 id="product-telegram-broadcasts-title">
+            Доставка Telegram-рассылок
+          </h3>
+          <p v-if="installation.broadcastsEnabled">
+            Включена. Одобренные рассылки могут отправляться пользователям с
+            явным согласием.
+          </p>
+          <p v-else-if="broadcastsReady">
+            Выключена. Одобренные рассылки не отправляются через этого бота.
+          </p>
+          <p v-else>
+            Рассылки можно включить после активации бота и завершения настройки
+            webhook.
+          </p>
+        </div>
+        <div
+          v-if="canManage"
+          class="broadcast-options"
+          role="group"
+          aria-label="Доставка Telegram-рассылок"
+        >
+          <button
+            type="button"
+            data-action="product-telegram-broadcasts-enable"
+            :aria-pressed="installation.broadcastsEnabled"
+            :disabled="
+              pending || installation.broadcastsEnabled || !broadcastsReady
+            "
+            @click="setBroadcastsEnabled(true)"
+          >
+            Включить
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            data-action="product-telegram-broadcasts-disable"
+            :aria-pressed="!installation.broadcastsEnabled"
+            :disabled="pending || !installation.broadcastsEnabled"
+            @click="setBroadcastsEnabled(false)"
+          >
+            Выключить
+          </button>
+        </div>
+        <p v-else class="read-only-note">
+          Изменение требует права управления интеграциями.
+        </p>
+      </section>
 
       <div v-if="canManage" class="actions">
         <button
@@ -707,6 +872,33 @@ onBeforeUnmount(() => {
   background: var(--status-success-soft);
   color: var(--status-success-text);
 }
+.feedback.warning {
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.broadcasts-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--surface-ground);
+}
+.broadcasts-settings h3,
+.broadcasts-settings p {
+  margin: 0;
+}
+.broadcasts-settings p {
+  margin-top: 5px;
+  color: var(--text-secondary);
+}
+.broadcast-options {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
 @media (max-width: 700px) {
   .heading {
     grid-template-columns: auto 1fr;
@@ -714,6 +906,10 @@ onBeforeUnmount(() => {
   .status {
     grid-column: 1 / -1;
     justify-self: start;
+  }
+  .broadcasts-settings {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 </style>

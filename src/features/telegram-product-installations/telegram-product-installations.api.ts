@@ -3,6 +3,7 @@ import {
   telegramChannelAdminDisable,
   telegramChannelAdminGet,
   telegramChannelAdminRotate,
+  telegramChannelAdminSetBroadcastsEnabled,
   telegramChannelAdminTest,
   telegramLinkAdminGet,
 } from "@/shared/api/generated/lola-backend";
@@ -11,6 +12,7 @@ import type {
   DisableTelegramChannelDto,
   RotateTelegramChannelDto,
   TestTelegramChannelDto,
+  SetTelegramBroadcastsEnabledDto,
 } from "@/shared/api/generated/models";
 
 const idempotencyOptions = (key: string) => ({
@@ -51,6 +53,18 @@ export const telegramProductInstallationsApi = {
     return telegramChannelAdminTest(
       projectId,
       installationId,
+      input,
+      idempotencyOptions(idempotencyKey),
+    );
+  },
+
+  setBroadcastsEnabled(
+    projectId: string,
+    input: SetTelegramBroadcastsEnabledDto,
+    idempotencyKey: string,
+  ) {
+    return telegramChannelAdminSetBroadcastsEnabled(
+      projectId,
       input,
       idempotencyOptions(idempotencyKey),
     );

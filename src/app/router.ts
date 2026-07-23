@@ -200,6 +200,22 @@ export const router = createRouter({
           meta: { projectPermission: "project.ai_proposals.read" },
         },
         {
+          path: "telegram/broadcasts",
+          name: "telegram-broadcasts",
+          component: () => import("@/pages/TelegramBroadcastsPage.vue"),
+          meta: {
+            projectPermission: "project.telegram.broadcasts.read",
+          },
+        },
+        {
+          path: "telegram/broadcasts/:broadcastId",
+          name: "telegram-broadcast-detail",
+          component: () => import("@/pages/TelegramBroadcastDetailPage.vue"),
+          meta: {
+            projectPermission: "project.telegram.broadcasts.read",
+          },
+        },
+        {
           path: "docs",
           name: "documentation",
           component: () => import("@/pages/DocumentationPage.vue"),

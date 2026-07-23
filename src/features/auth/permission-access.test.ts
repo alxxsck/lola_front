@@ -6,6 +6,27 @@ import {
 } from "./permission-access";
 
 describe("permission access", () => {
+  it("recognizes the four independent Telegram broadcast capabilities", () => {
+    const permissions = [
+      "project.telegram.broadcasts.read",
+      "project.telegram.broadcasts.draft",
+      "project.telegram.broadcasts.approve",
+      "project.telegram.broadcasts.operate",
+    ];
+
+    expect(
+      hasProjectPermission(permissions, "project.telegram.broadcasts.read"),
+    ).toBe(true);
+    expect(
+      hasProjectPermission(permissions, "project.telegram.broadcasts.draft"),
+    ).toBe(true);
+    expect(
+      hasProjectPermission(permissions, "project.telegram.broadcasts.approve"),
+    ).toBe(true);
+    expect(
+      hasProjectPermission(permissions, "project.telegram.broadcasts.operate"),
+    ).toBe(true);
+  });
   it("uses only the selected Project effective Permissions", () => {
     expect(
       hasProjectPermission(

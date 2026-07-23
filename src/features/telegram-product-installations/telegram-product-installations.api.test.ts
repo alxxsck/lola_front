@@ -4,6 +4,7 @@ import {
   telegramChannelAdminDisable,
   telegramChannelAdminGet,
   telegramChannelAdminRotate,
+  telegramChannelAdminSetBroadcastsEnabled,
   telegramChannelAdminTest,
   telegramLinkAdminGet,
 } from "@/shared/api/generated/lola-backend";
@@ -14,6 +15,7 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   telegramChannelAdminDisable: vi.fn(),
   telegramChannelAdminGet: vi.fn(),
   telegramChannelAdminRotate: vi.fn(),
+  telegramChannelAdminSetBroadcastsEnabled: vi.fn(),
   telegramChannelAdminTest: vi.fn(),
   telegramLinkAdminGet: vi.fn(),
 }));
@@ -43,6 +45,11 @@ describe("product Telegram API", () => {
       { expectedVersion: 4 },
       "test-key",
     );
+    await telegramProductInstallationsApi.setBroadcastsEnabled(
+      "project-1",
+      { enabled: true, expectedVersion: 7 },
+      "broadcasts-key",
+    );
     await telegramProductInstallationsApi.getEndUserSummary(
       "project-1",
       "end-user-1",
@@ -66,6 +73,11 @@ describe("product Telegram API", () => {
       "installation-1",
       { expectedVersion: 4 },
       { headers: { "Idempotency-Key": "test-key" } },
+    );
+    expect(telegramChannelAdminSetBroadcastsEnabled).toHaveBeenCalledWith(
+      "project-1",
+      { enabled: true, expectedVersion: 7 },
+      { headers: { "Idempotency-Key": "broadcasts-key" } },
     );
     expect(telegramLinkAdminGet).toHaveBeenCalledWith(
       "project-1",

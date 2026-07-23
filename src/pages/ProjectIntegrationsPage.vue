@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
@@ -9,6 +10,7 @@ import type { NotificationDestinationResponseDto } from "@/shared/api/generated/
 import { normalizeApiError } from "@/shared/api/http/api-error";
 
 const auth = useAuthStore();
+const router = useRouter();
 const projectId = computed(() => auth.project?.id ?? "");
 const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
@@ -35,6 +37,7 @@ const displayName = ref("Предложения Lola");
 const webhookUrl = ref("");
 const createRetryKey = ref("");
 const testRetry = ref<{ signature: string; key: string } | null>(null);
+const productTelegramStepUpPending = ref(false);
 let operationEpoch = 0;
 
 const statusLabel = computed(() => {
@@ -62,6 +65,23 @@ const readyToActivate = computed(
 function clearFeedback(): void {
   actionError.value = "";
   actionSuccess.value = "";
+}
+
+async function requireFreshProductTelegramLogin(): Promise<void> {
+  if (productTelegramStepUpPending.value) return;
+  productTelegramStepUpPending.value = true;
+  try {
+    await auth.logout();
+    operationEpoch += 1;
+    destination.value = null;
+    webhookUrl.value = "";
+    await router.replace({
+      name: "login",
+      query: { redirect: "/settings/integrations" },
+    });
+  } finally {
+    productTelegramStepUpPending.value = false;
+  }
 }
 
 function beginOperation(): { projectId: string; epoch: number } | null {
@@ -614,6 +634,7 @@ onMounted(load);
       :project-id="projectId"
       :can-read="canReadProductTelegram"
       :can-manage="canManageProductTelegram"
+      @fresh-login-requested="requireFreshProductTelegramLogin"
     />
   </main>
 </template>

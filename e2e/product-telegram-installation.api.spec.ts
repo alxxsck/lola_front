@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test.skip(
   process.env.VITE_DATA_MODE !== "api",
@@ -22,6 +23,11 @@ async function installFixtures(page: Page) {
   let setupRead = 0;
   const createKeys: string[] = [];
   const testKeys: string[] = [];
+  const broadcastCommands: Array<{
+    key: string;
+    enabled: boolean;
+    expectedVersion: number;
+  }> = [];
 
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
@@ -112,6 +118,8 @@ async function installFixtures(page: Page) {
         lastTestedAt: null,
         lastTestFailureCode: null,
         linkedUserCount: 12,
+        broadcastsEnabled: false,
+        broadcastsVersion: 1,
         updatedByActorType: "CMS_USER",
         updatedByActorId: "user-1",
         version: 1,
@@ -164,6 +172,24 @@ async function installFixtures(page: Page) {
         202,
       );
     }
+    if (path === `${base}/broadcasts` && request.method() === "PATCH") {
+      const input = request.postDataJSON() as {
+        enabled: boolean;
+        expectedVersion: number;
+      };
+      expect(input.expectedVersion).toBe(installation?.broadcastsVersion);
+      broadcastCommands.push({
+        key: request.headers()["idempotency-key"] ?? "",
+        ...input,
+      });
+      installation = {
+        ...installation,
+        broadcastsEnabled: input.enabled,
+        broadcastsVersion: input.expectedVersion + 1,
+        updatedAt: "2026-07-23T12:01:45.000Z",
+      };
+      return json(route, installation);
+    }
     if (path === base && request.method() === "PATCH") {
       const input = request.postDataJSON() as {
         botToken: string;
@@ -207,7 +233,7 @@ async function installFixtures(page: Page) {
     );
   });
 
-  return { createKeys, testKeys };
+  return { broadcastCommands, createKeys, testKeys };
 }
 
 test("project admin creates, tests, rotates and disables the separate product bot", async ({
@@ -238,6 +264,15 @@ test("project admin creates, tests, rotates and disables the separate product bo
   ).toBeVisible();
 
   page.on("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: "Включить", exact: true })
+    .click();
+  await expect(page.getByText("Telegram-рассылки включены.")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Выключить", exact: true })
+    .click();
+  await expect(page.getByText("Telegram-рассылки выключены.")).toBeVisible();
+
   await page.getByLabel("Новый bot token").fill(replacementToken);
   await page.getByRole("button", { name: "Заменить token" }).click();
   await expect(page.getByText("fedcba9876543210")).toBeVisible();
@@ -246,8 +281,30 @@ test("project admin creates, tests, rotates and disables the separate product bo
   await page.getByRole("button", { name: "Отключить" }).click();
   await expect(page.getByText("Отключено", { exact: true })).toBeVisible();
 
+  const accessibility = await new AxeBuilder({ page })
+    .include(".product-card")
+    .disableRules(["color-contrast"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+
   expect(fixture.createKeys).toHaveLength(1);
   expect(fixture.createKeys[0]?.length).toBeGreaterThanOrEqual(8);
   expect(fixture.testKeys).toHaveLength(2);
   expect(new Set(fixture.testKeys).size).toBe(1);
+  expect(fixture.broadcastCommands).toEqual([
+    {
+      key: expect.any(String),
+      enabled: true,
+      expectedVersion: 1,
+    },
+    {
+      key: expect.any(String),
+      enabled: false,
+      expectedVersion: 2,
+    },
+  ]);
+  expect(
+    fixture.broadcastCommands.every(({ key }) => key.length >= 8),
+  ).toBe(true);
+  expect(new Set(fixture.broadcastCommands.map(({ key }) => key)).size).toBe(2);
 });
