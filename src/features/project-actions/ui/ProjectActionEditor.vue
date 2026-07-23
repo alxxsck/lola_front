@@ -139,7 +139,7 @@ function submit() {
 
 function confirmSave() {
   confirmSaveVisible.value = false;
-  emit("save", toConfigureProjectActionInput(draft.value));
+  emit("save", toConfigureProjectActionInput(props.action, draft.value));
 }
 
 function confirmArchive() {

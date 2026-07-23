@@ -1,6 +1,7 @@
 import {
   productActionsActionTypes,
   productActionsArchiveProjectAction,
+  productActionsConfigureAiExposure,
   productActionsConfigureProjectAction,
   productActionsPreviewProjectAction,
   productActionsProjectActions,
@@ -25,7 +26,25 @@ export interface ProjectActionsRepository {
 const apiProjectActionsRepository: ProjectActionsRepository = {
   listActionTypes: productActionsActionTypes,
   listProjectActions: productActionsProjectActions,
-  configure: productActionsConfigureProjectAction,
+  async configure(projectId, actionId, input) {
+    const changesAiExposure =
+      input.aiEnabled !== undefined || input.aiUsageDescription !== undefined
+    if (!changesAiExposure) {
+      return productActionsConfigureProjectAction(projectId, actionId, input)
+    }
+
+    const { scenarioEnabled, ...aiExposureInput } = input
+    const aiExposure = await productActionsConfigureAiExposure(
+      projectId,
+      actionId,
+      aiExposureInput,
+    )
+    if (scenarioEnabled === undefined) return aiExposure
+
+    return productActionsConfigureProjectAction(projectId, actionId, {
+      scenarioEnabled,
+    })
+  },
   archive: productActionsArchiveProjectAction,
   async preview(projectId, actionId) {
     const preview = await productActionsPreviewProjectAction(projectId, actionId)

@@ -70,17 +70,31 @@ export function createProjectActionDraft(
 }
 
 export function toConfigureProjectActionInput(
+  action: ProjectAction,
   draft: ProjectActionDraft,
 ): ConfigureProjectActionInput {
   const description = draft.aiUsageDescription.trim();
   const auditReason = draft.auditReason.trim();
-  return {
-    scenarioEnabled: draft.scenarioEnabled,
-    aiEnabled: draft.aiEnabled,
-    aiUsageDescription: description || null,
-    configuration: cloneConfiguration(draft.configuration),
-    ...(auditReason ? { auditReason } : {}),
-  };
+  const input: ConfigureProjectActionInput = {};
+
+  if (action.scenarioEnabled !== draft.scenarioEnabled) {
+    input.scenarioEnabled = draft.scenarioEnabled;
+  }
+  if (action.aiEnabled !== draft.aiEnabled) {
+    input.aiEnabled = draft.aiEnabled;
+  }
+  if ((action.aiUsageDescription ?? "") !== description) {
+    input.aiUsageDescription = description || null;
+  }
+  if (stableValue(action.configuration) !== stableValue(draft.configuration)) {
+    input.configuration = cloneConfiguration(draft.configuration);
+    if (action.aiEnabled && input.aiEnabled === undefined) {
+      input.aiEnabled = true;
+    }
+  }
+  if (auditReason) input.auditReason = auditReason;
+
+  return input;
 }
 
 export function validateProjectActionDraft(

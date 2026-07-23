@@ -98,11 +98,9 @@ describe("ProjectActionEditor", () => {
       .trigger("click");
 
     expect(wrapper.emitted("save")?.[0]?.[0]).toEqual({
-      scenarioEnabled: false,
       aiEnabled: true,
       aiUsageDescription:
         "Use when the user explicitly asks to open the bonuses page.",
-      configuration: {},
       auditReason: "Enable requested bonuses navigation",
     });
   });

@@ -106,7 +106,7 @@ describe('Project Action draft', () => {
     ])
   })
 
-  it('builds a bounded backend command and removes editor-only whitespace', () => {
+  it('builds a bounded AI exposure command without unchanged standard fields', () => {
     const aiAction: ProjectAction = {
       ...action,
       actionTypeRevision: { ...action.actionTypeRevision, supportedSurfaces: ['AI'] },
@@ -116,12 +116,28 @@ describe('Project Action draft', () => {
     draft.aiUsageDescription = '  Use when the user explicitly asks to open bonuses.  '
     draft.auditReason = '  Enable requested bonuses navigation  '
 
-    expect(toConfigureProjectActionInput(draft)).toEqual({
-      scenarioEnabled: false,
+    expect(toConfigureProjectActionInput(aiAction, draft)).toEqual({
       aiEnabled: true,
       aiUsageDescription: 'Use when the user explicitly asks to open bonuses.',
-      configuration: {},
       auditReason: 'Enable requested bonuses navigation',
+    })
+  })
+
+  it('does not require AI exposure authority for a scenario-only change', () => {
+    const aiAction: ProjectAction = {
+      ...action,
+      aiEnabled: true,
+      aiUsageDescription: 'Use when the user explicitly asks to open a registered page.',
+      actionTypeRevision: {
+        ...action.actionTypeRevision,
+        supportedSurfaces: ['SCENARIO', 'AI'],
+      },
+    }
+    const draft = createProjectActionDraft(aiAction)
+    draft.scenarioEnabled = true
+
+    expect(toConfigureProjectActionInput(aiAction, draft)).toEqual({
+      scenarioEnabled: true,
     })
   })
 })
