@@ -15,7 +15,7 @@ import type {
   ActiveSession,
   ActivityItem,
   AdminMessageResult,
-  AuditLog,
+  AuditEvent,
   Conversation,
   ConversationAISuspensionDetail,
   ConversationMessage,
@@ -331,7 +331,7 @@ export const mockRepository: LolaRepository = {
     conversations: true,
     manualActions: true,
     operations: true,
-    auditLogs: true,
+    auditEvents: true,
     adminMessaging: true,
     userAttributes: true,
   },
@@ -1071,30 +1071,65 @@ export const mockRepository: LolaRepository = {
       },
     };
   },
-  async getAuditLogs() {
+  async getAuditEventsPage(_projectId, request) {
     await pause();
-    return [
+    const items = [
       {
         id: "audit_1",
-        actor: { id: "member_1", email: "admin@lola.demo", name: "Алексей" },
-        action: "scenario.update",
-        status: "SUCCEEDED",
-        resourceType: "Scenario",
+        actor: {
+          type: "CMS_USER",
+          id: "member_1",
+          email: "admin@lola.demo",
+          name: "Алексей",
+        },
+        target: { kind: "PROJECT", id: demoProject.id },
+        eventType: "iam.project_resource.changed",
+        eventVersion: 1,
+        outcome: "SUCCESS",
+        operation: "UPDATE",
+        resourceType: "SCENARIO",
         resourceId: "scn_1",
+        requiredPermissionCode: "project.scenarios.write",
+        authorizationEvidence: {},
         metadata: {},
-        createdAt: new Date().toISOString(),
+        occurredAt: new Date().toISOString(),
       },
       {
         id: "audit_2",
-        actor: { id: "member_1", email: "admin@lola.demo", name: "Алексей" },
-        action: "message.send",
-        status: "SUCCEEDED",
-        resourceType: "EndUser",
+        actor: {
+          type: "CMS_USER",
+          id: "member_1",
+          email: "admin@lola.demo",
+          name: "Алексей",
+        },
+        target: { kind: "PROJECT", id: demoProject.id },
+        eventType: "iam.project_resource.changed",
+        eventVersion: 1,
+        outcome: "SUCCESS",
+        operation: "SEND",
+        resourceType: "END_USER_MESSAGE",
         resourceId: "usr_1",
+        requiredPermissionCode: "project.messages.write",
+        authorizationEvidence: {},
         metadata: { channel: "admin" },
-        createdAt: new Date(Date.now() - 18 * 60_000).toISOString(),
+        occurredAt: new Date(Date.now() - 18 * 60_000).toISOString(),
       },
-    ] satisfies AuditLog[];
+    ] satisfies AuditEvent[];
+    const search = request?.search?.trim().toLowerCase();
+    const filtered = items.filter(
+      (item) =>
+        (!request?.outcome || item.outcome === request.outcome) &&
+        (!search ||
+          [
+            item.eventType,
+            item.operation,
+            item.resourceType,
+            item.resourceId,
+            item.actor.name,
+            item.actor.email,
+          ].some((value) => value?.toLowerCase().includes(search))),
+    );
+    return { items: filtered, nextCursor: null };
   },
   async sendAdminMessage(_projectId, userId, message) {
     const idempotencyKey = message.idempotencyKey ?? crypto.randomUUID();

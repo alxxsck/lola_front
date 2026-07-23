@@ -21,7 +21,7 @@ import {
   eventsList,
   scenarioRunsList,
   scenarioRunsPage,
-  auditList,
+  projectAuditEventsList,
   adminMessagingSend,
   presenceList,
   adminConversationsList,
@@ -48,7 +48,7 @@ import {
   toCreateUiElementDto,
   toUpdateProjectSettingsDto,
   toUpdateUiElementDto,
-  mapAuditLog,
+  mapAuditEvent,
   mapEventLog,
   mapScenarioRun,
   mapScenario,
@@ -70,7 +70,7 @@ const capabilities: RepositoryCapabilities = {
   conversations: true,
   manualActions: false,
   operations: true,
-  auditLogs: true,
+  auditEvents: true,
   adminMessaging: true,
   userAttributes: false,
 }
@@ -314,8 +314,12 @@ export const apiRepository: LolaRepository = {
     return platformOperationsUpdateActivitySettings(projectId, value)
   },
 
-  async getAuditLogs(projectId) {
-    return (await auditList(projectId)).map(mapAuditLog)
+  async getAuditEventsPage(projectId, request) {
+    const response = await projectAuditEventsList(projectId, request)
+    return {
+      items: response.items.map(mapAuditEvent),
+      nextCursor: response.nextCursor ?? null,
+    }
   },
 
   async sendAdminMessage(projectId, userId, message) {

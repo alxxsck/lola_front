@@ -8,7 +8,7 @@ import type {
   UiElementResponseDto,
   UpdateProjectSettingsDto,
   UpdateUiElementDto,
-  AuditLogResponseDto,
+  ProjectAuditEventResponseDto,
   EventLogResponseDto,
   ScenarioRunResponseDto,
   ActiveUserResponseDto,
@@ -20,7 +20,7 @@ import type {
 } from "@/shared/api/generated/models";
 import type {
   ActiveSession,
-  AuditLog,
+  AuditEvent,
   Conversation,
   ConversationAISuspensionDetail,
   ConversationAISuspensionSummary,
@@ -420,20 +420,36 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
   };
 }
 
-export function mapAuditLog(dto: AuditLogResponseDto): AuditLog {
+export function mapAuditEvent(dto: ProjectAuditEventResponseDto): AuditEvent {
+  const metadata = record(dto.metadata);
+  const details = record(metadata.details);
+
   return {
     id: dto.id,
     actor: {
-      id: dto.actorCmsUser?.id ?? dto.actorCmsUserId ?? undefined,
-      email: dto.actorCmsUser?.email,
-      name: dto.actorCmsUser?.displayName ?? undefined,
+      id: dto.actor.id,
+      type: dto.actor.type,
+      email: dto.actor.email,
+      name: dto.actor.displayName,
     },
-    action: dto.action,
-    status: dto.status,
-    resourceType: dto.resourceType ?? undefined,
-    resourceId: dto.resourceId ?? undefined,
+    target: dto.target,
+    eventType: dto.eventType,
+    eventVersion: dto.eventVersion,
+    outcome: dto.outcome,
+    operation: optionalString(details.operation),
+    resourceType: optionalString(details.resourceType),
+    resourceId: optionalString(details.resourceId),
+    requiredPermissionCode: dto.requiredPermissionCode ?? undefined,
+    reasonCode: dto.reasonCode ?? undefined,
+    auditReason: dto.auditReason ?? undefined,
     requestId: dto.requestId ?? undefined,
-    metadata: record(dto.metadata),
-    createdAt: dto.createdAt,
+    correlationId: dto.correlationId ?? undefined,
+    ipAddress: dto.ipAddress ?? undefined,
+    userAgent: dto.userAgent ?? undefined,
+    authorizationEvidence: record(dto.authorizationEvidence),
+    before: dto.before == null ? undefined : record(dto.before),
+    after: dto.after == null ? undefined : record(dto.after),
+    metadata,
+    occurredAt: dto.occurredAt,
   };
 }

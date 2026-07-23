@@ -582,7 +582,13 @@ const requiredOperations = new Map([
       response: "SendAdminMessageResponseDto",
     },
   ],
-  ["Audit_list", { label: "audit logs", response: "AuditLogResponseDto" }],
+  [
+    "ProjectAuditEvents_list",
+    {
+      label: "project audit events",
+      response: "ProjectAuditEventPageResponseDto",
+    },
+  ],
   [
     "Presence_list",
     { label: "active sessions", response: "ActiveUserResponseDto" },

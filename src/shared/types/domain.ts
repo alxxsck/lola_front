@@ -493,16 +493,36 @@ export interface ScenarioRun {
   steps: ScenarioRunStep[];
 }
 
-export interface AuditLog {
+export interface AuditEvent {
   id: string;
-  actor: { id?: string; email?: string; name?: string };
-  action: string;
-  status: "SUCCEEDED" | "FAILED";
+  actor: {
+    type: "CMS_USER" | "SYSTEM" | "BREAK_GLASS";
+    id: string;
+    email?: string;
+    name?: string;
+  };
+  target: {
+    kind: string;
+    id: string;
+  };
+  eventType: string;
+  eventVersion: number;
+  outcome: "SUCCESS" | "DENIED" | "FAILED";
+  operation?: string;
   resourceType?: string;
   resourceId?: string;
+  requiredPermissionCode?: string;
+  reasonCode?: string;
+  auditReason?: string;
   requestId?: string;
+  correlationId?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  authorizationEvidence: Record<string, unknown>;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
   metadata: Record<string, unknown>;
-  createdAt: string;
+  occurredAt: string;
 }
 
 export type DirectAdminActionType =

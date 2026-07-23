@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type {
-  AuditLogResponseDto,
   EndUserResponseDto,
   EventCatalogDefinitionResponseDto,
   EventLogResponseDto,
   ProjectResponseDto,
   ScenarioRunResponseDto,
   UiElementResponseDto,
+  ProjectAuditEventResponseDto,
 } from "@/shared/api/generated/models";
 import {
   mapActiveSessions,
-  mapAuditLog,
+  mapAuditEvent,
   mapConversation,
   mapConversationMessage,
   mapEndUser,
@@ -288,19 +288,38 @@ describe("repository domain mappers", () => {
         },
       ],
     } as ScenarioRunResponseDto);
-    const audit = mapAuditLog({
+    const audit = mapAuditEvent({
       id: "audit-1",
-      action: "scenario.update",
-      status: "SUCCEEDED",
-      metadata: {},
-      createdAt: "now",
-      actorCmsUserId: "admin-1",
-      actorCmsUser: {
+      eventType: "iam.project_resource.changed",
+      eventVersion: 1,
+      occurredAt: "2026-07-23T10:00:00.000Z",
+      actor: {
+        type: "CMS_USER",
         id: "admin-1",
         email: "owner@lola.dev",
         displayName: "Owner",
       },
-    } as AuditLogResponseDto);
+      target: { kind: "PROJECT", id: "project-1" },
+      requiredPermissionCode: "project.scenarios.write",
+      outcome: "SUCCESS",
+      authorizationEvidence: {},
+      reasonCode: null,
+      auditReason: "Save onboarding draft",
+      requestId: "request-1",
+      correlationId: "cms.save-draft",
+      ipAddress: "203.0.113.10",
+      userAgent: "CMS test",
+      before: null,
+      after: null,
+      metadata: {
+        source: "scenario-authoring",
+        details: {
+          resourceType: "SCENARIO",
+          resourceId: "scenario-1",
+          operation: "SAVE_DRAFT",
+        },
+      },
+    } as ProjectAuditEventResponseDto);
 
     expect(event).toMatchObject({
       eventCode: "deposit",
@@ -313,8 +332,18 @@ describe("repository domain mappers", () => {
     });
     expect(audit.actor).toEqual({
       id: "admin-1",
+      type: "CMS_USER",
       email: "owner@lola.dev",
       name: "Owner",
+    });
+    expect(audit).toMatchObject({
+      eventType: "iam.project_resource.changed",
+      operation: "SAVE_DRAFT",
+      outcome: "SUCCESS",
+      resourceType: "SCENARIO",
+      resourceId: "scenario-1",
+      target: { kind: "PROJECT", id: "project-1" },
+      occurredAt: "2026-07-23T10:00:00.000Z",
     });
   });
 

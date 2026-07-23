@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   auth: null as unknown as { project?: { id: string } },
   getEventLogs: vi.fn(),
   getScenarioRunsPage: vi.fn(),
-  getAuditLogs: vi.fn(),
+  getAuditEventsPage: vi.fn(),
   routeQuery: {} as Record<string, string>,
 }));
 
@@ -40,7 +40,7 @@ vi.mock("@/shared/api/repository", () => ({
     mode: "api",
     getEventLogs: mocks.getEventLogs,
     getScenarioRunsPage: mocks.getScenarioRunsPage,
-    getAuditLogs: mocks.getAuditLogs,
+    getAuditEventsPage: mocks.getAuditEventsPage,
   },
 }));
 
@@ -63,7 +63,10 @@ describe("OperationsPage event pagination", () => {
       items: [],
       nextCursor: null,
     });
-    mocks.getAuditLogs.mockResolvedValue([]);
+    mocks.getAuditEventsPage.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    });
   });
 
   it("loads numbered event pages and exposes the server total to the paginator", async () => {
@@ -291,12 +294,118 @@ describe("OperationsPage event pagination", () => {
     });
   });
 
+  it("filters, paginates and opens canonical audit-event details", async () => {
+    vi.useFakeTimers();
+    const audit = {
+      id: "audit-1",
+      eventType: "iam.project_resource.changed",
+      eventVersion: 1,
+      operation: "SAVE_DRAFT",
+      actor: {
+        id: "admin-1",
+        type: "CMS_USER",
+        name: "Owner",
+        email: "owner@lola.dev",
+      },
+      target: { kind: "PROJECT", id: "project-1" },
+      resourceType: "SCENARIO",
+      resourceId: "scenario-1",
+      outcome: "SUCCESS",
+      requiredPermissionCode: "project.scenarios.write",
+      auditReason: "Save onboarding draft",
+      requestId: "request-1",
+      authorizationEvidence: { roleKeys: ["owner"] },
+      metadata: { source: "scenario-authoring" },
+      occurredAt: "2026-07-23T10:00:00.000Z",
+    };
+    mocks.getAuditEventsPage
+      .mockResolvedValueOnce({
+        items: [audit],
+        nextCursor: "opaque-audit-cursor",
+      })
+      .mockResolvedValueOnce({
+        items: [audit],
+        nextCursor: "opaque-audit-cursor",
+      })
+      .mockResolvedValueOnce({
+        items: [{ ...audit, id: "audit-2" }],
+        nextCursor: null,
+      });
+    const wrapper = shallowMount(OperationsPage, {
+      global: {
+        stubs: {
+          Drawer: {
+            props: ["visible"],
+            template:
+              '<aside v-if="visible"><slot name="header" /><slot /></aside>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper.findAll(".section-tabs button")[2]!.trigger("click");
+
+    const search = wrapper.findComponent("input-text-stub") as unknown as {
+      vm: { $emit: (event: string, value: unknown) => void };
+    };
+    const status = wrapper.findComponent("select-stub") as unknown as {
+      vm: { $emit: (event: string, value: unknown) => void };
+    };
+    search.vm.$emit("update:modelValue", " draft ");
+    status.vm.$emit("update:modelValue", "SUCCESS");
+    await vi.advanceTimersByTimeAsync(300);
+    await flushPromises();
+
+    expect(mocks.getAuditEventsPage).toHaveBeenLastCalledWith("project-1", {
+      limit: 50,
+      search: "draft",
+      outcome: "SUCCESS",
+    });
+    const table = wrapper.findComponent("data-table-stub") as unknown as {
+      vm: {
+        $attrs: { value: Array<{ id: string }> };
+        $emit: (event: string, value: unknown) => void;
+      };
+    };
+    expect(table.vm.$attrs.value.map((item) => item.id)).toEqual(["audit-1"]);
+    table.vm.$emit("row-click", { data: audit });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain("project.scenarios.write");
+    expect(wrapper.text()).toContain("Save onboarding draft");
+    expect(wrapper.text()).toContain("request-1");
+
+    await wrapper
+      .find('button-stub[label="Загрузить ещё событий аудита"]')
+      .trigger("click");
+    await flushPromises();
+    expect(mocks.getAuditEventsPage).toHaveBeenLastCalledWith("project-1", {
+      limit: 50,
+      search: "draft",
+      outcome: "SUCCESS",
+      cursor: "opaque-audit-cursor",
+    });
+    expect(table.vm.$attrs.value.map((item) => item.id)).toEqual([
+      "audit-1",
+      "audit-2",
+    ]);
+
+    await wrapper.findAll(".section-tabs button")[1]!.trigger("click");
+    await wrapper.findAll(".section-tabs button")[2]!.trigger("click");
+    await vi.advanceTimersByTimeAsync(0);
+    await flushPromises();
+    expect(mocks.getAuditEventsPage).toHaveBeenLastCalledWith("project-1", {
+      limit: 50,
+    });
+    vi.useRealTimers();
+  });
+
   it("keeps the newest Runs and Audit snapshot when a slower reload finishes last", async () => {
     const oldEvents =
       deferred<Awaited<ReturnType<typeof mocks.getEventLogs>>>();
     const oldRuns =
       deferred<Awaited<ReturnType<typeof mocks.getScenarioRunsPage>>>();
-    const oldAudit = deferred<Awaited<ReturnType<typeof mocks.getAuditLogs>>>();
+    const oldAudit =
+      deferred<Awaited<ReturnType<typeof mocks.getAuditEventsPage>>>();
     const run = (id: string) => ({
       id,
       scenarioId: "scenario-1",
@@ -326,19 +435,32 @@ describe("OperationsPage event pagination", () => {
     mocks.getScenarioRunsPage
       .mockReturnValueOnce(oldRuns.promise)
       .mockResolvedValueOnce({ items: [run("run-new")], nextCursor: null });
-    mocks.getAuditLogs
+    mocks.getAuditEventsPage
       .mockReturnValueOnce(oldAudit.promise)
-      .mockResolvedValueOnce([
-        {
-          id: "audit-new",
-          action: "UPDATE",
-          actor: { name: "Новый", email: "new@example.com" },
-          resourceType: "scenario",
-          resourceId: "scenario-1",
-          status: "SUCCEEDED",
-          createdAt: "2026-07-18T10:00:00.000Z",
-        },
-      ]);
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "audit-new",
+            eventType: "iam.project_resource.changed",
+            eventVersion: 1,
+            operation: "UPDATE",
+            actor: {
+              id: "admin-new",
+              type: "CMS_USER",
+              name: "Новый",
+              email: "new@example.com",
+            },
+            target: { kind: "PROJECT", id: "project-1" },
+            resourceType: "SCENARIO",
+            resourceId: "scenario-1",
+            outcome: "SUCCESS",
+            authorizationEvidence: {},
+            metadata: {},
+            occurredAt: "2026-07-18T10:00:00.000Z",
+          },
+        ],
+        nextCursor: null,
+      });
 
     const wrapper = shallowMount(OperationsPage);
     await Promise.resolve();
@@ -357,17 +479,30 @@ describe("OperationsPage event pagination", () => {
       },
     });
     oldRuns.resolve({ items: [run("run-old")], nextCursor: "stale-cursor" });
-    oldAudit.resolve([
-      {
-        id: "audit-old",
-        action: "UPDATE",
-        actor: { name: "Старый", email: "old@example.com" },
-        resourceType: "scenario",
-        resourceId: "scenario-1",
-        status: "SUCCEEDED",
-        createdAt: "2026-07-18T09:00:00.000Z",
-      },
-    ]);
+    oldAudit.resolve({
+      items: [
+        {
+          id: "audit-old",
+          eventType: "iam.project_resource.changed",
+          eventVersion: 1,
+          operation: "UPDATE",
+          actor: {
+            id: "admin-old",
+            type: "CMS_USER",
+            name: "Старый",
+            email: "old@example.com",
+          },
+          target: { kind: "PROJECT", id: "project-1" },
+          resourceType: "SCENARIO",
+          resourceId: "scenario-1",
+          outcome: "SUCCESS",
+          authorizationEvidence: {},
+          metadata: {},
+          occurredAt: "2026-07-18T09:00:00.000Z",
+        },
+      ],
+      nextCursor: null,
+    });
     await flushPromises();
 
     await wrapper.findAll(".section-tabs button")[1]!.trigger("click");

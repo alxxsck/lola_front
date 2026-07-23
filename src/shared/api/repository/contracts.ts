@@ -11,7 +11,7 @@ import type {
   ManualAction,
   AdminMessageRequest,
   AdminMessageResult,
-  AuditLog,
+  AuditEvent,
   Project,
   Scenario,
   ScenarioRun,
@@ -48,7 +48,7 @@ export interface RepositoryCapabilities {
   conversations: boolean
   manualActions: boolean
   operations: boolean
-  auditLogs: boolean
+  auditEvents: boolean
   adminMessaging: boolean
   userAttributes: boolean
 }
@@ -113,6 +113,13 @@ export interface Page<T> {
 export interface EventLogsPageRequest extends PageRequest {
   search?: string
   status?: EventLogStatus
+}
+
+export interface AuditEventPageRequest {
+  cursor?: string
+  limit?: number
+  search?: string
+  outcome?: AuditEvent['outcome']
 }
 
 export interface UserAttributeDefinitionInput {
@@ -185,7 +192,7 @@ export interface LolaRepository {
   getScenarioRunsPage(projectId: string, request?: CursorPageRequest): Promise<CursorPage<ScenarioRun>>
   getActivitySettings(projectId: string): Promise<ActivitySettings>
   updateActivitySettings(projectId: string, value: UpdateActivitySettings): Promise<ActivitySettings>
-  getAuditLogs(projectId: string): Promise<AuditLog[]>
+  getAuditEventsPage(projectId: string, request?: AuditEventPageRequest): Promise<CursorPage<AuditEvent>>
   sendAdminMessage(projectId: string, userId: string, message: AdminMessageRequest): Promise<AdminMessageResult>
   getStats(projectId: string, effectivePermissionCodes?: readonly string[]): Promise<DashboardStats>
 }

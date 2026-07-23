@@ -42,7 +42,6 @@ import type {
   AttributeContractWorkspaceResponseDto,
   AttributeDefinitionImpactResponseDto,
   AudienceEvaluationResponseDto,
-  AuditLogResponseDto,
   BreakGlassLoginDto,
   BreakGlassLoginResponseDto,
   ChatListConversationMessagesParams,
@@ -176,6 +175,8 @@ import type {
   ProfileProjectionResponseDto,
   ProfileSyncResponseDto,
   ProjectActionResponseDto,
+  ProjectAuditEventPageResponseDto,
+  ProjectAuditEventsListParams,
   ProjectMembershipListParams,
   ProjectMembershipListResponseDto,
   ProjectMembershipResponseDto,
@@ -862,12 +863,17 @@ export const attributeDefinitionImpact = (
   );
 };
 
-export const auditList = (
+export const projectAuditEventsList = (
   projectId: string,
-  options?: SecondParameter<typeof request<AuditLogResponseDto[]>>,
+  params?: ProjectAuditEventsListParams,
+  options?: SecondParameter<typeof request<ProjectAuditEventPageResponseDto>>,
 ) => {
-  return request<AuditLogResponseDto[]>(
-    { url: `/api/v1/admin/projects/${projectId}/audit-logs`, method: "GET" },
+  return request<ProjectAuditEventPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/audit-events`,
+      method: "GET",
+      params,
+    },
     options,
   );
 };
@@ -3573,8 +3579,8 @@ export type AttributeContractWorkspaceResult = NonNullable<
 export type AttributeDefinitionImpactResult = NonNullable<
   Awaited<ReturnType<typeof attributeDefinitionImpact>>
 >;
-export type AuditListResult = NonNullable<
-  Awaited<ReturnType<typeof auditList>>
+export type ProjectAuditEventsListResult = NonNullable<
+  Awaited<ReturnType<typeof projectAuditEventsList>>
 >;
 export type AdminEndUserProfilesListResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesList>>

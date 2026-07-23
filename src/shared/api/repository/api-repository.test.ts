@@ -26,6 +26,7 @@ import {
   scenarioRunsPage,
   platformOperationsActivitySettings,
   platformOperationsUpdateActivitySettings,
+  projectAuditEventsList,
   conversationAISuspensionsGet,
   conversationAISuspensionsStart,
   conversationAISuspensionsExtend,
@@ -58,7 +59,6 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   platformOperationsUsers: vi.fn(),
   platformOperationsUsersPage: vi.fn(),
   adminMessagingSend: vi.fn(),
-  auditList: vi.fn(),
   eventsList: vi.fn(),
   scenarioRunsList: vi.fn(),
   presenceList: vi.fn(),
@@ -69,6 +69,7 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   scenarioRunsPage: vi.fn(),
   platformOperationsActivitySettings: vi.fn(),
   platformOperationsUpdateActivitySettings: vi.fn(),
+  projectAuditEventsList: vi.fn(),
   conversationAISuspensionsGet: vi.fn(),
   conversationAISuspensionsStart: vi.fn(),
   conversationAISuspensionsExtend: vi.fn(),
@@ -180,6 +181,69 @@ describe("api repository adapter", () => {
         visitInactivitySeconds: 1800,
       }),
     );
+  });
+
+  it("returns canonical audit-event cursor pages with server-side filters", async () => {
+    vi.mocked(projectAuditEventsList).mockResolvedValue({
+      items: [
+        {
+          id: "audit-1",
+          eventType: "iam.project_resource.changed",
+          eventVersion: 1,
+          occurredAt: "2026-07-23T10:00:00.000Z",
+          actor: {
+            type: "CMS_USER",
+            id: "admin-1",
+            email: "owner@lola.dev",
+            displayName: "Owner",
+          },
+          target: { kind: "PROJECT", id: "project-1" },
+          requiredPermissionCode: "project.scenarios.write",
+          outcome: "SUCCESS",
+          authorizationEvidence: {},
+          reasonCode: null,
+          auditReason: "Save draft",
+          requestId: "request-1",
+          correlationId: null,
+          ipAddress: null,
+          userAgent: null,
+          before: null,
+          after: null,
+          metadata: {
+            details: {
+              operation: "SAVE_DRAFT",
+              resourceType: "SCENARIO",
+              resourceId: "scenario-1",
+            },
+          },
+        },
+      ],
+      nextCursor: "audit-1",
+    });
+
+    await expect(
+      apiRepository.getAuditEventsPage("project-1", {
+        cursor: "audit-2",
+        limit: 25,
+        search: "draft",
+        outcome: "SUCCESS",
+      }),
+    ).resolves.toMatchObject({
+      items: [
+        {
+          id: "audit-1",
+          operation: "SAVE_DRAFT",
+          resourceType: "SCENARIO",
+        },
+      ],
+      nextCursor: "audit-1",
+    });
+    expect(projectAuditEventsList).toHaveBeenCalledWith("project-1", {
+      cursor: "audit-2",
+      limit: 25,
+      search: "draft",
+      outcome: "SUCCESS",
+    });
   });
 
   it("sends only backend-editable project settings", async () => {
