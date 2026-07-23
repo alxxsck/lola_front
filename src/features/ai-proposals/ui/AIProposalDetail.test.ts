@@ -51,4 +51,48 @@ describe("AIProposalDetail", () => {
     expect(wrapper.find("script").exists()).toBe(false);
     expect(wrapper.text()).toContain("<script>bad()</script>");
   });
+
+  it("shows typed AI Review findings, limitations, and Event links", () => {
+    const wrapper = mount(AIProposalDetail, {
+      props: {
+        proposal: {
+          ...proposal,
+          kind: "INSIGHT",
+          sourceType: "BACKGROUND_AI",
+          title: "AI Review",
+          content: {
+            findings: [
+              {
+                title: "Депозит отклонён",
+                detail: "Три попытки завершились ошибкой.",
+                eventIds: ["10000000-0000-4000-8000-000000000001"],
+              },
+            ],
+            limitations: ["Данных о провайдере платежей нет."],
+          },
+          evidence: [],
+        },
+        loading: false,
+        deciding: false,
+        canDecide: true,
+      },
+      global: {
+        stubs: {
+          Button: true,
+          Message: { template: "<div><slot /></div>" },
+          Skeleton: { template: "<div />" },
+          RouterLink: {
+            props: ["to"],
+            template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
+          },
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain("Депозит отклонён");
+    expect(wrapper.text()).toContain("Три попытки завершились ошибкой.");
+    expect(wrapper.text()).toContain("Данных о провайдере платежей нет.");
+    expect(wrapper.html()).toContain("10000000-0000-4000-8000-000000000001");
+    expect(wrapper.html()).toContain("event-logs");
+  });
 });

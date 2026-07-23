@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
@@ -41,6 +41,8 @@ const form = reactive({
 });
 let pollTimer: ReturnType<typeof setTimeout> | undefined;
 let pollFailures = 0;
+let estimateGeneration = 0;
+let loadGeneration = 0;
 
 const scopeReady = computed(
   () => Boolean(form.localDate) && form.eventCodes.length > 0,
@@ -60,9 +62,26 @@ watch(visible, (isVisible) => {
   else stopPolling();
 });
 watch(
+  () => [props.projectId, props.endUserId],
+  () => {
+    estimateGeneration += 1;
+    estimate.value = null;
+    run.value = null;
+    confirmedExpensive.value = false;
+    submissionKey.value = "";
+    estimating.value = false;
+    starting.value = false;
+    pollFailures = 0;
+    stopPolling();
+    if (visible.value) void load();
+  },
+);
+watch(
   () => [form.localDate, form.eventCodes, form.instruction],
   () => {
+    estimateGeneration += 1;
     estimate.value = null;
+    estimating.value = false;
     confirmedExpensive.value = false;
     submissionKey.value = "";
     pollFailures = 0;
@@ -72,6 +91,8 @@ watch(
 onBeforeUnmount(stopPolling);
 
 async function load() {
+  const generation = ++loadGeneration;
+  const projectId = props.projectId;
   loading.value = true;
   error.value = "";
   run.value = null;
@@ -79,9 +100,10 @@ async function load() {
   pollFailures = 0;
   try {
     const [nextSettings, definitions] = await Promise.all([
-      aiReviewRepository.getSettings(props.projectId),
-      eventCatalogRepository.listDefinitions(props.projectId, "ACTIVE"),
+      aiReviewRepository.getSettings(projectId),
+      eventCatalogRepository.listDefinitions(projectId, "ACTIVE"),
     ]);
+    if (generation !== loadGeneration || projectId !== props.projectId) return;
     settings.value = nextSettings;
     options.value = definitions
       .filter((item) => item.policy.enabled)
@@ -90,10 +112,11 @@ async function load() {
         value: item.code,
       }));
   } catch (cause) {
+    if (generation !== loadGeneration) return;
     error.value =
       cause instanceof Error ? cause.message : "Не удалось открыть AI Review";
   } finally {
-    loading.value = false;
+    if (generation === loadGeneration) loading.value = false;
   }
 }
 
@@ -110,40 +133,49 @@ function scope() {
 
 async function calculateEstimate() {
   if (!scopeReady.value) return;
+  await nextTick();
+  const generation = ++estimateGeneration;
   estimating.value = true;
   error.value = "";
   run.value = null;
   try {
-    estimate.value = await aiReviewRepository.estimate(
+    const nextEstimate = await aiReviewRepository.estimate(
       props.projectId,
       scope(),
     );
+    if (generation !== estimateGeneration) return;
+    estimate.value = nextEstimate;
   } catch (cause) {
+    if (generation !== estimateGeneration) return;
     error.value =
       cause instanceof Error ? cause.message : "Не удалось оценить запрос";
   } finally {
-    estimating.value = false;
+    if (generation === estimateGeneration) estimating.value = false;
   }
 }
 
 async function start() {
   if (!canStart.value || starting.value) return;
+  const generation = estimateGeneration;
   starting.value = true;
   error.value = "";
   try {
     submissionKey.value ||= crypto.randomUUID();
-    run.value = await aiReviewRepository.start(props.projectId, {
+    const nextRun = await aiReviewRepository.start(props.projectId, {
       ...scope(),
       idempotencyKey: submissionKey.value,
       confirmedExpensive: confirmedExpensive.value,
     });
+    if (generation !== estimateGeneration) return;
+    run.value = nextRun;
     if (run.value.status === "SUCCEEDED") await openProposal(run.value);
     else if (running.value) schedulePoll();
   } catch (cause) {
+    if (generation !== estimateGeneration) return;
     error.value =
       cause instanceof Error ? cause.message : "Не удалось запустить AI Review";
   } finally {
-    starting.value = false;
+    if (generation === estimateGeneration) starting.value = false;
   }
 }
 
@@ -155,13 +187,28 @@ function schedulePoll() {
 
 async function poll() {
   if (!visible.value || !run.value) return;
+  const projectId = props.projectId;
+  const runId = run.value.id;
   try {
-    run.value = await aiReviewRepository.get(props.projectId, run.value.id);
+    const nextRun = await aiReviewRepository.get(projectId, runId);
+    if (
+      projectId !== props.projectId ||
+      run.value?.id !== runId ||
+      !visible.value
+    )
+      return;
+    run.value = nextRun;
     error.value = "";
     pollFailures = 0;
     if (run.value.status === "SUCCEEDED") await openProposal(run.value);
     else if (running.value) schedulePoll();
   } catch (cause) {
+    if (
+      projectId !== props.projectId ||
+      run.value?.id !== runId ||
+      !visible.value
+    )
+      return;
     error.value =
       cause instanceof Error ? cause.message : "Не удалось обновить статус";
     pollFailures += 1;
@@ -288,7 +335,7 @@ function formatRange(value: string) {
               {{ formatBytes(estimate.redactedBytes) }}</strong
             >
             <span
-              >До
+              >Консервативная оценка:
               {{ estimate.estimatedInputTokens.toLocaleString("ru-RU") }}
               входных токенов</span
             >

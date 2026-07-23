@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-Operators can inspect Event Logs manually but do not have a bounded UI for requesting an
+Operators can inspect Events manually but do not have a bounded UI for requesting an
 evidence-linked Lola proposal about selected Events. A free-form prompt box would hide scope and
 cost, while a synchronous action would provide poor progress and retry feedback.
 
@@ -83,7 +83,7 @@ created AI Proposal on success.
   navigation.
 - Test Project settings read-only and editable states.
 - Test User Workspace integration and permission gating through visible behavior.
-- Follow existing User Workspace, Event Logs, AI Proposal, Activity Settings, and repository test
+- Follow existing User Workspace, Events, AI Proposal, Activity Settings, and repository test
   patterns.
 
 ## Out of Scope

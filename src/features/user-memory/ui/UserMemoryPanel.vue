@@ -17,6 +17,8 @@ const mutating = ref(false);
 const error = ref("");
 const facts = ref<UserMemoryFact[]>([]);
 const clearVisible = ref(false);
+let loadGeneration = 0;
+let mutationGeneration = 0;
 
 const labels: Record<UserMemoryCategory, string> = {
   PREFERENCE: "Предпочтение",
@@ -27,53 +29,81 @@ const labels: Record<UserMemoryCategory, string> = {
 };
 
 onMounted(load);
-watch(() => props.endUserId, load);
+watch(() => [props.projectId, props.endUserId], load);
 
 async function load() {
+  const generation = ++loadGeneration;
+  mutationGeneration += 1;
+  const projectId = props.projectId;
+  const endUserId = props.endUserId;
+  mutating.value = false;
+  clearVisible.value = false;
   loading.value = true;
   error.value = "";
   try {
-    facts.value = (
-      await userMemoryRepository.listFacts(props.projectId, props.endUserId)
-    ).items;
+    const response = await userMemoryRepository.listFacts(projectId, endUserId);
+    if (
+      generation !== loadGeneration ||
+      projectId !== props.projectId ||
+      endUserId !== props.endUserId
+    )
+      return;
+    facts.value = response.items;
   } catch (cause) {
+    if (generation !== loadGeneration) return;
     error.value =
       cause instanceof Error ? cause.message : "Не удалось загрузить память";
   } finally {
-    loading.value = false;
+    if (generation === loadGeneration) loading.value = false;
   }
 }
 
 async function remove(factId: string) {
   if (!props.editable || mutating.value) return;
+  const generation = ++mutationGeneration;
+  const projectId = props.projectId;
+  const endUserId = props.endUserId;
   mutating.value = true;
   try {
-    await userMemoryRepository.deleteFact(
-      props.projectId,
-      props.endUserId,
-      factId,
-    );
+    await userMemoryRepository.deleteFact(projectId, endUserId, factId);
+    if (
+      generation !== mutationGeneration ||
+      projectId !== props.projectId ||
+      endUserId !== props.endUserId
+    )
+      return;
     facts.value = facts.value.filter((fact) => fact.id !== factId);
   } catch (cause) {
+    if (generation !== mutationGeneration) return;
     error.value =
       cause instanceof Error ? cause.message : "Не удалось удалить факт";
   } finally {
-    mutating.value = false;
+    if (generation === mutationGeneration) mutating.value = false;
   }
 }
 
 async function clear() {
   if (!props.editable || mutating.value) return;
+  const generation = ++mutationGeneration;
+  const projectId = props.projectId;
+  const endUserId = props.endUserId;
   mutating.value = true;
   try {
-    await userMemoryRepository.clearFacts(props.projectId, props.endUserId);
+    await userMemoryRepository.clearFacts(projectId, endUserId);
+    if (
+      generation !== mutationGeneration ||
+      projectId !== props.projectId ||
+      endUserId !== props.endUserId
+    )
+      return;
     facts.value = [];
     clearVisible.value = false;
   } catch (cause) {
+    if (generation !== mutationGeneration) return;
     error.value =
       cause instanceof Error ? cause.message : "Не удалось очистить память";
   } finally {
-    mutating.value = false;
+    if (generation === mutationGeneration) mutating.value = false;
   }
 }
 
