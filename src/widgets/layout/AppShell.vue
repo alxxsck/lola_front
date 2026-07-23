@@ -29,6 +29,26 @@ const proposals = useAIProposalsStore();
 const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
+const canReadProjectSettings = computed(() =>
+  PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS.some((permission) =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      permission,
+    ),
+  ),
+);
+const canReadMemberships = computed(() =>
+  canReadProjectMemberships(
+    auth.user?.platformPermissionCodes ?? [],
+    auth.project?.effectivePermissionCodes ?? [],
+  ),
+);
+const canReadRoles = computed(() =>
+  canReadProjectRoles(
+    auth.user?.platformPermissionCodes ?? [],
+    auth.project?.effectivePermissionCodes ?? [],
+  ),
+);
 
 const navigation = computed(() =>
   [
@@ -44,12 +64,13 @@ const navigation = computed(() =>
       icon: "pi pi-sliders-h",
       to: "/project",
       project: true,
-      projectPermissionsAny: [...PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS],
+      projectSectionRoot: true,
     },
     {
       label: "Администраторы",
       icon: "pi pi-user-edit",
       to: "/project/memberships",
+      nested: true,
       project: true,
       projectMemberships: true,
     },
@@ -57,6 +78,7 @@ const navigation = computed(() =>
       label: "Роли",
       icon: "pi pi-shield",
       to: "/project/roles",
+      nested: true,
       project: true,
       projectRoles: true,
     },
@@ -159,6 +181,10 @@ const navigation = computed(() =>
   ].filter(
     (item) =>
       (!item.project || Boolean(auth.project)) &&
+      (!item.projectSectionRoot ||
+        canReadProjectSettings.value ||
+        canReadMemberships.value ||
+        canReadRoles.value) &&
       (!item.platformPermission ||
         auth.user?.platformPermissionCodes?.includes(
           item.platformPermission,
@@ -175,18 +201,16 @@ const navigation = computed(() =>
             permission as Parameters<typeof hasProjectPermission>[1],
           ),
         )) &&
-      (!item.projectMemberships ||
-        canReadProjectMemberships(
-          auth.user?.platformPermissionCodes ?? [],
-          auth.project?.effectivePermissionCodes ?? [],
-        )) &&
-      (!item.projectRoles ||
-        canReadProjectRoles(
-          auth.user?.platformPermissionCodes ?? [],
-          auth.project?.effectivePermissionCodes ?? [],
-        )),
+      (!item.projectMemberships || canReadMemberships.value) &&
+      (!item.projectRoles || canReadRoles.value),
   ),
 );
+
+function isNavigationItemActive(to: string): boolean {
+  return (
+    route.path === to || (to !== "/project" && route.path.startsWith(`${to}/`))
+  );
+}
 
 const profileItems = [
   { label: auth.user?.email, disabled: true },
@@ -280,27 +304,43 @@ onBeforeUnmount(() => {
 
       <div class="sidebar-scroll">
         <nav>
-          <RouterLink
-            v-for="item in navigation"
-            :key="item.to"
-            :to="item.to"
-            class="nav-item"
-            :class="{ active: route.path.startsWith(item.to) }"
-            @click="sidebarOpen = false"
-          >
-            <i
-              :class="item.icon"
-              :style="
-                item.live ? 'font-size:.55rem;color:var(--status-success)' : ''
-              "
-            />
-            <span>{{ item.label }}</span>
-            <AIProposalBadge
-              v-if="item.proposals"
-              :count="proposals.unreadCount"
-            />
-            <span v-if="item.live" class="live-pulse" />
-          </RouterLink>
+          <template v-for="item in navigation" :key="item.to">
+            <div
+              v-if="item.projectSectionRoot && !canReadProjectSettings"
+              class="nav-item nav-item--section"
+              role="heading"
+              aria-level="2"
+              aria-label="Проект"
+            >
+              <i :class="item.icon" />
+              <span>{{ item.label }}</span>
+            </div>
+            <RouterLink
+              v-else
+              :to="item.to"
+              class="nav-item"
+              :class="{
+                active: isNavigationItemActive(item.to),
+                'nav-item--nested': item.nested,
+              }"
+              @click="sidebarOpen = false"
+            >
+              <i
+                :class="item.icon"
+                :style="
+                  item.live
+                    ? 'font-size:.55rem;color:var(--status-success)'
+                    : ''
+                "
+              />
+              <span>{{ item.label }}</span>
+              <AIProposalBadge
+                v-if="item.proposals"
+                :count="proposals.unreadCount"
+              />
+              <span v-if="item.live" class="live-pulse" />
+            </RouterLink>
+          </template>
         </nav>
       </div>
 
@@ -501,9 +541,29 @@ nav {
   text-align: center;
   font-size: 0.9rem;
 }
+.nav-item--nested {
+  width: calc(100% - 22px);
+  margin-left: 22px;
+  padding: 8px 11px;
+  font-size: 0.82rem;
+}
+.nav-item--nested::after {
+  content: "";
+  position: absolute;
+  left: -10px;
+  width: 7px;
+  border-top: 1px solid var(--sidebar-border);
+}
+.nav-item--nested > i {
+  font-size: 0.82rem;
+}
 .nav-item:hover {
   background: var(--sidebar-surface-hover);
   color: var(--sidebar-text);
+}
+.nav-item--section:hover {
+  background: transparent;
+  color: var(--sidebar-text-muted);
 }
 .nav-item.active {
   background: var(--sidebar-active-background);
