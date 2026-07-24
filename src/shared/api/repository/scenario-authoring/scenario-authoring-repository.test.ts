@@ -248,31 +248,57 @@ describe("scenario authoring repository", () => {
   );
 
   it("routes scenario collection, metadata and archive through generated target operations", async () => {
-    const scenario = { id: "scenario-1", updatedAt: "2026-07-20T10:00:00.000Z" };
-    vi.mocked(scenarioAuthoringListScenarios).mockResolvedValue([scenario] as never);
-    vi.mocked(scenarioAuthoringUpdateScenarioMetadata).mockResolvedValue(scenario as never);
-    vi.mocked(scenarioAuthoringArchiveScenario).mockResolvedValue(scenario as never);
+    const scenario = {
+      id: "scenario-1",
+      updatedAt: "2026-07-20T10:00:00.000Z",
+    };
+    vi.mocked(scenarioAuthoringListScenarios).mockResolvedValue([
+      scenario,
+    ] as never);
+    vi.mocked(scenarioAuthoringUpdateScenarioMetadata).mockResolvedValue(
+      scenario as never,
+    );
+    vi.mocked(scenarioAuthoringArchiveScenario).mockResolvedValue(
+      scenario as never,
+    );
 
-    await expect(scenarioAuthoringRepository.listScenarios("project-1")).resolves.toEqual([scenario]);
-    await scenarioAuthoringRepository.updateScenarioMetadata("project-1", "scenario-1", {
-      status: "PAUSED",
-      expectedUpdatedAt: scenario.updatedAt,
-      reason: "Pause scenario from CMS",
-    });
-    await scenarioAuthoringRepository.archiveScenario("project-1", "scenario-1", {
-      expectedUpdatedAt: scenario.updatedAt,
-      reason: "Archive scenario from CMS",
-    });
+    await expect(
+      scenarioAuthoringRepository.listScenarios("project-1"),
+    ).resolves.toEqual([scenario]);
+    await scenarioAuthoringRepository.updateScenarioMetadata(
+      "project-1",
+      "scenario-1",
+      {
+        status: "PAUSED",
+        expectedUpdatedAt: scenario.updatedAt,
+        reason: "Pause scenario from CMS",
+      },
+    );
+    await scenarioAuthoringRepository.archiveScenario(
+      "project-1",
+      "scenario-1",
+      {
+        expectedUpdatedAt: scenario.updatedAt,
+        reason: "Archive scenario from CMS",
+      },
+    );
 
     expect(scenarioAuthoringUpdateScenarioMetadata).toHaveBeenCalledWith(
       "project-1",
       "scenario-1",
-      { status: "PAUSED", expectedUpdatedAt: scenario.updatedAt, reason: "Pause scenario from CMS" },
+      {
+        status: "PAUSED",
+        expectedUpdatedAt: scenario.updatedAt,
+        reason: "Pause scenario from CMS",
+      },
     );
     expect(scenarioAuthoringArchiveScenario).toHaveBeenCalledWith(
       "project-1",
       "scenario-1",
-      { expectedUpdatedAt: scenario.updatedAt, reason: "Archive scenario from CMS" },
+      {
+        expectedUpdatedAt: scenario.updatedAt,
+        reason: "Archive scenario from CMS",
+      },
     );
   });
 
@@ -721,6 +747,8 @@ describe("scenario authoring repository", () => {
           revisionNumber: 2,
           contentHash: "hash-2",
           catalogRevision: "catalog-revision-1",
+          importanceClass: "GENERAL" as const,
+          respectsQuietHours: false,
           publishedAt: "2026-07-18T00:00:00.000Z",
           publishedByAdminId: "admin-1",
           current: true,

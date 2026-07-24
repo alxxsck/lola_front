@@ -47,6 +47,7 @@ export const PROJECT_PERMISSION_CODES = [
   "project.scenarios.read",
   "project.scenarios.write",
   "project.scenarios.publish",
+  "project.scenarios.classify_security",
   "project.segments.read",
   "project.segments.write",
   "project.event_catalog.read",

@@ -16,6 +16,7 @@ import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
+import ToggleSwitch from "primevue/toggleswitch";
 import { Position, VueFlow, type Edge, type Node } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
@@ -82,6 +83,11 @@ import {
 } from "@/features/scenario-localization/ui";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
+import { scenarioAdmissionApi } from "@/features/scenario-admission/scenario-admission.api";
+import {
+  importanceClassOptions,
+  type ScenarioImportanceClass,
+} from "@/features/scenario-admission/scenario-admission.model";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import { repository } from "@/shared/api/repository";
 import type { UpdateScenarioMetadata } from "@/shared/api/repository/contracts";
@@ -98,6 +104,7 @@ import type {
   UiElement,
 } from "@/shared/types/domain";
 import type { ScenarioLocalizationPolicyDto } from "@/shared/api/generated/models";
+import type { ScenarioAdmissionSettingsResponseDto } from "@/shared/api/generated/models";
 import {
   createActionConfig,
   findScenarioActionCatalogItem,
@@ -129,6 +136,8 @@ interface ScenarioForm {
   status: ScenarioStatus;
   conversationPolicy: ConversationPolicy;
   priority: number;
+  importanceClass: ScenarioImportanceClass;
+  respectsQuietHours: boolean;
   cooldownSeconds?: number;
   maxRunsPerUser?: number;
   activeFrom?: string;
@@ -246,6 +255,9 @@ const desktopActionSearchInput = ref<HTMLInputElement | null>(null);
 const mobileActionSearchInput = ref<HTMLInputElement | null>(null);
 let actionViewReturnFocus: HTMLElement | null = null;
 const publishPending = ref(false);
+const admissionSettings = ref<ScenarioAdmissionSettingsResponseDto | null>(
+  null,
+);
 const codeTouched = ref(false);
 const initialSnapshot = ref("");
 let compactActionMedia: MediaQueryList | null = null;
@@ -257,6 +269,8 @@ const form = reactive<ScenarioForm>({
   eventDefinitionId: "",
   status: "DRAFT",
   priority: 0,
+  importanceClass: "GENERAL",
+  respectsQuietHours: false,
   conversationPolicy: "create_new",
   cooldownSeconds: undefined,
   maxRunsPerUser: undefined,
@@ -271,7 +285,9 @@ function localizedFieldReference(fieldPath: string) {
   if (!fieldPath.startsWith(prefix)) return null;
   const segments = fieldPath.slice(prefix.length).split(".");
   const nodeKey = segments.shift();
-  const action = form.actions.find((candidate) => candidate.nodeKey === nodeKey);
+  const action = form.actions.find(
+    (candidate) => candidate.nodeKey === nodeKey,
+  );
   if (!action || segments.length < 2) return null;
   let container: unknown = action;
   for (const segment of segments.slice(0, -1)) {
@@ -313,10 +329,16 @@ const translationController = createTranslationJobController({
     if (!reference) return "TARGET_CONFLICT";
     const current = localizedValue(
       reference.container[reference.key],
-      authoringContract.value?.localization?.defaultLocale ?? snapshot.sourceLocale,
+      authoringContract.value?.localization?.defaultLocale ??
+        snapshot.sourceLocale,
     );
-    const result = applyTranslationResult({ current, snapshot, translatedText: text });
-    if (result.outcome === "APPLIED") reference.container[reference.key] = result.value;
+    const result = applyTranslationResult({
+      current,
+      snapshot,
+      translatedText: text,
+    });
+    if (result.outcome === "APPLIED")
+      reference.container[reference.key] = result.value;
     return result.outcome;
   },
   state: (fieldPath, locale, state) => {
@@ -342,16 +364,22 @@ function requestTranslation(payload: { fieldPath: string; targets: string[] }) {
 }
 
 function retryTranslation(payload: { fieldPath: string; locale: string }) {
-  void translationController.retry(payload.fieldPath, payload.locale).catch(
-    (cause: unknown) => {
-      saveError.value = scenarioApiErrorMessage(cause, "Не удалось повторить перевод.");
-    },
-  );
+  void translationController
+    .retry(payload.fieldPath, payload.locale)
+    .catch((cause: unknown) => {
+      saveError.value = scenarioApiErrorMessage(
+        cause,
+        "Не удалось повторить перевод.",
+      );
+    });
 }
 
 function cancelTranslation(fieldPath: string) {
   void translationController.cancel(fieldPath).catch((cause: unknown) => {
-    saveError.value = scenarioApiErrorMessage(cause, "Не удалось отменить перевод.");
+    saveError.value = scenarioApiErrorMessage(
+      cause,
+      "Не удалось отменить перевод.",
+    );
   });
 }
 
@@ -381,7 +409,10 @@ const scenarioPickerActions = computed(() =>
   scenarioAvailableActions(actionCatalog.value),
 );
 const actionsError = computed(
-  () => actionsLoadError.value || actionCatalogProjection.value.error?.message || "",
+  () =>
+    actionsLoadError.value ||
+    actionCatalogProjection.value.error?.message ||
+    "",
 );
 const selectedAction = computed(
   () =>
@@ -484,7 +515,8 @@ const deliveryIsDirty = computed(
 const localizationIsDirty = computed(
   () =>
     Boolean(initialLocalizationSnapshot.value) &&
-    JSON.stringify(localizationPolicy.value) !== initialLocalizationSnapshot.value,
+    JSON.stringify(localizationPolicy.value) !==
+      initialLocalizationSnapshot.value,
 );
 const durableSourceIsDirty = computed(
   () =>
@@ -494,18 +526,34 @@ const durableSourceIsDirty = computed(
     deliveryIsDirty.value ||
     localizationIsDirty.value,
 );
-const canManage = computed(
-  () =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.scenarios.write",
-    ),
+const canManage = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.scenarios.write",
+  ),
 );
 const canPublishScenario = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
     "project.scenarios.publish",
   ),
+);
+const canClassifySecurity = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.scenarios.classify_security",
+  ),
+);
+const selectableImportanceClasses = computed(() =>
+  importanceClassOptions.filter(
+    (option) =>
+      option.value !== "SECURITY" ||
+      canClassifySecurity.value ||
+      form.importanceClass === "SECURITY",
+  ),
+);
+const usesGlobalFrequency = computed(
+  () => admissionSettings.value?.mode === "PROJECT_GLOBAL_V1",
 );
 const canEdit = computed(() => canManage.value && authoringEditable.value);
 const sourceSnapshotUnavailable = computed(
@@ -631,17 +679,17 @@ const stages = computed<
     detail: sourceSnapshotUnavailable.value
       ? "Исходные настройки недоступны"
       : audienceContext.value
-      ? (audienceSummary.value?.text ?? "Без ограничений")
-      : "Пока недоступна",
+        ? (audienceSummary.value?.text ?? "Без ограничений")
+        : "Пока недоступна",
     status: sourceSnapshotUnavailable.value
       ? "unavailable"
       : !audienceContext.value
-      ? "unavailable"
-      : audienceSummary.value?.status === "ready"
-        ? "valid"
-        : audienceSummary.value?.status === "empty"
-          ? "empty"
-          : "invalid",
+        ? "unavailable"
+        : audienceSummary.value?.status === "ready"
+          ? "valid"
+          : audienceSummary.value?.status === "empty"
+            ? "empty"
+            : "invalid",
   },
   {
     key: "eligibility",
@@ -676,8 +724,8 @@ const stages = computed<
     status: sourceSnapshotUnavailable.value
       ? "unavailable"
       : serializeDeliveryPolicy(deliveryPolicy.value).ok
-      ? "valid"
-      : "invalid",
+        ? "valid"
+        : "invalid",
   },
 ]);
 const eventOptions = computed(() =>
@@ -960,22 +1008,32 @@ async function load() {
         elements.value = value;
       }),
       canReadProjectActions.value
-        ? projectActionsStore.ensureLoaded(projectId).catch((cause: unknown) => {
-            actionsLoadError.value = scenarioApiErrorMessage(
-              cause,
-              "Не удалось загрузить настройки действий проекта",
-            );
-          })
+        ? projectActionsStore
+            .ensureLoaded(projectId)
+            .catch((cause: unknown) => {
+              actionsLoadError.value = scenarioApiErrorMessage(
+                cause,
+                "Не удалось загрузить настройки действий проекта",
+              );
+            })
         : Promise.resolve().then(() => {
             actionsLoadError.value =
               "У вас нет права читать Project Actions этого проекта.";
           }),
-      scenarioAuthoringRepository
-        .getContract(projectId)
-        .then(async (value) => {
-          authoringContract.value = value;
-          if (value.audience) await refreshAudienceSegments();
-        }),
+      scenarioAuthoringRepository.getContract(projectId).then(async (value) => {
+        authoringContract.value = value;
+        if (value.audience) await refreshAudienceSegments();
+      }),
+      repository.mode === "api"
+        ? scenarioAdmissionApi
+            .get(projectId)
+            .then((value) => {
+              admissionSettings.value = value;
+            })
+            .catch(() => {
+              admissionSettings.value = null;
+            })
+        : Promise.resolve(),
       repository.mode === "api"
         ? attributeContractRepository
             .workspace(projectId)
@@ -1039,6 +1097,8 @@ async function load() {
         status: scenario.status,
         conversationPolicy: scenario.conversationPolicy ?? "create_new",
         priority: scenario.priority,
+        importanceClass: scenario.importanceClass ?? "GENERAL",
+        respectsQuietHours: scenario.respectsQuietHours ?? false,
         cooldownSeconds: scenario.cooldownSeconds,
         maxRunsPerUser: scenario.maxRunsPerUser,
         activeFrom: scenario.activeFrom,
@@ -1060,6 +1120,9 @@ async function load() {
         if (restored.actions) form.actions = restored.actions;
       }
     } else {
+      form.importanceClass = "GENERAL";
+      form.respectsQuietHours =
+        admissionSettings.value?.quietHours.enabled === true;
       const catalogDefinitionIds = new Set(
         authoringContract.value?.events.map((event) => event.definitionId) ??
           [],
@@ -1085,7 +1148,9 @@ async function load() {
     initialRuleSnapshot.value = JSON.stringify(ruleDraft.value);
     initialAudienceSnapshot.value = JSON.stringify(audienceDraft.value);
     initialDeliverySnapshot.value = JSON.stringify(deliveryPolicy.value);
-    initialLocalizationSnapshot.value = JSON.stringify(localizationPolicy.value);
+    initialLocalizationSnapshot.value = JSON.stringify(
+      localizationPolicy.value,
+    );
     await translationController.recover();
   } catch (cause) {
     error.value =
@@ -1237,7 +1302,9 @@ function focusDraftIssue(issue: {
     inspectorMode.value = action ? "node" : "settings";
     if (action) {
       const projectLocales = new Set(
-        authoringContract.value?.localization?.locales.map(({ code }) => code) ?? [],
+        authoringContract.value?.localization?.locales.map(
+          ({ code }) => code,
+        ) ?? [],
       );
       const segments = issue.path.split(".");
       const pathLocale =
@@ -1330,15 +1397,22 @@ function nodeSummary(action: ScenarioAction) {
     if (typeof value === "string") return value;
     if (value && typeof value === "object" && !Array.isArray(value)) {
       const map = value as Record<string, unknown>;
-      const defaultLocale = authoringContract.value?.localization?.defaultLocale;
+      const defaultLocale =
+        authoringContract.value?.localization?.defaultLocale;
       const preferred = defaultLocale ? map[defaultLocale] : undefined;
       if (typeof preferred === "string") return preferred;
-      return Object.values(map).find((item): item is string => typeof item === "string") ?? "";
+      return (
+        Object.values(map).find(
+          (item): item is string => typeof item === "string",
+        ) ?? ""
+      );
     }
     return "";
   };
   if (action.type === "ASK_CHOICE")
-    return displayText(action.config.message) || "Настройте вопрос и варианты ответа";
+    return (
+      displayText(action.config.message) || "Настройте вопрос и варианты ответа"
+    );
   if (action.type === "CONDITION")
     return `${russianCount(Array.isArray(action.config.branches) ? action.config.branches.length : 0, "ветка", "ветки", "веток")} и запасной переход`;
   if (action.type === "WAIT_FOR_GOAL") {
@@ -1350,9 +1424,7 @@ function nodeSummary(action: ScenarioAction) {
       : "Настройте цель · конечный срок · 2 ветки";
   }
   const first = Object.values(action.config).map(displayText).find(Boolean);
-  return first
-    ? first
-    : "Настройте параметры действия";
+  return first ? first : "Настройте параметры действия";
 }
 
 function appendNode(type: string, connectPrevious: boolean) {
@@ -1469,13 +1541,7 @@ function toggleGraphExpanded() {
 
 function createTarget(
   type: string,
-  kind:
-    | "next"
-    | "choice"
-    | "timeout"
-    | "condition"
-    | "fallback"
-    | "goal",
+  kind: "next" | "choice" | "timeout" | "condition" | "fallback" | "goal",
   index?: number,
 ) {
   const source = selectedAction.value;
@@ -1697,13 +1763,20 @@ async function save() {
       status: form.status,
       conversationPolicy: form.conversationPolicy,
       priority: form.priority,
-      cooldownSeconds: form.cooldownSeconds || undefined,
-      maxRunsPerUser: form.maxRunsPerUser || undefined,
+      importanceClass: form.importanceClass,
+      respectsQuietHours:
+        form.importanceClass === "SECURITY" ? false : form.respectsQuietHours,
+      cooldownSeconds: usesGlobalFrequency.value
+        ? undefined
+        : form.cooldownSeconds || undefined,
+      maxRunsPerUser: usesGlobalFrequency.value
+        ? undefined
+        : form.maxRunsPerUser || undefined,
       activeFrom: form.activeFrom,
       activeTo: form.activeTo,
     };
-    if (payload.status === 'ARCHIVED') {
-      throw new Error('Архивный сценарий нельзя изменить из редактора');
+    if (payload.status === "ARCHIVED") {
+      throw new Error("Архивный сценарий нельзя изменить из редактора");
     }
     const draftContent = {
       catalogRevision: context.contract.revision,
@@ -1731,7 +1804,11 @@ async function save() {
     let draft: Awaited<ReturnType<typeof saveAuthoringDraft>>;
     if (existingScenarioId) {
       scenarioId = existingScenarioId;
-      draft = await saveAuthoringDraft(projectId, existingScenarioId, draftContent);
+      draft = await saveAuthoringDraft(
+        projectId,
+        existingScenarioId,
+        draftContent,
+      );
       const metadata: UpdateScenarioMetadata = {
         name: payload.name,
         description: payload.description,
@@ -1739,15 +1816,26 @@ async function save() {
         status: payload.status,
         conversationPolicy: payload.conversationPolicy,
         priority: payload.priority,
-        cooldownSeconds: payload.cooldownSeconds,
-        maxRunsPerUser: payload.maxRunsPerUser,
+        importanceClass: payload.importanceClass,
+        respectsQuietHours: payload.respectsQuietHours,
+        ...(usesGlobalFrequency.value
+          ? {}
+          : {
+              cooldownSeconds: payload.cooldownSeconds,
+              maxRunsPerUser: payload.maxRunsPerUser,
+            }),
         activeFrom: payload.activeFrom,
         activeTo: payload.activeTo,
-        expectedUpdatedAt: form.updatedAt ?? '',
-        reason: 'Update scenario metadata from CMS editor',
+        expectedUpdatedAt: form.updatedAt ?? "",
+        reason: "Update scenario metadata from CMS editor",
       };
-      if (!form.updatedAt) throw new Error('Не удалось определить версию сценария');
-      const updated = await repository.updateScenarioMetadata(projectId, scenarioId, metadata);
+      if (!form.updatedAt)
+        throw new Error("Не удалось определить версию сценария");
+      const updated = await repository.updateScenarioMetadata(
+        projectId,
+        scenarioId,
+        metadata,
+      );
       form.updatedAt = updated.updatedAt;
     } else {
       const created = await createAuthoringScenario(projectId, {
@@ -1758,6 +1846,8 @@ async function save() {
           triggerEventDefinitionRevisionId: payload.eventDefinitionId,
           conversationPolicy: payload.conversationPolicy,
           priority: payload.priority,
+          importanceClass: payload.importanceClass,
+          respectsQuietHours: payload.respectsQuietHours,
           ...(payload.cooldownSeconds !== undefined
             ? { cooldownSeconds: payload.cooldownSeconds }
             : {}),
@@ -1777,7 +1867,9 @@ async function save() {
     initialRuleSnapshot.value = JSON.stringify(ruleDraft.value);
     initialAudienceSnapshot.value = JSON.stringify(audienceDraft.value);
     initialDeliverySnapshot.value = JSON.stringify(deliveryPolicy.value);
-    initialLocalizationSnapshot.value = JSON.stringify(localizationPolicy.value);
+    initialLocalizationSnapshot.value = JSON.stringify(
+      localizationPolicy.value,
+    );
     for (const states of Object.values(translationStates)) {
       for (const [locale, state] of Object.entries(states)) {
         if (state === "MACHINE_UNSAVED") delete states[locale];
@@ -1926,7 +2018,9 @@ function leave() {
           `stage-${studioStage}`,
           {
             'has-action-inspector':
-              studioStage === 'actions' && Boolean(selectedAction) && !graphExpanded,
+              studioStage === 'actions' &&
+              Boolean(selectedAction) &&
+              !graphExpanded,
             'graph-is-expanded': studioStage === 'actions' && graphExpanded,
           },
         ]"
@@ -1968,34 +2062,72 @@ function leave() {
                 type="button"
                 class="action-outline-item"
                 :data-action-node-key="action.nodeKey"
-                :class="{ active: selectedNodeKey === action.nodeKey && !graphExpanded }"
+                :class="{
+                  active: selectedNodeKey === action.nodeKey && !graphExpanded,
+                }"
                 :aria-label="`Настроить действие ${findScenarioActionCatalogItem(actionCatalog, action.type)?.name ?? action.type}`"
                 @click="openNode(action.nodeKey ?? '')"
               >
-                <span><i :class="action.type === 'CONDITION' ? 'pi pi-code' : action.type === 'WAIT_FOR_GOAL' ? 'pi pi-clock' : 'pi pi-bolt'" /></span>
+                <span
+                  ><i
+                    :class="
+                      action.type === 'CONDITION'
+                        ? 'pi pi-code'
+                        : action.type === 'WAIT_FOR_GOAL'
+                          ? 'pi pi-clock'
+                          : 'pi pi-bolt'
+                    "
+                /></span>
                 <div>
-                  <strong>{{ findScenarioActionCatalogItem(actionCatalog, action.type)?.name ?? action.type }}</strong>
-                  <small>{{ action.nodeKey }} · {{ nodeSummary(action) }}</small>
+                  <strong>{{
+                    findScenarioActionCatalogItem(actionCatalog, action.type)
+                      ?.name ?? action.type
+                  }}</strong>
+                  <small
+                    >{{ action.nodeKey }} · {{ nodeSummary(action) }}</small
+                  >
                 </div>
-                <em v-if="actionIssues.filter((issue) => issue.nodeKey === action.nodeKey).length">
-                  {{ actionIssues.filter((issue) => issue.nodeKey === action.nodeKey).length }}
+                <em
+                  v-if="
+                    actionIssues.filter(
+                      (issue) => issue.nodeKey === action.nodeKey,
+                    ).length
+                  "
+                >
+                  {{
+                    actionIssues.filter(
+                      (issue) => issue.nodeKey === action.nodeKey,
+                    ).length
+                  }}
                 </em>
               </button>
             </div>
-            <p v-else class="action-outline-empty">Здесь появятся добавленные действия.</p>
+            <p v-else class="action-outline-empty">
+              Здесь появятся добавленные действия.
+            </p>
 
             <details
               v-if="canEdit"
               ref="desktopActionLibrary"
               class="action-library"
-              @toggle="handleActionLibraryToggle($event, desktopActionSearchInput)"
-              @keydown.esc.stop.prevent="closeActionLibrary(desktopActionLibrary)"
+              @toggle="
+                handleActionLibraryToggle($event, desktopActionSearchInput)
+              "
+              @keydown.esc.stop.prevent="
+                closeActionLibrary(desktopActionLibrary)
+              "
             >
               <summary><i class="pi pi-plus" />Добавить действие</summary>
               <div class="action-library-body">
                 <label class="action-library-search">
                   <i class="pi pi-search" />
-                  <input ref="desktopActionSearchInput" v-model="actionSearch" type="search" placeholder="Найти действие" aria-label="Найти действие" />
+                  <input
+                    ref="desktopActionSearchInput"
+                    v-model="actionSearch"
+                    type="search"
+                    placeholder="Найти действие"
+                    aria-label="Найти действие"
+                  />
                 </label>
                 <div
                   v-for="group in filteredActionGroups"
@@ -2009,16 +2141,38 @@ function leave() {
                     type="button"
                     @click="addNode(definition.type)"
                   >
-                    <span><i :class="definition.type === 'CONDITION' ? 'pi pi-code' : definition.type === 'ASK_CHOICE' ? 'pi pi-question-circle' : definition.executor === 'FRONTEND' ? 'pi pi-desktop' : 'pi pi-server'" /></span>
+                    <span
+                      ><i
+                        :class="
+                          definition.type === 'CONDITION'
+                            ? 'pi pi-code'
+                            : definition.type === 'ASK_CHOICE'
+                              ? 'pi pi-question-circle'
+                              : definition.executor === 'FRONTEND'
+                                ? 'pi pi-desktop'
+                                : 'pi pi-server'
+                        "
+                    /></span>
                     <div>
                       <strong>{{ definition.name }}</strong>
-                      <small>{{ definition.description || "Описание пока не добавлено" }}</small>
-                      <small class="library-executor">{{ definition.executor === "FRONTEND" ? "В интерфейсе" : "На сервере" }}</small>
+                      <small>{{
+                        definition.description || "Описание пока не добавлено"
+                      }}</small>
+                      <small class="library-executor">{{
+                        definition.executor === "FRONTEND"
+                          ? "В интерфейсе"
+                          : "На сервере"
+                      }}</small>
                     </div>
                     <i class="pi pi-plus" />
                   </button>
                 </div>
-                <p v-if="!filteredActionGroups.length" class="action-library-empty">Ничего не найдено. Попробуйте другое название.</p>
+                <p
+                  v-if="!filteredActionGroups.length"
+                  class="action-library-empty"
+                >
+                  Ничего не найдено. Попробуйте другое название.
+                </p>
               </div>
             </details>
           </section>
@@ -2036,9 +2190,19 @@ function leave() {
           <header v-if="form.actions.length" class="graph-toolbar">
             <div>
               <span>Схема сценария</span>
-              <small>{{ graphExpanded ? 'Полный обзор' : 'Обзор связей между действиями' }}</small>
+              <small>{{
+                graphExpanded ? "Полный обзор" : "Обзор связей между действиями"
+              }}</small>
             </div>
-            <button type="button" :aria-label="graphExpanded ? 'Вернуться к настройке действия' : 'Развернуть схему сценария'" @click="toggleGraphExpanded">
+            <button
+              type="button"
+              :aria-label="
+                graphExpanded
+                  ? 'Вернуться к настройке действия'
+                  : 'Развернуть схему сценария'
+              "
+              @click="toggleGraphExpanded"
+            >
               <i :class="graphExpanded ? 'pi pi-compress' : 'pi pi-expand'" />
               {{ graphExpanded ? "К настройке" : "Развернуть" }}
             </button>
@@ -2050,8 +2214,8 @@ function leave() {
             <summary>
               Языки контента ·
               {{
-                localizationPolicy.mode === 'ALL_PROJECT_LOCALES'
-                  ? 'все языки проекта'
+                localizationPolicy.mode === "ALL_PROJECT_LOCALES"
+                  ? "все языки проекта"
                   : `${localizationPolicy.locales.length} выбрано`
               }}
             </summary>
@@ -2098,10 +2262,18 @@ function leave() {
             <header>
               <div>
                 <span>Действия и ожидания</span
-                ><strong>{{ russianCount(form.actions.length, "действие", "действия", "действий") }}</strong>
+                ><strong>{{
+                  russianCount(
+                    form.actions.length,
+                    "действие",
+                    "действия",
+                    "действий",
+                  )
+                }}</strong>
               </div>
               <small
-                >Выберите действие для настройки или откройте схему целиком.</small
+                >Выберите действие для настройки или откройте схему
+                целиком.</small
               >
             </header>
             <button
@@ -2109,7 +2281,9 @@ function leave() {
               type="button"
               class="mobile-graph-button"
               @click="toggleGraphExpanded"
-            ><i class="pi pi-sitemap" />Открыть схему</button>
+            >
+              <i class="pi pi-sitemap" />Открыть схему
+            </button>
             <button
               v-for="action in form.actions"
               :key="action.nodeKey"
@@ -2131,8 +2305,8 @@ function leave() {
               /></span>
               <div>
                 <strong>{{
-                  findScenarioActionCatalogItem(actionCatalog, action.type)?.name ??
-                  action.type
+                  findScenarioActionCatalogItem(actionCatalog, action.type)
+                    ?.name ?? action.type
                 }}</strong
                 ><small>{{ action.nodeKey }} · {{ nodeSummary(action) }}</small>
               </div>
@@ -2156,13 +2330,23 @@ function leave() {
               v-if="canEdit"
               ref="mobileActionLibrary"
               class="mobile-library"
-              @toggle="handleActionLibraryToggle($event, mobileActionSearchInput)"
-              @keydown.esc.stop.prevent="closeActionLibrary(mobileActionLibrary)"
+              @toggle="
+                handleActionLibraryToggle($event, mobileActionSearchInput)
+              "
+              @keydown.esc.stop.prevent="
+                closeActionLibrary(mobileActionLibrary)
+              "
             >
               <summary>Добавить действие</summary>
               <label class="mobile-library-search">
                 <i class="pi pi-search" />
-                <input ref="mobileActionSearchInput" v-model="actionSearch" type="search" placeholder="Найти действие" aria-label="Найти действие на мобильном" />
+                <input
+                  ref="mobileActionSearchInput"
+                  v-model="actionSearch"
+                  type="search"
+                  placeholder="Найти действие"
+                  aria-label="Найти действие на мобильном"
+                />
               </label>
               <div v-for="group in filteredActionGroups" :key="group.label">
                 <strong>{{ group.label }}</strong
@@ -2175,15 +2359,24 @@ function leave() {
                   <i class="pi pi-plus" />
                   <span>
                     <strong>{{ definition.name }}</strong>
-                    <small>{{ definition.description || "Описание пока не добавлено" }}</small>
+                    <small>{{
+                      definition.description || "Описание пока не добавлено"
+                    }}</small>
                   </span>
                 </button>
               </div>
-              <p v-if="!filteredActionGroups.length" class="action-library-empty">Ничего не найдено. Попробуйте другое название.</p>
+              <p
+                v-if="!filteredActionGroups.length"
+                class="action-library-empty"
+              >
+                Ничего не найдено. Попробуйте другое название.
+              </p>
             </details>
           </section>
           <VueFlow
-            v-if="(!compactActionLayout || graphExpanded) && form.actions.length"
+            v-if="
+              (!compactActionLayout || graphExpanded) && form.actions.length
+            "
             :nodes="flowNodes"
             :edges="flowEdges"
             :node-types="flowNodeTypes"
@@ -2209,7 +2402,10 @@ function leave() {
                 добавления откроется схема сценария.
               </p>
             </div>
-            <div v-if="canEdit && actionGroups.length" class="action-empty-options">
+            <div
+              v-if="canEdit && actionGroups.length"
+              class="action-empty-options"
+            >
               <template v-for="group in actionGroups" :key="group.label">
                 <button
                   v-for="definition in group.items"
@@ -2228,7 +2424,9 @@ function leave() {
           <header class="stage-section-header">
             <div>
               <span>Условия запуска</span>
-              <h1 id="rule-builder-title">Что должно произойти перед запуском</h1>
+              <h1 id="rule-builder-title">
+                Что должно произойти перед запуском
+              </h1>
               <p>
                 Добавьте проверки текущего события или недавних действий
                 пользователя.
@@ -2281,9 +2479,8 @@ function leave() {
             <template v-if="sourceSnapshotUnavailable">
               <p><strong>Исходные условия недоступны</strong></p>
               <p>
-                Сценарий продолжает использовать условия опубликованной
-                версии, но показать их без сохранённого исходника редактора
-                нельзя.
+                Сценарий продолжает использовать условия опубликованной версии,
+                но показать их без сохранённого исходника редактора нельзя.
               </p>
             </template>
             <p v-else>{{ summarizeRule(ruleDraft, ruleContext).text }}</p>
@@ -2295,7 +2492,10 @@ function leave() {
               Конструктор использует точную ревизию Event из каталога. Мы не
               связываем ревизии только по одинаковому коду.
             </p>
-            <Button label="Открыть настройки запуска" @click="selectStage('trigger')" />
+            <Button
+              label="Открыть настройки запуска"
+              @click="selectStage('trigger')"
+            />
           </div>
         </main>
 
@@ -2355,7 +2555,9 @@ function leave() {
                   нельзя достоверно восстановить по данным выполнения.
                 </p>
               </template>
-              <p v-else>{{ audienceSummary?.text ?? "Аудитория не ограничена" }}</p>
+              <p v-else>
+                {{ audienceSummary?.text ?? "Аудитория не ограничена" }}
+              </p>
             </div>
           </div>
         </main>
@@ -2408,7 +2610,8 @@ function leave() {
               v-if="canManage && authoringEditable"
               ref="deliveryEditor"
               v-model="deliveryPolicy"
-            /><div v-else-if="!authoringEditable" class="readonly-stage-card">
+            />
+            <div v-else-if="!authoringEditable" class="readonly-stage-card">
               <i class="pi pi-eye" />
               <div>
                 <h2>Настройки доставки только для просмотра</h2>
@@ -2438,6 +2641,7 @@ function leave() {
               :delivery-policy="deliveryPolicy"
               :actions="form.actions"
               :localization-policy="localizationPolicy"
+              :importance-class="form.importanceClass"
               :authoring-snapshot="JSON.stringify(form)"
               :expected-current-revision-id="currentRevisionId"
               :expected-draft-version="currentDraftVersion"
@@ -2449,7 +2653,10 @@ function leave() {
               @focus-issue="focusDraftIssue"
               @reload-request="reloadAfterConflict"
               @resave-required="requireDraftResave"
-            /><Message v-else-if="!canPublishScenario" severity="info" :closable="false"
+            /><Message
+              v-else-if="!canPublishScenario"
+              severity="info"
+              :closable="false"
               >У вас нет права публиковать сценарии.</Message
             ><Message
               v-else-if="!authoringEditable"
@@ -2555,10 +2762,14 @@ function leave() {
           <div class="settings-head readonly-action-head">
             <div>
               <small>Режим просмотра</small>
-              <h2>{{
-                findScenarioActionCatalogItem(actionCatalog, selectedAction.type)
-                  ?.name ?? selectedAction.type
-              }}</h2>
+              <h2>
+                {{
+                  findScenarioActionCatalogItem(
+                    actionCatalog,
+                    selectedAction.type,
+                  )?.name ?? selectedAction.type
+                }}
+              </h2>
             </div>
             <Button
               icon="pi pi-times"
@@ -2571,7 +2782,9 @@ function leave() {
           <dl>
             <div>
               <dt>Код шага</dt>
-              <dd><code>{{ selectedAction.nodeKey }}</code></dd>
+              <dd>
+                <code>{{ selectedAction.nodeKey }}</code>
+              </dd>
             </div>
             <div>
               <dt>Что делает</dt>
@@ -2598,8 +2811,16 @@ function leave() {
             <p>Здесь показаны настройки опубликованной версии.</p>
           </div>
           <dl>
-            <div><dt>Название</dt><dd>{{ form.name }}</dd></div>
-            <div><dt>Системный код</dt><dd><code>{{ form.code }}</code></dd></div>
+            <div>
+              <dt>Название</dt>
+              <dd>{{ form.name }}</dd>
+            </div>
+            <div>
+              <dt>Системный код</dt>
+              <dd>
+                <code>{{ form.code }}</code>
+              </dd>
+            </div>
             <div>
               <dt>Событие запуска</dt>
               <dd>
@@ -2615,7 +2836,10 @@ function leave() {
                 }}
               </dd>
             </div>
-            <div><dt>Статус</dt><dd>{{ form.status === "ACTIVE" ? "Активен" : "Черновик" }}</dd></div>
+            <div>
+              <dt>Статус</dt>
+              <dd>{{ form.status === "ACTIVE" ? "Активен" : "Черновик" }}</dd>
+            </div>
           </dl>
         </aside>
         <aside v-else-if="studioStage === 'trigger'" class="settings-panel">
@@ -2716,12 +2940,12 @@ function leave() {
                   !canChooseFirstAction
                 "
               >
-                Для ветвящегося графа можно настроить текущий первый узел.
-                Смена корня отключена, чтобы не потерять ветки.
+                Для ветвящегося графа можно настроить текущий первый узел. Смена
+                корня отключена, чтобы не потерять ветки.
               </small>
               <small v-else-if="!firstAction"
-                >Добавьте действие на этапе «Действия» — оно станет первым
-                после события запуска.</small
+                >Добавьте действие на этапе «Действия» — оно станет первым после
+                события запуска.</small
               >
             </div>
             <div class="field">
@@ -2769,33 +2993,105 @@ function leave() {
             </div>
             <div class="settings-row">
               <div class="field">
-                <label for="scenario-priority">Приоритет</label
-                ><InputNumber
+                <label for="scenario-importance">Класс важности</label>
+                <Select
+                  input-id="scenario-importance"
+                  aria-label="Класс важности"
+                  v-model="form.importanceClass"
+                  :options="selectableImportanceClasses"
+                  option-label="title"
+                  option-value="value"
+                  :disabled="!canEdit"
+                >
+                  <template #option="{ option }">
+                    <div class="importance-option">
+                      <strong>{{ option.title }}</strong>
+                      <small>{{ option.description }}</small>
+                    </div>
+                  </template>
+                </Select>
+              </div>
+              <div class="field">
+                <label for="scenario-priority">Приоритет</label>
+                <InputNumber
                   input-id="scenario-priority"
                   v-model="form.priority"
                   :min="-1000"
                   :max="1000"
                 />
               </div>
-              <div class="field">
-                <label for="scenario-max-runs">Макс. запусков</label
-                ><InputNumber
-                  input-id="scenario-max-runs"
-                  v-model="form.maxRunsPerUser"
-                  :min="1"
-                  placeholder="Без лимита"
-                />
-              </div>
             </div>
-            <div class="field">
-              <label for="scenario-cooldown">Пауза, сек.</label
-              ><InputNumber
-                input-id="scenario-cooldown"
-                v-model="form.cooldownSeconds"
-                :min="0"
-                placeholder="Без паузы"
+            <Message
+              v-if="form.importanceClass === 'SECURITY'"
+              severity="warn"
+              :closable="false"
+            >
+              <strong>Вне общих лимитов.</strong> Сценарий безопасности
+              игнорирует частоту и тихие часы. Для сохранения и публикации нужны
+              специальные права и причина.
+            </Message>
+            <label class="quiet-hours-control">
+              <span>
+                <strong>Соблюдать тихие часы проекта</strong>
+                <small v-if="form.importanceClass === 'SECURITY'">
+                  Сообщения безопасности всегда обходят тихие часы.
+                </small>
+                <small
+                  v-else-if="
+                    admissionSettings && !admissionSettings.quietHours.enabled
+                  "
+                >
+                  В проекте тихие часы выключены; настройка сохранится на
+                  будущее.
+                </small>
+                <small v-else>
+                  Подавленный запуск появится в журнале и не израсходует лимит.
+                </small>
+              </span>
+              <ToggleSwitch
+                v-model="form.respectsQuietHours"
+                :disabled="!canEdit || form.importanceClass === 'SECURITY'"
               />
-            </div>
+            </label>
+            <p class="priority-helper">
+              Если одно событие подходит нескольким сценариям, запускается один:
+              сначала класс «Безопасность», затем большее значение priority. При
+              равенстве порядок детерминирован системой.
+            </p>
+            <Message
+              v-if="usesGlobalFrequency"
+              severity="info"
+              :closable="false"
+            >
+              Частота задаётся общими настройками проекта. Индивидуальные лимиты
+              этого сценария доступны только в технической истории.
+            </Message>
+            <template v-else>
+              <div class="settings-row">
+                <div class="field">
+                  <label for="scenario-max-runs">Макс. запусков</label
+                  ><InputNumber
+                    input-id="scenario-max-runs"
+                    v-model="form.maxRunsPerUser"
+                    :min="1"
+                    placeholder="Без лимита"
+                  />
+                </div>
+              </div>
+              <div class="field">
+                <label for="scenario-cooldown">Пауза, сек.</label
+                ><InputNumber
+                  input-id="scenario-cooldown"
+                  v-model="form.cooldownSeconds"
+                  :min="0"
+                  placeholder="Без паузы"
+                />
+                <small
+                  >Устаревающий режим. Перейдите на общую частоту в настройках
+                  проекта.</small
+                >
+              </div>
+            </template>
           </section>
         </aside>
         <aside
@@ -3029,7 +3325,7 @@ function leave() {
   border-radius: 9px;
   background: var(--surface-active);
   color: var(--text-secondary);
-  font-size: .65rem;
+  font-size: 0.65rem;
   font-weight: 800;
 }
 .action-outline-list {
@@ -3076,7 +3372,7 @@ function leave() {
   display: block;
 }
 .action-outline-item strong {
-  font-size: .7rem;
+  font-size: 0.7rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -3084,7 +3380,7 @@ function leave() {
   margin-top: 3px;
   overflow: hidden;
   color: var(--text-small-muted);
-  font-size: .58rem;
+  font-size: 0.58rem;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3097,14 +3393,14 @@ function leave() {
   border-radius: 999px;
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
-  font-size: .6rem;
+  font-size: 0.6rem;
   font-style: normal;
 }
 .action-outline-empty,
 .action-library-empty {
   margin: 4px 7px 12px;
   color: var(--text-small-muted);
-  font-size: .66rem;
+  font-size: 0.66rem;
   line-height: 1.45;
 }
 .action-library {
@@ -3120,14 +3416,20 @@ function leave() {
   border-radius: 11px;
   background: var(--status-violet-soft);
   color: var(--status-violet-text);
-  font-size: .7rem;
+  font-size: 0.7rem;
   font-weight: 800;
   list-style: none;
   cursor: pointer;
 }
-.action-library > summary::-webkit-details-marker { display: none; }
-.action-library[open] > summary { margin-bottom: 10px; }
-.action-library-body { display: grid; }
+.action-library > summary::-webkit-details-marker {
+  display: none;
+}
+.action-library[open] > summary {
+  margin-bottom: 10px;
+}
+.action-library-body {
+  display: grid;
+}
 .action-library-search {
   display: flex;
   align-items: center;
@@ -3138,7 +3440,10 @@ function leave() {
   border-radius: 10px;
   background: var(--surface-card);
 }
-.action-library-search i { color: var(--text-small-muted); font-size: .7rem; }
+.action-library-search i {
+  color: var(--text-small-muted);
+  font-size: 0.7rem;
+}
 .action-library-search input {
   min-width: 0;
   width: 100%;
@@ -3147,7 +3452,7 @@ function leave() {
   background: transparent;
   color: var(--text-primary);
   font: inherit;
-  font-size: .68rem;
+  font-size: 0.68rem;
 }
 .library-group {
   margin-bottom: 19px;
@@ -3242,9 +3547,18 @@ function leave() {
   backdrop-filter: blur(10px);
 }
 .graph-toolbar span,
-.graph-toolbar small { display: block; }
-.graph-toolbar span { font-size: .7rem; font-weight: 800; }
-.graph-toolbar small { margin-top: 2px; color: var(--text-small-muted); font-size: .58rem; }
+.graph-toolbar small {
+  display: block;
+}
+.graph-toolbar span {
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.graph-toolbar small {
+  margin-top: 2px;
+  color: var(--text-small-muted);
+  font-size: 0.58rem;
+}
 .graph-toolbar button,
 .mobile-graph-button {
   display: inline-flex;
@@ -3257,11 +3571,14 @@ function leave() {
   border-radius: 9px;
   background: var(--surface-card);
   color: var(--text-primary);
-  font: 750 .66rem var(--font-display);
+  font: 750 0.66rem var(--font-display);
   cursor: pointer;
 }
 .graph-toolbar button:hover,
-.mobile-graph-button:hover { border-color: var(--status-violet); color: var(--status-violet-text); }
+.mobile-graph-button:hover {
+  border-color: var(--status-violet);
+  color: var(--status-violet-text);
+}
 .scenario-studio :deep(.rule-validation-preview) {
   height: 100%;
   overflow: auto;
@@ -3432,14 +3749,18 @@ function leave() {
   background: var(--surface-card);
   box-shadow: var(--shadow-sm);
 }
-.stage-actions .localization-policy-card { top: 66px; }
+.stage-actions .localization-policy-card {
+  top: 66px;
+}
 .localization-policy-card summary {
   cursor: pointer;
   color: var(--text-secondary);
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 750;
 }
-.localization-policy-card[open] summary { margin-bottom: 12px; }
+.localization-policy-card[open] summary {
+  margin-bottom: 12px;
+}
 .action-empty {
   position: absolute;
   inset: 0;
@@ -3719,6 +4040,47 @@ function leave() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+.importance-option {
+  display: grid;
+  gap: 3px;
+  max-width: 440px;
+  white-space: normal;
+}
+.importance-option strong {
+  font-size: 0.72rem;
+}
+.importance-option small {
+  color: var(--text-small-muted);
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+.quiet-hours-control {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 13px;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 11px;
+  background: var(--surface-subtle);
+}
+.quiet-hours-control > span {
+  display: grid;
+  gap: 4px;
+}
+.quiet-hours-control strong {
+  font-size: 0.72rem;
+}
+.quiet-hours-control small,
+.priority-helper {
+  color: var(--text-small-muted);
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+.priority-helper {
+  margin: 12px 0;
 }
 .section-copy h3 {
   margin: 0;

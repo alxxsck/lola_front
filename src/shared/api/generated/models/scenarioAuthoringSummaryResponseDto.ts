@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ScenarioAuthoringSummaryResponseDtoConversationPolicy } from "./scenarioAuthoringSummaryResponseDtoConversationPolicy";
+import type { ScenarioAuthoringSummaryResponseDtoImportanceClass } from "./scenarioAuthoringSummaryResponseDtoImportanceClass";
 import type { ScenarioAuthoringSummaryResponseDtoStatus } from "./scenarioAuthoringSummaryResponseDtoStatus";
 
 export interface ScenarioAuthoringSummaryResponseDto {
@@ -25,6 +26,7 @@ export interface ScenarioAuthoringSummaryResponseDto {
   eventDefinitionId: string;
   eventDefinitionKeyId: string;
   id: string;
+  importanceClass: ScenarioAuthoringSummaryResponseDtoImportanceClass;
   /**
    * @minimum 1
    * @nullable
@@ -33,6 +35,7 @@ export interface ScenarioAuthoringSummaryResponseDto {
   name: string;
   priority: number;
   projectId: string;
+  respectsQuietHours: boolean;
   status: ScenarioAuthoringSummaryResponseDtoStatus;
   updatedAt: string;
 }

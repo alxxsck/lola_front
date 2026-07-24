@@ -325,9 +325,7 @@ describe("ProjectPage voice instructions", () => {
       "display: none",
     );
 
-    const voiceToggle = wrapper.get(
-      '[aria-controls="voice-chat-settings"]',
-    );
+    const voiceToggle = wrapper.get('[aria-controls="voice-chat-settings"]');
     await voiceToggle.trigger("click");
     expect(voiceToggle.attributes("aria-expanded")).toBe("true");
     expect(
@@ -362,7 +360,10 @@ describe("ProjectPage voice instructions", () => {
     expect(mainChildren[activityIndex - 1]?.textContent).toContain(
       "Подключение продукта",
     );
-    expect(mainChildren[activityIndex + 1]?.textContent).toContain("Ассистент");
+    expect(mainChildren[activityIndex + 1]?.tagName).toBe(
+      "SCENARIO-ADMISSION-SETTINGS-SECTION-STUB",
+    );
+    expect(mainChildren[activityIndex + 2]?.textContent).toContain("Ассистент");
     expect(
       wrapper.find(".settings-main > speech-synthesis-section-stub").exists(),
     ).toBe(true);

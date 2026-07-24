@@ -12,4 +12,10 @@ export interface RollbackScenarioDto {
    * @nullable
    */
   expectedCurrentRevisionId: string | null;
+  /**
+   * Required when the selected revision is classified as SECURITY.
+   * @minLength 10
+   * @maxLength 500
+   */
+  reason?: string;
 }

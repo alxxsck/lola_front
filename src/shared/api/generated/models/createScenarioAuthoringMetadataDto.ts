@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CreateScenarioAuthoringMetadataDtoConversationPolicy } from "./createScenarioAuthoringMetadataDtoConversationPolicy";
+import type { CreateScenarioAuthoringMetadataDtoImportanceClass } from "./createScenarioAuthoringMetadataDtoImportanceClass";
 
 export interface CreateScenarioAuthoringMetadataDto {
   activeFrom?: string;
@@ -17,6 +18,7 @@ export interface CreateScenarioAuthoringMetadataDto {
   cooldownSeconds?: number;
   /** @maxLength 2000 */
   description?: string;
+  importanceClass?: CreateScenarioAuthoringMetadataDtoImportanceClass;
   /**
    * @minimum 1
    * @nullable
@@ -32,5 +34,6 @@ export interface CreateScenarioAuthoringMetadataDto {
    * @maximum 1000
    */
   priority?: number;
+  respectsQuietHours?: boolean;
   triggerEventDefinitionRevisionId: string;
 }

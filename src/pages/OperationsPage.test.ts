@@ -62,7 +62,7 @@ describe("OperationsPage", () => {
 
     expect(
       wrapper.findAll(".section-tabs button").map((tab) => tab.text()),
-    ).toEqual(["Запуски сценариев0", "Аудит0"]);
+    ).toEqual(["Запуски сценариев0", "Аудит0", "Решения о запуске0"]);
     expect(
       wrapper.findAll(".section-tabs button")[0]!.attributes("aria-selected"),
     ).toBe("true");

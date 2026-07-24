@@ -60,7 +60,7 @@ describe("ProfileFieldEditorPage", () => {
       wrapper.find("fieldset.preset-section > .preset-heading").exists(),
     ).toBe(true);
     const presets = wrapper.findAll('input[name="profile-field-kind"]');
-    expect(presets).toHaveLength(6);
+    expect(presets).toHaveLength(7);
     expect(
       presets.every((preset) => !(preset.element as HTMLInputElement).checked),
     ).toBe(true);

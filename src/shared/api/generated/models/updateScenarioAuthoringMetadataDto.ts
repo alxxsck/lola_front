@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UpdateScenarioAuthoringMetadataDtoConversationPolicy } from "./updateScenarioAuthoringMetadataDtoConversationPolicy";
+import type { UpdateScenarioAuthoringMetadataDtoImportanceClass } from "./updateScenarioAuthoringMetadataDtoImportanceClass";
 import type { UpdateScenarioAuthoringMetadataDtoStatus } from "./updateScenarioAuthoringMetadataDtoStatus";
 
 export interface UpdateScenarioAuthoringMetadataDto {
@@ -23,6 +24,7 @@ export interface UpdateScenarioAuthoringMetadataDto {
   description?: string | null;
   eventDefinitionId?: string;
   expectedUpdatedAt: string;
+  importanceClass?: UpdateScenarioAuthoringMetadataDtoImportanceClass;
   /**
    * @minimum 1
    * @nullable
@@ -43,5 +45,6 @@ export interface UpdateScenarioAuthoringMetadataDto {
    * @maxLength 500
    */
   reason: string;
+  respectsQuietHours?: boolean;
   status?: UpdateScenarioAuthoringMetadataDtoStatus;
 }

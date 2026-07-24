@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ScenarioAuthoringDocumentResponseDtoDraft } from "./scenarioAuthoringDocumentResponseDtoDraft";
+import type { ScenarioAuthoringDocumentResponseDtoImportanceClass } from "./scenarioAuthoringDocumentResponseDtoImportanceClass";
 import type { ScenarioAuthoringDocumentResponseDtoSource } from "./scenarioAuthoringDocumentResponseDtoSource";
 import type { ScenarioAuthoringDocumentResponseDtoUnavailableReason } from "./scenarioAuthoringDocumentResponseDtoUnavailableReason";
 
@@ -19,8 +20,10 @@ export interface ScenarioAuthoringDocumentResponseDto {
   /** @nullable */
   draft?: ScenarioAuthoringDocumentResponseDtoDraft;
   editable: boolean;
+  importanceClass: ScenarioAuthoringDocumentResponseDtoImportanceClass;
   name: string;
   projectId: string;
+  respectsQuietHours: boolean;
   scenarioId: string;
   /** @nullable */
   source?: ScenarioAuthoringDocumentResponseDtoSource;

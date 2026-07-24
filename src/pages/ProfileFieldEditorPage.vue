@@ -134,6 +134,7 @@ const publishedSystemPurpose = computed(
     )?.semanticRole ?? null,
 );
 const isLocaleField = computed(() => form.value.semanticRole === "LOCALE");
+const isTimeZoneField = computed(() => form.value.semanticRole === "TIME_ZONE");
 const fieldKind = computed(() => selectedFieldKind.value);
 const localeValues = computed(() =>
   (form.value.constraints.allowedValues ?? []).filter(
@@ -155,7 +156,9 @@ const usedSystemPurposes = computed(
   () => new Set(usedSystemPurposeFields.value.keys()),
 );
 const showsAllowedValues = computed(
-  () => !["BOOLEAN", "DATETIME"].includes(form.value.valueType),
+  () =>
+    !isTimeZoneField.value &&
+    !["BOOLEAN", "DATETIME"].includes(form.value.valueType),
 );
 const showsTextLimits = computed(() => form.value.valueType === "STRING");
 const showsNumberLimits = computed(() =>
@@ -831,11 +834,19 @@ async function save() {
                   :options="valueTypes"
                   option-label="label"
                   option-value="value"
-                  :disabled="identityLocked || fieldKind === 'LOCALE'"
+                  :disabled="
+                    identityLocked ||
+                    fieldKind === 'LOCALE' ||
+                    fieldKind === 'TIME_ZONE'
+                  "
                 />
                 <small v-if="fieldKind === 'LOCALE'"
                   >Тип задан системным назначением языка. {{ typeHelp }}</small
                 >
+                <small v-else-if="fieldKind === 'TIME_ZONE'">
+                  Тип зафиксирован как строка. Передавайте canonical IANA ID,
+                  например Europe/Madrid, а не CET или UTC+2.
+                </small>
                 <small v-else-if="fieldKind !== 'CUSTOM'"
                   >Заготовка рекомендует этот тип, но до публикации его можно
                   изменить. {{ typeHelp }}</small
@@ -985,6 +996,14 @@ async function save() {
               </label>
               <small>{{ localeValues.length }}/20 языков</small>
             </div>
+            <Message
+              v-else-if="isTimeZoneField"
+              severity="info"
+              :closable="false"
+            >
+              Значение используется для локальных суток и тихих часов. Это не
+              язык интерфейса и не числовое смещение от UTC.
+            </Message>
             <label
               v-if="showsAllowedValues && !isLocaleField"
               class="field-control"

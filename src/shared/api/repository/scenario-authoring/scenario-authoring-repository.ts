@@ -55,6 +55,7 @@ export type ScenarioPublishInput = Required<
     | "expectedDraftVersion"
     | "localization"
     | "profileFreshness"
+    | "reason"
     | "rule"
   >;
 

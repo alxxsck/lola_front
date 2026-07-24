@@ -11,6 +11,7 @@ import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import AiUsageSection from "@/features/ai-usage/AiUsageSection.vue";
 import ActivitySettingsSection from "@/features/activity-settings/ActivitySettingsSection.vue";
+import ScenarioAdmissionSettingsSection from "@/features/scenario-admission/ScenarioAdmissionSettingsSection.vue";
 import UserMemorySettingsSection from "@/features/user-memory/ui/UserMemorySettingsSection.vue";
 import AIReviewSettingsSection from "@/features/ai-review/ui/AIReviewSettingsSection.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
@@ -650,6 +651,13 @@ onBeforeUnmount(() => {
           :project-id="project.id"
           :editable="canEditSettings"
           @change="handleActivitySettingsChange"
+        />
+
+        <ScenarioAdmissionSettingsSection
+          v-if="canReadSettings"
+          :project-id="project.id"
+          :editable="canEditSettings"
+          :fallback-time-zone="activitySettings?.timezone ?? 'UTC'"
         />
 
         <form

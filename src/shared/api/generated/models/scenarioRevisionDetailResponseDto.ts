@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ScenarioRevisionDetailResponseDtoImportanceClass } from "./scenarioRevisionDetailResponseDtoImportanceClass";
 import type { ScenarioRevisionDetailResponseDtoRuntime } from "./scenarioRevisionDetailResponseDtoRuntime";
 import type { ScenarioAuthoringSourceResponseDto } from "./scenarioAuthoringSourceResponseDto";
 
@@ -14,9 +15,11 @@ export interface ScenarioRevisionDetailResponseDto {
   current: boolean;
   editable: boolean;
   id: string;
+  importanceClass: ScenarioRevisionDetailResponseDtoImportanceClass;
   publishedAt: string;
   /** @nullable */
   publishedByAdminId?: string | null;
+  respectsQuietHours: boolean;
   /** @minimum 1 */
   revisionNumber: number;
   runtime: ScenarioRevisionDetailResponseDtoRuntime;

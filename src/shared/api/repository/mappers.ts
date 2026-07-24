@@ -167,6 +167,8 @@ export function mapScenario(
     status: dto.status,
     conversationPolicy: dto.conversationPolicy,
     priority: dto.priority,
+    importanceClass: dto.importanceClass,
+    respectsQuietHours: dto.respectsQuietHours,
     cooldownSeconds: dto.cooldownSeconds,
     ...(dto.maxRunsPerUser == null
       ? {}

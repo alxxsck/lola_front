@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
+import InputText from "primevue/inputtext";
 
 import {
   deliveryPolicySummary,
@@ -40,6 +41,7 @@ const props = defineProps<{
   deliveryPolicy: DeliveryPolicyDraft;
   actions?: ScenarioAction[];
   localizationPolicy?: ScenarioLocalizationPolicyDto;
+  importanceClass?: string;
   authoringSnapshot?: string;
   expectedCurrentRevisionId: string | null;
   expectedDraftVersion?: number | null;
@@ -61,7 +63,9 @@ const emit = defineEmits<{
   "head-change": [revisionId: string];
   "reload-request": [];
   "resave-required": [];
-  "focus-issue": [issue: { code: string; path: string; message: string; locale?: string }];
+  "focus-issue": [
+    issue: { code: string; path: string; message: string; locale?: string },
+  ];
 }>();
 const localizationPolicy = computed(
   () => props.localizationPolicy ?? defaultLocalizationPolicy(),
@@ -183,6 +187,7 @@ type ReviewState =
     };
 const reviewState = shallowRef<ReviewState>({ status: "idle" });
 const requiresResave = ref(false);
+const securityPublishReason = ref("");
 let reviewSequence = 0;
 const canPublish = computed(
   () =>
@@ -194,6 +199,8 @@ const canPublish = computed(
     (!audienceResult.value || audienceResult.value.ok) &&
     deliveryResult.value.ok &&
     reviewState.value.status === "ready" &&
+    (props.importanceClass !== "SECURITY" ||
+      securityPublishReason.value.trim().length >= 10) &&
     (state.value.status === "idle" || state.value.status === "error"),
 );
 
@@ -201,7 +208,12 @@ function compactIdentifier(value: string): string {
   return value.length > 18 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 }
 
-function focusIssue(issue: { code: string; path: string; message: string; locale?: string }) {
+function focusIssue(issue: {
+  code: string;
+  path: string;
+  message: string;
+  locale?: string;
+}) {
   emit("focus-issue", issue);
 }
 
@@ -239,6 +251,9 @@ function request(
             mode: "USE_LAST_KNOWN",
           },
         }
+      : {}),
+    ...(props.importanceClass === "SECURITY"
+      ? { reason: securityPublishReason.value.trim() }
       : {}),
   };
 }
@@ -583,6 +598,14 @@ onBeforeUnmount(() => {
     <p v-else-if="!expectedDraftVersion" class="blocked-reason">
       <i class="pi pi-save" /> Сохраните черновик перед публикацией.
     </p>
+    <label v-if="importanceClass === 'SECURITY'" class="security-reason">
+      <strong>Причина публикации сообщения безопасности</strong>
+      <InputText
+        v-model="securityPublishReason"
+        placeholder="Почему обход ограничений необходим"
+      />
+      <small>Минимум 10 символов. Причина попадёт в аудит публикации.</small>
+    </label>
 
     <div v-if="state.status === 'conflict'" class="conflict" role="alert">
       <template v-if="state.kind === 'catalog'">
@@ -668,9 +691,7 @@ onBeforeUnmount(() => {
               state.response.dependencies.userAttributeRevisionIds?.length ?? 0
             }}
             атрибутов ·
-            {{
-              state.response.dependencies.segmentRevisionIds?.length ?? 0
-            }}
+            {{ state.response.dependencies.segmentRevisionIds?.length ?? 0 }}
             сегментов
           </dd></template
         >
@@ -832,6 +853,21 @@ header p {
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
   font-size: 0.68rem;
+}
+.security-reason {
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+  border: 1px solid var(--status-warning-border);
+  border-radius: 12px;
+  background: var(--status-warning-soft);
+}
+.security-reason strong {
+  font-size: 0.72rem;
+}
+.security-reason small {
+  color: var(--text-small-muted);
+  font-size: 0.64rem;
 }
 .conflict,
 .publish-error {

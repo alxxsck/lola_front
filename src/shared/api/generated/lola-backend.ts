@@ -239,6 +239,10 @@ import type {
   SaveAttributeContractDraftDto,
   SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
+  ScenarioAdmissionDecisionPageResponseDto,
+  ScenarioAdmissionDecisionResponseDto,
+  ScenarioAdmissionDecisionsPageParams,
+  ScenarioAdmissionSettingsResponseDto,
   ScenarioAudienceSearchParams,
   ScenarioAuthoringDocumentResponseDto,
   ScenarioAuthoringDraftResponseDto,
@@ -307,6 +311,7 @@ import type {
   UpdateProjectMembershipDto,
   UpdateProjectRoleDto,
   UpdateProjectSettingsDto,
+  UpdateScenarioAdmissionSettingsDto,
   UpdateScenarioAuthoringMetadataDto,
   UpdateSlackNotificationDestinationDto,
   UpdateSpeechSettingsDto,
@@ -2179,6 +2184,39 @@ export const platformOperationsRotate = (
   );
 };
 
+export const scenarioAdmissionDecisionsGet = (
+  projectId: string,
+  decisionId: string,
+  options?: SecondParameter<
+    typeof request<ScenarioAdmissionDecisionResponseDto>
+  >,
+) => {
+  return request<ScenarioAdmissionDecisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-admission-decisions/${decisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const scenarioAdmissionDecisionsPage = (
+  projectId: string,
+  params?: ScenarioAdmissionDecisionsPageParams,
+  options?: SecondParameter<
+    typeof request<ScenarioAdmissionDecisionPageResponseDto>
+  >,
+) => {
+  return request<ScenarioAdmissionDecisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-admission-decisions/page`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const scenarioAudienceEvaluationEvaluateUser = (
   projectId: string,
   evaluateAudienceUserDto: BodyType<EvaluateAudienceUserDto>,
@@ -2556,6 +2594,39 @@ export const platformOperationsUpdateActivitySettings = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateActivitySettingsDto,
+    },
+    options,
+  );
+};
+
+export const platformOperationsScenarioAdmissionSettings = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<ScenarioAdmissionSettingsResponseDto>
+  >,
+) => {
+  return request<ScenarioAdmissionSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-engine/admission-settings`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const platformOperationsUpdateScenarioAdmissionSettings = (
+  projectId: string,
+  updateScenarioAdmissionSettingsDto: BodyType<UpdateScenarioAdmissionSettingsDto>,
+  options?: SecondParameter<
+    typeof request<ScenarioAdmissionSettingsResponseDto>
+  >,
+) => {
+  return request<ScenarioAdmissionSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-engine/admission-settings`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateScenarioAdmissionSettingsDto,
     },
     options,
   );
@@ -4885,6 +4956,12 @@ export type ProjectRoleReassignResult = NonNullable<
 export type PlatformOperationsRotateResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsRotate>>
 >;
+export type ScenarioAdmissionDecisionsGetResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAdmissionDecisionsGet>>
+>;
+export type ScenarioAdmissionDecisionsPageResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAdmissionDecisionsPage>>
+>;
 export type ScenarioAudienceEvaluationEvaluateUserResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAudienceEvaluationEvaluateUser>>
 >;
@@ -4957,6 +5034,15 @@ export type PlatformOperationsActivitySettingsResult = NonNullable<
 export type PlatformOperationsUpdateActivitySettingsResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsUpdateActivitySettings>>
 >;
+export type PlatformOperationsScenarioAdmissionSettingsResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsScenarioAdmissionSettings>>
+>;
+export type PlatformOperationsUpdateScenarioAdmissionSettingsResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof platformOperationsUpdateScenarioAdmissionSettings>
+    >
+  >;
 export type ScenarioRunsListResult = NonNullable<
   Awaited<ReturnType<typeof scenarioRunsList>>
 >;

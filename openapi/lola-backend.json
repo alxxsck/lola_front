@@ -3560,7 +3560,8 @@
           "EMAIL",
           "COUNTRY",
           "CURRENCY",
-          "LOCALE"
+          "LOCALE",
+          "TIME_ZONE"
         ],
         "type": "string"
       },
@@ -7778,6 +7779,17 @@
             "maxLength": 2000,
             "type": "string"
           },
+          "importanceClass": {
+            "default": "GENERAL",
+            "enum": [
+              "SECURITY",
+              "ACTION_RESPONSE",
+              "REMINDER",
+              "PROMOTION",
+              "GENERAL"
+            ],
+            "type": "string"
+          },
           "maxRunsPerUser": {
             "minimum": 1,
             "nullable": true,
@@ -7793,6 +7805,9 @@
             "maximum": 1000,
             "minimum": -1000,
             "type": "number"
+          },
+          "respectsQuietHours": {
+            "type": "boolean"
           },
           "triggerEventDefinitionRevisionId": {
             "format": "uuid",
@@ -14945,6 +14960,12 @@
               }
             ]
           },
+          "reason": {
+            "description": "Required when publishing a Scenario classified as SECURITY.",
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
           "rule": {
             "allOf": [
               {
@@ -15061,6 +15082,50 @@
           "rule",
           "catalogRevision",
           "expectedCurrentRevisionId"
+        ],
+        "type": "object"
+      },
+      "QuietHoursSettingsDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endLocalTime": {
+            "example": "08:00",
+            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+            "type": "string"
+          },
+          "startLocalTime": {
+            "example": "00:00",
+            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "startLocalTime",
+          "endLocalTime"
+        ],
+        "type": "object"
+      },
+      "QuietHoursSettingsResponseDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endLocalTime": {
+            "example": "08:00",
+            "type": "string"
+          },
+          "startLocalTime": {
+            "example": "00:00",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "startLocalTime",
+          "endLocalTime"
         ],
         "type": "object"
       },
@@ -15244,6 +15309,12 @@
             "description": "Scenario head observed by the editor.",
             "format": "uuid",
             "nullable": true,
+            "type": "string"
+          },
+          "reason": {
+            "description": "Required when the selected revision is classified as SECURITY.",
+            "maxLength": 500,
+            "minLength": 10,
             "type": "string"
           }
         },
@@ -15530,6 +15601,239 @@
         ],
         "type": "object"
       },
+      "ScenarioAdmissionDecisionPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioAdmissionDecisionResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "ScenarioAdmissionDecisionResponseDto": {
+        "properties": {
+          "endUserExternalId": {
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "eventLogId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object"
+          },
+          "frequencyExempt": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "importanceClass": {
+            "enum": [
+              "SECURITY",
+              "ACTION_RESPONSE",
+              "REMINDER",
+              "PROMOTION",
+              "GENERAL"
+            ],
+            "type": "string"
+          },
+          "localDate": {
+            "type": "string"
+          },
+          "numericPriority": {
+            "type": "number"
+          },
+          "outcome": {
+            "enum": [
+              "STARTED",
+              "SUPPRESSED"
+            ],
+            "type": "string"
+          },
+          "policySnapshot": {
+            "type": "object"
+          },
+          "reason": {
+            "enum": [
+              "ADMITTED",
+              "QUIET_HOURS",
+              "DAILY_LIMIT_REACHED",
+              "VISIT_LIMIT_REACHED",
+              "MINIMUM_INTERVAL_ACTIVE",
+              "LOST_ARBITRATION",
+              "LEGACY_SCENARIO_LIMIT"
+            ],
+            "type": "string"
+          },
+          "respectsQuietHours": {
+            "type": "boolean"
+          },
+          "retryAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "scenarioCode": {
+            "type": "string"
+          },
+          "scenarioId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "scenarioName": {
+            "type": "string"
+          },
+          "scenarioRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "timezoneSnapshot": {
+            "type": "string"
+          },
+          "timezoneSource": {
+            "enum": [
+              "END_USER_PROFILE",
+              "PROJECT_ACTIVITY",
+              "UTC_FALLBACK"
+            ],
+            "type": "string"
+          },
+          "visitIdSnapshot": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "winnerScenarioId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "scenarioId",
+          "scenarioCode",
+          "scenarioName",
+          "endUserExternalId",
+          "eventLogId",
+          "outcome",
+          "reason",
+          "importanceClass",
+          "numericPriority",
+          "frequencyExempt",
+          "respectsQuietHours",
+          "evaluatedAt",
+          "timezoneSnapshot",
+          "timezoneSource",
+          "localDate",
+          "policySnapshot",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "ScenarioAdmissionSettingsResponseDto": {
+        "properties": {
+          "maxStartsPerLocalDay": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "maxStartsPerVisit": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "minimumIntervalSeconds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "mode": {
+            "enum": [
+              "LEGACY_PER_SCENARIO",
+              "PROJECT_GLOBAL_V1"
+            ],
+            "type": "string"
+          },
+          "projectVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "quietHours": {
+            "$ref": "#/components/schemas/QuietHoursSettingsResponseDto"
+          },
+          "semantics": {
+            "$ref": "#/components/schemas/ScenarioAdmissionSettingsSemanticsResponseDto"
+          }
+        },
+        "required": [
+          "projectVersion",
+          "mode",
+          "maxStartsPerLocalDay",
+          "maxStartsPerVisit",
+          "minimumIntervalSeconds",
+          "quietHours",
+          "semantics"
+        ],
+        "type": "object"
+      },
+      "ScenarioAdmissionSettingsSemanticsResponseDto": {
+        "properties": {
+          "dailyLimitWindow": {
+            "enum": [
+              "END_USER_LOCAL_CALENDAR_DAY"
+            ],
+            "type": "string"
+          },
+          "minimumIntervalAnchor": {
+            "enum": [
+              "LAST_NON_SECURITY_START"
+            ],
+            "type": "string"
+          },
+          "quietHoursBehavior": {
+            "enum": [
+              "SUPPRESS_WITHOUT_DELAY_OR_QUOTA"
+            ],
+            "type": "string"
+          },
+          "securityBypass": {
+            "enum": [
+              "FREQUENCY_AND_QUIET_HOURS"
+            ],
+            "type": "string"
+          },
+          "visitLimitWithoutActiveVisit": {
+            "enum": [
+              "NOT_APPLIED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "dailyLimitWindow",
+          "visitLimitWithoutActiveVisit",
+          "minimumIntervalAnchor",
+          "quietHoursBehavior",
+          "securityBypass"
+        ],
+        "type": "object"
+      },
       "ScenarioAuthoringDocumentResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -15561,12 +15865,25 @@
           "editable": {
             "type": "boolean"
           },
+          "importanceClass": {
+            "enum": [
+              "SECURITY",
+              "ACTION_RESPONSE",
+              "REMINDER",
+              "PROMOTION",
+              "GENERAL"
+            ],
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
           "projectId": {
             "format": "uuid",
             "type": "string"
+          },
+          "respectsQuietHours": {
+            "type": "boolean"
           },
           "scenarioId": {
             "format": "uuid",
@@ -15606,6 +15923,8 @@
           "code",
           "name",
           "status",
+          "importanceClass",
+          "respectsQuietHours",
           "triggerEventDefinitionRevisionId",
           "editable",
           "createdAt",
@@ -15808,6 +16127,16 @@
             "format": "uuid",
             "type": "string"
           },
+          "importanceClass": {
+            "enum": [
+              "SECURITY",
+              "ACTION_RESPONSE",
+              "REMINDER",
+              "PROMOTION",
+              "GENERAL"
+            ],
+            "type": "string"
+          },
           "maxRunsPerUser": {
             "minimum": 1,
             "nullable": true,
@@ -15822,6 +16151,9 @@
           "projectId": {
             "format": "uuid",
             "type": "string"
+          },
+          "respectsQuietHours": {
+            "type": "boolean"
           },
           "status": {
             "enum": [
@@ -15847,6 +16179,8 @@
           "status",
           "conversationPolicy",
           "priority",
+          "importanceClass",
+          "respectsQuietHours",
           "cooldownSeconds",
           "createdAt",
           "updatedAt"
@@ -16579,6 +16913,16 @@
             "format": "uuid",
             "type": "string"
           },
+          "importanceClass": {
+            "enum": [
+              "SECURITY",
+              "ACTION_RESPONSE",
+              "REMINDER",
+              "PROMOTION",
+              "GENERAL"
+            ],
+            "type": "string"
+          },
           "publishedAt": {
             "format": "date-time",
             "type": "string"
@@ -16587,6 +16931,9 @@
             "format": "uuid",
             "nullable": true,
             "type": "string"
+          },
+          "respectsQuietHours": {
+            "type": "boolean"
           },
           "revisionNumber": {
             "minimum": 1,
@@ -16609,6 +16956,8 @@
           "revisionNumber",
           "contentHash",
           "catalogRevision",
+          "importanceClass",
+          "respectsQuietHours",
           "publishedAt",
           "current",
           "editable",
@@ -16636,6 +16985,16 @@
             "format": "uuid",
             "type": "string"
           },
+          "importanceClass": {
+            "enum": [
+              "SECURITY",
+              "ACTION_RESPONSE",
+              "REMINDER",
+              "PROMOTION",
+              "GENERAL"
+            ],
+            "type": "string"
+          },
           "publishedAt": {
             "format": "date-time",
             "type": "string"
@@ -16644,6 +17003,9 @@
             "format": "uuid",
             "nullable": true,
             "type": "string"
+          },
+          "respectsQuietHours": {
+            "type": "boolean"
           },
           "revisionNumber": {
             "minimum": 1,
@@ -16660,6 +17022,8 @@
           "revisionNumber",
           "contentHash",
           "catalogRevision",
+          "importanceClass",
+          "respectsQuietHours",
           "publishedAt",
           "current",
           "editable"
@@ -20545,6 +20909,57 @@
         ],
         "type": "object"
       },
+      "UpdateScenarioAdmissionSettingsDto": {
+        "properties": {
+          "acknowledgeLegacyScenarioLimits": {
+            "description": "Required when global mode replaces active legacy Scenario limits.",
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxStartsPerLocalDay": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "maxStartsPerVisit": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "minimumIntervalSeconds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "mode": {
+            "enum": [
+              "LEGACY_PER_SCENARIO",
+              "PROJECT_GLOBAL_V1"
+            ],
+            "type": "string"
+          },
+          "quietHours": {
+            "$ref": "#/components/schemas/QuietHoursSettingsDto"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "mode",
+          "maxStartsPerLocalDay",
+          "maxStartsPerVisit",
+          "minimumIntervalSeconds",
+          "quietHours",
+          "reason"
+        ],
+        "type": "object"
+      },
       "UpdateScenarioAuthoringMetadataDto": {
         "properties": {
           "activeFrom": {
@@ -20581,6 +20996,16 @@
             "format": "date-time",
             "type": "string"
           },
+          "importanceClass": {
+            "enum": [
+              "SECURITY",
+              "ACTION_RESPONSE",
+              "REMINDER",
+              "PROMOTION",
+              "GENERAL"
+            ],
+            "type": "string"
+          },
           "maxRunsPerUser": {
             "minimum": 1,
             "nullable": true,
@@ -20600,6 +21025,9 @@
             "maxLength": 500,
             "minLength": 10,
             "type": "string"
+          },
+          "respectsQuietHours": {
+            "type": "boolean"
           },
           "status": {
             "enum": [
@@ -30098,6 +30526,199 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/scenario-admission-decisions/{decisionId}": {
+      "get": {
+        "operationId": "ScenarioAdmissionDecisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "decisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioAdmissionDecisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario admission decisions"
+        ],
+        "x-iam-permission": {
+          "code": "project.scenario_runs.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-admission-decisions/page": {
+      "get": {
+        "operationId": "ScenarioAdmissionDecisions_page",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scenarioId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endUserExternalId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventLogId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "enum": [
+                "STARTED",
+                "SUPPRESSED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ADMITTED",
+                "QUIET_HOURS",
+                "DAILY_LIMIT_REACHED",
+                "VISIT_LIMIT_REACHED",
+                "MINIMUM_INTERVAL_ACTIVE",
+                "LOST_ARBITRATION",
+                "LEGACY_SCENARIO_LIMIT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "importanceClass",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SECURITY",
+                "ACTION_RESPONSE",
+                "REMINDER",
+                "PROMOTION",
+                "GENERAL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evaluatedFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evaluatedTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioAdmissionDecisionPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "scenario admission decisions"
+        ],
+        "x-iam-permission": {
+          "code": "project.scenario_runs.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/scenario-authoring/audience/evaluate-user": {
       "post": {
         "operationId": "ScenarioAudienceEvaluation_evaluateUser",
@@ -32210,6 +32831,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ActivitySettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin project operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/scenario-engine/admission-settings": {
+      "get": {
+        "operationId": "PlatformOperations_scenarioAdmissionSettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioAdmissionSettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin project operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.read",
+          "scope": "PROJECT"
+        }
+      },
+      "patch": {
+        "operationId": "PlatformOperations_updateScenarioAdmissionSettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScenarioAdmissionSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioAdmissionSettingsResponseDto"
                 }
               }
             },

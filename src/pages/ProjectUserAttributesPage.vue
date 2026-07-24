@@ -22,9 +22,7 @@ import {
   parseAllowedValues,
   validateContractDocument,
 } from "@/features/end-user-attributes/model/contract-domain";
-import {
-  type ContractIssuePresentation,
-} from "@/features/end-user-attributes/model/contract-issue-presentation";
+import { type ContractIssuePresentation } from "@/features/end-user-attributes/model/contract-issue-presentation";
 import { useContractIssuePresentation } from "@/features/end-user-attributes/model/use-contract-issue-presentation";
 import {
   readDemoContractDraft,
@@ -95,12 +93,11 @@ const aiFormat = ref<"STRUCTURED_JSON" | "COMPACT_TEXT">("STRUCTURED_JSON");
 const aiBudget = ref(2000);
 const savedDraftSnapshot = ref("");
 
-const canManage = computed(
-  () =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.profile_contract.write",
-    ),
+const canManage = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.profile_contract.write",
+  ),
 );
 const canManageAiContext = computed(() =>
   hasProjectPermission(
@@ -121,9 +118,7 @@ const orderedFields = computed(() =>
   ),
 );
 const profileContractFields = computed(() =>
-  fields.value.filter(
-    (field) => field.lifecycle !== "ARCHIVED",
-  ),
+  fields.value.filter((field) => field.lifecycle !== "ARCHIVED"),
 );
 const localIssues = computed(() =>
   workspace.value
@@ -134,10 +129,7 @@ const issueInputs = computed(() => [
   ...localIssues.value,
   ...(validation.value?.issues ?? []),
 ]);
-const { errors, warnings } = useContractIssuePresentation(
-  issueInputs,
-  fields,
-);
+const { errors, warnings } = useContractIssuePresentation(issueInputs, fields);
 const dirty = computed(() =>
   workspace.value
     ? contractDocumentSignature(workspace.value.draft.document) !==
@@ -284,6 +276,7 @@ const semanticRoleOptions = [
   { value: "EMAIL", label: "Электронная почта" },
   { value: "COUNTRY", label: "Страна" },
   { value: "CURRENCY", label: "Валюта" },
+  { value: "TIME_ZONE", label: "Часовой пояс" },
 ];
 const healthWindowOptions = [
   { value: "24h", label: "24 часа" },
@@ -840,7 +833,8 @@ function fieldPublicationState(field: AttributeContractDraftFieldDto) {
   const publishedDraft = toDraftField(
     published as unknown as Record<string, unknown>,
   );
-  return contractFieldSignature(field) === contractFieldSignature(publishedDraft)
+  return contractFieldSignature(field) ===
+    contractFieldSignature(publishedDraft)
     ? ("published" as const)
     : ("changed" as const);
 }
@@ -943,7 +937,11 @@ function archiveImpactedField() {
           severity="secondary"
           outlined
           :disabled="!profileContractFields.length"
-          :title="profileContractFields.length ? 'Скопировать текущий набор полей, их типы и обязательность' : 'Сначала добавьте хотя бы одно поле'"
+          :title="
+            profileContractFields.length
+              ? 'Скопировать текущий набор полей, их типы и обязательность'
+              : 'Сначала добавьте хотя бы одно поле'
+          "
           aria-label="Скопировать поля профиля"
           @click="copyProfileContract"
         />
@@ -1261,13 +1259,17 @@ function archiveImpactedField() {
         severity="error"
         :closable="false"
       >
-        <span class="notice-title">Публикация недоступна: исправьте ошибки</span>
+        <span class="notice-title"
+          >Публикация недоступна: исправьте ошибки</span
+        >
         <ul>
           <li v-for="issue in errors" :key="issue.key">
             <span class="notice-copy">
               <strong>{{ issue.title }}</strong>
               <small v-if="issue.detail">{{ issue.detail }}</small>
-              <small>Код: <code>{{ issue.code }}</code></small>
+              <small
+                >Код: <code>{{ issue.code }}</code></small
+              >
             </span>
             <Button
               v-if="issue.fieldIdentity"
@@ -1294,7 +1296,9 @@ function archiveImpactedField() {
             <span class="notice-copy">
               <strong>{{ issue.title }}</strong>
               <small>{{ issue.detail }}</small>
-              <small>Код: <code>{{ issue.code }}</code></small>
+              <small
+                >Код: <code>{{ issue.code }}</code></small
+              >
             </span>
             <Button
               v-if="issue.fieldIdentity"
@@ -1355,12 +1359,12 @@ function archiveImpactedField() {
                   fieldPublicationState(field) === 'draft'
                     ? 'secondary'
                     : fieldPublicationState(field) === 'changed'
-                        ? 'warn'
-                        : field.lifecycle === 'ACTIVE'
-                          ? 'success'
-                          : field.lifecycle === 'DEPRECATED'
-                            ? 'warn'
-                            : 'secondary'
+                      ? 'warn'
+                      : field.lifecycle === 'ACTIVE'
+                        ? 'success'
+                        : field.lifecycle === 'DEPRECATED'
+                          ? 'warn'
+                          : 'secondary'
                 "
               />
             </div>
@@ -1461,10 +1465,10 @@ function archiveImpactedField() {
               : errors.length
                 ? "Исправьте ошибки, чтобы опубликовать"
                 : validation?.valid && !hasUnsavedDraftEdits
-                ? "Черновик проверен — можно публиковать"
-                : hasUnsavedDraftEdits
-                  ? "Сохраните изменения, чтобы продолжить"
-                  : "Проверьте черновик перед публикацией"
+                  ? "Черновик проверен — можно публиковать"
+                  : hasUnsavedDraftEdits
+                    ? "Сохраните изменения, чтобы продолжить"
+                    : "Проверьте черновик перед публикацией"
           }}</strong
           ><small>{{
             dirty
@@ -1498,7 +1502,9 @@ function archiveImpactedField() {
             validation.draftVersion !== workspace.draft.draftVersion
           "
           @click="publishingVisible = true"
-        /><Message v-else severity="info" :closable="false">У вас нет права публиковать контракт.</Message>
+        /><Message v-else severity="info" :closable="false"
+          >У вас нет права публиковать контракт.</Message
+        >
       </footer>
       <div id="profile-quality-slot" class="content-slot" />
       <div id="profile-tools-slot" class="content-slot" />
@@ -1509,7 +1515,9 @@ function archiveImpactedField() {
       v-model:visible="editorVisible"
       modal
       :header="
-        editingIndex === null ? 'Новое поле профиля пользователя' : 'Изменить поле'
+        editingIndex === null
+          ? 'Новое поле профиля пользователя'
+          : 'Изменить поле'
       "
       :style="{ width: 'min(920px, calc(100vw - 24px))' }"
     >
@@ -1704,7 +1712,8 @@ function archiveImpactedField() {
             /><small
               >Укажите дату и время по UTC, например
               2026-12-31T00:00:00Z.</small
-          ></label>
+            ></label
+          >
         </div>
         <Message v-if="fieldFormError" severity="error" :closable="false">{{
           fieldFormError
@@ -1734,49 +1743,57 @@ function archiveImpactedField() {
           >После публикации новая структура начнёт действовать. Уже сохранённые
           профили и старые версии останутся без изменений.</Message
         ><label
-          ><span class="label-with-help">Причина изменения *
+          ><span class="label-with-help"
+            >Причина изменения *
             <button
               type="button"
               class="help-button"
               :aria-label="`Подсказка: ${publishHelp.reason}`"
               :data-tooltip="publishHelp.reason"
-            ><i class="pi pi-question-circle" /></button></span
+            >
+              <i class="pi pi-question-circle" /></button></span
           ><Textarea
             v-model="publishForm.reason"
             rows="3"
             maxlength="1000" /></label
         ><label
-          ><span class="label-with-help">Переходный период, дней
+          ><span class="label-with-help"
+            >Переходный период, дней
             <button
               type="button"
               class="help-button"
               :aria-label="`Подсказка: ${publishHelp.graceDays}`"
               :data-tooltip="publishHelp.graceDays"
-            ><i class="pi pi-question-circle" /></button></span
+            >
+              <i class="pi pi-question-circle" /></button></span
           ><InputNumber
             v-model="publishForm.graceDays"
             :min="0"
             :max="30" /></label
         ><label
-          ><span class="label-with-help">План перехода для несовместимых изменений
+          ><span class="label-with-help"
+            >План перехода для несовместимых изменений
             <button
               type="button"
               class="help-button"
               :aria-label="`Подсказка: ${publishHelp.breakingChangePlan}`"
               :data-tooltip="publishHelp.breakingChangePlan"
-            ><i class="pi pi-question-circle" /></button></span
+            >
+              <i class="pi pi-question-circle" /></button></span
           ><Textarea
             v-model="publishForm.breakingChangePlan"
             rows="3"
             maxlength="2000" /></label
         ><label
-          ><span class="label-with-help">Номер задачи о готовности интеграции
+          ><span class="label-with-help"
+            >Номер задачи о готовности интеграции
             <button
               type="button"
               class="help-button"
               :aria-label="`Подсказка: ${publishHelp.readinessEvidence}`"
               :data-tooltip="publishHelp.readinessEvidence"
-            ><i class="pi pi-question-circle" /></button></span
+            >
+              <i class="pi pi-question-circle" /></button></span
           ><InputText
             v-model="publishForm.readinessEvidenceId"
             class="mono"
@@ -1908,9 +1925,9 @@ await fetch("/api/v1/interaction-sessions", {
         <pre><code>{{ schemaJson }}</code></pre>
         <Message severity="info" :closable="false"
           >DECIMAL передавайте строкой, DATE — YYYY-MM-DD, DATETIME — RFC 3339.
-          Полный профиль заменяет предыдущее состояние. Сервер проверяет
-          список разрешённых полей, версию структуры и порядок обновлений
-          и не даёт перезаписать данные более старой версией.</Message
+          Полный профиль заменяет предыдущее состояние. Сервер проверяет список
+          разрешённых полей, версию структуры и порядок обновлений и не даёт
+          перезаписать данные более старой версией.</Message
         >
       </div>
     </Dialog>
@@ -2581,7 +2598,9 @@ await fetch("/api/v1/interaction-sessions", {
   text-align: left;
   text-transform: none;
   transform: translate(-50%, 4px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 .help-button:hover::after,
 .help-button:focus-visible::after {

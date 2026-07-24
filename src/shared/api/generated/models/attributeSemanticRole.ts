@@ -16,4 +16,5 @@ export const AttributeSemanticRole = {
   COUNTRY: "COUNTRY",
   CURRENCY: "CURRENCY",
   LOCALE: "LOCALE",
+  TIME_ZONE: "TIME_ZONE",
 } as const;

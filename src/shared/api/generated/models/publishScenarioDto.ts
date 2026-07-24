@@ -35,6 +35,12 @@ export interface PublishScenarioDto {
   localization?: ScenarioLocalizationPolicyDto;
   /** Required when Audience or action templates read End User Attributes. */
   profileFreshness?: PublishScenarioDtoProfileFreshness;
+  /**
+   * Required when publishing a Scenario classified as SECURITY.
+   * @minLength 10
+   * @maxLength 500
+   */
+  reason?: string;
   /** Versioned typed rule AST to compile into the immutable Scenario Revision. */
   rule?: ScenarioRuleDto;
   /** AUTO follows stable compatible Event revisions; EXACT intentionally pins this Scenario revision. */

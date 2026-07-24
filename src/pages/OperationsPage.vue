@@ -12,11 +12,12 @@ import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { RunExplainInspector } from "@/features/scenario-run-explain/ui";
+import ScenarioAdmissionDecisionsPanel from "@/features/scenario-admission/ScenarioAdmissionDecisionsPanel.vue";
 import { repository } from "@/shared/api/repository";
 import { formatDate, relativeTime } from "@/shared/lib/format";
 import type { AuditEvent, ScenarioRun } from "@/shared/types/domain";
 
-type Section = "runs" | "audit";
+type Section = "runs" | "admission" | "audit";
 const auth = useAuthStore();
 const route = useRoute();
 const activeWaitDefinitionKeyId = computed(() =>
@@ -25,10 +26,13 @@ const activeWaitDefinitionKeyId = computed(() =>
     : undefined,
 );
 const section = ref<Section>(
-  route.query.section === "audit" && !activeWaitDefinitionKeyId.value
-    ? "audit"
+  !activeWaitDefinitionKeyId.value &&
+    (route.query.section === "audit" || route.query.section === "admission")
+    ? route.query.section
     : "runs",
 );
+const admissionCount = ref(0);
+const admissionHasMore = ref(false);
 const scenarioRuns = ref<ScenarioRun[]>([]);
 const runsNextCursor = ref<string | null>(null);
 const loadingMoreRuns = ref(false);
@@ -40,6 +44,7 @@ const loadingMoreAudit = ref(false);
 const loading = ref(true);
 const errors = ref<Record<Section, string>>({
   runs: "",
+  admission: "",
   audit: "",
 });
 const search = ref("");
@@ -50,6 +55,11 @@ const selectedAudit = ref<AuditEvent | null>(null);
 const sections = [
   { value: "runs" as const, label: "Запуски сценариев", icon: "pi pi-sitemap" },
   { value: "audit" as const, label: "Аудит", icon: "pi pi-shield" },
+  {
+    value: "admission" as const,
+    label: "Решения о запуске",
+    icon: "pi pi-check-square",
+  },
 ];
 const statusOptions = computed(() => {
   const values =
@@ -351,188 +361,204 @@ onMounted(load);
         <strong>{{
           item.value === "runs"
             ? `${scenarioRuns.length}${runsNextCursor ? "+" : ""}`
-            : `${auditEvents.length}${auditNextCursor ? "+" : ""}`
+            : item.value === "admission"
+              ? `${admissionCount}${admissionHasMore ? "+" : ""}`
+              : `${auditEvents.length}${auditNextCursor ? "+" : ""}`
         }}</strong>
       </button>
     </div>
 
-    <div class="filters card">
-      <span class="search"
-        ><i class="pi pi-search" /><InputText
-          v-model="search"
-          :placeholder="
-            section === 'audit'
-              ? 'Действие, актор или ресурс'
-              : 'Код, пользователь или ID'
-          "
-      /></span>
-      <Select
-        v-model="status"
-        :options="statusOptions"
-        option-label="label"
-        option-value="value"
-      />
-      <span class="data-source"
-        ><i class="pi pi-database" />
-        {{
-          repository.mode === "api"
-            ? "Lola Backend · live data"
-            : "Демонстрационные данные"
-        }}</span
-      >
-    </div>
+    <ScenarioAdmissionDecisionsPanel
+      v-if="section === 'admission' && auth.project?.id"
+      :project-id="auth.project.id"
+      @count="
+        (count, hasMore) => {
+          admissionCount = count;
+          admissionHasMore = hasMore;
+        }
+      "
+    />
 
-    <div class="card table-card">
-      <div v-if="loading" class="loading-list">
-        <Skeleton v-for="item in 7" :key="item" height="58px" />
-      </div>
-      <DataTable
-        v-else-if="section === 'runs'"
-        :value="filteredRuns"
-        paginator
-        :rows="12"
-        :pt="{
-          tableContainer: {
-            tabindex: 0,
-            role: 'region',
-            'aria-label': 'Запуски сценариев',
-          },
-        }"
-        row-hover
-        data-key="id"
-        @row-click="selectedRun = $event.data"
-      >
-        <template #empty
-          ><div class="empty">
-            <i class="pi pi-sitemap" />Запусков по выбранным фильтрам нет.
-          </div></template
-        >
-        <Column header="Сценарий"
-          ><template #body="{ data }"
-            ><div class="primary-cell">
-              <strong>{{ data.scenarioName }}</strong
-              ><small class="mono">{{ data.scenarioCode }}</small>
-            </div></template
-          ></Column
-        >
-        <Column header="Пользователь"
-          ><template #body="{ data }"
-            ><span class="mono compact">{{
-              data.userExternalId
-            }}</span></template
-          ></Column
-        >
-        <Column header="Прогресс" class="mobile-hide"
-          ><template #body="{ data }"
-            ><span
-              >{{ data.currentStep }} / {{ data.steps.length }}</span
-            ></template
-          ></Column
-        >
-        <Column header="Статус"
-          ><template #body="{ data }"
-            ><Tag
-              :value="data.status"
-              :severity="severity(data.status)"
-              rounded /></template
-        ></Column>
-        <Column header="Старт"
-          ><template #body="{ data }"
-            ><span :title="formatDate(data.startedAt)">{{
-              relativeTime(data.startedAt)
-            }}</span></template
-          ></Column
-        >
-        <Column
-          ><template #body><i class="pi pi-chevron-right muted" /></template
-        ></Column>
-      </DataTable>
-      <div v-if="section === 'runs' && runsNextCursor" class="load-more">
-        <Button
-          label="Загрузить ещё запусков"
-          icon="pi pi-chevron-down"
-          severity="secondary"
-          outlined
-          :loading="loadingMoreRuns"
-          @click="loadMoreRuns"
+    <template v-else>
+      <div class="filters card">
+        <span class="search"
+          ><i class="pi pi-search" /><InputText
+            v-model="search"
+            :placeholder="
+              section === 'audit'
+                ? 'Действие, актор или ресурс'
+                : 'Код, пользователь или ID'
+            "
+        /></span>
+        <Select
+          v-model="status"
+          :options="statusOptions"
+          option-label="label"
+          option-value="value"
         />
+        <span class="data-source"
+          ><i class="pi pi-database" />
+          {{
+            repository.mode === "api"
+              ? "Lola Backend · live data"
+              : "Демонстрационные данные"
+          }}</span
+        >
       </div>
 
-      <DataTable
-        v-if="section === 'audit'"
-        :value="auditEvents"
-        :loading="auditLoading"
-        :pt="{
-          tableContainer: {
-            tabindex: 0,
-            role: 'region',
-            'aria-label': 'Аудит действий',
-          },
-        }"
-        row-hover
-        data-key="id"
-        @row-click="selectedAudit = $event.data"
-      >
-        <template #empty
-          ><div class="empty">
-            <i class="pi pi-shield" />Записей аудита по выбранным фильтрам нет.
-          </div></template
+      <div class="card table-card">
+        <div v-if="loading" class="loading-list">
+          <Skeleton v-for="item in 7" :key="item" height="58px" />
+        </div>
+        <DataTable
+          v-else-if="section === 'runs'"
+          :value="filteredRuns"
+          paginator
+          :rows="12"
+          :pt="{
+            tableContainer: {
+              tabindex: 0,
+              role: 'region',
+              'aria-label': 'Запуски сценариев',
+            },
+          }"
+          row-hover
+          data-key="id"
+          @row-click="selectedRun = $event.data"
         >
-        <Column header="Действие"
-          ><template #body="{ data }"
-            ><div class="primary-cell">
-              <strong>{{
-                data.operation || data.resourceType || data.eventType
-              }}</strong
-              ><small class="mono">{{ data.eventType }}</small>
+          <template #empty
+            ><div class="empty">
+              <i class="pi pi-sitemap" />Запусков по выбранным фильтрам нет.
             </div></template
-          ></Column
+          >
+          <Column header="Сценарий"
+            ><template #body="{ data }"
+              ><div class="primary-cell">
+                <strong>{{ data.scenarioName }}</strong
+                ><small class="mono">{{ data.scenarioCode }}</small>
+              </div></template
+            ></Column
+          >
+          <Column header="Пользователь"
+            ><template #body="{ data }"
+              ><span class="mono compact">{{
+                data.userExternalId
+              }}</span></template
+            ></Column
+          >
+          <Column header="Прогресс" class="mobile-hide"
+            ><template #body="{ data }"
+              ><span
+                >{{ data.currentStep }} / {{ data.steps.length }}</span
+              ></template
+            ></Column
+          >
+          <Column header="Статус"
+            ><template #body="{ data }"
+              ><Tag
+                :value="data.status"
+                :severity="severity(data.status)"
+                rounded /></template
+          ></Column>
+          <Column header="Старт"
+            ><template #body="{ data }"
+              ><span :title="formatDate(data.startedAt)">{{
+                relativeTime(data.startedAt)
+              }}</span></template
+            ></Column
+          >
+          <Column
+            ><template #body><i class="pi pi-chevron-right muted" /></template
+          ></Column>
+        </DataTable>
+        <div v-if="section === 'runs' && runsNextCursor" class="load-more">
+          <Button
+            label="Загрузить ещё запусков"
+            icon="pi pi-chevron-down"
+            severity="secondary"
+            outlined
+            :loading="loadingMoreRuns"
+            @click="loadMoreRuns"
+          />
+        </div>
+
+        <DataTable
+          v-if="section === 'audit'"
+          :value="auditEvents"
+          :loading="auditLoading"
+          :pt="{
+            tableContainer: {
+              tabindex: 0,
+              role: 'region',
+              'aria-label': 'Аудит действий',
+            },
+          }"
+          row-hover
+          data-key="id"
+          @row-click="selectedAudit = $event.data"
         >
-        <Column header="Администратор"
-          ><template #body="{ data }"
-            ><div class="primary-cell">
-              <strong>{{ data.actor.name || "Система" }}</strong
-              ><small>{{ data.actor.email || data.actor.type }}</small>
+          <template #empty
+            ><div class="empty">
+              <i class="pi pi-shield" />Записей аудита по выбранным фильтрам
+              нет.
             </div></template
-          ></Column
-        >
-        <Column header="Ресурс" class="mobile-hide"
-          ><template #body="{ data }"
-            ><div class="primary-cell">
-              <strong>{{ data.resourceType || "—" }}</strong
-              ><small class="mono">{{ data.resourceId || "—" }}</small>
-            </div></template
-          ></Column
-        >
-        <Column header="Статус"
-          ><template #body="{ data }"
-            ><Tag
-              :value="data.outcome"
-              :severity="severity(data.outcome)"
-              rounded /></template
-        ></Column>
-        <Column header="Время"
-          ><template #body="{ data }"
-            ><span :title="formatDate(data.occurredAt)">{{
-              relativeTime(data.occurredAt)
-            }}</span></template
-          ></Column
-        >
-        <Column
-          ><template #body><i class="pi pi-chevron-right muted" /></template
-        ></Column>
-      </DataTable>
-      <div v-if="section === 'audit' && auditNextCursor" class="load-more">
-        <Button
-          label="Загрузить ещё событий аудита"
-          icon="pi pi-chevron-down"
-          severity="secondary"
-          outlined
-          :loading="loadingMoreAudit"
-          @click="loadMoreAuditEvents"
-        />
+          >
+          <Column header="Действие"
+            ><template #body="{ data }"
+              ><div class="primary-cell">
+                <strong>{{
+                  data.operation || data.resourceType || data.eventType
+                }}</strong
+                ><small class="mono">{{ data.eventType }}</small>
+              </div></template
+            ></Column
+          >
+          <Column header="Администратор"
+            ><template #body="{ data }"
+              ><div class="primary-cell">
+                <strong>{{ data.actor.name || "Система" }}</strong
+                ><small>{{ data.actor.email || data.actor.type }}</small>
+              </div></template
+            ></Column
+          >
+          <Column header="Ресурс" class="mobile-hide"
+            ><template #body="{ data }"
+              ><div class="primary-cell">
+                <strong>{{ data.resourceType || "—" }}</strong
+                ><small class="mono">{{ data.resourceId || "—" }}</small>
+              </div></template
+            ></Column
+          >
+          <Column header="Статус"
+            ><template #body="{ data }"
+              ><Tag
+                :value="data.outcome"
+                :severity="severity(data.outcome)"
+                rounded /></template
+          ></Column>
+          <Column header="Время"
+            ><template #body="{ data }"
+              ><span :title="formatDate(data.occurredAt)">{{
+                relativeTime(data.occurredAt)
+              }}</span></template
+            ></Column
+          >
+          <Column
+            ><template #body><i class="pi pi-chevron-right muted" /></template
+          ></Column>
+        </DataTable>
+        <div v-if="section === 'audit' && auditNextCursor" class="load-more">
+          <Button
+            label="Загрузить ещё событий аудита"
+            icon="pi pi-chevron-down"
+            severity="secondary"
+            outlined
+            :loading="loadingMoreAudit"
+            @click="loadMoreAuditEvents"
+          />
+        </div>
       </div>
-    </div>
+    </template>
   </section>
 
   <Drawer

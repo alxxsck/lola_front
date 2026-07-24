@@ -67,6 +67,14 @@ export const profileFieldPresets: readonly ProfileFieldPreset[] = [
     key: "locale",
     valueType: "STRING",
   },
+  {
+    value: "TIME_ZONE",
+    label: "Часовой пояс",
+    hint: "Локальный IANA часовой пояс для суточных лимитов и тихих часов.",
+    icon: "pi-clock",
+    key: "timeZone",
+    valueType: "STRING",
+  },
 ] as const;
 
 export function profileFieldPreset(

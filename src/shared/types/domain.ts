@@ -285,6 +285,9 @@ export interface Scenario {
   status: ScenarioStatus;
   conversationPolicy: ConversationPolicy;
   priority: number;
+  importanceClass?:
+    "SECURITY" | "ACTION_RESPONSE" | "REMINDER" | "PROMOTION" | "GENERAL";
+  respectsQuietHours?: boolean;
   cooldownSeconds?: number;
   maxRunsPerUser?: number;
   activeFrom?: string;
