@@ -161,6 +161,10 @@ import type {
   IngestClientEventDto,
   IngestEventDto,
   InitialAccessLogin200,
+  IntegrationActivityContentResponseDto,
+  IntegrationActivityDetailResponseDto,
+  IntegrationActivityListParams,
+  IntegrationActivityListResponseDto,
   IntegrationAttributeContractResponseDto,
   InteractionSessionResponseDto,
   KnowledgeDocumentDetailResponseDto,
@@ -1553,6 +1557,53 @@ export const adminEventLogsGet = (
   return request<EventLogResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/event-logs/${eventId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationActivityList = (
+  projectId: string,
+  params?: IntegrationActivityListParams,
+  options?: SecondParameter<typeof request<IntegrationActivityListResponseDto>>,
+) => {
+  return request<IntegrationActivityListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-activity`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const integrationActivityGet = (
+  projectId: string,
+  activityId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationActivityDetailResponseDto>
+  >,
+) => {
+  return request<IntegrationActivityDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-activity/${activityId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationActivityContent = (
+  projectId: string,
+  activityId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationActivityContentResponseDto>
+  >,
+) => {
+  return request<IntegrationActivityContentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-activity/${activityId}/content`,
       method: "GET",
     },
     options,
@@ -4701,6 +4752,15 @@ export type AdminEventLogsListResult = NonNullable<
 >;
 export type AdminEventLogsGetResult = NonNullable<
   Awaited<ReturnType<typeof adminEventLogsGet>>
+>;
+export type IntegrationActivityListResult = NonNullable<
+  Awaited<ReturnType<typeof integrationActivityList>>
+>;
+export type IntegrationActivityGetResult = NonNullable<
+  Awaited<ReturnType<typeof integrationActivityGet>>
+>;
+export type IntegrationActivityContentResult = NonNullable<
+  Awaited<ReturnType<typeof integrationActivityContent>>
 >;
 export type KnowledgeListResult = NonNullable<
   Awaited<ReturnType<typeof knowledgeList>>

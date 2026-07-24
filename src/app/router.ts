@@ -187,8 +187,13 @@ export const router = createRouter({
         {
           path: "event-logs",
           name: "event-logs",
-          component: () => import("@/pages/EventLogsPage.vue"),
-          meta: { projectPermission: "project.event_logs.read" },
+          component: () => import("@/pages/ProjectLogsPage.vue"),
+          meta: {
+            projectPermissionsAny: [
+              "project.event_logs.read",
+              "project.integration_activity.read",
+            ],
+          },
         },
         {
           path: "actions",

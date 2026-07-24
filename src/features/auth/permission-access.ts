@@ -71,6 +71,8 @@ export const PROJECT_PERMISSION_CODES = [
   "project.notifications.manage",
   "project.integrations.read",
   "project.integrations.manage",
+  "project.integration_activity.read",
+  "project.integration_message_content.read",
   "project.telegram.links.read",
   "project.telegram.personal_messages.send",
   "project.telegram.broadcasts.read",

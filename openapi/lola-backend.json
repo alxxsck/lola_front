@@ -10620,6 +10620,383 @@
         ],
         "type": "object"
       },
+      "IntegrationActivityAttachmentDto": {
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "mimeType",
+          "filename",
+          "sizeBytes"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityAttemptDto": {
+        "properties": {
+          "attemptNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "retryAfterMs": {
+            "nullable": true,
+            "type": "number"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptNumber",
+          "outcome",
+          "startedAt",
+          "finishedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityContentResponseDto": {
+        "properties": {
+          "attachment": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationActivityAttachmentDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "AVAILABLE",
+              "REDACTED"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityDetailResponseDto": {
+        "properties": {
+          "activityType": {
+            "enum": [
+              "CONNECTION",
+              "PERSONAL_MESSAGE"
+            ],
+            "type": "string"
+          },
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationActivityAttemptDto"
+            },
+            "type": "array"
+          },
+          "contentState": {
+            "enum": [
+              "AVAILABLE",
+              "REDACTED",
+              "NOT_APPLICABLE"
+            ],
+            "type": "string"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "correlationId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/IntegrationActivityEndUserDto"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationActivityMilestoneDto"
+            },
+            "type": "array"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/IntegrationActivityOriginDto"
+          },
+          "provider": {
+            "example": "TELEGRAM",
+            "type": "string"
+          },
+          "requestId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "scenarioRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceResourceId": {
+            "type": "string"
+          },
+          "sourceResourceKind": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "OUTCOME_UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "activityType",
+          "status",
+          "state",
+          "endUser",
+          "origin",
+          "attemptCount",
+          "contentState",
+          "createdAt",
+          "updatedAt",
+          "sourceResourceKind",
+          "sourceResourceId",
+          "attempts",
+          "milestones"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityEndUserDto": {
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityItemDto": {
+        "properties": {
+          "activityType": {
+            "enum": [
+              "CONNECTION",
+              "PERSONAL_MESSAGE"
+            ],
+            "type": "string"
+          },
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "contentState": {
+            "enum": [
+              "AVAILABLE",
+              "REDACTED",
+              "NOT_APPLICABLE"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/IntegrationActivityEndUserDto"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/IntegrationActivityOriginDto"
+          },
+          "provider": {
+            "example": "TELEGRAM",
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "OUTCOME_UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "activityType",
+          "status",
+          "state",
+          "endUser",
+          "origin",
+          "attemptCount",
+          "contentState",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationActivityItemDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/IntegrationActivityPageInfoDto"
+          }
+        },
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityMilestoneDto": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "at"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityOriginDto": {
+        "properties": {
+          "id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "IntegrationActivityPageInfoDto": {
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "hasMore"
+        ],
+        "type": "object"
+      },
       "IntegrationAttributeContractResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -27231,6 +27608,254 @@
         ],
         "x-iam-permission": {
           "code": "project.event_logs.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-activity": {
+      "get": {
+        "operationId": "IntegrationActivity_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "explode": true,
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "TELEGRAM"
+                ],
+                "type": "string"
+              },
+              "maxItems": 10,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "style": "form"
+          },
+          {
+            "explode": true,
+            "in": "query",
+            "name": "activityType",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "CONNECTION",
+                  "PERSONAL_MESSAGE"
+                ],
+                "type": "string"
+              },
+              "maxItems": 2,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "style": "form"
+          },
+          {
+            "explode": true,
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "PENDING",
+                  "SUCCEEDED",
+                  "FAILED",
+                  "CANCELLED",
+                  "OUTCOME_UNKNOWN"
+                ],
+                "type": "string"
+              },
+              "maxItems": 5,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "externalUserId",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationActivityListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Activity"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_activity.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-activity/{activityId}": {
+      "get": {
+        "operationId": "IntegrationActivity_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "activityId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationActivityDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Activity"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_activity.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-activity/{activityId}/content": {
+      "get": {
+        "operationId": "IntegrationActivity_content",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "activityId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationActivityContentResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Activity"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_message_content.read",
           "scope": "PROJECT"
         }
       }

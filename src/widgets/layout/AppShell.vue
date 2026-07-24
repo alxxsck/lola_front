@@ -137,11 +137,14 @@ const navigation = computed(() =>
       projectPermission: "project.event_catalog.read",
     },
     {
-      label: "Журнал событий",
+      label: "Журнал проекта",
       icon: "pi pi-list",
       to: "/event-logs",
       project: true,
-      projectPermission: "project.event_logs.read",
+      projectPermissionsAny: [
+        "project.event_logs.read",
+        "project.integration_activity.read",
+      ],
     },
     {
       label: "Действия",

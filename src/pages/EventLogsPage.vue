@@ -23,6 +23,8 @@ import {
 import { formatDate, relativeTime } from "@/shared/lib/format";
 import type { EventDefinition, EventLog } from "@/shared/types/domain";
 
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
+
 type ViewMode = "table" | "timeline";
 interface FailedPageRequest {
   cursor: string | undefined;
@@ -425,8 +427,8 @@ function json(value: unknown) {
 </script>
 
 <template>
-  <section class="page event-logs-page">
-    <header class="page-header">
+  <section :class="['event-logs-page', { page: !embedded }]">
+    <header v-if="!embedded" class="page-header">
       <div>
         <div class="eyebrow">Observability · Event stream</div>
         <h1>Журнал событий</h1>
