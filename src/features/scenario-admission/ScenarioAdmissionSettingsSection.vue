@@ -49,11 +49,11 @@ const form = reactive({
 const modeOptions = [
   {
     value: "PROJECT_GLOBAL_V1",
-    label: "Общие ограничения проекта",
+    label: "Общие ограничения",
   },
   {
     value: "LEGACY_PER_SCENARIO",
-    label: "Индивидуальные ограничения сценариев (устаревающий режим)",
+    label: "По каждому сценарию (legacy)",
   },
 ];
 const summary = computed(() => formatAdmissionSummary(form));
@@ -216,7 +216,7 @@ async function save(acknowledge = false) {
                 :disabled="!editable"
               />
             </label>
-            <div class="two-columns">
+            <div class="two-columns frequency-limits">
               <label>
                 <span>Максимум за локальные сутки</span>
                 <InputNumber
@@ -313,11 +313,11 @@ async function save(acknowledge = false) {
             <ol>
               <li>
                 <strong>Time Zone профиля</strong
-                ><small>Canonical IANA, например Europe/Madrid.</small>
+                ><small>Формат IANA, например Europe/Madrid.</small>
               </li>
               <li>
-                <strong>Часовой пояс активности проекта</strong
-                ><small>{{ fallbackTimeZone }}</small>
+                <strong>Time Zone проекта</strong
+                ><small>Настройка активности: {{ fallbackTimeZone }}</small>
               </li>
               <li>
                 <strong>UTC</strong
@@ -400,6 +400,7 @@ async function save(acknowledge = false) {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  container-type: inline-size;
 }
 .loading {
   display: flex;
@@ -566,10 +567,25 @@ async function save(acknowledge = false) {
   align-items: center;
   gap: 8px;
   align-self: flex-start;
-  color: var(--accent);
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
   font-size: 0.7rem;
   font-weight: 700;
   text-decoration: none;
+}
+.profile-link:hover {
+  text-decoration: underline;
+}
+.admission-settings :deep(.p-disabled),
+.admission-settings :deep(.p-component:disabled) {
+  opacity: 1;
+}
+.admission-settings :deep(.p-inputtext:disabled) {
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
 }
 .actions {
   display: flex;
@@ -621,6 +637,20 @@ async function save(acknowledge = false) {
   }
   .actions :deep(.p-button) {
     width: 100%;
+  }
+}
+@container (max-width: 1240px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .timezone-card {
+    grid-column: auto;
+  }
+}
+@container (max-width: 760px) {
+  .frequency-limits,
+  .timezone-card ol {
+    grid-template-columns: 1fr;
   }
 }
 @media (max-width: 520px) {

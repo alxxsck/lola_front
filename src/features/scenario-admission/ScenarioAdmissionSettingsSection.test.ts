@@ -56,6 +56,8 @@ describe("ScenarioAdmissionSettingsSection", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("Не более 3 запусков за локальные сутки");
+    expect(wrapper.find(".frequency-limits").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Time Zone проекта");
     const numbers = wrapper.findAllComponents(InputNumber);
     numbers[0]!.vm.$emit("update:modelValue", 4);
     await wrapper.vm.$nextTick();

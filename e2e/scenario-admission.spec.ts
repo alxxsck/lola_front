@@ -89,6 +89,47 @@ test("scenario author sees importance and quiet-hours semantics", async ({
               fields: [],
             },
           ],
+          audience: {
+            version: 1,
+            revision: "audience-catalog-admission-e2e",
+            locales: [
+              { code: "ru-RU", language: "ru", label: "Русский" },
+            ],
+            localeSource: {
+              operators: ["eq"],
+              control: "SELECT",
+              authoringAvailability: "AVAILABLE",
+            },
+            languageSource: {
+              operators: ["eq"],
+              control: "SELECT",
+              authoringAvailability: "AVAILABLE",
+            },
+            country: {
+              source: "profile.country",
+              valueType: "countryCode",
+              semantics: "ISO_3166_1_ALPHA_2_UPPERCASE",
+              operators: ["eq"],
+              control: "COUNTRY_CODE",
+              authoringAvailability: "AVAILABLE",
+            },
+            attributes: [],
+            segmentSource: {
+              operators: ["is_member"],
+              searchEndpoint: "/segments",
+              control: "SEARCH",
+              authoringAvailability: "AVAILABLE",
+            },
+            snapshotPolicy: {
+              initialEvaluation: "RUN_START",
+              missingOrNull: "NO_MATCH_EXCEPT_NOT_EXISTS",
+              deletedDefinition: "PINNED_SNAPSHOT_CONTINUES",
+              unavailableSource: "PUBLISH_REJECTED_EXPLAIN_UNAVAILABLE",
+              segmentRevision: "PINNED_REVISION",
+              persistence: "SNAPSHOT_WITH_SEPARATE_LAST_RECHECK",
+              recheckTrigger: "DELIVERY_RECHECK_ELIGIBILITY",
+            },
+          },
         }),
       }),
   );
@@ -107,5 +148,56 @@ test("scenario author sees importance and quiet-hours semantics", async ({
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await page.waitForTimeout(250);
+
+  await page.getByRole("button", { name: /Аудитория/ }).click();
+  const audienceBuilder = page.locator(".audience-builder");
+  const anyCondition = audienceBuilder.getByRole("button", {
+    name: "Достаточно одного условия",
+    exact: true,
+  });
+  await expect(
+    audienceBuilder.getByRole("button", {
+      name: "Должны выполняться все условия",
+      exact: true,
+    }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await anyCondition.click();
+  await expect(anyCondition).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    audienceBuilder.locator('select[aria-label^="Как учитывать условия"]'),
+  ).toHaveCount(0);
+  await expectNoSeriousAccessibilityViolations(page);
+});
+
+test("segment editor uses the same audience logic controls", async ({ page }) => {
+  await page.goto("/segments");
+  await page.getByRole("link", { name: "Новый сегмент" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Новый сегмент" }),
+  ).toBeVisible();
+
+  const audienceBuilder = page.locator(".audience-builder");
+  const allConditions = audienceBuilder.getByRole("button", {
+    name: "Должны выполняться все условия",
+    exact: true,
+  });
+  const anyCondition = audienceBuilder.getByRole("button", {
+    name: "Достаточно одного условия",
+    exact: true,
+  });
+
+  await expect(allConditions).toHaveAttribute("aria-pressed", "true");
+  await anyCondition.click();
+  await expect(anyCondition).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    audienceBuilder.locator('select[aria-label^="Как учитывать условия"]'),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
   await expectNoSeriousAccessibilityViolations(page);
 });

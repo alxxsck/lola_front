@@ -167,6 +167,22 @@ describe("AudienceRuleBuilder", () => {
     expect(wrapper.text()).toContain("Использовать текущие данные");
     expect(wrapper.text()).toContain("Учитывать только недавние данные");
     expect(wrapper.text()).toContain("Должны выполняться все условия");
+    const allConditions = wrapper.get(
+      'button[aria-label="Должны выполняться все условия"]',
+    );
+    const anyCondition = wrapper.get(
+      'button[aria-label="Достаточно одного условия"]',
+    );
+    expect(allConditions.attributes("aria-pressed")).toBe("true");
+    expect(anyCondition.attributes("aria-pressed")).toBe("false");
+    expect(wrapper.find('select[aria-label^="Как учитывать условия"]').exists()).toBe(
+      false,
+    );
+    await anyCondition.trigger("click");
+    expect(anyCondition.attributes("aria-pressed")).toBe("true");
+    expect(
+      (wrapper.vm as unknown as { draft: AudienceDraft }).draft.root.kind,
+    ).toBe("any");
     expect(wrapper.text()).not.toMatch(
       /Current Profile|End User|backend|pinned contract|\bRun\b/,
     );

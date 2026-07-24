@@ -145,6 +145,14 @@ describe("SegmentManager", () => {
     });
     await flushPromises();
     await wrapper.get('button[aria-label="Создать сегмент"]').trigger("click");
+    expect(
+      wrapper
+        .get('button[aria-label="Должны выполняться все условия"]')
+        .attributes("aria-pressed"),
+    ).toBe("true");
+    expect(
+      wrapper.find('select[aria-label^="Как учитывать условия"]').exists(),
+    ).toBe(false);
     await wrapper
       .get('input[aria-label="Название сегмента"]')
       .setValue("Русскоязычные");

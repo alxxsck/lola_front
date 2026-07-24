@@ -382,6 +382,20 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     );
   });
 
+  it("keeps legacy frequency controls in one balanced row", async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+
+    const legacyFields = wrapper.find(".legacy-frequency-fields");
+    expect(legacyFields.exists()).toBe(true);
+    expect(legacyFields.findAll(".field")).toHaveLength(2);
+    expect(legacyFields.text()).toContain("Макс. запусков");
+    expect(legacyFields.text()).toContain("Пауза, сек.");
+    expect(wrapper.find(".legacy-frequency-note").text()).toContain(
+      "Перейдите на общую частоту",
+    );
+  });
+
   it("preserves a new multilingual form after create failure and retries atomic creation", async () => {
     mocks.route.params.scenarioId = "new";
     mocks.getScenarios.mockResolvedValueOnce([]);

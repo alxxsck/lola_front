@@ -3067,7 +3067,7 @@ function leave() {
               этого сценария доступны только в технической истории.
             </Message>
             <template v-else>
-              <div class="settings-row">
+              <div class="settings-row legacy-frequency-fields">
                 <div class="field">
                   <label for="scenario-max-runs">Макс. запусков</label
                   ><InputNumber
@@ -3077,20 +3077,20 @@ function leave() {
                     placeholder="Без лимита"
                   />
                 </div>
+                <div class="field">
+                  <label for="scenario-cooldown">Пауза, сек.</label
+                  ><InputNumber
+                    input-id="scenario-cooldown"
+                    v-model="form.cooldownSeconds"
+                    :min="0"
+                    placeholder="Без паузы"
+                  />
+                </div>
               </div>
-              <div class="field">
-                <label for="scenario-cooldown">Пауза, сек.</label
-                ><InputNumber
-                  input-id="scenario-cooldown"
-                  v-model="form.cooldownSeconds"
-                  :min="0"
-                  placeholder="Без паузы"
-                />
-                <small
-                  >Устаревающий режим. Перейдите на общую частоту в настройках
-                  проекта.</small
-                >
-              </div>
+              <small class="legacy-frequency-note"
+                >Устаревающий режим. Перейдите на общую частоту в настройках
+                проекта.</small
+              >
             </template>
           </section>
         </aside>
@@ -4040,6 +4040,13 @@ function leave() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+.legacy-frequency-note {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-small-muted);
+  font-size: 0.67rem;
+  line-height: 1.45;
 }
 .importance-option {
   display: grid;

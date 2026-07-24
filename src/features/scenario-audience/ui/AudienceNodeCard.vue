@@ -35,16 +35,19 @@ const leafPresentation = computed(() => {
   <li class="audience-node" :class="[`kind-${node.kind}`, { root }]" :data-audience-node="node.nodeId">
     <section v-if="node.kind === 'all' || node.kind === 'any'" tabindex="-1" class="group-card">
       <header>
-        <label>
-          <span>Как учитывать условия</span>
-          <select
-            :value="node.kind"
-            :aria-label="`Как учитывать условия: ${groupLabel}`"
-            @change="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: ($event.target as HTMLSelectElement).value as 'all' | 'any' })"
+        <div class="logic-switch" role="group" :aria-label="`Логика группы ${groupLabel}`">
+          <button
+            v-for="option in groupOptions"
+            :key="option.value"
+            type="button"
+            :aria-label="option.label"
+            :aria-pressed="node.kind === option.value"
+            @click="emit('command', { type: 'changeGroup', nodeId: node.nodeId, kind: option.value })"
           >
-            <option v-for="option in groupOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-          </select>
-        </label>
+            {{ option.label }}
+          </button>
+        </div>
+        <span class="group-count">{{ node.children.length }} {{ node.children.length === 1 ? 'условие' : 'условий' }}</span>
         <div class="group-actions">
           <button
             type="button"
@@ -79,8 +82,8 @@ const leafPresentation = computed(() => {
       </ol>
       <p v-else class="empty">Добавьте первое условие — аудитория пока не ограничена.</p>
       <footer>
-        <button type="button" :aria-label="`Добавить условие аудитории в ${groupLabel}`" @click="emit('addCondition', node.nodeId, groupLabel, $event.currentTarget as HTMLElement)"><i class="pi pi-plus" /> Добавить условие</button>
-        <button type="button" :aria-label="`Добавить группу аудитории в ${groupLabel}`" :disabled="(depth ?? 0) >= 3" @click="emit('command', { type: 'addGroup', parentNodeId: node.nodeId })"><i class="pi pi-folder-plus" /> Добавить группу</button>
+        <button type="button" :aria-label="`Добавить условие аудитории в ${groupLabel}`" @click="emit('addCondition', node.nodeId, groupLabel, $event.currentTarget as HTMLElement)"><i class="pi pi-plus" /> Условие</button>
+        <button type="button" :aria-label="`Добавить группу аудитории в ${groupLabel}`" :disabled="(depth ?? 0) >= 3" @click="emit('command', { type: 'addGroup', parentNodeId: node.nodeId })"><i class="pi pi-folder-plus" /> Группа</button>
       </footer>
     </section>
     <article v-else-if="node.kind === 'not'" tabindex="-1" class="not-card">
@@ -122,31 +125,41 @@ const leafPresentation = computed(() => {
 }
 .group-card > header {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
 }
-.group-card label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.group-card label span,
 .leaf-card span {
   color: var(--text-small-muted);
   font-size: var(--font-size-caption);
 }
-.group-card label span {
-  text-transform: uppercase;
+.logic-switch {
+  display: flex;
+  min-width: 0;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--surface-subtle);
 }
-.group-card select {
-  min-height: var(--control-height);
-  padding: 8px 10px;
-  border: 1px solid var(--border-default);
-  border-radius: 9px;
-  background: var(--surface-card);
-  font-size: var(--font-size-control);
+.group-card .logic-switch button {
+  min-width: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.69rem;
   font-weight: 700;
+  line-height: 1.2;
+}
+.group-card .logic-switch button[aria-pressed="true"] {
+  background: var(--surface-card);
+  color: var(--status-violet-text);
+  box-shadow: var(--shadow-raised);
+}
+.group-count {
+  margin-left: auto;
+  color: var(--text-small-muted);
+  font-size: 0.65rem;
+  white-space: nowrap;
 }
 .group-card ol,
 .not-card ol {
@@ -186,11 +199,23 @@ const leafPresentation = computed(() => {
   height: 36px;
   padding: 0;
 }
+.group-actions button {
+  border: 0;
+  background: var(--surface-subtle);
+}
 .group-card footer button {
-  min-height: var(--control-height);
-  padding: 8px 12px;
-  font-size: var(--font-size-control);
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 0;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+  font-size: 0.67rem;
   font-weight: 700;
+  line-height: 1.2;
+}
+.group-card footer button:last-child {
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
 }
 .group-card button:disabled {
   opacity: 0.4;
@@ -270,6 +295,26 @@ const leafPresentation = computed(() => {
   .group-card ol,
   .not-card ol {
     padding-left: 8px;
+  }
+  .group-card > header {
+    flex-wrap: wrap;
+  }
+  .logic-switch {
+    width: 100%;
+  }
+  .group-card .logic-switch button {
+    flex: 1;
+    padding-inline: 6px;
+  }
+  .group-count {
+    margin-left: 0;
+  }
+  .group-actions {
+    margin-left: auto;
+  }
+  .group-card footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>
