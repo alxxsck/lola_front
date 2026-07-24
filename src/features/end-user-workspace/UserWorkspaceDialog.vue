@@ -35,10 +35,12 @@ import type { ConversationMessage } from "@/shared/types/domain";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
 import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
+import EndUserAiUsageCard from "@/features/ai-usage/EndUserAiUsageCard.vue";
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
 
-type MobilePane = "LIST" | "CHAT" | "PROFILE";
+type WorkspaceMode = "PROFILE" | "CHAT";
+type MobilePane = "LIST" | "CHAT";
 type SuspensionMode = "START" | "EXTEND" | "RESUME";
 
 interface ConversationMessageUpsertEvent {
@@ -66,6 +68,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   changed: [];
   conversationSelected: [conversationId: string];
+  profileSelected: [];
 }>();
 const visible = defineModel<boolean>("visible", { required: true });
 const auth = useAuthStore();
@@ -73,6 +76,7 @@ const suspensionStore = useConversationAISuspensionStore();
 const detail = ref<ProfileProjectionResponseDto | null>(null);
 const detailLoading = ref(false);
 const detailError = ref("");
+const workspaceMode = ref<WorkspaceMode>("PROFILE");
 const mobilePane = ref<MobilePane>("CHAT");
 const historyElement = ref<HTMLElement | null>(null);
 const newChatOpen = ref(false);
@@ -82,7 +86,6 @@ const suspensionHistoryVisible = ref(false);
 const suspensionDialogMode = ref<SuspensionMode>("START");
 const combinedSend = ref(false);
 const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
-const profileCollapsed = ref(false);
 const aiReviewVisible = ref(false);
 const liveMessageIds = ref<string[]>([]);
 const telegramDraftDirty = ref(false);
@@ -95,7 +98,10 @@ let presenceTimer: ReturnType<typeof setInterval> | undefined;
 const consoleState = useAdminConversationConsole({
   projectId: () => props.projectId,
   endUserId: () => props.endUserId ?? undefined,
-  updateRoute: (conversationId) => emit("conversationSelected", conversationId),
+  updateRoute: (conversationId) => {
+    if (workspaceMode.value === "CHAT")
+      emit("conversationSelected", conversationId);
+  },
   beforeLoadMessages: (conversationId) =>
     cmsRealtimeClient.watchConversation(conversationId),
   canReadPresence: () =>
@@ -151,6 +157,9 @@ const canSendTelegramPersonalMessages = computed(() =>
 );
 const canReadUserMemory = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.user_memory.read"),
+);
+const canReadAiUsage = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
 );
 const canReadConversations = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.read"),
@@ -267,16 +276,24 @@ async function openWorkspace(
   newChatOpen.value = false;
   newChatText.value = "";
   mobilePane.value = "CHAT";
-  profileCollapsed.value = false;
+  workspaceMode.value = preferredConversationId ? "CHAT" : "PROFILE";
   liveMessageIds.value = [];
   consoleState.reset();
-  if (canReadConversations.value)
-    await cmsRealtimeClient.activateProject(props.projectId);
+  const profilePromise = canReadProfiles.value
+    ? loadProfile(endUserId)
+    : Promise.resolve(null);
+  const conversationsPromise = canReadConversations.value
+    ? (async () => {
+        await cmsRealtimeClient.activateProject(props.projectId);
+        await consoleState.loadConversations(
+          endUserId,
+          preferredConversationId,
+        );
+      })()
+    : Promise.resolve();
   const results = await Promise.allSettled([
-    canReadProfiles.value ? loadProfile(endUserId) : Promise.resolve(null),
-    canReadConversations.value
-      ? consoleState.loadConversations(endUserId, preferredConversationId)
-      : Promise.resolve(),
+    profilePromise,
+    conversationsPromise,
   ]);
   if (
     request !== profileRequest ||
@@ -342,6 +359,22 @@ function closeWorkspace(): void {
   newChatOpen.value = false;
   liveMessageIds.value = [];
   telegramDraftDirty.value = false;
+}
+
+async function openChat(): Promise<void> {
+  if (!canReadConversations.value) return;
+  workspaceMode.value = "CHAT";
+  mobilePane.value = selectedConversation.value ? "CHAT" : "LIST";
+  if (selectedConversation.value) {
+    emit("conversationSelected", selectedConversation.value.id);
+    await nextTick();
+    scrollToLatest(false);
+  }
+}
+
+function openProfile(): void {
+  workspaceMode.value = "PROFILE";
+  emit("profileSelected");
 }
 
 function messageFromEvent(
@@ -450,6 +483,7 @@ async function handleHistoryScroll(force = false): Promise<void> {
 async function selectConversation(
   conversation: (typeof conversations.value)[number],
 ): Promise<void> {
+  workspaceMode.value = "CHAT";
   await consoleState.loadMessages(conversation);
   await nextTick();
   scrollToLatest(false);
@@ -609,7 +643,161 @@ function displayField(
       </div>
     </template>
 
+    <section
+      v-if="workspaceMode === 'PROFILE'"
+      class="profile-overview"
+      data-testid="profile-overview"
+    >
+      <div class="profile-hero">
+        <div class="profile-identity">
+          <span class="profile-avatar">{{
+            displayName.slice(0, 1).toUpperCase()
+          }}</span>
+          <div>
+            <span class="eyebrow">Профиль пользователя</span>
+            <h2>{{ displayName }}</h2>
+            <p>
+              {{ detail?.externalUserId || endUserId }}
+              <template v-if="detail?.observedAt">
+                · обновлён {{ relativeTime(detail.observedAt) }}
+              </template>
+            </p>
+          </div>
+        </div>
+        <Button
+          v-if="canReadConversations"
+          data-action="open-chat"
+          label="Открыть чат"
+          icon="pi pi-arrow-right"
+          icon-pos="right"
+          @click="openChat"
+        />
+      </div>
+
+      <div class="profile-layout">
+        <main class="profile-main">
+          <section class="profile-card">
+            <header class="profile-card-header">
+              <div>
+                <span class="eyebrow">Контекст</span>
+                <h3><i class="pi pi-id-card" /> Основная информация</h3>
+              </div>
+              <Tag
+                :value="onlineSession ? 'Онлайн' : 'Офлайн'"
+                :severity="onlineSession ? 'success' : 'secondary'"
+                rounded
+              />
+            </header>
+            <div v-if="detailLoading" class="profile-loading">
+              <Skeleton v-for="item in 6" :key="item" height="64px" />
+            </div>
+            <Message v-else-if="detailError" severity="error" :closable="false">
+              {{ detailError }}
+            </Message>
+            <template v-else-if="detail">
+              <dl class="profile-facts">
+                <div>
+                  <dt>ID продукта</dt>
+                  <dd>{{ detail.externalUserId }}</dd>
+                </div>
+                <div>
+                  <dt>Версия профиля</dt>
+                  <dd>{{ detail.profileVersion }}</dd>
+                </div>
+                <div>
+                  <dt>Актуальность</dt>
+                  <dd>
+                    {{
+                      detail.observedAt
+                        ? relativeTime(detail.observedAt)
+                        : "Нет данных"
+                    }}
+                  </dd>
+                </div>
+                <div v-for="field in detail.fields" :key="field.definitionId">
+                  <dt>{{ field.label }}</dt>
+                  <dd>{{ displayField(field) }}</dd>
+                </div>
+              </dl>
+            </template>
+            <div v-else class="profile-empty">
+              Профиль скрыт вашими правами доступа.
+            </div>
+          </section>
+
+          <EndUserAiUsageCard
+            v-if="canReadAiUsage && endUserId"
+            :project-id="projectId"
+            :end-user-id="endUserId"
+          />
+          <section v-else class="profile-card profile-empty-card">
+            <i class="pi pi-lock" />
+            <div>
+              <strong>Потребление AI недоступно</strong>
+              <span>Нужно право на чтение статистики AI проекта.</span>
+            </div>
+          </section>
+        </main>
+
+        <aside class="profile-actions" aria-label="Действия с пользователем">
+          <section class="profile-card action-card">
+            <header class="profile-card-header">
+              <div>
+                <span class="eyebrow">Управление</span>
+                <h3><i class="pi pi-bolt" /> Действия</h3>
+              </div>
+            </header>
+            <section
+              v-if="canStartAIReview && endUserId"
+              class="ai-review-entry"
+              data-testid="ai-review-entry"
+            >
+              <span class="ai-review-entry-icon"
+                ><i class="pi pi-sparkles"
+              /></span>
+              <div>
+                <strong>AI-анализ событий</strong>
+                <span>Выберите события и сначала оцените объём запроса.</span>
+              </div>
+              <Button
+                label="Запросить анализ"
+                icon="pi pi-arrow-right"
+                icon-pos="right"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="aiReviewVisible = true"
+              />
+            </section>
+            <EndUserTelegramPanel
+              :visible="visible"
+              :project-id="projectId"
+              :end-user-id="endUserId"
+              :can-read="canReadTelegramLinks"
+              :can-send="canSendTelegramPersonalMessages"
+              @dirty-change="telegramDraftDirty = $event"
+            />
+          </section>
+
+          <section v-if="canReadUserMemory && endUserId" class="profile-card">
+            <UserMemoryPanel
+              :project-id="projectId"
+              :end-user-id="endUserId"
+              :user-label="displayName"
+              :editable="
+                hasProjectPermission(
+                  projectPermissions,
+                  'project.user_memory.manage',
+                )
+              "
+            />
+          </section>
+        </aside>
+      </div>
+    </section>
+
     <nav
+      v-if="workspaceMode === 'CHAT'"
       class="mobile-workspace-nav"
       aria-label="Разделы рабочего пространства"
     >
@@ -627,19 +815,13 @@ function displayField(
       >
         <i class="pi pi-comment" /> Чат
       </button>
-      <button
-        :class="{ active: mobilePane === 'PROFILE' }"
-        :aria-pressed="mobilePane === 'PROFILE'"
-        @click="mobilePane = 'PROFILE'"
-      >
-        <i class="pi pi-user" /> Профиль
-      </button>
     </nav>
 
     <div
+      v-if="workspaceMode === 'CHAT'"
       class="workspace-grid"
-      :class="{ 'profile-collapsed': profileCollapsed }"
       :data-mobile-pane="mobilePane"
+      data-testid="chat-workspace"
     >
       <aside class="conversation-pane">
         <div class="pane-header">
@@ -739,13 +921,13 @@ function displayField(
           </div>
           <div class="chat-header-status">
             <Button
-              v-if="profileCollapsed"
+              data-action="open-profile"
               icon="pi pi-user"
-              label="Показать профиль"
+              label="К профилю"
               severity="secondary"
               text
               size="small"
-              @click="profileCollapsed = false"
+              @click="openProfile"
             />
             <Tag
               v-if="selectedConversation.isCurrent"
@@ -855,6 +1037,15 @@ function displayField(
         <div v-else class="empty-state chat-empty">
           <i class="pi pi-comment" /><strong>Выберите диалог</strong>
           <span>История и live-сообщения появятся здесь.</span>
+          <Button
+            data-action="open-profile"
+            icon="pi pi-user"
+            label="К профилю"
+            severity="secondary"
+            text
+            size="small"
+            @click="openProfile"
+          />
         </div>
         <button
           v-if="newMessageCount"
@@ -913,107 +1104,6 @@ function displayField(
           </div>
         </form>
       </main>
-
-      <aside
-        class="profile-pane"
-        tabindex="0"
-        role="region"
-        aria-label="Профиль пользователя"
-      >
-        <div class="pane-header">
-          <div>
-            <span class="eyebrow">Контекст</span>
-            <h3>Профиль</h3>
-          </div>
-          <Button
-            icon="pi pi-angle-right"
-            aria-label="Скрыть профиль"
-            severity="secondary"
-            text
-            rounded
-            @click="profileCollapsed = true"
-          />
-        </div>
-        <div v-if="detailLoading" class="pane-loading">
-          <Skeleton v-for="item in 6" :key="item" height="60px" />
-        </div>
-        <Message v-else-if="detailError" severity="error" :closable="false">{{
-          detailError
-        }}</Message>
-        <template v-else-if="detail">
-          <dl class="profile-summary">
-            <div>
-              <dt>ID продукта</dt>
-              <dd>{{ detail.externalUserId }}</dd>
-            </div>
-            <div>
-              <dt>Версия профиля</dt>
-              <dd>{{ detail.profileVersion }}</dd>
-            </div>
-            <div>
-              <dt>Данные актуальны</dt>
-              <dd>
-                {{
-                  detail.observedAt
-                    ? relativeTime(detail.observedAt)
-                    : "Нет данных"
-                }}
-              </dd>
-            </div>
-          </dl>
-          <div class="profile-fields">
-            <article v-for="field in detail.fields" :key="field.definitionId">
-              <span>{{ field.label }}</span>
-              <strong>{{ displayField(field) }}</strong>
-              <small>{{
-                field.availability === "AVAILABLE"
-                  ? "Актуально"
-                  : field.availability
-              }}</small>
-            </article>
-          </div>
-        </template>
-        <EndUserTelegramPanel
-          :visible="visible"
-          :project-id="projectId"
-          :end-user-id="endUserId"
-          :can-read="canReadTelegramLinks"
-          :can-send="canSendTelegramPersonalMessages"
-          @dirty-change="telegramDraftDirty = $event"
-        />
-        <UserMemoryPanel
-          v-if="canReadUserMemory && endUserId"
-          :project-id="projectId"
-          :end-user-id="endUserId"
-          :user-label="displayName"
-          :editable="
-            hasProjectPermission(
-              projectPermissions,
-              'project.user_memory.manage',
-            )
-          "
-        />
-        <section
-          v-if="canStartAIReview && endUserId"
-          class="ai-review-entry"
-          data-testid="ai-review-entry"
-        >
-          <span class="ai-review-entry-icon"><i class="pi pi-sparkles" /></span>
-          <div>
-            <strong>AI-анализ событий</strong>
-            <span>Выберите события и сначала оцените объём запроса.</span>
-          </div>
-          <Button
-            label="Запросить анализ"
-            icon="pi pi-arrow-right"
-            icon-pos="right"
-            size="small"
-            severity="secondary"
-            outlined
-            @click="aiReviewVisible = true"
-          />
-        </section>
-      </aside>
     </div>
 
     <AIReviewDialog
@@ -1172,32 +1262,162 @@ function displayField(
   color: var(--text-secondary);
   font-weight: 800;
 }
+.profile-overview {
+  height: min(760px, calc(100dvh - 170px));
+  padding: 28px;
+  overflow-y: auto;
+  background: var(--surface-ground);
+  animation: profile-enter 0.22s ease-out;
+}
+.profile-hero,
+.profile-identity,
+.profile-card-header {
+  display: flex;
+  align-items: center;
+}
+.profile-hero,
+.profile-card-header {
+  justify-content: space-between;
+  gap: 18px;
+}
+.profile-hero {
+  max-width: 1220px;
+  padding: 4px 4px 24px;
+  margin: 0 auto;
+}
+.profile-identity {
+  min-width: 0;
+  gap: 15px;
+}
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  border-radius: 18px;
+  background: var(--surface-emphasis);
+  color: var(--text-on-emphasis);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+.profile-identity h2 {
+  margin: 3px 0;
+  font: 750 clamp(1.25rem, 2vw, 1.7rem) var(--font-display);
+  letter-spacing: -0.03em;
+}
+.profile-identity p {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 390px);
+  align-items: start;
+  gap: 20px;
+  max-width: 1220px;
+  margin: 0 auto;
+}
+.profile-main,
+.profile-actions {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  min-width: 0;
+}
+.profile-card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
+}
+.profile-card-header {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.profile-card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font: 700 1rem var(--font-display);
+}
+.profile-card-header h3 i {
+  color: var(--text-brand);
+}
+.profile-facts,
+.profile-loading {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin: 0;
+}
+.profile-facts > div {
+  min-width: 0;
+  padding: 13px 14px;
+  border-radius: 13px;
+  background: var(--surface-subtle);
+}
+.profile-facts dt {
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+}
+.profile-facts dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.profile-empty {
+  padding: 28px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 0.72rem;
+}
+.profile-empty-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  color: var(--text-secondary);
+}
+.profile-empty-card i {
+  font-size: 1.1rem;
+}
+.profile-empty-card div {
+  display: grid;
+  gap: 3px;
+}
+.profile-empty-card strong {
+  color: var(--text-primary);
+  font-size: 0.76rem;
+}
+.profile-empty-card span {
+  font-size: 0.66rem;
+}
+.action-card .ai-review-entry {
+  margin-top: 0;
+}
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(245px, 300px) minmax(420px, 1fr) minmax(
-      260px,
-      320px
-    );
+  grid-template-columns: minmax(245px, 300px) minmax(420px, 1fr);
   height: min(760px, calc(100dvh - 170px));
   background: var(--surface-ground);
-}
-@media (min-width: 961px) {
-  .workspace-grid.profile-collapsed {
-    grid-template-columns: minmax(245px, 300px) minmax(420px, 1fr) 0;
-  }
-  .workspace-grid.profile-collapsed .profile-pane {
-    display: none;
-  }
+  animation: chat-enter 0.22s ease-out;
 }
 .conversation-pane,
-.chat-pane,
-.profile-pane {
+.chat-pane {
   min-width: 0;
   min-height: 0;
   background: var(--surface-card);
 }
-.conversation-pane,
-.profile-pane {
+.conversation-pane {
   display: flex;
   flex-direction: column;
   padding: 18px;
@@ -1205,10 +1425,6 @@ function displayField(
 }
 .conversation-pane {
   border-right: 1px solid var(--line);
-}
-.profile-pane {
-  border-left: 1px solid var(--line);
-  overflow-y: auto;
 }
 .chat-pane {
   position: relative;
@@ -1543,6 +1759,18 @@ function displayField(
     transform: none;
   }
 }
+@keyframes profile-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+}
+@keyframes chat-enter {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
 @keyframes live-pulse {
   0% {
     box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 35%, transparent);
@@ -1560,6 +1788,10 @@ function displayField(
     transition: none;
   }
   .connection-status[data-state="connected"] .connection-live-dot {
+    animation: none;
+  }
+  .profile-overview,
+  .workspace-grid {
     animation: none;
   }
 }
@@ -1592,9 +1824,30 @@ function displayField(
     flex: 1;
     min-height: 0;
   }
+  .profile-overview {
+    height: calc(100dvh - 82px);
+    padding: 18px 14px 28px;
+  }
+  .profile-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .profile-hero :deep(.p-button) {
+    width: 100%;
+  }
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+  .profile-actions {
+    grid-row: auto;
+  }
+  .profile-facts,
+  .profile-loading {
+    grid-template-columns: 1fr;
+  }
   .mobile-workspace-nav {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     padding: 0 10px 10px;
     border-bottom: 1px solid var(--line);
     background: var(--surface-card);
@@ -1617,25 +1870,20 @@ function displayField(
     height: calc(100dvh - 154px);
   }
   .conversation-pane,
-  .chat-pane,
-  .profile-pane {
+  .chat-pane {
     display: none;
     width: 100%;
     height: 100%;
     border: 0;
   }
   .workspace-grid[data-mobile-pane="LIST"] .conversation-pane,
-  .workspace-grid[data-mobile-pane="CHAT"] .chat-pane,
-  .workspace-grid[data-mobile-pane="PROFILE"] .profile-pane {
+  .workspace-grid[data-mobile-pane="CHAT"] .chat-pane {
     display: flex;
   }
   .workspace-grid[data-mobile-pane="CHAT"] .chat-pane {
     display: flex;
     flex-direction: column;
     padding: 13px 12px 10px;
-  }
-  .workspace-grid[data-mobile-pane="PROFILE"] .profile-pane {
-    overflow-y: auto;
   }
   .message-bubble {
     max-width: 88%;
@@ -1665,18 +1913,32 @@ function displayField(
   }
 }
 @media (max-width: 440px) {
+  .workspace-title > .avatar,
+  .workspace-title .eyebrow {
+    display: none;
+  }
+  .workspace-title h2 {
+    font-size: 0.9rem;
+  }
   .workspace-statuses .p-tag {
     display: none;
   }
   .conversation-pane,
-  .profile-pane {
+  .profile-card {
     padding: 14px;
   }
   .message-bubble {
     max-width: 94%;
   }
   .chat-header {
+    align-items: flex-start;
+    flex-direction: column;
     margin-bottom: 8px;
+  }
+  .chat-header-status {
+    justify-content: flex-start;
+    width: 100%;
+    flex-wrap: wrap;
   }
 }
 </style>

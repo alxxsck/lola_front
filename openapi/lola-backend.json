@@ -1527,7 +1527,15 @@
           "durationSeconds": {
             "type": "string"
           },
+          "effectiveCost": {
+            "description": "providerReportedCost plus estimatedFallbackCost.",
+            "type": "string"
+          },
           "estimatedCost": {
+            "type": "string"
+          },
+          "estimatedFallbackCost": {
+            "description": "Locally estimated fallback currency cost.",
             "type": "string"
           },
           "inputAudioTokens": {
@@ -1570,6 +1578,10 @@
             "example": "1250.000000000000",
             "type": "string"
           },
+          "providerReportedCost": {
+            "description": "Provider-reported currency cost.",
+            "type": "string"
+          },
           "reasoningTokens": {
             "type": "number"
           },
@@ -1602,9 +1614,136 @@
           "durationSeconds",
           "estimatedCost",
           "billedCost",
+          "providerReportedCost",
+          "estimatedFallbackCost",
+          "effectiveCost",
           "provider",
           "model",
           "operation",
+          "currency"
+        ],
+        "type": "object"
+      },
+      "AiUsageCategoryBreakdownResponseDto": {
+        "properties": {
+          "billedCost": {
+            "type": "string"
+          },
+          "cachedInputAudioTokens": {
+            "type": "number"
+          },
+          "cachedInputImageTokens": {
+            "type": "number"
+          },
+          "cachedInputTextTokens": {
+            "type": "number"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheWriteInputTokens": {
+            "type": "number"
+          },
+          "category": {
+            "enum": [
+              "CHAT",
+              "VOICE",
+              "SPEECH",
+              "MEMORY",
+              "AI_REVIEW",
+              "PROJECT_OVERHEAD"
+            ],
+            "type": "string"
+          },
+          "currency": {
+            "example": "usd",
+            "type": "string"
+          },
+          "durationSeconds": {
+            "type": "string"
+          },
+          "effectiveCost": {
+            "description": "providerReportedCost plus estimatedFallbackCost.",
+            "type": "string"
+          },
+          "estimatedCost": {
+            "type": "string"
+          },
+          "estimatedFallbackCost": {
+            "description": "Locally estimated fallback currency cost.",
+            "type": "string"
+          },
+          "inputAudioTokens": {
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputImageTokens": {
+            "type": "number"
+          },
+          "inputTextTokens": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "outputAudioTokens": {
+            "type": "number"
+          },
+          "outputImageTokens": {
+            "type": "number"
+          },
+          "outputTextTokens": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "providerBilledUnits": {
+            "example": "1250.000000000000",
+            "type": "string"
+          },
+          "providerReportedCost": {
+            "description": "Provider-reported currency cost.",
+            "type": "string"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "records": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "records",
+          "inputCharacters",
+          "providerBilledUnits",
+          "totalTokens",
+          "inputTokens",
+          "cachedInputTokens",
+          "cacheWriteInputTokens",
+          "outputTokens",
+          "reasoningTokens",
+          "inputTextTokens",
+          "cachedInputTextTokens",
+          "outputTextTokens",
+          "inputAudioTokens",
+          "cachedInputAudioTokens",
+          "outputAudioTokens",
+          "inputImageTokens",
+          "cachedInputImageTokens",
+          "outputImageTokens",
+          "durationSeconds",
+          "estimatedCost",
+          "billedCost",
+          "providerReportedCost",
+          "estimatedFallbackCost",
+          "effectiveCost",
+          "category",
           "currency"
         ],
         "type": "object"
@@ -1632,6 +1771,17 @@
         "properties": {
           "billedCost": {
             "nullable": true,
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "CHAT",
+              "VOICE",
+              "SPEECH",
+              "MEMORY",
+              "AI_REVIEW",
+              "PROJECT_OVERHEAD"
+            ],
             "type": "string"
           },
           "costStatus": {
@@ -1701,6 +1851,7 @@
           "id",
           "provider",
           "operation",
+          "category",
           "providerRequestId",
           "model",
           "status",
@@ -1725,6 +1876,12 @@
           "breakdown": {
             "items": {
               "$ref": "#/components/schemas/AiUsageBreakdownResponseDto"
+            },
+            "type": "array"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/AiUsageCategoryBreakdownResponseDto"
             },
             "type": "array"
           },
@@ -1755,6 +1912,7 @@
           "range",
           "totals",
           "breakdown",
+          "categories",
           "items",
           "nextCursor"
         ],
@@ -1783,11 +1941,22 @@
           "durationSeconds": {
             "type": "string"
           },
+          "effectiveCost": {
+            "description": "providerReportedCost plus estimatedFallbackCost.",
+            "type": "string"
+          },
           "estimatedCost": {
             "type": "string"
           },
           "estimatedCostRecords": {
             "description": "Records included in estimatedCost.",
+            "type": "number"
+          },
+          "estimatedFallbackCost": {
+            "description": "Locally estimated fallback currency cost.",
+            "type": "string"
+          },
+          "estimatedRecords": {
             "type": "number"
           },
           "inputAudioTokens": {
@@ -1821,8 +1990,18 @@
             "example": "1250.000000000000",
             "type": "string"
           },
+          "providerReportedCost": {
+            "description": "Provider-reported currency cost.",
+            "type": "string"
+          },
+          "providerReportedCostRecords": {
+            "type": "number"
+          },
           "providerReportedUsageRecords": {
             "description": "Records measured in provider billing units without a per-request currency cost.",
+            "type": "number"
+          },
+          "providerUnitOnlyRecords": {
             "type": "number"
           },
           "reasoningTokens": {
@@ -1860,9 +2039,15 @@
           "durationSeconds",
           "estimatedCost",
           "billedCost",
+          "providerReportedCost",
+          "estimatedFallbackCost",
+          "effectiveCost",
           "unpricedRecords",
           "providerReportedUsageRecords",
-          "estimatedCostRecords"
+          "estimatedCostRecords",
+          "providerReportedCostRecords",
+          "estimatedRecords",
+          "providerUnitOnlyRecords"
         ],
         "type": "object"
       },
@@ -8011,6 +8196,93 @@
         ],
         "type": "object"
       },
+      "EndUserAiUsageRangeResponseDto": {
+        "properties": {
+          "from": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "timezone": {
+            "example": "Europe/Madrid",
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "timezone"
+        ],
+        "type": "object"
+      },
+      "EndUserAiUsageReportResponseDto": {
+        "properties": {
+          "breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/AiUsageBreakdownResponseDto"
+            },
+            "type": "array"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/AiUsageCategoryBreakdownResponseDto"
+            },
+            "type": "array"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiUsageRecordResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "range": {
+            "$ref": "#/components/schemas/EndUserAiUsageRangeResponseDto"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/AiUsageTotalsResponseDto"
+          },
+          "window": {
+            "enum": [
+              "today",
+              "7d",
+              "30d",
+              "all",
+              "custom"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "range",
+          "totals",
+          "breakdown",
+          "categories",
+          "items",
+          "nextCursor",
+          "endUserId",
+          "window"
+        ],
+        "type": "object"
+      },
       "EndUserPageResponseDto": {
         "properties": {
           "items": {
@@ -13793,7 +14065,8 @@
               "PERMISSION",
               "AUTHENTICATION_ATTEMPT",
               "EMAIL_MESSAGE",
-              "EMAIL_ADDRESS"
+              "EMAIL_ADDRESS",
+              "INTEGRATION_ACTIVITY"
             ],
             "type": "string"
           }
@@ -25580,6 +25853,106 @@
         ],
         "x-iam-permission": {
           "code": "project.profiles.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/ai-usage": {
+      "get": {
+        "operationId": "EndUserAiUsage_report",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "window",
+            "required": false,
+            "schema": {
+              "default": "today",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserAiUsageReportResponseDto"
+                }
+              }
+            },
+            "description": "AI usage totals and breakdown attributed to one End User."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User AI usage"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_usage.read",
           "scope": "PROJECT"
         }
       }

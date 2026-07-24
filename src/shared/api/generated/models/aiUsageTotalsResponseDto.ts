@@ -14,9 +14,14 @@ export interface AiUsageTotalsResponseDto {
   cachedInputTokens: number;
   cacheWriteInputTokens: number;
   durationSeconds: string;
+  /** providerReportedCost plus estimatedFallbackCost. */
+  effectiveCost: string;
   estimatedCost: string;
   /** Records included in estimatedCost. */
   estimatedCostRecords: number;
+  /** Locally estimated fallback currency cost. */
+  estimatedFallbackCost: string;
+  estimatedRecords: number;
   inputAudioTokens: number;
   inputCharacters: number;
   inputImageTokens: number;
@@ -27,8 +32,12 @@ export interface AiUsageTotalsResponseDto {
   outputTextTokens: number;
   outputTokens: number;
   providerBilledUnits: string;
+  /** Provider-reported currency cost. */
+  providerReportedCost: string;
+  providerReportedCostRecords: number;
   /** Records measured in provider billing units without a per-request currency cost. */
   providerReportedUsageRecords: number;
+  providerUnitOnlyRecords: number;
   reasoningTokens: number;
   records: number;
   totalTokens: number;

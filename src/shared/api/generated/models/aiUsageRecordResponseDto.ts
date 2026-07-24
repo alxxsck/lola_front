@@ -5,12 +5,14 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiUsageRecordResponseDtoCategory } from "./aiUsageRecordResponseDtoCategory";
 import type { AiUsageRecordResponseDtoProviderMetadata } from "./aiUsageRecordResponseDtoProviderMetadata";
 import type { AiUsageRecordResponseDtoRawUsage } from "./aiUsageRecordResponseDtoRawUsage";
 
 export interface AiUsageRecordResponseDto {
   /** @nullable */
   billedCost: string | null;
+  category: AiUsageRecordResponseDtoCategory;
   costStatus: string;
   currency: string;
   /** @nullable */

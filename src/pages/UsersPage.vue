@@ -250,6 +250,14 @@ async function selectConversation(conversationId: string): Promise<void> {
   });
 }
 
+async function selectProfile(): Promise<void> {
+  if (!selected.value) return;
+  await router.replace({
+    name: "users",
+    params: { endUserId: selected.value.endUserId },
+  });
+}
+
 function closeProfile(): void {
   if (workspaceVisible.value) return;
   selected.value = null;
@@ -530,6 +538,7 @@ onBeforeUnmount(() => {
     "
     @changed="load()"
     @conversation-selected="selectConversation"
+    @profile-selected="selectProfile"
     @update:visible="closeProfile"
   />
 </template>

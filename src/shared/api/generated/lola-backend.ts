@@ -112,6 +112,8 @@ import type {
   DisableTelegramChannelDto,
   EmailAIProposalPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
+  EndUserAiUsageReportParams,
+  EndUserAiUsageReportResponseDto,
   EndUserPageResponseDto,
   EndUserResponseDto,
   EndVoiceSessionDto,
@@ -1144,6 +1146,22 @@ export const adminEndUserProfilesList = (
   return request<CmsProfileListResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/end-users`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const endUserAiUsageReport = (
+  projectId: string,
+  endUserId: string,
+  params?: EndUserAiUsageReportParams,
+  options?: SecondParameter<typeof request<EndUserAiUsageReportResponseDto>>,
+) => {
+  return request<EndUserAiUsageReportResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/ai-usage`,
       method: "GET",
       params,
     },
@@ -4677,6 +4695,9 @@ export type ProjectAuditEventsListResult = NonNullable<
 >;
 export type AdminEndUserProfilesListResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesList>>
+>;
+export type EndUserAiUsageReportResult = NonNullable<
+  Awaited<ReturnType<typeof endUserAiUsageReport>>
 >;
 export type AdminEndUserProfilesProfileResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesProfile>>

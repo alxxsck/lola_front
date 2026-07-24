@@ -5,14 +5,16 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiUsageCategoryBreakdownResponseDtoCategory } from "./aiUsageCategoryBreakdownResponseDtoCategory";
 
-export interface AiUsageBreakdownResponseDto {
+export interface AiUsageCategoryBreakdownResponseDto {
   billedCost: string;
   cachedInputAudioTokens: number;
   cachedInputImageTokens: number;
   cachedInputTextTokens: number;
   cachedInputTokens: number;
   cacheWriteInputTokens: number;
+  category: AiUsageCategoryBreakdownResponseDtoCategory;
   currency: string;
   durationSeconds: string;
   /** providerReportedCost plus estimatedFallbackCost. */
@@ -25,13 +27,10 @@ export interface AiUsageBreakdownResponseDto {
   inputImageTokens: number;
   inputTextTokens: number;
   inputTokens: number;
-  model: string;
-  operation: string;
   outputAudioTokens: number;
   outputImageTokens: number;
   outputTextTokens: number;
   outputTokens: number;
-  provider: string;
   providerBilledUnits: string;
   /** Provider-reported currency cost. */
   providerReportedCost: string;
