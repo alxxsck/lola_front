@@ -149,6 +149,18 @@ test("scenario author sees importance and quiet-hours semantics", async ({
   await page.keyboard.press("Escape");
   await page.waitForTimeout(250);
 
+  await page.getByRole("button", { name: /Условия/ }).click();
+  const conditionScale = await page.evaluate(() => {
+    const fontSize = (selector: string) =>
+      getComputedStyle(document.querySelector(selector)!).fontSize;
+    return {
+      emphasis: fontSize(".rule-builder .recipe-heading strong"),
+      supporting: fontSize(".rule-builder .recipe-heading small"),
+      empty: fontSize(".rule-builder .group-empty span"),
+      summary: fontSize(".rule-builder .builder-summary > div > strong"),
+    };
+  });
+
   await page.getByRole("button", { name: /Аудитория/ }).click();
   const audienceBuilder = page.locator(".audience-builder");
   const anyCondition = audienceBuilder.getByRole("button", {
@@ -166,6 +178,17 @@ test("scenario author sees importance and quiet-hours semantics", async ({
   await expect(
     audienceBuilder.locator('select[aria-label^="Как учитывать условия"]'),
   ).toHaveCount(0);
+  const audienceScale = await page.evaluate(() => {
+    const fontSize = (selector: string) =>
+      getComputedStyle(document.querySelector(selector)!).fontSize;
+    return {
+      emphasis: fontSize(".audience-builder .semantics-note strong"),
+      supporting: fontSize(".audience-builder .semantics-note span"),
+      empty: fontSize(".audience-builder .group-empty span"),
+      summary: fontSize(".audience-builder .summary > div > strong"),
+    };
+  });
+  expect(audienceScale).toEqual(conditionScale);
   await expectNoSeriousAccessibilityViolations(page);
 });
 

@@ -532,7 +532,7 @@ defineExpose({ focusIssue });
 .builder-header p {
   margin: 5px 0 0;
   color: var(--text-small-muted);
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-body-small);
 }
 .health {
   flex: 0 0 auto;
@@ -547,12 +547,12 @@ defineExpose({ focusIssue });
   display: block;
 }
 .health strong {
-  font-size: var(--font-size-body-small);
+  font-size: 0.7rem;
 }
 .health span {
   margin-top: 3px;
   color: var(--text-small-muted);
-  font-size: var(--font-size-caption);
+  font-size: 0.61rem;
 }
 .health.ready {
   border-color: var(--status-success);
@@ -577,17 +577,17 @@ defineExpose({ focusIssue });
   display: block;
 }
 .semantics-note strong {
-  font-size: var(--font-size-body);
+  font-size: 0.72rem;
 }
 .semantics-note span {
   margin-top: 3px;
-  font-size: var(--font-size-body-small);
+  font-size: 0.64rem;
   line-height: 1.4;
 }
 .policy {
   padding: 0 3px;
   color: var(--text-secondary);
-  font-size: var(--font-size-body-small);
+  font-size: 0.67rem;
 }
 .policy summary {
   cursor: pointer;
@@ -613,13 +613,14 @@ defineExpose({ focusIssue });
 .summary span {
   display: block;
   color: var(--text-on-emphasis-muted);
-  font-size: var(--font-size-caption);
+  font-size: 0.61rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .summary strong {
   display: block;
-  margin-top: 4px;
-  font-size: var(--font-size-body);
+  margin-top: 5px;
+  font-size: 0.72rem;
   line-height: 1.45;
 }
 .summary dl {
@@ -632,17 +633,17 @@ defineExpose({ focusIssue });
 }
 .summary dt {
   color: var(--text-on-emphasis-muted);
-  font-size: var(--font-size-caption);
+  font-size: 0.58rem;
 }
 .summary dd {
   margin: 3px 0 0;
-  font-size: var(--font-size-body);
-  font-weight: 800;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 .summary small {
   grid-column: 1/3;
   color: var(--text-on-emphasis-muted);
-  font-size: var(--font-size-caption);
+  font-size: 0.63rem;
 }
 .summary code {
   color: var(--brand);
@@ -760,7 +761,7 @@ defineExpose({ focusIssue });
 }
 .freshness legend {
   padding: 0 5px;
-  font-size: var(--font-size-body);
+  font-size: 0.72rem;
   font-weight: 800;
 }
 .freshness label {
@@ -776,12 +777,12 @@ defineExpose({ focusIssue });
   display: block;
 }
 .freshness strong {
-  font-size: var(--font-size-body);
+  font-size: 0.72rem;
 }
 .freshness small {
   margin-top: 3px;
   color: var(--text-small-muted);
-  font-size: var(--font-size-body-small);
+  font-size: 0.64rem;
   line-height: 1.4;
 }
 .freshness .age {
@@ -789,7 +790,7 @@ defineExpose({ focusIssue });
   align-items: center;
 }
 .freshness .age span {
-  font-size: var(--font-size-body-small);
+  font-size: 0.64rem;
   font-weight: 700;
 }
 .freshness .age input {

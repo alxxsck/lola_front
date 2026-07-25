@@ -80,7 +80,10 @@ const leafPresentation = computed(() => {
           @edit="(...args) => emit('edit', ...args)"
         />
       </ol>
-      <p v-else class="empty">Добавьте первое условие — аудитория пока не ограничена.</p>
+      <div v-else class="group-empty">
+        <span>Добавьте первое условие</span>
+        <small>Аудитория пока не ограничена.</small>
+      </div>
       <footer>
         <button type="button" :aria-label="`Добавить условие аудитории в ${groupLabel}`" @click="emit('addCondition', node.nodeId, groupLabel, $event.currentTarget as HTMLElement)"><i class="pi pi-plus" /> Условие</button>
         <button type="button" :aria-label="`Добавить группу аудитории в ${groupLabel}`" :disabled="(depth ?? 0) >= 3" @click="emit('command', { type: 'addGroup', parentNodeId: node.nodeId })"><i class="pi pi-folder-plus" /> Группа</button>
@@ -121,7 +124,8 @@ const leafPresentation = computed(() => {
   background: var(--surface-card);
 }
 .group-card {
-  padding: 14px;
+  padding: 16px;
+  border-radius: 17px;
 }
 .group-card > header {
   display: flex;
@@ -130,7 +134,7 @@ const leafPresentation = computed(() => {
 }
 .leaf-card span {
   color: var(--text-small-muted);
-  font-size: var(--font-size-caption);
+  font-size: 0.63rem;
 }
 .logic-switch {
   display: flex;
@@ -165,16 +169,16 @@ const leafPresentation = computed(() => {
 .not-card ol {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 12px 0 0;
+  gap: 9px;
+  margin: 13px 0 0;
   padding: 0 0 0 14px;
-  border-left: 2px solid var(--status-violet-soft);
+  border-left: 2px solid var(--status-violet);
 }
 .group-card footer,
 .group-actions,
 .leaf-actions {
   display: flex;
-  gap: 8px;
+  gap: 7px;
 }
 .group-card footer {
   margin-top: 12px;
@@ -195,16 +199,19 @@ const leafPresentation = computed(() => {
 .group-actions button,
 .leaf-card button,
 .not-card header button {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   padding: 0;
 }
 .group-actions button {
+  width: 28px;
+  height: 28px;
   border: 0;
+  border-radius: 8px;
   background: var(--surface-subtle);
+  font-size: 0.62rem;
 }
 .group-card footer button {
-  min-height: 34px;
   padding: 7px 9px;
   border: 0;
   background: var(--status-violet-soft);
@@ -220,25 +227,37 @@ const leafPresentation = computed(() => {
 .group-card button:disabled {
   opacity: 0.4;
 }
-.empty {
+.group-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin: 12px 0 0;
-  padding: 14px;
-  border-radius: 10px;
-  background: var(--surface-subtle);
-  color: var(--text-small-muted);
-  font-size: var(--font-size-body-small);
+  padding: 18px;
+  border: 1px dashed var(--border-default);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.group-empty span {
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.group-empty small {
+  margin-top: 4px;
+  font-size: 0.64rem;
 }
 .leaf-card {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: start;
   gap: 10px;
   padding: 12px;
+  background: var(--surface-subtle);
 }
 .leaf-icon {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   background: var(--status-violet-soft);
   color: var(--status-violet-text);
@@ -250,7 +269,7 @@ const leafPresentation = computed(() => {
 }
 .leaf-card strong {
   margin-top: 3px;
-  font-size: var(--font-size-body);
+  font-size: 0.74rem;
   line-height: 1.4;
 }
 .not-card {
@@ -269,19 +288,19 @@ const leafPresentation = computed(() => {
   display: block;
 }
 .not-card strong {
-  font-size: var(--font-size-body);
+  font-size: 0.74rem;
 }
 .not-card small {
   margin-top: 3px;
   color: var(--text-small-muted);
-  font-size: var(--font-size-caption);
+  font-size: 0.63rem;
 }
 .not-badge {
   padding: 5px 8px;
   border-radius: 7px;
   background: var(--status-danger-text);
   color: var(--on-status-danger);
-  font-size: var(--font-size-caption);
+  font-size: 0.61rem;
   font-weight: 800;
 }
 @media (max-width: 520px) {
@@ -295,6 +314,9 @@ const leafPresentation = computed(() => {
   .group-card ol,
   .not-card ol {
     padding-left: 8px;
+  }
+  .group-card {
+    padding: 12px;
   }
   .group-card > header {
     flex-wrap: wrap;
