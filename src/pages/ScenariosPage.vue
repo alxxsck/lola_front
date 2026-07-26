@@ -117,7 +117,7 @@ async function toggleScenario(scenario: Scenario) {
   const projectId = auth.project?.id;
   if (!projectId || pendingIds.value.has(scenario.id) || !canWrite.value)
     return;
-  if (scenario.status !== "ACTIVE") {
+  if (scenario.status === "DRAFT") {
     if (!canPublish.value) return;
     openEdit(scenario);
     toast.add({
@@ -128,7 +128,9 @@ async function toggleScenario(scenario: Scenario) {
     });
     return;
   }
-  const nextStatus: ScenarioStatus = "PAUSED";
+  if (scenario.status === "ARCHIVED") return;
+  const resuming = scenario.status === "PAUSED";
+  const nextStatus: ScenarioStatus = resuming ? "ACTIVE" : "PAUSED";
   pendingIds.value.add(scenario.id);
   try {
     if (!scenario.updatedAt)
@@ -139,13 +141,15 @@ async function toggleScenario(scenario: Scenario) {
       {
         status: nextStatus,
         expectedUpdatedAt: scenario.updatedAt,
-        reason: "Pause scenario from CMS list",
+        reason: resuming
+          ? "Resume scenario from CMS list"
+          : "Pause scenario from CMS list",
       },
     );
     replaceScenario(saved);
     toast.add({
-      severity: "secondary",
-      summary: "Сценарий приостановлен",
+      severity: resuming ? "success" : "secondary",
+      summary: resuming ? "Сценарий запущен" : "Сценарий приостановлен",
       detail: scenario.name,
       life: 2600,
     });
@@ -432,8 +436,19 @@ function errorMessage(cause: unknown) {
           <template #body="{ data }">
             <div class="row-actions" @click.stop>
               <Button
-                v-if="canWrite && (data.status === 'ACTIVE' || canPublish)"
-                :icon="data.status === 'ACTIVE' ? 'pi pi-pause' : 'pi pi-send'"
+                v-if="
+                  canWrite &&
+                  (data.status === 'ACTIVE' ||
+                    data.status === 'PAUSED' ||
+                    canPublish)
+                "
+                :icon="
+                  data.status === 'ACTIVE'
+                    ? 'pi pi-pause'
+                    : data.status === 'PAUSED'
+                      ? 'pi pi-play'
+                      : 'pi pi-send'
+                "
                 text
                 rounded
                 size="small"
@@ -442,7 +457,9 @@ function errorMessage(cause: unknown) {
                 :aria-label="
                   data.status === 'ACTIVE'
                     ? 'Поставить на паузу'
-                    : 'Настроить и опубликовать'
+                    : data.status === 'PAUSED'
+                      ? 'Запустить'
+                      : 'Настроить и опубликовать'
                 "
                 @click="toggleScenario(data)"
               />

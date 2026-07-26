@@ -49,6 +49,30 @@ describe('ScenariosPage V2 activation boundary', () => {
     expect(mocks.push).toHaveBeenCalledWith({ name: 'scenario-edit', params: { scenarioId: 'scenario-1' } })
   })
 
+  it('resumes a paused published scenario without creating a new revision', async () => {
+    const paused = { ...scenario, status: 'PAUSED', currentRevisionId: 'revision-1' } as Scenario
+    mocks.permissions = [
+      'project.scenarios.read', 'project.scenarios.write', 'project.event_catalog.read',
+    ]
+    mocks.getScenarios.mockResolvedValue([paused])
+    const wrapper = shallowMount(ScenariosPage)
+    await flushPromises()
+
+    await (wrapper.vm as unknown as { toggleScenario: (value: Scenario) => Promise<void> })
+      .toggleScenario(paused)
+
+    expect(mocks.updateScenarioMetadata).toHaveBeenCalledWith(
+      'project-1',
+      'scenario-1',
+      {
+        status: 'ACTIVE',
+        expectedUpdatedAt: scenario.updatedAt,
+        reason: 'Resume scenario from CMS list',
+      },
+    )
+    expect(mocks.push).not.toHaveBeenCalled()
+  })
+
   it('still allows an active scenario to be paused', async () => {
     const wrapper = shallowMount(ScenariosPage)
     await flushPromises()
