@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
+import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import { formatDate } from "@/shared/lib/format";
 import type { EndUserCaseDetailBundle } from "../api/end-user-cases-repository";
@@ -17,7 +19,7 @@ import {
   endUserCaseToneLabel,
 } from "../model/end-user-case-presentation";
 
-defineProps<{
+const props = defineProps<{
   value: EndUserCaseDetailBundle | null;
   loading: boolean;
   messagesLoading?: boolean;
@@ -39,6 +41,51 @@ defineEmits<{
   requestSplit: [];
   loadMoreMessages: [];
 }>();
+
+type RelatedTab = "messages" | "proposals" | "history";
+
+const relatedTabs: readonly RelatedTab[] = ["messages", "proposals", "history"];
+const activeRelatedTab = ref<RelatedTab>("messages");
+const resolutionActions: readonly EndUserCaseStatus[] = [
+  "RESOLVED",
+  "UNRESOLVED",
+];
+
+const workflowStatusOptions = (statuses: EndUserCaseStatus[]) =>
+  statuses
+    .filter((status) => !resolutionActions.includes(status))
+    .map((status) => ({
+      label: endUserCaseActionLabel(status),
+      value: status,
+    }));
+
+watch(
+  () => props.value?.case.id,
+  (caseId, previousCaseId) => {
+    if (caseId !== previousCaseId) activeRelatedTab.value = "messages";
+  },
+);
+
+function handleRelatedTabKeydown(event: KeyboardEvent, tab: RelatedTab): void {
+  const currentIndex = relatedTabs.indexOf(tab);
+  let nextIndex: number | null = null;
+  if (event.key === "ArrowRight") {
+    nextIndex = (currentIndex + 1) % relatedTabs.length;
+  } else if (event.key === "ArrowLeft") {
+    nextIndex = (currentIndex - 1 + relatedTabs.length) % relatedTabs.length;
+  } else if (event.key === "Home") {
+    nextIndex = 0;
+  } else if (event.key === "End") {
+    nextIndex = relatedTabs.length - 1;
+  }
+  if (nextIndex === null) return;
+  event.preventDefault();
+  const nextTab = relatedTabs[nextIndex]!;
+  activeRelatedTab.value = nextTab;
+  requestAnimationFrame(() =>
+    document.getElementById(`case-${nextTab}-tab`)?.focus(),
+  );
+}
 
 const resolutionLabel = (assessment: string): string =>
   ({
@@ -100,25 +147,68 @@ const hasMessageGap = (
       <Button label="Повторить" text size="small" @click="$emit('retry')" />
     </Message>
     <template v-else-if="value">
-      <header class="detail-header">
-        <div class="kicker">
-          <span>Обращение № {{ value.case.projectSequence }}</span>
-          <span>{{ endUserCaseGroupLabel(value.case.groupCode) }}</span>
+      <section class="detail-card identity-card">
+        <header class="detail-header">
+          <div class="kicker">
+            <span>Обращение № {{ value.case.projectSequence }}</span>
+            <span class="group-badge">{{
+              endUserCaseGroupLabel(value.case.groupCode)
+            }}</span>
+          </div>
+          <h2 tabindex="-1">{{ value.case.title }}</h2>
+          <p>{{ value.case.goal }}</p>
+          <div class="badges">
+            <span class="badge status">{{
+              endUserCaseStatusLabel(value.case.status)
+            }}</span>
+            <span class="badge priority">
+              {{ endUserCasePriorityLabel(value.case.priority) }}
+            </span>
+            <span class="badge">{{
+              resolutionLabel(value.case.resolution.assessment)
+            }}</span>
+          </div>
+        </header>
+
+        <div class="card-divider" />
+
+        <div class="meta-grid">
+          <div>
+            <span>Пользователь</span>
+            <RouterLink
+              v-if="canReadEndUser"
+              :to="{
+                name: 'users',
+                params: { endUserId: value.case.endUser.id },
+              }"
+            >
+              {{ value.case.endUser.externalId }}
+            </RouterLink>
+            <strong v-else>{{ value.case.endUser.externalId }}</strong>
+          </div>
+          <div>
+            <span>Исполнитель</span>
+            <strong>{{
+              value.case.assignee?.displayName ?? "Не назначен"
+            }}</strong>
+          </div>
+          <div>
+            <span>Последняя активность</span>
+            <strong>{{ formatDate(value.case.lastActivityAt) }}</strong>
+          </div>
+          <div>
+            <span>Настроение пользователя</span>
+            <strong
+              >{{ endUserCaseToneLabel(value.case.initialTone) }} →
+              {{ endUserCaseToneLabel(value.case.currentTone) }}</strong
+            >
+          </div>
+          <div>
+            <span>Возвраты к цели</span>
+            <strong>{{ value.case.endUserRecontactCount }}</strong>
+          </div>
         </div>
-        <h2 tabindex="-1">{{ value.case.title }}</h2>
-        <p>{{ value.case.goal }}</p>
-        <div class="badges">
-          <span class="badge">{{
-            endUserCaseStatusLabel(value.case.status)
-          }}</span>
-          <span class="badge priority">
-            {{ endUserCasePriorityLabel(value.case.priority) }}
-          </span>
-          <span class="badge">{{
-            resolutionLabel(value.case.resolution.assessment)
-          }}</span>
-        </div>
-      </header>
+      </section>
 
       <Message v-if="error" severity="warn" :closable="false">{{
         error
@@ -147,137 +237,129 @@ const hasMessageGap = (
         доступны, но сводка может обновиться позже.
       </Message>
 
-      <section class="meta-grid">
-        <div>
-          <span>Пользователь</span>
-          <RouterLink
-            v-if="canReadEndUser"
-            :to="{
-              name: 'users',
-              params: { endUserId: value.case.endUser.id },
-            }"
-          >
-            {{ value.case.endUser.externalId }}
-          </RouterLink>
-          <strong v-else>{{ value.case.endUser.externalId }}</strong>
-        </div>
-        <div>
-          <span>Исполнитель</span>
-          <strong>{{
-            value.case.assignee?.displayName ?? "Не назначен"
-          }}</strong>
-        </div>
-        <div>
-          <span>Последняя активность</span>
-          <strong>{{ formatDate(value.case.lastActivityAt) }}</strong>
-        </div>
-        <div>
-          <span>Настроение пользователя</span>
-          <strong
-            >{{ endUserCaseToneLabel(value.case.initialTone) }} →
-            {{ endUserCaseToneLabel(value.case.currentTone) }}</strong
-          >
-        </div>
-        <div>
-          <span>Возвраты к цели</span>
-          <strong>{{ value.case.endUserRecontactCount }}</strong>
-        </div>
-      </section>
+      <section
+        class="detail-card overview-card"
+        aria-labelledby="case-overview-title"
+      >
+        <h3 id="case-overview-title" class="card-title">Обзор</h3>
 
-      <section class="summary-card">
-        <div class="section-heading">
-          <h3>Актуальная сводка</h3>
-          <small>Версия {{ value.case.version }}</small>
-        </div>
-        <p>{{ value.case.summary || "Сводка ещё формируется." }}</p>
-      </section>
-
-      <section v-if="value.case.workSummary" class="work-summary">
-        <div class="section-heading">
-          <h3>Что уже сделано</h3>
-          <small>
-            Каналы:
-            {{
-              value.case.channels.length
-                ? value.case.channels.map(endUserCaseChannelLabel).join(", ")
-                : "не определены"
-            }}
-          </small>
-        </div>
-        <div
-          v-if="value.case.workSummary.aiCapabilities.length"
-          class="capability-list"
-        >
-          <div
-            v-for="capability in value.case.workSummary.aiCapabilities"
-            :key="capability.actionTypeCode"
-            class="capability-row"
-          >
-            <strong :title="capability.actionTypeCode">{{
-              endUserCaseCapabilityLabel(capability.actionTypeCode)
-            }}</strong>
-            <span>
-              {{ capability.invocationCount }} вызовов ·
-              {{ capability.succeeded }} успешно · {{ capability.failed }} с
-              ошибкой
-            </span>
+        <div class="overview-block">
+          <div class="section-heading">
+            <h4>Актуальная сводка</h4>
+            <small>Версия {{ value.case.version }}</small>
           </div>
+          <p>{{ value.case.summary || "Сводка ещё формируется." }}</p>
         </div>
-        <p v-else class="empty-copy">
-          Инструменты Lola ещё не использовались.
-        </p>
-        <p
-          v-if="
-            value.case.workSummary.cmsParticipation.messageCount ||
-            value.case.workSummary.cmsParticipation.actionCount
-          "
-        >
-          Администратор:
-          {{ value.case.workSummary.cmsParticipation.messageCount }}
-          сообщений,
-          {{ value.case.workSummary.cmsParticipation.actionCount }} действий.
-        </p>
-        <div v-if="value.case.workSummary.blockers.length" class="work-copy">
-          <strong>Блокеры</strong>
-          <span>{{ value.case.workSummary.blockers.join(" · ") }}</span>
-        </div>
-        <div v-if="value.case.workSummary.limitations.length" class="work-copy">
-          <strong>Ограничения</strong>
-          <span>{{ value.case.workSummary.limitations.join(" · ") }}</span>
-        </div>
+
+        <template v-if="value.case.workSummary">
+          <div class="overview-block">
+            <div class="section-heading">
+              <h4>Что уже сделано</h4>
+              <small>
+                Каналы:
+                {{
+                  value.case.channels.length
+                    ? value.case.channels
+                        .map(endUserCaseChannelLabel)
+                        .join(", ")
+                    : "не определены"
+                }}
+              </small>
+            </div>
+            <div
+              v-if="value.case.workSummary.aiCapabilities.length"
+              class="capability-list"
+            >
+              <div
+                v-for="capability in value.case.workSummary.aiCapabilities"
+                :key="capability.actionTypeCode"
+                class="capability-row"
+              >
+                <strong :title="capability.actionTypeCode">{{
+                  endUserCaseCapabilityLabel(capability.actionTypeCode)
+                }}</strong>
+                <span>
+                  {{ capability.invocationCount }} вызовов ·
+                  {{ capability.succeeded }} успешно · {{ capability.failed }} с
+                  ошибкой
+                </span>
+              </div>
+            </div>
+            <p v-else class="empty-copy">
+              Инструменты Lola ещё не использовались.
+            </p>
+            <p
+              v-if="
+                value.case.workSummary.cmsParticipation.messageCount ||
+                value.case.workSummary.cmsParticipation.actionCount
+              "
+            >
+              Администратор:
+              {{ value.case.workSummary.cmsParticipation.messageCount }}
+              сообщений,
+              {{ value.case.workSummary.cmsParticipation.actionCount }}
+              действий.
+            </p>
+          </div>
+
+          <div
+            v-if="value.case.workSummary.blockers.length"
+            class="overview-block work-copy"
+          >
+            <h4>Блокеры</h4>
+            <span>{{ value.case.workSummary.blockers.join(" · ") }}</span>
+          </div>
+          <div
+            v-if="value.case.workSummary.limitations.length"
+            class="overview-block work-copy"
+          >
+            <h4>Ограничения</h4>
+            <span>{{ value.case.workSummary.limitations.join(" · ") }}</span>
+          </div>
+        </template>
       </section>
 
-      <section v-if="canManage" class="workflow-card">
-        <div class="section-heading">
-          <h3>Изменить состояние</h3>
-          <small
-            >Решение подтверждается только явным действием или проверенным
-            фактом</small
-          >
-        </div>
-        <div class="workflow-actions">
+      <section
+        v-if="canManage"
+        class="detail-card workflow-card"
+        aria-labelledby="case-actions-title"
+      >
+        <h3 id="case-actions-title" class="card-title">Действия</h3>
+        <p class="section-description">
+          Решение подтверждается только явным действием или проверенным фактом.
+        </p>
+        <div class="status-actions">
+          <Select
+            v-if="workflowStatusOptions(value.case.availableStatuses).length"
+            class="status-select"
+            :model-value="null"
+            :options="workflowStatusOptions(value.case.availableStatuses)"
+            option-label="label"
+            option-value="value"
+            placeholder="Изменить статус"
+            aria-label="Изменить статус"
+            :disabled="mutating"
+            @update:model-value="$emit('requestTransition', $event)"
+          />
           <Button
-            v-for="status in value.case.availableStatuses"
+            v-for="status in value.case.availableStatuses.filter((item) =>
+              resolutionActions.includes(item),
+            )"
             :key="status"
             :data-status="status"
             :label="endUserCaseActionLabel(status)"
-            :severity="
-              status === 'RESOLVED'
-                ? 'success'
-                : status === 'UNRESOLVED'
-                  ? 'danger'
-                  : 'secondary'
-            "
-            :outlined="!['RESOLVED', 'UNRESOLVED'].includes(status)"
+            :severity="status === 'RESOLVED' ? 'success' : 'danger'"
             :loading="mutating"
             @click="$emit('requestTransition', status)"
           />
+        </div>
+        <div class="workflow-tools">
           <Button
             v-if="canAssign"
             label="Назначение"
             icon="pi pi-user-edit"
             severity="secondary"
-            outlined
+            text
             @click="$emit('requestAssignment')"
           />
           <Button
@@ -305,144 +387,220 @@ const hasMessageGap = (
         </div>
       </section>
 
-      <section class="linked-section">
-        <div class="section-heading">
-          <h3>Связанные сообщения</h3>
-          <small
-            >{{ value.messages.items.length }} из обращения, не весь
-            диалог</small
+      <section class="detail-card related-card">
+        <div class="related-tabs" role="tablist" aria-label="Связанные данные">
+          <button
+            id="case-messages-tab"
+            type="button"
+            role="tab"
+            aria-controls="case-messages-panel"
+            :aria-selected="activeRelatedTab === 'messages'"
+            :tabindex="activeRelatedTab === 'messages' ? 0 : -1"
+            @click="activeRelatedTab = 'messages'"
+            @keydown="handleRelatedTabKeydown($event, 'messages')"
           >
+            Связанные сообщения
+            <strong>{{ value.messages.items.length }}</strong>
+          </button>
+          <button
+            id="case-proposals-tab"
+            type="button"
+            role="tab"
+            aria-controls="case-proposals-panel"
+            :aria-selected="activeRelatedTab === 'proposals'"
+            :tabindex="activeRelatedTab === 'proposals' ? 0 : -1"
+            @click="activeRelatedTab = 'proposals'"
+            @keydown="handleRelatedTabKeydown($event, 'proposals')"
+          >
+            Предложения Lola
+            <strong>{{ value.proposals.items.length }}</strong>
+          </button>
+          <button
+            id="case-history-tab"
+            type="button"
+            role="tab"
+            aria-controls="case-history-panel"
+            :aria-selected="activeRelatedTab === 'history'"
+            :tabindex="activeRelatedTab === 'history' ? 0 : -1"
+            @click="activeRelatedTab = 'history'"
+            @keydown="handleRelatedTabKeydown($event, 'history')"
+          >
+            История
+            <strong>{{ value.timeline.events.length }}</strong>
+          </button>
         </div>
-        <div v-if="!value.messages.items.length" class="empty-copy">
-          Связанных сообщений пока нет.
-        </div>
-        <template
-          v-for="(link, index) in value.messages.items"
-          :key="link.message.id"
+
+        <div
+          v-if="activeRelatedTab === 'messages'"
+          id="case-messages-panel"
+          class="related-panel"
+          role="tabpanel"
+          aria-labelledby="case-messages-tab"
         >
-          <div
-            v-if="beginsMessageGroup(value.messages.items, index)"
-            class="message-group"
-          >
-            <strong>{{
-              endUserCaseChannelLabel(messageChannel(link.message))
-            }}</strong>
+          <div v-if="value.messages.items[0]" class="panel-context">
+            <span>
+              <strong>{{
+                endUserCaseChannelLabel(
+                  messageChannel(value.messages.items[0].message),
+                )
+              }}</strong>
+              · {{ value.messages.items.length }} из обращения, не весь диалог
+            </span>
             <RouterLink
               v-if="canReadEndUser && canReadConversation"
               :to="{
                 name: 'users',
                 params: { endUserId: value.case.endUser.id },
                 query: {
-                  conversationId: link.message.threadId,
+                  conversationId: value.messages.items[0].message.threadId,
                   endUserCaseId: value.case.id,
                 },
               }"
             >
               Открыть диалог
             </RouterLink>
-            <span v-else>Диалог {{ link.message.threadId.slice(0, 8) }}</span>
-          </div>
-          <div
-            v-else-if="hasMessageGap(value.messages.items, index)"
-            class="message-gap"
-          >
-            Часть диалога не относится к этому обращению
-          </div>
-          <article class="message-row">
-            <div class="message-meta">
-              <strong>{{ roleLabel(link.message.role) }}</strong>
-              <span>{{
-                link.relation === "PRIMARY" ? "Основное" : "Контекст"
-              }}</span>
-              <time :datetime="link.message.createdAt">
-                {{ formatDate(link.message.createdAt) }}
-              </time>
-            </div>
-            <p>{{ link.message.text }}</p>
-            <Button
-              v-if="canManage"
-              label="Исключить"
-              severity="secondary"
-              text
-              size="small"
-              @click="$emit('requestUnlink', link.message.id)"
-            />
-          </article>
-        </template>
-        <Button
-          v-if="value.messages.nextCursor"
-          label="Показать ещё сообщения"
-          icon="pi pi-chevron-down"
-          severity="secondary"
-          outlined
-          :loading="messagesLoading"
-          @click="$emit('loadMoreMessages')"
-        />
-      </section>
-
-      <section class="linked-section">
-        <div class="section-heading">
-          <h3>Предложения Lola</h3>
-          <small>{{ value.proposals.items.length }}</small>
-        </div>
-        <div v-if="!value.proposals.items.length" class="empty-copy">
-          Связанных предложений нет.
-        </div>
-        <template v-if="canReadProposals">
-          <RouterLink
-            v-for="proposal in value.proposals.items"
-            :key="proposal.id"
-            class="proposal-row"
-            :to="{
-              name: 'ai-proposal-detail',
-              params: { proposalId: proposal.id },
-            }"
-          >
-            <div>
-              <strong>{{ proposal.title }}</strong>
-              <span>{{ proposal.summary }}</span>
-            </div>
-            <span>
-              {{ endUserCaseProposalStatusLabel(proposal.workflowStatus) }}
-              <i class="pi pi-arrow-up-right" />
+            <span v-else>
+              Диалог
+              {{ value.messages.items[0].message.threadId.slice(0, 8) }}
             </span>
-          </RouterLink>
-        </template>
-        <template v-else>
-          <div
-            v-for="proposal in value.proposals.items"
-            :key="proposal.id"
-            class="proposal-row"
-          >
-            <div>
-              <strong>{{ proposal.title }}</strong>
-              <span>{{ proposal.summary }}</span>
-            </div>
-            <span>{{
-              endUserCaseProposalStatusLabel(proposal.workflowStatus)
-            }}</span>
           </div>
-        </template>
-      </section>
+          <div v-if="!value.messages.items.length" class="empty-copy">
+            Связанных сообщений пока нет.
+          </div>
+          <template
+            v-for="(link, index) in value.messages.items"
+            :key="link.message.id"
+          >
+            <div
+              v-if="
+                index > 0 && beginsMessageGroup(value.messages.items, index)
+              "
+              class="message-group"
+            >
+              <strong>{{
+                endUserCaseChannelLabel(messageChannel(link.message))
+              }}</strong>
+              <RouterLink
+                v-if="canReadEndUser && canReadConversation"
+                :to="{
+                  name: 'users',
+                  params: { endUserId: value.case.endUser.id },
+                  query: {
+                    conversationId: link.message.threadId,
+                    endUserCaseId: value.case.id,
+                  },
+                }"
+              >
+                Открыть диалог
+              </RouterLink>
+              <span v-else>Диалог {{ link.message.threadId.slice(0, 8) }}</span>
+            </div>
+            <div
+              v-else-if="hasMessageGap(value.messages.items, index)"
+              class="message-gap"
+            >
+              Часть диалога не относится к этому обращению
+            </div>
+            <article class="message-row">
+              <div class="message-meta">
+                <strong>{{ roleLabel(link.message.role) }}</strong>
+                <span>{{
+                  link.relation === "PRIMARY" ? "Основное" : "Контекст"
+                }}</span>
+                <time :datetime="link.message.createdAt">
+                  {{ formatDate(link.message.createdAt) }}
+                </time>
+              </div>
+              <p>{{ link.message.text }}</p>
+              <Button
+                v-if="canManage"
+                label="Исключить"
+                severity="secondary"
+                text
+                size="small"
+                @click="$emit('requestUnlink', link.message.id)"
+              />
+            </article>
+          </template>
+          <Button
+            v-if="value.messages.nextCursor"
+            label="Показать ещё сообщения"
+            icon="pi pi-chevron-down"
+            severity="secondary"
+            outlined
+            :loading="messagesLoading"
+            @click="$emit('loadMoreMessages')"
+          />
+        </div>
 
-      <section class="linked-section">
-        <div class="section-heading">
-          <h3>История</h3>
-          <small>{{ value.timeline.events.length }} событий</small>
-        </div>
-        <div v-if="!value.timeline.events.length" class="empty-copy">
-          История появится после следующего изменения.
-        </div>
         <div
-          v-for="event in value.timeline.events"
-          :key="event.id"
-          class="timeline-row"
+          v-else-if="activeRelatedTab === 'proposals'"
+          id="case-proposals-panel"
+          class="related-panel"
+          role="tabpanel"
+          aria-labelledby="case-proposals-tab"
         >
-          <i class="pi pi-circle-fill" />
-          <strong>{{ endUserCaseEventLabel(event.type) }}</strong>
-          <time :datetime="event.createdAt">{{
-            formatDate(event.createdAt)
-          }}</time>
+          <div v-if="!value.proposals.items.length" class="empty-copy">
+            Связанных предложений нет.
+          </div>
+          <template v-if="canReadProposals">
+            <RouterLink
+              v-for="proposal in value.proposals.items"
+              :key="proposal.id"
+              class="proposal-row"
+              :to="{
+                name: 'ai-proposal-detail',
+                params: { proposalId: proposal.id },
+              }"
+            >
+              <div>
+                <strong>{{ proposal.title }}</strong>
+                <span>{{ proposal.summary }}</span>
+              </div>
+              <span>
+                {{ endUserCaseProposalStatusLabel(proposal.workflowStatus) }}
+                <i class="pi pi-arrow-up-right" />
+              </span>
+            </RouterLink>
+          </template>
+          <template v-else>
+            <div
+              v-for="proposal in value.proposals.items"
+              :key="proposal.id"
+              class="proposal-row"
+            >
+              <div>
+                <strong>{{ proposal.title }}</strong>
+                <span>{{ proposal.summary }}</span>
+              </div>
+              <span>{{
+                endUserCaseProposalStatusLabel(proposal.workflowStatus)
+              }}</span>
+            </div>
+          </template>
+        </div>
+
+        <div
+          v-else
+          id="case-history-panel"
+          class="related-panel"
+          role="tabpanel"
+          aria-labelledby="case-history-tab"
+        >
+          <div v-if="!value.timeline.events.length" class="empty-copy">
+            История появится после следующего изменения.
+          </div>
+          <div
+            v-for="event in value.timeline.events"
+            :key="event.id"
+            class="timeline-row"
+          >
+            <i class="pi pi-circle-fill" />
+            <strong>{{ endUserCaseEventLabel(event.type) }}</strong>
+            <time :datetime="event.createdAt">{{
+              formatDate(event.createdAt)
+            }}</time>
+          </div>
         </div>
       </section>
     </template>
@@ -457,19 +615,27 @@ const hasMessageGap = (
 <style scoped>
 .case-detail {
   min-height: 100%;
-  padding: 26px;
+  padding: 18px;
+  background: var(--surface-subtle);
 }
 .case-detail,
 .detail-loading {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+}
+.detail-card {
+  padding: 22px;
+  border: 1px solid var(--border-default);
+  border-radius: 18px;
+  background: var(--surface-card);
 }
 .kicker,
 .badges,
 .section-heading,
 .message-meta,
-.workflow-actions,
+.status-actions,
+.workflow-tools,
 .timeline-row {
   display: flex;
   align-items: center;
@@ -480,6 +646,12 @@ const hasMessageGap = (
   font-size: 0.7rem;
   font-weight: 700;
 }
+.group-badge {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
 .detail-header h2 {
   margin: 9px 0 5px;
   font:
@@ -487,8 +659,9 @@ const hasMessageGap = (
     sans-serif;
 }
 .detail-header p,
-.summary-card p,
+.overview-card p,
 .message-row p {
+  margin-bottom: 0;
   color: var(--text-secondary);
   line-height: 1.55;
 }
@@ -508,20 +681,26 @@ const hasMessageGap = (
   background: var(--status-warning-soft);
   color: var(--status-warning-text);
 }
+.badge.status {
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+}
+.card-divider {
+  height: 1px;
+  margin: 20px 0;
+  background: var(--border-subtle);
+}
 .meta-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
-.meta-grid > div,
-.summary-card,
-.work-summary,
-.workflow-card,
-.linked-section {
-  padding: 16px;
+.meta-grid > div {
+  min-width: 0;
+  padding: 14px;
   border: 1px solid var(--border-default);
-  border-radius: 16px;
-  background: var(--surface-card);
+  border-radius: 14px;
+  background: var(--surface-subtle);
 }
 .meta-grid span,
 .meta-grid strong {
@@ -530,25 +709,63 @@ const hasMessageGap = (
 .meta-grid span,
 .section-heading small {
   color: var(--text-tertiary);
-  font-size: 0.68rem;
+  font-size: var(--font-size-caption);
 }
 .meta-grid strong,
 .meta-grid a {
   margin-top: 5px;
-  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-body);
+}
+.meta-grid a {
+  display: block;
+  color: var(--text-link);
+  font-weight: 700;
+}
+.card-title {
+  margin: 0;
+  font-size: var(--font-size-heading-small);
+}
+.overview-card > .card-title {
+  margin-bottom: 16px;
+}
+.overview-block {
+  padding: 16px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.overview-card > .card-title + .overview-block {
+  padding-top: 0;
+  border-top: 0;
 }
 .section-heading {
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
-.section-heading h3 {
+.section-heading h4,
+.work-copy h4 {
   margin: 0;
-  font-size: 0.88rem;
+  font:
+    700 var(--font-size-body) var(--font-display),
+    sans-serif;
 }
-.workflow-actions {
+.section-description {
+  margin: 4px 0 16px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-small);
+}
+.status-actions,
+.workflow-tools {
   flex-wrap: wrap;
   gap: 8px;
+}
+.status-select {
+  width: min(220px, 100%);
+}
+.workflow-tools {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
 }
 .capability-list,
 .work-copy {
@@ -565,9 +782,70 @@ const hasMessageGap = (
 }
 .capability-row span,
 .work-copy span,
-.work-summary > p {
+.overview-card p {
   color: var(--text-secondary);
-  font-size: 0.74rem;
+  font-size: var(--font-size-body-small);
+}
+.related-card {
+  padding-top: 0;
+}
+.related-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border-subtle);
+}
+.related-tabs button {
+  position: relative;
+  min-width: 0;
+  padding: 18px 8px 13px;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-weight: 700;
+  text-align: left;
+}
+.related-tabs button::after {
+  position: absolute;
+  right: 8px;
+  bottom: -1px;
+  left: 8px;
+  height: 2px;
+  border-radius: 999px;
+  background: transparent;
+  content: "";
+}
+.related-tabs button:hover {
+  color: var(--text-secondary);
+}
+.related-tabs button[aria-selected="true"] {
+  color: var(--text-primary);
+}
+.related-tabs button[aria-selected="true"]::after {
+  background: var(--action-primary);
+}
+.related-tabs strong {
+  color: inherit;
+}
+.related-panel {
+  padding-top: 14px;
+}
+.panel-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+}
+.panel-context a {
+  flex: 0 0 auto;
+  color: var(--text-link);
+  font-weight: 700;
 }
 .message-row,
 .proposal-row {
@@ -637,10 +915,16 @@ const hasMessageGap = (
   color: var(--text-tertiary);
   text-align: center;
 }
+.empty-copy {
+  padding: 18px 0;
+}
 .placeholder {
   display: grid;
   place-items: center;
   min-height: 440px;
+  border: 1px solid var(--border-default);
+  border-radius: 18px;
+  background: var(--surface-card);
 }
 .placeholder i {
   font-size: 2rem;
@@ -649,12 +933,35 @@ const hasMessageGap = (
   max-width: 320px;
   margin: 0;
 }
+@media (max-width: 760px) {
+  .meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 560px) {
   .case-detail {
+    padding: 12px;
+  }
+  .detail-card {
     padding: 18px;
   }
   .meta-grid {
     grid-template-columns: 1fr;
+  }
+  .related-tabs {
+    grid-template-columns: 1fr;
+  }
+  .related-tabs button {
+    padding: 11px 4px;
+  }
+  .related-tabs button::after {
+    right: 0;
+    left: 0;
+  }
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 }
 </style>

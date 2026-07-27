@@ -24,8 +24,9 @@ test("operator inbox stays clear and contained on desktop, tablet and mobile", a
     await expect(
       page.getByRole("heading", { level: 1, name: "Обращения пользователей" }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Дополнительные фильтры" }))
-      .toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Дополнительные фильтры" }),
+    ).toBeVisible();
     await expect(page.getByLabel("ID пользователя")).toHaveCount(0);
 
     const layout = await page.evaluate(() => ({
@@ -37,15 +38,16 @@ test("operator inbox stays clear and contained on desktop, tablet and mobile", a
     }));
     expect(layout.scrollWidth).toBe(layout.clientWidth);
     expect(layout.visiblePrimaryControls).toBe(5);
-    const clippedInboxControls = await page.evaluate(() =>
-      Array.from(
-        document.querySelectorAll(
-          ".cases-page button, .cases-page input, .cases-page [role='combobox']",
-        ),
-      ).filter((element) => {
-        const bounds = element.getBoundingClientRect();
-        return bounds.left < 0 || bounds.right > window.innerWidth;
-      }).length,
+    const clippedInboxControls = await page.evaluate(
+      () =>
+        Array.from(
+          document.querySelectorAll(
+            ".cases-page button, .cases-page input, .cases-page [role='combobox']",
+          ),
+        ).filter((element) => {
+          const bounds = element.getBoundingClientRect();
+          return bounds.left < 0 || bounds.right > window.innerWidth;
+        }).length,
     );
     expect(clippedInboxControls).toBe(0);
 
@@ -62,13 +64,14 @@ test("operator inbox stays clear and contained on desktop, tablet and mobile", a
         }),
       ).toBeVisible();
       await page.waitForTimeout(250);
-      const clippedActions = await page.evaluate(() =>
-        Array.from(document.querySelectorAll(".case-detail button")).filter(
-          (element) => {
-            const bounds = element.getBoundingClientRect();
-            return bounds.left < 0 || bounds.right > window.innerWidth;
-          },
-        ).length,
+      const clippedActions = await page.evaluate(
+        () =>
+          Array.from(document.querySelectorAll(".case-detail button")).filter(
+            (element) => {
+              const bounds = element.getBoundingClientRect();
+              return bounds.left < 0 || bounds.right > window.innerWidth;
+            },
+          ).length,
       );
       expect(clippedActions).toBe(0);
     }
@@ -103,10 +106,12 @@ test("case detail explains evidence and exposes the linked Lola proposal", async
   await expect(page.getByText("Обеспокоен → Спокоен")).toBeVisible();
   await expect(page.getByText("Текст, Голос")).toBeVisible();
   await expect(page.getByText("Проверка депозита")).toBeVisible();
-  await expect(page.getByText("Запрошена помощь администратора")).toBeVisible();
+  await page.getByRole("tab", { name: /Предложения Lola/ }).click();
   await expect(
     page.getByRole("link", { name: /Подключиться к обращению/ }),
   ).toHaveAttribute("href", "/ai-proposals/proposal-demo-1");
+  await page.getByRole("tab", { name: /История/ }).click();
+  await expect(page.getByText("Запрошена помощь администратора")).toBeVisible();
 });
 
 test("workflow change is persisted in demo mode and reloaded", async ({
@@ -119,13 +124,12 @@ test("workflow change is persisted in demo mode and reloaded", async ({
       name: "Обращение № 48: Не поступил депозит",
     })
     .click();
-  await page.getByRole("button", { name: "Взять в работу" }).click();
+  await page.getByRole("combobox", { name: "Изменить статус" }).click();
+  await page.getByRole("option", { name: "Взять в работу" }).click();
   await page
     .getByLabel("Основание")
     .fill("Оператор проверил платёж и взял обращение в работу");
-  await page
-    .getByRole("button", { name: "Подтвердить", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Подтвердить", exact: true }).click();
 
   await expect(
     page.locator(".case-detail .badge").filter({ hasText: "В работе" }),

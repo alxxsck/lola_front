@@ -146,14 +146,14 @@ watch(
           label="Настройки"
           icon="pi pi-sliders-h"
           severity="secondary"
-          outlined
+          text
           @click="router.push({ name: 'end-user-case-settings' })"
         />
         <Button
           label="Обновить"
           icon="pi pi-refresh"
           severity="secondary"
-          outlined
+          text
           :loading="store.loading"
           @click="store.reconcile()"
         />

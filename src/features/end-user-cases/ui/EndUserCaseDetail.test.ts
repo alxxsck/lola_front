@@ -103,7 +103,83 @@ const detail = {
   },
 };
 
+const selectStub = {
+  props: ["options", "placeholder"],
+  emits: ["update:modelValue"],
+  template:
+    '<button data-test="status-select" @click="$emit(\'update:modelValue\', options[0].value)">{{ placeholder }}: {{ options.map((option) => option.label).join(", ") }}</button>',
+};
+
 describe("EndUserCaseDetail", () => {
+  it("organizes the case into overview, actions and tabbed related context", async () => {
+    const wrapper = mount(EndUserCaseDetail, {
+      attachTo: document.body,
+      props: {
+        value: detail as never,
+        loading: false,
+        canManage: true,
+        canReadProposals: true,
+      },
+      global: {
+        stubs: {
+          Button: {
+            props: ["label"],
+            template: "<button>{{ label }}</button>",
+          },
+          Message: { template: "<div><slot /></div>" },
+          Select: selectStub,
+          Skeleton: true,
+          RouterLink: {
+            props: ["to"],
+            template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
+          },
+        },
+      },
+    });
+
+    expect(wrapper.get("#case-overview-title").text()).toBe("Обзор");
+    expect(wrapper.get("#case-actions-title").text()).toBe("Действия");
+    expect(wrapper.get('[data-test="status-select"]').text()).toContain(
+      "Изменить статус: Взять в работу, Нужен администратор",
+    );
+    await wrapper.get('[data-test="status-select"]').trigger("click");
+    expect(wrapper.emitted("requestTransition")?.[0]).toEqual(["IN_PROGRESS"]);
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toContain(
+      "Связанные сообщения",
+    );
+    expect(wrapper.find("#case-messages-panel").exists()).toBe(true);
+    expect(wrapper.find("#case-proposals-panel").exists()).toBe(false);
+
+    await wrapper.get("#case-proposals-tab").trigger("click");
+
+    expect(wrapper.find("#case-messages-panel").exists()).toBe(false);
+    expect(wrapper.get("#case-proposals-panel").text()).toContain(
+      "Подключиться к диалогу",
+    );
+    expect(wrapper.get("#case-proposals-tab").attributes("aria-selected")).toBe(
+      "true",
+    );
+
+    await wrapper
+      .get("#case-proposals-tab")
+      .trigger("keydown", { key: "ArrowRight" });
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(wrapper.get("#case-history-tab").attributes("aria-selected")).toBe(
+      "true",
+    );
+    expect(document.activeElement?.id).toBe("case-history-tab");
+
+    const nextCase = structuredClone(detail);
+    nextCase.case.id = "case-2";
+    await wrapper.setProps({ value: nextCase as never });
+
+    expect(wrapper.get("#case-messages-tab").attributes("aria-selected")).toBe(
+      "true",
+    );
+    wrapper.unmount();
+  });
+
   it("distinguishes likely resolution, renders linked evidence safely and uses backend actions", async () => {
     const wrapper = mount(EndUserCaseDetail, {
       props: {
@@ -123,6 +199,7 @@ describe("EndUserCaseDetail", () => {
             template: "<button @click=\"$emit('click')\">{{ label }}</button>",
           },
           Message: { template: "<div><slot /></div>" },
+          Select: selectStub,
           Skeleton: true,
           RouterLink: {
             props: ["to"],
@@ -134,7 +211,6 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Вероятно решено — требует подтверждения");
     expect(wrapper.text()).toContain("<script>bad()</script> Где депозит?");
     expect(wrapper.find("script").exists()).toBe(false);
-    expect(wrapper.html()).toContain("ai-proposal-detail");
     expect(wrapper.text()).toContain("Подтвердить решение");
     expect(wrapper.text()).toContain("Проверка депозита");
     expect(wrapper.text()).toContain("1 успешно");
@@ -143,10 +219,12 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Открыть диалог");
     expect(wrapper.text()).toContain("Текст, Голос");
     expect(wrapper.text()).toContain("Обеспокоен → Спокоен");
-    expect(wrapper.text()).toContain("Открыто");
     expect(wrapper.text()).not.toContain("check_deposit");
     expect(wrapper.text()).not.toContain("CONCERNED");
     expect(wrapper.html()).toContain("conversationId");
+    await wrapper.get("#case-proposals-tab").trigger("click");
+    expect(wrapper.html()).toContain("ai-proposal-detail");
+    expect(wrapper.text()).toContain("Открыто");
     await wrapper.get('[data-status="RESOLVED"]').trigger("click");
     expect(wrapper.emitted("requestTransition")?.[0]).toEqual(["RESOLVED"]);
   });
@@ -166,6 +244,7 @@ describe("EndUserCaseDetail", () => {
             template: "<button @click=\"$emit('click')\">{{ label }}</button>",
           },
           Message: { template: "<div><slot /></div>" },
+          Select: selectStub,
           Skeleton: true,
           RouterLink: true,
         },
@@ -305,6 +384,7 @@ describe("EndUserCaseDetail", () => {
             template: "<button @click=\"$emit('click')\">{{ label }}</button>",
           },
           Message: { template: "<div><slot /></div>" },
+          Select: selectStub,
           Skeleton: true,
           RouterLink: {
             props: ["to"],
@@ -318,14 +398,15 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Анализ временно отстаёт");
     expect(wrapper.text()).toContain("Сводка ещё формируется");
     expect(wrapper.text()).toContain("Каналы: не определены");
-    expect(wrapper.text()).toContain(
-      "Инструменты Lola ещё не использовались",
-    );
+    expect(wrapper.text()).toContain("Инструменты Lola ещё не использовались");
     expect(wrapper.text()).toContain("Часть диалога не относится");
     expect(wrapper.text()).toContain("Администратор");
+    await wrapper.get("#case-proposals-tab").trigger("click");
     expect(wrapper.text()).toContain("Связанных предложений нет");
+    await wrapper.get("#case-history-tab").trigger("click");
     expect(wrapper.text()).toContain("Назначен исполнитель");
     expect(wrapper.text()).not.toContain("ASSIGNED");
+    await wrapper.get("#case-messages-tab").trigger("click");
 
     for (const [label, event] of [
       ["Назначение", "requestAssignment"],
@@ -346,7 +427,7 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.emitted("requestUnlink")?.[0]).toEqual(["message-1"]);
   });
 
-  it("renders scoped context without navigation when related read permissions are absent", () => {
+  it("renders scoped context without navigation when related read permissions are absent", async () => {
     const wrapper = mount(EndUserCaseDetail, {
       props: {
         value: detail as never,
@@ -368,9 +449,10 @@ describe("EndUserCaseDetail", () => {
       },
     });
     expect(wrapper.text()).toContain("customer-42");
-    expect(wrapper.text()).toContain("Подключиться к диалогу");
-    expect(wrapper.html()).not.toContain("ai-proposal-detail");
     expect(wrapper.html()).not.toContain('"users"');
     expect(wrapper.text()).not.toContain("Открыть диалог");
+    await wrapper.get("#case-proposals-tab").trigger("click");
+    expect(wrapper.text()).toContain("Подключиться к диалогу");
+    expect(wrapper.html()).not.toContain("ai-proposal-detail");
   });
 });

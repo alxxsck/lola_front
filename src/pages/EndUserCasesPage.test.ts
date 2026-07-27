@@ -133,6 +133,34 @@ describe("EndUserCasesPage", () => {
     expect(wrapper.text()).toContain("Настройки");
   });
 
+  it("keeps header actions enabled and renders them as tertiary buttons", () => {
+    const wrapper = mount(EndUserCasesPage, {
+      global: {
+        stubs: {
+          Button: {
+            props: ["label", "text", "outlined", "disabled"],
+            template:
+              '<button :data-label="label" :data-text="text" :data-outlined="outlined" :disabled="disabled">{{ label }}</button>',
+          },
+          Drawer: true,
+          Message: true,
+          Skeleton: true,
+          EndUserCaseFilters: true,
+          EndUserCaseCard: true,
+          EndUserCaseDetail: true,
+          EndUserCaseDialogs: true,
+        },
+      },
+    });
+
+    for (const label of ["Настройки", "Обновить"]) {
+      const action = wrapper.get(`[data-label="${label}"]`);
+      expect(action.attributes("data-text")).toBe("");
+      expect(action.attributes("data-outlined")).not.toBe("true");
+      expect(action.attributes("disabled")).toBeUndefined();
+    }
+  });
+
   it("forwards detail assignment actions to the isolated dialogs workflow", async () => {
     (state.store as { selected: unknown }).selected = {
       case: { id: "case-1", assignee: null },
