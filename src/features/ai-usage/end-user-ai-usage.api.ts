@@ -1,6 +1,9 @@
 import { endUserAiUsageReport } from "@/shared/api/generated/lola-backend";
 import { isMockMode } from "@/shared/config/data-mode";
-import type { AiUsageRangeKey } from "./ai-usage.model";
+import {
+  AI_USAGE_CATEGORIES,
+  type AiUsageRangeKey,
+} from "./ai-usage.model";
 import type {
   EndUserAiUsageCategory,
   EndUserAiUsageCategoryRow,
@@ -9,14 +12,7 @@ import type {
   EndUserAiUsageTotals,
 } from "./end-user-ai-usage.model";
 
-const categories = new Set<EndUserAiUsageCategory>([
-  "CHAT",
-  "VOICE",
-  "SPEECH",
-  "MEMORY",
-  "AI_REVIEW",
-  "PROJECT_OVERHEAD",
-]);
+const categories = new Set<EndUserAiUsageCategory>(AI_USAGE_CATEGORIES);
 const windows = new Set<AiUsageRangeKey>(["today", "7d", "30d", "all"]);
 
 function record(value: unknown): Record<string, unknown> | undefined {

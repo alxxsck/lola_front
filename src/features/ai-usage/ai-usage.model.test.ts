@@ -118,6 +118,7 @@ describe('AI usage model', () => {
       projectId: 'project-1',
       totals,
       breakdown: [breakdown(), breakdown({ currency: 'eur' })],
+      categories: [],
     }
 
     expect(aggregateModelUsage(report.breakdown)).toHaveLength(2)

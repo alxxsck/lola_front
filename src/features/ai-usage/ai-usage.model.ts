@@ -1,5 +1,15 @@
 export type AiUsageRangeKey = 'today' | '7d' | '30d' | 'all'
 export type AiUsageMetric = 'tokens' | 'cost'
+export const AI_USAGE_CATEGORIES = [
+  'CHAT',
+  'VOICE',
+  'SPEECH',
+  'MEMORY',
+  'AI_REVIEW',
+  'CASE_INTELLIGENCE',
+  'PROJECT_OVERHEAD',
+] as const
+export type AiUsageCategory = (typeof AI_USAGE_CATEGORIES)[number]
 
 export interface AiUsageRangeQuery {
   from?: string
@@ -61,6 +71,11 @@ export interface AiUsageBreakdown {
   billedCost: number
 }
 
+export interface AiUsageCategoryBreakdown
+  extends Omit<AiUsageBreakdown, 'provider' | 'model' | 'operation'> {
+  category: AiUsageCategory
+}
+
 export interface AiProviderUsage {
   records: number
   inputCharacters: number
@@ -89,6 +104,7 @@ export interface AiUsageReport {
   projectId: string
   totals: AiUsageTotals
   breakdown: AiUsageBreakdown[]
+  categories: AiUsageCategoryBreakdown[]
 }
 
 export interface AiModelUsage {
@@ -133,6 +149,16 @@ export const AI_USAGE_RANGE_OPTIONS: ReadonlyArray<{
   { label: '30 дней', value: '30d' },
   { label: 'Всё время', value: 'all' },
 ]
+
+export const AI_USAGE_CATEGORY_LABELS: Record<AiUsageCategory, string> = {
+  CHAT: 'Чат с Lola',
+  VOICE: 'Голос',
+  SPEECH: 'Озвучивание',
+  MEMORY: 'Память Lola',
+  AI_REVIEW: 'AI Review',
+  CASE_INTELLIGENCE: 'Анализ и проверка обращений',
+  PROJECT_OVERHEAD: 'Системные операции',
+}
 
 export function getAiUsageRange(
   key: AiUsageRangeKey,

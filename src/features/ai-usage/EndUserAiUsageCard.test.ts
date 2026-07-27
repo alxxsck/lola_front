@@ -64,6 +64,20 @@ const report = {
       estimatedFallbackCost: 0,
       effectiveCost: 0,
     },
+    {
+      category: "CASE_INTELLIGENCE" as const,
+      currency: "usd",
+      records: 23,
+      totalTokens: 41_099,
+      inputTokens: 32_536,
+      outputTokens: 8_563,
+      inputCharacters: 0,
+      providerBilledUnits: 0,
+      durationSeconds: 0,
+      providerReportedCost: 0.0890324,
+      estimatedFallbackCost: 0,
+      effectiveCost: 0.0890324,
+    },
   ],
 };
 
@@ -91,6 +105,7 @@ describe("End User AI consumption card", () => {
     expect(wrapper.text()).toContain("Единицы ElevenLabs");
     expect(wrapper.text()).toContain("Чат с Lola");
     expect(wrapper.text()).toContain("Озвучивание");
+    expect(wrapper.text()).toContain("Анализ и проверка обращений");
     expect(wrapper.text()).toContain("Europe/Madrid");
   });
 

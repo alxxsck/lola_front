@@ -107,6 +107,34 @@ describe("AI usage API response validation", () => {
     });
   });
 
+  it("parses case intelligence as a project usage category", () => {
+    const responseWithCaseUsage = {
+      ...response,
+      categories: [
+        {
+          ...response.breakdown[0],
+          category: "CASE_INTELLIGENCE",
+          records: 23,
+          totalTokens: 41_099,
+          billedCost: "0.089032400000",
+        },
+      ],
+    };
+
+    expect(
+      parseAiUsageReport(responseWithCaseUsage, "project-1"),
+    ).toMatchObject({
+      categories: [
+        {
+          category: "CASE_INTELLIGENCE",
+          records: 23,
+          totalTokens: 41_099,
+          billedCost: 0.0890324,
+        },
+      ],
+    });
+  });
+
   it("parses provider-reported xAI billed cost when estimated cost is zero", () => {
     const providerReportedResponse = {
       ...response,

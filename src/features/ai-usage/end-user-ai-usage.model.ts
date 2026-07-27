@@ -1,7 +1,10 @@
-import type { AiUsageRangeKey } from "./ai-usage.model";
+import {
+  AI_USAGE_CATEGORY_LABELS,
+  type AiUsageCategory,
+  type AiUsageRangeKey,
+} from "./ai-usage.model";
 
-export type EndUserAiUsageCategory =
-  "CHAT" | "VOICE" | "SPEECH" | "MEMORY" | "AI_REVIEW" | "PROJECT_OVERHEAD";
+export type EndUserAiUsageCategory = AiUsageCategory;
 
 export interface EndUserAiUsageSummary {
   records: number;
@@ -54,11 +57,4 @@ export const END_USER_AI_USAGE_WINDOWS: ReadonlyArray<{
 export const END_USER_AI_USAGE_CATEGORY_LABELS: Record<
   EndUserAiUsageCategory,
   string
-> = {
-  CHAT: "Чат с Lola",
-  VOICE: "Голос",
-  SPEECH: "Озвучивание",
-  MEMORY: "Память Lola",
-  AI_REVIEW: "AI Review",
-  PROJECT_OVERHEAD: "Системные операции",
-};
+> = AI_USAGE_CATEGORY_LABELS;

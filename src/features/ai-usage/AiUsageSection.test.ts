@@ -98,6 +98,7 @@ describe('AiUsageSection', () => {
           billedCost: 0,
         },
       ],
+      categories: [],
     })
   })
 
@@ -195,6 +196,82 @@ describe('AiUsageSection', () => {
 
     expect(wrapper.getComponent(AiModelUsageChart).props('metric')).toBe('cost')
     expect(wrapper.getComponent(AiModalityChart).props('metric')).toBe('cost')
+  })
+
+  it('shows AI-created case consumption with its operation breakdown', async () => {
+    const baseReport = await mocks.fetchReport()
+    const xAiRow = baseReport.breakdown[0]
+    mocks.fetchReport.mockResolvedValue({
+      ...baseReport,
+      totals: {
+        ...baseReport.totals,
+        records: 25,
+        totalTokens: 41_219,
+        inputTokens: 32_616,
+        outputTokens: 8_603,
+        billedCost: 0.0902324,
+      },
+      breakdown: [
+        ...baseReport.breakdown,
+        {
+          ...xAiRow,
+          operation: 'case_router',
+          records: 18,
+          totalTokens: 29_670,
+          inputTokens: 24_447,
+          outputTokens: 5_223,
+          billedCost: 0.055208,
+        },
+        {
+          ...xAiRow,
+          operation: 'case_aggregator',
+          records: 5,
+          totalTokens: 11_429,
+          inputTokens: 8_089,
+          outputTokens: 3_340,
+          billedCost: 0.0338244,
+        },
+      ],
+      categories: [
+        {
+          category: 'CASE_INTELLIGENCE',
+          currency: 'usd',
+          records: 23,
+          inputCharacters: 0,
+          providerBilledUnits: 0,
+          totalTokens: 41_099,
+          inputTokens: 32_536,
+          cachedInputTokens: 16_128,
+          cacheWriteInputTokens: 0,
+          outputTokens: 8_563,
+          reasoningTokens: 6_302,
+          inputTextTokens: 32_536,
+          cachedInputTextTokens: 16_128,
+          outputTextTokens: 8_563,
+          inputAudioTokens: 0,
+          cachedInputAudioTokens: 0,
+          outputAudioTokens: 0,
+          inputImageTokens: 0,
+          cachedInputImageTokens: 0,
+          outputImageTokens: 0,
+          durationSeconds: 0,
+          estimatedCost: 0,
+          billedCost: 0.0890324,
+        },
+      ],
+    })
+
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: 'project-1' },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('AI-кейсы')
+    expect(wrapper.text()).toContain('Анализ и проверка обращений')
+    expect(wrapper.text()).toContain('Маршрутизация')
+    expect(wrapper.text()).toContain('Агрегация')
+    expect(wrapper.text()).toContain('0,09 $')
+    expect(wrapper.text()).toContain('41,1 тыс.')
   })
 
   it('includes all estimated Voice costs from the backend response', async () => {

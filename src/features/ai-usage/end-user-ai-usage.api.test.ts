@@ -52,6 +52,39 @@ describe("End User AI consumption response validation", () => {
     });
   });
 
+  it("accepts case intelligence usage returned for AI-created cases", () => {
+    const responseWithCaseUsage = {
+      ...response,
+      categories: [
+        ...response.categories,
+        {
+          ...summary,
+          category: "CASE_INTELLIGENCE",
+          currency: "usd",
+          records: 23,
+          totalTokens: 41_099,
+        },
+      ],
+    };
+
+    expect(
+      parseEndUserAiUsageReport(
+        responseWithCaseUsage,
+        "project-1",
+        "user-1",
+      ),
+    ).toMatchObject({
+      categories: [
+        { category: "CHAT" },
+        {
+          category: "CASE_INTELLIGENCE",
+          records: 23,
+          totalTokens: 41_099,
+        },
+      ],
+    });
+  });
+
   it("rejects cross-user responses and unknown UI categories", () => {
     expect(
       parseEndUserAiUsageReport(response, "project-1", "another-user"),

@@ -2,10 +2,13 @@ import { aiUsageReport } from '@/shared/api/generated/lola-backend'
 import { isMockMode } from '@/shared/config/data-mode'
 import type {
   AiUsageBreakdown,
+  AiUsageCategory,
+  AiUsageCategoryBreakdown,
   AiUsageRangeQuery,
   AiUsageReport,
   AiUsageTotals,
 } from './ai-usage.model'
+import { AI_USAGE_CATEGORIES } from './ai-usage.model'
 
 const demoReport = (projectId: string): AiUsageReport => ({
   projectId,
@@ -172,6 +175,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       billedCost: 0,
     },
   ],
+  categories: [],
 })
 
 const totalsIntegerKeys = [
@@ -319,12 +323,35 @@ function parseBreakdown(value: unknown): AiUsageBreakdown | undefined {
   } as unknown as AiUsageBreakdown
 }
 
+const usageCategories = new Set<AiUsageCategory>(AI_USAGE_CATEGORIES)
+
+function parseCategory(
+  value: unknown,
+): AiUsageCategoryBreakdown | undefined {
+  if (!isRecord(value)) return undefined
+  if (
+    typeof value.category !== 'string' ||
+    !usageCategories.has(value.category as AiUsageCategory) ||
+    !boundedString(value.currency, 3, 8)
+  )
+    return undefined
+  const numbers = normalizeNumbers(value, breakdownIntegerKeys)
+  if (!numbers) return undefined
+  return {
+    category: value.category as AiUsageCategory,
+    currency: value.currency,
+    ...numbers,
+  } as unknown as AiUsageCategoryBreakdown
+}
+
 export function parseAiUsageReport(
   value: unknown,
   projectId: string,
 ): AiUsageReport | undefined {
   if (!isRecord(value) || value.projectId !== projectId) return undefined
   if (!Array.isArray(value.breakdown) || value.breakdown.length > 1_000)
+    return undefined
+  if (!Array.isArray(value.categories) || value.categories.length > 100)
     return undefined
   if (!Array.isArray(value.items) || value.items.length > 1) return undefined
   if (value.nextCursor !== null && typeof value.nextCursor !== 'string')
@@ -337,7 +364,13 @@ export function parseAiUsageReport(
     if (!parsed) return undefined
     breakdown.push(parsed)
   }
-  return { projectId, totals, breakdown }
+  const categories: AiUsageCategoryBreakdown[] = []
+  for (const item of value.categories) {
+    const parsed = parseCategory(item)
+    if (!parsed) return undefined
+    categories.push(parsed)
+  }
+  return { projectId, totals, breakdown, categories }
 }
 
 export async function fetchAiUsageReport(
