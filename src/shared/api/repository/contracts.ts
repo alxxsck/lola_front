@@ -12,6 +12,8 @@ import type {
   AdminMessageRequest,
   AdminMessageResult,
   AuditEvent,
+  ProductApiRequestLog,
+  ProductApiRequestLogDetail,
   Project,
   Scenario,
   ScenarioRun,
@@ -153,6 +155,17 @@ export interface AuditEventPageRequest {
   limit?: number;
   search?: string;
   outcome?: AuditEvent["outcome"];
+}
+
+export interface ProductApiRequestLogPageRequest {
+  cursor?: string;
+  limit?: number;
+  method?: string;
+  path?: string;
+  externalUserId?: string;
+  outcome?: ProductApiRequestLog["outcome"];
+  receivedFrom?: string;
+  receivedTo?: string;
 }
 
 export interface UserAttributeDefinitionInput {
@@ -325,6 +338,14 @@ export interface LolaRepository {
     projectId: string,
     request?: AuditEventPageRequest,
   ): Promise<CursorPage<AuditEvent>>;
+  getProductApiRequestLogsPage(
+    projectId: string,
+    request?: ProductApiRequestLogPageRequest,
+  ): Promise<CursorPage<ProductApiRequestLog>>;
+  getProductApiRequestLog(
+    projectId: string,
+    requestLogId: string,
+  ): Promise<ProductApiRequestLogDetail>;
   sendAdminMessage(
     projectId: string,
     userId: string,

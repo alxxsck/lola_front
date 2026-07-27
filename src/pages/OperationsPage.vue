@@ -15,11 +15,21 @@ import { RunExplainInspector } from "@/features/scenario-run-explain/ui";
 import ScenarioAdmissionDecisionsPanel from "@/features/scenario-admission/ScenarioAdmissionDecisionsPanel.vue";
 import { repository } from "@/shared/api/repository";
 import { formatDate, relativeTime } from "@/shared/lib/format";
-import type { AuditEvent, ScenarioRun } from "@/shared/types/domain";
+import type {
+  AuditEvent,
+  ProductApiRequestLog,
+  ProductApiRequestLogDetail,
+  ScenarioRun,
+} from "@/shared/types/domain";
 
-type Section = "runs" | "admission" | "audit";
+type Section = "runs" | "admission" | "audit" | "productApi";
 const auth = useAuthStore();
 const route = useRoute();
+const canReadProductApi = computed(() =>
+  (auth.project?.effectivePermissionCodes ?? []).includes(
+    "project.integration_api_requests.read",
+  ),
+);
 const activeWaitDefinitionKeyId = computed(() =>
   typeof route.query.eventDefinitionKeyId === "string"
     ? route.query.eventDefinitionKeyId
@@ -27,7 +37,9 @@ const activeWaitDefinitionKeyId = computed(() =>
 );
 const section = ref<Section>(
   !activeWaitDefinitionKeyId.value &&
-    (route.query.section === "audit" || route.query.section === "admission")
+    (route.query.section === "audit" ||
+      route.query.section === "admission" ||
+      (route.query.section === "productApi" && canReadProductApi.value))
     ? route.query.section
     : "runs",
 );
@@ -41,31 +53,52 @@ const auditNextCursor = ref<string | null>(null);
 const auditLoadedFilterKey = ref<string | null>(null);
 const auditLoading = ref(false);
 const loadingMoreAudit = ref(false);
+const productApiRequests = ref<ProductApiRequestLog[]>([]);
+const productApiNextCursor = ref<string | null>(null);
+const productApiLoadedFilterKey = ref<string | null>(null);
+const productApiLoading = ref(false);
+const loadingMoreProductApi = ref(false);
 const loading = ref(true);
 const errors = ref<Record<Section, string>>({
   runs: "",
   admission: "",
   audit: "",
+  productApi: "",
 });
 const search = ref("");
 const status = ref("ALL");
 const selectedRun = ref<ScenarioRun | null>(null);
 const selectedAudit = ref<AuditEvent | null>(null);
+const selectedProductApiRequest = ref<ProductApiRequestLog | null>(null);
+const productApiDetail = ref<ProductApiRequestLogDetail | null>(null);
+const productApiDetailLoading = ref(false);
+const productApiDetailError = ref("");
 
-const sections = [
+const sections = computed(() => [
   { value: "runs" as const, label: "Запуски сценариев", icon: "pi pi-sitemap" },
   { value: "audit" as const, label: "Аудит", icon: "pi pi-shield" },
+  ...(canReadProductApi.value
+    ? [
+        {
+          value: "productApi" as const,
+          label: "Логи API",
+          icon: "pi pi-code",
+        },
+      ]
+    : []),
   {
     value: "admission" as const,
     label: "Решения о запуске",
     icon: "pi pi-check-square",
   },
-];
+]);
 const statusOptions = computed(() => {
   const values =
     section.value === "runs"
       ? ["RUNNING", "COMPLETED", "FAILED", "SKIPPED", "CANCELLED", "EXPIRED"]
-      : ["SUCCESS", "DENIED", "FAILED"];
+      : section.value === "productApi"
+        ? ["SUCCEEDED", "FAILED"]
+        : ["SUCCESS", "DENIED", "FAILED"];
   return [
     { label: "Все статусы", value: "ALL" },
     ...values.map((value) => ({ label: value, value })),
@@ -90,7 +123,7 @@ const filteredRuns = computed(() =>
 const severity = (
   value: string,
 ): "success" | "danger" | "warn" | "info" | "secondary" => {
-  if (["COMPLETED", "SUCCESS"].includes(value)) return "success";
+  if (["COMPLETED", "SUCCESS", "SUCCEEDED"].includes(value)) return "success";
   if (["FAILED", "EXPIRED", "CANCELLED"].includes(value)) return "danger";
   if (value === "DENIED") return "warn";
   if (
@@ -103,6 +136,8 @@ const json = (value: unknown) => JSON.stringify(value, null, 2);
 let loadRequestId = 0;
 let runsRequestId = 0;
 let auditRequestId = 0;
+let productApiRequestId = 0;
+let productApiDetailRequestId = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
 function auditRequest(cursor?: string) {
@@ -118,6 +153,32 @@ function auditRequest(cursor?: string) {
 
 function auditFilterKey() {
   return `${search.value.trim()}\u0000${status.value}`;
+}
+
+function productApiRequest(cursor?: string) {
+  return {
+    limit: 50,
+    ...(search.value.trim() ? { path: search.value.trim() } : {}),
+    ...(status.value !== "ALL"
+      ? { outcome: status.value as ProductApiRequestLog["outcome"] }
+      : {}),
+    ...(cursor ? { cursor } : {}),
+  };
+}
+
+function productApiFilterKey() {
+  return `${search.value.trim()}\u0000${status.value}`;
+}
+
+function formatBytes(value: number) {
+  if (value < 1024) return `${value} Б`;
+  return `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value / 1024)} КБ`;
+}
+
+function formatDuration(value: number) {
+  return value < 1000
+    ? `${value} мс`
+    : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value / 1000)} с`;
 }
 
 async function load() {
@@ -173,6 +234,103 @@ async function load() {
     errors.value.audit = message(results[1].reason);
   if (currentAuditRequestId === auditRequestId) auditLoading.value = false;
   if (requestId === loadRequestId) loading.value = false;
+}
+
+async function refresh() {
+  await load();
+  if (section.value === "productApi" && canReadProductApi.value)
+    await loadProductApiPage();
+}
+
+async function loadProductApiPage() {
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  const requestId = ++productApiRequestId;
+  productApiLoading.value = true;
+  errors.value.productApi = "";
+  try {
+    const page = await repository.getProductApiRequestLogsPage(
+      projectId,
+      productApiRequest(),
+    );
+    if (requestId === productApiRequestId && auth.project?.id === projectId) {
+      productApiRequests.value = page.items;
+      productApiNextCursor.value = page.nextCursor;
+      productApiLoadedFilterKey.value = productApiFilterKey();
+    }
+  } catch (cause) {
+    if (requestId === productApiRequestId && auth.project?.id === projectId)
+      errors.value.productApi =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось загрузить запросы Product API";
+  } finally {
+    if (requestId === productApiRequestId && auth.project?.id === projectId)
+      productApiLoading.value = false;
+  }
+}
+
+async function loadMoreProductApiRequests() {
+  const projectId = auth.project?.id;
+  if (!projectId || !productApiNextCursor.value) return;
+  const requestId = ++productApiRequestId;
+  loadingMoreProductApi.value = true;
+  errors.value.productApi = "";
+  try {
+    const page = await repository.getProductApiRequestLogsPage(
+      projectId,
+      productApiRequest(productApiNextCursor.value),
+    );
+    if (requestId === productApiRequestId && auth.project?.id === projectId) {
+      productApiRequests.value.push(...page.items);
+      productApiNextCursor.value = page.nextCursor;
+    }
+  } catch (cause) {
+    if (requestId === productApiRequestId && auth.project?.id === projectId)
+      errors.value.productApi =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось загрузить следующую страницу запросов Product API";
+  } finally {
+    if (requestId === productApiRequestId && auth.project?.id === projectId)
+      loadingMoreProductApi.value = false;
+  }
+}
+
+async function openProductApiRequest(item: ProductApiRequestLog) {
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  selectedProductApiRequest.value = item;
+  productApiDetail.value = null;
+  productApiDetailError.value = "";
+  productApiDetailLoading.value = true;
+  const requestId = ++productApiDetailRequestId;
+  try {
+    const detail = await repository.getProductApiRequestLog(projectId, item.id);
+    if (
+      requestId === productApiDetailRequestId &&
+      auth.project?.id === projectId &&
+      selectedProductApiRequest.value?.id === item.id
+    )
+      productApiDetail.value = detail;
+  } catch (cause) {
+    if (requestId === productApiDetailRequestId)
+      productApiDetailError.value =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось загрузить JSON запроса";
+  } finally {
+    if (requestId === productApiDetailRequestId)
+      productApiDetailLoading.value = false;
+  }
+}
+
+function closeProductApiRequest() {
+  productApiDetailRequestId += 1;
+  selectedProductApiRequest.value = null;
+  productApiDetail.value = null;
+  productApiDetailError.value = "";
+  productApiDetailLoading.value = false;
 }
 
 async function loadAuditPage() {
@@ -261,20 +419,31 @@ function resetProjectState() {
   loadRequestId += 1;
   runsRequestId += 1;
   auditRequestId += 1;
+  productApiRequestId += 1;
+  productApiDetailRequestId += 1;
   clearTimeout(searchTimer);
   scenarioRuns.value = [];
   auditEvents.value = [];
+  productApiRequests.value = [];
   auditNextCursor.value = null;
   auditLoadedFilterKey.value = null;
+  productApiNextCursor.value = null;
+  productApiLoadedFilterKey.value = null;
   runsNextCursor.value = null;
   selectedRun.value = null;
   selectedAudit.value = null;
+  selectedProductApiRequest.value = null;
+  productApiDetail.value = null;
   loading.value = false;
   loadingMoreRuns.value = false;
   auditLoading.value = false;
   loadingMoreAudit.value = false;
+  productApiLoading.value = false;
+  loadingMoreProductApi.value = false;
+  productApiDetailLoading.value = false;
   errors.value.runs = "";
   errors.value.audit = "";
+  errors.value.productApi = "";
 }
 
 function changeSection(value: Section) {
@@ -294,6 +463,15 @@ watch([section, search, status], ([currentSection], [previousSection]) => {
         () => void loadAuditPage(),
         previousSection === "audit" ? 300 : 0,
       );
+  } else if (currentSection === "productApi") {
+    if (
+      previousSection === "productApi" ||
+      productApiLoadedFilterKey.value !== productApiFilterKey()
+    )
+      searchTimer = setTimeout(
+        () => void loadProductApiPage(),
+        previousSection === "productApi" ? 300 : 0,
+      );
   }
 });
 watch(
@@ -306,7 +484,7 @@ watch(
 );
 
 onBeforeUnmount(() => clearTimeout(searchTimer));
-onMounted(load);
+onMounted(() => void refresh());
 </script>
 
 <template>
@@ -325,7 +503,7 @@ onMounted(load);
         severity="secondary"
         outlined
         :loading="loading"
-        @click="load"
+        @click="refresh"
       />
     </header>
     <Message v-if="sectionError" severity="error" class="mb"
@@ -335,7 +513,7 @@ onMounted(load);
         icon="pi pi-refresh"
         size="small"
         text
-        @click="load"
+        @click="refresh"
     /></Message>
     <Message
       v-if="activeWaitDefinitionKeyId"
@@ -363,7 +541,9 @@ onMounted(load);
             ? `${scenarioRuns.length}${runsNextCursor ? "+" : ""}`
             : item.value === "admission"
               ? `${admissionCount}${admissionHasMore ? "+" : ""}`
-              : `${auditEvents.length}${auditNextCursor ? "+" : ""}`
+              : item.value === "productApi"
+                ? `${productApiRequests.length}${productApiNextCursor ? "+" : ""}`
+                : `${auditEvents.length}${auditNextCursor ? "+" : ""}`
         }}</strong>
       </button>
     </div>
@@ -387,7 +567,9 @@ onMounted(load);
             :placeholder="
               section === 'audit'
                 ? 'Действие, актор или ресурс'
-                : 'Код, пользователь или ID'
+                : section === 'productApi'
+                  ? 'Путь API, например sessions'
+                  : 'Код, пользователь или ID'
             "
         /></span>
         <Select
@@ -555,6 +737,95 @@ onMounted(load);
             outlined
             :loading="loadingMoreAudit"
             @click="loadMoreAuditEvents"
+          />
+        </div>
+
+        <DataTable
+          v-if="section === 'productApi'"
+          :value="productApiRequests"
+          :loading="productApiLoading"
+          :pt="{
+            tableContainer: {
+              tabindex: 0,
+              role: 'region',
+              'aria-label': 'Запросы Product API',
+            },
+          }"
+          row-hover
+          data-key="id"
+          @row-click="openProductApiRequest($event.data)"
+        >
+          <template #empty
+            ><div class="empty">
+              <i class="pi pi-code" />Запросов Product API по выбранным фильтрам
+              нет.
+            </div></template
+          >
+          <Column header="Получено"
+            ><template #body="{ data }"
+              ><span :title="formatDate(data.receivedAt)">{{
+                relativeTime(data.receivedAt)
+              }}</span></template
+            ></Column
+          >
+          <Column header="Method"
+            ><template #body="{ data }"
+              ><Tag
+                :value="data.method"
+                severity="secondary"
+                rounded /></template
+          ></Column>
+          <Column header="Path"
+            ><template #body="{ data }"
+              ><div class="primary-cell api-path">
+                <strong class="mono">{{ data.path }}</strong
+                ><small class="mono">{{ data.credentialId }}</small>
+              </div></template
+            ></Column
+          >
+          <Column header="Status"
+            ><template #body="{ data }"
+              ><div class="primary-cell">
+                <Tag
+                  :value="String(data.statusCode)"
+                  :severity="severity(data.outcome)"
+                  rounded
+                /><small>{{ data.outcome }}</small>
+              </div></template
+            ></Column
+          >
+          <Column header="User" class="mobile-hide"
+            ><template #body="{ data }"
+              ><span class="mono compact">{{
+                data.externalUserId || "—"
+              }}</span></template
+            ></Column
+          >
+          <Column header="Размер" class="mobile-hide"
+            ><template #body="{ data }">{{
+              formatBytes(data.payloadBytes)
+            }}</template></Column
+          >
+          <Column header="Duration"
+            ><template #body="{ data }">{{
+              formatDuration(data.durationMs)
+            }}</template></Column
+          >
+          <Column
+            ><template #body><i class="pi pi-chevron-right muted" /></template
+          ></Column>
+        </DataTable>
+        <div
+          v-if="section === 'productApi' && productApiNextCursor"
+          class="load-more"
+        >
+          <Button
+            label="Загрузить ещё запросов"
+            icon="pi pi-chevron-down"
+            severity="secondary"
+            outlined
+            :loading="loadingMoreProductApi"
+            @click="loadMoreProductApiRequests"
           />
         </div>
       </div>
@@ -737,6 +1008,89 @@ onMounted(load);
         <pre>{{ json(selectedAudit.metadata) }}</pre>
       </div>
       <small class="mono muted">{{ selectedAudit.id }}</small>
+    </div>
+  </Drawer>
+
+  <Drawer
+    :visible="Boolean(selectedProductApiRequest)"
+    position="right"
+    :style="{ width: 'min(760px, 100vw)' }"
+    @update:visible="!$event && closeProductApiRequest()"
+  >
+    <template #header
+      ><div>
+        <div class="eyebrow">Product API request</div>
+        <h2>
+          {{ selectedProductApiRequest?.method }}
+          {{ selectedProductApiRequest?.path }}
+        </h2>
+      </div></template
+    >
+    <div v-if="selectedProductApiRequest" class="detail-stack">
+      <div class="detail-hero">
+        <div>
+          <span>Статус</span
+          ><Tag
+            :value="String(selectedProductApiRequest.statusCode)"
+            :severity="severity(selectedProductApiRequest.outcome)"
+          /><small>{{ selectedProductApiRequest.outcome }}</small>
+        </div>
+        <div>
+          <span>Пользователь</span
+          ><strong class="mono">{{
+            selectedProductApiRequest.externalUserId || "—"
+          }}</strong>
+        </div>
+        <div>
+          <span>Получено</span
+          ><strong>{{
+            formatDate(selectedProductApiRequest.receivedAt)
+          }}</strong>
+        </div>
+      </div>
+      <div class="audit-facts">
+        <div>
+          <span>Request ID</span
+          ><strong class="mono">{{
+            selectedProductApiRequest.requestId || "—"
+          }}</strong>
+        </div>
+        <div>
+          <span>Credential prefix</span
+          ><strong class="mono">{{
+            selectedProductApiRequest.credentialId
+          }}</strong>
+        </div>
+        <div>
+          <span>Размер payload</span
+          ><strong>{{
+            formatBytes(selectedProductApiRequest.payloadBytes)
+          }}</strong>
+        </div>
+        <div>
+          <span>Duration</span
+          ><strong>{{
+            formatDuration(selectedProductApiRequest.durationMs)
+          }}</strong>
+        </div>
+        <div>
+          <span>Хранится до</span
+          ><strong>{{
+            formatDate(selectedProductApiRequest.retainUntil)
+          }}</strong>
+        </div>
+      </div>
+      <Message v-if="productApiDetailError" severity="error" :closable="false">
+        {{ productApiDetailError }}
+      </Message>
+      <div>
+        <h3>Исходный JSON body</h3>
+        <Skeleton v-if="productApiDetailLoading" height="260px" />
+        <pre v-else-if="productApiDetail">{{
+          json(productApiDetail.payload)
+        }}</pre>
+      </div>
+      <small class="mono muted">{{ selectedProductApiRequest.id }}</small>
     </div>
   </Drawer>
 </template>

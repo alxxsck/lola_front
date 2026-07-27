@@ -335,6 +335,7 @@ export const router = createRouter({
             projectPermissionsAny: [
               "project.scenario_runs.read",
               "project.audit.read",
+              "project.integration_api_requests.read",
             ],
           },
         },

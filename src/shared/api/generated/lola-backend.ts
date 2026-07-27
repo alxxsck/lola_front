@@ -226,6 +226,9 @@ import type {
   PreviewScenarioRuleDto,
   PreviewScenarioRuleResponseDto,
   PreviewTelegramBroadcastDto,
+  ProductApiRequestLogDetailDto,
+  ProductApiRequestLogListParams,
+  ProductApiRequestLogListResponseDto,
   ProfileHealthHealthParams,
   ProfileHealthResponseDto,
   ProfileProjectionResponseDto,
@@ -2341,6 +2344,37 @@ export const projectPermissionList = (
 ) => {
   return request<ProjectPermissionCatalogResponseDto>(
     { url: `/api/v1/admin/projects/${projectId}/permissions`, method: "GET" },
+    options,
+  );
+};
+
+export const productApiRequestLogList = (
+  projectId: string,
+  params?: ProductApiRequestLogListParams,
+  options?: SecondParameter<
+    typeof request<ProductApiRequestLogListResponseDto>
+  >,
+) => {
+  return request<ProductApiRequestLogListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/product-api-requests`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const productApiRequestLogGet = (
+  projectId: string,
+  requestLogId: string,
+  options?: SecondParameter<typeof request<ProductApiRequestLogDetailDto>>,
+) => {
+  return request<ProductApiRequestLogDetailDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/product-api-requests/${requestLogId}`,
+      method: "GET",
+    },
     options,
   );
 };
@@ -5322,6 +5356,12 @@ export type NotificationDestinationCreateTelegramResult = NonNullable<
 >;
 export type ProjectPermissionListResult = NonNullable<
   Awaited<ReturnType<typeof projectPermissionList>>
+>;
+export type ProductApiRequestLogListResult = NonNullable<
+  Awaited<ReturnType<typeof productApiRequestLogList>>
+>;
+export type ProductApiRequestLogGetResult = NonNullable<
+  Awaited<ReturnType<typeof productApiRequestLogGet>>
 >;
 export type ProductActionsProjectActionsResult = NonNullable<
   Awaited<ReturnType<typeof productActionsProjectActions>>

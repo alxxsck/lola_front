@@ -15103,6 +15103,176 @@
         ],
         "type": "object"
       },
+      "ProductApiRequestLogDetailDto": {
+        "properties": {
+          "credentialId": {
+            "type": "string"
+          },
+          "durationMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "externalUserId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "SUCCEEDED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "payloadBytes": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "requestId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "retainUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "statusCode": {
+            "maximum": 599,
+            "minimum": 100,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "credentialId",
+          "method",
+          "path",
+          "payloadBytes",
+          "statusCode",
+          "outcome",
+          "durationMs",
+          "receivedAt",
+          "retainUntil",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "ProductApiRequestLogItemDto": {
+        "properties": {
+          "credentialId": {
+            "type": "string"
+          },
+          "durationMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "externalUserId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "SUCCEEDED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "payloadBytes": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "requestId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "retainUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "statusCode": {
+            "maximum": 599,
+            "minimum": 100,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "credentialId",
+          "method",
+          "path",
+          "payloadBytes",
+          "statusCode",
+          "outcome",
+          "durationMs",
+          "receivedAt",
+          "retainUntil"
+        ],
+        "type": "object"
+      },
+      "ProductApiRequestLogListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductApiRequestLogItemDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/ProductApiRequestLogPageInfoDto"
+          }
+        },
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "type": "object"
+      },
+      "ProductApiRequestLogPageInfoDto": {
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "hasMore"
+        ],
+        "type": "object"
+      },
       "ProfileAgeDistributionResponseDto": {
         "properties": {
           "from24HoursTo7Days": {
@@ -33160,6 +33330,173 @@
             "scope": "PROJECT"
           }
         ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/product-api-requests": {
+      "get": {
+        "operationId": "ProductApiRequestLog_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "method",
+            "required": false,
+            "schema": {
+              "example": "POST",
+              "maxLength": 16,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "externalUserId",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SUCCEEDED",
+                "FAILED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "receivedFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "receivedTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductApiRequestLogListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Product API request log"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_api_requests.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/product-api-requests/{requestLogId}": {
+      "get": {
+        "operationId": "ProductApiRequestLog_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requestLogId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductApiRequestLogDetailDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Product API request log"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_api_requests.read",
+          "scope": "PROJECT"
+        }
       }
     },
     "/api/v1/admin/projects/{projectId}/project-actions": {

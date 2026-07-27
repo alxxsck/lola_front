@@ -207,6 +207,7 @@ const navigation = computed(() =>
         "project.event_logs.read",
         "project.scenario_runs.read",
         "project.audit.read",
+        "project.integration_api_requests.read",
       ],
     },
     {

@@ -22,6 +22,7 @@ import type {
   EventDefinition,
   EventLog,
   Project,
+  ProductApiRequestLog,
   Scenario,
   ScenarioRun,
   UiElement,
@@ -1121,6 +1122,58 @@ export const mockRepository: LolaRepository = {
           ].some((value) => value?.toLowerCase().includes(search))),
     );
     return { items: filtered, nextCursor: null };
+  },
+  async getProductApiRequestLogsPage(_projectId, request) {
+    await pause();
+    const items = [
+      {
+        id: "product_api_request_1",
+        credentialId: "lola_sk_demo",
+        requestId: "req_demo_1",
+        externalUserId: "demo-user",
+        method: "POST",
+        path: "/interaction-sessions",
+        payloadBytes: 184,
+        statusCode: 201,
+        outcome: "SUCCEEDED",
+        durationMs: 32,
+        receivedAt: new Date().toISOString(),
+        retainUntil: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+      },
+    ] satisfies ProductApiRequestLog[];
+    const filtered = items.filter(
+      (item) =>
+        (!request?.method || item.method === request.method) &&
+        (!request?.path || item.path.includes(request.path)) &&
+        (!request?.externalUserId ||
+          item.externalUserId === request.externalUserId) &&
+        (!request?.outcome || item.outcome === request.outcome),
+    );
+    const offset = request?.cursor ? Number(request.cursor) : 0;
+    const limit = request?.limit ?? 25;
+    return {
+      items: filtered.slice(offset, offset + limit),
+      nextCursor:
+        offset + limit < filtered.length ? String(offset + limit) : null,
+    };
+  },
+  async getProductApiRequestLog(_projectId, requestLogId) {
+    await pause();
+    return {
+      id: requestLogId,
+      credentialId: "lola_sk_demo",
+      requestId: "req_demo_1",
+      externalUserId: "demo-user",
+      method: "POST",
+      path: "/interaction-sessions",
+      payloadBytes: 184,
+      statusCode: 201,
+      outcome: "SUCCEEDED",
+      durationMs: 32,
+      receivedAt: new Date().toISOString(),
+      retainUntil: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+      payload: { externalUserId: "demo-user", locale: "ru" },
+    };
   },
   async sendAdminMessage(_projectId, userId, message) {
     const idempotencyKey = message.idempotencyKey ?? crypto.randomUUID();

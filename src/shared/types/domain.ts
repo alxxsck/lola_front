@@ -527,6 +527,25 @@ export interface AuditEvent {
   occurredAt: string;
 }
 
+export interface ProductApiRequestLog {
+  id: string;
+  credentialId: string;
+  requestId?: string | null;
+  externalUserId?: string | null;
+  method: string;
+  path: string;
+  payloadBytes: number;
+  statusCode: number;
+  outcome: "SUCCEEDED" | "FAILED";
+  durationMs: number;
+  receivedAt: string;
+  retainUntil: string;
+}
+
+export interface ProductApiRequestLogDetail extends ProductApiRequestLog {
+  payload: Record<string, unknown> | unknown[];
+}
+
 export type DirectAdminActionType =
   | "SHOW_ASSISTANT"
   | "HIDE_ASSISTANT"

@@ -22,6 +22,8 @@ import {
   scenarioRunsList,
   scenarioRunsPage,
   projectAuditEventsList,
+  productApiRequestLogGet,
+  productApiRequestLogList,
   adminMessagingSend,
   presenceList,
   adminConversationsList,
@@ -297,6 +299,18 @@ export const apiRepository: LolaRepository = {
       items: response.items.map(mapAuditEvent),
       nextCursor: response.nextCursor ?? null,
     }
+  },
+
+  async getProductApiRequestLogsPage(projectId, request) {
+    const response = await productApiRequestLogList(projectId, request)
+    return {
+      items: response.items,
+      nextCursor: response.pageInfo.nextCursor ?? null,
+    }
+  },
+
+  async getProductApiRequestLog(projectId, requestLogId) {
+    return productApiRequestLogGet(projectId, requestLogId)
   },
 
   async sendAdminMessage(projectId, userId, message) {

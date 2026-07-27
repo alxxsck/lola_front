@@ -4,9 +4,13 @@ import { RunExplainInspector } from "@/features/scenario-run-explain/ui";
 import OperationsPage from "./OperationsPage.vue";
 
 const mocks = vi.hoisted(() => ({
-  auth: null as unknown as { project?: { id: string } },
+  auth: null as unknown as {
+    project?: { id: string; effectivePermissionCodes: string[] };
+  },
   getScenarioRunsPage: vi.fn(),
   getAuditEventsPage: vi.fn(),
+  getProductApiRequestLog: vi.fn(),
+  getProductApiRequestLogsPage: vi.fn(),
   routeQuery: {} as Record<string, string>,
 }));
 
@@ -24,7 +28,12 @@ function deferred<T>() {
 
 vi.mock("@/features/auth/auth.store", async () => {
   const { reactive } = await import("vue");
-  mocks.auth = reactive({ project: { id: "project-1" } });
+  mocks.auth = reactive({
+    project: {
+      id: "project-1",
+      effectivePermissionCodes: ["project.integration_api_requests.read"],
+    },
+  });
   return {
     useAuthStore: () => ({
       get project() {
@@ -39,6 +48,8 @@ vi.mock("@/shared/api/repository", () => ({
     mode: "api",
     getScenarioRunsPage: mocks.getScenarioRunsPage,
     getAuditEventsPage: mocks.getAuditEventsPage,
+    getProductApiRequestLog: mocks.getProductApiRequestLog,
+    getProductApiRequestLogsPage: mocks.getProductApiRequestLogsPage,
   },
 }));
 
@@ -54,6 +65,11 @@ describe("OperationsPage", () => {
       items: [],
       nextCursor: null,
     });
+    mocks.getProductApiRequestLogsPage.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    });
+    mocks.getProductApiRequestLog.mockResolvedValue(null);
   });
 
   it("opens on scenario runs and does not expose an events section", async () => {
@@ -62,7 +78,12 @@ describe("OperationsPage", () => {
 
     expect(
       wrapper.findAll(".section-tabs button").map((tab) => tab.text()),
-    ).toEqual(["Запуски сценариев0", "Аудит0", "Решения о запуске0"]);
+    ).toEqual([
+      "Запуски сценариев0",
+      "Аудит0",
+      "Логи API0",
+      "Решения о запуске0",
+    ]);
     expect(
       wrapper.findAll(".section-tabs button")[0]!.attributes("aria-selected"),
     ).toBe("true");
@@ -73,6 +94,95 @@ describe("OperationsPage", () => {
     expect(mocks.getAuditEventsPage).toHaveBeenCalledWith("project-1", {
       limit: 50,
     });
+  });
+
+  it("filters, opens JSON detail and appends Product API requests by cursor", async () => {
+    vi.useFakeTimers();
+    const requestLog = {
+      id: "request-log-1",
+      credentialId: "sk_live_abcd",
+      requestId: "request-1",
+      externalUserId: "user-1",
+      method: "POST",
+      path: "/interaction-sessions",
+      payloadBytes: 128,
+      statusCode: 201,
+      outcome: "SUCCEEDED",
+      durationMs: 24,
+      receivedAt: "2026-07-27T10:00:00.000Z",
+      retainUntil: "2026-08-26T10:00:00.000Z",
+    };
+    mocks.getProductApiRequestLogsPage
+      .mockResolvedValueOnce({
+        items: [requestLog],
+        nextCursor: "opaque-product-api-cursor",
+      })
+      .mockResolvedValueOnce({
+        items: [{ ...requestLog, id: "request-log-2" }],
+        nextCursor: null,
+      });
+    mocks.getProductApiRequestLog.mockResolvedValue({
+      ...requestLog,
+      payload: { externalUserId: "user-1", locale: "ru" },
+    });
+    const wrapper = shallowMount(OperationsPage, {
+      global: {
+        stubs: {
+          Drawer: {
+            props: ["visible"],
+            template:
+              '<aside v-if="visible"><slot name="header" /><slot /></aside>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper.findAll(".section-tabs button")[2]!.trigger("click");
+    await flushPromises();
+
+    const search = wrapper.findComponent("input-text-stub") as unknown as {
+      vm: { $emit: (event: string, value: unknown) => void };
+    };
+    search.vm.$emit("update:modelValue", " sessions ");
+    await vi.advanceTimersByTimeAsync(300);
+    await flushPromises();
+    expect(mocks.getProductApiRequestLogsPage).toHaveBeenLastCalledWith(
+      "project-1",
+      { limit: 50, path: "sessions" },
+    );
+
+    const table = wrapper.findComponent("data-table-stub") as unknown as {
+      vm: {
+        $attrs: { value: Array<{ id: string }> };
+        $emit: (event: string, value: unknown) => void;
+      };
+    };
+    table.vm.$emit("row-click", { data: requestLog });
+    await flushPromises();
+    expect(mocks.getProductApiRequestLog).toHaveBeenCalledWith(
+      "project-1",
+      "request-log-1",
+    );
+    expect(wrapper.text()).toContain('"locale": "ru"');
+    expect(wrapper.text()).toContain("request-1");
+
+    await wrapper
+      .find('button-stub[label="Загрузить ещё запросов"]')
+      .trigger("click");
+    await flushPromises();
+    expect(mocks.getProductApiRequestLogsPage).toHaveBeenLastCalledWith(
+      "project-1",
+      {
+        limit: 50,
+        path: "sessions",
+        cursor: "opaque-product-api-cursor",
+      },
+    );
+    expect(table.vm.$attrs.value.map((item) => item.id)).toEqual([
+      "request-log-1",
+      "request-log-2",
+    ]);
+    vi.useRealTimers();
   });
 
   it("opens a real server-filtered Runs surface for an active-wait deep link", async () => {
@@ -95,6 +205,25 @@ describe("OperationsPage", () => {
     );
   });
 
+  it("does not expose Product API logs without the high-risk read permission", async () => {
+    mocks.routeQuery = { section: "productApi" };
+    mocks.auth.project = { id: "project-1", effectivePermissionCodes: [] };
+    const wrapper = shallowMount(OperationsPage);
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Логи API");
+    expect(mocks.getProductApiRequestLogsPage).not.toHaveBeenCalled();
+    expect(
+      wrapper.findAll(".section-tabs button")[0]!.attributes("aria-selected"),
+    ).toBe("true");
+
+    wrapper.unmount();
+    mocks.auth.project = {
+      id: "project-1",
+      effectivePermissionCodes: ["project.integration_api_requests.read"],
+    };
+  });
+
   it("reloads on Project switch and rejects a late response from the old tenant", async () => {
     const old = deferred<{
       items: Array<{ id: string }>;
@@ -108,7 +237,10 @@ describe("OperationsPage", () => {
     const wrapper = shallowMount(OperationsPage);
     await flushPromises();
 
-    mocks.auth.project = { id: "project-2" };
+    mocks.auth.project = {
+      id: "project-2",
+      effectivePermissionCodes: ["project.integration_api_requests.read"],
+    };
     await flushPromises();
     expect(mocks.getScenarioRunsPage).toHaveBeenCalledWith("project-2", {
       limit: 50,
@@ -124,7 +256,10 @@ describe("OperationsPage", () => {
     };
     expect(runsTable.vm.$attrs.value).toEqual([]);
     wrapper.unmount();
-    mocks.auth.project = { id: "project-1" };
+    mocks.auth.project = {
+      id: "project-1",
+      effectivePermissionCodes: ["project.integration_api_requests.read"],
+    };
   });
 
   it("opens the strict Run Explain inspector for a selected project-scoped Run", async () => {

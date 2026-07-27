@@ -27,6 +27,8 @@ import {
   platformOperationsActivitySettings,
   platformOperationsUpdateActivitySettings,
   projectAuditEventsList,
+  productApiRequestLogGet,
+  productApiRequestLogList,
   conversationAISuspensionsGet,
   conversationAISuspensionsStart,
   conversationAISuspensionsExtend,
@@ -70,6 +72,8 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   platformOperationsActivitySettings: vi.fn(),
   platformOperationsUpdateActivitySettings: vi.fn(),
   projectAuditEventsList: vi.fn(),
+  productApiRequestLogGet: vi.fn(),
+  productApiRequestLogList: vi.fn(),
   conversationAISuspensionsGet: vi.fn(),
   conversationAISuspensionsStart: vi.fn(),
   conversationAISuspensionsExtend: vi.fn(),
@@ -244,6 +248,59 @@ describe("api repository adapter", () => {
       search: "draft",
       outcome: "SUCCESS",
     });
+  });
+
+  it("returns Product API request cursor pages and loads payload only from detail", async () => {
+    const item = {
+      id: "request-log-1",
+      credentialId: "sk_live_abcd",
+      requestId: "request-1",
+      externalUserId: "user-1",
+      method: "POST",
+      path: "/interaction-sessions",
+      payloadBytes: 128,
+      statusCode: 201,
+      outcome: "SUCCEEDED" as const,
+      durationMs: 24,
+      receivedAt: "2026-07-27T10:00:00.000Z",
+      retainUntil: "2026-08-26T10:00:00.000Z",
+    };
+    vi.mocked(productApiRequestLogList).mockResolvedValue({
+      items: [item],
+      pageInfo: { hasMore: true, nextCursor: "opaque-product-api-cursor" },
+    });
+    vi.mocked(productApiRequestLogGet).mockResolvedValue({
+      ...item,
+      payload: { externalUserId: "user-1" },
+    });
+
+    await expect(
+      apiRepository.getProductApiRequestLogsPage("project-1", {
+        cursor: "previous-cursor",
+        limit: 25,
+        path: "sessions",
+        outcome: "SUCCEEDED",
+      }),
+    ).resolves.toEqual({
+      items: [item],
+      nextCursor: "opaque-product-api-cursor",
+    });
+    await expect(
+      apiRepository.getProductApiRequestLog("project-1", "request-log-1"),
+    ).resolves.toMatchObject({
+      id: "request-log-1",
+      payload: { externalUserId: "user-1" },
+    });
+    expect(productApiRequestLogList).toHaveBeenCalledWith("project-1", {
+      cursor: "previous-cursor",
+      limit: 25,
+      path: "sessions",
+      outcome: "SUCCEEDED",
+    });
+    expect(productApiRequestLogGet).toHaveBeenCalledWith(
+      "project-1",
+      "request-log-1",
+    );
   });
 
   it("sends only backend-editable project settings", async () => {
