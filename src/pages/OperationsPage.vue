@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { useRoute } from "vue-router";
 import Button from "primevue/button";
 import Column from "primevue/column";
@@ -15,6 +22,7 @@ import { RunExplainInspector } from "@/features/scenario-run-explain/ui";
 import ScenarioAdmissionDecisionsPanel from "@/features/scenario-admission/ScenarioAdmissionDecisionsPanel.vue";
 import { repository } from "@/shared/api/repository";
 import { formatDate, relativeTime } from "@/shared/lib/format";
+import CodeBlock from "@/shared/ui/CodeBlock.vue";
 import type {
   AuditEvent,
   ProductApiRequestLog,
@@ -23,6 +31,33 @@ import type {
 } from "@/shared/types/domain";
 
 type Section = "runs" | "admission" | "audit" | "productApi";
+type ProductApiCopyField = "requestId" | "credentialId" | "logId";
+type ProductApiCopyFeedback = {
+  field: ProductApiCopyField;
+  outcome: "success" | "error";
+};
+
+const PRODUCT_API_OUTCOME_PRESENTATION: Record<
+  ProductApiRequestLog["outcome"],
+  { label: string; tone: "success" | "danger"; icon: string }
+> = {
+  SUCCEEDED: {
+    label: "Успешно",
+    tone: "success",
+    icon: "pi pi-check-circle",
+  },
+  FAILED: {
+    label: "Ошибка",
+    tone: "danger",
+    icon: "pi pi-times-circle",
+  },
+};
+const PRODUCT_API_COPY_LABELS: Record<ProductApiCopyField, string> = {
+  requestId: "Request ID",
+  credentialId: "Credential prefix",
+  logId: "Log ID",
+};
+
 const auth = useAuthStore();
 const route = useRoute();
 const canReadProductApi = computed(() =>
@@ -73,6 +108,9 @@ const selectedProductApiRequest = ref<ProductApiRequestLog | null>(null);
 const productApiDetail = ref<ProductApiRequestLogDetail | null>(null);
 const productApiDetailLoading = ref(false);
 const productApiDetailError = ref("");
+const productApiCopyFeedback = ref<ProductApiCopyFeedback | null>(null);
+const productApiTitleElement = ref<HTMLElement | null>(null);
+let productApiReturnFocusId: string | null = null;
 
 const sections = computed(() => [
   { value: "runs" as const, label: "Запуски сценариев", icon: "pi pi-sitemap" },
@@ -105,6 +143,21 @@ const statusOptions = computed(() => {
   ];
 });
 const sectionError = computed(() => errors.value[section.value]);
+const selectedProductApiOutcome = computed(() =>
+  selectedProductApiRequest.value
+    ? PRODUCT_API_OUTCOME_PRESENTATION[
+        selectedProductApiRequest.value.outcome
+      ]
+    : null,
+);
+const productApiCopyMessage = computed(() => {
+  const feedback = productApiCopyFeedback.value;
+  if (!feedback) return "";
+  const label = PRODUCT_API_COPY_LABELS[feedback.field];
+  return feedback.outcome === "success"
+    ? `${label} скопирован`
+    : `Не удалось скопировать ${label}`;
+});
 
 const query = computed(() => search.value.trim().toLowerCase());
 const filteredRuns = computed(() =>
@@ -139,6 +192,7 @@ let auditRequestId = 0;
 let productApiRequestId = 0;
 let productApiDetailRequestId = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
+let copyFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
 
 function auditRequest(cursor?: string) {
   return {
@@ -179,6 +233,32 @@ function formatDuration(value: number) {
   return value < 1000
     ? `${value} мс`
     : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value / 1000)} с`;
+}
+
+function productApiTriggerId(requestId: string) {
+  return `product-api-request-trigger-${encodeURIComponent(requestId)}`;
+}
+
+function productApiCopyIcon(field: ProductApiCopyField) {
+  const feedback = productApiCopyFeedback.value;
+  if (feedback?.field !== field) return "pi pi-copy";
+  return feedback.outcome === "success" ? "pi pi-check" : "pi pi-times";
+}
+
+async function copyProductApiValue(
+  field: ProductApiCopyField,
+  value: string,
+) {
+  try {
+    await navigator.clipboard.writeText(value);
+    productApiCopyFeedback.value = { field, outcome: "success" };
+  } catch {
+    productApiCopyFeedback.value = { field, outcome: "error" };
+  }
+  clearTimeout(copyFeedbackTimer);
+  copyFeedbackTimer = setTimeout(() => {
+    productApiCopyFeedback.value = null;
+  }, 1800);
 }
 
 async function load() {
@@ -300,10 +380,13 @@ async function loadMoreProductApiRequests() {
 async function openProductApiRequest(item: ProductApiRequestLog) {
   const projectId = auth.project?.id;
   if (!projectId) return;
+  productApiReturnFocusId = item.id;
   selectedProductApiRequest.value = item;
   productApiDetail.value = null;
   productApiDetailError.value = "";
   productApiDetailLoading.value = true;
+  await nextTick();
+  productApiTitleElement.value?.focus({ preventScroll: true });
   const requestId = ++productApiDetailRequestId;
   try {
     const detail = await repository.getProductApiRequestLog(projectId, item.id);
@@ -327,10 +410,20 @@ async function openProductApiRequest(item: ProductApiRequestLog) {
 
 function closeProductApiRequest() {
   productApiDetailRequestId += 1;
+  clearTimeout(copyFeedbackTimer);
+  productApiCopyFeedback.value = null;
   selectedProductApiRequest.value = null;
   productApiDetail.value = null;
   productApiDetailError.value = "";
   productApiDetailLoading.value = false;
+}
+
+function restoreProductApiTriggerFocus() {
+  if (!productApiReturnFocusId) return;
+  document
+    .getElementById(productApiTriggerId(productApiReturnFocusId))
+    ?.focus({ preventScroll: true });
+  productApiReturnFocusId = null;
 }
 
 async function loadAuditPage() {
@@ -483,7 +576,10 @@ watch(
   },
 );
 
-onBeforeUnmount(() => clearTimeout(searchTimer));
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer);
+  clearTimeout(copyFeedbackTimer);
+});
 onMounted(() => void refresh());
 </script>
 
@@ -812,7 +908,17 @@ onMounted(() => void refresh());
             }}</template></Column
           >
           <Column
-            ><template #body><i class="pi pi-chevron-right muted" /></template
+            ><template #body="{ data }"
+              ><button
+                :id="productApiTriggerId(data.id)"
+                class="row-detail-button"
+                type="button"
+                aria-controls="product-api-request-drawer"
+                :aria-expanded="selectedProductApiRequest?.id === data.id"
+                :aria-label="`Открыть детали запроса ${data.method} ${data.path}`"
+                @click.stop="openProductApiRequest(data)"
+              >
+                <i class="pi pi-chevron-right" /></button></template
           ></Column>
         </DataTable>
         <div
@@ -1015,82 +1121,165 @@ onMounted(() => void refresh());
     :visible="Boolean(selectedProductApiRequest)"
     position="right"
     :style="{ width: 'min(760px, 100vw)' }"
+    id="product-api-request-drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="product-api-request-title"
     @update:visible="!$event && closeProductApiRequest()"
+    @after-hide="restoreProductApiTriggerFocus"
   >
     <template #header
-      ><div>
+      ><div class="request-drawer-header">
         <div class="eyebrow">Product API request</div>
-        <h2>
-          {{ selectedProductApiRequest?.method }}
-          {{ selectedProductApiRequest?.path }}
-        </h2>
+        <div class="request-title">
+          <Tag
+            :value="selectedProductApiRequest?.method"
+            severity="secondary"
+            rounded
+          />
+          <h2
+            id="product-api-request-title"
+            ref="productApiTitleElement"
+            tabindex="-1"
+          >
+            {{ selectedProductApiRequest?.path }}
+          </h2>
+        </div>
       </div></template
     >
-    <div v-if="selectedProductApiRequest" class="detail-stack">
-      <div class="detail-hero">
-        <div>
-          <span>Статус</span
-          ><Tag
-            :value="String(selectedProductApiRequest.statusCode)"
-            :severity="severity(selectedProductApiRequest.outcome)"
-          /><small>{{ selectedProductApiRequest.outcome }}</small>
+    <div
+      v-if="selectedProductApiRequest"
+      class="detail-stack request-detail"
+    >
+      <section class="request-summary" aria-label="Итог запроса">
+        <div
+          class="request-status"
+          :class="selectedProductApiOutcome?.tone"
+        >
+          <i :class="selectedProductApiOutcome?.icon" />
+          <strong>
+            {{ selectedProductApiRequest.statusCode }} ·
+            {{ selectedProductApiOutcome?.label }}
+          </strong>
         </div>
-        <div>
-          <span>Пользователь</span
-          ><strong class="mono">{{
+        <div class="request-user">
+          <span>Пользователь</span>
+          <strong class="mono">{{
             selectedProductApiRequest.externalUserId || "—"
           }}</strong>
         </div>
-        <div>
-          <span>Получено</span
-          ><strong>{{
-            formatDate(selectedProductApiRequest.receivedAt)
-          }}</strong>
+        <div class="request-vitals">
+          <span
+            ><i class="pi pi-clock" />{{
+              formatDate(selectedProductApiRequest.receivedAt)
+            }}</span
+          >
+          <span
+            ><i class="pi pi-bolt" />{{
+              formatDuration(selectedProductApiRequest.durationMs)
+            }}</span
+          >
+          <span
+            ><i class="pi pi-file" />{{
+              formatBytes(selectedProductApiRequest.payloadBytes)
+            }}</span
+          >
         </div>
-      </div>
-      <div class="audit-facts">
-        <div>
-          <span>Request ID</span
-          ><strong class="mono">{{
-            selectedProductApiRequest.requestId || "—"
-          }}</strong>
-        </div>
-        <div>
-          <span>Credential prefix</span
-          ><strong class="mono">{{
-            selectedProductApiRequest.credentialId
-          }}</strong>
-        </div>
-        <div>
-          <span>Размер payload</span
-          ><strong>{{
-            formatBytes(selectedProductApiRequest.payloadBytes)
-          }}</strong>
-        </div>
-        <div>
-          <span>Duration</span
-          ><strong>{{
-            formatDuration(selectedProductApiRequest.durationMs)
-          }}</strong>
-        </div>
-        <div>
-          <span>Хранится до</span
-          ><strong>{{
-            formatDate(selectedProductApiRequest.retainUntil)
-          }}</strong>
-        </div>
-      </div>
-      <Message v-if="productApiDetailError" severity="error" :closable="false">
+      </section>
+
+      <section class="request-section">
+        <h3>Реквизиты запроса</h3>
+        <dl class="request-metadata">
+          <div>
+            <dt>Request ID</dt>
+            <dd>
+              <code>{{
+                selectedProductApiRequest.requestId || "—"
+              }}</code>
+              <button
+                v-if="selectedProductApiRequest.requestId"
+                type="button"
+                aria-label="Скопировать Request ID"
+                title="Скопировать Request ID"
+                @click="
+                  copyProductApiValue(
+                    'requestId',
+                    selectedProductApiRequest.requestId,
+                  )
+                "
+              >
+                <i :class="productApiCopyIcon('requestId')" />
+              </button>
+            </dd>
+          </div>
+          <div>
+            <dt>Credential prefix</dt>
+            <dd>
+              <code>{{ selectedProductApiRequest.credentialId }}</code>
+              <button
+                type="button"
+                aria-label="Скопировать Credential prefix"
+                title="Скопировать Credential prefix"
+                @click="
+                  copyProductApiValue(
+                    'credentialId',
+                    selectedProductApiRequest.credentialId,
+                  )
+                "
+              >
+                <i :class="productApiCopyIcon('credentialId')" />
+              </button>
+            </dd>
+          </div>
+          <div>
+            <dt>Log ID</dt>
+            <dd>
+              <code>{{ selectedProductApiRequest.id }}</code>
+              <button
+                type="button"
+                aria-label="Скопировать Log ID"
+                title="Скопировать Log ID"
+                @click="
+                  copyProductApiValue('logId', selectedProductApiRequest.id)
+                "
+              >
+                <i :class="productApiCopyIcon('logId')" />
+              </button>
+            </dd>
+          </div>
+          <div>
+            <dt>Хранится до</dt>
+            <dd>
+              <span>{{
+                formatDate(selectedProductApiRequest.retainUntil)
+              }}</span>
+            </dd>
+          </div>
+        </dl>
+        <span class="sr-only" role="status" aria-live="polite">{{
+          productApiCopyMessage
+        }}</span>
+      </section>
+
+      <Message
+        v-if="productApiDetailError"
+        severity="error"
+        :closable="false"
+      >
         {{ productApiDetailError }}
       </Message>
-      <div>
-        <h3>Исходный JSON body</h3>
+      <section class="request-section request-payload">
+        <h3 v-if="productApiDetailLoading">Тело запроса</h3>
         <Skeleton v-if="productApiDetailLoading" height="260px" />
-        <pre v-else-if="productApiDetail">{{
-          json(productApiDetail.payload)
-        }}</pre>
-      </div>
-      <small class="mono muted">{{ selectedProductApiRequest.id }}</small>
+        <CodeBlock
+          v-else-if="productApiDetail"
+          title="Тело запроса"
+          language="JSON"
+          :code="json(productApiDetail.payload)"
+          collapsible
+          :collapsed-lines="10"
+        />
+      </section>
     </div>
   </Drawer>
 </template>
@@ -1173,6 +1362,26 @@ onMounted(() => void refresh());
 .table-card :deep(tbody tr) {
   cursor: pointer;
 }
+.row-detail-button {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.row-detail-button:hover {
+  background: var(--surface-hover);
+  color: var(--status-violet-text);
+}
+.row-detail-button:focus-visible {
+  outline: 3px solid
+    color-mix(in srgb, var(--focus-ring) 35%, transparent);
+  outline-offset: 2px;
+}
 .loading-list {
   display: grid;
   gap: 10px;
@@ -1209,8 +1418,8 @@ onMounted(() => void refresh());
 .detail-hero > div {
   min-width: 0;
 }
-.detail-hero span,
-.detail-hero strong {
+.detail-hero > div > span,
+.detail-hero > div > strong {
   display: block;
 }
 .detail-hero > div > span {
@@ -1246,6 +1455,170 @@ onMounted(() => void refresh());
 .detail-stack h3 {
   font-size: 0.9rem;
   margin: 0 0 9px;
+}
+.request-drawer-header {
+  min-width: 0;
+}
+.request-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.request-title h2 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.request-detail {
+  gap: 24px;
+}
+.request-summary {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 14px 18px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--surface-subtle);
+}
+.request-status {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  align-self: start;
+  padding: 0 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-size: 0.72rem;
+}
+.request-status.success {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.request-status.danger {
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
+.request-user {
+  min-width: 0;
+}
+.request-user span,
+.request-user strong {
+  display: block;
+}
+.request-user span {
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.request-user strong {
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+}
+.request-vitals {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-default);
+}
+.request-vitals span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+.request-vitals i {
+  color: var(--status-violet-text);
+  font-size: 0.68rem;
+}
+.request-section {
+  min-width: 0;
+}
+.request-section > h3 {
+  margin-bottom: 12px;
+}
+.request-metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.request-metadata > div {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  background: var(--surface-card);
+}
+.request-metadata dt {
+  margin-bottom: 7px;
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+}
+.request-metadata dd {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+}
+.request-metadata code,
+.request-metadata dd > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.request-metadata button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.request-metadata button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--status-violet-text);
+}
+.request-metadata button:focus-visible {
+  outline: 3px solid
+    color-mix(in srgb, var(--focus-ring) 35%, transparent);
+  outline-offset: 2px;
+}
+.request-payload > h3 {
+  margin-bottom: 12px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .steps {
   display: flex;
@@ -1313,6 +1686,9 @@ onMounted(() => void refresh());
   .detail-hero {
     grid-template-columns: 1fr 1fr;
   }
+  .request-metadata {
+    grid-template-columns: 1fr;
+  }
   .table-card {
     overflow: auto;
   }
@@ -1321,6 +1697,18 @@ onMounted(() => void refresh());
   }
   .data-source {
     white-space: normal;
+  }
+}
+@media (max-width: 520px) {
+  .request-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .request-summary {
+    grid-template-columns: 1fr;
+  }
+  .request-vitals {
+    grid-column: 1;
   }
 }
 </style>

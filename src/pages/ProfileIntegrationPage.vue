@@ -5,7 +5,7 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
-import CodeBlock from "@/features/end-user-attributes/ui/CodeBlock.vue";
+import CodeBlock from "@/shared/ui/CodeBlock.vue";
 import { repository } from "@/shared/api/repository";
 import type {
   AttributeContractWorkspaceResponseDto,

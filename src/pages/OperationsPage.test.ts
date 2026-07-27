@@ -1,6 +1,7 @@
 import { flushPromises, shallowMount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RunExplainInspector } from "@/features/scenario-run-explain/ui";
+import CodeBlock from "@/shared/ui/CodeBlock.vue";
 import OperationsPage from "./OperationsPage.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -56,6 +57,10 @@ vi.mock("@/shared/api/repository", () => ({
 describe("OperationsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
     mocks.routeQuery = {};
     mocks.getScenarioRunsPage.mockResolvedValue({
       items: [],
@@ -125,13 +130,18 @@ describe("OperationsPage", () => {
       ...requestLog,
       payload: { externalUserId: "user-1", locale: "ru" },
     });
+    const returnFocusTarget = document.createElement("button");
+    returnFocusTarget.id =
+      "product-api-request-trigger-request-log-1";
+    document.body.append(returnFocusTarget);
     const wrapper = shallowMount(OperationsPage, {
+      attachTo: document.body,
       global: {
         stubs: {
           Drawer: {
             props: ["visible"],
             template:
-              '<aside v-if="visible"><slot name="header" /><slot /></aside>',
+              '<aside v-if="visible"><slot name="header" /><button class="test-close" @click="$emit(\'update:visible\', false); $emit(\'after-hide\')" /><slot /></aside>',
           },
         },
       },
@@ -163,8 +173,31 @@ describe("OperationsPage", () => {
       "project-1",
       "request-log-1",
     );
-    expect(wrapper.text()).toContain('"locale": "ru"');
-    expect(wrapper.text()).toContain("request-1");
+    const detail = wrapper.get("aside");
+    expect(detail.attributes("role")).toBe("dialog");
+    expect(detail.attributes("aria-modal")).toBe("true");
+    expect(detail.attributes("id")).toBe("product-api-request-drawer");
+    expect(detail.get("h2").attributes("tabindex")).toBe("-1");
+    expect(document.activeElement).toBe(detail.get("h2").element);
+    expect(detail.get(".request-status").text()).toContain("201 · Успешно");
+    expect(
+      detail.findAll(".request-metadata dt").map((term) => term.text()),
+    ).toEqual(["Request ID", "Credential prefix", "Log ID", "Хранится до"]);
+
+    const codeBlock = wrapper.findComponent(CodeBlock);
+    expect(codeBlock.props("title")).toBe("Тело запроса");
+    expect(codeBlock.props("code")).toContain('"locale": "ru"');
+    expect(codeBlock.props("collapsible")).toBe(true);
+
+    await detail
+      .get('[aria-label="Скопировать Request ID"]')
+      .trigger("click");
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("request-1");
+
+    await detail.get(".test-close").trigger("click");
+    await flushPromises();
+    expect(document.activeElement).toBe(returnFocusTarget);
+    returnFocusTarget.remove();
 
     await wrapper
       .find('button-stub[label="Загрузить ещё запросов"]')
@@ -182,6 +215,7 @@ describe("OperationsPage", () => {
       "request-log-1",
       "request-log-2",
     ]);
+    wrapper.unmount();
     vi.useRealTimers();
   });
 

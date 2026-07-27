@@ -16,7 +16,7 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { DocumentationCallout } from "@/features/documentation/ui";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
-import CodeBlock from "@/features/end-user-attributes/ui/CodeBlock.vue";
+import CodeBlock from "@/shared/ui/CodeBlock.vue";
 import {
   createContractField,
   parseAllowedValues,
