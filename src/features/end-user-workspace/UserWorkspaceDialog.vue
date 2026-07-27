@@ -18,6 +18,7 @@ import { hasProjectPermission } from "@/features/auth/permission-access";
 import { useAdminConversationConsole } from "@/features/admin-conversations/model/use-admin-conversation-console";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import { formatProfileValue } from "@/features/end-user-profile/model/profile-value";
+import EndUserProfileSyncHistory from "@/features/end-user-profile/ui/EndUserProfileSyncHistory.vue";
 import EndUserTelegramPanel from "@/features/telegram-product-installations/EndUserTelegramPanel.vue";
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
@@ -684,11 +685,18 @@ function displayField(
                 <span class="eyebrow">Контекст</span>
                 <h3><i class="pi pi-id-card" /> Основная информация</h3>
               </div>
-              <Tag
-                :value="onlineSession ? 'Онлайн' : 'Офлайн'"
-                :severity="onlineSession ? 'success' : 'secondary'"
-                rounded
-              />
+              <div class="profile-card-header-actions">
+                <EndUserProfileSyncHistory
+                  v-if="canReadProfiles && endUserId"
+                  :project-id="projectId"
+                  :end-user-id="endUserId"
+                />
+                <Tag
+                  :value="onlineSession ? 'Онлайн' : 'Офлайн'"
+                  :severity="onlineSession ? 'success' : 'secondary'"
+                  rounded
+                />
+              </div>
             </header>
             <div v-if="detailLoading" class="profile-loading">
               <Skeleton v-for="item in 6" :key="item" height="64px" />
@@ -1354,6 +1362,11 @@ function displayField(
 .profile-card-header h3 i {
   color: var(--text-brand);
 }
+.profile-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .profile-facts,
 .profile-loading {
   display: grid;
@@ -1928,6 +1941,14 @@ function displayField(
   .conversation-pane,
   .profile-card {
     padding: 14px;
+  }
+  .profile-card-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .profile-card-header-actions {
+    justify-content: space-between;
+    width: 100%;
   }
   .message-bubble {
     max-width: 94%;

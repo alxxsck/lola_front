@@ -5800,6 +5800,166 @@
         ],
         "type": "object"
       },
+      "CmsProfileSyncHistoryFieldResponseDto": {
+        "properties": {
+          "definitionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "nullable": true,
+            "type": "string"
+          },
+          "label": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "definitionId"
+        ],
+        "type": "object"
+      },
+      "CmsProfileSyncHistoryItemResponseDto": {
+        "properties": {
+          "activeContractRevision": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "declaredContractRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "durationMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "idempotencyConflictCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileSyncIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "APPLIED",
+              "NOOP",
+              "REJECTED_INVALID",
+              "STALE_IGNORED",
+              "DUPLICATE"
+            ],
+            "type": "string"
+          },
+          "previousProfileVersion": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "removedFields": {
+            "items": {
+              "$ref": "#/components/schemas/CmsProfileSyncHistoryFieldResponseDto"
+            },
+            "type": "array"
+          },
+          "resultProfileVersion": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "snapshotBytes": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "source": {
+            "enum": [
+              "SESSION",
+              "PROFILE_SYNC"
+            ],
+            "type": "string"
+          },
+          "sourceSequence": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "APPLIED",
+              "NOOP",
+              "DUPLICATE",
+              "REJECTED_INVALID",
+              "CONTRACT_OUTDATED",
+              "STALE_IGNORED",
+              "IDEMPOTENCY_CONFLICT",
+              "SOURCE_SEQUENCE_CONFLICT",
+              "OBSERVATION_CONFLICT",
+              "RATE_LIMITED"
+            ],
+            "type": "string"
+          },
+          "submittedFields": {
+            "items": {
+              "$ref": "#/components/schemas/CmsProfileSyncHistoryFieldResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "receivedAt",
+          "source",
+          "credentialId",
+          "outcome",
+          "status",
+          "declaredContractRevision",
+          "previousProfileVersion",
+          "resultProfileVersion",
+          "submittedFields",
+          "removedFields",
+          "issues",
+          "snapshotBytes",
+          "durationMs",
+          "idempotencyConflictCount"
+        ],
+        "type": "object"
+      },
+      "CmsProfileSyncHistoryResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CmsProfileSyncHistoryItemResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "CmsSecurityMutationResponseDto": {
         "properties": {
           "success": {
@@ -29469,6 +29629,75 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProfileProjectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin end user profiles"
+        ],
+        "x-iam-permission": {
+          "code": "project.profiles.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/profile-sync-history": {
+      "get": {
+        "operationId": "AdminEndUserProfiles_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsProfileSyncHistoryResponseDto"
                 }
               }
             },

@@ -209,6 +209,11 @@ describe("единое рабочее пространство пользова�
           ConversationAISuspensionBanner: true,
           ConversationAISuspensionDialog: true,
           ConversationAISuspensionHistory: true,
+          EndUserProfileSyncHistory: {
+            props: ["projectId", "endUserId"],
+            template:
+              '<div data-testid="profile-sync-history" :data-project-id="projectId" :data-end-user-id="endUserId" />',
+          },
           EndUserTelegramPanel: {
             props: ["visible", "projectId", "endUserId", "canRead", "canSend"],
             emits: ["dirty-change"],
@@ -262,6 +267,31 @@ describe("единое рабочее пространство пользова�
 
     await wrapper.get('[data-action="open-profile"]').trigger("click");
     expect(wrapper.get('[data-testid="profile-overview"]')).toBeTruthy();
+  });
+
+  it("размещает историю синхронизации в карточке доступного профиля", async () => {
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    const history = wrapper.get('[data-testid="profile-sync-history"]');
+    expect(history.attributes()).toMatchObject({
+      "data-project-id": "project-1",
+      "data-end-user-id": "user-1",
+    });
+    expect(history.element.closest(".profile-card-header")).not.toBeNull();
+  });
+
+  it("скрывает историю синхронизации без права чтения профилей", async () => {
+    mocks.permissions.splice(
+      mocks.permissions.indexOf("project.profiles.read"),
+      1,
+    );
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="profile-sync-history"]').exists()).toBe(
+      false,
+    );
   });
 
   it("opens a conversation deep link directly in chat mode", async () => {

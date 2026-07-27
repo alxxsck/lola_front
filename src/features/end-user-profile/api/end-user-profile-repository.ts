@@ -1,8 +1,12 @@
 import {
+  adminEndUserProfilesHistory,
   adminEndUserProfilesList,
   adminEndUserProfilesProfile,
 } from "@/shared/api/generated/lola-backend";
-import type { AdminEndUserProfilesListParams } from "@/shared/api/generated/models";
+import type {
+  AdminEndUserProfilesHistoryParams,
+  AdminEndUserProfilesListParams,
+} from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 
 async function call<Response>(
@@ -20,4 +24,9 @@ export const endUserProfileRepository = {
     call(() => adminEndUserProfilesList(projectId, params)),
   profile: (projectId: string, endUserId: string) =>
     call(() => adminEndUserProfilesProfile(projectId, endUserId)),
+  history: (
+    projectId: string,
+    endUserId: string,
+    params?: AdminEndUserProfilesHistoryParams,
+  ) => call(() => adminEndUserProfilesHistory(projectId, endUserId, params)),
 };

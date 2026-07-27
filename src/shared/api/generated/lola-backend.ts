@@ -24,6 +24,7 @@ import type {
   AdminConversationsListMessagesParams,
   AdminConversationsListParams,
   AdminConversationsPageResponseDto,
+  AdminEndUserProfilesHistoryParams,
   AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
   AdminSpeechVoicesParams,
@@ -65,6 +66,7 @@ import type {
   CmsPasswordChangeRequestDto,
   CmsPasswordChangedResponseDto,
   CmsProfileListResponseDto,
+  CmsProfileSyncHistoryResponseDto,
   CmsSecurityMutationResponseDto,
   CmsSessionContextResponseDto,
   CmsSessionListResponseDto,
@@ -1508,6 +1510,22 @@ export const adminEndUserProfilesProfile = (
     {
       url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/profile`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const adminEndUserProfilesHistory = (
+  projectId: string,
+  endUserId: string,
+  params?: AdminEndUserProfilesHistoryParams,
+  options?: SecondParameter<typeof request<CmsProfileSyncHistoryResponseDto>>,
+) => {
+  return request<CmsProfileSyncHistoryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/profile-sync-history`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -5154,6 +5172,9 @@ export type EndUserAiUsageReportResult = NonNullable<
 >;
 export type AdminEndUserProfilesProfileResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesProfile>>
+>;
+export type AdminEndUserProfilesHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof adminEndUserProfilesHistory>>
 >;
 export type TelegramLinkAdminGetResult = NonNullable<
   Awaited<ReturnType<typeof telegramLinkAdminGet>>
