@@ -13,6 +13,7 @@ const proposal: AIProposalDetail = {
   title: "Нужна помощь",
   summary: "Пользователь просит связаться.",
   sourceType: "TEXT_CHAT",
+  caseLinkState: "NOT_APPLICABLE",
   version: 2,
   isRead: true,
   createdAt: "2026-07-19T18:00:00.000Z",

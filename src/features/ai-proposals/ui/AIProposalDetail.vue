@@ -13,6 +13,9 @@ const props = defineProps<{
   loading: boolean;
   deciding: boolean;
   canDecide?: boolean;
+  canReadEndUser?: boolean;
+  canReadConversation?: boolean;
+  canReadCases?: boolean;
   error?: string | null;
 }>();
 defineEmits<{ resolve: []; retry: [] }>();
@@ -146,6 +149,9 @@ const reviewResult = computed(() => {
           }}</small>
         </div>
         <RouterLink
+          v-if="
+            canReadEndUser && (!proposal.conversationId || canReadConversation)
+          "
           class="context-link"
           :to="{
             name: 'users',
@@ -158,7 +164,45 @@ const reviewResult = computed(() => {
           {{ proposal.conversationId ? "Открыть диалог" : "Открыть профиль" }}
           <i class="pi pi-arrow-up-right" />
         </RouterLink>
+        <span v-else class="context-link" aria-disabled="true">
+          {{
+            proposal.conversationId && canReadEndUser
+              ? "Диалог недоступен"
+              : "Профиль недоступен"
+          }}
+        </span>
       </section>
+
+      <section v-if="proposal.endUserCase" class="case-context-card">
+        <div>
+          <span
+            >Связанное обращение №
+            {{ proposal.endUserCase.projectSequence }}</span
+          >
+          <strong>{{ proposal.endUserCase.title }}</strong>
+          <small>{{ proposal.endUserCase.summary }}</small>
+        </div>
+        <RouterLink
+          v-if="canReadCases"
+          class="context-link"
+          :to="{
+            name: 'end-user-case-detail',
+            params: { caseId: proposal.endUserCase.id },
+          }"
+        >
+          Открыть обращение <i class="pi pi-arrow-up-right" />
+        </RouterLink>
+        <span v-else class="context-link" aria-disabled="true">
+          Обращение недоступно
+        </span>
+      </section>
+      <Message
+        v-else-if="proposal.caseLinkState === 'LEGACY_MISSING'"
+        severity="secondary"
+        :closable="false"
+      >
+        Это старое предложение было создано до обязательной связи с обращением.
+      </Message>
 
       <section v-if="reviewResult" class="review-result">
         <div class="section-heading">
@@ -256,6 +300,29 @@ const reviewResult = computed(() => {
   flex-direction: column;
   gap: 22px;
   padding: 26px;
+}
+.case-context-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  background: var(--surface-subtle);
+}
+.case-context-card > div,
+.case-context-card strong,
+.case-context-card small {
+  display: block;
+}
+.case-context-card span,
+.case-context-card small {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+.case-context-card strong {
+  margin: 4px 0;
 }
 .detail-loading {
   display: flex;

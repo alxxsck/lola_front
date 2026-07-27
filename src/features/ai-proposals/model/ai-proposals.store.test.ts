@@ -47,6 +47,7 @@ const item: AIProposalListItem = {
   title: "Нужна помощь администратора",
   summary: "Пользователь просит связаться с ним.",
   sourceType: "TEXT_CHAT",
+  caseLinkState: "NOT_APPLICABLE",
   endUser: { id: "user-1", externalId: "customer-1" },
   conversationId: "conversation-1",
   version: 1,

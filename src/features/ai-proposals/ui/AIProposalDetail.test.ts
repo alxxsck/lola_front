@@ -13,6 +13,7 @@ const proposal: AIProposalDetailModel = {
   title: "Нужна помощь",
   summary: "Пользователь просит связаться.",
   sourceType: "TEXT_CHAT",
+  caseLinkState: "NOT_APPLICABLE",
   endUser: { id: "user-1", externalId: "customer-1" },
   conversationId: "conversation-1",
   version: 1,
@@ -74,6 +75,7 @@ describe("AIProposalDetail", () => {
         },
         loading: false,
         deciding: false,
+        canReadCases: true,
         canDecide: true,
       },
       global: {
@@ -94,5 +96,106 @@ describe("AIProposalDetail", () => {
     expect(wrapper.text()).toContain("Данных о провайдере платежей нет.");
     expect(wrapper.html()).toContain("10000000-0000-4000-8000-000000000001");
     expect(wrapper.html()).toContain("event-logs");
+  });
+
+  it("does not expose a dialog link with profile permission alone", () => {
+    const wrapper = mount(AIProposalDetail, {
+      props: {
+        proposal,
+        loading: false,
+        deciding: false,
+        canReadEndUser: true,
+        canReadConversation: false,
+      },
+      global: {
+        stubs: {
+          Button: true,
+          Message: { template: "<div><slot /></div>" },
+          Skeleton: true,
+          RouterLink: {
+            props: ["to"],
+            template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
+          },
+        },
+      },
+    });
+
+    expect(wrapper.text()).not.toContain("Открыть диалог");
+    expect(wrapper.text()).toContain("Диалог недоступен");
+  });
+
+  it("links an administrator proposal back to its Case", () => {
+    const wrapper = mount(AIProposalDetail, {
+      props: {
+        proposal: {
+          ...proposal,
+          caseLinkState: "LINKED",
+          endUserCase: {
+            id: "case-1",
+            projectSequence: "47",
+            title: "Не поступил депозит",
+            summary: "Платёж проверяется.",
+            status: "WAITING_ADMIN",
+            priority: "HIGH",
+            version: 3,
+          },
+        },
+        loading: false,
+        deciding: false,
+        canReadCases: true,
+      },
+      global: {
+        stubs: {
+          Button: true,
+          Message: { template: "<div><slot /></div>" },
+          Skeleton: { template: "<div />" },
+          RouterLink: {
+            props: ["to"],
+            template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
+          },
+        },
+      },
+    });
+    expect(wrapper.text()).toContain("Связанное обращение № 47");
+    expect(wrapper.html()).toContain("end-user-case-detail");
+  });
+
+  it("keeps linked context visible but non-navigable without related permissions", () => {
+    const wrapper = mount(AIProposalDetail, {
+      props: {
+        proposal: {
+          ...proposal,
+          caseLinkState: "LINKED",
+          endUserCase: {
+            id: "case-1",
+            projectSequence: "47",
+            title: "Не поступил депозит",
+            summary: "Платёж проверяется.",
+            status: "WAITING_ADMIN",
+            priority: "HIGH",
+            version: 3,
+          },
+        },
+        loading: false,
+        deciding: false,
+        canReadEndUser: false,
+        canReadConversation: false,
+        canReadCases: false,
+      },
+      global: {
+        stubs: {
+          Button: true,
+          Message: { template: "<div><slot /></div>" },
+          Skeleton: true,
+          RouterLink: {
+            props: ["to"],
+            template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
+          },
+        },
+      },
+    });
+    expect(wrapper.text()).toContain("Профиль недоступен");
+    expect(wrapper.text()).toContain("Обращение недоступно");
+    expect(wrapper.html()).not.toContain("end-user-case-detail");
   });
 });

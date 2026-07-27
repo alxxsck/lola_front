@@ -13,6 +13,7 @@ const proposal: AIProposalListItem = {
   title: '<script>alert("x")</script> Нужна помощь',
   summary: "<img src=x onerror=alert(1)> Просьба клиента",
   sourceType: "VOICE",
+  caseLinkState: "NOT_APPLICABLE",
   endUser: { id: "user-1", externalId: "customer-1" },
   version: 1,
   isRead: false,

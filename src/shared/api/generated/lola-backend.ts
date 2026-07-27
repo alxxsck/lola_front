@@ -38,6 +38,7 @@ import type {
   ArchiveProjectRoleDto,
   ArchiveScenarioAuthoringDto,
   ArchivedSegmentResponseDto,
+  AssignEndUserCaseDto,
   AssignableProjectRoleCatalogResponseDto,
   AttributeContractDraftResponseDto,
   AttributeContractRevisionPageResponseDto,
@@ -52,6 +53,7 @@ import type {
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   ChatSend200,
+  ClassifyEndUserCaseDto,
   CmsAuthenticatedResponseDto,
   CmsEmailChangeCancelledResponseDto,
   CmsEmailChangeRequestDto,
@@ -114,6 +116,20 @@ import type {
   EmailUnsubscribeResponseDto,
   EndUserAiUsageReportParams,
   EndUserAiUsageReportResponseDto,
+  EndUserCaseAssigneesResponseDto,
+  EndUserCaseCommandResponseDto,
+  EndUserCaseCostSummaryResponseDto,
+  EndUserCaseMessagesResponseDto,
+  EndUserCasePolicyPreviewResponseDto,
+  EndUserCasePolicyResponseDto,
+  EndUserCasePolicyRevisionResponseDto,
+  EndUserCaseProposalsResponseDto,
+  EndUserCaseResponseDto,
+  EndUserCaseSummaryResponseDto,
+  EndUserCaseTimelineResponseDto,
+  EndUserCasesListParams,
+  EndUserCasesMessagesParams,
+  EndUserCasesPageResponseDto,
   EndUserPageResponseDto,
   EndUserResponseDto,
   EndVoiceSessionDto,
@@ -175,8 +191,11 @@ import type {
   KnowledgeListParams,
   KnowledgeUploadFileBody,
   LegacyEventLogPageResponseDto,
+  LinkEndUserCaseMessageDto,
   ListMessagesDto,
   ListThreadMessagesDto,
+  MergeEndUserCasesDto,
+  MergeEndUserCasesResponseDto,
   NotificationDestinationListResponseDto,
   NotificationDestinationResponseDto,
   NotificationDestinationTestResponseDto,
@@ -199,6 +218,7 @@ import type {
   PlatformRoleListResponseDto,
   PlatformRoleResponseDto,
   PlatformTranslationUsageUsageReportParams,
+  PreviewEndUserCasePolicyDto,
   PreviewScenarioGoalDto,
   PreviewScenarioGoalResponseDto,
   PreviewScenarioRuleDto,
@@ -221,6 +241,7 @@ import type {
   ProviderBillingSnapshotResponseDto,
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
+  PublishEndUserCasePolicyDto,
   PublishEventSchemaDraftDto,
   PublishScenarioDto,
   PublishScenarioResponseDto,
@@ -237,6 +258,7 @@ import type {
   RotateServerKeyResponseDto,
   RotateTelegramChannelDto,
   SaveAttributeContractDraftDto,
+  SaveEndUserCasePolicyDraftDto,
   SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
   ScenarioAdmissionDecisionPageResponseDto,
@@ -264,6 +286,8 @@ import type {
   SetTelegramBroadcastsEnabledDto,
   SpeechSettingsResponseDto,
   SpeechVoicePageResponseDto,
+  SplitEndUserCaseDto,
+  SplitEndUserCaseResponseDto,
   StartAIReviewDto,
   StartAdminVoiceConversationDto,
   StartConversationAISuspensionDto,
@@ -299,10 +323,12 @@ import type {
   TranslationUsageReportParams,
   TranslationUsageResponseDto,
   UiElementResponseDto,
+  UnlinkEndUserCaseMessageDto,
   UpdateAIReviewSettingsDto,
   UpdateActivitySettingsDto,
   UpdateCmsUserProfileDto,
   UpdateEmailAIProposalPreferenceDto,
+  UpdateEndUserCaseWorkflowDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
   UpdateOperationalTelegramDestinationDto,
@@ -1138,6 +1164,305 @@ export const projectAuditEventsList = (
       url: `/api/v1/admin/projects/${projectId}/audit-events`,
       method: "GET",
       params,
+    },
+    options,
+  );
+};
+
+export const endUserCasePolicyGet = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EndUserCasePolicyResponseDto>>,
+) => {
+  return request<EndUserCasePolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-case-policy`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasePolicySaveDraft = (
+  projectId: string,
+  saveEndUserCasePolicyDraftDto: BodyType<SaveEndUserCasePolicyDraftDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCasePolicyRevisionResponseDto>
+  >,
+) => {
+  return request<EndUserCasePolicyRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-case-policy/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveEndUserCasePolicyDraftDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasePolicyPreview = (
+  projectId: unknown,
+  previewEndUserCasePolicyDto: BodyType<PreviewEndUserCasePolicyDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCasePolicyPreviewResponseDto>
+  >,
+) => {
+  return request<EndUserCasePolicyPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-case-policy/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: previewEndUserCasePolicyDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasePolicyPublish = (
+  projectId: string,
+  publishEndUserCasePolicyDto: BodyType<PublishEndUserCasePolicyDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCasePolicyRevisionResponseDto>
+  >,
+) => {
+  return request<EndUserCasePolicyRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-case-policy/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishEndUserCasePolicyDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesList = (
+  projectId: string,
+  params?: EndUserCasesListParams,
+  options?: SecondParameter<typeof request<EndUserCasesPageResponseDto>>,
+) => {
+  return request<EndUserCasesPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const endUserCasesDetail = (
+  projectId: string,
+  caseId: string,
+  options?: SecondParameter<typeof request<EndUserCaseResponseDto>>,
+) => {
+  return request<EndUserCaseResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasesAssignment = (
+  projectId: string,
+  caseId: string,
+  assignEndUserCaseDto: BodyType<AssignEndUserCaseDto>,
+  options?: SecondParameter<typeof request<EndUserCaseCommandResponseDto>>,
+) => {
+  return request<EndUserCaseCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/assignment`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: assignEndUserCaseDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesClassification = (
+  projectId: string,
+  caseId: string,
+  classifyEndUserCaseDto: BodyType<ClassifyEndUserCaseDto>,
+  options?: SecondParameter<typeof request<EndUserCaseCommandResponseDto>>,
+) => {
+  return request<EndUserCaseCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/classification`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: classifyEndUserCaseDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesMerge = (
+  projectId: string,
+  caseId: string,
+  mergeEndUserCasesDto: BodyType<MergeEndUserCasesDto>,
+  options?: SecondParameter<typeof request<MergeEndUserCasesResponseDto>>,
+) => {
+  return request<MergeEndUserCasesResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/merge`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: mergeEndUserCasesDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesLinkMessage = (
+  projectId: string,
+  caseId: string,
+  linkEndUserCaseMessageDto: BodyType<LinkEndUserCaseMessageDto>,
+  options?: SecondParameter<typeof request<EndUserCaseCommandResponseDto>>,
+) => {
+  return request<EndUserCaseCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/message-links`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: linkEndUserCaseMessageDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesUnlinkMessage = (
+  projectId: string,
+  caseId: string,
+  messageId: string,
+  unlinkEndUserCaseMessageDto: BodyType<UnlinkEndUserCaseMessageDto>,
+  options?: SecondParameter<typeof request<EndUserCaseCommandResponseDto>>,
+) => {
+  return request<EndUserCaseCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/message-links/${messageId}`,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      data: unlinkEndUserCaseMessageDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesMessages = (
+  projectId: string,
+  caseId: string,
+  params?: EndUserCasesMessagesParams,
+  options?: SecondParameter<typeof request<EndUserCaseMessagesResponseDto>>,
+) => {
+  return request<EndUserCaseMessagesResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/messages`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const endUserCasesProposals = (
+  projectId: string,
+  caseId: string,
+  options?: SecondParameter<typeof request<EndUserCaseProposalsResponseDto>>,
+) => {
+  return request<EndUserCaseProposalsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/proposals`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasesSplit = (
+  projectId: string,
+  caseId: string,
+  splitEndUserCaseDto: BodyType<SplitEndUserCaseDto>,
+  options?: SecondParameter<typeof request<SplitEndUserCaseResponseDto>>,
+) => {
+  return request<SplitEndUserCaseResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/split`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: splitEndUserCaseDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesTimeline = (
+  projectId: string,
+  caseId: string,
+  options?: SecondParameter<typeof request<EndUserCaseTimelineResponseDto>>,
+) => {
+  return request<EndUserCaseTimelineResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/timeline`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasesWorkflow = (
+  projectId: string,
+  caseId: string,
+  updateEndUserCaseWorkflowDto: BodyType<UpdateEndUserCaseWorkflowDto>,
+  options?: SecondParameter<typeof request<EndUserCaseCommandResponseDto>>,
+) => {
+  return request<EndUserCaseCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/workflow`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateEndUserCaseWorkflowDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesAssignees = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EndUserCaseAssigneesResponseDto>>,
+) => {
+  return request<EndUserCaseAssigneesResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/assignees`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasesSummary = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EndUserCaseSummaryResponseDto>>,
+) => {
+  return request<EndUserCaseSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/summary`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasesCostSummary = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EndUserCaseCostSummaryResponseDto>>,
+) => {
+  return request<EndUserCaseCostSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/summary/cost`,
+      method: "GET",
     },
     options,
   );
@@ -4763,6 +5088,63 @@ export type AttributeDefinitionImpactResult = NonNullable<
 >;
 export type ProjectAuditEventsListResult = NonNullable<
   Awaited<ReturnType<typeof projectAuditEventsList>>
+>;
+export type EndUserCasePolicyGetResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasePolicyGet>>
+>;
+export type EndUserCasePolicySaveDraftResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasePolicySaveDraft>>
+>;
+export type EndUserCasePolicyPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasePolicyPreview>>
+>;
+export type EndUserCasePolicyPublishResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasePolicyPublish>>
+>;
+export type EndUserCasesListResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesList>>
+>;
+export type EndUserCasesDetailResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesDetail>>
+>;
+export type EndUserCasesAssignmentResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesAssignment>>
+>;
+export type EndUserCasesClassificationResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesClassification>>
+>;
+export type EndUserCasesMergeResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesMerge>>
+>;
+export type EndUserCasesLinkMessageResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesLinkMessage>>
+>;
+export type EndUserCasesUnlinkMessageResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesUnlinkMessage>>
+>;
+export type EndUserCasesMessagesResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesMessages>>
+>;
+export type EndUserCasesProposalsResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesProposals>>
+>;
+export type EndUserCasesSplitResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesSplit>>
+>;
+export type EndUserCasesTimelineResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesTimeline>>
+>;
+export type EndUserCasesWorkflowResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesWorkflow>>
+>;
+export type EndUserCasesAssigneesResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesAssignees>>
+>;
+export type EndUserCasesSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesSummary>>
+>;
+export type EndUserCasesCostSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesCostSummary>>
 >;
 export type AdminEndUserProfilesListResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesList>>

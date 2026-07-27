@@ -485,6 +485,7 @@ export interface ScenarioRun {
     "RUNNING" | "COMPLETED" | "FAILED" | "SKIPPED" | "CANCELLED" | "EXPIRED";
   conversationPolicy: ConversationPolicy;
   conversationId?: string;
+  endUserCaseId?: string;
   interactionSessionId?: string;
   scenarioRevisionId?: string;
   errorCode?: string;
@@ -544,6 +545,7 @@ export interface DirectAdminAction {
 export interface AdminMessageRequest {
   text: string;
   conversationId?: string;
+  endUserCaseId?: string;
   conversationPolicy?: ConversationPolicy;
   interactionSessionId?: string;
   actions?: DirectAdminAction[];

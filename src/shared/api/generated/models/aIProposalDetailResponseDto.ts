@@ -5,9 +5,11 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AIProposalDetailResponseDtoCaseLinkState } from "./aIProposalDetailResponseDtoCaseLinkState";
 import type { AIProposalDetailResponseDtoContent } from "./aIProposalDetailResponseDtoContent";
 import type { AIProposalDetailResponseDtoDecisionMode } from "./aIProposalDetailResponseDtoDecisionMode";
 import type { AIProposalDetailResponseDtoEndUser } from "./aIProposalDetailResponseDtoEndUser";
+import type { AIProposalDetailResponseDtoEndUserCase } from "./aIProposalDetailResponseDtoEndUserCase";
 import type { AIProposalDetailResponseDtoEvidenceItem } from "./aIProposalDetailResponseDtoEvidenceItem";
 import type { AIProposalDetailResponseDtoKind } from "./aIProposalDetailResponseDtoKind";
 import type { AIProposalDetailResponseDtoPriority } from "./aIProposalDetailResponseDtoPriority";
@@ -15,6 +17,7 @@ import type { AIProposalDetailResponseDtoSourceType } from "./aIProposalDetailRe
 import type { AIProposalDetailResponseDtoWorkflowStatus } from "./aIProposalDetailResponseDtoWorkflowStatus";
 
 export interface AIProposalDetailResponseDto {
+  caseLinkState: AIProposalDetailResponseDtoCaseLinkState;
   content: AIProposalDetailResponseDtoContent;
   /** @nullable */
   conversationId?: string | null;
@@ -28,6 +31,8 @@ export interface AIProposalDetailResponseDto {
   decisionReason?: string | null;
   /** @nullable */
   endUser?: AIProposalDetailResponseDtoEndUser;
+  /** @nullable */
+  endUserCase?: AIProposalDetailResponseDtoEndUserCase;
   evidence: AIProposalDetailResponseDtoEvidenceItem[];
   id: string;
   isRead: boolean;

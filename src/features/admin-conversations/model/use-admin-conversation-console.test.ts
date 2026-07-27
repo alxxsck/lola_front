@@ -517,6 +517,7 @@ describe('панель ответа администратором', () => {
     const console = useAdminConversationConsole({
       projectId: () => 'project-1',
       endUserId: () => 'user-1',
+      endUserCaseId: () => 'case-1',
     })
     console.selectedConversation.value = {
       id: 'conversation-1',
@@ -551,6 +552,9 @@ describe('панель ответа администратором', () => {
     expect(mocks.sendAdminMessage).toHaveBeenCalledTimes(2)
     expect(mocks.sendAdminMessage.mock.calls[0]?.[2].idempotencyKey).toBe(
       mocks.sendAdminMessage.mock.calls[1]?.[2].idempotencyKey,
+    )
+    expect(mocks.sendAdminMessage.mock.calls[0]?.[2].endUserCaseId).toBe(
+      'case-1',
     )
   })
 

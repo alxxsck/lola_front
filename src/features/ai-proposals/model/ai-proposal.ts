@@ -33,6 +33,16 @@ export interface AIProposalListItem {
   sourceType: AIProposalSourceType;
   isRead: boolean;
   endUser?: AIProposalEndUser;
+  endUserCase?: {
+    id: string;
+    projectSequence: string;
+    title: string;
+    summary: string;
+    status: string;
+    priority: string;
+    version: number;
+  };
+  caseLinkState: "LINKED" | "NOT_APPLICABLE" | "LEGACY_MISSING";
   conversationId?: string;
   sourceMessageId?: string;
   createdAt: string;
@@ -95,6 +105,8 @@ export function mapAIProposalListItem(
     sourceType: value.sourceType,
     isRead: value.isRead,
     ...(value.endUser ? { endUser: value.endUser } : {}),
+    ...(value.endUserCase ? { endUserCase: value.endUserCase } : {}),
+    caseLinkState: value.caseLinkState,
     ...(value.conversationId ? { conversationId: value.conversationId } : {}),
     ...(value.sourceMessageId
       ? { sourceMessageId: value.sourceMessageId }

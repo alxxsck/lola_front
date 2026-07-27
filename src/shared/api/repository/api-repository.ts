@@ -310,6 +310,7 @@ export const apiRepository: LolaRepository = {
       ...(message.conversationId
         ? { conversationId: message.conversationId }
         : { conversationPolicy: message.conversationPolicy }),
+      endUserCaseId: message.endUserCaseId,
       interactionSessionId: message.interactionSessionId,
       actions: message.actions,
       aiSuspension: message.aiSuspension,

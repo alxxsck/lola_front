@@ -5,20 +5,25 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AIProposalListItemResponseDtoCaseLinkState } from "./aIProposalListItemResponseDtoCaseLinkState";
 import type { AIProposalListItemResponseDtoDecisionMode } from "./aIProposalListItemResponseDtoDecisionMode";
 import type { AIProposalListItemResponseDtoEndUser } from "./aIProposalListItemResponseDtoEndUser";
+import type { AIProposalListItemResponseDtoEndUserCase } from "./aIProposalListItemResponseDtoEndUserCase";
 import type { AIProposalListItemResponseDtoKind } from "./aIProposalListItemResponseDtoKind";
 import type { AIProposalListItemResponseDtoPriority } from "./aIProposalListItemResponseDtoPriority";
 import type { AIProposalListItemResponseDtoSourceType } from "./aIProposalListItemResponseDtoSourceType";
 import type { AIProposalListItemResponseDtoWorkflowStatus } from "./aIProposalListItemResponseDtoWorkflowStatus";
 
 export interface AIProposalListItemResponseDto {
+  caseLinkState: AIProposalListItemResponseDtoCaseLinkState;
   /** @nullable */
   conversationId?: string | null;
   createdAt: string;
   decisionMode: AIProposalListItemResponseDtoDecisionMode;
   /** @nullable */
   endUser?: AIProposalListItemResponseDtoEndUser;
+  /** @nullable */
+  endUserCase?: AIProposalListItemResponseDtoEndUserCase;
   id: string;
   isRead: boolean;
   kind: AIProposalListItemResponseDtoKind;

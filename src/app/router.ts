@@ -202,6 +202,24 @@ export const router = createRouter({
           meta: { projectPermission: "project.actions.read" },
         },
         {
+          path: "cases",
+          name: "end-user-cases",
+          component: () => import("@/pages/EndUserCasesPage.vue"),
+          meta: { projectPermission: "project.cases.read" },
+        },
+        {
+          path: "cases/settings",
+          name: "end-user-case-settings",
+          component: () => import("@/pages/EndUserCaseSettingsPage.vue"),
+          meta: { projectPermission: "project.cases.settings.manage" },
+        },
+        {
+          path: "cases/:caseId",
+          name: "end-user-case-detail",
+          component: () => import("@/pages/EndUserCasesPage.vue"),
+          meta: { projectPermission: "project.cases.read" },
+        },
+        {
           path: "ai-proposals",
           name: "ai-proposals",
           component: () => import("@/pages/AIProposalsPage.vue"),

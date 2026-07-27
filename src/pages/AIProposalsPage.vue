@@ -50,6 +50,24 @@ const canDecide = computed(() =>
     "project.ai_proposals.decide",
   ),
 );
+const canReadEndUsers = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.profiles.read",
+  ),
+);
+const canReadConversations = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.conversations.read",
+  ),
+);
+const canReadCases = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.cases.read",
+  ),
+);
 const selectedVisible = computed(() => Boolean(store.selectedId));
 const countDescription = computed(() => {
   if (!store.summary) return "Загрузка сводки";
@@ -244,7 +262,8 @@ watch(
     </header>
 
     <Message v-if="!canAccess" severity="warn" :closable="false">
-      Для просмотра предложений Lola требуется соответствующее разрешение проекта.
+      Для просмотра предложений Lola требуется соответствующее разрешение
+      проекта.
     </Message>
     <template v-else>
       <AIProposalFilters
@@ -321,6 +340,9 @@ watch(
             :loading="store.detailLoading"
             :deciding="store.deciding"
             :can-decide="canDecide"
+            :can-read-end-user="canReadEndUsers"
+            :can-read-conversation="canReadConversations"
+            :can-read-cases="canReadCases"
             :error="store.detailError"
             @retry="store.selectedId && store.open(store.selectedId)"
             @resolve="askToResolve"
@@ -343,6 +365,9 @@ watch(
       :loading="store.detailLoading"
       :deciding="store.deciding"
       :can-decide="canDecide"
+      :can-read-end-user="canReadEndUsers"
+      :can-read-conversation="canReadConversations"
+      :can-read-cases="canReadCases"
       :error="store.detailError"
       @retry="store.selectedId && store.open(store.selectedId)"
       @resolve="askToResolve"

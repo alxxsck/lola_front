@@ -805,6 +805,14 @@ onBeforeUnmount(() => {
                     aria-label="Сохранять транскрипты голосового чата"
                   />
                 </div>
+                <p
+                  v-if="form.voiceEnabled && !form.voiceTranscriptEnabled"
+                  class="setting-warning"
+                  role="status"
+                >
+                  Обращения из голосовых диалогов нельзя определять и обновлять
+                  по содержанию без сохранённого финального транскрипта.
+                </p>
               </div>
               <div class="field">
                 <label for="voice-instructions"
@@ -1243,6 +1251,12 @@ onBeforeUnmount(() => {
 }
 .setting-toggle.disabled {
   opacity: 0.6;
+}
+.setting-warning {
+  margin: -6px 0 0;
+  color: var(--p-orange-700);
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 .connection-settings {
   display: grid;

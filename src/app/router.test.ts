@@ -277,6 +277,16 @@ describe("authentication routes", () => {
     expect(auth.project?.id).toBe("project-2");
   });
 
+  it("protects Case list, detail, and policy routes with their exact permissions", () => {
+    expect(router.resolve("/cases").meta.projectPermission).toBe(
+      "project.cases.read",
+    );
+    expect(router.resolve("/cases/case-1").name).toBe("end-user-case-detail");
+    expect(router.resolve("/cases/settings").meta.projectPermission).toBe(
+      "project.cases.settings.manage",
+    );
+  });
+
   it("keeps an authenticated multi-Project user on login until a Project is selected", async () => {
     const auth = useAuthStore();
     const project = (id: string) => ({

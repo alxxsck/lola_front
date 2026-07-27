@@ -476,7 +476,12 @@ describe("ProjectPage voice instructions", () => {
       "https://one.example.com\nhttps://two.example.com",
     );
     voice.vm.$emit("update:modelValue", "rex");
+    voiceEnabled.vm.$emit("update:modelValue", true);
     voiceTranscriptEnabled.vm.$emit("update:modelValue", false);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain(
+      "Обращения из голосовых диалогов нельзя определять",
+    );
     voiceEnabled.vm.$emit("update:modelValue", false);
     await wrapper.vm.$nextTick();
     await wrapper.get("form").trigger("submit");

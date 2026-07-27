@@ -956,6 +956,14 @@
       },
       "AIProposalDetailResponseDto": {
         "properties": {
+          "caseLinkState": {
+            "enum": [
+              "LINKED",
+              "NOT_APPLICABLE",
+              "LEGACY_MISSING"
+            ],
+            "type": "string"
+          },
           "content": {
             "additionalProperties": true,
             "type": "object"
@@ -994,6 +1002,15 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "endUserCase": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AIProposalEndUserCaseResponseDto"
               }
             ],
             "nullable": true,
@@ -1096,12 +1113,67 @@
           "title",
           "summary",
           "sourceType",
+          "caseLinkState",
           "version",
           "isRead",
           "createdAt",
           "updatedAt",
           "content",
           "evidence"
+        ],
+        "type": "object"
+      },
+      "AIProposalEndUserCaseResponseDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "projectSequence": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "WAITING_ADMIN",
+              "RESOLVED",
+              "UNRESOLVED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectSequence",
+          "title",
+          "summary",
+          "status",
+          "priority",
+          "version"
         ],
         "type": "object"
       },
@@ -1123,6 +1195,14 @@
       },
       "AIProposalListItemResponseDto": {
         "properties": {
+          "caseLinkState": {
+            "enum": [
+              "LINKED",
+              "NOT_APPLICABLE",
+              "LEGACY_MISSING"
+            ],
+            "type": "string"
+          },
           "conversationId": {
             "format": "uuid",
             "nullable": true,
@@ -1143,6 +1223,15 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "endUserCase": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AIProposalEndUserCaseResponseDto"
               }
             ],
             "nullable": true,
@@ -1224,6 +1313,7 @@
           "title",
           "summary",
           "sourceType",
+          "caseLinkState",
           "version",
           "isRead",
           "createdAt",
@@ -2562,6 +2652,35 @@
           "version",
           "description",
           "permissionCodes"
+        ],
+        "type": "object"
+      },
+      "AssignEndUserCaseDto": {
+        "properties": {
+          "assignedCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "assignedCmsUserId",
+          "reason"
         ],
         "type": "object"
       },
@@ -5247,6 +5366,73 @@
           "accessToken",
           "tokenType",
           "expiresIn"
+        ],
+        "type": "object"
+      },
+      "ClassifyEndUserCaseDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "groupCode": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "INFORMATION_REQUEST",
+              "PROBLEM_RESOLUTION",
+              "DECISION_SUPPORT",
+              "ACTION_REQUEST",
+              "FEEDBACK",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "IMMEDIATE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "reason"
         ],
         "type": "object"
       },
@@ -8295,6 +8481,1228 @@
           "nextCursor",
           "endUserId",
           "window"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseAssigneeOptionResponseDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseAssigneeResponseDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseAssigneesResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseAssigneeOptionResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCapabilitySummaryResponseDto": {
+        "properties": {
+          "actionTypeCode": {
+            "type": "string"
+          },
+          "failed": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "invocationCount": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "lastInvokedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "succeeded": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "actionTypeCode",
+          "invocationCount",
+          "succeeded",
+          "failed",
+          "lastInvokedAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCmsParticipationResponseDto": {
+        "properties": {
+          "actionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "firstParticipatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "messageCount": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "messageCount",
+          "actionCount"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCommandResponseDto": {
+        "properties": {
+          "assignedCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "closedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "groupCode": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "resolutionAssessment": {
+            "enum": [
+              "NOT_ASSESSED",
+              "LIKELY_RESOLVED",
+              "CONFIRMED_RESOLVED",
+              "LIKELY_UNRESOLVED",
+              "CONFIRMED_UNRESOLVED",
+              "INCONCLUSIVE"
+            ],
+            "type": "string"
+          },
+          "resolutionSource": {
+            "enum": [
+              "END_USER_EXPLICIT",
+              "CMS_USER",
+              "TRUSTED_VERIFICATION",
+              "AI_INFERENCE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "WAITING_ADMIN",
+              "RESOLVED",
+              "UNRESOLVED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "INFORMATION_REQUEST",
+              "PROBLEM_RESOLUTION",
+              "DECISION_SUPPORT",
+              "ACTION_REQUEST",
+              "FEEDBACK",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "IMMEDIATE"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "status"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCostBudgetResponseDto": {
+        "properties": {
+          "backlogCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "degradedReasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "emergencyPaused": {
+            "type": "boolean"
+          },
+          "oldestPendingAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectDailyTokenHardCap": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "emergencyPaused",
+          "projectDailyTokenHardCap",
+          "backlogCount",
+          "oldestPendingAt",
+          "degradedReasons"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCostOperationResponseDto": {
+        "properties": {
+          "billedCostUsd": {
+            "type": "string"
+          },
+          "caseCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "estimatedCostUsd": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "requestCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "requestCount",
+          "caseCount",
+          "totalTokens",
+          "billedCostUsd",
+          "estimatedCostUsd"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCostSummaryResponseDto": {
+        "properties": {
+          "billedCostUsd": {
+            "type": "string"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/EndUserCaseCostBudgetResponseDto"
+          },
+          "calculatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "estimatedCostUsd": {
+            "type": "string"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseCostOperationResponseDto"
+            },
+            "type": "array"
+          },
+          "requestCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestCount",
+          "totalTokens",
+          "billedCostUsd",
+          "estimatedCostUsd",
+          "operations",
+          "budget",
+          "calculatedAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseEndUserResponseDto": {
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseEventResponseDto": {
+        "properties": {
+          "caseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "projectSequence": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CREATED",
+              "MESSAGE_LINKED",
+              "REOPENED",
+              "UPDATED",
+              "STATUS_CHANGED",
+              "ASSIGNED",
+              "CORRECTED",
+              "MERGED",
+              "SPLIT",
+              "ADMIN_ATTENTION_REQUESTED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectSequence",
+          "type",
+          "caseVersion",
+          "payload",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseMessageLinkResponseDto": {
+        "properties": {
+          "linkedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "linkedBy": {
+            "enum": [
+              "ROUTER",
+              "DETERMINISTIC",
+              "CMS"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "$ref": "#/components/schemas/EndUserCaseMessageResponseDto"
+          },
+          "relation": {
+            "enum": [
+              "PRIMARY",
+              "SUPPORTING"
+            ],
+            "type": "string"
+          },
+          "relevance": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "relation",
+          "relevance",
+          "linkedBy",
+          "linkedAt",
+          "message"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseMessageResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "role": {
+            "enum": [
+              "USER",
+              "ASSISTANT",
+              "ADMIN",
+              "SCENARIO",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "WRITING",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "threadId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "threadId",
+          "role",
+          "text",
+          "status",
+          "createdAt",
+          "metadata"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseMessagesResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseMessageLinkResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "EndUserCasePolicyPreviewExampleResponseDto": {
+        "properties": {
+          "floor": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "ruleCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ruleCode",
+          "floor"
+        ],
+        "type": "object"
+      },
+      "EndUserCasePolicyPreviewResponseDto": {
+        "properties": {
+          "compiledPolicy": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "compiledPolicyHash": {
+            "type": "string"
+          },
+          "compilerVersion": {
+            "type": "string"
+          },
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCasePolicyPreviewExampleResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "compiledPolicy",
+          "compiledPolicyHash",
+          "compilerVersion",
+          "examples"
+        ],
+        "type": "object"
+      },
+      "EndUserCasePolicyResponseDto": {
+        "properties": {
+          "draft": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCasePolicyRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "published": {
+            "$ref": "#/components/schemas/EndUserCasePolicyRevisionResponseDto"
+          }
+        },
+        "required": [
+          "published"
+        ],
+        "type": "object"
+      },
+      "EndUserCasePolicyRevisionResponseDto": {
+        "properties": {
+          "compiledPolicy": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "compiledPolicyHash": {
+            "type": "string"
+          },
+          "compilerVersion": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "status",
+          "compiledPolicy",
+          "compiledPolicyHash",
+          "compilerVersion"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseProposalResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "ADMIN_ATTENTION",
+              "INSIGHT",
+              "ACTION_RECOMMENDATION"
+            ],
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "workflowStatus": {
+            "enum": [
+              "OPEN",
+              "ACCEPTED",
+              "REJECTED",
+              "RESOLVED",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "workflowStatus",
+          "priority",
+          "title",
+          "summary",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseProposalsResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseProposalResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseResolutionResponseDto": {
+        "properties": {
+          "assessment": {
+            "enum": [
+              "NOT_ASSESSED",
+              "LIKELY_RESOLVED",
+              "CONFIRMED_RESOLVED",
+              "LIKELY_UNRESOLVED",
+              "CONFIRMED_UNRESOLVED",
+              "INCONCLUSIVE"
+            ],
+            "type": "string"
+          },
+          "confidence": {
+            "nullable": true,
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "END_USER_EXPLICIT",
+              "CMS_USER",
+              "TRUSTED_VERIFICATION",
+              "AI_INFERENCE"
+            ],
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "assessment"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseResponseDto": {
+        "properties": {
+          "aggregationDirtyAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "assignee": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCaseAssigneeResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "availableStatuses": {
+            "items": {
+              "enum": [
+                "OPEN",
+                "IN_PROGRESS",
+                "WAITING_END_USER",
+                "WAITING_SYSTEM",
+                "WAITING_ADMIN",
+                "RESOLVED",
+                "UNRESOLVED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "channels": {
+            "items": {
+              "enum": [
+                "TEXT",
+                "VOICE",
+                "CMS"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "closedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currentTone": {
+            "enum": [
+              "CALM",
+              "CONFUSED",
+              "CONCERNED",
+              "FRUSTRATED",
+              "ANGRY",
+              "POSITIVE",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "degradedReason": {
+            "enum": [
+              "BUDGET",
+              "PROVIDER",
+              "QUEUE",
+              "PLATFORM_PAUSED"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/EndUserCaseEndUserResponseDto"
+          },
+          "endUserRecontactCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "firstObservedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "goal": {
+            "type": "string"
+          },
+          "groupCode": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "initialTone": {
+            "enum": [
+              "CALM",
+              "CONFUSED",
+              "CONCERNED",
+              "FRUSTRATED",
+              "ANGRY",
+              "POSITIVE",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "lastActivityAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastEndUserRecontactAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "mergedIntoCaseId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "messageCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "nextAggregationAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "primaryLanguage": {
+            "nullable": true,
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "priorityReasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "prioritySource": {
+            "enum": [
+              "PLATFORM_RULE",
+              "PROJECT_RULE",
+              "AI",
+              "CMS_OVERRIDE"
+            ],
+            "type": "string"
+          },
+          "projectSequence": {
+            "description": "JSON-safe project-local sequence.",
+            "type": "string"
+          },
+          "proposalCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "reopenedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "resolution": {
+            "$ref": "#/components/schemas/EndUserCaseResolutionResponseDto"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "splitEvidence": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseSplitEvidenceResponseDto"
+            },
+            "type": "array"
+          },
+          "splitFromCaseId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "staleAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "WAITING_ADMIN",
+              "RESOLVED",
+              "UNRESOLVED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "suggestedGroup": {
+            "nullable": true,
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "toneTrend": {
+            "enum": [
+              "IMPROVING",
+              "STABLE",
+              "WORSENING",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "INFORMATION_REQUEST",
+              "PROBLEM_RESOLUTION",
+              "DECISION_SUPPORT",
+              "ACTION_REQUEST",
+              "FEEDBACK",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "IMMEDIATE"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "waitingSince": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "workSummary": {
+            "$ref": "#/components/schemas/EndUserCaseWorkSummaryResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "projectSequence",
+          "version",
+          "type",
+          "groupCode",
+          "title",
+          "goal",
+          "summary",
+          "status",
+          "availableStatuses",
+          "resolution",
+          "impact",
+          "urgency",
+          "priority",
+          "prioritySource",
+          "priorityReasons",
+          "initialTone",
+          "currentTone",
+          "toneTrend",
+          "languages",
+          "channels",
+          "endUser",
+          "messageCount",
+          "proposalCount",
+          "firstObservedAt",
+          "lastActivityAt",
+          "endUserRecontactCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseRevisionResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "producer": {
+            "enum": [
+              "AI",
+              "CMS",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "producer",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCasesPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseSplitEvidenceResponseDto": {
+        "properties": {
+          "contribution": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "AI_ACTION_INVOCATION",
+              "AI_PROPOSAL",
+              "TRUSTED_VERIFICATION"
+            ],
+            "type": "string"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "contribution",
+          "observedAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseSummaryResponseDto": {
+        "properties": {
+          "attentionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "calculatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cancelledCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "criticalCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "degradedCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "lastProjectSequence": {
+            "type": "string"
+          },
+          "openCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "resolvedCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "staleCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "unassignedCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "unresolvedCount": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "openCount",
+          "attentionCount",
+          "criticalCount",
+          "unassignedCount",
+          "staleCount",
+          "degradedCount",
+          "resolvedCount",
+          "unresolvedCount",
+          "cancelledCount",
+          "totalCount",
+          "lastProjectSequence",
+          "calculatedAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseTimelineResponseDto": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseEventResponseDto"
+            },
+            "type": "array"
+          },
+          "revisions": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseRevisionResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "events",
+          "revisions"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseWorkSummaryResponseDto": {
+        "properties": {
+          "aiCapabilities": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseCapabilitySummaryResponseDto"
+            },
+            "type": "array"
+          },
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "cmsParticipation": {
+            "$ref": "#/components/schemas/EndUserCaseCmsParticipationResponseDto"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "aiCapabilities",
+          "cmsParticipation",
+          "blockers",
+          "limitations"
         ],
         "type": "object"
       },
@@ -12001,6 +13409,48 @@
         ],
         "type": "object"
       },
+      "LinkEndUserCaseMessageDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "messageId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "PRIMARY",
+              "SUPPORTING"
+            ],
+            "type": "string"
+          },
+          "relevance": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "messageId",
+          "relation",
+          "relevance",
+          "reason"
+        ],
+        "type": "object"
+      },
       "ListMessagesDto": {
         "properties": {},
         "type": "object"
@@ -12034,6 +13484,80 @@
           "name",
           "managed",
           "version"
+        ],
+        "type": "object"
+      },
+      "MergeEndUserCasesDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/MergeEndUserCaseSourceDto"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "sources",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "MergeEndUserCaseSourceDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "caseId",
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "MergeEndUserCasesResponseDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mergedCaseIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "caseId",
+          "version",
+          "mergedCaseIds"
         ],
         "type": "object"
       },
@@ -13187,6 +14711,31 @@
           "assignedUserCountCapped",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "PreviewEndUserCasePolicyDto": {
+        "properties": {
+          "groups": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "priorityRules": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "scheduling": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "groups",
+          "priorityRules"
         ],
         "type": "object"
       },
@@ -14868,6 +16417,29 @@
         ],
         "type": "object"
       },
+      "PublishEndUserCasePolicyDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "reason"
+        ],
+        "type": "object"
+      },
       "PublishEventSchemaDraftDto": {
         "properties": {
           "confirmBreakingChange": {
@@ -15431,6 +17003,41 @@
         "required": [
           "expectedDraftVersion",
           "document"
+        ],
+        "type": "object"
+      },
+      "SaveEndUserCasePolicyDraftDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "groups": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "priorityRules": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "scheduling": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "groups",
+          "priorityRules"
         ],
         "type": "object"
       },
@@ -18375,6 +19982,11 @@
             "deprecated": true,
             "description": "Compatibility fallback. New CMS clients must send conversationId."
           },
+          "endUserCaseId": {
+            "description": "Case context selected by the operator for this reply.",
+            "format": "uuid",
+            "type": "string"
+          },
           "interactionSessionId": {
             "description": "Optional preferred online session. If omitted, backend selects the most recently active session.",
             "format": "uuid",
@@ -18671,6 +20283,85 @@
           "provider",
           "labels",
           "languages"
+        ],
+        "type": "object"
+      },
+      "SplitEndUserCaseDto": {
+        "properties": {
+          "evidenceIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "groupCode": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "messageIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "messageIds",
+          "title",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "SplitEndUserCaseResponseDto": {
+        "properties": {
+          "newCaseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "newCaseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "sourceCaseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "sourceCaseId",
+          "sourceVersion",
+          "newCaseId",
+          "newCaseVersion"
         ],
         "type": "object"
       },
@@ -20531,6 +22222,29 @@
         ],
         "type": "object"
       },
+      "UnlinkEndUserCaseMessageDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "reason"
+        ],
+        "type": "object"
+      },
       "UpdateActivitySettingsDto": {
         "properties": {
           "expectedVersion": {
@@ -20614,6 +22328,43 @@
         },
         "required": [
           "subscribed"
+        ],
+        "type": "object"
+      },
+      "UpdateEndUserCaseWorkflowDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "WAITING_ADMIN",
+              "RESOLVED",
+              "UNRESOLVED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "status",
+          "reason"
         ],
         "type": "object"
       },
@@ -26124,6 +27875,1310 @@
         ],
         "x-iam-permission": {
           "code": "project.audit.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-case-policy": {
+      "get": {
+        "operationId": "EndUserCasePolicy_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCasePolicyResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Case Policy"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.settings.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-case-policy/draft": {
+      "put": {
+        "operationId": "EndUserCasePolicy_saveDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveEndUserCasePolicyDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCasePolicyRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Case Policy"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.settings.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-case-policy/preview": {
+      "post": {
+        "operationId": "EndUserCasePolicy_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewEndUserCasePolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCasePolicyPreviewResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Case Policy"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.settings.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-case-policy/publish": {
+      "post": {
+        "operationId": "EndUserCasePolicy_publish",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishEndUserCasePolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCasePolicyRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Case Policy"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.settings.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases": {
+      "get": {
+        "operationId": "EndUserCases_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ATTENTION_FIRST",
+                "LAST_ACTIVITY",
+                "OLDEST_OPEN",
+                "PRIORITY",
+                "RECENTLY_RESOLVED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "OPEN",
+                  "IN_PROGRESS",
+                  "WAITING_END_USER",
+                  "WAITING_SYSTEM",
+                  "WAITING_ADMIN",
+                  "RESOLVED",
+                  "UNRESOLVED",
+                  "CANCELLED"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "priority",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "LOW",
+                  "NORMAL",
+                  "HIGH",
+                  "URGENT",
+                  "CRITICAL"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "impact",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "urgency",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "IMMEDIATE"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resolutionAssessment",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "NOT_ASSESSED",
+                  "LIKELY_RESOLVED",
+                  "CONFIRMED_RESOLVED",
+                  "LIKELY_UNRESOLVED",
+                  "CONFIRMED_UNRESOLVED",
+                  "INCONCLUSIVE"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resolutionSource",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "END_USER_EXPLICIT",
+                  "CMS_USER",
+                  "TRUSTED_VERIFICATION",
+                  "AI_INFERENCE"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "groupCode",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assignedCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assignment",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ASSIGNED",
+                "UNASSIGNED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "primaryLanguage",
+            "required": false,
+            "schema": {
+              "maxLength": 35,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channel",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "TEXT",
+                  "VOICE",
+                  "CMS"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "aiCapabilityCode",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "aiCapabilityOutcome",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "RESERVED",
+                  "ACCEPTED",
+                  "COMPLETED",
+                  "REJECTED",
+                  "FAILED"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "adminAttention",
+            "required": false,
+            "schema": {
+              "enum": [
+                "OPEN",
+                "NONE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cmsParticipation",
+            "required": false,
+            "schema": {
+              "enum": [
+                "YES",
+                "NO"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recontacted",
+            "required": false,
+            "schema": {
+              "enum": [
+                "YES",
+                "NO"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reopened",
+            "required": false,
+            "schema": {
+              "enum": [
+                "YES",
+                "NO"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stale",
+            "required": false,
+            "schema": {
+              "enum": [
+                "YES",
+                "NO"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "degraded",
+            "required": false,
+            "schema": {
+              "enum": [
+                "YES",
+                "NO"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lastActivityFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lastActivityTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCasesPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}": {
+      "get": {
+        "operationId": "EndUserCases_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/assignment": {
+      "patch": {
+        "operationId": "EndUserCases_assignment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignEndUserCaseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.assign",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/classification": {
+      "patch": {
+        "operationId": "EndUserCases_classification",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassifyEndUserCaseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/merge": {
+      "post": {
+        "operationId": "EndUserCases_merge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeEndUserCasesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeEndUserCasesResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/message-links": {
+      "post": {
+        "operationId": "EndUserCases_linkMessage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkEndUserCaseMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/message-links/{messageId}": {
+      "delete": {
+        "operationId": "EndUserCases_unlinkMessage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "messageId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnlinkEndUserCaseMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/messages": {
+      "get": {
+        "operationId": "EndUserCases_messages",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "example": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseMessagesResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/proposals": {
+      "get": {
+        "operationId": "EndUserCases_proposals",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseProposalsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_proposals.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/split": {
+      "post": {
+        "operationId": "EndUserCases_split",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SplitEndUserCaseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SplitEndUserCaseResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/timeline": {
+      "get": {
+        "operationId": "EndUserCases_timeline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseTimelineResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/workflow": {
+      "patch": {
+        "operationId": "EndUserCases_workflow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEndUserCaseWorkflowDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/assignees": {
+      "get": {
+        "operationId": "EndUserCases_assignees",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseAssigneesResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.assign",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/summary": {
+      "get": {
+        "operationId": "EndUserCases_summary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseSummaryResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.analytics.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/summary/cost": {
+      "get": {
+        "operationId": "EndUserCases_costSummary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCostSummaryResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_usage.read",
           "scope": "PROJECT"
         }
       }

@@ -64,6 +64,7 @@ const props = defineProps<{
   endUserId: string | null;
   externalUserId?: string;
   preferredConversationId?: string;
+  preferredEndUserCaseId?: string;
 }>();
 const emit = defineEmits<{
   changed: [];
@@ -109,6 +110,7 @@ const consoleState = useAdminConversationConsole({
       auth.project?.effectivePermissionCodes ?? [],
       "project.end_users.read",
     ),
+  endUserCaseId: () => props.preferredEndUserCaseId,
 });
 const {
   conversations,

@@ -7,6 +7,7 @@ import Menu from "primevue/menu";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
+import { useEndUserCasesStore } from "@/features/end-user-cases/model/end-user-cases.store";
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
 import {
@@ -26,6 +27,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const projectActions = useProjectActionsStore();
 const proposals = useAIProposalsStore();
+const cases = useEndUserCasesStore();
 const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
@@ -154,6 +156,14 @@ const navigation = computed(() =>
       projectPermission: "project.actions.read",
     },
     {
+      label: "Обращения",
+      icon: "pi pi-comments",
+      to: "/cases",
+      cases: true,
+      project: true,
+      projectPermission: "project.cases.read",
+    },
+    {
       label: "Предложения Lola",
       icon: "pi pi-inbox",
       to: "/ai-proposals",
@@ -263,6 +273,7 @@ const profileItems = [
 
 async function logout(allDevices: boolean) {
   proposals.deactivate();
+  cases.deactivate();
   suspensions.deactivate();
   cmsRealtimeClient.deactivateProject();
   try {
@@ -292,6 +303,14 @@ watch(
       if (
         hasProjectPermission(
           auth.project?.effectivePermissionCodes ?? [],
+          "project.cases.read",
+        )
+      )
+        void cases.activateProject(projectId);
+      else cases.deactivate();
+      if (
+        hasProjectPermission(
+          auth.project?.effectivePermissionCodes ?? [],
           "project.ai_proposals.read",
         )
       )
@@ -299,6 +318,7 @@ watch(
       else proposals.deactivate();
     } else {
       proposals.deactivate();
+      cases.deactivate();
       suspensions.deactivate();
       cmsRealtimeClient.deactivateProject();
     }
@@ -308,6 +328,7 @@ watch(
 
 onBeforeUnmount(() => {
   proposals.deactivate();
+  cases.deactivate();
   suspensions.deactivate();
   cmsRealtimeClient.deactivateProject();
 });
@@ -374,6 +395,10 @@ onBeforeUnmount(() => {
               <AIProposalBadge
                 v-if="item.proposals"
                 :count="proposals.unreadCount"
+              />
+              <AIProposalBadge
+                v-if="item.cases"
+                :count="cases.summary?.attentionCount ?? 0"
               />
               <span v-if="item.live" class="live-pulse" />
             </RouterLink>

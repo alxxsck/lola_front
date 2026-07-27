@@ -246,7 +246,12 @@ async function selectConversation(conversationId: string): Promise<void> {
   await router.replace({
     name: "users",
     params: { endUserId: selected.value.endUserId },
-    query: { conversationId },
+    query: {
+      conversationId,
+      ...(typeof route.query.endUserCaseId === "string"
+        ? { endUserCaseId: route.query.endUserCaseId }
+        : {}),
+    },
   });
 }
 
@@ -534,6 +539,11 @@ onBeforeUnmount(() => {
     :preferred-conversation-id="
       typeof route.query.conversationId === 'string'
         ? route.query.conversationId
+        : undefined
+    "
+    :preferred-end-user-case-id="
+      typeof route.query.endUserCaseId === 'string'
+        ? route.query.endUserCaseId
         : undefined
     "
     @changed="load()"

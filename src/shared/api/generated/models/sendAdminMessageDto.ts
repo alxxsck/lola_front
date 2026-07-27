@@ -20,6 +20,8 @@ export interface SendAdminMessageDto {
    * @deprecated
    */
   conversationPolicy?: AdminConversationPolicy;
+  /** Case context selected by the operator for this reply. */
+  endUserCaseId?: string;
   /** Optional preferred online session. If omitted, backend selects the most recently active session. */
   interactionSessionId?: string;
   /**

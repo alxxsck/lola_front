@@ -13,6 +13,7 @@ interface AdminConversationConsoleOptions {
   updateRoute?(conversationId: string): unknown | Promise<unknown>;
   beforeLoadMessages?(conversationId: string): unknown | Promise<unknown>;
   canReadPresence?(): boolean;
+  endUserCaseId?(): string | undefined;
 }
 
 function orderedMessages(items: ConversationMessage[]): ConversationMessage[] {
@@ -569,6 +570,9 @@ export function useAdminConversationConsole(
       await repository.sendAdminMessage(projectId, endUserId, {
         text,
         conversationId: conversation.id,
+        ...(options.endUserCaseId?.()
+          ? { endUserCaseId: options.endUserCaseId() }
+          : {}),
         interactionSessionId: onlineSession.value.id,
         idempotencyKey: attempt.key,
       });

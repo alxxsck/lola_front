@@ -118,6 +118,7 @@ const mockSeed: AIProposalDetail[] = [
     summary:
       "Мария не смогла подобрать подходящий тариф и просит помочь с условиями подключения сегодня.",
     sourceType: "TEXT_CHAT",
+    caseLinkState: "NOT_APPLICABLE",
     endUser: {
       id: "usr_1",
       externalId: "user_89421",
@@ -149,6 +150,7 @@ const mockSeed: AIProposalDetail[] = [
     summary:
       "Пользователь просит проверить статус возврата по последнему заказу.",
     sourceType: "VOICE",
+    caseLinkState: "NOT_APPLICABLE",
     endUser: {
       id: "usr_2",
       externalId: "user_11603",
@@ -178,6 +180,7 @@ const mockSeed: AIProposalDetail[] = [
     title: "Запрос условий для команды",
     summary: "Администратор связался с клиентом и отправил условия.",
     sourceType: "TEXT_CHAT",
+    caseLinkState: "NOT_APPLICABLE",
     endUser: {
       id: "usr_4",
       externalId: "user_53187",
