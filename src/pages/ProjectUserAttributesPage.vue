@@ -1748,10 +1748,16 @@ function archiveImpactedField() {
             <button
               type="button"
               class="help-button"
-              :aria-label="`Подсказка: ${publishHelp.reason}`"
-              :data-tooltip="publishHelp.reason"
+              aria-describedby="publish-reason-help"
             >
-              <i class="pi pi-question-circle" /></button></span
+              <i class="pi pi-question-circle" aria-hidden="true" />
+              <span class="sr-only">Показать подсказку</span></button
+            ><span
+              id="publish-reason-help"
+              class="help-tooltip"
+              role="tooltip"
+              >{{ publishHelp.reason }}</span
+            ></span
           ><Textarea
             v-model="publishForm.reason"
             rows="3"
@@ -1762,10 +1768,16 @@ function archiveImpactedField() {
             <button
               type="button"
               class="help-button"
-              :aria-label="`Подсказка: ${publishHelp.graceDays}`"
-              :data-tooltip="publishHelp.graceDays"
+              aria-describedby="publish-grace-days-help"
             >
-              <i class="pi pi-question-circle" /></button></span
+              <i class="pi pi-question-circle" aria-hidden="true" />
+              <span class="sr-only">Показать подсказку</span></button
+            ><span
+              id="publish-grace-days-help"
+              class="help-tooltip"
+              role="tooltip"
+              >{{ publishHelp.graceDays }}</span
+            ></span
           ><InputNumber
             v-model="publishForm.graceDays"
             :min="0"
@@ -1776,10 +1788,16 @@ function archiveImpactedField() {
             <button
               type="button"
               class="help-button"
-              :aria-label="`Подсказка: ${publishHelp.breakingChangePlan}`"
-              :data-tooltip="publishHelp.breakingChangePlan"
+              aria-describedby="publish-breaking-change-plan-help"
             >
-              <i class="pi pi-question-circle" /></button></span
+              <i class="pi pi-question-circle" aria-hidden="true" />
+              <span class="sr-only">Показать подсказку</span></button
+            ><span
+              id="publish-breaking-change-plan-help"
+              class="help-tooltip"
+              role="tooltip"
+              >{{ publishHelp.breakingChangePlan }}</span
+            ></span
           ><Textarea
             v-model="publishForm.breakingChangePlan"
             rows="3"
@@ -1790,10 +1808,16 @@ function archiveImpactedField() {
             <button
               type="button"
               class="help-button"
-              :aria-label="`Подсказка: ${publishHelp.readinessEvidence}`"
-              :data-tooltip="publishHelp.readinessEvidence"
+              aria-describedby="publish-readiness-evidence-help"
             >
-              <i class="pi pi-question-circle" /></button></span
+              <i class="pi pi-question-circle" aria-hidden="true" />
+              <span class="sr-only">Показать подсказку</span></button
+            ><span
+              id="publish-readiness-evidence-help"
+              class="help-tooltip"
+              role="tooltip"
+              >{{ publishHelp.readinessEvidence }}</span
+            ></span
           ><InputText
             v-model="publishForm.readinessEvidenceId"
             class="mono"
@@ -2558,6 +2582,7 @@ await fetch("/api/v1/interaction-sessions", {
   font-weight: 700;
 }
 .label-with-help {
+  position: relative;
   display: inline-flex !important;
   align-items: center;
   gap: 6px;
@@ -2576,11 +2601,11 @@ await fetch("/api/v1/interaction-sessions", {
   color: var(--status-violet-text);
   cursor: help;
 }
-.help-button::after {
+.help-tooltip {
   position: absolute;
   z-index: 20;
   bottom: calc(100% + 8px);
-  left: 50%;
+  left: 0;
   width: max-content;
   max-width: min(320px, calc(100vw - 48px));
   padding: 9px 11px;
@@ -2589,7 +2614,6 @@ await fetch("/api/v1/interaction-sessions", {
   background: var(--surface-raised);
   box-shadow: var(--shadow-raised);
   color: var(--text-primary);
-  content: attr(data-tooltip);
   font-size: var(--font-size-body-small);
   font-weight: 500;
   line-height: 1.4;
@@ -2597,15 +2621,26 @@ await fetch("/api/v1/interaction-sessions", {
   pointer-events: none;
   text-align: left;
   text-transform: none;
-  transform: translate(-50%, 4px);
+  transform: translateY(4px);
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
 }
-.help-button:hover::after,
-.help-button:focus-visible::after {
+.help-button:hover + .help-tooltip,
+.help-button:focus-visible + .help-tooltip {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .form-grid {
   display: grid;

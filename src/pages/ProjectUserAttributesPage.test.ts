@@ -136,6 +136,41 @@ describe("ProjectUserAttributesPage", () => {
     expect(publishHelp.graceDays).toContain("предыдущую версию полей");
   });
 
+  it("uses one tooltip per publication help button", async () => {
+    const wrapper = shallowMount(ProjectUserAttributesPage, {
+      global: {
+        stubs: {
+          Dialog: { template: "<div><slot /></div>" },
+          RouterLink: true,
+        },
+      },
+    });
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      publishHelp: Record<string, string>;
+    };
+
+    const tooltipIds = [
+      "publish-reason-help",
+      "publish-grace-days-help",
+      "publish-breaking-change-plan-help",
+      "publish-readiness-evidence-help",
+    ];
+    const buttons = wrapper.findAll(".help-button");
+
+    expect(buttons).toHaveLength(tooltipIds.length);
+    buttons.forEach((button, index) => {
+      const tooltipId = tooltipIds[index]!;
+
+      expect(button.attributes("aria-describedby")).toBe(tooltipId);
+      expect(button.attributes("aria-label")).toBeUndefined();
+      expect(button.attributes("data-tooltip")).toBeUndefined();
+      expect(wrapper.get(`#${tooltipId}[role="tooltip"]`).text()).toBe(
+        Object.values(vm.publishHelp)[index],
+      );
+    });
+  });
+
   it("does not present a failed load as a real empty contract", async () => {
     mocks.workspace.mockRejectedValue(new Error("Backend unavailable"));
     const wrapper = shallowMount(ProjectUserAttributesPage);
