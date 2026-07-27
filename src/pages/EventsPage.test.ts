@@ -113,6 +113,17 @@ function mountPage() {
   });
 }
 
+function selectControl(
+  wrapper: ReturnType<typeof mountPage>,
+  ariaLabel: string,
+) {
+  const control = wrapper
+    .findAllComponents({ name: "Select" })
+    .find((item) => item.attributes("aria-label") === ariaLabel);
+  if (!control) throw new Error(`Select "${ariaLabel}" not found`);
+  return control;
+}
+
 describe("EventsPage event editor journey", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -235,6 +246,247 @@ describe("EventsPage event editor journey", () => {
     expect(wrapper.get(".empty").text()).toContain("События не найдены");
   });
 
+  it("filters the catalog by system ownership", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      existingEvent,
+      {
+        ...existingEvent,
+        definitionKeyId: "definition-system",
+        currentSchema: {
+          ...existingEvent.currentSchema,
+          revisionId: "system-event",
+        },
+        metadata: {
+          ...existingEvent.metadata,
+          name: "Системный визит",
+        },
+        origin: "LOLA_MANAGED",
+        readOnly: true,
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    selectControl(wrapper, "Тип события").vm.$emit(
+      "update:modelValue",
+      "SYSTEM",
+    );
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.findAll(".event-card")).toHaveLength(1);
+    expect(wrapper.get(".event-card").text()).toContain("Системный визит");
+    expect(wrapper.text()).not.toContain("Успешный депозит");
+  });
+
+  it("combines active reception and frontend-source filters and can reset them", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      existingEvent,
+      {
+        ...existingEvent,
+        definitionKeyId: "event-key-client-enabled",
+        currentSchema: {
+          ...existingEvent.currentSchema,
+          revisionId: "client-enabled",
+        },
+        metadata: { ...existingEvent.metadata, name: "Клик по CTA" },
+        policy: { ...existingEvent.policy, clientIngestible: true },
+      },
+      {
+        ...existingEvent,
+        definitionKeyId: "event-key-client-disabled",
+        currentSchema: {
+          ...existingEvent.currentSchema,
+          revisionId: "client-disabled",
+        },
+        metadata: { ...existingEvent.metadata, name: "Старый просмотр" },
+        policy: {
+          ...existingEvent.policy,
+          enabled: false,
+          clientIngestible: true,
+        },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    selectControl(wrapper, "Приём события").vm.$emit(
+      "update:modelValue",
+      "ENABLED",
+    );
+    selectControl(wrapper, "Приём с фронтенда").vm.$emit(
+      "update:modelValue",
+      "ACCEPTING",
+    );
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.findAll(".event-card")).toHaveLength(1);
+    expect(wrapper.get(".event-card").text()).toContain("Клик по CTA");
+
+    await wrapper.find('button-stub[label="Сбросить"]').trigger("click");
+
+    expect(wrapper.findAll(".event-card")).toHaveLength(3);
+  });
+
+  it("distinguishes frontend policy blocks from a disabled backend", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      existingEvent,
+      {
+        ...existingEvent,
+        definitionKeyId: "event-key-disabled",
+        currentSchema: {
+          ...existingEvent.currentSchema,
+          revisionId: "event-disabled",
+        },
+        metadata: { ...existingEvent.metadata, name: "Отключённый просмотр" },
+        policy: {
+          ...existingEvent.policy,
+          enabled: false,
+          clientIngestible: true,
+        },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    const source = selectControl(wrapper, "Приём с фронтенда");
+    source.vm.$emit("update:modelValue", "POLICY_BLOCKED");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get(".event-card").text()).toContain("Успешный депозит");
+
+    source.vm.$emit("update:modelValue", "BACKEND_DISABLED");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get(".event-card").text()).toContain("Отключённый просмотр");
+  });
+
+  it("sorts the visible catalog by event code", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      {
+        ...existingEvent,
+        code: "z.event",
+        metadata: { ...existingEvent.metadata, name: "Первое по названию" },
+      },
+      {
+        ...existingEvent,
+        definitionKeyId: "event-key-a",
+        code: "a.event",
+        currentSchema: {
+          ...existingEvent.currentSchema,
+          revisionId: "event-a",
+        },
+        metadata: { ...existingEvent.metadata, name: "Второе по названию" },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    selectControl(wrapper, "Сортировка событий").vm.$emit(
+      "update:modelValue",
+      "CODE",
+    );
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper.findAll(".event-card h3").map((heading) => heading.text()),
+    ).toEqual(["Второе по названию", "Первое по названию"]);
+  });
+
+  it("sorts the catalog by reception status and schema version", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      existingEvent,
+      {
+        ...existingEvent,
+        definitionKeyId: "event-key-accepting",
+        currentSchema: {
+          ...existingEvent.currentSchema,
+          revisionId: "event-accepting",
+          revisionNumber: 1,
+        },
+        metadata: { ...existingEvent.metadata, name: "Принимающее событие" },
+        policy: { ...existingEvent.policy, clientIngestible: true },
+      },
+      {
+        ...existingEvent,
+        definitionKeyId: "event-key-disabled",
+        currentSchema: {
+          ...existingEvent.currentSchema,
+          revisionId: "event-disabled",
+          revisionNumber: 5,
+        },
+        metadata: { ...existingEvent.metadata, name: "Выключенное событие" },
+        policy: { ...existingEvent.policy, enabled: false },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    const sort = selectControl(wrapper, "Сортировка событий");
+    sort.vm.$emit("update:modelValue", "STATUS");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll(".event-card h3")[0]?.text()).toBe(
+      "Принимающее событие",
+    );
+
+    sort.vm.$emit("update:modelValue", "VERSION");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll(".event-card h3")[0]?.text()).toBe(
+      "Выключенное событие",
+    );
+  });
+
+  it("keeps a toggled card in the current result and reports the outcome beside the switch", async () => {
+    const disabledEvent = {
+      ...existingEvent,
+      policy: { ...existingEvent.policy, enabled: false },
+    };
+    mocks.listDefinitions
+      .mockResolvedValueOnce([existingEvent])
+      .mockResolvedValue([disabledEvent]);
+    mocks.getUsage.mockResolvedValue({
+      scenarios: { total: 0 },
+      activeWaitCount: 0,
+    });
+    mocks.updatePolicy.mockResolvedValue(undefined);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    selectControl(wrapper, "Приём события").vm.$emit(
+      "update:modelValue",
+      "ENABLED",
+    );
+    await wrapper.vm.$nextTick();
+    wrapper
+      .getComponent({ name: "ToggleSwitch" })
+      .vm.$emit("update:modelValue", false);
+    await flushPromises();
+
+    expect(wrapper.findAll(".event-card")).toHaveLength(1);
+    expect(wrapper.get(".event-card").text()).toContain("Успешный депозит");
+    expect(wrapper.get(".event-policy-feedback").text()).toBe("Приём выключен");
+    expect(wrapper.get(".event-policy-feedback").classes()).toContain(
+      "success",
+    );
+  });
+
+  it("keeps a policy update error beside the affected switch", async () => {
+    mocks.getUsage.mockResolvedValue({
+      scenarios: { total: 0 },
+      activeWaitCount: 0,
+    });
+    mocks.updatePolicy.mockRejectedValue(new Error("Сервис недоступен"));
+    const wrapper = mountPage();
+    await flushPromises();
+
+    wrapper
+      .getComponent({ name: "ToggleSwitch" })
+      .vm.$emit("update:modelValue", false);
+    await flushPromises();
+
+    expect(wrapper.get(".event-policy-feedback").text()).toContain(
+      "Сервис недоступен",
+    );
+    expect(wrapper.get(".event-policy-feedback").classes()).toContain("error");
+  });
+
   it("puts system events first and explains their lock without a managed badge", async () => {
     mocks.listDefinitions.mockResolvedValue([
       existingEvent,
@@ -255,7 +507,12 @@ describe("EventsPage event editor journey", () => {
     await flushPromises();
 
     const cards = wrapper.findAll(".event-card");
-    expect(cards[0]?.find("h2").text()).toBe("Пользователь стал офлайн");
+    expect(
+      wrapper
+        .findAll(".event-group-header h2")
+        .map((heading) => heading.text()),
+    ).toEqual(["Системные события Lola", "События проекта"]);
+    expect(cards[0]?.find("h3").text()).toBe("Пользователь стал офлайн");
     expect(cards[0]?.find(".system-description").text()).toBe(
       "Пользователь отключился от Lola",
     );
@@ -287,6 +544,7 @@ describe("EventsPage event editor journey", () => {
     expect(card.classes()).toContain("inactive");
     expect(card.classes()).not.toContain("disabled");
     expect(card.get(".event-status").text()).toBe("Выключено");
+    expect(card.text()).toContain("Недоступен: бэкенд выключен");
     expect(
       wrapper.getComponent({ name: "ToggleSwitch" }).attributes("disabled"),
     ).toBe("false");
@@ -298,6 +556,101 @@ describe("EventsPage event editor journey", () => {
     expect(
       card.find('button-stub[aria-label="Удалить Успешный депозит"]').exists(),
     ).toBe(false);
+  });
+
+  it("shows reception, frontend, activity, and ownership status directly on every card", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      existingEvent,
+      {
+        ...existingEvent,
+        definitionKeyId: "event-key-client",
+        currentSchema: {
+          ...existingEvent.currentSchema,
+          revisionId: "event-client",
+        },
+        metadata: {
+          ...existingEvent.metadata,
+          name: "Просмотр страницы",
+          description:
+            "Пользователь открыл страницу продукта из браузера после авторизации.",
+        },
+        policy: {
+          ...existingEvent.policy,
+          clientIngestible: true,
+          countsAsActivity: false,
+        },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    const backendCard = wrapper
+      .findAll(".event-card")
+      .find((card) => card.text().includes("Успешный депозит"));
+    const clientCard = wrapper
+      .findAll(".event-card")
+      .find((card) => card.text().includes("Просмотр страницы"));
+
+    expect(backendCard?.text()).toContain("Проектное");
+    expect(backendCard?.text()).toContain("Бэкенд");
+    expect(backendCard?.text()).toContain("Запрещён политикой");
+    expect(backendCard?.text()).toContain("Считает активность");
+    expect(clientCard?.text()).toContain("Фронтенд");
+    expect(clientCard?.text()).toContain("Принимает");
+    expect(clientCard?.text()).toContain("Не считает активность");
+    expect(clientCard?.text()).toContain(
+      "Пользователь открыл страницу продукта из браузера после авторизации.",
+    );
+  });
+
+  it("keeps common actions visible and moves secondary actions into overflow", async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+
+    const card = wrapper.get(".event-card");
+    expect(
+      card
+        .findAll(".event-action-buttons > button-stub")
+        .map((button) => button.attributes("label")),
+    ).toEqual(["Редактировать", "Журнал"]);
+    expect(
+      card.get(".event-more-actions summary").attributes("aria-label"),
+    ).toContain("Другие действия");
+    expect(
+      card
+        .get(
+          'button-stub[aria-label="Скопировать контракт события Успешный депозит"]',
+        )
+        .attributes("label"),
+    ).toBe("Скопировать контракт");
+  });
+
+  it("lets the operator reveal and collapse a long event description", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      {
+        ...existingEvent,
+        metadata: {
+          ...existingEvent.metadata,
+          description:
+            "Событие отправляется после подтверждения операции пользователем, проверки лимитов, ответа платёжного провайдера и окончательного зачисления средств на игровой баланс без ошибок.",
+        },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.get(".event-description").classes()).toContain("clamped");
+    const expand = wrapper.get('button-stub[label="Показать полностью"]');
+    expect(expand.attributes("aria-expanded")).toBe("false");
+
+    await expand.trigger("click");
+
+    expect(wrapper.get(".event-description").classes()).not.toContain(
+      "clamped",
+    );
+    expect(
+      wrapper.find('button-stub[label="Свернуть описание"]').exists(),
+    ).toBe(true);
   });
 
   it("shows a load error and retries successfully", async () => {
