@@ -1038,37 +1038,24 @@ describe("api repository adapter", () => {
     expect(adminEventLogsGet).toHaveBeenCalledWith("project-1", "log-1");
   });
 
-  it("uses pagination totals for dashboard event and failure counts", async () => {
+  it("uses canonical cursor event-log pages for dashboard snapshots", async () => {
     vi.spyOn(apiRepository, "getProject").mockResolvedValue({
       _count: undefined,
     } as never);
     vi.spyOn(apiRepository, "getScenarios").mockResolvedValue([]);
     vi.spyOn(apiRepository, "getUsers").mockResolvedValue([]);
     vi.spyOn(apiRepository, "getSessions").mockResolvedValue([]);
-    const getEventLogs = vi
-      .spyOn(apiRepository, "getEventLogs")
+    const getEventLogPage = vi
+      .spyOn(apiRepository, "getEventLogPage")
       .mockResolvedValueOnce({
-        items: [],
-        pagination: {
-          page: 1,
-          limit: 1,
-          total: 250,
-          totalPages: 250,
-          hasNextPage: true,
-          hasPreviousPage: false,
-        },
+        items: [{ id: "event-log-1" }] as never,
+        nextCursor: "event-log-2",
       })
       .mockResolvedValueOnce({
-        items: [],
-        pagination: {
-          page: 1,
-          limit: 1,
-          total: 37,
-          totalPages: 37,
-          hasNextPage: true,
-          hasPreviousPage: false,
-        },
+        items: [{ id: "failed-event-log-1" }] as never,
+        nextCursor: "failed-event-log-2",
       });
+    const getEventLogs = vi.spyOn(apiRepository, "getEventLogs");
     vi.spyOn(apiRepository, "getScenarioRuns").mockResolvedValue([
       { status: "FAILED" },
       { status: "COMPLETED" },
@@ -1076,15 +1063,18 @@ describe("api repository adapter", () => {
 
     await expect(apiRepository.getStats("project-1")).resolves.toEqual(
       expect.objectContaining({
-        events: 250,
-        integrationErrors: 38,
+        events: 1,
+        integrationErrors: 2,
       }),
     );
-    expect(getEventLogs).toHaveBeenNthCalledWith(1, "project-1", { limit: 1 });
-    expect(getEventLogs).toHaveBeenNthCalledWith(2, "project-1", {
-      status: "FAILED",
+    expect(getEventLogPage).toHaveBeenNthCalledWith(1, "project-1", {
       limit: 1,
     });
+    expect(getEventLogPage).toHaveBeenNthCalledWith(2, "project-1", {
+      status: ["FAILED"],
+      limit: 1,
+    });
+    expect(getEventLogs).not.toHaveBeenCalled();
   });
 
   it("loads dashboard sources only when their exact Project Permissions are effective", async () => {
@@ -1098,19 +1088,9 @@ describe("api repository adapter", () => {
     const getSessions = vi
       .spyOn(apiRepository, "getSessions")
       .mockResolvedValue([]);
-    const getEventLogs = vi
-      .spyOn(apiRepository, "getEventLogs")
-      .mockResolvedValue({
-        items: [],
-        pagination: {
-          page: 1,
-          limit: 1,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      });
+    const getEventLogPage = vi
+      .spyOn(apiRepository, "getEventLogPage")
+      .mockResolvedValue({ items: [], nextCursor: null });
     const getScenarioRuns = vi
       .spyOn(apiRepository, "getScenarioRuns")
       .mockResolvedValue([]);
@@ -1131,7 +1111,7 @@ describe("api repository adapter", () => {
     expect(getProject).not.toHaveBeenCalled();
     expect(getUsers).not.toHaveBeenCalled();
     expect(getSessions).not.toHaveBeenCalled();
-    expect(getEventLogs).not.toHaveBeenCalled();
+    expect(getEventLogPage).not.toHaveBeenCalled();
     expect(getScenarioRuns).not.toHaveBeenCalled();
   });
 

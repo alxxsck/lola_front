@@ -354,19 +354,19 @@ export const apiRepository: LolaRepository = {
       capabilities.scenarios && permitted('project.scenarios.read') ? this.getScenarios(projectId) : Promise.resolve([]),
       permitted('project.end_users.read') ? this.getUsers(projectId) : Promise.resolve([]),
       permitted('project.conversations.read') ? this.getSessions(projectId) : Promise.resolve([]),
-      canReadEvents ? this.getEventLogs(projectId, { limit: 1 }) : Promise.resolve(null),
-      canReadEvents ? this.getEventLogs(projectId, { status: 'FAILED', limit: 1 }) : Promise.resolve(null),
+      canReadEvents ? this.getEventLogPage(projectId, { limit: 1 }) : Promise.resolve(null),
+      canReadEvents ? this.getEventLogPage(projectId, { status: ['FAILED'], limit: 1 }) : Promise.resolve(null),
       permitted('project.scenario_runs.read') ? this.getScenarioRuns(projectId) : Promise.resolve([]),
     ])
     return {
       users: project?._count?.users ?? users.length,
       online: new Set(sessions.map((item) => item.userId)).size,
-      events: project?._count?.eventLogs ?? eventLogs?.pagination.total ?? 0,
+      events: project?._count?.eventLogs ?? eventLogs?.items.length ?? 0,
       scenarios: scenarios.filter((item) => item.status === 'ACTIVE').length,
       conversations: 0,
       ctaConversion: 0,
       integrationErrors:
-        (failedEventLogs?.pagination.total ?? 0) +
+        (failedEventLogs?.items.length ?? 0) +
         runs.filter((item) => item.status === 'FAILED').length,
     }
   },
