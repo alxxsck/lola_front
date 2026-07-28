@@ -45,6 +45,9 @@ export const PROJECT_PERMISSION_CODES = [
   "project.cases.assign",
   "project.cases.analytics.read",
   "project.cases.settings.manage",
+  "project.end_user_cases.verify",
+  "project.event_query_policy.manage",
+  "project.event_query_policy.preview",
   "project.user_memory.read",
   "project.user_memory.manage",
   "project.ai_review.read",
@@ -97,6 +100,8 @@ export const PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS = [
   "project.profile_contract.read",
   "project.speech.read",
   "project.ai_usage.read",
+  "project.event_query_policy.manage",
+  "project.event_query_policy.preview",
 ] as const satisfies readonly ProjectPermissionCode[];
 
 export function hasProjectPermission(

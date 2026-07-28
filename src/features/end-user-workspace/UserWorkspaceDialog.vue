@@ -177,7 +177,7 @@ const canStartAIReview = computed(
     hasProjectPermission(projectPermissions.value, "project.settings.read") &&
     hasProjectPermission(
       projectPermissions.value,
-      "project.event_catalog.read",
+      "project.event_query_policy.preview",
     ) &&
     hasProjectPermission(projectPermissions.value, "project.ai_proposals.read"),
 );

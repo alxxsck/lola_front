@@ -24,6 +24,7 @@ import EndUserCaseCard from "@/features/end-user-cases/ui/EndUserCaseCard.vue";
 import EndUserCaseDetail from "@/features/end-user-cases/ui/EndUserCaseDetail.vue";
 import EndUserCaseDialogs from "@/features/end-user-cases/ui/EndUserCaseDialogs.vue";
 import EndUserCaseFilters from "@/features/end-user-cases/ui/EndUserCaseFilters.vue";
+import type { CaseVerificationRunResponseDto } from "@/shared/api/generated/models";
 
 const route = useRoute();
 const router = useRouter();
@@ -31,6 +32,10 @@ const auth = useAuthStore();
 const store = useEndUserCasesStore();
 const isMobile = ref(false);
 const dialogs = ref<InstanceType<typeof EndUserCaseDialogs> | null>(null);
+const latestVerification = ref<{
+  caseId: string;
+  run: CaseVerificationRunResponseDto;
+} | null>(null);
 
 const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
@@ -56,7 +61,18 @@ const canReadConversations = computed(() =>
 const canReadProposals = computed(() =>
   hasProjectPermission(permissions.value, "project.ai_proposals.read"),
 );
+const canVerifyEvents = computed(() =>
+  hasProjectPermission(permissions.value, "project.end_user_cases.verify"),
+);
+const canPreviewEvents = computed(() =>
+  hasProjectPermission(permissions.value, "project.event_query_policy.preview"),
+);
 const selectedVisible = computed(() => Boolean(store.selectedId));
+const selectedVerificationRun = computed(() => {
+  const latest = latestVerification.value;
+  if (!latest) return null;
+  return latest.caseId === store.selected?.case.id ? latest.run : null;
+});
 const counts = computed(() => ({
   active: store.summary?.openCount ?? 0,
   attention: store.summary?.attentionCount ?? 0,
@@ -96,6 +112,14 @@ async function closeDetail(): Promise<void> {
 
 function updateViewport(): void {
   isMobile.value = window.innerWidth <= 1180;
+}
+
+async function handleVerificationCompleted(
+  run: CaseVerificationRunResponseDto,
+): Promise<void> {
+  if (!store.selectedId) return;
+  latestVerification.value = { caseId: store.selectedId, run };
+  await store.open(store.selectedId, canReadProposals.value);
 }
 
 onMounted(async () => {
@@ -260,6 +284,10 @@ watch(
             :can-read-end-user="canReadEndUser"
             :can-read-conversation="canReadConversations"
             :can-read-proposals="canReadProposals"
+            :project-id="auth.project?.id"
+            :can-verify-events="canVerifyEvents"
+            :can-preview-events="canPreviewEvents"
+            :verification-run="selectedVerificationRun"
             :error="store.detailError"
             @retry="
               store.selectedId && store.open(store.selectedId, canReadProposals)
@@ -271,6 +299,7 @@ watch(
             @request-merge="dialogs?.requestMerge()"
             @request-split="dialogs?.requestSplit()"
             @load-more-messages="store.loadMoreMessages"
+            @verification-completed="handleVerificationCompleted"
           />
         </aside>
       </div>
@@ -294,6 +323,10 @@ watch(
       :can-read-end-user="canReadEndUser"
       :can-read-conversation="canReadConversations"
       :can-read-proposals="canReadProposals"
+      :project-id="auth.project?.id"
+      :can-verify-events="canVerifyEvents"
+      :can-preview-events="canPreviewEvents"
+      :verification-run="selectedVerificationRun"
       :error="store.detailError"
       @request-transition="dialogs?.requestTransition($event)"
       @request-assignment="dialogs?.requestAssignment()"
@@ -302,6 +335,7 @@ watch(
       @request-merge="dialogs?.requestMerge()"
       @request-split="dialogs?.requestSplit()"
       @load-more-messages="store.loadMoreMessages"
+      @verification-completed="handleVerificationCompleted"
     />
   </Drawer>
 

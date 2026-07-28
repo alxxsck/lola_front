@@ -10,6 +10,7 @@ import MultiSelect from "primevue/multiselect";
 import ProgressSpinner from "primevue/progressspinner";
 import Textarea from "primevue/textarea";
 import { eventCatalogRepository } from "@/shared/api/repository/event-catalog";
+import { eventQueryRepository } from "@/features/event-query/api/event-query-repository";
 import { aiReviewRepository } from "../api/ai-review-repository";
 import type {
   AIReviewEstimate,
@@ -25,6 +26,7 @@ const props = defineProps<{
 const visible = defineModel<boolean>("visible", { required: true });
 const router = useRouter();
 const settings = ref<AIReviewSettings | null>(null);
+const queryPolicyEnabled = ref(false);
 const options = ref<Array<{ label: string; value: string }>>([]);
 const estimate = ref<AIReviewEstimate | null>(null);
 const run = ref<AIReviewRun | null>(null);
@@ -45,7 +47,10 @@ let estimateGeneration = 0;
 let loadGeneration = 0;
 
 const scopeReady = computed(
-  () => Boolean(form.localDate) && form.eventCodes.length > 0,
+  () =>
+    queryPolicyEnabled.value &&
+    Boolean(form.localDate) &&
+    form.eventCodes.length > 0,
 );
 const canStart = computed(
   () =>
@@ -103,16 +108,35 @@ async function load() {
   estimate.value = null;
   pollFailures = 0;
   try {
-    const [nextSettings, definitions] = await Promise.all([
+    const [nextSettings, queryPolicy] = await Promise.all([
       aiReviewRepository.getSettings(projectId),
-      eventCatalogRepository.listDefinitions(projectId, "ACTIVE"),
+      eventQueryRepository.getPolicy(projectId),
     ]);
+    const definitions = await eventCatalogRepository
+      .listDefinitions(projectId, "ACTIVE")
+      .catch(() => []);
     if (generation !== loadGeneration || projectId !== props.projectId) return;
     settings.value = nextSettings;
-    options.value = definitions.map((item) => ({
-      label: `${item.metadata.name} · ${item.code}`,
-      value: item.code,
-    }));
+    queryPolicyEnabled.value = queryPolicy.published?.document.enabled === true;
+    const queryableCodes = new Set(
+      queryPolicy.published?.document.items.map((item) => item.stableCode) ??
+        [],
+    );
+    options.value =
+      queryPolicy.published?.document.items.map((item) => {
+        const definition = definitions.find(
+          (candidate) => candidate.code === item.stableCode,
+        );
+        return {
+          label: definition
+            ? `${definition.metadata.name} · ${item.stableCode}`
+            : `${item.descriptionForAI} · ${item.stableCode}`,
+          value: item.stableCode,
+        };
+      }) ?? [];
+    form.eventCodes = form.eventCodes.filter((code) =>
+      queryableCodes.has(code),
+    );
   } catch (cause) {
     if (generation !== loadGeneration) return;
     error.value =
@@ -170,8 +194,7 @@ async function start() {
     });
     if (generation !== estimateGeneration) return;
     run.value = nextRun;
-    if (run.value.status === "SUCCEEDED") await openProposal(run.value);
-    else if (running.value) schedulePoll();
+    if (running.value) schedulePoll();
   } catch (cause) {
     if (generation !== estimateGeneration) return;
     error.value =
@@ -202,8 +225,7 @@ async function poll() {
     run.value = nextRun;
     error.value = "";
     pollFailures = 0;
-    if (run.value.status === "SUCCEEDED") await openProposal(run.value);
-    else if (running.value) schedulePoll();
+    if (running.value) schedulePoll();
   } catch (cause) {
     if (
       projectId !== props.projectId ||
@@ -291,6 +313,14 @@ function formatRange(value: string) {
         >
           AI Review выключен в настройках проекта. Включите его, чтобы запускать
           анализ.
+        </Message>
+        <Message
+          v-else-if="!queryPolicyEnabled || !options.length"
+          severity="warn"
+          :closable="false"
+        >
+          Нет опубликованных queryable событий. Настройте раздел «Доступ ИИ к
+          событиям» в проекте.
         </Message>
         <label>
           <span>Дата в часовом поясе проекта</span>
@@ -394,6 +424,35 @@ function formatRange(value: string) {
           <ProgressSpinner stroke-width="5" />
           <span>Lola анализирует события в фоне…</span>
         </div>
+        <section
+          v-if="run?.status === 'SUCCEEDED'"
+          class="estimate"
+          data-test="ai-review-run-detail"
+        >
+          <div>
+            <strong>AI Review завершён</strong>
+            <span
+              >Policy revision:
+              {{ run.policyRevisionId ?? "legacy / недоступна" }}</span
+            >
+            <span
+              >{{ run.eventCount }} событий ·
+              {{ formatBytes(run.redactedBytes) }} ·
+              {{ run.estimatedInputTokens.toLocaleString("ru-RU") }}
+              входных токенов</span
+            >
+            <span v-if="run.limitations?.length">
+              Ограничения: {{ run.limitations.join(" · ") }}
+            </span>
+            <span v-else>Ограничения выборки не зафиксированы.</span>
+          </div>
+          <Button
+            v-if="run.proposalId"
+            label="Открыть предложение"
+            icon="pi pi-arrow-right"
+            @click="openProposal(run)"
+          />
+        </section>
         <Button
           class="review-action review-action-primary"
           label="Запустить AI Review"

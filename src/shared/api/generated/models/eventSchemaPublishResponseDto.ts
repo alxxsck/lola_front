@@ -13,6 +13,8 @@ export interface EventSchemaPublishResponseDto {
   /** @minimum 0 */
   automaticallyExtendedBindings: number;
   /** @minimum 0 */
+  automaticallyExtendedEventQueryPolicies: number;
+  /** @minimum 0 */
   automaticallyExtendedWaits: number;
   compatibility: EventSchemaCompatibilityResponseDto;
   definitionKeyId: string;

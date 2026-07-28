@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
@@ -14,6 +21,7 @@ import ActivitySettingsSection from "@/features/activity-settings/ActivitySettin
 import ScenarioAdmissionSettingsSection from "@/features/scenario-admission/ScenarioAdmissionSettingsSection.vue";
 import UserMemorySettingsSection from "@/features/user-memory/ui/UserMemorySettingsSection.vue";
 import AIReviewSettingsSection from "@/features/ai-review/ui/AIReviewSettingsSection.vue";
+import EventQueryPolicySection from "@/features/event-query/ui/EventQueryPolicySection.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
@@ -88,6 +96,21 @@ const canWriteSpeech = computed(() =>
 const canReadAiUsage = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
 );
+const canPreviewEventQueries = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.event_query_policy.preview",
+  ),
+);
+const canManageEventQueryPolicy = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.event_query_policy.manage",
+  ),
+);
+const canReadEventCatalog = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.event_catalog.read"),
+);
 const toast = useToast();
 const loading = ref(true);
 const saving = ref(false);
@@ -110,6 +133,7 @@ let systemPromptResizeState: {
   startHeight: number;
   minHeight: number;
 } | null = null;
+let loadProjectGeneration = 0;
 const form = reactive<ProjectForm>({
   name: "",
   description: "",
@@ -173,6 +197,7 @@ function fillForm(nextProject: Project) {
 }
 
 async function loadProject() {
+  const generation = ++loadProjectGeneration;
   const selectedProject = auth.project;
   if (!selectedProject) {
     error.value = "Текущий проект не найден. Войдите заново.";
@@ -192,6 +217,8 @@ async function loadProject() {
         ? attributeContractRepository.workspace(projectId).catch(() => null)
         : Promise.resolve(null),
     ]);
+    if (generation !== loadProjectGeneration || auth.project?.id !== projectId)
+      return;
     if (nextProject) fillForm(nextProject);
     else {
       settingsProject.value = null;
@@ -204,12 +231,13 @@ async function loadProject() {
           field.semanticRole === "LOCALE" && field.lifecycle === "ACTIVE",
       ) ?? null;
   } catch (cause) {
+    if (generation !== loadProjectGeneration) return;
     error.value =
       cause instanceof Error
         ? cause.message
         : "Не удалось загрузить настройки проекта";
   } finally {
-    loading.value = false;
+    if (generation === loadProjectGeneration) loading.value = false;
   }
 }
 
@@ -399,6 +427,7 @@ onMounted(() => {
   window.addEventListener("beforeunload", beforeUnload);
   void loadProject();
 });
+watch(() => auth.project?.id, loadProject);
 onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", beforeUnload);
   stopSystemPromptResize();
@@ -658,6 +687,14 @@ onBeforeUnmount(() => {
           :project-id="project.id"
           :editable="canEditSettings"
           :fallback-time-zone="activitySettings?.timezone ?? 'UTC'"
+        />
+
+        <EventQueryPolicySection
+          v-if="canPreviewEventQueries || canManageEventQueryPolicy"
+          :project-id="project.id"
+          :can-preview="canPreviewEventQueries"
+          :can-manage="canManageEventQueryPolicy"
+          :can-read-catalog="canReadEventCatalog"
         />
 
         <form

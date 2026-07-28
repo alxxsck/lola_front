@@ -35,6 +35,8 @@ export interface AIReviewRun {
   eventCount: number;
   redactedBytes: number;
   estimatedInputTokens: number;
+  policyRevisionId?: string;
+  limitations?: string[];
   proposalId?: string;
   errorCode?: string;
   createdAt: string;

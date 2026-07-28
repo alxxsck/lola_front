@@ -167,13 +167,6 @@ const requiredOperations = new Map([
     },
   ],
   [
-    "Events_list",
-    {
-      label: "paginated legacy event logs",
-      response: "LegacyEventLogPageResponseDto",
-    },
-  ],
-  [
     "AdminEventLogs_list",
     {
       label: "cursor-paginated event logs",
@@ -183,6 +176,75 @@ const requiredOperations = new Map([
   [
     "AdminEventLogs_get",
     { label: "event log detail", response: "EventLogResponseDto" },
+  ],
+  [
+    "EventQueryPolicy_get",
+    {
+      label: "Event Query policy state",
+      response: "EventQueryPolicyStateResponseDto",
+    },
+  ],
+  [
+    "EventQueryPolicy_saveDraft",
+    {
+      label: "Event Query policy draft save",
+      request: "SaveEventQueryPolicyDraftDto",
+      response: "EventQueryPolicyDraftResponseDto",
+    },
+  ],
+  [
+    "EventQueryPolicy_validate",
+    {
+      label: "Event Query policy validation",
+      request: "ValidateEventQueryPolicyDto",
+      response: "EventQueryPolicyValidationResponseDto",
+    },
+  ],
+  [
+    "EventQueryPolicy_publish",
+    {
+      label: "Event Query policy publication",
+      request: "PublishEventQueryPolicyDto",
+      response: "EventQueryPolicyRevisionResponseDto",
+    },
+  ],
+  [
+    "EventQueryPolicy_preview",
+    {
+      label: "bounded Event Query preview",
+      request: "PreviewEventQueryDto",
+      response: "EventQueryResultResponseDto",
+    },
+  ],
+  [
+    "EventQueryPolicy_usage",
+    {
+      label: "Event Query usage estimate",
+      response: "EventQueryUsageResponseDto",
+    },
+  ],
+  [
+    "CaseVerification_estimate",
+    {
+      label: "Case verification estimate",
+      request: "EstimateCaseVerificationDto",
+      response: "CaseVerificationEstimateResponseDto",
+    },
+  ],
+  [
+    "CaseVerification_start",
+    {
+      label: "Case verification run",
+      request: "StartCaseVerificationDto",
+      response: "CaseVerificationRunResponseDto",
+    },
+  ],
+  [
+    "CaseVerification_get",
+    {
+      label: "Case verification run detail",
+      response: "CaseVerificationRunResponseDto",
+    },
   ],
   [
     "ScenarioRuns_list",
@@ -1772,6 +1834,66 @@ requireRequiredProperties("NotificationQuarantineDto", [
   "reason",
   "confirmation",
 ]);
+
+requireRequiredProperties("EventQueryPolicyDocumentDto", ["enabled", "items"]);
+requireRequiredProperties("EventQueryPolicyItemDto", [
+  "stableCode",
+  "descriptionForAI",
+  "allowedModes",
+  "maxInteractiveLookbackHours",
+  "maxVerificationLookbackHours",
+  "safeFields",
+]);
+requireRequiredProperties("EventQueryRequestDto", [
+  "eventCodes",
+  "mode",
+  "timeRange",
+]);
+requireRequiredProperties("EventQueryResultResponseDto", [
+  "status",
+  "complete",
+  "truncated",
+  "limitations",
+  "range",
+  "policyRevisionId",
+  "snapshotReceivedAt",
+  "excludedCount",
+  "provenance",
+]);
+requireRequiredProperties("EventQueryProvenanceResponseDto", ["source"]);
+requireRequiredProperties("CaseVerificationRunResponseDto", [
+  "id",
+  "planId",
+  "policyRevisionId",
+  "queries",
+  "predicate",
+  "snapshotReceivedAt",
+  "evaluation",
+  "results",
+  "estimatedAddedInputTokens",
+  "caseChanged",
+  "caseStatus",
+  "caseVersion",
+]);
+
+for (const schemaName of [
+  "EventQueryRequestDto",
+  "CaseVerificationQueryDto",
+  "EstimateCaseVerificationDto",
+  "StartCaseVerificationDto",
+]) {
+  const exposedProperties = Object.keys(
+    contractSchema(schemaName).properties ?? {},
+  );
+  const forbiddenProperties = exposedProperties.filter((propertyName) =>
+    ["projectId", "endUserId", "caseId", "sql", "table"].includes(propertyName),
+  );
+  if (forbiddenProperties.length) {
+    throw new Error(
+      `${schemaName} exposes trusted scope or arbitrary storage access: ${forbiddenProperties.join(", ")}`,
+    );
+  }
+}
 
 for (const schemaName of [
   "NotificationOperationsHealthResponseDto",

@@ -1497,6 +1497,16 @@
             "format": "uuid",
             "type": "string"
           },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "proposalId": {
             "format": "uuid",
             "type": "string"
@@ -1522,6 +1532,7 @@
           "eventCount",
           "redactedBytes",
           "estimatedInputTokens",
+          "limitations",
           "createdAt"
         ],
         "type": "object"
@@ -5587,6 +5598,204 @@
         ],
         "type": "object"
       },
+      "CaseVerificationEstimateResponseDto": {
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "estimatedAddedInputTokens": {
+            "type": "number"
+          },
+          "evaluation": {
+            "enum": [
+              "VERIFIED_RESOLVED",
+              "VERIFIED_UNRESOLVED",
+              "INCONCLUSIVE"
+            ],
+            "type": "string"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "predicate": {
+            "discriminator": {
+              "propertyName": "operator"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EventExistsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/CountGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/SumGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LatestFieldEqualsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LogicalPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotPredicateDto"
+              }
+            ]
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/CaseVerificationQueryDto"
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "type": "array"
+          },
+          "results": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EventQueryResultResponseDto"
+            },
+            "type": "object"
+          },
+          "snapshotReceivedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policyRevisionId",
+          "snapshotReceivedAt",
+          "queries",
+          "predicate",
+          "evaluation",
+          "complete",
+          "estimatedAddedInputTokens",
+          "results"
+        ],
+        "type": "object"
+      },
+      "CaseVerificationQueryDto": {
+        "properties": {
+          "key": {
+            "example": "goal_event",
+            "type": "string"
+          },
+          "query": {
+            "$ref": "#/components/schemas/EventQueryRequestDto"
+          }
+        },
+        "required": [
+          "key",
+          "query"
+        ],
+        "type": "object"
+      },
+      "CaseVerificationRunResponseDto": {
+        "properties": {
+          "caseChanged": {
+            "type": "boolean"
+          },
+          "caseStatus": {
+            "type": "string"
+          },
+          "caseVersion": {
+            "type": "number"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "estimatedAddedInputTokens": {
+            "type": "number"
+          },
+          "evaluation": {
+            "enum": [
+              "VERIFIED_RESOLVED",
+              "VERIFIED_UNRESOLVED",
+              "INCONCLUSIVE"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "planId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "predicate": {
+            "discriminator": {
+              "propertyName": "operator"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EventExistsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/CountGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/SumGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LatestFieldEqualsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LogicalPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotPredicateDto"
+              }
+            ]
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/CaseVerificationQueryDto"
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "type": "array"
+          },
+          "results": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EventQueryResultResponseDto"
+            },
+            "type": "object"
+          },
+          "snapshotReceivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "COMPLETED",
+              "FAILED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "policyRevisionId",
+          "snapshotReceivedAt",
+          "queries",
+          "predicate",
+          "evaluation",
+          "complete",
+          "estimatedAddedInputTokens",
+          "results",
+          "id",
+          "planId",
+          "status",
+          "caseChanged",
+          "caseStatus",
+          "caseVersion"
+        ],
+        "type": "object"
+      },
       "ClassifyEndUserCaseDto": {
         "properties": {
           "expectedVersion": {
@@ -7896,6 +8105,29 @@
         ],
         "type": "string"
       },
+      "CountGtePredicateDto": {
+        "properties": {
+          "operator": {
+            "enum": [
+              "COUNT_GTE"
+            ],
+            "type": "string"
+          },
+          "queryKey": {
+            "type": "string"
+          },
+          "value": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "operator",
+          "queryKey",
+          "value"
+        ],
+        "type": "object"
+      },
       "CreateConversationDto": {
         "properties": {
           "title": {
@@ -9704,6 +9936,11 @@
             "nullable": true,
             "type": "string"
           },
+          "latestVerificationRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "mergedIntoCaseId": {
             "format": "uuid",
             "nullable": true,
@@ -10183,6 +10420,52 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "EstimateCaseVerificationDto": {
+        "properties": {
+          "predicate": {
+            "discriminator": {
+              "propertyName": "operator"
+            },
+            "example": {
+              "operator": "EVENT_EXISTS",
+              "queryKey": "goal_event"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EventExistsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/CountGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/SumGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LatestFieldEqualsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LogicalPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotPredicateDto"
+              }
+            ]
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/CaseVerificationQueryDto"
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "queries",
+          "predicate"
+        ],
         "type": "object"
       },
       "EvaluateAudienceUserDto": {
@@ -10934,6 +11217,24 @@
         ],
         "type": "object"
       },
+      "EventExistsPredicateDto": {
+        "properties": {
+          "operator": {
+            "enum": [
+              "EVENT_EXISTS"
+            ],
+            "type": "string"
+          },
+          "queryKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operator",
+          "queryKey"
+        ],
+        "type": "object"
+      },
       "EventFieldRuleExplanationResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -11326,6 +11627,604 @@
         ],
         "type": "object"
       },
+      "EventQueryMetricDto": {
+        "properties": {
+          "currencyField": {
+            "description": "Required for MONEY SUM and AVG.",
+            "type": "string"
+          },
+          "field": {
+            "description": "Required for SUM, MIN, MAX and AVG.",
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "COUNT",
+              "SUM",
+              "MIN",
+              "MAX",
+              "AVG"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyDiagnosticDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "location",
+          "message"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyDocumentDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyItemDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "enabled",
+          "items"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyDraftResponseDto": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/EventQueryPolicyDocumentDto"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "document",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyFieldDto": {
+        "properties": {
+          "currencyPath": {
+            "example": "currency",
+            "type": "string"
+          },
+          "operations": {
+            "items": {
+              "enum": [
+                "PROJECT",
+                "GROUP_BY",
+                "SUM",
+                "MIN",
+                "MAX",
+                "AVG"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "path": {
+            "example": "amount",
+            "type": "string"
+          },
+          "semanticType": {
+            "enum": [
+              "STRING",
+              "BOOLEAN",
+              "INTEGER",
+              "DECIMAL",
+              "MONEY",
+              "CURRENCY"
+            ],
+            "type": "string"
+          },
+          "sensitivity": {
+            "enum": [
+              "PUBLIC_TO_END_USER",
+              "PRIVATE_DERIVED",
+              "FORBIDDEN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "semanticType",
+          "operations",
+          "sensitivity"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyItemDto": {
+        "properties": {
+          "allowedModes": {
+            "items": {
+              "enum": [
+                "SUMMARY",
+                "AGGREGATE",
+                "LATEST"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "descriptionForAI": {
+            "example": "A deposit was credited to the current End User.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "maxInteractiveLookbackHours": {
+            "maximum": 744,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxVerificationLookbackHours": {
+            "maximum": 2160,
+            "minimum": 1,
+            "type": "number"
+          },
+          "safeFields": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyFieldDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "stableCode": {
+            "example": "deposit.completed",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stableCode",
+          "descriptionForAI",
+          "allowedModes",
+          "safeFields",
+          "maxInteractiveLookbackHours",
+          "maxVerificationLookbackHours"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyRevisionResponseDto": {
+        "properties": {
+          "compilerVersion": {
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/EventQueryPolicyDocumentDto"
+          },
+          "documentHash": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "document",
+          "documentHash",
+          "compilerVersion",
+          "publishedAt"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyStateResponseDto": {
+        "properties": {
+          "draft": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventQueryPolicyDraftResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "published": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventQueryPolicyRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "EventQueryPolicyValidationResponseDto": {
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyDiagnosticDto"
+            },
+            "type": "array"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid",
+          "errors"
+        ],
+        "type": "object"
+      },
+      "EventQueryProvenanceResponseDto": {
+        "properties": {
+          "policyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "snapshotReceivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "EVENT_LOG"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "type": "object"
+      },
+      "EventQueryRangeResponseDto": {
+        "properties": {
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "EventQueryRequestDto": {
+        "properties": {
+          "eventCodes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "groupBy": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 2,
+            "type": "array"
+          },
+          "limit": {
+            "default": 5,
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryMetricDto"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "SUMMARY",
+              "AGGREGATE",
+              "LATEST"
+            ],
+            "type": "string"
+          },
+          "timeRange": {
+            "$ref": "#/components/schemas/EventQueryTimeRangeDto"
+          }
+        },
+        "required": [
+          "eventCodes",
+          "mode",
+          "timeRange"
+        ],
+        "type": "object"
+      },
+      "EventQueryResultResponseDto": {
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "estimatedAddedInputTokens": {
+            "type": "number"
+          },
+          "excludedCount": {
+            "type": "number"
+          },
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "dimensions": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "eventCode": {
+                  "type": "string"
+                },
+                "metrics": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              },
+              "required": [
+                "eventCode",
+                "dimensions",
+                "metrics"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "matchedCount": {
+            "type": "number"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/EventQueryProvenanceResponseDto"
+          },
+          "range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventQueryRangeResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "eventCode": {
+                  "type": "string"
+                },
+                "fields": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "occurredAt": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "receivedAt": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "eventCode",
+                "occurredAt",
+                "receivedAt",
+                "fields"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "serializedBytes": {
+            "type": "number"
+          },
+          "snapshotReceivedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "COMPLETED",
+              "REJECTED",
+              "TEMPORARILY_UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "summaries": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "count": {
+                  "type": "number"
+                },
+                "eventCode": {
+                  "type": "string"
+                },
+                "firstOccurredAt": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "lastOccurredAt": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "eventCode",
+                "count",
+                "firstOccurredAt",
+                "lastOccurredAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "complete",
+          "truncated",
+          "limitations",
+          "range",
+          "policyRevisionId",
+          "snapshotReceivedAt",
+          "excludedCount",
+          "provenance"
+        ],
+        "type": "object"
+      },
+      "EventQueryTimeRangeDto": {
+        "properties": {
+          "from": {
+            "description": "Required only for EXPLICIT.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "LAST_24_HOURS",
+              "LAST_7_DAYS",
+              "LAST_30_DAYS",
+              "CURRENT_CASE_WINDOW",
+              "EXPLICIT"
+            ],
+            "type": "string"
+          },
+          "to": {
+            "description": "Required only for EXPLICIT.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "EventQueryUsageResponseDto": {
+        "properties": {
+          "byOrigin": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "calls": {
+                  "type": "number"
+                },
+                "estimatedAddedInputTokens": {
+                  "type": "number"
+                },
+                "resultBytes": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "calls",
+                "estimatedAddedInputTokens",
+                "resultBytes"
+              ],
+              "type": "object"
+            },
+            "type": "object"
+          },
+          "calls": {
+            "type": "number"
+          },
+          "estimatedAddedInputTokens": {
+            "type": "number"
+          },
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "resultBytes": {
+            "type": "number"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "calls",
+          "estimatedAddedInputTokens",
+          "resultBytes",
+          "byOrigin"
+        ],
+        "type": "object"
+      },
       "EventSchemaActiveWaitImpactResponseDto": {
         "properties": {
           "acceptsCurrentRevision": {
@@ -11696,6 +12595,55 @@
         ],
         "type": "object"
       },
+      "EventSchemaEventQueryPolicyImpactResponseDto": {
+        "properties": {
+          "blocking": {
+            "type": "boolean"
+          },
+          "eventCode": {
+            "type": "string"
+          },
+          "fieldKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reasonCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resolutionActions": {
+            "items": {
+              "enum": [
+                "UPDATE_EVENT_QUERY_POLICY"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "revisionId",
+          "version",
+          "eventCode",
+          "blocking",
+          "reasonCodes",
+          "fieldKeys",
+          "resolutionActions"
+        ],
+        "type": "object"
+      },
       "EventSchemaImpactDetailResponseDto": {
         "properties": {
           "activeWaits": {
@@ -11710,6 +12658,12 @@
             },
             "type": "array"
           },
+          "eventQueryPolicies": {
+            "items": {
+              "$ref": "#/components/schemas/EventSchemaEventQueryPolicyImpactResponseDto"
+            },
+            "type": "array"
+          },
           "summary": {
             "$ref": "#/components/schemas/EventSchemaImpactSummaryResponseDto"
           }
@@ -11717,6 +12671,7 @@
         "required": [
           "consumers",
           "activeWaits",
+          "eventQueryPolicies",
           "summary"
         ],
         "type": "object"
@@ -11769,7 +12724,15 @@
             "minimum": 0,
             "type": "number"
           },
+          "blockingEventQueryPolicyCount": {
+            "minimum": 0,
+            "type": "number"
+          },
           "consumerCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "eventQueryPolicyCount": {
             "minimum": 0,
             "type": "number"
           },
@@ -11783,6 +12746,8 @@
           "activeWaitCount",
           "blockingConsumerCount",
           "blockingActiveWaitCount",
+          "eventQueryPolicyCount",
+          "blockingEventQueryPolicyCount",
           "legacyExactCount"
         ],
         "type": "object"
@@ -11790,6 +12755,10 @@
       "EventSchemaPublishResponseDto": {
         "properties": {
           "automaticallyExtendedBindings": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "automaticallyExtendedEventQueryPolicies": {
             "minimum": 0,
             "type": "number"
           },
@@ -11840,7 +12809,8 @@
           "compatibility",
           "impact",
           "automaticallyExtendedBindings",
-          "automaticallyExtendedWaits"
+          "automaticallyExtendedWaits",
+          "automaticallyExtendedEventQueryPolicies"
         ],
         "type": "object"
       },
@@ -13482,288 +14452,39 @@
         ],
         "type": "object"
       },
-      "LegacyEventDefinitionResponseDto": {
+      "LatestFieldEqualsPredicateDto": {
         "properties": {
-          "clientIngestible": {
-            "type": "boolean"
-          },
-          "code": {
+          "field": {
             "type": "string"
           },
-          "countsAsActivity": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "format": "date-time",
+          "operator": {
+            "enum": [
+              "LATEST_FIELD_EQUALS"
+            ],
             "type": "string"
           },
-          "description": {
-            "nullable": true,
+          "queryKey": {
             "type": "string"
           },
-          "enabled": {
-            "type": "boolean"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "payloadSchema": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "projectId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "projectId",
-          "code",
-          "name",
-          "version",
-          "payloadSchema",
-          "enabled",
-          "clientIngestible",
-          "countsAsActivity",
-          "createdAt",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "LegacyEventLogPageResponseDto": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyEventLogResponseDto"
-            },
-            "type": "array"
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/LegacyEventLogPaginationResponseDto"
-          }
-        },
-        "required": [
-          "items",
-          "pagination"
-        ],
-        "type": "object"
-      },
-      "LegacyEventLogPaginationResponseDto": {
-        "properties": {
-          "hasNextPage": {
-            "type": "boolean"
-          },
-          "hasPreviousPage": {
-            "type": "boolean"
-          },
-          "limit": {
-            "maximum": 100,
-            "minimum": 1,
-            "type": "number"
-          },
-          "page": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "total": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "totalPages": {
-            "minimum": 0,
-            "type": "number"
-          }
-        },
-        "required": [
-          "page",
-          "limit",
-          "total",
-          "totalPages",
-          "hasNextPage",
-          "hasPreviousPage"
-        ],
-        "type": "object"
-      },
-      "LegacyEventLogResponseDto": {
-        "properties": {
-          "context": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "endUser": {
-            "$ref": "#/components/schemas/LegacyEventUserResponseDto"
-          },
-          "endUserId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "error": {
-            "nullable": true,
-            "type": "string"
-          },
-          "eventDefinition": {
-            "$ref": "#/components/schemas/LegacyEventDefinitionResponseDto"
-          },
-          "eventDefinitionId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "eventDefinitionKeyId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "externalEventId": {
-            "nullable": true,
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "ingestionPolicySnapshot": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "ingestionPolicyVersion": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "message": {
-            "nullable": true,
-            "type": "string"
-          },
-          "occurredAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "payload": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "processingResult": {
-            "additionalProperties": true,
-            "nullable": true,
-            "type": "object"
-          },
-          "projectId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "receivedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "source": {
-            "allOf": [
+          "value": {
+            "oneOf": [
               {
-                "$ref": "#/components/schemas/EventSource"
-              }
-            ]
-          },
-          "status": {
-            "allOf": [
+                "type": "string"
+              },
               {
-                "$ref": "#/components/schemas/EventStatus"
+                "type": "number"
+              },
+              {
+                "type": "boolean"
               }
             ]
           }
         },
         "required": [
-          "id",
-          "projectId",
-          "eventDefinitionId",
-          "eventDefinitionKeyId",
-          "ingestionPolicyVersion",
-          "ingestionPolicySnapshot",
-          "endUserId",
-          "source",
-          "payload",
-          "context",
-          "occurredAt",
-          "receivedAt",
-          "status",
-          "eventDefinition",
-          "endUser"
-        ],
-        "type": "object"
-      },
-      "LegacyEventUserResponseDto": {
-        "properties": {
-          "attributes": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "attributesSchemaRevisionId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "externalId": {
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "isGuest": {
-            "type": "boolean"
-          },
-          "lastSeenAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "locale": {
-            "nullable": true,
-            "type": "string"
-          },
-          "preferences": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "profile": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "projectId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "segment": {
-            "nullable": true,
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "projectId",
-          "externalId",
-          "isGuest",
-          "profile",
-          "attributes",
-          "preferences",
-          "lastSeenAt",
-          "createdAt",
-          "updatedAt"
+          "operator",
+          "queryKey",
+          "field",
+          "value"
         ],
         "type": "object"
       },
@@ -13835,6 +14556,52 @@
       },
       "ListThreadMessagesDto": {
         "properties": {},
+        "type": "object"
+      },
+      "LogicalPredicateDto": {
+        "properties": {
+          "operands": {
+            "items": {
+              "discriminator": {
+                "propertyName": "operator"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EventExistsPredicateDto"
+                },
+                {
+                  "$ref": "#/components/schemas/CountGtePredicateDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SumGtePredicateDto"
+                },
+                {
+                  "$ref": "#/components/schemas/LatestFieldEqualsPredicateDto"
+                },
+                {
+                  "$ref": "#/components/schemas/LogicalPredicateDto"
+                },
+                {
+                  "$ref": "#/components/schemas/NotPredicateDto"
+                }
+              ]
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "type": "array"
+          },
+          "operator": {
+            "enum": [
+              "ALL",
+              "ANY"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "operator",
+          "operands"
+        ],
         "type": "object"
       },
       "ManagedProjectRoleSummaryDto": {
@@ -14676,6 +15443,46 @@
         ],
         "type": "object"
       },
+      "NotPredicateDto": {
+        "properties": {
+          "operand": {
+            "discriminator": {
+              "propertyName": "operator"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EventExistsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/CountGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/SumGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LatestFieldEqualsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LogicalPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotPredicateDto"
+              }
+            ]
+          },
+          "operator": {
+            "enum": [
+              "NOT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "operator",
+          "operand"
+        ],
+        "type": "object"
+      },
       "NotRuleExplanationResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -15114,6 +15921,22 @@
         "required": [
           "groups",
           "priorityRules"
+        ],
+        "type": "object"
+      },
+      "PreviewEventQueryDto": {
+        "properties": {
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "query": {
+            "$ref": "#/components/schemas/EventQueryRequestDto"
+          }
+        },
+        "required": [
+          "endUserId",
+          "query"
         ],
         "type": "object"
       },
@@ -17017,6 +17840,18 @@
         ],
         "type": "object"
       },
+      "PublishEventQueryPolicyDto": {
+        "properties": {
+          "expectedDraftVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedDraftVersion"
+        ],
+        "type": "object"
+      },
       "PublishEventSchemaDraftDto": {
         "properties": {
           "confirmBreakingChange": {
@@ -17615,6 +18450,22 @@
           "idempotencyKey",
           "groups",
           "priorityRules"
+        ],
+        "type": "object"
+      },
+      "SaveEventQueryPolicyDraftDto": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/EventQueryPolicyDocumentDto"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "document"
         ],
         "type": "object"
       },
@@ -21007,6 +21858,57 @@
         ],
         "type": "object"
       },
+      "StartCaseVerificationDto": {
+        "properties": {
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "predicate": {
+            "discriminator": {
+              "propertyName": "operator"
+            },
+            "example": {
+              "operator": "EVENT_EXISTS",
+              "queryKey": "goal_event"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EventExistsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/CountGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/SumGtePredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LatestFieldEqualsPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/LogicalPredicateDto"
+              },
+              {
+                "$ref": "#/components/schemas/NotPredicateDto"
+              }
+            ]
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/CaseVerificationQueryDto"
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "queries",
+          "predicate",
+          "idempotencyKey"
+        ],
+        "type": "object"
+      },
       "StartConversationAISuspensionDto": {
         "properties": {
           "durationSeconds": {
@@ -21056,6 +21958,37 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "SumGtePredicateDto": {
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "SUM_GTE"
+            ],
+            "type": "string"
+          },
+          "queryKey": {
+            "type": "string"
+          },
+          "value": {
+            "description": "Exact decimal string.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operator",
+          "queryKey",
+          "field",
+          "currency",
+          "value"
+        ],
         "type": "object"
       },
       "SyncAttributeSnapshotDto": {
@@ -23900,6 +24833,17 @@
         },
         "required": [
           "expectedDraftVersion"
+        ],
+        "type": "object"
+      },
+      "ValidateEventQueryPolicyDto": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/EventQueryPolicyDocumentDto"
+          }
+        },
+        "required": [
+          "document"
         ],
         "type": "object"
       },
@@ -29771,6 +30715,175 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/verification-runs": {
+      "post": {
+        "operationId": "CaseVerification_start",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartCaseVerificationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseVerificationRunResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.end_user_cases.verify",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/verification-runs/{runId}": {
+      "get": {
+        "operationId": "CaseVerification_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseVerificationRunResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.preview",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/verification/estimate": {
+      "post": {
+        "operationId": "CaseVerification_estimate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateCaseVerificationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseVerificationEstimateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.preview",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/workflow": {
       "patch": {
         "operationId": "EndUserCases_workflow",
@@ -32296,6 +33409,304 @@
         ],
         "x-iam-permission": {
           "code": "project.event_logs.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy": {
+      "get": {
+        "operationId": "EventQueryPolicy_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.event_query_policy.preview",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.event_query_policy.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/draft": {
+      "put": {
+        "operationId": "EventQueryPolicy_saveDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveEventQueryPolicyDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/preview": {
+      "post": {
+        "operationId": "EventQueryPolicy_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewEventQueryDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryResultResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.preview",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/publish": {
+      "post": {
+        "operationId": "EventQueryPolicy_publish",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishEventQueryPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/usage": {
+      "get": {
+        "operationId": "EventQueryPolicy_usage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryUsageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.preview",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/validate": {
+      "post": {
+        "operationId": "EventQueryPolicy_validate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateEventQueryPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyValidationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
           "scope": "PROJECT"
         }
       }
@@ -43681,83 +45092,6 @@
         "tags": [
           "events"
         ]
-      }
-    },
-    "/api/v1/events/admin/{projectId}": {
-      "get": {
-        "operationId": "Events_list",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "required": false,
-            "schema": {
-              "default": 1,
-              "minimum": 1,
-              "type": "number"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 12,
-              "maximum": 100,
-              "minimum": 1,
-              "type": "number"
-            }
-          },
-          {
-            "in": "query",
-            "name": "search",
-            "required": false,
-            "schema": {
-              "maxLength": 200,
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "status",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/EventStatus"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LegacyEventLogPageResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "events"
-        ],
-        "x-iam-permission": {
-          "code": "project.event_logs.read",
-          "scope": "PROJECT"
-        }
       }
     },
     "/api/v1/events/client": {

@@ -50,6 +50,8 @@ export interface EndUserCaseResponseDto {
   /** @nullable */
   lastEndUserRecontactAt?: string | null;
   /** @nullable */
+  latestVerificationRunId?: string | null;
+  /** @nullable */
   mergedIntoCaseId?: string | null;
   /** @minimum 0 */
   messageCount: number;
