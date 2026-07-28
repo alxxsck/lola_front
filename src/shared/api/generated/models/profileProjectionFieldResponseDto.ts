@@ -23,6 +23,8 @@ export interface ProfileProjectionFieldResponseDto {
   label: string;
   lifecycle: ProfileProjectionFieldResponseDtoLifecycle;
   /** @nullable */
+  purpose?: string | null;
+  /** @nullable */
   semanticRole?: string | null;
   untrustedData?: boolean;
   value?: ProfileFieldValueResponseDto;

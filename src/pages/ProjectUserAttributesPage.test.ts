@@ -2,6 +2,7 @@ import { flushPromises, shallowMount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
+  AttributeContractDraftFieldDto,
   AttributeContractIssueResponseDto,
   AttributeContractWorkspaceResponseDto,
 } from "@/shared/api/generated/models";
@@ -11,7 +12,10 @@ import ProjectUserAttributesPage from "./ProjectUserAttributesPage.vue";
 const mocks = vi.hoisted(() => ({
   workspace: vi.fn(),
   health: vi.fn(),
+  publications: vi.fn(),
+  publication: vi.fn(),
   revisions: vi.fn(),
+  revision: vi.fn(),
   saveDraft: vi.fn(),
   validate: vi.fn(),
   publish: vi.fn(),
@@ -42,7 +46,10 @@ vi.mock(
     attributeContractRepository: {
       workspace: mocks.workspace,
       health: mocks.health,
+      publications: mocks.publications,
+      publication: mocks.publication,
       revisions: mocks.revisions,
+      revision: mocks.revision,
       saveDraft: mocks.saveDraft,
       validate: mocks.validate,
       publish: mocks.publish,
@@ -52,11 +59,19 @@ vi.mock(
 vi.mock("primevue/usetoast", () => ({ useToast: () => ({ add: mocks.toast }) }));
 
 const workspace = {
-  currentRevision: null,
+  currentPublication: null,
+  currentContractRevision: null,
+  changes: {
+    contractChanged: false,
+    contractCompatibility: "UNCHANGED",
+    lifecycleChanged: false,
+    metadataChanged: false,
+    policyChanged: false,
+  },
   draft: {
     projectId: "project-1",
     draftVersion: 0,
-    baseContractRevisionId: null,
+    basePublicationId: null,
     document: { fields: [] },
   },
   validation: {
@@ -74,8 +89,84 @@ const workspace = {
         required: [],
       },
     },
+    changes: {
+      contractChanged: false,
+      contractCompatibility: "UNCHANGED",
+      lifecycleChanged: false,
+      metadataChanged: false,
+      policyChanged: false,
+    },
   },
 };
+
+function setPublishedWorkspace(
+  target: AttributeContractWorkspaceResponseDto,
+  fields: AttributeContractDraftFieldDto[],
+  version = 2,
+  sequence = 3,
+) {
+  const publishedAt = "2026-07-20T10:00:00.000Z";
+  const compatibilityReport = {
+    valid: true,
+    issues: [],
+    lifecycleImpacts: [],
+    authorization: {
+      readinessEvidenceId: null,
+      securityConfirmations: [],
+      breakingChangePlan: null,
+      compatibilityGraceDays: 7,
+    },
+  };
+  target.currentPublication = {
+    id: `publication-${sequence}`,
+    projectId: "project-1",
+    sequence,
+    canonicalHash: "publication-hash",
+    validationHash: "validation-hash",
+    contractRevisionId: `revision-${version}`,
+    contractVersion: version,
+    changes: {
+      contractChanged: false,
+      contractCompatibility: "UNCHANGED",
+      lifecycleChanged: false,
+      metadataChanged: false,
+      policyChanged: false,
+    },
+    compatibilityReport,
+    publishedById: null,
+    publishedActorType: "CMS_USER",
+    publishedActorId: "cms-user-1",
+    publishReason: `Публикация #${sequence}`,
+    publishedAt,
+    document: { fields: structuredClone(fields) },
+  };
+  target.currentContractRevision = {
+    id: `revision-${version}`,
+    projectId: "project-1",
+    version,
+    canonicalHash: "contract-hash",
+    validationHash: "validation-hash",
+    acceptances: [],
+    compatibilityReport,
+    schema: {
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      additionalProperties: false,
+      properties: {},
+      required: [],
+    },
+    fields: fields.map((field) => ({
+      ...field,
+      classification: field.classification ?? "INTERNAL",
+      definitionRevisionId: `${field.definitionId}-r${version}`,
+      definitionRevisionNumber: version,
+      allowedValues: field.constraints.allowedValues ?? null,
+    })),
+    publishedAt,
+    publishedById: null,
+    publishReason: `Контракт v${version}`,
+  };
+}
 
 describe("ProjectUserAttributesPage", () => {
   beforeEach(() => {
@@ -86,7 +177,38 @@ describe("ProjectUserAttributesPage", () => {
     });
     mocks.workspace.mockResolvedValue(structuredClone(workspace));
     mocks.health.mockResolvedValue(null);
+    mocks.publications.mockResolvedValue({ items: [], nextCursor: null });
     mocks.revisions.mockResolvedValue({ items: [], nextCursor: null });
+  });
+
+  it("loads and names publication history separately from contract revisions", async () => {
+    const publishedWorkspace = structuredClone(workspace);
+    publishedWorkspace.currentPublication = {
+      id: "publication-12",
+      sequence: 12,
+      contractVersion: 8,
+      document: { fields: [] },
+    } as never;
+    publishedWorkspace.currentContractRevision = {
+      id: "revision-8",
+      version: 8,
+      fields: [],
+      schema: {
+        $schema: "",
+        type: "object",
+        additionalProperties: false,
+        properties: {},
+        required: [],
+      },
+    } as never;
+    mocks.workspace.mockResolvedValue(publishedWorkspace);
+
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
+
+    expect(mocks.publications).toHaveBeenCalledWith("project-1", { limit: 25 });
+    expect(wrapper.text()).toContain("Публикация #12");
+    expect(wrapper.text()).toContain("Контракт v8");
   });
 
   it("shows mutation controls only after Contract Workspace loaded", async () => {
@@ -124,51 +246,15 @@ describe("ProjectUserAttributesPage", () => {
     expect(wrapper.find(".p-dialog").exists()).toBe(false);
   });
 
-  it("explains every publication field next to its label", async () => {
+  it("delegates publication decisions to the focused publish dialog", async () => {
     const wrapper = shallowMount(ProjectUserAttributesPage);
     await flushPromises();
-    const { publishHelp } = wrapper.vm as unknown as {
-      publishHelp: Record<string, string>;
-    };
 
-    expect(Object.keys(publishHelp)).toHaveLength(4);
-    expect(publishHelp.graceDays).toContain("Переходный период");
-    expect(publishHelp.graceDays).toContain("предыдущую версию полей");
-  });
-
-  it("uses one tooltip per publication help button", async () => {
-    const wrapper = shallowMount(ProjectUserAttributesPage, {
-      global: {
-        stubs: {
-          Dialog: { template: "<div><slot /></div>" },
-          RouterLink: true,
-        },
-      },
+    const dialog = wrapper.findComponent({
+      name: "PublishAttributeChangesDialog",
     });
-    await flushPromises();
-    const vm = wrapper.vm as unknown as {
-      publishHelp: Record<string, string>;
-    };
-
-    const tooltipIds = [
-      "publish-reason-help",
-      "publish-grace-days-help",
-      "publish-breaking-change-plan-help",
-      "publish-readiness-evidence-help",
-    ];
-    const buttons = wrapper.findAll(".help-button");
-
-    expect(buttons).toHaveLength(tooltipIds.length);
-    buttons.forEach((button, index) => {
-      const tooltipId = tooltipIds[index]!;
-
-      expect(button.attributes("aria-describedby")).toBe(tooltipId);
-      expect(button.attributes("aria-label")).toBeUndefined();
-      expect(button.attributes("data-tooltip")).toBeUndefined();
-      expect(wrapper.get(`#${tooltipId}[role="tooltip"]`).text()).toBe(
-        Object.values(vm.publishHelp)[index],
-      );
-    });
+    expect(dialog.exists()).toBe(true);
+    expect(dialog.props("changes")).toEqual(workspace.validation.changes);
   });
 
   it("does not present a failed load as a real empty contract", async () => {
@@ -182,7 +268,7 @@ describe("ProjectUserAttributesPage", () => {
     expect(wrapper.text()).not.toContain("Контракт пока пуст");
   });
 
-  it("publishes readiness evidence and every security definition from validation", async () => {
+  it("publishes the reviewed command against the current publication head", async () => {
     const validatedWorkspace = structuredClone(
       workspace,
     ) as AttributeContractWorkspaceResponseDto;
@@ -223,30 +309,40 @@ describe("ProjectUserAttributesPage", () => {
       },
     ];
     mocks.workspace.mockResolvedValue(validatedWorkspace);
-    mocks.publish.mockResolvedValue(undefined);
+    mocks.publish.mockResolvedValue({
+      publication: { sequence: 1 },
+      contractRevision: { version: 1 },
+      changes: {
+        contractChanged: true,
+        contractCompatibility: "BACKWARD_COMPATIBLE",
+        lifecycleChanged: false,
+        metadataChanged: false,
+        policyChanged: false,
+      },
+    });
     const wrapper = shallowMount(ProjectUserAttributesPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
-      publishForm: {
+      publish: (command: {
+        breakingChangePlan: string | null;
+        compatibilityGraceDays: number | undefined;
+        readinessEvidenceId: string | null;
         reason: string;
-        readinessEvidenceId: string;
-        confirmSecurity: boolean;
-      };
-      requiresReadinessEvidence: boolean;
-      requiresSecurityConfirmation: boolean;
-      publish: () => Promise<void>;
+        securityConfirmations: string[];
+      }) => Promise<void>;
     };
-    vm.publishForm.reason = "Roll out warning mode";
-    vm.publishForm.readinessEvidenceId = "readiness-42";
-    vm.publishForm.confirmSecurity = true;
-
-    expect(vm.requiresReadinessEvidence).toBe(true);
-    expect(vm.requiresSecurityConfirmation).toBe(true);
-    await vm.publish();
+    await vm.publish({
+      breakingChangePlan: null,
+      compatibilityGraceDays: 7,
+      readinessEvidenceId: "readiness-42",
+      reason: "Roll out warning mode",
+      securityConfirmations: ["definition-security"],
+    });
 
     expect(mocks.publish).toHaveBeenCalledWith(
       "project-1",
       expect.objectContaining({
+        expectedCurrentPublicationId: null,
         readinessEvidenceId: "readiness-42",
         securityConfirmations: ["definition-security"],
       }),
@@ -403,8 +499,6 @@ describe("ProjectUserAttributesPage", () => {
   });
 
   it("does not label a new or changed draft field as active", async () => {
-    const wrapper = shallowMount(ProjectUserAttributesPage);
-    await flushPromises();
     const published = {
       ...createContractField(10),
       definitionId: "definition-city",
@@ -412,27 +506,24 @@ describe("ProjectUserAttributesPage", () => {
       label: "Город",
       purpose: "Показывать город в карточке пользователя",
     };
+    const publishedWorkspace = structuredClone(
+      workspace,
+    ) as AttributeContractWorkspaceResponseDto;
+    setPublishedWorkspace(publishedWorkspace, [published]);
+    publishedWorkspace.draft.document.fields = [structuredClone(published)];
+    mocks.workspace.mockResolvedValue(publishedWorkspace);
+    const wrapper = shallowMount(ProjectUserAttributesPage);
+    await flushPromises();
     const vm = wrapper.vm as unknown as {
       workspace: {
         draft: {
           document: { fields: ReturnType<typeof createContractField>[] };
         };
-        currentRevision: { fields: Array<Record<string, unknown>> } | null;
       };
       fieldPublicationState: (
         field: ReturnType<typeof createContractField>,
       ) => "draft" | "changed" | "published";
     };
-    vm.workspace.currentRevision = {
-      fields: [
-        {
-          ...published,
-          definitionRevisionId: "definition-city-r1",
-          definitionRevisionNumber: 1,
-        },
-      ],
-    };
-
     expect(vm.fieldPublicationState(published)).toBe("published");
     expect(
       vm.fieldPublicationState({ ...published, label: "Новый город" }),
@@ -507,52 +598,20 @@ describe("ProjectUserAttributesPage", () => {
     publishedWorkspace.draft.document.fields = [draftField];
     publishedWorkspace.draft.draftVersion = 14;
     publishedWorkspace.validation.draftVersion = 14;
-    publishedWorkspace.currentRevision = {
-      id: "revision-2",
-      projectId: "project-1",
-      version: 2,
-      canonicalHash: "canonical-hash",
-      validationHash: "validation-hash",
-      acceptances: [],
-      compatibilityReport: {
-        valid: true,
-        issues: [],
-        lifecycleImpacts: [],
-        authorization: {
-          readinessEvidenceId: null,
-          securityConfirmations: [],
-          breakingChangePlan: null,
-          compatibilityGraceDays: 7,
-        },
+    setPublishedWorkspace(publishedWorkspace, [
+      {
+        ...draftField,
+        purpose: "Показывать уровень лояльности в карточке пользователя",
+        policies: publishedPolicies ?? draftField.policies,
       },
-      schema: {
-        $schema: "https://json-schema.org/draft/2020-12/schema",
-        type: "object",
-        additionalProperties: false,
-        properties: {},
-        required: [],
-      },
-      fields: [
-        {
-          ...draftField,
-          definitionRevisionId: "definition-loyalty-r2",
-          definitionRevisionNumber: 2,
-          purpose: "Показывать уровень лояльности в карточке пользователя",
-          policies: publishedPolicies ?? draftField.policies,
-        },
-      ],
-      publishedAt: "2026-07-20T10:00:00.000Z",
-      publishedById: null,
-      publishReason: "Публикация версии 2",
-    };
+    ]);
     mocks.workspace.mockResolvedValue(publishedWorkspace);
 
     const wrapper = shallowMount(ProjectUserAttributesPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
       dirty: boolean;
-      canPublish: boolean;
-      publishForm: { reason: string };
+      publishReady: boolean;
       fields: typeof publishedWorkspace.draft.document.fields;
       fieldPublicationState: (
         field: (typeof publishedWorkspace.draft.document.fields)[number],
@@ -561,11 +620,9 @@ describe("ProjectUserAttributesPage", () => {
 
     expect(vm.dirty).toBe(false);
     expect(vm.fieldPublicationState(vm.fields[0])).toBe("published");
-    vm.publishForm.reason = "Повторная публикация";
-    await nextTick();
-    expect(vm.canPublish).toBe(false);
+    expect(vm.publishReady).toBe(false);
     expect(wrapper.text()).toContain("Все изменения опубликованы");
-    expect(wrapper.text()).toContain("Совпадает с опубликованной версией 2");
+    expect(wrapper.text()).toContain("Совпадает с публикацией #3");
     expect(wrapper.text()).not.toContain("Версия 14");
     expect(wrapper.text()).not.toContain("Есть изменения");
     expect(wrapper.text()).not.toContain(
@@ -608,17 +665,7 @@ describe("ProjectUserAttributesPage", () => {
       label: "Опубликованный город",
     };
     publishedWorkspace.draft.document.fields = [publishedField];
-    publishedWorkspace.currentRevision = {
-      fields: [
-        {
-          ...publishedField,
-          definitionRevisionId: "definition-published-r1",
-          definitionRevisionNumber: 1,
-        },
-      ],
-    } as unknown as NonNullable<
-      AttributeContractWorkspaceResponseDto["currentRevision"]
-    >;
+    setPublishedWorkspace(publishedWorkspace, [publishedField]);
     mocks.workspace.mockResolvedValue(publishedWorkspace);
     const wrapper = shallowMount(ProjectUserAttributesPage);
     await flushPromises();
@@ -634,10 +681,10 @@ describe("ProjectUserAttributesPage", () => {
     const publishedWorkspace = structuredClone(
       workspace,
     ) as AttributeContractWorkspaceResponseDto;
-    publishedWorkspace.currentRevision = {
-      version: 5,
-      fields: [
+    const publishedFields = [
         {
+          ...createContractField(10),
+          definitionId: "definition-display-name",
           key: "displayName",
           label: "Отображаемое имя",
           description: "Имя для интерфейса",
@@ -646,14 +693,16 @@ describe("ProjectUserAttributesPage", () => {
           lifecycle: "ACTIVE",
         },
         {
+          ...createContractField(20),
+          definitionId: "definition-deposit-count",
           key: "depositCount",
           label: "Количество депозитов",
           valueType: "INTEGER",
           requirement: "REQUIRED_ENFORCED",
           lifecycle: "ACTIVE",
         },
-      ],
-    } as NonNullable<AttributeContractWorkspaceResponseDto["currentRevision"]>;
+      ] satisfies AttributeContractDraftFieldDto[];
+    setPublishedWorkspace(publishedWorkspace, publishedFields, 5);
     publishedWorkspace.draft.document.fields = [
       {
         ...createContractField(10),

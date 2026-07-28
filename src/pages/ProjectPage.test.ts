@@ -112,7 +112,8 @@ describe("ProjectPage voice instructions", () => {
     mocks.authProject = project();
     mocks.getProject.mockResolvedValue(project());
     mocks.attributeWorkspace.mockResolvedValue({
-      currentRevision: null,
+      currentPublication: null,
+      currentContractRevision: null,
       draft: { document: { fields: [] } },
       validation: { issues: [] },
     });
@@ -188,8 +189,9 @@ describe("ProjectPage voice instructions", () => {
 
   it("shows content languages as a Locale Attribute summary and does not patch legacy locale fields", async () => {
     mocks.attributeWorkspace.mockResolvedValue({
-      currentRevision: {
-        fields: [
+      currentPublication: {
+        document: {
+          fields: [
           {
             key: "language",
             label: "Язык",
@@ -200,7 +202,8 @@ describe("ProjectPage voice instructions", () => {
               defaultLocale: "pt-BR",
             },
           },
-        ],
+          ],
+        },
       },
       draft: { document: { fields: [] } },
       validation: { issues: [] },

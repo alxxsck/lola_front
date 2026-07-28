@@ -1038,7 +1038,8 @@ async function load() {
         ? attributeContractRepository
             .workspace(projectId)
             .then((workspace) => {
-              const publishedFields = workspace.currentRevision?.fields ?? [];
+              const publishedFields =
+                workspace.currentPublication?.document.fields ?? [];
               templateAttributeKeys.value = publishedFields
                 .filter(
                   (field) =>

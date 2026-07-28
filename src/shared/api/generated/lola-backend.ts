@@ -42,12 +42,15 @@ import type {
   AssignEndUserCaseDto,
   AssignableProjectRoleCatalogResponseDto,
   AttributeContractDraftResponseDto,
+  AttributeContractPublicationsParams,
   AttributeContractRevisionPageResponseDto,
   AttributeContractRevisionResponseDto,
   AttributeContractRevisionsParams,
   AttributeContractValidationResponseDto,
   AttributeContractWorkspaceResponseDto,
   AttributeDefinitionImpactResponseDto,
+  AttributePublicationPageResponseDto,
+  AttributePublicationResponseDto,
   AudienceEvaluationResponseDto,
   BreakGlassLoginDto,
   BreakGlassLoginResponseDto,
@@ -1054,6 +1057,37 @@ export const profileHealthHealth = (
       url: `/api/v1/admin/projects/${projectId}/attribute-contract/health`,
       method: "GET",
       params,
+    },
+    options,
+  );
+};
+
+export const attributeContractPublications = (
+  projectId: string,
+  params?: AttributeContractPublicationsParams,
+  options?: SecondParameter<
+    typeof request<AttributePublicationPageResponseDto>
+  >,
+) => {
+  return request<AttributePublicationPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/publications`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const attributeContractPublication = (
+  projectId: string,
+  publicationId: string,
+  options?: SecondParameter<typeof request<AttributePublicationResponseDto>>,
+) => {
+  return request<AttributePublicationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/attribute-contract/publications/${publicationId}`,
+      method: "GET",
     },
     options,
   );
@@ -5119,6 +5153,12 @@ export type AttributeContractSaveDraftResult = NonNullable<
 >;
 export type ProfileHealthHealthResult = NonNullable<
   Awaited<ReturnType<typeof profileHealthHealth>>
+>;
+export type AttributeContractPublicationsResult = NonNullable<
+  Awaited<ReturnType<typeof attributeContractPublications>>
+>;
+export type AttributeContractPublicationResult = NonNullable<
+  Awaited<ReturnType<typeof attributeContractPublication>>
 >;
 export type AttributeContractPublishResult = NonNullable<
   Awaited<ReturnType<typeof attributeContractPublish>>

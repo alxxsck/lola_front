@@ -9,7 +9,7 @@ import type { AttributeContractDocumentDto } from "./attributeContractDocumentDt
 
 export interface AttributeContractDraftResponseDto {
   /** @nullable */
-  baseContractRevisionId?: string | null;
+  basePublicationId?: string | null;
   document: AttributeContractDocumentDto;
   draftVersion: number;
   projectId: string;

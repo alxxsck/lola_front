@@ -2818,15 +2818,15 @@
           "reason": {
             "type": "string"
           },
-          "sourcePublishRevisionId": {
+          "sourcePublicationId": {
             "format": "uuid",
-            "nullable": true,
             "type": "string"
           }
         },
         "required": [
           "id",
           "acceptedFrom",
+          "sourcePublicationId",
           "reason"
         ],
         "type": "object"
@@ -2995,6 +2995,7 @@
             "type": "string"
           },
           "compatibilityGraceDays": {
+            "nullable": true,
             "type": "number"
           },
           "readinessEvidenceId": {
@@ -3010,8 +3011,7 @@
           }
         },
         "required": [
-          "securityConfirmations",
-          "compatibilityGraceDays"
+          "securityConfirmations"
         ],
         "type": "object"
       },
@@ -3178,7 +3178,7 @@
       "AttributeContractDraftResponseDto": {
         "additionalProperties": false,
         "properties": {
-          "baseContractRevisionId": {
+          "basePublicationId": {
             "format": "uuid",
             "nullable": true,
             "type": "string"
@@ -3489,6 +3489,9 @@
           "artifact": {
             "$ref": "#/components/schemas/AttributeContractArtifactResponseDto"
           },
+          "changes": {
+            "$ref": "#/components/schemas/AttributePublicationChangesResponseDto"
+          },
           "draftVersion": {
             "type": "number"
           },
@@ -3510,17 +3513,30 @@
           "draftVersion",
           "validationHash",
           "issues",
-          "artifact"
+          "artifact",
+          "changes"
         ],
         "type": "object"
       },
       "AttributeContractWorkspaceResponseDto": {
         "additionalProperties": false,
         "properties": {
-          "currentRevision": {
+          "changes": {
+            "$ref": "#/components/schemas/AttributePublicationChangesResponseDto"
+          },
+          "currentContractRevision": {
             "allOf": [
               {
                 "$ref": "#/components/schemas/AttributeContractRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "currentPublication": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttributePublicationResponseDto"
               }
             ],
             "nullable": true,
@@ -3535,6 +3551,7 @@
         },
         "required": [
           "draft",
+          "changes",
           "validation"
         ],
         "type": "object"
@@ -3662,6 +3679,207 @@
           "properties",
           "required",
           "additionalProperties"
+        ],
+        "type": "object"
+      },
+      "AttributePublicationChangesResponseDto": {
+        "properties": {
+          "contractChanged": {
+            "type": "boolean"
+          },
+          "contractCompatibility": {
+            "enum": [
+              "INITIAL",
+              "UNCHANGED",
+              "BACKWARD_COMPATIBLE",
+              "BREAKING"
+            ],
+            "type": "string"
+          },
+          "lifecycleChanged": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "metadataChanged": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "policyChanged": {
+            "nullable": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contractChanged",
+          "metadataChanged",
+          "policyChanged",
+          "lifecycleChanged",
+          "contractCompatibility"
+        ],
+        "type": "object"
+      },
+      "AttributePublicationPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AttributePublicationSummaryResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "AttributePublicationResponseDto": {
+        "properties": {
+          "canonicalHash": {
+            "type": "string"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/AttributePublicationChangesResponseDto"
+          },
+          "compatibilityReport": {
+            "$ref": "#/components/schemas/AttributeContractCompatibilityReportResponseDto"
+          },
+          "contractRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "contractVersion": {
+            "type": "number"
+          },
+          "document": {
+            "$ref": "#/components/schemas/AttributeContractDocumentDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedActorId": {
+            "type": "string"
+          },
+          "publishedActorType": {
+            "enum": [
+              "CMS_USER",
+              "SYSTEM",
+              "BREAK_GLASS"
+            ],
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedById": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "publishReason": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "number"
+          },
+          "validationHash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "sequence",
+          "canonicalHash",
+          "validationHash",
+          "contractRevisionId",
+          "contractVersion",
+          "changes",
+          "compatibilityReport",
+          "publishedActorType",
+          "publishedActorId",
+          "publishReason",
+          "publishedAt",
+          "document"
+        ],
+        "type": "object"
+      },
+      "AttributePublicationSummaryResponseDto": {
+        "properties": {
+          "canonicalHash": {
+            "type": "string"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/AttributePublicationChangesResponseDto"
+          },
+          "contractRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "contractVersion": {
+            "type": "number"
+          },
+          "fieldCount": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedActorId": {
+            "type": "string"
+          },
+          "publishedActorType": {
+            "enum": [
+              "CMS_USER",
+              "SYSTEM",
+              "BREAK_GLASS"
+            ],
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedById": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "publishReason": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "sequence",
+          "canonicalHash",
+          "contractRevisionId",
+          "contractVersion",
+          "changes",
+          "publishedActorType",
+          "publishedActorId",
+          "publishReason",
+          "publishedAt",
+          "fieldCount"
         ],
         "type": "object"
       },
@@ -15488,6 +15706,10 @@
             ],
             "type": "string"
           },
+          "purpose": {
+            "nullable": true,
+            "type": "string"
+          },
           "semanticRole": {
             "nullable": true,
             "type": "string"
@@ -15571,6 +15793,15 @@
               "PRODUCT_PROFILE"
             ],
             "type": "string"
+          },
+          "publicationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "publicationSequence": {
+            "nullable": true,
+            "type": "number"
           },
           "receivedAt": {
             "format": "date-time",
@@ -16519,7 +16750,7 @@
             "minimum": 0,
             "type": "number"
           },
-          "expectedCurrentRevisionId": {
+          "expectedCurrentPublicationId": {
             "format": "uuid",
             "nullable": true,
             "type": "string"
@@ -16554,7 +16785,7 @@
         },
         "required": [
           "expectedDraftVersion",
-          "expectedCurrentRevisionId",
+          "expectedCurrentPublicationId",
           "validationHash",
           "reason"
         ],
@@ -16563,18 +16794,34 @@
       "PublishAttributeContractResponseDto": {
         "additionalProperties": false,
         "properties": {
+          "changes": {
+            "$ref": "#/components/schemas/AttributePublicationChangesResponseDto"
+          },
           "compatibility": {
             "items": {
               "$ref": "#/components/schemas/AttributeContractIssueResponseDto"
             },
             "type": "array"
           },
-          "revision": {
+          "contractRevision": {
             "$ref": "#/components/schemas/AttributeContractRevisionResponseDto"
+          },
+          "productIntegrationActionRequired": {
+            "type": "boolean"
+          },
+          "profileResyncRequired": {
+            "type": "boolean"
+          },
+          "publication": {
+            "$ref": "#/components/schemas/AttributePublicationResponseDto"
           }
         },
         "required": [
-          "revision",
+          "publication",
+          "contractRevision",
+          "changes",
+          "productIntegrationActionRequired",
+          "profileResyncRequired",
           "compatibility"
         ],
         "type": "object"
@@ -27478,6 +27725,192 @@
         ],
         "tags": [
           "attribute contract health"
+        ],
+        "x-iam-permission": {
+          "code": "project.profile_contract.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/publications": {
+      "get": {
+        "operationId": "AttributeContract_publications",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributePublicationPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
+        ],
+        "x-iam-permission": {
+          "code": "project.profile_contract.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/attribute-contract/publications/{publicationId}": {
+      "get": {
+        "operationId": "AttributeContract_publication",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "publicationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributePublicationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "attribute contract"
         ],
         "x-iam-permission": {
           "code": "project.profile_contract.read",

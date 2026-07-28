@@ -1,4 +1,6 @@
 import {
+  attributeContractPublication,
+  attributeContractPublications,
   attributeContractPublish,
   attributeContractRevision,
   attributeContractRevisions,
@@ -9,6 +11,7 @@ import {
   profileHealthHealth,
 } from "@/shared/api/generated/lola-backend";
 import type {
+  AttributeContractPublicationsParams,
   AttributeContractRevisionsParams,
   ProfileHealthHealthParams,
   PublishAttributeContractDto,
@@ -35,6 +38,12 @@ export const attributeContractRepository = {
     call(() => attributeContractValidate(projectId, { expectedDraftVersion })),
   publish: (projectId: string, body: PublishAttributeContractDto) =>
     call(() => attributeContractPublish(projectId, body)),
+  publications: (
+    projectId: string,
+    params?: AttributeContractPublicationsParams,
+  ) => call(() => attributeContractPublications(projectId, params)),
+  publication: (projectId: string, publicationId: string) =>
+    call(() => attributeContractPublication(projectId, publicationId)),
   revisions: (projectId: string, params?: AttributeContractRevisionsParams) =>
     call(() => attributeContractRevisions(projectId, params)),
   revision: (projectId: string, revisionId: string) =>

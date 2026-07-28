@@ -5,13 +5,18 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AttributeContractWorkspaceResponseDtoCurrentRevision } from "./attributeContractWorkspaceResponseDtoCurrentRevision";
+import type { AttributePublicationChangesResponseDto } from "./attributePublicationChangesResponseDto";
+import type { AttributeContractWorkspaceResponseDtoCurrentContractRevision } from "./attributeContractWorkspaceResponseDtoCurrentContractRevision";
+import type { AttributeContractWorkspaceResponseDtoCurrentPublication } from "./attributeContractWorkspaceResponseDtoCurrentPublication";
 import type { AttributeContractDraftResponseDto } from "./attributeContractDraftResponseDto";
 import type { AttributeContractValidationResponseDto } from "./attributeContractValidationResponseDto";
 
 export interface AttributeContractWorkspaceResponseDto {
+  changes: AttributePublicationChangesResponseDto;
   /** @nullable */
-  currentRevision?: AttributeContractWorkspaceResponseDtoCurrentRevision;
+  currentContractRevision?: AttributeContractWorkspaceResponseDtoCurrentContractRevision;
+  /** @nullable */
+  currentPublication?: AttributeContractWorkspaceResponseDtoCurrentPublication;
   draft: AttributeContractDraftResponseDto;
   validation: AttributeContractValidationResponseDto;
 }

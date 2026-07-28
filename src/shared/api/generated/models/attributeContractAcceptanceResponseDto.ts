@@ -12,6 +12,5 @@ export interface AttributeContractAcceptanceResponseDto {
   acceptedUntil?: string | null;
   id: string;
   reason: string;
-  /** @nullable */
-  sourcePublishRevisionId?: string | null;
+  sourcePublicationId: string;
 }

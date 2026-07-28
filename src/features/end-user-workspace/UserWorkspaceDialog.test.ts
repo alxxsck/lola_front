@@ -133,6 +133,8 @@ describe("единое рабочее пространство пользова�
       receivedAt: "2026-07-20T12:00:00.000Z",
       ageSeconds: 60,
       contractRevision: 1,
+      publicationId: "publication-12",
+      publicationSequence: 12,
       provenance: "PRODUCT_PROFILE",
     });
     mocks.getConversations.mockResolvedValue({
@@ -252,6 +254,10 @@ describe("единое рабочее пространство пользова�
     await flushPromises();
 
     expect(wrapper.get('[data-testid="profile-overview"]')).toBeTruthy();
+    expect(wrapper.text()).toContain("Контракт полей");
+    expect(wrapper.text()).toContain("v1");
+    expect(wrapper.text()).toContain("Публикация настроек");
+    expect(wrapper.text()).toContain("#12");
     expect(
       wrapper.get('[data-testid="end-user-ai-usage"]').attributes(),
     ).toMatchObject({

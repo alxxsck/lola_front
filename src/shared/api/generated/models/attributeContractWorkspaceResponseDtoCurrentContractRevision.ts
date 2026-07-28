@@ -10,5 +10,5 @@ import type { AttributeContractRevisionResponseDto } from "./attributeContractRe
 /**
  * @nullable
  */
-export type AttributeContractWorkspaceResponseDtoCurrentRevision =
+export type AttributeContractWorkspaceResponseDtoCurrentContractRevision =
   AttributeContractRevisionResponseDto | null;

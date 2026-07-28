@@ -18,7 +18,7 @@ export interface PublishAttributeContractDto {
    */
   compatibilityGraceDays?: number;
   /** @nullable */
-  expectedCurrentRevisionId: string | null;
+  expectedCurrentPublicationId: string | null;
   /** @minimum 0 */
   expectedDraftVersion: number;
   /** @nullable */

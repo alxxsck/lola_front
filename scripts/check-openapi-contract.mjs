@@ -571,9 +571,23 @@ const requiredOperations = new Map([
     },
   ],
   [
+    "AttributeContract_publications",
+    {
+      label: "attribute publication history",
+      response: "AttributePublicationPageResponseDto",
+    },
+  ],
+  [
+    "AttributeContract_publication",
+    {
+      label: "attribute publication",
+      response: "AttributePublicationResponseDto",
+    },
+  ],
+  [
     "AttributeContract_revisions",
     {
-      label: "attribute contract history",
+      label: "attribute contract revision history",
       response: "AttributeContractRevisionPageResponseDto",
     },
   ],
@@ -1362,13 +1376,78 @@ requireRequiredProperties("AudienceCatalogV2ResponseDto", [
   "snapshotPolicy",
 ]);
 requireSchemaProperties("AttributeContractWorkspaceResponseDto", [
-  "currentRevision",
+  "currentPublication",
+  "currentContractRevision",
   "draft",
+  "changes",
   "validation",
 ]);
 requireRequiredProperties("AttributeContractWorkspaceResponseDto", [
   "draft",
+  "changes",
   "validation",
+]);
+requireSchemaProperties("AttributeContractValidationResponseDto", [
+  "valid",
+  "draftVersion",
+  "validationHash",
+  "issues",
+  "artifact",
+  "changes",
+]);
+requireRequiredProperties("AttributeContractValidationResponseDto", [
+  "valid",
+  "draftVersion",
+  "validationHash",
+  "issues",
+  "artifact",
+  "changes",
+]);
+requireSchemaProperties("PublishAttributeContractDto", [
+  "expectedDraftVersion",
+  "expectedCurrentPublicationId",
+  "validationHash",
+  "reason",
+  "compatibilityGraceDays",
+  "breakingChangePlan",
+  "readinessEvidenceId",
+  "securityConfirmations",
+]);
+requireRequiredProperties("PublishAttributeContractDto", [
+  "expectedDraftVersion",
+  "expectedCurrentPublicationId",
+  "validationHash",
+  "reason",
+]);
+requireSchemaProperties("PublishAttributeContractResponseDto", [
+  "publication",
+  "contractRevision",
+  "changes",
+  "productIntegrationActionRequired",
+  "profileResyncRequired",
+  "compatibility",
+]);
+requireRequiredProperties("PublishAttributeContractResponseDto", [
+  "publication",
+  "contractRevision",
+  "changes",
+  "productIntegrationActionRequired",
+  "profileResyncRequired",
+  "compatibility",
+]);
+requireSchemaProperties("AttributePublicationChangesResponseDto", [
+  "contractChanged",
+  "metadataChanged",
+  "policyChanged",
+  "lifecycleChanged",
+  "contractCompatibility",
+]);
+requireRequiredProperties("AttributePublicationChangesResponseDto", [
+  "contractChanged",
+  "metadataChanged",
+  "policyChanged",
+  "lifecycleChanged",
+  "contractCompatibility",
 ]);
 requireSchemaProperties("AttributeContractDraftFieldDto", [
   "definitionId",
@@ -1430,6 +1509,8 @@ requireSchemaProperties("ProfileProjectionResponseDto", [
   "externalUserId",
   "profileVersion",
   "contractRevision",
+  "publicationId",
+  "publicationSequence",
   "syncStatus",
   "observedAt",
   "receivedAt",

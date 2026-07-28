@@ -9,7 +9,8 @@
 export interface AttributeContractAuthorizationResponseDto {
   /** @nullable */
   breakingChangePlan?: string | null;
-  compatibilityGraceDays: number;
+  /** @nullable */
+  compatibilityGraceDays?: number | null;
   /** @nullable */
   readinessEvidenceId?: string | null;
   securityConfirmations: string[];

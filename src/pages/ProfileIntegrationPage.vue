@@ -19,8 +19,12 @@ const workspace = ref<AttributeContractWorkspaceResponseDto | null>(null);
 const health = ref<ProfileHealthResponseDto | null>(null);
 const method = ref<"direct" | "session">("session");
 
-const revision = computed(() => workspace.value?.currentRevision?.version ?? 1);
-const published = computed(() => Boolean(workspace.value?.currentRevision));
+const revision = computed(
+  () => workspace.value?.currentContractRevision?.version ?? 1,
+);
+const published = computed(() =>
+  Boolean(workspace.value?.currentContractRevision),
+);
 type ExampleValue = string | number | boolean;
 
 function exampleValue(
@@ -46,7 +50,7 @@ const exampleProfile = computed<{
   attributes: Record<string, ExampleValue>;
   usesPublishedFields: boolean;
 }>(() => {
-  const fields = (workspace.value?.currentRevision?.fields ?? []).filter(
+  const fields = (workspace.value?.currentContractRevision?.fields ?? []).filter(
     (field) => field.lifecycle !== "ARCHIVED",
   );
   if (fields.length) {
@@ -60,7 +64,8 @@ const exampleProfile = computed<{
       usesPublishedFields: true,
     };
   }
-  const properties = workspace.value?.currentRevision?.schema.properties ?? {};
+  const properties =
+    workspace.value?.currentContractRevision?.schema.properties ?? {};
   const fromSchema = Object.entries(properties).map(([key, property]) => [
     key,
     exampleValue(
@@ -132,7 +137,7 @@ await fetch(\`${"${lolaUrl}"}/api/v1/interaction-sessions\`, {
 const schemaJson = computed(() =>
   JSON.stringify(
     workspace.value?.validation.artifact.schema ??
-      workspace.value?.currentRevision?.schema ?? {
+      workspace.value?.currentContractRevision?.schema ?? {
         type: "object",
         properties: {},
         additionalProperties: false,
@@ -150,8 +155,16 @@ async function load() {
   loading.value = true;
   try {
     if (repository.mode === "mock") {
+      const changes = {
+        contractChanged: false,
+        contractCompatibility: "UNCHANGED" as const,
+        lifecycleChanged: false,
+        metadataChanged: false,
+        policyChanged: false,
+      };
       workspace.value = {
-        currentRevision: {
+        currentPublication: null,
+        currentContractRevision: {
           id: "demo-revision",
           projectId,
           version: 3,
@@ -187,10 +200,11 @@ async function load() {
           publishedById: null,
           publishReason: "Демонстрационная версия",
         },
+        changes,
         draft: {
           projectId,
           draftVersion: 3,
-          baseContractRevisionId: "demo-revision",
+          basePublicationId: null,
           updatedById: null,
           document: { fields: [] },
         },
@@ -215,6 +229,7 @@ async function load() {
               required: [],
             },
           },
+          changes,
         },
       };
       health.value = {

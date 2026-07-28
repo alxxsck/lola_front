@@ -715,6 +715,28 @@ function displayField(
                   <dd>{{ detail.profileVersion }}</dd>
                 </div>
                 <div>
+                  <dt>Контракт полей</dt>
+                  <dd>
+                    {{
+                      detail.contractRevision !== null &&
+                      detail.contractRevision !== undefined
+                        ? `v${detail.contractRevision}`
+                        : "Не указан"
+                    }}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Публикация настроек</dt>
+                  <dd>
+                    {{
+                      detail.publicationSequence !== null &&
+                      detail.publicationSequence !== undefined
+                        ? `#${detail.publicationSequence}`
+                        : "Не указана"
+                    }}
+                  </dd>
+                </div>
+                <div>
                   <dt>Актуальность</dt>
                   <dd>
                     {{

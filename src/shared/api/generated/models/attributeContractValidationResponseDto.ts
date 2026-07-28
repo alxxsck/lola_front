@@ -6,10 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AttributeContractArtifactResponseDto } from "./attributeContractArtifactResponseDto";
+import type { AttributePublicationChangesResponseDto } from "./attributePublicationChangesResponseDto";
 import type { AttributeContractIssueResponseDto } from "./attributeContractIssueResponseDto";
 
 export interface AttributeContractValidationResponseDto {
   artifact: AttributeContractArtifactResponseDto;
+  changes: AttributePublicationChangesResponseDto;
   draftVersion: number;
   issues: AttributeContractIssueResponseDto[];
   valid: boolean;

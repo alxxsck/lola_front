@@ -19,7 +19,7 @@ import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
 import SpeechSynthesisSection from "@/features/speech-synthesis/SpeechSynthesisSection.vue";
 import type {
-  AttributeContractRevisionFieldResponseDto,
+  AttributeContractDraftFieldDto,
   RealtimeVoice,
 } from "@/shared/api/generated/models";
 import { repository } from "@/shared/api/repository";
@@ -100,7 +100,7 @@ const error = ref("");
 const validationError = ref("");
 const project = ref<AuthProject | null>(null);
 const settingsProject = ref<Project | null>(null);
-const localeField = ref<AttributeContractRevisionFieldResponseDto | null>(null);
+const localeField = ref<AttributeContractDraftFieldDto | null>(null);
 const activitySettings = ref<ActivitySettings | null>(null);
 const initialSnapshot = ref("");
 const systemPromptControl = ref<HTMLElement | null>(null);
@@ -199,7 +199,7 @@ async function loadProject() {
       initialSnapshot.value = "";
     }
     localeField.value =
-      workspace?.currentRevision?.fields.find(
+      workspace?.currentPublication?.document.fields.find(
         (field) =>
           field.semanticRole === "LOCALE" && field.lifecycle === "ACTIVE",
       ) ?? null;

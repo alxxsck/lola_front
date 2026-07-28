@@ -122,14 +122,14 @@ const identityLocked = computed(() => {
   const definitionId = form.value.definitionId;
   return Boolean(
     definitionId &&
-    workspace.value?.currentRevision?.fields.some(
+    workspace.value?.currentPublication?.document.fields.some(
       (field) => field.definitionId === definitionId,
     ),
   );
 });
 const publishedSystemPurpose = computed(
   () =>
-    workspace.value?.currentRevision?.fields.find(
+    workspace.value?.currentPublication?.document.fields.find(
       (field) => field.definitionId === form.value.definitionId,
     )?.semanticRole ?? null,
 );
@@ -445,12 +445,21 @@ function mockWorkspace(): AttributeContractWorkspaceResponseDto {
       },
     },
   ];
+  const changes = {
+    contractChanged: false,
+    contractCompatibility: "UNCHANGED" as const,
+    lifecycleChanged: false,
+    metadataChanged: false,
+    policyChanged: false,
+  };
   return {
-    currentRevision: null,
+    currentPublication: null,
+    currentContractRevision: null,
+    changes,
     draft: {
       projectId,
       draftVersion: 3,
-      baseContractRevisionId: null,
+      basePublicationId: null,
       updatedById: null,
       document: readDemoContractDraft(projectId, { fields }),
     },
@@ -469,6 +478,7 @@ function mockWorkspace(): AttributeContractWorkspaceResponseDto {
           required: [],
         },
       },
+      changes,
     },
   };
 }

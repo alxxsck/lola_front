@@ -4,22 +4,22 @@ import { onBeforeRouteLeave, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { DocumentationCallout } from "@/features/documentation/ui";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
+import type { AttributePublicationFormCommand } from "@/features/end-user-attributes/model/publication-domain";
+import AttributePublicationHistory from "@/features/end-user-attributes/ui/AttributePublicationHistory.vue";
+import ContractRevisionHistory from "@/features/end-user-attributes/ui/ContractRevisionHistory.vue";
+import PublishAttributeChangesDialog from "@/features/end-user-attributes/ui/PublishAttributeChangesDialog.vue";
 import CodeBlock from "@/shared/ui/CodeBlock.vue";
 import {
   createContractField,
-  parseAllowedValues,
   validateContractDocument,
 } from "@/features/end-user-attributes/model/contract-domain";
 import { type ContractIssuePresentation } from "@/features/end-user-attributes/model/contract-issue-presentation";
@@ -34,10 +34,13 @@ import { formatProfileContractMarkdown } from "@/shared/lib/data-contract-markdo
 import type {
   AttributeContractDraftResponseDto,
   AttributeContractDraftFieldDto,
+  AttributeContractRevisionResponseDto,
   AttributeContractRevisionSummaryResponseDto,
   AttributeDefinitionImpactResponseDto,
   AttributeContractValidationResponseDto,
   AttributeContractWorkspaceResponseDto,
+  AttributePublicationResponseDto,
+  AttributePublicationSummaryResponseDto,
   ProfileHealthResponseDto,
 } from "@/shared/api/generated/models";
 
@@ -57,37 +60,19 @@ const draftConflict = ref<{
 } | null>(null);
 const validation = ref<AttributeContractValidationResponseDto | null>(null);
 const health = ref<ProfileHealthResponseDto | null>(null);
+const publications = ref<AttributePublicationSummaryResponseDto[]>([]);
 const revisions = ref<AttributeContractRevisionSummaryResponseDto[]>([]);
-const editorVisible = ref(false);
+const selectedPublication = ref<AttributePublicationResponseDto | null>(null);
+const selectedRevision = ref<AttributeContractRevisionResponseDto | null>(null);
+const historyTab = ref<"publications" | "contracts">("publications");
+const historyDetailLoading = ref(false);
 const publishingVisible = ref(false);
-const integrationVisible = ref(false);
 const historyVisible = ref(false);
 const impactVisible = ref(false);
 const aiContextVisible = ref(false);
 const impactLoading = ref(false);
 const impact = ref<AttributeDefinitionImpactResponseDto | null>(null);
 const impactField = ref<AttributeContractDraftFieldDto | null>(null);
-const editingIndex = ref<number | null>(null);
-const form = ref<AttributeContractDraftFieldDto>(createContractField());
-const allowedValuesInput = ref("");
-const fieldFormError = ref("");
-const publishForm = ref({
-  reason: "",
-  graceDays: 7,
-  breakingChangePlan: "",
-  readinessEvidenceId: "",
-  confirmSecurity: false,
-});
-const publishHelp = {
-  reason:
-    "Коротко опишите, что изменилось и зачем. Этот текст будет виден администраторам в истории публикаций.",
-  graceDays:
-    "Переходный период позволяет временно принимать предыдущую версию полей. Укажите количество дней, пока разработчики обновляют интеграцию, или 0, если все источники уже готовы.",
-  breakingChangePlan:
-    "Заполните, если старые запросы перестанут подходить новой структуре. Укажите, какие системы и в каком порядке обновит команда.",
-  readinessEvidence:
-    "Укажите номер задачи или проверки, где разработчики подтвердили, что готовы передавать новые обязательные поля.",
-} as const;
 const healthWindow = ref<"24h" | "7d" | "30d">("7d");
 const aiFormat = ref<"STRUCTURED_JSON" | "COMPACT_TEXT">("STRUCTURED_JSON");
 const aiBudget = ref(2000);
@@ -133,11 +118,9 @@ const { errors, warnings } = useContractIssuePresentation(issueInputs, fields);
 const dirty = computed(() =>
   workspace.value
     ? contractDocumentSignature(workspace.value.draft.document) !==
-      contractDocumentSignature({
-        fields: (workspace.value.currentRevision?.fields ?? []).map(
-          toDraftField,
-        ),
-      })
+      contractDocumentSignature(
+        workspace.value.currentPublication?.document ?? { fields: [] },
+      )
     : false,
 );
 const hasUnsavedDraftEdits = computed(
@@ -146,57 +129,18 @@ const hasUnsavedDraftEdits = computed(
     JSON.stringify(workspace.value?.draft.document) !==
       savedDraftSnapshot.value,
 );
-const securityAffectedDefinitionIds = computed(() => [
-  ...new Set(
-    (validation.value?.issues ?? [])
-      .filter(
-        (issue) =>
-          issue.compatibility === "SECURITY" && Boolean(issue.definitionId),
-      )
-      .map((issue) => issue.definitionId as string),
-  ),
-]);
-const canPublish = computed(
+const publishReady = computed(
   () =>
     canManage.value &&
     canPublishContract.value &&
     dirty.value &&
     !hasUnsavedDraftEdits.value &&
-    validation.value?.valid &&
-    validation.value.draftVersion === workspace.value?.draft.draftVersion &&
-    !errors.value.length &&
-    (!requiresReadinessEvidence.value ||
-      publishForm.value.readinessEvidenceId.trim().length > 0) &&
-    (!requiresSecurityConfirmation.value ||
-      (canManageAiContext.value && publishForm.value.confirmSecurity)) &&
-    publishForm.value.reason.trim().length > 0,
-);
-const requiresReadinessEvidence = computed(() =>
-  (validation.value?.issues ?? []).some(
-    (issue) =>
-      issue.code === "ATTRIBUTE_REQUIREMENT_CHANGED" ||
-      issue.code === "ATTRIBUTE_REQUIRED_ENFORCED_ADDED",
-  ),
-);
-const requiresSecurityConfirmation = computed(() =>
-  (validation.value?.issues ?? []).some(
-    (issue) => issue.compatibility === "SECURITY",
-  ),
-);
-const schemaJson = computed(() =>
-  JSON.stringify(
-    validation.value?.artifact.schema ??
-      workspace.value?.currentRevision?.schema ?? {
-        type: "object",
-        properties: {},
-        additionalProperties: false,
-      },
-    null,
-    2,
-  ),
+    Boolean(validation.value?.valid) &&
+    validation.value?.draftVersion === workspace.value?.draft.draftVersion &&
+    !errors.value.length,
 );
 const publishedAiFields = computed(() =>
-  (workspace.value?.currentRevision?.fields ?? []).filter(
+  (workspace.value?.currentPublication?.document.fields ?? []).filter(
     (field) => field.lifecycle !== "ARCHIVED" && field.policies.aiRead,
   ),
 );
@@ -270,13 +214,6 @@ const indexOptions = [
   { value: "NONE", label: "Не использовать для поиска" },
   { value: "EXACT", label: "Искать по точному значению" },
   { value: "RANGE_SORT", label: "Фильтровать и сортировать" },
-];
-const semanticRoleOptions = [
-  { value: "DISPLAY_NAME", label: "Имя пользователя" },
-  { value: "EMAIL", label: "Электронная почта" },
-  { value: "COUNTRY", label: "Страна" },
-  { value: "CURRENCY", label: "Валюта" },
-  { value: "TIME_ZONE", label: "Часовой пояс" },
 ];
 const healthWindowOptions = [
   { value: "24h", label: "24 часа" },
@@ -374,25 +311,51 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
   const publishedDocument = {
     fields: publishedFields.map((field) => toDraftField(field)),
   };
+  const changes = {
+    contractChanged: false,
+    contractCompatibility: "UNCHANGED" as const,
+    lifecycleChanged: false,
+    metadataChanged: false,
+    policyChanged: false,
+  };
+  const compatibilityReport = {
+    valid: true,
+    issues: [],
+    lifecycleImpacts: [],
+    authorization: {
+      readinessEvidenceId: null,
+      securityConfirmations: [],
+      breakingChangePlan: null,
+      compatibilityGraceDays: 7,
+    },
+  };
+  const publishedAt = new Date().toISOString();
   return {
-    currentRevision: {
+    currentPublication: {
+      id: "demo-publication",
+      projectId,
+      sequence: 4,
+      canonicalHash: "demo-publication",
+      validationHash: "demo",
+      contractRevisionId: "demo-revision",
+      contractVersion: 3,
+      changes,
+      compatibilityReport,
+      publishedById: null,
+      publishedActorType: "SYSTEM",
+      publishedActorId: "demo",
+      publishReason: "Демонстрационная публикация",
+      publishedAt,
+      document: publishedDocument,
+    },
+    currentContractRevision: {
       id: "demo-revision",
       projectId,
       version: 3,
       canonicalHash: "demo",
       validationHash: "demo",
       acceptances: [],
-      compatibilityReport: {
-        valid: true,
-        issues: [],
-        lifecycleImpacts: [],
-        authorization: {
-          readinessEvidenceId: null,
-          securityConfirmations: [],
-          breakingChangePlan: null,
-          compatibilityGraceDays: 7,
-        },
-      },
+      compatibilityReport,
       schema: {
         $schema: "https://json-schema.org/draft/2020-12/schema",
         type: "object",
@@ -401,14 +364,15 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
         required: [],
       },
       fields: publishedFields,
-      publishedAt: new Date().toISOString(),
+      publishedAt,
       publishedById: null,
       publishReason: "Демонстрационная версия",
     },
+    changes,
     draft: {
       projectId,
       draftVersion: 3,
-      baseContractRevisionId: "demo-revision",
+      basePublicationId: "demo-publication",
       updatedById: null,
       document: readDemoContractDraft(projectId, publishedDocument),
     },
@@ -427,6 +391,7 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
           required: [],
         },
       },
+      changes,
     },
   };
 }
@@ -441,6 +406,19 @@ async function load() {
     if (repository.mode === "mock") {
       workspace.value = demoWorkspace();
       validation.value = workspace.value.validation;
+      const publication = workspace.value.currentPublication;
+      const revision = workspace.value.currentContractRevision;
+      publications.value = publication
+        ? [
+            {
+              ...publication,
+              fieldCount: publication.document.fields.length,
+            },
+          ]
+        : [];
+      revisions.value = revision
+        ? [{ ...revision, fieldCount: revision.fields.length }]
+        : [];
       health.value = {
         since: new Date(Date.now() - 7 * 86400000).toISOString(),
         coverage: 0.84,
@@ -469,17 +447,20 @@ async function load() {
         },
       };
     } else {
-      const [nextWorkspace, nextHealth, history] = await Promise.all([
+      const [nextWorkspace, nextHealth, publicationHistory, contractHistory] =
+        await Promise.all([
         attributeContractRepository.workspace(projectId),
         attributeContractRepository.health(projectId, {
           window: healthWindow.value,
         }),
+        attributeContractRepository.publications(projectId, { limit: 25 }),
         attributeContractRepository.revisions(projectId, { limit: 25 }),
       ]);
       workspace.value = nextWorkspace;
       validation.value = nextWorkspace.validation;
       health.value = nextHealth;
-      revisions.value = history.items;
+      publications.value = publicationHistory.items;
+      revisions.value = contractHistory.items;
     }
     savedDraftSnapshot.value = JSON.stringify(workspace.value.draft.document);
     loaded.value = true;
@@ -514,29 +495,6 @@ function openCreate() {
 
 function openEdit(field: AttributeContractDraftFieldDto) {
   void router.push(`/profile-fields/${field.definitionId || field.key}`);
-}
-
-function saveField() {
-  if (!workspace.value) return;
-  try {
-    form.value.constraints.allowedValues = parseAllowedValues(
-      form.value.valueType,
-      allowedValuesInput.value,
-    );
-  } catch (cause) {
-    fieldFormError.value =
-      cause instanceof Error
-        ? cause.message
-        : "Проверьте список допустимых значений.";
-    return;
-  }
-  const index = editingIndex.value;
-  if (index === null)
-    workspace.value.draft.document.fields.push(structuredClone(form.value));
-  else
-    workspace.value.draft.document.fields[index] = structuredClone(form.value);
-  validation.value = null;
-  editorVisible.value = false;
 }
 
 function removeDraftField(field: AttributeContractDraftFieldDto) {
@@ -619,7 +577,7 @@ async function copyLocalConflict() {
 }
 
 async function copyProfileContract() {
-  const revision = workspace.value?.currentRevision;
+  const revision = workspace.value?.currentContractRevision;
   if (!workspace.value || !profileContractFields.value.length) return;
   const copiesDraft = !revision || dirty.value || hasUnsavedDraftEdits.value;
   try {
@@ -682,9 +640,9 @@ async function validateDraft() {
   }
 }
 
-async function publish() {
+async function publish(command: AttributePublicationFormCommand) {
   const projectId = auth.project?.id;
-  if (!projectId || !workspace.value || !validation.value || !canPublish.value)
+  if (!projectId || !workspace.value || !validation.value || !publishReady.value)
     return;
   publishing.value = true;
   error.value = "";
@@ -693,30 +651,28 @@ async function publish() {
       publishingVisible.value = false;
       toast.add({
         severity: "success",
-        summary: "Ревизия опубликована",
-        detail: "Новая версия полей профиля доступна для интеграций.",
+        summary: "Изменения опубликованы",
+        detail: workspace.value.changes.contractChanged
+          ? "Созданы новая публикация и новая версия контракта."
+          : "Создана новая публикация. Версия контракта не изменилась.",
         life: 3500,
       });
       return;
     }
-    await attributeContractRepository.publish(projectId, {
-      expectedCurrentRevisionId: workspace.value.currentRevision?.id ?? null,
+    const result = await attributeContractRepository.publish(projectId, {
+      expectedCurrentPublicationId: workspace.value.currentPublication?.id ?? null,
       expectedDraftVersion: workspace.value.draft.draftVersion,
       validationHash: validation.value.validationHash,
-      reason: publishForm.value.reason.trim(),
-      compatibilityGraceDays: publishForm.value.graceDays,
-      breakingChangePlan: publishForm.value.breakingChangePlan.trim() || null,
-      readinessEvidenceId: publishForm.value.readinessEvidenceId.trim() || null,
-      securityConfirmations: publishForm.value.confirmSecurity
-        ? securityAffectedDefinitionIds.value
-        : [],
+      ...command,
     });
     publishingVisible.value = false;
     await load();
     toast.add({
       severity: "success",
-      summary: "Поля профиля опубликованы",
-      detail: "Создана новая версия настроек.",
+      summary: `Публикация #${result.publication.sequence} создана`,
+      detail: result.changes.contractChanged
+        ? `Создан контракт v${result.contractRevision.version}. Команде продукта нужно обновить известную версию.`
+        : `Контракт v${result.contractRevision.version} не изменился. Обновлять backend продукта и профили не нужно.`,
       life: 3500,
     });
   } catch (cause) {
@@ -724,6 +680,42 @@ async function publish() {
       cause instanceof Error ? cause.message : "Сервер отклонил публикацию";
   } finally {
     publishing.value = false;
+  }
+}
+
+async function selectPublication(publicationId: string) {
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  historyDetailLoading.value = true;
+  try {
+    selectedPublication.value =
+      repository.mode === "mock"
+        ? (workspace.value?.currentPublication ?? null)
+        : await attributeContractRepository.publication(projectId, publicationId);
+  } catch (cause) {
+    error.value =
+      cause instanceof Error
+        ? cause.message
+        : "Не удалось загрузить публикацию";
+  } finally {
+    historyDetailLoading.value = false;
+  }
+}
+
+async function selectRevision(revisionId: string) {
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  historyDetailLoading.value = true;
+  try {
+    selectedRevision.value =
+      repository.mode === "mock"
+        ? (workspace.value?.currentContractRevision ?? null)
+        : await attributeContractRepository.revision(projectId, revisionId);
+  } catch (cause) {
+    error.value =
+      cause instanceof Error ? cause.message : "Не удалось загрузить контракт";
+  } finally {
+    historyDetailLoading.value = false;
   }
 }
 
@@ -840,7 +832,7 @@ function fieldPublicationState(field: AttributeContractDraftFieldDto) {
 }
 
 function publishedFieldFor(field: AttributeContractDraftFieldDto) {
-  return workspace.value?.currentRevision?.fields.find(
+  return workspace.value?.currentPublication?.document.fields.find(
     (item) => item.definitionId === field.definitionId,
   );
 }
@@ -1045,7 +1037,7 @@ function archiveImpactedField() {
               ><small>Что хранить о пользователе</small>
             </div>
           </li>
-          <li :class="{ done: Boolean(workspace.currentRevision) }">
+          <li :class="{ done: Boolean(workspace.currentPublication) }">
             <span>2</span>
             <div>
               <strong>Опубликуйте структуру</strong
@@ -1064,17 +1056,29 @@ function archiveImpactedField() {
 
       <section class="summary-grid">
         <article class="metric card">
-          <span>Опубликованная версия</span
+          <span>Текущая публикация</span
           ><strong>{{
-            workspace.currentRevision
-              ? `Версия ${workspace.currentRevision.version}`
+            workspace.currentPublication
+              ? `Публикация #${workspace.currentPublication.sequence}`
               : "Ещё не опубликовано"
           }}</strong
           ><small>{{
-            workspace.currentRevision
-              ? "Эта структура сейчас используется"
+            workspace.currentPublication
+              ? `Настройки Lola · контракт v${workspace.currentPublication.contractVersion}`
               : "Сначала добавьте хотя бы одно поле"
           }}</small>
+        </article>
+        <article class="metric card">
+          <span>Интеграционный контракт</span
+          ><strong>{{
+            workspace.currentContractRevision
+              ? `Контракт v${workspace.currentContractRevision.version}`
+              : "Ещё не создан"
+          }}</strong
+          ><small
+            >Версия меняется только вместе с producer-visible
+            структурой.</small
+          >
         </article>
         <article class="metric card">
           <span>Текущий черновик</span
@@ -1089,11 +1093,11 @@ function archiveImpactedField() {
             hasUnsavedDraftEdits
               ? "Сохраните изменения, чтобы проверить и опубликовать их."
               : dirty
-                ? workspace.currentRevision
-                  ? `Сохранённый черновик отличается от опубликованной версии ${workspace.currentRevision.version}.`
+                ? workspace.currentPublication
+                  ? `Сохранённый черновик отличается от публикации #${workspace.currentPublication.sequence}.`
                   : "Сохранённый черновик ещё не опубликован."
-                : workspace.currentRevision
-                  ? `Совпадает с опубликованной версией ${workspace.currentRevision.version}.`
+                : workspace.currentPublication
+                  ? `Совпадает с публикацией #${workspace.currentPublication.sequence}.`
                   : "Изменений для публикации нет."
           }}</small>
         </article>
@@ -1472,8 +1476,10 @@ function archiveImpactedField() {
           }}</strong
           ><small>{{
             dirty
-              ? "Новая структура начнёт действовать только после публикации."
-              : "Текущая структура уже используется Lola."
+              ? validation?.changes.contractChanged
+                ? "Публикация создаст новую версию интеграционного контракта."
+                : "Настройки Lola изменятся без новой версии контракта."
+              : "Текущая публикация уже используется Lola."
           }}</small>
         </div>
         <Button
@@ -1510,350 +1516,15 @@ function archiveImpactedField() {
       <div id="profile-tools-slot" class="content-slot" />
     </template>
 
-    <Dialog
-      v-if="false"
-      v-model:visible="editorVisible"
-      modal
-      :header="
-        editingIndex === null
-          ? 'Новое поле профиля пользователя'
-          : 'Изменить поле'
-      "
-      :style="{ width: 'min(920px, calc(100vw - 24px))' }"
-    >
-      <form
-        id="contract-field-form"
-        class="editor-form"
-        @submit.prevent="saveField"
-      >
-        <div class="form-grid triple">
-          <label
-            ><span>Название *</span
-            ><InputText v-model="form.label" autofocus maxlength="120" /></label
-          ><label
-            ><span>Stable key *</span
-            ><InputText
-              v-model="form.key"
-              class="mono"
-              :disabled="isPublishedField(form)"
-          /></label>
-        </div>
-        <div class="form-grid triple">
-          <label
-            ><span>Тип</span
-            ><Select
-              v-model="form.valueType"
-              :options="valueTypes"
-              option-label="label"
-              option-value="value"
-              :disabled="isPublishedField(form)" /></label
-          ><label
-            ><span>Lifecycle</span
-            ><Select
-              v-model="form.lifecycle"
-              :options="lifecycleOptions"
-              option-label="label"
-              option-value="value" /></label
-          ><label
-            ><span>Position</span
-            ><InputNumber
-              v-model="form.position"
-              :min="0"
-              :max="10000"
-              :use-grouping="false"
-          /></label>
-        </div>
-        <small class="type-copy">{{ typeHint(form.valueType) }}</small>
-        <div class="form-grid">
-          <label
-            ><span>Requirement</span
-            ><Select
-              v-model="form.requirement"
-              :options="requirementOptions"
-              option-label="label"
-              option-value="value" /></label
-          ><label
-            ><span>Classification</span
-            ><Select
-              v-model="form.classification"
-              :options="classificationOptions"
-              option-label="label"
-              option-value="value" /></label
-          ><label
-            ><span>Назначение данных</span
-            ><Select
-              v-model="form.semanticRole"
-              :options="semanticRoleOptions"
-              option-label="label"
-              option-value="value"
-              show-clear
-              placeholder="Не задана"
-          /></label>
-        </div>
-        <label
-          ><span>Описание</span
-          ><Textarea
-            v-model="form.description"
-            rows="2"
-            auto-resize
-            maxlength="2000"
-        /></label>
-        <label
-          ><span>Цель и правовое основание</span
-          ><Textarea
-            v-model="form.purpose"
-            rows="2"
-            auto-resize
-            maxlength="500"
-            placeholder="Обязательно, если поле используют функции с ИИ"
-        /></label>
-        <section class="policy-editor surface-soft">
-          <h3>Политики потребителей</h3>
-          <div class="toggle-grid">
-            <label
-              ><span>Просмотр администраторами</span
-              ><ToggleSwitch v-model="form.policies.adminRead" /></label
-            ><label
-              ><span>Условия аудитории</span
-              ><ToggleSwitch v-model="form.policies.audienceRead" /></label
-            ><label
-              ><span>Шаблоны сообщений</span
-              ><ToggleSwitch v-model="form.policies.templateRead" /></label
-            ><label
-              ><span>Функции с ИИ</span
-              ><ToggleSwitch v-model="form.policies.aiRead" /></label
-            ><label
-              ><span>Интерфейс продукта</span
-              ><ToggleSwitch v-model="form.policies.clientRead" /></label
-            ><label
-              ><span>Выгрузка</span
-              ><ToggleSwitch v-model="form.policies.exportRead" /></label
-            ><label
-              ><span>Индексирование</span
-              ><Select
-                v-model="form.policies.indexPolicy"
-                :options="indexOptions"
-                option-label="label"
-                option-value="value"
-            /></label>
-          </div>
-          <label class="allowed-values"
-            ><span>Допустимые значения · по одному в строке</span
-            ><Textarea
-              v-model="allowedValuesInput"
-              rows="3"
-              auto-resize
-              :placeholder="
-                form.valueType === 'BOOLEAN'
-                  ? 'true\nfalse'
-                  : form.valueType === 'DECIMAL'
-                    ? '10.00\n99.95'
-                    : 'basic\npremium'
-              "
-            /><small
-              >Десятичные числа сохраняются без округления; целые числа и
-              значения «да/нет» проверяются до отправки на сервер.</small
-            ></label
-          >
-        </section>
-        <section class="policy-editor surface-soft">
-          <h3>Ограничения</h3>
-          <div class="form-grid triple">
-            <label
-              ><span>Минимальная длина</span
-              ><InputNumber
-                v-model="form.constraints.minLength"
-                :min="0" /></label
-            ><label
-              ><span>Максимальная длина</span
-              ><InputNumber
-                v-model="form.constraints.maxLength"
-                :min="0" /></label
-            ><label
-              ><span>Всего цифр в числе</span
-              ><InputNumber
-                v-model="form.constraints.precision"
-                :min="1"
-                :max="38" /></label
-            ><label
-              ><span>Цифр после запятой</span
-              ><InputNumber
-                v-model="form.constraints.scale"
-                :min="0"
-                :max="38" /></label
-            ><label
-              ><span>Минимальное значение</span
-              ><InputText
-                :model-value="String(form.constraints.minimum ?? '')"
-                @update:model-value="
-                  form.constraints.minimum = $event || undefined
-                " /></label
-            ><label
-              ><span>Максимальное значение</span
-              ><InputText
-                :model-value="String(form.constraints.maximum ?? '')"
-                @update:model-value="
-                  form.constraints.maximum = $event || undefined
-                "
-            /></label>
-          </div>
-        </section>
-        <div v-if="form.lifecycle === 'DEPRECATED'" class="form-grid">
-          <label
-            ><span>ID поля, которое используется вместо этого</span
-            ><InputText
-              v-model="form.replacementDefinitionId"
-              class="mono" /></label
-          ><label
-            ><span>Когда перестать принимать поле</span
-            ><InputText
-              v-model="form.sunsetAt"
-              placeholder="2026-12-31T00:00:00Z"
-            /><small
-              >Укажите дату и время по UTC, например
-              2026-12-31T00:00:00Z.</small
-            ></label
-          >
-        </div>
-        <Message v-if="fieldFormError" severity="error" :closable="false">{{
-          fieldFormError
-        }}</Message>
-      </form>
-      <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="editorVisible = false" /><Button
-          form="contract-field-form"
-          type="submit"
-          label="Применить в черновик"
-          :disabled="!form.label.trim() || !form.key.trim()"
-      /></template>
-    </Dialog>
-
-    <Dialog
+    <PublishAttributeChangesDialog
+      v-if="validation"
       v-model:visible="publishingVisible"
-      modal
-      header="Опубликовать изменения"
-      :style="{ width: 'min(650px, calc(100vw - 24px))' }"
-    >
-      <div class="publish-form">
-        <Message severity="warn" :closable="false"
-          >После публикации новая структура начнёт действовать. Уже сохранённые
-          профили и старые версии останутся без изменений.</Message
-        ><label
-          ><span class="label-with-help"
-            >Причина изменения *
-            <button
-              type="button"
-              class="help-button"
-              aria-describedby="publish-reason-help"
-            >
-              <i class="pi pi-question-circle" aria-hidden="true" />
-              <span class="sr-only">Показать подсказку</span></button
-            ><span
-              id="publish-reason-help"
-              class="help-tooltip"
-              role="tooltip"
-              >{{ publishHelp.reason }}</span
-            ></span
-          ><Textarea
-            v-model="publishForm.reason"
-            rows="3"
-            maxlength="1000" /></label
-        ><label
-          ><span class="label-with-help"
-            >Переходный период, дней
-            <button
-              type="button"
-              class="help-button"
-              aria-describedby="publish-grace-days-help"
-            >
-              <i class="pi pi-question-circle" aria-hidden="true" />
-              <span class="sr-only">Показать подсказку</span></button
-            ><span
-              id="publish-grace-days-help"
-              class="help-tooltip"
-              role="tooltip"
-              >{{ publishHelp.graceDays }}</span
-            ></span
-          ><InputNumber
-            v-model="publishForm.graceDays"
-            :min="0"
-            :max="30" /></label
-        ><label
-          ><span class="label-with-help"
-            >План перехода для несовместимых изменений
-            <button
-              type="button"
-              class="help-button"
-              aria-describedby="publish-breaking-change-plan-help"
-            >
-              <i class="pi pi-question-circle" aria-hidden="true" />
-              <span class="sr-only">Показать подсказку</span></button
-            ><span
-              id="publish-breaking-change-plan-help"
-              class="help-tooltip"
-              role="tooltip"
-              >{{ publishHelp.breakingChangePlan }}</span
-            ></span
-          ><Textarea
-            v-model="publishForm.breakingChangePlan"
-            rows="3"
-            maxlength="2000" /></label
-        ><label
-          ><span class="label-with-help"
-            >Номер задачи о готовности интеграции
-            <button
-              type="button"
-              class="help-button"
-              aria-describedby="publish-readiness-evidence-help"
-            >
-              <i class="pi pi-question-circle" aria-hidden="true" />
-              <span class="sr-only">Показать подсказку</span></button
-            ><span
-              id="publish-readiness-evidence-help"
-              class="help-tooltip"
-              role="tooltip"
-              >{{ publishHelp.readinessEvidence }}</span
-            ></span
-          ><InputText
-            v-model="publishForm.readinessEvidenceId"
-            class="mono"
-          /><small v-if="requiresReadinessEvidence"
-            >Обязательно: контракт изменяет режим обязательности поля.</small
-          ></label
-        ><label class="security-confirm"
-          ><ToggleSwitch v-model="publishForm.confirmSecurity" /><span
-            >Я проверил, где будут доступны персональные и чувствительные
-            данные.<template v-if="requiresSecurityConfirmation">
-              Подтверждение обязательно, потому что меняется доступ к
-              данным.</template
-            ></span
-          ></label
-        >
-        <Message
-          v-if="requiresSecurityConfirmation && !canManageAiContext"
-          severity="error"
-          :closable="false"
-          >Изменение доступа к чувствительным данным может подтвердить только
-          владелец проекта.</Message
-        >
-      </div>
-      <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="publishingVisible = false" /><Button
-          label="Опубликовать"
-          icon="pi pi-send"
-          :loading="publishing"
-          :disabled="!canPublish"
-          @click="publish"
-      /></template>
-    </Dialog>
+      :can-confirm-security="canManageAiContext"
+      :changes="validation.changes"
+      :issues="validation.issues"
+      :publishing="publishing"
+      @publish="publish"
+    />
 
     <Dialog
       v-model:visible="aiContextVisible"
@@ -1891,7 +1562,7 @@ function archiveImpactedField() {
         <div v-if="publishedAiFields.length" class="policy-list">
           <span
             v-for="field in publishedAiFields"
-            :key="field.definitionRevisionId"
+            :key="field.definitionId ?? field.key"
             >{{ field.label }} · {{ field.classification }}</span
           >
         </div>
@@ -1907,75 +1578,60 @@ function archiveImpactedField() {
     </Dialog>
 
     <Dialog
-      v-model:visible="integrationVisible"
-      modal
-      header="Как передавать профиль"
-      :style="{ width: 'min(820px, calc(100vw - 24px))' }"
-    >
-      <div class="guide">
-        <p>
-          Сервер вашего продукта передаёт полный профиль. Токену нужен доступ
-          <code>profile:snapshot:write</code>. Обновление с большим порядковым
-          номером нельзя перезаписать более старым; один и тот же запрос можно
-          безопасно повторить.
-        </p>
-        <h3>Обновление профиля · PUT /api/v1/end-user-profile-snapshots</h3>
-        <pre><code>curl -X PUT "$LOLA_URL/api/v1/end-user-profile-snapshots" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  --data '{
-  "externalUserId": "user-123",
-  "contractRevision": {{ workspace?.currentRevision?.version ?? 1 }},
-  "observedAt": "2026-07-19T08:30:00Z",
-  "sourceSequence": "42",
-  "attributes": { "displayName": "Ada", "loyaltyTier": "gold" }
-}'</code></pre>
-        <h3>Профиль при создании сессии · POST /api/v1/interaction-sessions</h3>
-        <pre><code>const body = {
-  externalUserId: "user-123",
-  profileSnapshot: {
-    contractRevision: {{ workspace?.currentRevision?.version ?? 1 }},
-    idempotencyKey: "session:user-123:42",
-    observedAt: "2026-07-19T08:30:00Z",
-    sourceSequence: "42",
-    attributes: { displayName: "Ada", loyaltyTier: "gold" }
-  }
-};
-await fetch("/api/v1/interaction-sessions", {
-  method: "POST",
-  headers: { "Content-Type": "application/json", Authorization: "Bearer &lt;token&gt;" },
-  body: JSON.stringify(body)
-});</code></pre>
-        <h3>Сгенерированная схема JSON</h3>
-        <pre><code>{{ schemaJson }}</code></pre>
-        <Message severity="info" :closable="false"
-          >DECIMAL передавайте строкой, DATE — YYYY-MM-DD, DATETIME — RFC 3339.
-          Полный профиль заменяет предыдущее состояние. Сервер проверяет список
-          разрешённых полей, версию структуры и порядок обновлений и не даёт
-          перезаписать данные более старой версией.</Message
-        >
-      </div>
-    </Dialog>
-
-    <Dialog
       v-model:visible="historyVisible"
       modal
       header="История изменений полей"
-      :style="{ width: 'min(760px, calc(100vw - 24px))' }"
+      :style="{ width: 'min(860px, calc(100vw - 24px))' }"
     >
-      <ol v-if="revisions.length" class="history">
-        <li v-for="revision in revisions" :key="revision.id">
-          <div>
-            <strong
-              >v{{ revision.version }} · {{ revision.fieldCount }} полей</strong
-            ><span>{{
-              new Date(revision.publishedAt).toLocaleString("ru-RU")
-            }}</span>
-          </div>
-          <p>{{ revision.publishReason }}</p>
-          <code>{{ revision.canonicalHash }}</code>
-        </li>
-      </ol>
-      <div v-else class="empty">Опубликованных ревизий пока нет.</div>
+      <div class="history-tabs" role="tablist" aria-label="Тип истории">
+        <button
+          id="publication-history-tab"
+          type="button"
+          role="tab"
+          :aria-selected="historyTab === 'publications'"
+          aria-controls="publication-history-panel"
+          @click="historyTab = 'publications'"
+        >
+          Публикации
+        </button>
+        <button
+          id="contract-history-tab"
+          type="button"
+          role="tab"
+          :aria-selected="historyTab === 'contracts'"
+          aria-controls="contract-history-panel"
+          @click="historyTab = 'contracts'"
+        >
+          Версии контракта
+        </button>
+      </div>
+      <div v-if="historyDetailLoading" class="history-loading">
+        <Skeleton height="6rem" />
+      </div>
+      <div
+        v-show="historyTab === 'publications'"
+        id="publication-history-panel"
+        role="tabpanel"
+        aria-labelledby="publication-history-tab"
+      >
+        <AttributePublicationHistory
+          :items="publications"
+          :selected="selectedPublication"
+          @select="selectPublication"
+        />
+      </div>
+      <div
+        v-show="historyTab === 'contracts'"
+        id="contract-history-panel"
+        role="tabpanel"
+        aria-labelledby="contract-history-tab"
+      >
+        <ContractRevisionHistory
+          :items="revisions"
+          :selected="selectedRevision"
+          @select="selectRevision"
+        />
+      </div>
     </Dialog>
     <Dialog
       v-model:visible="impactVisible"
@@ -2052,6 +1708,34 @@ await fetch("/api/v1/interaction-sessions", {
   border-color: var(--border-strong);
   background: var(--surface-card);
   color: var(--text-primary);
+}
+.history-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem;
+  border-radius: 12px;
+  background: var(--p-content-hover-background);
+}
+.history-tabs button {
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  border: 0;
+  border-radius: 9px;
+  color: var(--p-text-muted-color);
+  background: transparent;
+  cursor: pointer;
+}
+.history-tabs button[aria-selected="true"] {
+  color: var(--p-primary-contrast-color);
+  background: var(--p-primary-color);
+}
+.history-tabs button:focus-visible {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 2px;
+}
+.history-loading {
+  margin-bottom: 1rem;
 }
 .section-nav {
   display: flex;
@@ -2563,173 +2247,20 @@ await fetch("/api/v1/interaction-sessions", {
   text-align: center;
   color: var(--muted);
 }
-.editor-form,
-.publish-form,
 .guide {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-.editor-form > label,
-.publish-form > label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.editor-form label > span,
-.publish-form label > span {
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-.label-with-help {
-  position: relative;
-  display: inline-flex !important;
-  align-items: center;
-  gap: 6px;
-  width: fit-content;
-}
-.help-button {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--status-violet-text);
-  cursor: help;
-}
-.help-tooltip {
-  position: absolute;
-  z-index: 20;
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: max-content;
-  max-width: min(320px, calc(100vw - 48px));
-  padding: 9px 11px;
-  border: 1px solid var(--border-strong);
-  border-radius: 9px;
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-raised);
-  color: var(--text-primary);
-  font-size: var(--font-size-body-small);
-  font-weight: 500;
-  line-height: 1.4;
-  opacity: 0;
-  pointer-events: none;
-  text-align: left;
-  text-transform: none;
-  transform: translateY(4px);
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
-}
-.help-button:hover + .help-tooltip,
-.help-button:focus-visible + .help-tooltip {
-  opacity: 1;
-  transform: translateY(0);
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
-.form-grid.triple {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 .form-grid label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-.type-copy {
-  color: var(--muted);
-}
-.policy-editor {
-  padding: 14px;
-}
-.policy-editor h3 {
-  margin: 0 0 12px;
-  font-size: 0.78rem;
-}
-.allowed-values {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-}
-.allowed-values small {
-  color: var(--muted);
-  font-size: 0.62rem;
-}
-.toggle-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
-}
-.toggle-grid label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 9px;
-  background: var(--surface-card);
-  border-radius: 10px;
-}
-.security-confirm {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 10px !important;
-}
-.guide pre {
-  max-height: 360px;
-  overflow: auto;
-  padding: 14px;
-  border-radius: 12px;
-  background: var(--surface-emphasis);
-  color: var(--text-on-emphasis);
-  font-size: 0.68rem;
-}
-.guide h3 {
-  margin: 5px 0 0;
-}
-.history {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  list-style: none;
-}
-.history li {
-  padding: 13px;
-  border: 1px solid var(--border-default);
-  border-radius: 12px;
-}
-.history li > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-.history span,
-.history code {
-  color: var(--muted);
-  font-size: 0.65rem;
-}
-.history p {
-  margin: 7px 0;
-  font-size: 0.75rem;
 }
 @media (max-width: 960px) {
   .setup-status {
@@ -2739,9 +2270,6 @@ await fetch("/api/v1/interaction-sessions", {
     grid-template-columns: repeat(2, 1fr);
   }
   .fact-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .toggle-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -2820,7 +2348,6 @@ button.tool-card {
   .summary-grid,
   .loading-grid,
   .form-grid,
-  .form-grid.triple,
   .fact-grid,
   .age-grid,
   .raw-health-grid,
@@ -2854,9 +2381,6 @@ button.tool-card {
   }
   .workspace-footer {
     position: static;
-  }
-  .toggle-grid {
-    grid-template-columns: 1fr;
   }
 }
 .impact-list {

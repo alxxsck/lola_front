@@ -13,6 +13,15 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
+function setPublishedFields(
+  workspace: AttributeContractWorkspaceResponseDto,
+  fields: Array<Partial<ReturnType<typeof createContractField>>>,
+) {
+  workspace.currentPublication = {
+    document: { fields },
+  } as never;
+}
+
 vi.mock("vue-router", () => ({
   useRoute: () => mocks.route,
   useRouter: () => ({ push: mocks.push }),
@@ -422,11 +431,7 @@ describe("ProfileFieldEditorPage", () => {
       workspace: AttributeContractWorkspaceResponseDto;
     };
     vm.form.definitionId = "definition-draft-only";
-    vm.workspace.currentRevision = {
-      fields: [],
-    } as unknown as NonNullable<
-      AttributeContractWorkspaceResponseDto["currentRevision"]
-    >;
+    setPublishedFields(vm.workspace, []);
     await wrapper.vm.$nextTick();
 
     expect(
@@ -451,11 +456,9 @@ describe("ProfileFieldEditorPage", () => {
       workspace: AttributeContractWorkspaceResponseDto;
     };
     vm.form.definitionId = "definition-published";
-    vm.workspace.currentRevision = {
-      fields: [{ definitionId: "definition-published" }],
-    } as unknown as NonNullable<
-      AttributeContractWorkspaceResponseDto["currentRevision"]
-    >;
+    setPublishedFields(vm.workspace, [
+      { ...createContractField(), definitionId: "definition-published" },
+    ]);
     await wrapper.vm.$nextTick();
 
     expect(
@@ -483,16 +486,13 @@ describe("ProfileFieldEditorPage", () => {
     const vm = wrapper.vm as unknown as {
       workspace: AttributeContractWorkspaceResponseDto;
     };
-    vm.workspace.currentRevision = {
-      fields: [
-        {
-          definitionId: "attr-name",
-          semanticRole: "DISPLAY_NAME",
-        },
-      ],
-    } as unknown as NonNullable<
-      AttributeContractWorkspaceResponseDto["currentRevision"]
-    >;
+    setPublishedFields(vm.workspace, [
+      {
+        ...createContractField(),
+        definitionId: "attr-name",
+        semanticRole: "DISPLAY_NAME",
+      },
+    ]);
     await wrapper.vm.$nextTick();
 
     const customPreset = wrapper.find(
@@ -514,16 +514,13 @@ describe("ProfileFieldEditorPage", () => {
     };
     vm.form.definitionId = "definition-published";
     vm.form.label = "Название из черновика";
-    vm.workspace.currentRevision = {
-      fields: [
-        {
-          definitionId: "definition-published",
-          label: "Опубликованное название",
-        },
-      ],
-    } as unknown as NonNullable<
-      AttributeContractWorkspaceResponseDto["currentRevision"]
-    >;
+    setPublishedFields(vm.workspace, [
+      {
+        ...createContractField(),
+        definitionId: "definition-published",
+        label: "Опубликованное название",
+      },
+    ]);
     await wrapper.vm.$nextTick();
 
     expect(
@@ -547,11 +544,9 @@ describe("ProfileFieldEditorPage", () => {
     };
     vm.form.definitionId = "definition-published";
     vm.form.valueType = "INTEGER";
-    vm.workspace.currentRevision = {
-      fields: [{ definitionId: "definition-published" }],
-    } as unknown as NonNullable<
-      AttributeContractWorkspaceResponseDto["currentRevision"]
-    >;
+    setPublishedFields(vm.workspace, [
+      { ...createContractField(), definitionId: "definition-published" },
+    ]);
 
     vm.form.semanticRole = "LOCALE";
     await wrapper.vm.$nextTick();

@@ -28,6 +28,10 @@ export interface ProfileProjectionResponseDto {
   profileVersion: string;
   provenance: ProfileProjectionResponseDtoProvenance;
   /** @nullable */
+  publicationId?: string | null;
+  /** @nullable */
+  publicationSequence?: number | null;
+  /** @nullable */
   receivedAt?: string | null;
   syncStatus: ProfileProjectionResponseDtoSyncStatus;
 }
