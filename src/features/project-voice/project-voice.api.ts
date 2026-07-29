@@ -1,4 +1,5 @@
 import { xaiVoiceCatalogList } from "@/shared/api/generated/lola-backend";
+import { isMockMode } from "@/shared/config/data-mode";
 
 export interface ProjectVoiceCatalogItem {
   id: string;
@@ -10,6 +11,17 @@ export interface ProjectVoiceCatalog {
   items: ProjectVoiceCatalogItem[];
   stale: boolean;
 }
+
+const demoCatalog: ProjectVoiceCatalog = {
+  items: [
+    { id: "ara", name: "Ara", language: "multilingual" },
+    { id: "eve", name: "Eve", language: "multilingual" },
+    { id: "leo", name: "Leo", language: "multilingual" },
+    { id: "rex", name: "Rex", language: "multilingual" },
+    { id: "sal", name: "Sal", language: "multilingual" },
+  ],
+  stale: false,
+};
 
 function boundedText(value: unknown, maximum: number): value is string {
   return (
@@ -61,6 +73,7 @@ export async function fetchProjectVoiceCatalog(
   projectId: string,
   signal?: AbortSignal,
 ): Promise<ProjectVoiceCatalog> {
+  if (isMockMode) return demoCatalog;
   const response: unknown = await xaiVoiceCatalogList(projectId, { signal });
   const catalog = parseProjectVoiceCatalog(response);
   if (!catalog) {

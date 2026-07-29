@@ -5,13 +5,34 @@ import {
   parseProjectVoiceCatalog,
 } from "./project-voice.api";
 
+const mocks = vi.hoisted(() => ({ mockMode: false }));
+
 vi.mock("@/shared/api/generated/lola-backend", () => ({
   xaiVoiceCatalogList: vi.fn(),
+}));
+vi.mock("@/shared/config/data-mode", () => ({
+  get isMockMode() {
+    return mocks.mockMode;
+  },
 }));
 
 describe("Project voice catalog API", () => {
   beforeEach(() => {
+    mocks.mockMode = false;
     vi.mocked(xaiVoiceCatalogList).mockReset();
+  });
+
+  it("uses an xAI demo catalog without a backend request in mock mode", async () => {
+    mocks.mockMode = true;
+
+    await expect(fetchProjectVoiceCatalog("project-1")).resolves.toMatchObject({
+      stale: false,
+      items: expect.arrayContaining([
+        { id: "eve", name: "Eve", language: "multilingual" },
+        { id: "rex", name: "Rex", language: "multilingual" },
+      ]),
+    });
+    expect(xaiVoiceCatalogList).not.toHaveBeenCalled();
   });
 
   it("loads the Project-scoped backend catalog without provider credentials", async () => {
