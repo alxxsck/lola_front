@@ -126,6 +126,26 @@ describe("CMS User authentication state", () => {
     );
   });
 
+  it("lands an AI-pricing-only Platform Operator on pricing administration", async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      kind: "AUTHENTICATED",
+      context: {
+        user: {
+          id: "operator-pricing",
+          email: "pricing@example.com",
+          name: "Pricing",
+          platformPermissionCodes: ["platform.ai_pricing.read"],
+        },
+        projects: [],
+      },
+    });
+    const auth = useAuthStore();
+
+    await auth.login("pricing@example.com", "permanent passphrase");
+
+    expect(auth.authenticatedLandingPath).toBe("/platform/ai-pricing");
+  });
+
   it("keeps MFA capabilities and recovery codes in memory only", async () => {
     const storageWrite = vi.spyOn(Storage.prototype, "setItem");
     vi.mocked(authApi.login).mockResolvedValue({

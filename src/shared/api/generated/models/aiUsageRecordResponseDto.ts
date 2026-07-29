@@ -20,7 +20,8 @@ export interface AiUsageRecordResponseDto {
   id: string;
   inputCharacters: number;
   inputTokens: number;
-  model: string;
+  /** @nullable */
+  model: string | null;
   occurredAt: string;
   operation: string;
   outputTokens: number;

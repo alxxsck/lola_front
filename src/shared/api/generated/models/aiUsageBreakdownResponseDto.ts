@@ -25,7 +25,8 @@ export interface AiUsageBreakdownResponseDto {
   inputImageTokens: number;
   inputTextTokens: number;
   inputTokens: number;
-  model: string;
+  /** @nullable */
+  model: string | null;
   operation: string;
   outputAudioTokens: number;
   outputImageTokens: number;

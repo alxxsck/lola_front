@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ProjectSpeechSettingsResponseDtoSchemaVersion =
-  (typeof ProjectSpeechSettingsResponseDtoSchemaVersion)[keyof typeof ProjectSpeechSettingsResponseDtoSchemaVersion];
+export type AiTextToSpeechCurrentPricingResponseDtoCurrency =
+  (typeof AiTextToSpeechCurrentPricingResponseDtoCurrency)[keyof typeof AiTextToSpeechCurrentPricingResponseDtoCurrency];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ProjectSpeechSettingsResponseDtoSchemaVersion = {
-  NUMBER_2: 2,
+export const AiTextToSpeechCurrentPricingResponseDtoCurrency = {
+  usd: "usd",
 } as const;

@@ -182,6 +182,28 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("security-settings");
   });
 
+  it("allows AI pricing only with the exact Platform read Permission", async () => {
+    const auth = useAuthStore();
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+        platformPermissionCodes: ["platform.ai_pricing.read"],
+      },
+    });
+
+    await router.push("/platform/ai-pricing");
+    expect(router.currentRoute.value.name).toBe("platform-ai-pricing");
+
+    auth.user!.platformPermissionCodes = ["platform.ai_pricing.write"];
+    await router.push("/settings/security");
+    await router.push("/platform/ai-pricing");
+    expect(router.currentRoute.value.name).toBe("security-settings");
+  });
+
   it("allows every authenticated CMS User to open personal security settings", async () => {
     const auth = useAuthStore();
     auth.$patch({
@@ -472,7 +494,6 @@ describe("authentication routes", () => {
   it.each([
     "project.settings.read",
     "project.profile_contract.read",
-    "project.speech.read",
     "project.ai_usage.read",
   ])(
     "allows the composite Project settings surface through independent %s authority",

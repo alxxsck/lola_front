@@ -133,7 +133,8 @@ describe('scenario action catalog schema helpers', () => {
       },
     })
     expect(definition?.uiSchema.fields.map((field) => field.key))
-      .toEqual(['text', 'voice', 'waitForCompletion', 'timeoutMs'])
+      .toEqual(['text', 'waitForCompletion', 'timeoutMs'])
+    expect(definition?.configSchema.properties).not.toHaveProperty('voice')
     expect(createActionConfig(definition!)).toEqual({ waitForCompletion: true })
     expect(validateActionConfig(definition!, { text: 'Привет!', waitForCompletion: true })).toBe('')
     expect(validateActionConfig(definition!, { text: 'Привет!', waitForCompletion: false })).toBe('')

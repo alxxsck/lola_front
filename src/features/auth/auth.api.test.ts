@@ -157,16 +157,16 @@ describe("target CMS User auth API", () => {
     vi.mocked(cmsSessionContextMe).mockResolvedValue(
       sessionContext([
         {
-          id: "speech-project",
-          name: "Speech Project",
-          slug: "speech-project",
+          id: "usage-project",
+          name: "Usage Project",
+          slug: "usage-project",
           status: "ACTIVE",
           supportedLocales: ["ru"],
-          membershipId: "membership-speech",
+          membershipId: "membership-usage",
           membershipStatus: "ACTIVE",
           membershipVersion: 1,
-          roleKeys: ["SPEECH_READER"],
-          effectivePermissionCodes: ["project.speech.read"],
+          roleKeys: ["AI_USAGE_READER"],
+          effectivePermissionCodes: ["project.ai_usage.read"],
         },
       ]),
     );
@@ -175,9 +175,9 @@ describe("target CMS User auth API", () => {
     const [mapped] = result.projects;
 
     expect(mapped).toMatchObject({
-      id: "speech-project",
+      id: "usage-project",
       supportedLocales: ["ru"],
-      effectivePermissionCodes: ["project.speech.read"],
+      effectivePermissionCodes: ["project.ai_usage.read"],
     });
     expect(mapped).not.toHaveProperty("settings");
     expect(mapped).not.toHaveProperty("assistantName");

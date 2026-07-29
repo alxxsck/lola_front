@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
-import type { AiUsageRangeKey } from "./ai-usage.model";
+import { pluralizeRu, type AiUsageRangeKey } from "./ai-usage.model";
 import { fetchEndUserAiUsageReport } from "./end-user-ai-usage.api";
 import {
   END_USER_AI_USAGE_CATEGORY_LABELS,
@@ -11,6 +11,7 @@ import {
   type EndUserAiUsageCategoryRow,
   type EndUserAiUsageReport,
 } from "./end-user-ai-usage.model";
+import AiTtsPricingContext from "./components/AiTtsPricingContext.vue";
 
 const props = defineProps<{
   projectId: string;
@@ -30,6 +31,11 @@ const maxCategoryCost = computed(() =>
     ...(report.value?.categories.map((item) => item.effectiveCost) ?? [0]),
   ),
 );
+const hasSpeechUsage = computed(() =>
+  report.value?.categories.some(
+    (category) => category.category === "SPEECH" && category.records > 0,
+  ),
+);
 
 function categoryWidth(category: EndUserAiUsageCategoryRow) {
   if (!maxCategoryCost.value || !category.effectiveCost) return "0%";
@@ -43,22 +49,54 @@ function formatCount(value: number) {
   }).format(value);
 }
 
-function formatMoney(value: number, currency = "usd") {
+function formatMoney(value: number, currency = "usd", precise = false) {
   return new Intl.NumberFormat("ru-RU", {
     style: "currency",
     currency: currency.toUpperCase(),
-    minimumFractionDigits: value > 0 && value < 0.01 ? 4 : 2,
-    maximumFractionDigits: value > 0 && value < 0.01 ? 6 : 2,
+    minimumFractionDigits: precise ? 2 : value > 0 && value < 0.01 ? 4 : 2,
+    maximumFractionDigits: precise ? 6 : value > 0 && value < 0.01 ? 6 : 2,
   }).format(value);
 }
 
+function categoryMetric(category: EndUserAiUsageCategoryRow) {
+  if (category.category === "SPEECH") {
+    return `${formatCount(category.inputCharacters)} ${pluralizeRu(
+      category.inputCharacters,
+      "символ",
+      "символа",
+      "символов",
+    )}`;
+  }
+  return category.totalTokens
+    ? formatCount(category.totalTokens)
+    : `${formatCount(category.records)} ${pluralizeRu(
+        category.records,
+        "операция",
+        "операции",
+        "операций",
+      )}`;
+}
+
 function categoryCost(category: EndUserAiUsageCategoryRow) {
+  if (category.category === "SPEECH") {
+    const generations = `${category.records} ${pluralizeRu(
+      category.records,
+      "генерация",
+      "генерации",
+      "генераций",
+    )}`;
+    return category.estimatedFallbackCost > 0
+      ? `${formatMoney(
+          category.estimatedFallbackCost,
+          category.currency,
+          true,
+        )} расчёт · ${generations}`
+      : generations;
+  }
   if (category.providerReportedCost > 0)
     return `${formatMoney(category.providerReportedCost, category.currency)} по данным провайдера`;
   if (category.estimatedFallbackCost > 0)
-    return `${formatMoney(category.estimatedFallbackCost, category.currency)} оценка`;
-  if (category.providerBilledUnits > 0)
-    return `${formatCount(category.providerBilledUnits)} ед.`;
+    return `${formatMoney(category.estimatedFallbackCost, category.currency)} расчёт`;
   return `${category.records} операций`;
 }
 
@@ -95,13 +133,15 @@ function formatBytes(value: number) {
 async function load(nextWindow = windowKey.value) {
   controller?.abort();
   controller = new AbortController();
+  const requestedProjectId = props.projectId;
+  const requestedEndUserId = props.endUserId;
   const generation = ++requestGeneration;
   loading.value = true;
   error.value = "";
   try {
     const nextReport = await fetchEndUserAiUsageReport(
-      props.projectId,
-      props.endUserId,
+      requestedProjectId,
+      requestedEndUserId,
       nextWindow,
       controller.signal,
     );
@@ -133,7 +173,10 @@ watch(
   },
 );
 onMounted(() => void load());
-onBeforeUnmount(() => controller?.abort());
+onBeforeUnmount(() => {
+  requestGeneration += 1;
+  controller?.abort();
+});
 </script>
 
 <template>
@@ -142,7 +185,7 @@ onBeforeUnmount(() => controller?.abort());
       <div>
         <span class="usage-kicker">Потребление</span>
         <h3 id="end-user-ai-usage-title">
-          <i class="pi pi-chart-line" /> AI и голос
+          <i class="pi pi-chart-line" /> AI и речь
         </h3>
       </div>
       <div class="window-switch" aria-label="Период потребления">
@@ -180,7 +223,7 @@ onBeforeUnmount(() => controller?.abort());
           </span>
         </article>
         <article>
-          <small>По данным xAI</small>
+          <small>Фактически по данным xAI</small>
           <strong>{{ formatMoney(report.totals.providerReportedCost) }}</strong>
           <span
             >{{ report.totals.providerReportedCostRecords }} операций с ценой
@@ -188,19 +231,16 @@ onBeforeUnmount(() => controller?.abort());
           >
         </article>
         <article>
-          <small>Оценка по тарифу</small>
+          <small>Расчёт по тарифу</small>
           <strong>{{
             formatMoney(report.totals.estimatedFallbackCost)
           }}</strong>
           <span>{{ report.totals.estimatedRecords }} оценочных операций</span>
         </article>
         <article>
-          <small>Единицы ElevenLabs</small>
-          <strong>{{ formatCount(report.totals.providerBilledUnits) }}</strong>
-          <span
-            >{{ report.totals.providerUnitOnlyRecords }} без per-request
-            USD</span
-          >
+          <small>Операции AI и речи</small>
+          <strong>{{ formatCount(report.totals.records) }}</strong>
+          <span>Все учтённые операции за период</span>
         </article>
       </div>
 
@@ -209,6 +249,7 @@ onBeforeUnmount(() => controller?.abort());
           v-for="category in report.categories"
           :key="`${category.category}:${category.currency}`"
           class="category-row"
+          :data-usage-category="category.category"
         >
           <span>{{
             END_USER_AI_USAGE_CATEGORY_LABELS[category.category]
@@ -216,17 +257,18 @@ onBeforeUnmount(() => controller?.abort());
           <div class="category-track" title="Доля денежной стоимости категории">
             <i :style="{ width: categoryWidth(category) }" />
           </div>
-          <strong>{{
-            category.totalTokens
-              ? formatCount(category.totalTokens)
-              : formatCount(
-                  category.providerBilledUnits || category.inputCharacters,
-                )
-          }}</strong>
+          <strong>{{ categoryMetric(category) }}</strong>
           <small>{{ categoryCost(category) }}</small>
         </div>
       </div>
       <p v-else class="usage-empty">За выбранный период расходов пока нет.</p>
+
+      <AiTtsPricingContext
+        v-if="hasSpeechUsage"
+        :pricing="report.textToSpeechPricing"
+        class="tts-pricing-note"
+        data-testid="end-user-tts-pricing"
+      />
 
       <section class="event-query-summary">
         <div>
@@ -249,9 +291,7 @@ onBeforeUnmount(() => controller?.abort());
           <article>
             <small>Оценочный вклад данных</small>
             <strong>
-              {{
-                formatCount(report.eventQuery.estimatedAddedInputTokens)
-              }}
+              {{ formatCount(report.eventQuery.estimatedAddedInputTokens) }}
               токенов
             </strong>
           </article>
@@ -468,6 +508,9 @@ h3 i {
 .category-row small {
   color: var(--text-secondary);
 }
+.tts-pricing-note {
+  margin-top: 16px;
+}
 .completeness-note {
   display: flex;
   align-items: center;
@@ -496,7 +539,7 @@ footer {
 footer strong {
   color: var(--text-primary);
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .usage-card > header {
     align-items: flex-start;
     flex-direction: column;

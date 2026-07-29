@@ -1,10 +1,11 @@
 import { endUserAiUsageReport } from "@/shared/api/generated/lola-backend";
 import { isMockMode } from "@/shared/config/data-mode";
 import {
-  AI_USAGE_CATEGORIES,
-  type AiUsageRangeKey,
-} from "./ai-usage.model";
-import { parseAiUsageEventQueryBreakdown } from "./ai-usage.api";
+  buildDemoTextToSpeechPricingContext,
+  parseAiUsageEventQueryBreakdown,
+  parseTextToSpeechPricing,
+} from "./ai-usage.api";
+import { AI_USAGE_CATEGORIES, type AiUsageRangeKey } from "./ai-usage.model";
 import type {
   EndUserAiUsageCategory,
   EndUserAiUsageCategoryRow,
@@ -82,7 +83,7 @@ function parseCategory(value: unknown): EndUserAiUsageCategoryRow | undefined {
     !summary ||
     typeof source.category !== "string" ||
     !categories.has(source.category as EndUserAiUsageCategory) ||
-    typeof source.currency !== "string"
+    source.currency !== "usd"
   )
     return undefined;
   return {
@@ -118,7 +119,15 @@ export function parseEndUserAiUsageReport(
   const providers = record(source.providers);
   const xai = record(providers?.xai);
   const eventQuery = parseAiUsageEventQueryBreakdown(xai?.eventQuery);
-  if (!totals || !eventQuery || parsedCategories.some((item) => !item))
+  const textToSpeechPricing = parseTextToSpeechPricing(
+    source.textToSpeechPricing,
+  );
+  if (
+    !totals ||
+    !eventQuery ||
+    parsedCategories.some((item) => !item) ||
+    !textToSpeechPricing
+  )
     return undefined;
   return {
     projectId,
@@ -132,10 +141,11 @@ export function parseEndUserAiUsageReport(
     totals,
     categories: parsedCategories as EndUserAiUsageCategoryRow[],
     eventQuery,
+    textToSpeechPricing,
   };
 }
 
-function demoReport(
+export function buildEndUserAiUsageDemoReport(
   projectId: string,
   endUserId: string,
   window: AiUsageRangeKey,
@@ -187,7 +197,8 @@ function demoReport(
       ...summary({
         records: 4,
         inputCharacters: 1_980,
-        providerBilledUnits: 2_040,
+        estimatedFallbackCost: 0.0297,
+        effectiveCost: 0.0297,
       }),
     },
     {
@@ -219,15 +230,14 @@ function demoReport(
         inputTokens: 35_300,
         outputTokens: 9_400,
         inputCharacters: 1_980,
-        providerBilledUnits: 2_040,
         durationSeconds: 146,
         providerReportedCost: 0.16,
-        estimatedFallbackCost: 0.06,
-        effectiveCost: 0.22,
+        estimatedFallbackCost: 0.0897,
+        effectiveCost: 0.2497,
       }),
       providerReportedCostRecords: 19,
-      estimatedRecords: 6,
-      providerUnitOnlyRecords: 4,
+      estimatedRecords: 11,
+      providerUnitOnlyRecords: 0,
       unpricedRecords: 0,
     },
     categories,
@@ -245,6 +255,7 @@ function demoReport(
         estimatedCostUsd: null,
       },
     },
+    textToSpeechPricing: buildDemoTextToSpeechPricingContext(),
   };
 }
 
@@ -254,7 +265,8 @@ export async function fetchEndUserAiUsageReport(
   window: AiUsageRangeKey,
   signal?: AbortSignal,
 ): Promise<EndUserAiUsageReport> {
-  if (isMockMode) return demoReport(projectId, endUserId, window);
+  if (isMockMode)
+    return buildEndUserAiUsageDemoReport(projectId, endUserId, window);
   const response: unknown = await endUserAiUsageReport(
     projectId,
     endUserId,

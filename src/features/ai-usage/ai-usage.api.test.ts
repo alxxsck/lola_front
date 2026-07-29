@@ -56,6 +56,15 @@ const response = {
       },
     },
   },
+  textToSpeechPricing: {
+    current: {
+      rate: "15",
+      currency: "usd",
+      unit: "per_million_input_characters",
+      effectiveFrom: "2026-07-29T10:00:00.000Z",
+    },
+    sourceUrl: "https://docs.x.ai/developers/pricing",
+  },
   totals: currentTotals,
   breakdown: [
     {
@@ -121,6 +130,28 @@ describe("AI usage API response validation", () => {
     });
   });
 
+  it("rejects missing Event Query data or a false totals-inclusion contract", () => {
+    expect(
+      parseAiUsageReport({ ...response, providers: undefined }, "project-1"),
+    ).toBeUndefined();
+    expect(
+      parseAiUsageReport(
+        {
+          ...response,
+          providers: {
+            xai: {
+              eventQuery: {
+                ...response.providers.xai.eventQuery,
+                linkedUsageIncludedInProviderTotals: false,
+              },
+            },
+          },
+        },
+        "project-1",
+      ),
+    ).toBeUndefined();
+  });
+
   it("parses modality details from the current backend DTO", () => {
     expect(parseAiUsageReport(response, "project-1")?.totals).toMatchObject({
       cacheWriteInputTokens: 0,
@@ -130,6 +161,111 @@ describe("AI usage API response validation", () => {
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
     });
+  });
+
+  it("parses the backend-owned current TTS pricing explanation", () => {
+    expect(
+      parseAiUsageReport(response, "project-1")?.textToSpeechPricing,
+    ).toEqual({
+      current: {
+        rate: "15",
+        currency: "usd",
+        unit: "per_million_input_characters",
+        effectiveFrom: "2026-07-29T10:00:00.000Z",
+      },
+      sourceUrl: "https://docs.x.ai/developers/pricing",
+    });
+
+    expect(
+      parseAiUsageReport(
+        {
+          ...response,
+          textToSpeechPricing: {
+            ...response.textToSpeechPricing,
+            current: null,
+          },
+        },
+        "project-1",
+      )?.textToSpeechPricing.current,
+    ).toBeNull();
+  });
+
+  it("rejects unsafe or malformed TTS pricing context", () => {
+    for (const textToSpeechPricing of [
+      {
+        ...response.textToSpeechPricing,
+        sourceUrl: "http://docs.x.ai/developers/pricing",
+      },
+      {
+        ...response.textToSpeechPricing,
+        current: { ...response.textToSpeechPricing.current, rate: "0" },
+      },
+      {
+        ...response.textToSpeechPricing,
+        current: {
+          ...response.textToSpeechPricing.current,
+          rate: "0.1234567890123",
+        },
+      },
+      {
+        ...response.textToSpeechPricing,
+        current: {
+          ...response.textToSpeechPricing.current,
+          unit: "per_thousand_characters",
+        },
+      },
+      {
+        ...response.textToSpeechPricing,
+        current: {
+          ...response.textToSpeechPricing.current,
+          effectiveFrom: "not-a-date",
+        },
+      },
+    ]) {
+      expect(
+        parseAiUsageReport({ ...response, textToSpeechPricing }, "project-1"),
+      ).toBeUndefined();
+    }
+  });
+
+  it("accepts a nullable model only for xAI Text-to-Speech usage", () => {
+    const speech = {
+      ...response.breakdown[0],
+      model: null,
+      operation: "speech",
+      records: 1,
+      inputCharacters: 240,
+      totalTokens: 0,
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
+      inputTextTokens: 0,
+      cachedInputTextTokens: 0,
+      outputTextTokens: 0,
+      estimatedCost: "0.003600000000",
+      estimatedFallbackCost: "0.003600000000",
+      effectiveCost: "0.003600000000",
+    };
+
+    expect(
+      parseAiUsageReport({ ...response, breakdown: [speech] }, "project-1")
+        ?.breakdown[0],
+    ).toMatchObject({
+      provider: "xai",
+      model: null,
+      operation: "speech",
+      inputCharacters: 240,
+      effectiveCost: 0.0036,
+    });
+    expect(
+      parseAiUsageReport(
+        {
+          ...response,
+          breakdown: [{ ...speech, operation: "responses" }],
+        },
+        "project-1",
+      ),
+    ).toBeUndefined();
   });
 
   it("parses case intelligence as a project usage category", () => {
@@ -155,6 +291,34 @@ describe("AI usage API response validation", () => {
           records: 23,
           totalTokens: 41_099,
           billedCost: 0.0890324,
+        },
+      ],
+    });
+  });
+
+  it("preserves project AI analysis usage returned by the backend", () => {
+    const responseWithAnalysisUsage = {
+      ...response,
+      categories: [
+        {
+          ...response.breakdown[0],
+          category: "AI_ANALYSIS",
+          records: 7,
+          totalTokens: 12_345,
+          billedCost: "0.041200000000",
+        },
+      ],
+    };
+
+    expect(
+      parseAiUsageReport(responseWithAnalysisUsage, "project-1"),
+    ).toMatchObject({
+      categories: [
+        {
+          category: "AI_ANALYSIS",
+          records: 7,
+          totalTokens: 12_345,
+          billedCost: 0.0412,
         },
       ],
     });
@@ -211,52 +375,6 @@ describe("AI usage API response validation", () => {
       cachedInputImageTokens: 7,
       outputImageTokens: 8,
     });
-  });
-
-  it("does not guess exact coverage counters from an aggregated legacy response", () => {
-    const legacyResponse = {
-      ...response,
-      totals: {
-        ...response.totals,
-        records: 3,
-        unpricedRecords: 3,
-        providerReportedUsageRecords: undefined,
-        estimatedCostRecords: undefined,
-        inputCharacters: 1_200,
-        providerBilledUnits: "1250.000000000000",
-        estimatedCost: "0.000000000000",
-      },
-      breakdown: [
-        {
-          ...response.breakdown[0],
-          provider: "elevenlabs",
-          model: "eleven_v3",
-          operation: "speech",
-          records: 3,
-          inputCharacters: 1_200,
-          providerBilledUnits: "1250.000000000000",
-          totalTokens: 0,
-          inputTokens: 0,
-          cachedInputTokens: 0,
-          outputTokens: 0,
-          inputTextTokens: 0,
-          outputTextTokens: 0,
-          estimatedCost: "0.000000000000",
-        },
-      ],
-    };
-
-    expect(
-      parseAiUsageReport(legacyResponse, "project-1")?.totals,
-    ).toMatchObject({
-      unpricedRecords: 3,
-    });
-    expect(
-      parseAiUsageReport(legacyResponse, "project-1")?.totals,
-    ).not.toHaveProperty("providerReportedUsageRecords");
-    expect(
-      parseAiUsageReport(legacyResponse, "project-1")?.totals,
-    ).not.toHaveProperty("estimatedCostRecords");
   });
 
   it("rejects cross-project, negative and oversized responses", () => {

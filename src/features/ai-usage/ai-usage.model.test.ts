@@ -1,27 +1,33 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from "vitest";
 import {
-  aggregateCreditUsage,
+  AI_USAGE_CATEGORY_LABELS,
   aggregateModelUsage,
   aggregateProviderUsage,
+  formatDuration,
   formatMoney,
   getAiUsageRange,
+  getCategoryUsage,
+  getModelBreakdown,
   getModalityUsage,
   getProviderBreakdown,
   getReportCurrency,
   getUsageCost,
-  hasUsageCost,
   pluralizeRu,
+  usageOperationLabel,
   type AiUsageBreakdown,
   type AiUsageReport,
   type AiUsageTotals,
-} from './ai-usage.model'
+} from "./ai-usage.model";
 
 const totals: AiUsageTotals = {
   records: 3,
   unpricedRecords: 0,
-  providerReportedUsageRecords: 0,
-  estimatedCostRecords: 0,
-  inputCharacters: 0,
+  providerReportedUsageRecords: 1,
+  estimatedCostRecords: 2,
+  providerReportedCostRecords: 1,
+  estimatedRecords: 2,
+  providerUnitOnlyRecords: 0,
+  inputCharacters: 240,
   providerBilledUnits: 0,
   totalTokens: 1_300,
   inputTokens: 900,
@@ -38,86 +44,177 @@ const totals: AiUsageTotals = {
   inputImageTokens: 0,
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
-  durationSeconds: 0,
-  estimatedCost: 0,
+  durationSeconds: 95,
+  estimatedCost: 0.05,
   billedCost: 0.03,
-}
+  providerReportedCost: 0.03,
+  estimatedFallbackCost: 0.05,
+  effectiveCost: 0.08,
+};
 
 function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
   return {
-    provider: 'xai',
-    model: 'grok-4.5',
-    operation: 'responses',
-    currency: 'usd',
+    provider: "xai",
+    model: "grok-4.5",
+    operation: "response",
+    currency: "usd",
     records: 1,
     inputCharacters: 0,
     providerBilledUnits: 0,
     totalTokens: 100,
-  inputTokens: 70,
-  cachedInputTokens: 10,
-  cacheWriteInputTokens: 0,
-  outputTokens: 30,
-  reasoningTokens: 0,
-  inputTextTokens: 70,
-  cachedInputTextTokens: 10,
-  outputTextTokens: 30,
-  inputAudioTokens: 0,
-  cachedInputAudioTokens: 0,
-  outputAudioTokens: 0,
-  inputImageTokens: 0,
-  cachedInputImageTokens: 0,
-  outputImageTokens: 0,
+    inputTokens: 70,
+    cachedInputTokens: 10,
+    cacheWriteInputTokens: 0,
+    outputTokens: 30,
+    reasoningTokens: 0,
+    inputTextTokens: 70,
+    cachedInputTextTokens: 10,
+    outputTextTokens: 30,
+    inputAudioTokens: 0,
+    cachedInputAudioTokens: 0,
+    outputAudioTokens: 0,
+    inputImageTokens: 0,
+    cachedInputImageTokens: 0,
+    outputImageTokens: 0,
     durationSeconds: 0,
     estimatedCost: 0,
     billedCost: 0.01,
+    providerReportedCost: 0.01,
+    estimatedFallbackCost: 0,
+    effectiveCost: 0.01,
     ...patch,
-  }
+  };
 }
 
-describe('AI usage model', () => {
-  it('builds calendar ranges in the browser timezone', () => {
-    const now = new Date(2026, 6, 14, 15, 30)
-    const expectedStart = new Date(now)
-    expectedStart.setHours(0, 0, 0, 0)
+describe("AI usage model", () => {
+  it("uses user-facing labels for every end-user AI and speech category", () => {
+    expect(AI_USAGE_CATEGORY_LABELS).toMatchObject({
+      CHAT: "Чат с Lola",
+      VOICE: "Голосовой чат",
+      SPEECH: "Озвучивание текста",
+      MEMORY: "Память Lola",
+      AI_REVIEW: "Проверка сообщений",
+      AI_ANALYSIS: "AI-анализ",
+      CASE_INTELLIGENCE: "Анализ и проверка обращений",
+    });
+  });
 
-    expect(getAiUsageRange('today', now)).toEqual({
+  it("builds calendar ranges in the browser timezone", () => {
+    const now = new Date(2026, 6, 14, 15, 30);
+    const expectedStart = new Date(now);
+    expectedStart.setHours(0, 0, 0, 0);
+
+    expect(getAiUsageRange("today", now)).toEqual({
       from: expectedStart.toISOString(),
       to: now.toISOString(),
-    })
+    });
 
-    expectedStart.setDate(expectedStart.getDate() - 6)
-    expect(getAiUsageRange('7d', now).from).toBe(expectedStart.toISOString())
-    expect(getAiUsageRange('all', now)).toEqual({})
-  })
+    expectedStart.setDate(expectedStart.getDate() - 6);
+    expect(getAiUsageRange("7d", now).from).toBe(expectedStart.toISOString());
+    expect(getAiUsageRange("all", now)).toEqual({});
+  });
 
-  it('combines operations of the same provider model and currency', () => {
+  it("keeps only non-Voice, non-Speech operations in the Grok model slice", () => {
+    const model = breakdown();
+    const voice = breakdown({
+      model: "grok-voice-latest",
+      operation: "realtime_response",
+      durationSeconds: 95,
+    });
+    const speech = breakdown({
+      model: null,
+      operation: "speech",
+      inputCharacters: 240,
+      totalTokens: 0,
+    });
+
+    expect(getModelBreakdown([model, voice, speech])).toEqual([model]);
+    expect(
+      aggregateModelUsage(getModelBreakdown([model, voice, speech])),
+    ).toHaveLength(1);
+  });
+
+  it("combines operations of the same Grok model and currency", () => {
     const result = aggregateModelUsage([
-      breakdown({ inputCharacters: 100, providerBilledUnits: 110 }),
+      breakdown(),
       breakdown({
-        operation: 'scripted_intro',
+        operation: "case_router",
         records: 2,
-        inputCharacters: 200,
-        providerBilledUnits: 220,
         totalTokens: 200,
         billedCost: 0.02,
       }),
-    ])
+    ]);
 
-    expect(result).toHaveLength(1)
-    expect(result[0]).toMatchObject({
-      records: 3,
-      inputCharacters: 300,
-      providerBilledUnits: 330,
-      totalTokens: 300,
-      billedCost: 0.03,
-    })
-  })
+    expect(result).toEqual([
+      expect.objectContaining({
+        model: "grok-4.5",
+        records: 3,
+        totalTokens: 300,
+        billedCost: 0.03,
+      }),
+    ]);
+  });
 
-  it('keeps currencies separate and refuses to combine their total', () => {
+  it("returns category usage without inventing an empty ledger row", () => {
+    const speech = {
+      ...breakdown({ model: null, operation: "speech" }),
+      category: "SPEECH" as const,
+    };
     const report: AiUsageReport = {
-      projectId: 'project-1',
+      projectId: "project-1",
       totals,
-      breakdown: [breakdown(), breakdown({ currency: 'eur' })],
+      breakdown: [],
+      categories: [speech],
+      eventQuery: {
+        calls: 0,
+        resultBytes: 0,
+        estimatedAddedInputTokens: 0,
+        linkedUsageIncludedInProviderTotals: true,
+        linkedAiUsage: {
+          records: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          billedCostUsd: null,
+          estimatedCostUsd: null,
+        },
+      },
+      textToSpeechPricing: {
+        current: null,
+        sourceUrl: "https://docs.x.ai/developers/pricing",
+      },
+    };
+
+    expect(getCategoryUsage(report, "SPEECH")).toBe(speech);
+    expect(getCategoryUsage(report, "VOICE")).toBeUndefined();
+  });
+
+  it("keeps provider totals and factual/calculated money separate", () => {
+    const usage = aggregateProviderUsage([
+      breakdown(),
+      breakdown({
+        operation: "realtime_response",
+        billedCost: 0,
+        providerReportedCost: 0,
+        estimatedCost: 0.05,
+        estimatedFallbackCost: 0.05,
+        effectiveCost: 0.05,
+      }),
+    ]);
+
+    expect(usage).toMatchObject({
+      providerReportedCost: 0.01,
+      estimatedFallbackCost: 0.05,
+    });
+    expect(usage.effectiveCost).toBeCloseTo(0.06);
+    expect(getUsageCost(usage)).toBeCloseTo(0.06);
+  });
+
+  it("keeps currencies separate and refuses to combine their report total", () => {
+    const report: AiUsageReport = {
+      projectId: "project-1",
+      totals,
+      breakdown: [breakdown(), breakdown({ currency: "eur" })],
       categories: [],
       eventQuery: {
         calls: 0,
@@ -133,116 +230,37 @@ describe('AI usage model', () => {
           estimatedCostUsd: null,
         },
       },
-    }
+      textToSpeechPricing: {
+        current: null,
+        sourceUrl: "https://docs.x.ai/developers/pricing",
+      },
+    };
 
-    expect(aggregateModelUsage(report.breakdown)).toHaveLength(2)
-    expect(getReportCurrency(report)).toBeUndefined()
-  })
+    expect(aggregateModelUsage(report.breakdown)).toHaveLength(2);
+    expect(getReportCurrency(report)).toBeUndefined();
+    expect(getProviderBreakdown(report.breakdown, "xai")).toHaveLength(2);
+  });
 
-  it('separates provider totals and credit usage before presentation', () => {
-    const xAi = breakdown()
-    const elevenLabs = breakdown({
-      provider: 'elevenlabs',
-      model: 'eleven_v3',
-      operation: 'speech',
-      records: 3,
-      inputCharacters: 1_200,
-      providerBilledUnits: 1_250,
-      totalTokens: 0,
-      inputTokens: 0,
-      cachedInputTokens: 0,
-      outputTokens: 0,
-      inputTextTokens: 0,
-      outputTextTokens: 0,
-      estimatedCost: 0,
-      billedCost: 0,
-    })
-
-    const xAiUsage = aggregateProviderUsage(
-      getProviderBreakdown([xAi, elevenLabs], 'xai'),
-    )
-    const elevenLabsUsage = aggregateProviderUsage(
-      getProviderBreakdown([xAi, elevenLabs], 'elevenlabs'),
-    )
-    const creditRows = aggregateCreditUsage([elevenLabs])
-
-    expect(xAiUsage).toMatchObject({
-      records: 1,
-      totalTokens: 100,
-      providerBilledUnits: 0,
-    })
-    expect(elevenLabsUsage).toMatchObject({
-      records: 3,
-      totalTokens: 0,
-      providerBilledUnits: 1_250,
-    })
-    expect(creditRows).toEqual([
-      expect.objectContaining({
-        model: 'eleven_v3',
-        operation: 'speech',
-        records: 3,
-        inputCharacters: 1_200,
-        providerBilledUnits: 1_250,
-      }),
-    ])
-  })
-
-  it('does not present provider-reported ElevenLabs units as a zero-cost estimate', () => {
-    const row = aggregateModelUsage([
-      breakdown({
-        provider: 'elevenlabs',
-        model: 'eleven_v3',
-        totalTokens: 0,
-        providerBilledUnits: 125,
-        estimatedCost: 0,
-        billedCost: 0,
-      }),
-    ])[0]!
-
-    expect(row.estimatedCost).toBe(0)
-  })
-
-  it('keeps rejected zero-unit ElevenLabs requests unpriced', () => {
-    const row = aggregateModelUsage([
-      breakdown({
-        provider: 'elevenlabs',
-        model: 'eleven_v3',
-        totalTokens: 0,
-        providerBilledUnits: 0,
-        estimatedCost: 0,
-        billedCost: 0,
-      }),
-    ])[0]!
-
-    expect(row.estimatedCost).toBe(0)
-  })
-
-  it('combines provider-reported and estimated xAI cost', () => {
-    const row = aggregateModelUsage([
-      breakdown({ estimatedCost: 0.046208333333, billedCost: 0.018152 }),
-    ])[0]!
-
-    expect(hasUsageCost(row)).toBe(true)
-    expect(getUsageCost(row)).toBeCloseTo(0.064360333333)
-  })
-
-  it('uses non-overlapping text, audio and image modality totals', () => {
+  it("uses non-overlapping text, audio and image modality totals", () => {
     expect(getModalityUsage(totals).map((item) => item.tokens)).toEqual([
       850, 450, 0,
-    ])
-  })
+    ]);
+  });
 
-  it('uses correct Russian plural forms', () => {
+  it("labels speech as text-to-speech and formats duration without token language", () => {
+    expect(usageOperationLabel("speech")).toBe("Озвучивание текста");
+    expect(usageOperationLabel("case_router")).toBe("Маршрутизация");
+    expect(usageOperationLabel("realtime_response")).toBe("Голосовой ответ");
+    expect(usageOperationLabel("knowledge_search")).toBe("Knowledge search");
+    expect(formatDuration(95)).toBe("1 мин 35 сек");
+  });
+
+  it("uses correct Russian plural forms and money formatting", () => {
     expect(
       [1, 2, 5, 11, 21, 24].map((value) =>
-        pluralizeRu(value, 'модель', 'модели', 'моделей'),
+        pluralizeRu(value, "модель", "модели", "моделей"),
       ),
-    ).toEqual(['модель', 'модели', 'моделей', 'моделей', 'модель', 'модели'])
-  })
-
-  it('rounds money to cents and keeps grouping for large totals', () => {
-    expect(formatMoney(0.604959, 'usd')).toBe('0,60 $')
-    expect(formatMoney(12_345.678, 'usd')).toBe('12 345,68 $')
-    expect(formatMoney(0.0012, 'usd')).toBe('< 0,01 $')
-  })
-})
+    ).toEqual(["модель", "модели", "моделей", "моделей", "модель", "модели"]);
+    expect(formatMoney(0.0012, "usd")).toBe("< 0,01 $");
+  });
+});

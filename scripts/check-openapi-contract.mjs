@@ -712,25 +712,25 @@ const requiredOperations = new Map([
     { label: "active sessions", response: "ActiveUserResponseDto" },
   ],
   [
-    "AdminSpeech_get",
+    "XaiVoiceCatalog_list",
     {
-      label: "speech synthesis settings",
-      response: "SpeechSettingsResponseDto",
+      label: "xAI Project voice catalog",
+      response: "XaiVoiceCatalogResponseDto",
     },
   ],
   [
-    "AdminSpeech_update",
+    "AiPricingRevision_get",
     {
-      label: "speech synthesis update",
-      request: "UpdateSpeechSettingsDto",
-      response: "SpeechSettingsResponseDto",
+      label: "xAI Text-to-Speech pricing revision state",
+      response: "AiPricingRevisionStateResponseDto",
     },
   ],
   [
-    "AdminSpeech_voices",
+    "AiPricingRevision_publish",
     {
-      label: "speech synthesis voices",
-      response: "SpeechVoicePageResponseDto",
+      label: "xAI Text-to-Speech pricing revision publication",
+      request: "PublishAiPricingRevisionDto",
+      response: "AiPricingRevisionStateResponseDto",
     },
   ],
   [
@@ -803,20 +803,6 @@ const requiredOperations = new Map([
       response: "AiCapabilityPreviewResponseDto",
     },
   ],
-  [
-    "ProviderBilling_get",
-    {
-      label: "ElevenLabs provider billing snapshot",
-      response: "ProviderBillingSnapshotResponseDto",
-    },
-  ],
-  [
-    "ProviderBilling_sync",
-    {
-      label: "ElevenLabs provider billing refresh",
-      response: "ProviderBillingSnapshotResponseDto",
-    },
-  ],
 ]);
 
 const operations = Object.values(document.paths ?? {}).flatMap((path) =>
@@ -824,6 +810,22 @@ const operations = Object.values(document.paths ?? {}).flatMap((path) =>
     (operation) => operation && typeof operation === "object",
   ),
 );
+
+for (const removedOperationId of [
+  "AdminSpeech_get",
+  "AdminSpeech_update",
+  "AdminSpeech_voices",
+  "ProviderBilling_get",
+  "ProviderBilling_sync",
+]) {
+  if (
+    operations.some((candidate) => candidate.operationId === removedOperationId)
+  ) {
+    throw new Error(
+      `OpenAPI snapshot still exposes removed ElevenLabs operation ${removedOperationId}`,
+    );
+  }
+}
 
 function containsSchema(schema, schemaName) {
   if (!schema) return false;
@@ -1027,6 +1029,48 @@ for (const deprecatedOperation of [
 
 requireSchemaProperties("CmsLoginRequestDto", ["identifier", "secret"]);
 requireRequiredProperties("CmsLoginRequestDto", ["identifier", "secret"]);
+requireSchemaProperties("AiUsageReportResponseDto", [
+  "breakdown",
+  "categories",
+  "items",
+  "textToSpeechPricing",
+]);
+requireRequiredProperties("AiUsageReportResponseDto", ["textToSpeechPricing"]);
+requireSchemaProperties("AiTextToSpeechPricingContextResponseDto", [
+  "current",
+  "sourceUrl",
+]);
+requireRequiredProperties("AiTextToSpeechPricingContextResponseDto", [
+  "current",
+  "sourceUrl",
+]);
+requireSchemaProperties("AiTextToSpeechCurrentPricingResponseDto", [
+  "rate",
+  "currency",
+  "unit",
+  "effectiveFrom",
+]);
+requireRequiredProperties("AiTextToSpeechCurrentPricingResponseDto", [
+  "rate",
+  "currency",
+  "unit",
+  "effectiveFrom",
+]);
+for (const schemaName of [
+  "AiUsageCategoryBreakdownResponseDto",
+  "AiUsageRecordResponseDto",
+]) {
+  const categories = new Set(
+    contractSchema(schemaName).properties?.category?.enum ?? [],
+  );
+  for (const requiredCategory of ["VOICE", "SPEECH", "CASE_INTELLIGENCE"]) {
+    if (!categories.has(requiredCategory)) {
+      throw new Error(
+        `${schemaName}.category no longer exposes ${requiredCategory}`,
+      );
+    }
+  }
+}
 requireSchemaProperties("PasswordSetupRequestDto", [
   "setupToken",
   "newPassword",

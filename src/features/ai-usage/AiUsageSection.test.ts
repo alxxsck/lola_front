@@ -1,376 +1,398 @@
-import { config, flushPromises, shallowMount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import AiUsageSection from './AiUsageSection.vue'
-import AiModelUsageChart from './components/AiModelUsageChart.vue'
-import AiModalityChart from './components/AiModalityChart.vue'
+import { config, flushPromises, shallowMount } from "@vue/test-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import AiUsageSection from "./AiUsageSection.vue";
+import AiModelUsageChart from "./components/AiModelUsageChart.vue";
+import AiModalityChart from "./components/AiModalityChart.vue";
 
-config.global.stubs.ProjectSettingsSectionHeader = false
+config.global.stubs.ProjectSettingsSectionHeader = false;
+config.global.stubs.AiModelUsageSlice = false;
+config.global.stubs.AiVoiceUsageSlice = false;
+config.global.stubs.AiSpeechUsageSlice = false;
+config.global.stubs.AiTtsPricingContext = false;
+config.global.stubs.AiModelUsageChart = false;
+config.global.stubs.AiModalityChart = false;
 
-const mocks = vi.hoisted(() => ({ fetchReport: vi.fn() }))
+const mocks = vi.hoisted(() => ({ fetchReport: vi.fn() }));
 
-vi.mock('./ai-usage.api', () => ({ fetchAiUsageReport: mocks.fetchReport }))
-vi.mock('@/shared/config/data-mode', () => ({ isMockMode: false }))
+vi.mock("./ai-usage.api", () => ({ fetchAiUsageReport: mocks.fetchReport }));
+vi.mock("@/shared/config/data-mode", () => ({ isMockMode: false }));
 
-describe('AiUsageSection', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.fetchReport.mockResolvedValue({
-      eventQuery: {
-        calls: 6,
-        resultBytes: 3_300,
-        estimatedAddedInputTokens: 1_119,
-        linkedUsageIncludedInProviderTotals: true,
-        linkedAiUsage: {
-          records: 6,
-          inputTokens: 60_000,
-          outputTokens: 14_546,
-          totalTokens: 74_546,
-          billedCostUsd: 0.0295008,
-          estimatedCostUsd: null,
-        },
-      },
-      projectId: 'project-1',
-      totals: {
+const summary = (patch: Record<string, unknown> = {}) => ({
+  records: 0,
+  inputCharacters: 0,
+  providerBilledUnits: 0,
+  totalTokens: 0,
+  inputTokens: 0,
+  cachedInputTokens: 0,
+  cacheWriteInputTokens: 0,
+  outputTokens: 0,
+  reasoningTokens: 0,
+  inputTextTokens: 0,
+  cachedInputTextTokens: 0,
+  outputTextTokens: 0,
+  inputAudioTokens: 0,
+  cachedInputAudioTokens: 0,
+  outputAudioTokens: 0,
+  inputImageTokens: 0,
+  cachedInputImageTokens: 0,
+  outputImageTokens: 0,
+  durationSeconds: 0,
+  estimatedCost: 0,
+  billedCost: 0,
+  providerReportedCost: 0,
+  estimatedFallbackCost: 0,
+  effectiveCost: 0,
+  ...patch,
+});
+
+const baseReport = () => ({
+  projectId: "project-1",
+  totals: {
+    ...summary({
+      records: 9,
+      inputCharacters: 1_200,
+      totalTokens: 1_500,
+      inputTokens: 1_000,
+      cachedInputTokens: 200,
+      outputTokens: 500,
+      inputTextTokens: 1_000,
+      cachedInputTextTokens: 200,
+      outputTextTokens: 500,
+      durationSeconds: 95,
+      estimatedCost: 0.098,
+      billedCost: 0.12,
+      providerReportedCost: 0.12,
+      estimatedFallbackCost: 0.098,
+      effectiveCost: 0.218,
+    }),
+    unpricedRecords: 0,
+    providerReportedUsageRecords: 3,
+    estimatedCostRecords: 6,
+    providerReportedCostRecords: 3,
+    estimatedRecords: 6,
+    providerUnitOnlyRecords: 0,
+  },
+  breakdown: [
+    {
+      provider: "xai",
+      model: "grok-4.5",
+      operation: "response",
+      currency: "usd",
+      ...summary({
+        records: 3,
+        totalTokens: 1_500,
+        inputTokens: 1_000,
+        cachedInputTokens: 200,
+        outputTokens: 500,
+        inputTextTokens: 1_000,
+        cachedInputTextTokens: 200,
+        outputTextTokens: 500,
+        billedCost: 0.12,
+        providerReportedCost: 0.12,
+        effectiveCost: 0.12,
+      }),
+    },
+    {
+      provider: "xai",
+      model: "grok-voice-latest",
+      operation: "realtime_response",
+      currency: "usd",
+      ...summary({
         records: 2,
-        unpricedRecords: 0,
-        providerReportedUsageRecords: 2,
-        estimatedCostRecords: 0,
-        inputCharacters: 1_200,
-        providerBilledUnits: 1_250,
-        totalTokens: 120,
-        inputTokens: 80,
-        cachedInputTokens: 20,
-        cacheWriteInputTokens: 0,
-        outputTokens: 40,
-        reasoningTokens: 0,
-        inputTextTokens: 80,
-        cachedInputTextTokens: 20,
-        outputTextTokens: 40,
-        inputAudioTokens: 0,
-        cachedInputAudioTokens: 0,
-        outputAudioTokens: 0,
-        inputImageTokens: 0,
-        cachedInputImageTokens: 0,
-        outputImageTokens: 0,
-        durationSeconds: 0,
-        estimatedCost: 0,
-        billedCost: 0.0012,
-      },
-      breakdown: [
-        {
-          provider: 'xai',
-          model: 'grok-4.5',
-          operation: 'responses',
-          currency: 'usd',
-          records: 1,
-          inputCharacters: 0,
-          providerBilledUnits: 0,
-          totalTokens: 120,
-          inputTokens: 80,
-          cachedInputTokens: 20,
-          cacheWriteInputTokens: 0,
-          outputTokens: 40,
-          reasoningTokens: 0,
-          inputTextTokens: 80,
-          cachedInputTextTokens: 20,
-          outputTextTokens: 40,
-          inputAudioTokens: 0,
-          cachedInputAudioTokens: 0,
-          outputAudioTokens: 0,
-          inputImageTokens: 0,
-          cachedInputImageTokens: 0,
-          outputImageTokens: 0,
-          durationSeconds: 0,
-          estimatedCost: 0,
-          billedCost: 0.0012,
-        },
-        {
-          provider: 'elevenlabs',
-          model: 'eleven_v3',
-          operation: 'speech',
-          currency: 'usd',
-          records: 1,
-          inputCharacters: 1_200,
-          providerBilledUnits: 1_250,
-          totalTokens: 0,
-          inputTokens: 0,
-          cachedInputTokens: 0,
-          cacheWriteInputTokens: 0,
-          outputTokens: 0,
-          reasoningTokens: 0,
-          inputTextTokens: 0,
-          cachedInputTextTokens: 0,
-          outputTextTokens: 0,
-          inputAudioTokens: 0,
-          cachedInputAudioTokens: 0,
-          outputAudioTokens: 0,
-          inputImageTokens: 0,
-          cachedInputImageTokens: 0,
-          outputImageTokens: 0,
-          durationSeconds: 0,
-          estimatedCost: 0,
-          billedCost: 0,
-        },
-      ],
-      categories: [],
-    })
-  })
-
-  it('shows the loading state while the first report is pending', async () => {
-    mocks.fetchReport.mockReturnValue(new Promise(() => {}))
-
-    const wrapper = shallowMount(AiUsageSection, { props: { projectId: 'project-1' } })
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.find('[aria-label="Загрузка статистики"]').exists()).toBe(true)
-    expect(wrapper.find('.provider-stack').exists()).toBe(false)
-  })
-
-  it('starts collapsed and expands the report without reloading it', async () => {
-    const wrapper = shallowMount(AiUsageSection, { props: { projectId: 'project-1' } })
-    await flushPromises()
-
-    const toggle = wrapper.get('[aria-controls="ai-usage-content"]')
-    expect(toggle.attributes('aria-expanded')).toBe('false')
-    expect(wrapper.get('#ai-usage-content').attributes('style')).toContain('display: none')
-    expect(mocks.fetchReport).toHaveBeenCalledTimes(1)
-
-    await toggle.trigger('click')
-
-    expect(toggle.attributes('aria-expanded')).toBe('true')
-    expect(wrapper.get('#ai-usage-content').attributes('style')).not.toContain('display: none')
-    expect(mocks.fetchReport).toHaveBeenCalledTimes(1)
-  })
-
-  it('shows a load error and retries the request', async () => {
-    const report = await mocks.fetchReport()
-    mocks.fetchReport
-      .mockRejectedValueOnce(new Error('AI usage недоступен'))
-      .mockResolvedValueOnce(report)
-    const wrapper = shallowMount(AiUsageSection, {
-      props: { projectId: 'project-1' },
-      global: { stubs: { Message: { template: '<div class="message-stub"><slot /></div>' } } },
-    })
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('AI usage недоступен')
-    await wrapper.find('button-stub[label="Повторить"]').trigger('click')
-    await flushPromises()
-
-    expect(mocks.fetchReport).toHaveBeenCalledTimes(3)
-    expect(wrapper.find('.provider-stack').exists()).toBe(true)
-  })
-
-  it('keeps the cost mode disabled when the report has no priced xAI operations', async () => {
-    const report = await mocks.fetchReport()
-    report.breakdown[0].billedCost = 0
-    report.breakdown[0].estimatedCost = 0
-    mocks.fetchReport.mockResolvedValueOnce(report)
-
-    const wrapper = shallowMount(AiUsageSection, { props: { projectId: 'project-1' } })
-    await flushPromises()
-
-    const costButton = wrapper.findAll('.metric-switch button')[1]!
-    expect(costButton.attributes('disabled')).toBeDefined()
-    await costButton.trigger('click')
-    expect(wrapper.getComponent(AiModalityChart).props('metric')).toBe('tokens')
-  })
-
-  it('shows xAI billed cost separately from ElevenLabs credits', async () => {
-    const wrapper = shallowMount(AiUsageSection, {
-      props: { projectId: 'project-1' },
-    })
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('xAI · Grok')
-    expect(wrapper.text()).toContain('ElevenLabs')
-    expect(wrapper.text()).toContain('Использовано credits')
-    expect(wrapper.text()).toContain('1,3 тыс.')
-    expect(wrapper.text()).toContain('< 0,01 $')
-    expect(wrapper.text()).toContain('Стоимость Grok')
-    expect(wrapper.text()).toContain('По данным xAI')
-    expect(wrapper.text()).toContain('Стоимость голосового Grok рассчитывается')
-    expect(wrapper.text()).not.toContain('Расчётная стоимость')
-    expect(wrapper.text()).not.toContain('операция ElevenLabs учтена')
-    expect(wrapper.text()).not.toContain('character-cost')
-    expect(wrapper.text()).not.toContain('Расчётная стоимость может отличаться')
-    expect(wrapper.findAll('.metric-switch button')[1]!.attributes('disabled')).toBeUndefined()
-  })
-
-  it('shows Event Query consumption inside the Grok panel', async () => {
-    const wrapper = shallowMount(AiUsageSection, {
-      props: { projectId: 'project-1' },
-    })
-    await flushPromises()
-
-    expect(mocks.fetchReport).toHaveBeenCalledTimes(1)
-    expect(wrapper.get('.xai-panel').text()).toContain('Запросы к событиям')
-    expect(wrapper.get('.event-query-usage').text()).toContain('6')
-    expect(wrapper.get('.event-query-usage').text()).toContain('3,2 КБ')
-    expect(wrapper.get('.event-query-usage').text()).toContain(
-      '1,1\u00a0тыс. токенов',
-    )
-    expect(wrapper.get('.event-query-usage').text()).toContain(
-      '74,5\u00a0тыс. токенов',
-    )
-    expect(wrapper.get('.event-query-usage').text()).toContain('0,03\u00a0$')
-  })
-
-  it('uses one token and cost switch for both Grok charts', async () => {
-    const wrapper = shallowMount(AiUsageSection, {
-      props: { projectId: 'project-1' },
-    })
-    await flushPromises()
-
-    expect(wrapper.getComponent(AiModelUsageChart).props('metric')).toBe('tokens')
-    expect(wrapper.getComponent(AiModalityChart).props('metric')).toBe('tokens')
-
-    await wrapper.findAll('.metric-switch button')[1]!.trigger('click')
-
-    expect(wrapper.getComponent(AiModelUsageChart).props('metric')).toBe('cost')
-    expect(wrapper.getComponent(AiModalityChart).props('metric')).toBe('cost')
-  })
-
-  it('shows AI-created case consumption with its operation breakdown', async () => {
-    const baseReport = await mocks.fetchReport()
-    const xAiRow = baseReport.breakdown[0]
-    mocks.fetchReport.mockResolvedValue({
-      ...baseReport,
-      totals: {
-        ...baseReport.totals,
-        records: 25,
-        totalTokens: 41_219,
-        inputTokens: 32_616,
-        outputTokens: 8_603,
-        billedCost: 0.0902324,
-      },
-      breakdown: [
-        ...baseReport.breakdown,
-        {
-          ...xAiRow,
-          operation: 'case_router',
-          records: 18,
-          totalTokens: 29_670,
-          inputTokens: 24_447,
-          outputTokens: 5_223,
-          billedCost: 0.055208,
-        },
-        {
-          ...xAiRow,
-          operation: 'case_aggregator',
-          records: 5,
-          totalTokens: 11_429,
-          inputTokens: 8_089,
-          outputTokens: 3_340,
-          billedCost: 0.0338244,
-        },
-      ],
-      categories: [
-        {
-          category: 'CASE_INTELLIGENCE',
-          currency: 'usd',
-          records: 23,
-          inputCharacters: 0,
-          providerBilledUnits: 0,
-          totalTokens: 41_099,
-          inputTokens: 32_536,
-          cachedInputTokens: 16_128,
-          cacheWriteInputTokens: 0,
-          outputTokens: 8_563,
-          reasoningTokens: 6_302,
-          inputTextTokens: 32_536,
-          cachedInputTextTokens: 16_128,
-          outputTextTokens: 8_563,
-          inputAudioTokens: 0,
-          cachedInputAudioTokens: 0,
-          outputAudioTokens: 0,
-          inputImageTokens: 0,
-          cachedInputImageTokens: 0,
-          outputImageTokens: 0,
-          durationSeconds: 0,
-          estimatedCost: 0,
-          billedCost: 0.0890324,
-        },
-      ],
-    })
-
-    const wrapper = shallowMount(AiUsageSection, {
-      props: { projectId: 'project-1' },
-    })
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('AI-кейсы')
-    expect(wrapper.text()).toContain('Анализ и проверка обращений')
-    expect(wrapper.text()).toContain('Маршрутизация')
-    expect(wrapper.text()).toContain('Агрегация')
-    expect(wrapper.text()).toContain('0,09 $')
-    expect(wrapper.text()).toContain('41,1 тыс.')
-  })
-
-  it('includes all estimated Voice costs from the backend response', async () => {
-    const baseReport = await mocks.fetchReport()
-    const textUsage = baseReport.breakdown[0]
-    mocks.fetchReport.mockResolvedValue({
-      ...baseReport,
-      totals: {
-        ...baseReport.totals,
+        durationSeconds: 95,
+        estimatedCost: 0.08,
+        estimatedFallbackCost: 0.08,
+        effectiveCost: 0.08,
+      }),
+    },
+    {
+      provider: "xai",
+      model: null,
+      operation: "speech",
+      currency: "usd",
+      ...summary({
         records: 4,
-        estimatedCostRecords: 2,
-        durationSeconds: 170.35,
-        estimatedCost: 0.197958333333,
+        inputCharacters: 1_200,
+        estimatedCost: 0.018,
+        estimatedFallbackCost: 0.018,
+        effectiveCost: 0.018,
+      }),
+    },
+  ],
+  categories: [
+    {
+      category: "VOICE",
+      currency: "usd",
+      ...summary({
+        records: 2,
+        durationSeconds: 95,
+        estimatedCost: 0.08,
+        estimatedFallbackCost: 0.08,
+        effectiveCost: 0.08,
+      }),
+    },
+    {
+      category: "SPEECH",
+      currency: "usd",
+      ...summary({
+        records: 4,
+        inputCharacters: 1_200,
+        estimatedCost: 0.018,
+        estimatedFallbackCost: 0.018,
+        effectiveCost: 0.018,
+      }),
+    },
+  ],
+  eventQuery: {
+    calls: 6,
+    resultBytes: 3_300,
+    estimatedAddedInputTokens: 1_119,
+    linkedUsageIncludedInProviderTotals: true as const,
+    linkedAiUsage: {
+      records: 6,
+      inputTokens: 60_000,
+      outputTokens: 14_546,
+      totalTokens: 74_546,
+      billedCostUsd: 0.0295008,
+      estimatedCostUsd: null,
+    },
+  },
+  textToSpeechPricing: {
+    current: {
+      rate: "15",
+      currency: "usd",
+      unit: "per_million_input_characters",
+      effectiveFrom: "2026-07-29T10:00:00.000Z",
+    },
+    sourceUrl: "https://docs.x.ai/developers/pricing",
+  },
+});
+
+describe("AiUsageSection", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.fetchReport.mockResolvedValue(baseReport());
+  });
+
+  it("shows the loading state while the first report is pending", async () => {
+    mocks.fetchReport.mockReturnValue(new Promise(() => {}));
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[aria-label="Загрузка статистики"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find(".provider-stack").exists()).toBe(false);
+  });
+
+  it("starts collapsed and expands without reloading", async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    const toggle = wrapper.get('[aria-controls="ai-usage-content"]');
+    expect(toggle.attributes("aria-expanded")).toBe("false");
+    expect(mocks.fetchReport).toHaveBeenCalledTimes(1);
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+    expect(mocks.fetchReport).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a load error and retries", async () => {
+    mocks.fetchReport
+      .mockRejectedValueOnce(new Error("AI usage недоступен"))
+      .mockResolvedValueOnce(baseReport());
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+      global: {
+        stubs: {
+          Message: { template: '<div class="message-stub"><slot /></div>' },
+        },
       },
-      breakdown: [
-        ...baseReport.breakdown,
-        {
-          ...textUsage,
-          model: 'grok-voice-latest',
-          operation: 'realtime_response',
-          records: 2,
-          totalTokens: 0,
-          inputTokens: 0,
-          cachedInputTokens: 0,
-          outputTokens: 0,
-          inputTextTokens: 0,
-          cachedInputTextTokens: 0,
-          outputTextTokens: 0,
-          durationSeconds: 170.35,
-          estimatedCost: 0.141958333333,
-          billedCost: 0,
-        },
-        {
-          ...textUsage,
-          model: 'grok-voice-latest',
-          operation: 'realtime_text_input',
-          records: 2,
-          providerBilledUnits: 14,
-          totalTokens: 0,
-          inputTokens: 0,
-          cachedInputTokens: 0,
-          outputTokens: 0,
-          inputTextTokens: 0,
-          cachedInputTextTokens: 0,
-          outputTextTokens: 0,
-          durationSeconds: 0,
-          estimatedCost: 0.056,
-          billedCost: 0,
-        },
-      ],
-    })
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("AI usage недоступен");
+    await wrapper.find('button-stub[label="Повторить"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find(".provider-stack").exists()).toBe(true);
+  });
+
+  it("renders one xAI surface with separate model, Voice and text-to-speech slices", async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    expect(wrapper.findAll(".provider-panel")).toHaveLength(1);
+    expect(wrapper.text()).toContain("xAI");
+    expect(wrapper.text()).toContain("Модели Grok");
+    expect(wrapper.text()).toContain("Голосовой чат");
+    expect(wrapper.text()).toContain("Озвучивание текста");
+    expect(wrapper.text()).not.toContain("ElevenLabs");
+    expect(wrapper.text()).not.toContain("credits");
+    expect(wrapper.getComponent(AiModelUsageChart).props("rows")).toHaveLength(
+      1,
+    );
+    const ids = wrapper
+      .findAll("[id]")
+      .map((element) => element.attributes("id"));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("shows Event Query consumption inside the Grok panel", async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    expect(mocks.fetchReport).toHaveBeenCalledTimes(1);
+    expect(wrapper.get(".xai-panel").text()).toContain("Запросы к событиям");
+    expect(wrapper.get(".event-query-usage").text()).toContain("6");
+    expect(wrapper.get(".event-query-usage").text()).toContain("3,2 КБ");
+    expect(wrapper.get(".event-query-usage").text()).toContain(
+      "1,1\u00a0тыс. токенов",
+    );
+    expect(wrapper.get(".event-query-usage").text()).toContain(
+      "74,5\u00a0тыс. токенов",
+    );
+    expect(wrapper.get(".event-query-usage").text()).toContain("0,03\u00a0$");
+  });
+
+  it("shows provider-reported and calculated xAI totals separately", async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    expect(wrapper.get(".actual-cost").text()).toContain("0,12 $");
+    expect(wrapper.get(".estimated-cost").text()).toContain("0,10 $");
+    expect(wrapper.get(".effective-cost").text()).toContain("0,22 $");
+    expect(wrapper.get(".effective-cost").text()).not.toContain("фактически");
+  });
+
+  it("never combines mixed currencies under a fabricated USD label", async () => {
+    const report = baseReport();
+    report.breakdown.push({
+      ...report.breakdown[0]!,
+      currency: "eur",
+      billedCost: 1,
+      providerReportedCost: 1,
+      effectiveCost: 1,
+    });
+    mocks.fetchReport.mockResolvedValue(report);
 
     const wrapper = shallowMount(AiUsageSection, {
-      props: { projectId: 'project-1' },
-    })
-    await flushPromises()
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
 
-    expect(wrapper.text()).toContain('0,20 $')
-    expect(wrapper.text()).toContain('< 0,01 $ фактически')
-    expect(wrapper.text()).toContain('0,20 $ расчётно')
-    expect(wrapper.text()).toContain('0,05 $ за минуту отправленного и полученного аудио')
-    expect(wrapper.text()).toContain('Если ставка изменилась, сообщите в поддержку')
-    expect(wrapper.get('.voice-pricing-note a').attributes()).toMatchObject({
-      href: 'https://docs.x.ai/developers/pricing#voice-api',
-      target: '_blank',
-      rel: 'noopener noreferrer',
-    })
-  })
-})
+    expect(wrapper.get(".actual-cost").text()).toContain("Несколько валют");
+    expect(wrapper.get(".estimated-cost").text()).toContain("Несколько валют");
+    expect(wrapper.get(".effective-cost").text()).toContain("Несколько валют");
+    expect(
+      wrapper.findAll(".metric-switch button")[1]!.attributes(),
+    ).toHaveProperty("disabled");
+  });
+
+  it("presents Voice as duration-based calculated usage without a hardcoded rate", async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    const voice = wrapper.get(".voice-slice");
+    expect(voice.text()).toContain("1 мин 35 сек");
+    expect(voice.text()).toContain("2 операции");
+    expect(voice.text()).toContain("0,08 $");
+    expect(voice.text()).toContain("Расчёт по публичному тарифу xAI");
+    expect(voice.text()).not.toContain("0,05 $");
+  });
+
+  it("presents TTS from backend characters, cost and current pricing context", async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    const speech = wrapper.get(".speech-slice");
+    expect(speech.text()).toContain("1,2 тыс.");
+    expect(speech.text()).toContain("4 генерации");
+    expect(speech.text()).toContain("0,02 $");
+    expect(speech.text()).not.toContain("0 токен");
+    expect(speech.text()).not.toContain("provider units");
+    expect(speech.text()).toContain("15,00 $ за 1 000 000 входных символов");
+    expect(speech.text()).toContain("29.07.2026");
+    expect(speech.text()).toContain(
+      "История рассчитана по ставке, действовавшей в момент каждой операции",
+    );
+    expect(speech.text()).toContain(
+      "Если ставка xAI изменилась, сообщите администрации",
+    );
+    expect(speech.get("a").attributes()).toMatchObject({
+      href: "https://docs.x.ai/developers/pricing",
+      target: "_blank",
+      rel: "noopener noreferrer",
+    });
+  });
+
+  it("keeps token/cost charts scoped to Grok models", async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    expect(wrapper.getComponent(AiModelUsageChart).props("metric")).toBe(
+      "tokens",
+    );
+    expect(wrapper.getComponent(AiModalityChart).props("metric")).toBe(
+      "tokens",
+    );
+    await wrapper.findAll(".metric-switch button")[1]!.trigger("click");
+    expect(wrapper.getComponent(AiModelUsageChart).props("metric")).toBe(
+      "cost",
+    );
+    expect(wrapper.getComponent(AiModalityChart).props("metric")).toBe("cost");
+  });
+
+  it("keeps the AI cases section and operation labels", async () => {
+    const report = baseReport();
+    report.breakdown.push({
+      ...report.breakdown[0]!,
+      operation: "case_router",
+      records: 18,
+      totalTokens: 29_670,
+      inputTokens: 24_447,
+      outputTokens: 5_223,
+      billedCost: 0.055208,
+      providerReportedCost: 0.055208,
+      effectiveCost: 0.055208,
+    });
+    report.categories.push({
+      category: "CASE_INTELLIGENCE",
+      currency: "usd",
+      ...summary({
+        records: 18,
+        totalTokens: 29_670,
+        inputTokens: 24_447,
+        outputTokens: 5_223,
+        billedCost: 0.055208,
+        providerReportedCost: 0.055208,
+        effectiveCost: 0.055208,
+      }),
+    });
+    mocks.fetchReport.mockResolvedValue(report);
+
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("AI-кейсы");
+    expect(wrapper.text()).toContain("Анализ и проверка обращений");
+    expect(wrapper.text()).toContain("Маршрутизация");
+  });
+});

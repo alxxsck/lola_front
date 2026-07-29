@@ -75,6 +75,12 @@ const navigation = computed(() =>
       to: "/platform/notification-operations",
       platformPermission: "platform.notifications.operations.read",
     },
+    {
+      label: "Тарифы AI",
+      icon: "pi pi-dollar",
+      to: "/platform/ai-pricing",
+      platformPermission: "platform.ai_pricing.read",
+    },
     { label: "Обзор", icon: "pi pi-sparkles", to: "/overview", project: true },
     {
       label: "Проект",

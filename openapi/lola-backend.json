@@ -1054,6 +1054,11 @@
             },
             "type": "array"
           },
+          "nextCursor": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "sourceUrl": {
             "format": "uri",
             "type": "string"
@@ -1063,6 +1068,7 @@
           "current",
           "history",
           "hasMore",
+          "nextCursor",
           "sourceUrl"
         ],
         "type": "object"
@@ -1714,6 +1720,59 @@
         ],
         "type": "object"
       },
+      "AiTextToSpeechCurrentPricingResponseDto": {
+        "properties": {
+          "currency": {
+            "enum": [
+              "usd"
+            ],
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rate": {
+            "example": "15",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "per_million_input_characters"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "rate",
+          "currency",
+          "unit",
+          "effectiveFrom"
+        ],
+        "type": "object"
+      },
+      "AiTextToSpeechPricingContextResponseDto": {
+        "properties": {
+          "current": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiTextToSpeechCurrentPricingResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "sourceUrl": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current",
+          "sourceUrl"
+        ],
+        "type": "object"
+      },
       "AiUsageBreakdownResponseDto": {
         "properties": {
           "billedCost": {
@@ -1768,6 +1827,7 @@
             "type": "number"
           },
           "model": {
+            "nullable": true,
             "type": "string"
           },
           "operation": {
@@ -2102,6 +2162,7 @@
             "type": "number"
           },
           "model": {
+            "nullable": true,
             "type": "string"
           },
           "occurredAt": {
@@ -2203,6 +2264,9 @@
           "range": {
             "$ref": "#/components/schemas/AiUsageRangeResponseDto"
           },
+          "textToSpeechPricing": {
+            "$ref": "#/components/schemas/AiTextToSpeechPricingContextResponseDto"
+          },
           "totals": {
             "$ref": "#/components/schemas/AiUsageTotalsResponseDto"
           }
@@ -2211,6 +2275,7 @@
           "projectId",
           "range",
           "totals",
+          "textToSpeechPricing",
           "breakdown",
           "categories",
           "providers",
@@ -6856,7 +6921,7 @@
             ]
           },
           "supportedLocales": {
-            "description": "Present only when the membership grants project.speech.read, project.knowledge.read, project.knowledge.write or project.settings.read.",
+            "description": "Present only when the membership grants project.knowledge.read, project.knowledge.write or project.settings.read.",
             "items": {
               "type": "string"
             },
@@ -7562,11 +7627,10 @@
       "CompatibilityVoiceConfigDto": {
         "properties": {
           "voice": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/RealtimeVoice"
-              }
-            ]
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+            "type": "string"
           }
         },
         "required": [
@@ -8668,7 +8732,7 @@
           },
           "settings": {
             "additionalProperties": true,
-            "description": "General project settings. Text-to-Speech settings are managed by the dedicated speech-synthesis endpoint.",
+            "description": "General project settings.",
             "type": "object"
           },
           "slug": {
@@ -9355,6 +9419,9 @@
           "range": {
             "$ref": "#/components/schemas/EndUserAiUsageRangeResponseDto"
           },
+          "textToSpeechPricing": {
+            "$ref": "#/components/schemas/AiTextToSpeechPricingContextResponseDto"
+          },
           "totals": {
             "$ref": "#/components/schemas/AiUsageTotalsResponseDto"
           },
@@ -9373,6 +9440,7 @@
           "projectId",
           "range",
           "totals",
+          "textToSpeechPricing",
           "breakdown",
           "categories",
           "providers",
@@ -18475,37 +18543,6 @@
         ],
         "type": "object"
       },
-      "ProjectSpeechSettingsResponseDto": {
-        "properties": {
-          "languageOverride": {
-            "description": "ISO 639-1 language override. Null enables automatic language detection.",
-            "nullable": true,
-            "pattern": "^[a-z]{2}$",
-            "type": "string"
-          },
-          "schemaVersion": {
-            "enum": [
-              2
-            ],
-            "type": "number"
-          },
-          "stability": {
-            "maximum": 1,
-            "minimum": 0,
-            "type": "number"
-          },
-          "voiceId": {
-            "maxLength": 100,
-            "minLength": 12,
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "schemaVersion"
-        ],
-        "type": "object"
-      },
       "ProjectStatus": {
         "enum": [
           "ACTIVE",
@@ -18513,73 +18550,6 @@
           "ARCHIVED"
         ],
         "type": "string"
-      },
-      "ProviderBillingSnapshotResponseDto": {
-        "properties": {
-          "currency": {
-            "nullable": true,
-            "type": "string"
-          },
-          "currentOverageAmount": {
-            "nullable": true,
-            "type": "string"
-          },
-          "error": {
-            "nullable": true,
-            "type": "string"
-          },
-          "lastAttemptAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "lastSyncedAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "provider": {
-            "example": "elevenlabs",
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "RUNNING",
-              "CURRENT",
-              "STALE"
-            ],
-            "example": "CURRENT",
-            "type": "string"
-          },
-          "subscription": {
-            "nullable": true,
-            "type": "object"
-          },
-          "ttsCreditsUsed": {
-            "description": "Provider credits.",
-            "nullable": true,
-            "type": "string"
-          },
-          "usageByProduct": {
-            "nullable": true,
-            "type": "object"
-          },
-          "windowEnd": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "windowStart": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "provider",
-          "status",
-          "lastAttemptAt"
-        ],
-        "type": "object"
       },
       "PublishAiPricingRevisionDto": {
         "properties": {
@@ -19193,16 +19163,6 @@
         "enum": [
           "grok-voice-think-fast-1.0",
           "grok-voice-latest"
-        ],
-        "type": "string"
-      },
-      "RealtimeVoice": {
-        "enum": [
-          "ara",
-          "eve",
-          "leo",
-          "rex",
-          "sal"
         ],
         "type": "string"
       },
@@ -22615,164 +22575,6 @@
         ],
         "type": "object"
       },
-      "SpeechIntegrationResponseDto": {
-        "properties": {
-          "capabilities": {
-            "$ref": "#/components/schemas/SpeechProviderCapabilitiesResponseDto"
-          },
-          "configured": {
-            "description": "Whether the server-side provider credential is configured.",
-            "type": "boolean"
-          },
-          "defaults": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "id": {
-            "enum": [
-              "elevenlabs"
-            ],
-            "type": "string"
-          },
-          "model": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "configured",
-          "model",
-          "defaults",
-          "capabilities"
-        ],
-        "type": "object"
-      },
-      "SpeechProviderCapabilitiesResponseDto": {
-        "properties": {
-          "languageOverride": {
-            "type": "boolean"
-          },
-          "outputFormat": {
-            "type": "string"
-          },
-          "settings": {
-            "additionalProperties": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "object"
-          },
-          "streaming": {
-            "type": "boolean"
-          },
-          "unsupportedForModel": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "voices": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "streaming",
-          "voices",
-          "languageOverride",
-          "settings",
-          "unsupportedForModel"
-        ],
-        "type": "object"
-      },
-      "SpeechSettingsResponseDto": {
-        "properties": {
-          "integration": {
-            "$ref": "#/components/schemas/SpeechIntegrationResponseDto"
-          },
-          "settings": {
-            "$ref": "#/components/schemas/ProjectSpeechSettingsResponseDto"
-          }
-        },
-        "required": [
-          "settings",
-          "integration"
-        ],
-        "type": "object"
-      },
-      "SpeechVoicePageResponseDto": {
-        "properties": {
-          "hasMore": {
-            "type": "boolean"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/SpeechVoiceResponseDto"
-            },
-            "type": "array"
-          },
-          "nextCursor": {
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "items",
-          "hasMore"
-        ],
-        "type": "object"
-      },
-      "SpeechVoiceResponseDto": {
-        "properties": {
-          "category": {
-            "nullable": true,
-            "type": "string"
-          },
-          "description": {
-            "nullable": true,
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "labels": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object"
-          },
-          "languages": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "name": {
-            "type": "string"
-          },
-          "previewUrl": {
-            "nullable": true,
-            "type": "string"
-          },
-          "provider": {
-            "enum": [
-              "elevenlabs"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "provider",
-          "labels",
-          "languages"
-        ],
-        "type": "object"
-      },
       "SplitEndUserCaseDto": {
         "properties": {
           "evidenceIds": {
@@ -22866,11 +22668,10 @@
             "type": "string"
           },
           "voice": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/RealtimeVoice"
-              }
-            ]
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+            "type": "string"
           }
         },
         "required": [
@@ -23003,11 +22804,10 @@
             "type": "string"
           },
           "voice": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/RealtimeVoice"
-              }
-            ]
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+            "type": "string"
           },
           "voiceModelId": {
             "allOf": [
@@ -25090,7 +24890,7 @@
           },
           "settings": {
             "additionalProperties": true,
-            "description": "General project settings. The speechSynthesis subtree is preserved and can only be changed through the dedicated endpoint.",
+            "description": "General project settings.",
             "type": "object"
           },
           "status": {
@@ -25394,28 +25194,6 @@
         "required": [
           "expectedVersion"
         ],
-        "type": "object"
-      },
-      "UpdateSpeechSettingsDto": {
-        "properties": {
-          "languageOverride": {
-            "description": "ISO 639-1 language override. Null enables automatic language detection.",
-            "nullable": true,
-            "pattern": "^[a-z]{2}$",
-            "type": "string"
-          },
-          "stability": {
-            "maximum": 1,
-            "minimum": 0,
-            "type": "number"
-          },
-          "voiceId": {
-            "maxLength": 100,
-            "minLength": 12,
-            "nullable": true,
-            "type": "string"
-          }
-        },
         "type": "object"
       },
       "UpdateTelegramBroadcastDto": {
@@ -26137,6 +25915,54 @@
           "expiryMs"
         ],
         "type": "object"
+      },
+      "XaiVoiceCatalogItemDto": {
+        "properties": {
+          "id": {
+            "example": "eve",
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "language": {
+            "example": "multilingual",
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "example": "Eve",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "language"
+        ],
+        "type": "object"
+      },
+      "XaiVoiceCatalogResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/XaiVoiceCatalogItemDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "stale": {
+            "description": "True when a previously loaded catalog is served after a provider refresh error.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "stale"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -26168,7 +25994,28 @@
     "/api/v1/admin/ai-pricing/xai/text-to-speech": {
       "get": {
         "operationId": "AiPricingRevision_get",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -40469,160 +40316,6 @@
         }
       }
     },
-    "/api/v1/admin/projects/{projectId}/speech-synthesis": {
-      "get": {
-        "operationId": "AdminSpeech_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SpeechSettingsResponseDto"
-                }
-              }
-            },
-            "description": "Effective project TTS settings and provider capabilities."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin speech synthesis"
-        ],
-        "x-iam-permission": {
-          "code": "project.speech.read",
-          "scope": "PROJECT"
-        }
-      },
-      "patch": {
-        "operationId": "AdminSpeech_update",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSpeechSettingsDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SpeechSettingsResponseDto"
-                }
-              }
-            },
-            "description": "Updated project TTS settings. Provider secrets are never returned."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin speech synthesis"
-        ],
-        "x-iam-permission": {
-          "code": "project.speech.write",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/speech-synthesis/voices": {
-      "get": {
-        "operationId": "AdminSpeech_voices",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "search",
-            "required": false,
-            "schema": {
-              "maxLength": 100,
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cursor",
-            "required": false,
-            "schema": {
-              "maxLength": 500,
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SpeechVoicePageResponseDto"
-                }
-              }
-            },
-            "description": "Normalized provider voice catalog with cursor pagination."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin speech synthesis"
-        ],
-        "x-iam-permission": {
-          "code": "project.speech.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
     "/api/v1/admin/projects/{projectId}/telegram-broadcasts": {
       "get": {
         "operationId": "TelegramBroadcast_list",
@@ -43414,20 +43107,30 @@
         }
       }
     },
-    "/api/v1/admin/provider-billing/elevenlabs": {
+    "/api/v1/admin/projects/{projectId}/voice-catalog": {
       "get": {
-        "operationId": "ProviderBilling_get",
-        "parameters": [],
+        "operationId": "XaiVoiceCatalog_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProviderBillingSnapshotResponseDto"
+                  "$ref": "#/components/schemas/XaiVoiceCatalogResponseDto"
                 }
               }
             },
-            "description": "Sanitized ElevenLabs workspace usage/subscription snapshot."
+            "description": ""
           }
         },
         "security": [
@@ -43436,42 +43139,11 @@
           }
         ],
         "tags": [
-          "provider billing"
+          "admin voice"
         ],
         "x-iam-permission": {
-          "code": "platform.provider_billing.read",
-          "scope": "PLATFORM"
-        }
-      }
-    },
-    "/api/v1/admin/provider-billing/elevenlabs/sync": {
-      "post": {
-        "operationId": "ProviderBilling_sync",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProviderBillingSnapshotResponseDto"
-                }
-              }
-            },
-            "description": "Refresh and return the ElevenLabs billing snapshot."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "provider billing"
-        ],
-        "x-iam-fresh-strong-authentication": true,
-        "x-iam-permission": {
-          "code": "platform.provider_billing.sync",
-          "scope": "PLATFORM"
+          "code": "project.settings.read",
+          "scope": "PROJECT"
         }
       }
     },

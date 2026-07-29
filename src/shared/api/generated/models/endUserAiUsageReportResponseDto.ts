@@ -10,6 +10,7 @@ import type { AiUsageCategoryBreakdownResponseDto } from "./aiUsageCategoryBreak
 import type { AiUsageRecordResponseDto } from "./aiUsageRecordResponseDto";
 import type { AiUsageProviderBreakdownsResponseDto } from "./aiUsageProviderBreakdownsResponseDto";
 import type { EndUserAiUsageRangeResponseDto } from "./endUserAiUsageRangeResponseDto";
+import type { AiTextToSpeechPricingContextResponseDto } from "./aiTextToSpeechPricingContextResponseDto";
 import type { AiUsageTotalsResponseDto } from "./aiUsageTotalsResponseDto";
 import type { EndUserAiUsageReportResponseDtoWindow } from "./endUserAiUsageReportResponseDtoWindow";
 
@@ -23,6 +24,7 @@ export interface EndUserAiUsageReportResponseDto {
   projectId: string;
   providers: AiUsageProviderBreakdownsResponseDto;
   range: EndUserAiUsageRangeResponseDto;
+  textToSpeechPricing: AiTextToSpeechPricingContextResponseDto;
   totals: AiUsageTotalsResponseDto;
   window: EndUserAiUsageReportResponseDtoWindow;
 }

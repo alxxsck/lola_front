@@ -27,8 +27,8 @@ import type {
   AdminEndUserProfilesHistoryParams,
   AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
-  AdminSpeechVoicesParams,
   AiCapabilityPreviewResponseDto,
+  AiPricingRevisionGetParams,
   AiPricingRevisionStateResponseDto,
   AiUsageReportParams,
   AiUsageReportResponseDto,
@@ -267,7 +267,6 @@ import type {
   ProjectResponseDto,
   ProjectRoleListResponseDto,
   ProjectRoleResponseDto,
-  ProviderBillingSnapshotResponseDto,
   PublishAiPricingRevisionDto,
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
@@ -317,8 +316,6 @@ import type {
   SendAdminMessageResponseDto,
   SendChatMessageDto,
   SetTelegramBroadcastsEnabledDto,
-  SpeechSettingsResponseDto,
-  SpeechVoicePageResponseDto,
   SplitEndUserCaseDto,
   SplitEndUserCaseResponseDto,
   StartAIReviewDto,
@@ -374,7 +371,6 @@ import type {
   UpdateScenarioAdmissionSettingsDto,
   UpdateScenarioAuthoringMetadataDto,
   UpdateSlackNotificationDestinationDto,
-  UpdateSpeechSettingsDto,
   UpdateTelegramBroadcastDto,
   UpdateUiElementDto,
   UpdateUserMemorySettingsDto,
@@ -391,6 +387,7 @@ import type {
   ValidateScenarioDraftResponseDto,
   ValidateScenarioRuleDto,
   ValidateScenarioRuleResponseDto,
+  XaiVoiceCatalogResponseDto,
 } from "./models";
 
 import { request } from "../http/orval-mutator";
@@ -398,10 +395,15 @@ import type { BodyType } from "../http/orval-mutator";
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 export const aiPricingRevisionGet = (
+  params?: AiPricingRevisionGetParams,
   options?: SecondParameter<typeof request<AiPricingRevisionStateResponseDto>>,
 ) => {
   return request<AiPricingRevisionStateResponseDto>(
-    { url: `/api/v1/admin/ai-pricing/xai/text-to-speech`, method: "GET" },
+    {
+      url: `/api/v1/admin/ai-pricing/xai/text-to-speech`,
+      method: "GET",
+      params,
+    },
     options,
   );
 };
@@ -3518,50 +3520,6 @@ export const platformOperationsUpdateProjectSettings = (
   );
 };
 
-export const adminSpeechGet = (
-  projectId: string,
-  options?: SecondParameter<typeof request<SpeechSettingsResponseDto>>,
-) => {
-  return request<SpeechSettingsResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/speech-synthesis`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const adminSpeechUpdate = (
-  projectId: string,
-  updateSpeechSettingsDto: BodyType<UpdateSpeechSettingsDto>,
-  options?: SecondParameter<typeof request<SpeechSettingsResponseDto>>,
-) => {
-  return request<SpeechSettingsResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/speech-synthesis`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: updateSpeechSettingsDto,
-    },
-    options,
-  );
-};
-
-export const adminSpeechVoices = (
-  projectId: string,
-  params?: AdminSpeechVoicesParams,
-  options?: SecondParameter<typeof request<SpeechVoicePageResponseDto>>,
-) => {
-  return request<SpeechVoicePageResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/speech-synthesis/voices`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
 export const telegramBroadcastList = (
   projectId: string,
   params?: TelegramBroadcastListParams,
@@ -4287,20 +4245,12 @@ export const platformOperationsUsersPage = (
   );
 };
 
-export const providerBillingGet = (
-  options?: SecondParameter<typeof request<ProviderBillingSnapshotResponseDto>>,
+export const xaiVoiceCatalogList = (
+  projectId: string,
+  options?: SecondParameter<typeof request<XaiVoiceCatalogResponseDto>>,
 ) => {
-  return request<ProviderBillingSnapshotResponseDto>(
-    { url: `/api/v1/admin/provider-billing/elevenlabs`, method: "GET" },
-    options,
-  );
-};
-
-export const providerBillingSync = (
-  options?: SecondParameter<typeof request<ProviderBillingSnapshotResponseDto>>,
-) => {
-  return request<ProviderBillingSnapshotResponseDto>(
-    { url: `/api/v1/admin/provider-billing/elevenlabs/sync`, method: "POST" },
+  return request<XaiVoiceCatalogResponseDto>(
+    { url: `/api/v1/admin/projects/${projectId}/voice-catalog`, method: "GET" },
     options,
   );
 };
@@ -5986,15 +5936,6 @@ export type PlatformOperationsProjectSettingsResult = NonNullable<
 export type PlatformOperationsUpdateProjectSettingsResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsUpdateProjectSettings>>
 >;
-export type AdminSpeechGetResult = NonNullable<
-  Awaited<ReturnType<typeof adminSpeechGet>>
->;
-export type AdminSpeechUpdateResult = NonNullable<
-  Awaited<ReturnType<typeof adminSpeechUpdate>>
->;
-export type AdminSpeechVoicesResult = NonNullable<
-  Awaited<ReturnType<typeof adminSpeechVoices>>
->;
 export type TelegramBroadcastListResult = NonNullable<
   Awaited<ReturnType<typeof telegramBroadcastList>>
 >;
@@ -6130,11 +6071,8 @@ export type PresenceListResult = NonNullable<
 export type PlatformOperationsUsersPageResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsUsersPage>>
 >;
-export type ProviderBillingGetResult = NonNullable<
-  Awaited<ReturnType<typeof providerBillingGet>>
->;
-export type ProviderBillingSyncResult = NonNullable<
-  Awaited<ReturnType<typeof providerBillingSync>>
+export type XaiVoiceCatalogListResult = NonNullable<
+  Awaited<ReturnType<typeof xaiVoiceCatalogList>>
 >;
 export type PlatformTranslationUsageUsageReportResult = NonNullable<
   Awaited<ReturnType<typeof platformTranslationUsageUsageReport>>

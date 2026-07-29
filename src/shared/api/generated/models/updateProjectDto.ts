@@ -19,7 +19,7 @@ export interface UpdateProjectDto {
    * @maxLength 100
    */
   name?: string;
-  /** General project settings. The speechSynthesis subtree is preserved and can only be changed through the dedicated endpoint. */
+  /** General project settings. */
   settings?: UpdateProjectDtoSettings;
   status?: MutableProjectStatus;
   /** @maxItems 20 */
