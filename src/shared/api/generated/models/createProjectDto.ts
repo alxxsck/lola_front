@@ -23,7 +23,7 @@ export interface CreateProjectDto {
   organizationName: string;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   organizationSlug: string;
-  /** General project settings. Text-to-Speech settings are managed by the dedicated speech-synthesis endpoint. */
+  /** General project settings. */
   settings?: CreateProjectDtoSettings;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   slug: string;

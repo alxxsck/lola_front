@@ -41,6 +41,9 @@ const totals: AiUsageTotals = {
   durationSeconds: 0,
   estimatedCost: 0,
   billedCost: 0.03,
+  providerReportedCost: 0.03,
+  estimatedFallbackCost: 0,
+  effectiveCost: 0.03,
 }
 
 function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
@@ -70,6 +73,9 @@ function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
     durationSeconds: 0,
     estimatedCost: 0,
     billedCost: 0.01,
+    providerReportedCost: 0.01,
+    estimatedFallbackCost: 0,
+    effectiveCost: 0.01,
     ...patch,
   }
 }

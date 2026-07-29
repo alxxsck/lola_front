@@ -35,8 +35,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
     cachedInputImageTokens: 0,
     outputImageTokens: 0,
     durationSeconds: 428,
-    estimatedCost: 1.108099,
+    estimatedCost: 1.384999,
     billedCost: 0.1765,
+    providerReportedCost: 0.1765,
+    estimatedFallbackCost: 1.384999,
+    effectiveCost: 1.561499,
   },
   breakdown: [
     {
@@ -65,6 +68,9 @@ const demoReport = (projectId: string): AiUsageReport => ({
       durationSeconds: 0,
       estimatedCost: 0,
       billedCost: 0.1765,
+      providerReportedCost: 0.1765,
+      estimatedFallbackCost: 0,
+      effectiveCost: 0.1765,
     },
     {
       provider: 'xai',
@@ -92,6 +98,9 @@ const demoReport = (projectId: string): AiUsageReport => ({
       durationSeconds: 0,
       estimatedCost: 0.8467,
       billedCost: 0,
+      providerReportedCost: 0,
+      estimatedFallbackCost: 0.8467,
+      effectiveCost: 0.8467,
     },
     {
       provider: 'xai',
@@ -119,6 +128,9 @@ const demoReport = (projectId: string): AiUsageReport => ({
       durationSeconds: 0,
       estimatedCost: 0.1964,
       billedCost: 0,
+      providerReportedCost: 0,
+      estimatedFallbackCost: 0.1964,
+      effectiveCost: 0.1964,
     },
     {
       provider: 'xai',
@@ -146,10 +158,13 @@ const demoReport = (projectId: string): AiUsageReport => ({
       durationSeconds: 428,
       estimatedCost: 0.064999,
       billedCost: 0,
+      providerReportedCost: 0,
+      estimatedFallbackCost: 0.064999,
+      effectiveCost: 0.064999,
     },
     {
-      provider: 'elevenlabs',
-      model: 'eleven_v3',
+      provider: 'xai',
+      model: null,
       operation: 'speech',
       currency: 'usd',
       records: 24,
@@ -171,8 +186,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0,
+      estimatedCost: 0.2769,
       billedCost: 0,
+      providerReportedCost: 0,
+      estimatedFallbackCost: 0.2769,
+      effectiveCost: 0.2769,
     },
   ],
   categories: [],
@@ -224,6 +242,9 @@ const decimalKeys = [
   'durationSeconds',
   'estimatedCost',
   'billedCost',
+  'providerReportedCost',
+  'estimatedFallbackCost',
+  'effectiveCost',
 ] as const
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -294,6 +315,9 @@ function parseTotals(value: unknown): AiUsageTotals | undefined {
   for (const key of [
     'providerReportedUsageRecords',
     'estimatedCostRecords',
+    'providerReportedCostRecords',
+    'estimatedRecords',
+    'providerUnitOnlyRecords',
   ] as const) {
     if (value[key] === undefined) continue
     const parsed = safeInteger(value[key])
@@ -305,9 +329,16 @@ function parseTotals(value: unknown): AiUsageTotals | undefined {
 
 function parseBreakdown(value: unknown): AiUsageBreakdown | undefined {
   if (!isRecord(value)) return undefined
+  const model = boundedString(value.model, 1, 160)
+    ? value.model
+    : value.model === null &&
+        value.provider === 'xai' &&
+        value.operation === 'speech'
+      ? null
+      : undefined
   if (
     !boundedString(value.provider, 1, 80) ||
-    !boundedString(value.model, 1, 160) ||
+    model === undefined ||
     !boundedString(value.operation, 1, 120) ||
     !boundedString(value.currency, 3, 8)
   )
@@ -316,7 +347,7 @@ function parseBreakdown(value: unknown): AiUsageBreakdown | undefined {
   if (!numbers) return undefined
   return {
     provider: value.provider,
-    model: value.model,
+    model,
     operation: value.operation,
     currency: value.currency,
     ...numbers,

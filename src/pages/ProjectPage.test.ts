@@ -15,14 +15,13 @@ const mocks = vi.hoisted(() => ({
   updateAuthProject: vi.fn(),
   addToast: vi.fn(),
   attributeWorkspace: vi.fn(),
+  fetchVoiceCatalog: vi.fn(),
   authProject: {} as object,
   permissions: [
     "project.settings.read",
     "project.settings.write",
     "project.profile_contract.read",
     "project.profile_contract.write",
-    "project.speech.read",
-    "project.speech.write",
     "project.ai_usage.read",
   ] as string[],
 }));
@@ -52,6 +51,9 @@ vi.mock(
     attributeContractRepository: { workspace: mocks.attributeWorkspace },
   }),
 );
+vi.mock("@/features/project-voice/project-voice.api", () => ({
+  fetchProjectVoiceCatalog: mocks.fetchVoiceCatalog,
+}));
 
 vi.mock("primevue/usetoast", () => ({
   useToast: () => ({ add: mocks.addToast }),
@@ -105,8 +107,6 @@ describe("ProjectPage voice instructions", () => {
       "project.settings.write",
       "project.profile_contract.read",
       "project.profile_contract.write",
-      "project.speech.read",
-      "project.speech.write",
       "project.ai_usage.read",
     ];
     mocks.authProject = project();
@@ -116,6 +116,13 @@ describe("ProjectPage voice instructions", () => {
       currentContractRevision: null,
       draft: { document: { fields: [] } },
       validation: { issues: [] },
+    });
+    mocks.fetchVoiceCatalog.mockResolvedValue({
+      items: [
+        { id: "eve", name: "Eve", language: "multilingual" },
+        { id: "rex", name: "Rex", language: "multilingual" },
+      ],
+      stale: false,
     });
     mocks.updateProject.mockImplementation(
       async (_projectId: string, patch: Partial<Project>) => project(patch),
@@ -142,49 +149,14 @@ describe("ProjectPage voice instructions", () => {
     ).toBeDefined();
   });
 
-  it("renders speech settings read-only without project.speech.write", async () => {
-    mocks.permissions = ["project.settings.read", "project.speech.read"];
+  it("has no independently protected ElevenLabs speech settings section", async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
-    expect(
-      wrapper
-        .findComponent({ name: "SpeechSynthesisSection" })
-        .props("editable"),
-    ).toBe(false);
-  });
-
-  it("opens an independently permitted speech section without reading or rendering Project settings", async () => {
-    mocks.permissions = ["project.speech.read"];
-    mocks.authProject = {
-      id: "project-1",
-      name: "Lola",
-      slug: "lola",
-      status: "ACTIVE",
-      supportedLocales: ["ru"],
-    };
-
-    const wrapper = shallowMount(ProjectPage);
-    await flushPromises();
-
-    expect(mocks.getProject).not.toHaveBeenCalled();
-    expect(mocks.attributeWorkspace).not.toHaveBeenCalled();
     expect(
       wrapper.findComponent({ name: "SpeechSynthesisSection" }).exists(),
-    ).toBe(true);
-    expect(
-      wrapper
-        .findComponent({ name: "SpeechSynthesisSection" })
-        .props("supportedLocales"),
-    ).toEqual(["ru"]);
-    expect(wrapper.text()).not.toContain("Cannot read properties");
-    expect(
-      wrapper.findComponent({ name: "ActivitySettingsSection" }).exists(),
     ).toBe(false);
-    expect(wrapper.findComponent({ name: "AiUsageSection" }).exists()).toBe(
-      false,
-    );
-    expect(wrapper.find("#project-settings-form").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Озвучивание текста");
   });
 
   it("shows content languages as a Locale Attribute summary and does not patch legacy locale fields", async () => {
@@ -192,16 +164,16 @@ describe("ProjectPage voice instructions", () => {
       currentPublication: {
         document: {
           fields: [
-          {
-            key: "language",
-            label: "Язык",
-            semanticRole: "LOCALE",
-            lifecycle: "ACTIVE",
-            constraints: {
-              allowedValues: ["en", "pt-BR"],
-              defaultLocale: "pt-BR",
+            {
+              key: "language",
+              label: "Язык",
+              semanticRole: "LOCALE",
+              lifecycle: "ACTIVE",
+              constraints: {
+                allowedValues: ["en", "pt-BR"],
+                defaultLocale: "pt-BR",
+              },
             },
-          },
           ],
         },
       },
@@ -349,7 +321,7 @@ describe("ProjectPage voice instructions", () => {
     ).toBe("Изменить высоту системной инструкции");
   });
 
-  it("keeps TTS in the settings column and submits the project form from the sidebar", async () => {
+  it("keeps one Project form in the settings column and submits it from the sidebar", async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
@@ -369,7 +341,7 @@ describe("ProjectPage voice instructions", () => {
     expect(mainChildren[activityIndex + 2]?.textContent).toContain("Ассистент");
     expect(
       wrapper.find(".settings-main > speech-synthesis-section-stub").exists(),
-    ).toBe(true);
+    ).toBe(false);
     expect(wrapper.get("#project-settings-form").element.parentElement).toBe(
       wrapper.get(".settings-main").element,
     );
@@ -393,7 +365,7 @@ describe("ProjectPage voice instructions", () => {
     const review = form.getComponent({ name: "AIReviewSettingsSection" });
     const voiceSection = form
       .findAll("section")
-      .find((section) => section.text().includes("Голосовой чат"))!;
+      .find((section) => section.text().includes("Голос Lola"))!;
 
     expect(
       assistantSection.element.compareDocumentPosition(memory.element) &
@@ -409,7 +381,7 @@ describe("ProjectPage voice instructions", () => {
     ).toBeTruthy();
   });
 
-  it("keeps project connection and Grok voice settings editable in API mode", async () => {
+  it("keeps project connection and the shared xAI voice editable in API mode", async () => {
     mocks.getProject.mockResolvedValue(
       project({
         settings: {
@@ -421,7 +393,6 @@ describe("ProjectPage voice instructions", () => {
           voiceEnabled: true,
           voiceTranscriptEnabled: true,
           voice: "eve",
-          speechSynthesis: { schemaVersion: 2, voiceId: "server-owned-voice" },
         },
       }),
     );
@@ -504,10 +475,101 @@ describe("ProjectPage voice instructions", () => {
           voiceEnabled: false,
           voiceTranscriptEnabled: false,
           voice: "rex",
-          speechSynthesis: { schemaVersion: 2, voiceId: "server-owned-voice" },
         }),
       }),
     );
+  });
+
+  it("loads the backend catalog and keeps the shared voice selector enabled when voice chat is off", async () => {
+    mocks.getProject.mockResolvedValue(
+      project({
+        settings: {
+          voiceEnabled: false,
+          voiceTranscriptEnabled: true,
+          voice: "eve",
+        },
+      }),
+    );
+
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    const voice = wrapper
+      .findAllComponents(Select)
+      .find((component) => component.attributes("id") === "voice")!;
+    expect(mocks.fetchVoiceCatalog).toHaveBeenCalledWith(
+      "project-1",
+      expect.any(AbortSignal),
+    );
+    expect(voice.attributes("disabled")).toBe("false");
+    expect(voice.attributes("modelvalue")).toBe("eve");
+    expect(voice.attributes("options")).toBe("[object Object],[object Object]");
+    expect(wrapper.text()).toContain(
+      "Используется в голосовом чате и командах «Озвучить текст»",
+    );
+  });
+
+  it("preserves an unknown saved voice when the catalog is temporarily unavailable", async () => {
+    mocks.getProject.mockResolvedValue(
+      project({ settings: { voiceEnabled: false, voice: "future-voice" } }),
+    );
+    mocks.fetchVoiceCatalog.mockRejectedValue(new Error("Каталог недоступен"));
+
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    const voice = wrapper
+      .findAllComponents(Select)
+      .find((component) => component.attributes("id") === "voice")!;
+    expect(voice.attributes("modelvalue")).toBe("future-voice");
+    expect(voice.attributes("options")).toBe("[object Object]");
+    expect(voice.attributes("disabled")).toBe("false");
+    expect(wrapper.text()).toContain("Каталог недоступен");
+  });
+
+  it("requires a replacement when a fresh catalog no longer supports the saved voice", async () => {
+    mocks.getProject.mockResolvedValue(
+      project({ settings: { voiceEnabled: false, voice: "retired-voice" } }),
+    );
+
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    const voice = wrapper
+      .findAllComponents(Select)
+      .find((component) => component.attributes("id") === "voice")!;
+    expect(voice.attributes("modelvalue")).toBe("retired-voice");
+    expect(voice.attributes("disabled")).toBe("false");
+    expect(wrapper.text()).toContain(
+      "Сохранённый голос больше недоступен. Выберите новый",
+    );
+
+    await wrapper.get("form").trigger("submit");
+    expect(mocks.updateProject).not.toHaveBeenCalled();
+
+    voice.vm.$emit("update:modelValue", "rex");
+    await wrapper.vm.$nextTick();
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(mocks.updateProject).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        settings: expect.objectContaining({ voice: "rex" }),
+      }),
+    );
+  });
+
+  it("shows the saved voice read-only without Project settings write permission", async () => {
+    mocks.permissions = ["project.settings.read"];
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    const voice = wrapper
+      .findAllComponents(Select)
+      .find((component) => component.attributes("id") === "voice")!;
+    expect(voice.attributes("modelvalue")).toBe("eve");
+    expect(voice.attributes("disabled")).toBe("true");
   });
 
   it("preserves the latest dedicated activity timezone when the main project form is saved", async () => {

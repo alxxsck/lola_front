@@ -472,7 +472,6 @@ describe("authentication routes", () => {
   it.each([
     "project.settings.read",
     "project.profile_contract.read",
-    "project.speech.read",
     "project.ai_usage.read",
   ])(
     "allows the composite Project settings surface through independent %s authority",

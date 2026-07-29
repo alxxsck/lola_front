@@ -40,7 +40,7 @@ export interface CmsSessionProjectContextDto {
   settings?: CmsSessionProjectContextDtoSettings;
   slug: string;
   status: ProjectStatus;
-  /** Present only when the membership grants project.speech.read, project.knowledge.read, project.knowledge.write or project.settings.read. */
+  /** Present only when the membership grants project.knowledge.read, project.knowledge.write or project.settings.read. */
   supportedLocales?: string[];
   /** Present only when the membership grants project.settings.read. */
   systemPrompt?: string;
