@@ -7,6 +7,6 @@
  */
 
 /**
- * General project settings. Text-to-Speech settings are managed by the dedicated speech-synthesis endpoint.
+ * General project settings.
  */
 export type CreateProjectDtoSettings = { [key: string]: unknown };

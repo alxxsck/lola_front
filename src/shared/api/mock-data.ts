@@ -13,9 +13,6 @@ import type {
   ScenarioActionCatalogItem,
   UiElement,
 } from '@/shared/types/domain'
-import {
-  RealtimeVoice,
-} from '@/shared/api/generated/models'
 import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations'
 
 const ServerActionHandler = {
@@ -60,12 +57,7 @@ export const demoProject: Project = {
   _count: { users: 1284, scenarios: 4, eventLogs: 18742 },
 }
 
-const realtimeVoices = Object.values(RealtimeVoice)
-const speechVoiceIds = [
-  '21m00Tcm4TlvDq8ikWAM',
-  'EXAVITQu4vr4xnSDxMaL',
-  'ErXwobaYiN019PkySvjV',
-]
+const demoVoiceIds = ['ara', 'eve', 'leo', 'rex', 'sal']
 const timeoutProperty = {
   type: 'integer' as const,
   minimum: 1000,
@@ -210,7 +202,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
       'FRONTEND',
       {
         text: { type: 'string', minLength: 1, maxLength: 2000 },
-        voice: { type: 'string', enum: speechVoiceIds },
+        voice: { type: 'string', enum: demoVoiceIds },
         waitForCompletion: { type: 'boolean', default: true },
       },
       ['text'],
@@ -225,7 +217,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
           key: 'voice',
           label: 'Голос',
           control: 'select',
-          options: speechVoiceIds,
+          options: demoVoiceIds,
         },
         {
           key: 'waitForCompletion',
@@ -233,7 +225,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
           control: 'boolean',
         },
       ],
-      'Генерирует речь через ElevenLabs и может дождаться окончания воспроизведения.',
+      'Генерирует речь через xAI голосом Lola и может дождаться окончания воспроизведения.',
     ),
   },
   demoScenarioActionCatalogItem(
@@ -242,7 +234,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
     'SERVER',
     {
       text: { type: 'string', minLength: 1, maxLength: 2000 },
-      voice: { type: 'string', enum: realtimeVoices },
+      voice: { type: 'string', enum: demoVoiceIds },
       onUnavailable: { type: 'string', enum: ['continue', 'fail'] },
     },
     ['text'],
@@ -257,7 +249,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
         key: 'voice',
         label: 'Голос',
         control: 'select',
-        options: realtimeVoices,
+        options: demoVoiceIds,
       },
       {
         key: 'onUnavailable',

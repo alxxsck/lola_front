@@ -13,5 +13,7 @@ export interface AiPricingRevisionStateResponseDto {
   current: AiPricingRevisionStateResponseDtoCurrent;
   hasMore: boolean;
   history: AiPricingRevisionResponseDto[];
+  /** @nullable */
+  nextCursor: string | null;
   sourceUrl: string;
 }

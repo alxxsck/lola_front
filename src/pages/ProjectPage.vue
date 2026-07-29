@@ -25,11 +25,11 @@ import EventQueryPolicySection from "@/features/event-query/ui/EventQueryPolicyS
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
-import SpeechSynthesisSection from "@/features/speech-synthesis/SpeechSynthesisSection.vue";
-import type {
-  AttributeContractDraftFieldDto,
-  RealtimeVoice,
-} from "@/shared/api/generated/models";
+import {
+  fetchProjectVoiceCatalog,
+  type ProjectVoiceCatalogItem,
+} from "@/features/project-voice/project-voice.api";
+import type { AttributeContractDraftFieldDto } from "@/shared/api/generated/models";
 import { repository } from "@/shared/api/repository";
 import type {
   ActivitySettings,
@@ -49,20 +49,17 @@ interface ProjectForm {
   allowedOrigins: string;
   voiceEnabled: boolean;
   voiceTranscriptEnabled: boolean;
-  voice: RealtimeVoice;
+  voice: string;
   voiceInstructions: string;
 }
 
-const voiceOptions: { label: string; value: RealtimeVoice }[] = [
-  { label: "Ara", value: "ara" },
-  { label: "Eve", value: "eve" },
-  { label: "Leo", value: "leo" },
-  { label: "Rex", value: "rex" },
-  { label: "Sal", value: "sal" },
-];
-
-function isRealtimeVoice(value: unknown): value is RealtimeVoice {
-  return voiceOptions.some((option) => option.value === value);
+function isVoiceId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 64 &&
+    value.trim() === value
+  );
 }
 
 const auth = useAuthStore();
@@ -86,12 +83,6 @@ const canWriteProfileContract = computed(() =>
     projectPermissions.value,
     "project.profile_contract.write",
   ),
-);
-const canReadSpeech = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.speech.read"),
-);
-const canWriteSpeech = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.speech.write"),
 );
 const canReadAiUsage = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
@@ -127,6 +118,11 @@ const localeField = ref<AttributeContractDraftFieldDto | null>(null);
 const activitySettings = ref<ActivitySettings | null>(null);
 const initialSnapshot = ref("");
 const systemPromptControl = ref<HTMLElement | null>(null);
+const voiceCatalogItems = ref<ProjectVoiceCatalogItem[]>([]);
+const voiceCatalogLoading = ref(false);
+const voiceCatalogError = ref("");
+const voiceCatalogStale = ref(false);
+let voiceCatalogController: AbortController | null = null;
 let systemPromptResizeState: {
   pointerId: number;
   startY: number;
@@ -147,6 +143,27 @@ const form = reactive<ProjectForm>({
   voice: "eve",
   voiceInstructions: "",
 });
+const voiceOptions = computed(() => {
+  const options = voiceCatalogItems.value.map((voice) => ({
+    label: `${voice.name} · ${voice.language}`,
+    value: voice.id,
+  }));
+  if (
+    isVoiceId(form.voice) &&
+    !options.some((option) => option.value === form.voice)
+  ) {
+    options.unshift({
+      label: `Текущий голос · ${form.voice}`,
+      value: form.voice,
+    });
+  }
+  return options;
+});
+const hasValidVoiceOption = computed(
+  () =>
+    isVoiceId(form.voice) &&
+    voiceOptions.value.some((option) => option.value === form.voice),
+);
 
 const formSnapshot = computed(() => JSON.stringify(form));
 const isDirty = computed(
@@ -188,12 +205,42 @@ function fillForm(nextProject: Project) {
     voiceEnabled: nextProject.settings.voiceEnabled === true,
     voiceTranscriptEnabled:
       nextProject.settings.voiceTranscriptEnabled !== false,
-    voice: isRealtimeVoice(nextProject.settings.voice)
+    voice: isVoiceId(nextProject.settings.voice)
       ? nextProject.settings.voice
       : "eve",
     voiceInstructions: nextProject.voiceInstructions,
   });
   initialSnapshot.value = JSON.stringify(form);
+}
+
+async function loadVoiceCatalog(projectId: string) {
+  voiceCatalogController?.abort();
+  const controller = new AbortController();
+  voiceCatalogController = controller;
+  voiceCatalogLoading.value = true;
+  voiceCatalogError.value = "";
+  try {
+    const catalog = await fetchProjectVoiceCatalog(
+      projectId,
+      controller.signal,
+    );
+    if (voiceCatalogController !== controller) return;
+    voiceCatalogItems.value = catalog.items;
+    voiceCatalogStale.value = catalog.stale;
+  } catch (cause) {
+    if (voiceCatalogController !== controller || controller.signal.aborted)
+      return;
+    voiceCatalogItems.value = [];
+    voiceCatalogStale.value = false;
+    voiceCatalogError.value =
+      cause instanceof Error
+        ? cause.message
+        : "Не удалось загрузить каталог голосов xAI";
+  } finally {
+    if (voiceCatalogController === controller) {
+      voiceCatalogLoading.value = false;
+    }
+  }
 }
 
 async function loadProject() {
@@ -208,6 +255,13 @@ async function loadProject() {
 
   loading.value = true;
   error.value = "";
+  if (canReadSettings.value) void loadVoiceCatalog(projectId);
+  else {
+    voiceCatalogController?.abort();
+    voiceCatalogItems.value = [];
+    voiceCatalogError.value = "";
+    voiceCatalogStale.value = false;
+  }
   try {
     const [nextProject, workspace] = await Promise.all([
       canReadSettings.value
@@ -252,6 +306,9 @@ function validate() {
     validationError.value = "API URL должен использовать HTTPS.";
   else if (form.wsUrl && !form.wsUrl.startsWith("wss://"))
     validationError.value = "WebSocket URL должен использовать WSS.";
+  else if (!hasValidVoiceOption.value)
+    validationError.value =
+      "Выберите доступный голос Lola перед сохранением проекта.";
   else if (form.voiceInstructions.length > 20_000)
     validationError.value =
       "Инструкция для голосовой модели не должна превышать 20 000 символов.";
@@ -285,28 +342,30 @@ async function saveProject() {
   saving.value = true;
   error.value = "";
   try {
+    const nextSettings: Record<string, unknown> = {
+      ...currentProject.settings,
+      ...(activitySettings.value
+        ? { timezone: activitySettings.value.timezone }
+        : {}),
+      description: form.description.trim(),
+      apiBaseUrl: form.apiBaseUrl.trim(),
+      wsUrl: form.wsUrl.trim(),
+      allowedOrigins: form.allowedOrigins
+        .split("\n")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      voiceEnabled: form.voiceEnabled,
+      voiceTranscriptEnabled: form.voiceTranscriptEnabled,
+      voice: form.voice,
+    };
+    delete nextSettings.speechSynthesis;
     const savedProject = await repository.updateProject(currentProject.id, {
       version: currentProject.version,
       name: form.name.trim(),
       assistantName: form.assistantName.trim(),
       systemPrompt: form.systemPrompt.trim(),
       voiceInstructions: form.voiceInstructions,
-      settings: {
-        ...currentProject.settings,
-        ...(activitySettings.value
-          ? { timezone: activitySettings.value.timezone }
-          : {}),
-        description: form.description.trim(),
-        apiBaseUrl: form.apiBaseUrl.trim(),
-        wsUrl: form.wsUrl.trim(),
-        allowedOrigins: form.allowedOrigins
-          .split("\n")
-          .map((value) => value.trim())
-          .filter(Boolean),
-        voiceEnabled: form.voiceEnabled,
-        voiceTranscriptEnabled: form.voiceTranscriptEnabled,
-        voice: form.voice,
-      },
+      settings: nextSettings,
     });
     fillForm(savedProject);
     auth.updateProject(savedProject);
@@ -429,6 +488,7 @@ onMounted(() => {
 });
 watch(() => auth.project?.id, loadProject);
 onBeforeUnmount(() => {
+  voiceCatalogController?.abort();
   window.removeEventListener("beforeunload", beforeUnload);
   stopSystemPromptResize();
 });
@@ -786,8 +846,8 @@ onBeforeUnmount(() => {
           >
             <ProjectSettingsSectionHeader
               v-model:expanded="voiceSettingsExpanded"
-              title="Голосовой чат"
-              description="Настройте голосовые диалоги, голос Lola и манеру её речи."
+              title="Голос Lola"
+              description="Один голос для голосовых диалогов и команд «Озвучить текст»."
               icon="pi pi-microphone"
               tone="blue"
               content-id="voice-chat-settings"
@@ -814,15 +874,43 @@ onBeforeUnmount(() => {
               </div>
               <div class="form-grid columns">
                 <div class="field">
-                  <label for="voice">Голос по умолчанию</label
+                  <label for="voice">Голос Lola</label
                   ><Select
                     id="voice"
                     v-model="form.voice"
                     :options="voiceOptions"
                     option-label="label"
                     option-value="value"
-                    :disabled="saving || !canEditSettings || !form.voiceEnabled"
+                    :loading="voiceCatalogLoading"
+                    :disabled="
+                      saving || !canEditSettings || !hasValidVoiceOption
+                    "
                   />
+                  <small class="field-hint"
+                    >Используется в голосовом чате и командах «Озвучить
+                    текст».</small
+                  >
+                  <div
+                    v-if="voiceCatalogError"
+                    class="voice-catalog-status warning"
+                    role="status"
+                  >
+                    <span>{{ voiceCatalogError }}</span>
+                    <Button
+                      label="Повторить"
+                      severity="secondary"
+                      text
+                      size="small"
+                      :disabled="voiceCatalogLoading"
+                      @click="loadVoiceCatalog(project.id)"
+                    />
+                  </div>
+                  <small
+                    v-else-if="voiceCatalogStale"
+                    class="voice-catalog-status warning"
+                    role="status"
+                    >Показан последний доступный каталог голосов xAI.</small
+                  >
                 </div>
                 <div
                   class="setting-toggle compact surface-soft"
@@ -871,14 +959,6 @@ onBeforeUnmount(() => {
             </div>
           </section>
         </form>
-
-        <SpeechSynthesisSection
-          v-if="canReadSpeech"
-          class="settings-main-tts"
-          :project-id="project.id"
-          :supported-locales="project.supportedLocales ?? []"
-          :editable="canWriteSpeech"
-        />
       </div>
 
       <aside class="settings-aside stack">
@@ -1020,9 +1100,6 @@ onBeforeUnmount(() => {
   gap: 18px;
   align-items: start;
 }
-.settings-main-tts {
-  margin-top: 0;
-}
 .settings-section {
   padding: 26px;
 }
@@ -1037,6 +1114,19 @@ onBeforeUnmount(() => {
   font-size: 0.68rem;
   color: var(--text-small-muted);
   text-align: right;
+}
+.field-hint {
+  text-align: left !important;
+}
+.voice-catalog-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-small-muted);
+}
+.voice-catalog-status.warning {
+  color: var(--status-warning-text);
 }
 .assistant-fields {
   display: grid;

@@ -21,6 +21,9 @@ export interface AiUsageTotals {
   unpricedRecords: number
   providerReportedUsageRecords?: number
   estimatedCostRecords?: number
+  providerReportedCostRecords?: number
+  estimatedRecords?: number
+  providerUnitOnlyRecords?: number
   inputCharacters: number
   providerBilledUnits: number
   totalTokens: number
@@ -41,11 +44,14 @@ export interface AiUsageTotals {
   durationSeconds: number
   estimatedCost: number
   billedCost: number
+  providerReportedCost: number
+  estimatedFallbackCost: number
+  effectiveCost: number
 }
 
 export interface AiUsageBreakdown {
   provider: string
-  model: string
+  model: string | null
   operation: string
   currency: string
   records: number
@@ -69,6 +75,9 @@ export interface AiUsageBreakdown {
   durationSeconds: number
   estimatedCost: number
   billedCost: number
+  providerReportedCost: number
+  estimatedFallbackCost: number
+  effectiveCost: number
 }
 
 export interface AiUsageCategoryBreakdown
@@ -98,6 +107,9 @@ export interface AiProviderUsage {
   durationSeconds: number
   estimatedCost: number
   billedCost: number
+  providerReportedCost: number
+  estimatedFallbackCost: number
+  effectiveCost: number
 }
 
 export interface AiUsageReport {
@@ -180,6 +192,7 @@ export function aggregateModelUsage(
   const models = new Map<string, AiModelUsage>()
 
   for (const item of breakdown) {
+    if (item.model === null) continue
     const key = `${item.provider}\u0000${item.model}\u0000${item.currency}`
     const current = models.get(key)
     if (current) {
@@ -252,6 +265,9 @@ export function aggregateProviderUsage(
     durationSeconds: 0,
     estimatedCost: 0,
     billedCost: 0,
+    providerReportedCost: 0,
+    estimatedFallbackCost: 0,
+    effectiveCost: 0,
   }
 
   for (const item of breakdown) {
@@ -269,6 +285,7 @@ export function aggregateCreditUsage(
   const rows = new Map<string, AiCreditUsage>()
 
   for (const item of breakdown) {
+    if (item.model === null) continue
     const key = `${item.provider}\u0000${item.model}\u0000${item.operation}`
     const current = rows.get(key)
     if (current) {

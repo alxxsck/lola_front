@@ -6,18 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminSpeechVoicesParams = {
+export interface XaiVoiceCatalogItemDto {
   /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  id: string;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  language: string;
+  /**
+   * @minLength 1
    * @maxLength 100
    */
-  search?: string;
-  /**
-   * @maxLength 500
-   */
-  cursor?: string;
-  /**
-   * @minimum 1
-   * @maximum 100
-   */
-  limit?: number;
-};
+  name: string;
+}

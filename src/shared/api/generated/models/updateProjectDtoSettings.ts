@@ -7,6 +7,6 @@
  */
 
 /**
- * General project settings. The speechSynthesis subtree is preserved and can only be changed through the dedicated endpoint.
+ * General project settings.
  */
 export type UpdateProjectDtoSettings = { [key: string]: unknown };

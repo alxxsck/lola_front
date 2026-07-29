@@ -73,6 +73,9 @@ const emptyXAiUsage: AiProviderUsage = {
   durationSeconds: 0,
   estimatedCost: 0,
   billedCost: 0,
+  providerReportedCost: 0,
+  estimatedFallbackCost: 0,
+  effectiveCost: 0,
 }
 
 const xAiBreakdown: AiUsageBreakdown = {
@@ -101,6 +104,9 @@ const xAiBreakdown: AiUsageBreakdown = {
   durationSeconds: 0,
   estimatedCost: 0.005,
   billedCost: 0.025,
+  providerReportedCost: 0.025,
+  estimatedFallbackCost: 0.005,
+  effectiveCost: 0.03,
 }
 
 describe('AI usage charts', () => {

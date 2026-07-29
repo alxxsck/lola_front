@@ -5,7 +5,6 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { RealtimeVoice } from "./realtimeVoice";
 
 export interface StartAdminVoiceConversationDto {
   /** Optional preferred online interaction session. Backend selects the latest active one when omitted. */
@@ -16,5 +15,10 @@ export interface StartAdminVoiceConversationDto {
    * @maxLength 2000
    */
   text: string;
-  voice?: RealtimeVoice;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   * @pattern ^[A-Za-z][A-Za-z0-9_-]{0,63}$
+   */
+  voice?: string;
 }

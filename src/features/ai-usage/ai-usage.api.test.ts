@@ -107,6 +107,48 @@ describe("AI usage API response validation", () => {
     });
   });
 
+  it("accepts a nullable model only for xAI Text-to-Speech usage", () => {
+    const speech = {
+      ...response.breakdown[0],
+      model: null,
+      operation: "speech",
+      records: 1,
+      inputCharacters: 240,
+      totalTokens: 0,
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
+      inputTextTokens: 0,
+      cachedInputTextTokens: 0,
+      outputTextTokens: 0,
+      estimatedCost: "0.003600000000",
+      estimatedFallbackCost: "0.003600000000",
+      effectiveCost: "0.003600000000",
+    };
+
+    expect(
+      parseAiUsageReport(
+        { ...response, breakdown: [speech] },
+        "project-1",
+      )?.breakdown[0],
+    ).toMatchObject({
+      provider: "xai",
+      model: null,
+      operation: "speech",
+      inputCharacters: 240,
+      effectiveCost: 0.0036,
+    });
+    expect(
+      parseAiUsageReport(
+        {
+          ...response,
+          breakdown: [{ ...speech, operation: "responses" }],
+        },
+        "project-1",
+      ),
+    ).toBeUndefined();
+  });
+
   it("parses case intelligence as a project usage category", () => {
     const responseWithCaseUsage = {
       ...response,
