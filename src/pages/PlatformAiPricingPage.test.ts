@@ -180,6 +180,22 @@ describe('Platform AI pricing page', () => {
     expect(api.publish).not.toHaveBeenCalled()
   })
 
+  it('compares the maximum rate without rounding decimal input', async () => {
+    const { wrapper } = await mountPage()
+
+    await wrapper
+      .get('[data-testid="pricing-rate"]')
+      .setValue('1000000.000000000001')
+    await wrapper
+      .get('[data-testid="pricing-reason"]')
+      .setValue('Проверка точной верхней границы')
+    await wrapper.get('form').trigger('submit')
+
+    expect(wrapper.text()).toContain('не более 1 000 000')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(api.publish).not.toHaveBeenCalled()
+  })
+
   it('preserves the exact backend decimal when rendering a rate', async () => {
     api.fetch.mockResolvedValue({
       ...state,
@@ -238,6 +254,32 @@ describe('Platform AI pricing page', () => {
     })
     expect(wrapper.text()).toContain('Первичная проверенная ставка')
     expect(wrapper.text()).toContain('Предыдущая проверенная ставка')
+  })
+
+  it('scrubs history and refreshes authority after forbidden pagination', async () => {
+    api.fetch
+      .mockResolvedValueOnce({
+        ...state,
+        hasMore: true,
+        nextCursor: revision.id,
+      })
+      .mockRejectedValueOnce(new ApiError(403, 'unsafe backend text'))
+    const { auth, wrapper } = await mountPage(false)
+    const refreshContext = vi
+      .spyOn(auth, 'refreshContext')
+      .mockImplementation(async () => {
+        auth.user!.platformPermissionCodes = []
+      })
+
+    const loadMore = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Загрузить ещё'))
+    await loadMore!.trigger('click')
+    await flushPromises()
+
+    expect(refreshContext).toHaveBeenCalledOnce()
+    expect(wrapper.text()).not.toContain('Первичная проверенная ставка')
+    expect(wrapper.text()).not.toContain('unsafe backend text')
   })
 
   it('offers fresh login without replaying a denied publication', async () => {
@@ -317,6 +359,54 @@ describe('Platform AI pricing page', () => {
       wrapper.get('[data-testid="prepare-pricing"]').attributes(),
     ).toHaveProperty('disabled')
     expect(api.publish).toHaveBeenCalledOnce()
+  })
+
+  it('accepts a newer successful refresh while publication reread is still pending', async () => {
+    let resolvePublicationReread!: (value: typeof state) => void
+    const nextRevision = {
+      ...revision,
+      id: '00000000-0000-4000-8000-000000000002',
+      rate: '16',
+      changeReason: 'Проверенная новая ставка',
+    }
+    api.fetch
+      .mockResolvedValueOnce(state)
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolvePublicationReread = resolve
+        }),
+      )
+      .mockResolvedValueOnce({
+        ...state,
+        current: nextRevision,
+        history: [nextRevision, revision],
+      })
+    const { wrapper } = await mountPage()
+
+    await wrapper.get('[data-testid="pricing-rate"]').setValue('16')
+    await wrapper
+      .get('[data-testid="pricing-reason"]')
+      .setValue('Проверенная новая ставка')
+    await wrapper.get('form').trigger('submit')
+    await wrapper.get('[data-testid="confirm-pricing"]').trigger('click')
+    await vi.waitFor(() => expect(api.fetch).toHaveBeenCalledTimes(2))
+
+    const refresh = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Обновить'))
+    refresh!.element.removeAttribute('disabled')
+    await refresh!.trigger('click')
+    await vi.waitFor(() => expect(api.fetch).toHaveBeenCalledTimes(3))
+    resolvePublicationReread(state)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('16,00 $')
+    expect(wrapper.text()).not.toContain(
+      'Ставка опубликована, но состояние не удалось перечитать',
+    )
+    expect(
+      wrapper.get('[data-testid="prepare-pricing"]').attributes(),
+    ).not.toHaveProperty('disabled')
   })
 
   it('scrubs history and refreshes authority after a forbidden read', async () => {

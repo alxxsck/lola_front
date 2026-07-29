@@ -32,6 +32,7 @@ const pendingPublication = ref<{
   changeReason: string
 } | null>(null)
 let loadGeneration = 0
+let latestSuccessfulLoadGeneration = 0
 let mutationGeneration = 0
 let activeRequest: AbortController | undefined
 
@@ -73,6 +74,20 @@ function actorLabel(revision: TextToSpeechPricingRevision): string {
     SYSTEM: 'System',
   }[revision.createdBy.type]
   return `${type} · ${revision.createdBy.id}`
+}
+
+function isValidRate(value: string): boolean {
+  if (value.length > 64 || !/^\d+(?:\.\d{1,12})?$/.test(value)) return false
+  const [whole = '', fraction = ''] = value.split('.')
+  const normalizedWhole = whole.replace(/^0+(?=\d)/, '')
+  const hasNonZeroDigit = /[1-9]/.test(`${normalizedWhole}${fraction}`)
+  if (!hasNonZeroDigit) return false
+  const maximum = '1000000'
+  if (normalizedWhole.length !== maximum.length) {
+    return normalizedWhole.length < maximum.length
+  }
+  if (normalizedWhole !== maximum) return normalizedWhole < maximum
+  return !/[1-9]/.test(fraction)
 }
 
 function clearSensitiveState(): void {
@@ -123,6 +138,8 @@ async function load(): Promise<boolean> {
     )
     if (generation !== loadGeneration) return false
     state.value = next
+    latestSuccessfulLoadGeneration = generation
+    error.value = ''
     publicationOutcomeUnknown.value = false
     return true
   } catch (cause) {
@@ -161,8 +178,14 @@ async function loadMore(): Promise<void> {
       hasMore: next.hasMore,
       nextCursor: next.nextCursor,
     }
-  } catch {
-    error.value = 'Не удалось загрузить продолжение истории тарифов.'
+  } catch (cause) {
+    const normalized = normalizeApiError(cause)
+    if (normalized.status === 403) {
+      error.value = 'Недостаточно прав для просмотра тарифов AI.'
+      await refreshAuthorityAfterForbidden()
+    } else {
+      error.value = 'Не удалось загрузить продолжение истории тарифов.'
+    }
   } finally {
     loadingMore.value = false
   }
@@ -172,11 +195,7 @@ function preparePublication(): void {
   if (publicationOutcomeUnknown.value) return
   const normalizedRate = rate.value.trim()
   const normalizedReason = reason.value.trim().normalize('NFC')
-  if (
-    !/^\d+(?:\.\d{1,12})?$/.test(normalizedRate) ||
-    Number(normalizedRate) <= 0 ||
-    Number(normalizedRate) > 1_000_000
-  ) {
+  if (!isValidRate(normalizedRate)) {
     validationError.value =
       'Укажите положительную ставку не более 1 000 000, до 12 знаков после запятой.'
     return
@@ -219,13 +238,14 @@ async function confirmPublication(): Promise<void> {
       return
     rate.value = ''
     reason.value = ''
+    const rereadGeneration = loadGeneration + 1
     const refreshed = await load()
     if (
       generation !== mutationGeneration ||
       authorityKey !== currentAuthorityKey()
     )
       return
-    if (refreshed) {
+    if (refreshed || latestSuccessfulLoadGeneration > rereadGeneration) {
       notice.value =
         'Новая ставка опубликована. Исторические операции не пересчитаны.'
     } else {
