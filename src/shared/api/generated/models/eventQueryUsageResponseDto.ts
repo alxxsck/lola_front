@@ -5,15 +5,19 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EventQueryUsageResponseDtoByAudience } from "./eventQueryUsageResponseDtoByAudience";
 import type { EventQueryUsageResponseDtoByOrigin } from "./eventQueryUsageResponseDtoByOrigin";
 import type { EventQueryUsageResponseDtoExactAiUsage } from "./eventQueryUsageResponseDtoExactAiUsage";
+import type { EventQueryUsageResponseDtoScope } from "./eventQueryUsageResponseDtoScope";
 
 export interface EventQueryUsageResponseDto {
+  byAudience: EventQueryUsageResponseDtoByAudience;
   byOrigin: EventQueryUsageResponseDtoByOrigin;
   calls: number;
   estimatedAddedInputTokens: number;
   exactAiUsage?: EventQueryUsageResponseDtoExactAiUsage;
   from: string;
   resultBytes: number;
+  scope: EventQueryUsageResponseDtoScope;
   to: string;
 }

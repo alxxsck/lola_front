@@ -4,10 +4,14 @@ import EndUserAiUsageCard from "./EndUserAiUsageCard.vue";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
+  requests: vi.fn(),
 }));
 
 vi.mock("./end-user-ai-usage.api", () => ({
   fetchEndUserAiUsageReport: mocks.fetch,
+}));
+vi.mock("@/features/event-query/api/event-query-repository", () => ({
+  eventQueryRepository: { listRequests: mocks.requests },
 }));
 
 const report = {
@@ -94,6 +98,40 @@ describe("End User AI consumption card", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.fetch.mockResolvedValue(report);
+    mocks.requests.mockResolvedValue({
+      items: [
+        {
+          id: "request-1",
+          createdAt: "2026-07-24T12:00:00.000Z",
+          endUserId: "user-1",
+          origin: "INTERACTIVE_TEXT",
+          audience: "END_USER_CONVERSATION",
+          mode: "SUMMARY",
+          eventCodes: ["deposit.completed"],
+          queryShape: { mode: "SUMMARY" },
+          policyRevisionId: null,
+          range: null,
+          snapshotReceivedAt: "2026-07-24T12:00:00.000Z",
+          status: "COMPLETED",
+          rejectionCode: null,
+          scannedRows: 2,
+          returnedRows: 1,
+          resultBytes: 96,
+          estimatedAddedInputTokens: 24,
+          durationMs: 18,
+          attribution: {},
+          linkedAiUsage: {
+            records: 1,
+            totalTokens: 840,
+            inputTokens: 710,
+            outputTokens: 130,
+            billedCostUsd: null,
+            estimatedCostUsd: null,
+          },
+        },
+      ],
+      pageInfo: { hasMore: false, nextCursor: null },
+    });
   });
 
   it("loads a Project-local report with factual, calculated and operation totals", async () => {
@@ -117,6 +155,16 @@ describe("End User AI consumption card", () => {
     expect(wrapper.text()).toContain("Озвучивание текста");
     expect(wrapper.text()).toContain("Анализ и проверка обращений");
     expect(wrapper.text()).toContain("Europe/Madrid");
+    expect(wrapper.text()).toContain("Запросы пользователя к событиям");
+    expect(wrapper.text()).toContain("deposit.completed");
+    expect(wrapper.text()).toContain("840 токенов");
+    expect(mocks.requests).toHaveBeenCalledWith("project-1", {
+      from: report.range.from,
+      to: report.range.to,
+      endUserId: "user-1",
+      audience: "END_USER_CONVERSATION",
+      limit: 20,
+    });
   });
 
   it("shows speech characters, generations and calculated cost without token or provider-unit copy", async () => {
@@ -141,9 +189,7 @@ describe("End User AI consumption card", () => {
     await flushPromises();
 
     const pricing = wrapper.get('[data-testid="end-user-tts-pricing"]');
-    expect(pricing.text()).toContain(
-      "15,00 $ за 1 000 000 входных символов",
-    );
+    expect(pricing.text()).toContain("15,00 $ за 1 000 000 входных символов");
     expect(pricing.text()).toContain("29.07.2026");
     expect(pricing.text()).toContain(
       "История рассчитана по ставке, действовавшей в момент каждой операции",
@@ -172,9 +218,9 @@ describe("End User AI consumption card", () => {
     await flushPromises();
 
     expect(wrapper.find('[data-usage-category="SPEECH"]').exists()).toBe(false);
-    expect(
-      wrapper.find('[data-testid="end-user-tts-pricing"]').exists(),
-    ).toBe(false);
+    expect(wrapper.find('[data-testid="end-user-tts-pricing"]').exists()).toBe(
+      false,
+    );
   });
 
   it("requests a new server window when the administrator changes the period", async () => {

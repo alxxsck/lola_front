@@ -4,39 +4,45 @@ import { eventQueryRepository } from "../api/event-query-repository";
 import CaseEventVerification from "./CaseEventVerification.vue";
 import type {
   CaseVerificationEstimateResponseDto,
-  EventQueryPolicyStateResponseDto,
+  EventQueryPolicyCatalogResponseDto,
 } from "@/shared/api/generated/models";
 
 vi.mock("../api/event-query-repository", () => ({
   eventQueryRepository: {
-    getPolicy: vi.fn(),
+    listItems: vi.fn(),
     estimateCaseVerification: vi.fn(),
     startCaseVerification: vi.fn(),
     getCaseVerification: vi.fn(),
   },
 }));
 
-const policy: EventQueryPolicyStateResponseDto = {
-  published: {
+const policy: EventQueryPolicyCatalogResponseDto = {
+  audience: "INTERNAL_AI",
+  effectiveOnly: true,
+  publishedMasterEnabled: true,
+  publishedPolicyRevision: {
     id: "60000000-0000-4000-8000-000000000006",
     version: 2,
-    compilerVersion: "1",
-    documentHash: "hash",
     publishedAt: "2026-07-28T10:00:00.000Z",
-    document: {
-      enabled: true,
-      items: [
-        {
-          stableCode: "deposit.completed",
-          descriptionForAI: "Депозит зачислен",
-          allowedModes: ["SUMMARY"],
-          maxInteractiveLookbackHours: 168,
-          maxVerificationLookbackHours: 720,
-          safeFields: [],
-        },
-      ],
-    },
   },
+  items: [
+    {
+      definitionKeyId: "definition-1",
+      eventCode: "deposit.completed",
+      eventName: "Депозит зачислен",
+      lifecycle: "ACTIVE",
+      configuration: {
+        descriptionForAI: "Депозит зачислен",
+        allowedModes: ["SUMMARY"],
+        maxInteractiveLookbackHours: 168,
+        maxVerificationLookbackHours: 720,
+        safeFields: [],
+      },
+      effective: { internalAi: true, endUserConversation: false },
+      queryable: true,
+    },
+  ],
+  pageInfo: { hasMore: false, nextCursor: null },
 };
 
 const result: CaseVerificationEstimateResponseDto = {
@@ -116,6 +122,11 @@ function mountComponent(
           props: ["visible"],
           template: '<div v-if="visible" role="dialog"><slot /></div>',
         },
+        InputText: {
+          props: ["modelValue"],
+          emits: ["update:modelValue", "input"],
+          template: "<input />",
+        },
         Message: { template: '<div class="message"><slot /></div>' },
       },
     },
@@ -125,7 +136,7 @@ function mountComponent(
 describe("CaseEventVerification", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(eventQueryRepository.getPolicy).mockResolvedValue(policy);
+    vi.mocked(eventQueryRepository.listItems).mockResolvedValue(policy);
     vi.mocked(eventQueryRepository.estimateCaseVerification).mockResolvedValue(
       result,
     );
@@ -324,19 +335,17 @@ describe("CaseEventVerification", () => {
   });
 
   it("only offers ranges allowed by the selected verification policy", async () => {
-    vi.mocked(eventQueryRepository.getPolicy).mockResolvedValue({
-      published: {
-        ...policy.published!,
-        document: {
-          enabled: true,
-          items: [
-            {
-              ...policy.published!.document.items[0]!,
-              maxVerificationLookbackHours: 6,
-            },
-          ],
+    vi.mocked(eventQueryRepository.listItems).mockResolvedValue({
+      ...policy,
+      items: [
+        {
+          ...policy.items[0]!,
+          configuration: {
+            ...policy.items[0]!.configuration,
+            maxVerificationLookbackHours: 6,
+          },
         },
-      },
+      ],
     });
     const wrapper = mountComponent({
       caseCreatedAt: new Date(Date.now() - 48 * 60 * 60 * 1_000).toISOString(),
@@ -363,5 +372,40 @@ describe("CaseEventVerification", () => {
         ],
       }),
     );
+  });
+
+  it("ищет разрешённое событие на сервере за пределами первой страницы", async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    vi.mocked(eventQueryRepository.listItems).mockResolvedValueOnce({
+      ...policy,
+      items: [
+        {
+          ...policy.items[0]!,
+          eventCode: "withdrawal.completed",
+          eventName: "Вывод завершён",
+        },
+      ],
+    });
+    vi.useFakeTimers();
+    const vm = wrapper.vm as unknown as {
+      policySearch: string;
+      schedulePolicySearch: () => void;
+    };
+    vm.policySearch = "withdrawal";
+    vm.schedulePolicySearch();
+    await vi.advanceTimersByTimeAsync(250);
+    await flushPromises();
+
+    expect(eventQueryRepository.listItems).toHaveBeenLastCalledWith(
+      expect.any(String),
+      {
+        audience: "INTERNAL_AI",
+        effective: true,
+        search: "withdrawal",
+        limit: 100,
+      },
+    );
+    vi.useRealTimers();
   });
 });

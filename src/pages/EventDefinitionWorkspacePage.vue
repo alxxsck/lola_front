@@ -7,6 +7,7 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import EventDefinitionHistory from "@/features/events/EventDefinitionHistory.vue";
 import EventSchemaAuthoring from "@/features/events/EventSchemaAuthoring.vue";
+import EventQueryEventAccess from "@/features/event-query/ui/EventQueryEventAccess.vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
   applyEventMetadataUpdate,
@@ -15,13 +16,8 @@ import {
   type EventDefinitionUsage,
 } from "@/shared/api/repository/event-catalog";
 
-type WorkspaceSection = "overview" | "policy" | "schema" | "usage";
-const workspaceSections: WorkspaceSection[] = [
-  "overview",
-  "policy",
-  "schema",
-  "usage",
-];
+type WorkspaceSection =
+  "overview" | "policy" | "ai-access" | "schema" | "usage";
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -95,6 +91,27 @@ const canPublish = computed(() =>
     "project.event_catalog.publish",
   ),
 );
+const canManageEventQueryPolicy = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.event_query_policy.manage",
+  ),
+);
+const canReadEventQueryPolicy = computed(
+  () =>
+    canManageEventQueryPolicy.value ||
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.event_query_policy.preview",
+    ),
+);
+const workspaceSections = computed<WorkspaceSection[]>(() => [
+  "overview",
+  "policy",
+  ...(canReadEventQueryPolicy.value ? (["ai-access"] as const) : []),
+  "schema",
+  "usage",
+]);
 const isArchived = computed(() => definition.value?.lifecycle === "ARCHIVED");
 const hasMetadataConcurrencyToken = computed(() =>
   Boolean(definition.value?.metadata.concurrencyToken),
@@ -266,21 +283,23 @@ async function selectSection(section: WorkspaceSection) {
 }
 
 function handleTabKeydown(event: KeyboardEvent, section: WorkspaceSection) {
-  const currentIndex = workspaceSections.indexOf(section);
+  const currentIndex = workspaceSections.value.indexOf(section);
   let nextIndex: number | null = null;
   if (event.key === "ArrowRight") {
-    nextIndex = (currentIndex + 1) % workspaceSections.length;
+    nextIndex = (currentIndex + 1) % workspaceSections.value.length;
   } else if (event.key === "ArrowLeft") {
     nextIndex =
-      (currentIndex - 1 + workspaceSections.length) % workspaceSections.length;
+      (currentIndex - 1 + workspaceSections.value.length) %
+      workspaceSections.value.length;
   } else if (event.key === "Home") {
     nextIndex = 0;
   } else if (event.key === "End") {
-    nextIndex = workspaceSections.length - 1;
+    nextIndex = workspaceSections.value.length - 1;
   }
   if (nextIndex === null) return;
   event.preventDefault();
-  const next = workspaceSections[nextIndex];
+  const next = workspaceSections.value[nextIndex];
+  if (!next) return;
   void selectSection(next);
   requestAnimationFrame(() =>
     document.getElementById(`event-tab-${next}`)?.focus(),
@@ -602,7 +621,7 @@ async function restoreDefinition() {
     definition.value = restored;
     usage.value = null;
     success.value =
-      "Событие восстановлено. Приём новых событий остаётся выключенным.";
+      "Событие восстановлено. Приём новых событий остаётся выключенным. Доступ AI также остаётся выключенным.";
   } catch (cause) {
     if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
       return;
@@ -687,6 +706,8 @@ function blockerLabel(blocker: string) {
       SCENARIO_DEPENDENCIES: "Событие используется в сценариях или их истории",
       ACTIVE_WAITS: "Есть активные ожидания события",
       EVENT_LOGS: "Существуют записанные Event Logs",
+      EVENT_QUERY_POLICY_HISTORY:
+        "Событие использовалось в опубликованной политике доступа AI и не может быть удалено",
     }[blocker] ?? blocker
   );
 }
@@ -768,9 +789,7 @@ function errorMessage(cause: unknown, fallback: string) {
             <button
               type="button"
               class="danger-button"
-              :disabled="
-                mutationPending || usageLoading || usage?.canDelete === false
-              "
+              :disabled="mutationPending || usageLoading"
               @click="prepareDelete"
             >
               Удалить
@@ -792,6 +811,12 @@ function errorMessage(cause: unknown, fallback: string) {
         role="note"
       >
         <strong>Действия ограничены существующими зависимостями.</strong>
+        <span
+          v-for="blocker in usage.deleteBlockers"
+          :key="`delete-${blocker}`"
+        >
+          {{ blockerLabel(blocker) }}
+        </span>
         <router-link
           v-for="scenario in usage.scenarios.items"
           :key="scenario.scenarioId"
@@ -875,6 +900,21 @@ function errorMessage(cause: unknown, fallback: string) {
           @keydown="handleTabKeydown($event, 'policy')"
         >
           <i class="pi pi-shield" /> Приём событий
+        </button>
+        <button
+          v-if="canReadEventQueryPolicy"
+          id="event-tab-ai-access"
+          type="button"
+          role="tab"
+          data-section="ai-access"
+          aria-controls="event-panel-ai-access"
+          :aria-selected="activeSection === 'ai-access'"
+          :tabindex="activeSection === 'ai-access' ? 0 : -1"
+          :class="{ active: activeSection === 'ai-access' }"
+          @click="selectSection('ai-access')"
+          @keydown="handleTabKeydown($event, 'ai-access')"
+        >
+          <i class="pi pi-sparkles" /> Доступ AI
         </button>
         <button
           id="event-tab-schema"
@@ -1132,6 +1172,33 @@ function errorMessage(cause: unknown, fallback: string) {
       </section>
 
       <section
+        id="event-panel-ai-access"
+        v-else-if="activeSection === 'ai-access'"
+        class="workspace-panel card"
+        role="tabpanel"
+        aria-labelledby="event-tab-ai-access"
+      >
+        <div class="section-heading">
+          <div>
+            <span>Доступ к данным события</span>
+            <h2>Доступ AI</h2>
+            <p>
+              Настройки определяют, какие AI-потребители могут читать это
+              событие и какие поля им доступны.
+            </p>
+          </div>
+          <span class="schema-safe-label">
+            <i class="pi pi-check-circle" /> Без новой версии схемы
+          </span>
+        </div>
+        <EventQueryEventAccess
+          :project-id="definition.projectId"
+          :definition="definition"
+          :can-manage="canManageEventQueryPolicy"
+        />
+      </section>
+
+      <section
         id="event-panel-schema"
         v-else-if="activeSection === 'schema'"
         class="workspace-panel card"
@@ -1210,6 +1277,24 @@ function errorMessage(cause: unknown, fallback: string) {
               <strong>{{ usage.eventLogs.exists ? "Есть" : "Нет" }}</strong
               ><span>Event Logs</span>
             </div>
+            <div>
+              <strong>
+                {{
+                  usage.eventQueryPolicy?.currentGrantEnabled
+                    ? usage.eventQueryPolicy.currentConversationGrantEnabled
+                      ? "AI + Chat/Voice"
+                      : "Только AI"
+                    : "Выключено"
+                }}
+              </strong>
+              <span>текущий доступ AI</span>
+            </div>
+            <div>
+              <strong>
+                {{ usage.eventQueryPolicy?.publishedRevisionHistoryCount ?? 0 }}
+              </strong>
+              <span>ревизий политики AI</span>
+            </div>
           </div>
           <ul
             v-if="usage.scenarios.items.length"
@@ -1287,6 +1372,16 @@ function errorMessage(cause: unknown, fallback: string) {
       <p>
         Событие исчезнет из активного каталога, приём новых событий будет
         выключен. Event Logs и история схемы сохранятся.
+      </p>
+      <p
+        v-if="
+          usage?.archiveEffects?.includes('EVENT_QUERY_ACCESS_WILL_BE_REVOKED')
+        "
+      >
+        <strong>
+          Текущий доступ AI и Chat/Voice будет отозван атомарно. Сохранённая
+          конфигурация останется доступна только для чтения.
+        </strong>
       </p>
       <ul v-if="usage && !usage.canArchive" class="blocker-list" role="alert">
         <li v-for="blocker in usage.archiveBlockers" :key="blocker">

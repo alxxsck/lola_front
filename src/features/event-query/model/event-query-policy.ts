@@ -1,16 +1,13 @@
 import type {
-  EventQueryPolicyDiagnosticDto,
-  EventQueryPolicyDocumentDto,
+  EventQueryPolicyFieldDto,
   EventQueryPolicyFieldDtoSemanticType,
+  EventQueryPolicyItemDto,
+  PatchEventQueryPolicyItemDto,
 } from "@/shared/api/generated/models";
 
 export interface SchemaField {
   path: string;
   schemaType: string;
-}
-
-interface PolicyItemIdentity {
-  stableCode: string;
 }
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -49,81 +46,91 @@ export function schemaTypeToSemanticType(
   return "STRING";
 }
 
-export function eventPolicyState(
-  code: string,
-  draftItems: readonly PolicyItemIdentity[],
-  publishedItems: readonly PolicyItemIdentity[],
-  diagnostics: readonly Pick<EventQueryPolicyDiagnosticDto, "location">[],
-): "disabled" | "draft" | "published" | "invalid" {
-  const draftIndex = draftItems.findIndex((item) => item.stableCode === code);
-  if (draftIndex < 0) return "disabled";
+const modes = new Set(["SUMMARY", "AGGREGATE", "LATEST"]);
+const semanticTypes = new Set([
+  "STRING",
+  "BOOLEAN",
+  "INTEGER",
+  "DECIMAL",
+  "MONEY",
+  "CURRENCY",
+]);
+const sensitivities = new Set([
+  "PUBLIC_TO_END_USER",
+  "PRIVATE_DERIVED",
+  "FORBIDDEN",
+]);
+const operations = new Set(["PROJECT", "GROUP_BY", "SUM", "MIN", "MAX", "AVG"]);
+
+function policyField(value: unknown): EventQueryPolicyFieldDto | null {
+  const field = record(value);
   if (
-    diagnostics.some((diagnostic) =>
-      diagnostic.location.startsWith(`items[${draftIndex}]`),
-    )
+    !field ||
+    typeof field.path !== "string" ||
+    typeof field.semanticType !== "string" ||
+    !semanticTypes.has(field.semanticType) ||
+    typeof field.sensitivity !== "string" ||
+    !sensitivities.has(field.sensitivity) ||
+    !Array.isArray(field.operations) ||
+    !field.operations.every(
+      (operation) => typeof operation === "string" && operations.has(operation),
+    ) ||
+    (field.currencyPath !== undefined && typeof field.currencyPath !== "string")
   ) {
-    return "invalid";
+    return null;
   }
-  return publishedItems.some((item) => item.stableCode === code)
-    ? "published"
-    : "draft";
+  return field as unknown as EventQueryPolicyFieldDto;
 }
 
-export interface EventQueryPolicyImpact {
-  enabledChanged: boolean;
-  addedEvents: number;
-  changedEvents: number;
-  removedEvents: number;
-}
-
-export function eventQueryPolicyImpact(
-  published: EventQueryPolicyDocumentDto | null,
-  draft: EventQueryPolicyDocumentDto,
-): EventQueryPolicyImpact {
-  const publishedByCode = new Map(
-    (published?.items ?? []).map((item) => [item.stableCode, item]),
-  );
-  const draftByCode = new Map(
-    draft.items.map((item) => [item.stableCode, item]),
-  );
-  let addedEvents = 0;
-  let changedEvents = 0;
-  for (const [code, item] of draftByCode) {
-    const previous = publishedByCode.get(code);
-    if (!previous) addedEvents += 1;
-    else if (JSON.stringify(previous) !== JSON.stringify(item))
-      changedEvents += 1;
+export function eventQueryPolicyItemFromConfiguration(
+  stableCode: string,
+  value: unknown,
+): EventQueryPolicyItemDto | null {
+  const configuration = record(value);
+  if (
+    !configuration ||
+    typeof configuration.descriptionForAI !== "string" ||
+    !Array.isArray(configuration.allowedModes) ||
+    configuration.allowedModes.length === 0 ||
+    !configuration.allowedModes.every(
+      (mode) => typeof mode === "string" && modes.has(mode),
+    ) ||
+    !Array.isArray(configuration.safeFields) ||
+    typeof configuration.maxInteractiveLookbackHours !== "number" ||
+    typeof configuration.maxVerificationLookbackHours !== "number"
+  ) {
+    return null;
   }
-  let removedEvents = 0;
-  for (const code of publishedByCode.keys()) {
-    if (!draftByCode.has(code)) removedEvents += 1;
-  }
+  const safeFields = configuration.safeFields.map(policyField);
+  if (safeFields.some((field) => field === null)) return null;
   return {
-    enabledChanged: published !== null && published.enabled !== draft.enabled,
-    addedEvents,
-    changedEvents,
-    removedEvents,
+    stableCode,
+    descriptionForAI: configuration.descriptionForAI,
+    allowedModes:
+      configuration.allowedModes as EventQueryPolicyItemDto["allowedModes"],
+    safeFields: safeFields as EventQueryPolicyFieldDto[],
+    maxInteractiveLookbackHours: configuration.maxInteractiveLookbackHours,
+    maxVerificationLookbackHours: configuration.maxVerificationLookbackHours,
   };
 }
 
-export function eventQueryPolicyHardLimitViolations(
-  document: EventQueryPolicyDocumentDto,
-): string[] {
-  const violations: string[] = [];
-  if (document.items.length > 50) {
-    violations.push("Не более 50 типов событий в одной политике.");
-  }
-  for (const item of document.items) {
-    if (item.safeFields.length > 50) {
-      violations.push(
-        `${item.stableCode}: не более 50 безопасных полей на тип события.`,
-      );
-    }
-    if (item.descriptionForAI.length > 500) {
-      violations.push(
-        `${item.stableCode}: описание для ИИ не должно превышать 500 символов.`,
-      );
-    }
-  }
-  return violations;
+export function eventQueryPolicyItemPatch(
+  item: EventQueryPolicyItemDto,
+  enabled: boolean,
+  endUserConversationEnabled: boolean,
+  expectedVersion: number,
+): PatchEventQueryPolicyItemDto {
+  return {
+    expectedVersion,
+    enabled,
+    endUserConversationEnabled,
+    descriptionForAI: item.descriptionForAI,
+    allowedModes: [...item.allowedModes],
+    safeFields: item.safeFields.map((field) => ({
+      ...field,
+      operations: [...field.operations],
+    })),
+    maxInteractiveLookbackHours: item.maxInteractiveLookbackHours,
+    maxVerificationLookbackHours: item.maxVerificationLookbackHours,
+  };
 }

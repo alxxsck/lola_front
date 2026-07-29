@@ -1,24 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import type {
-  EventQueryPolicyDiagnosticDto,
-  EventQueryPolicyDocumentDto,
-  EventQueryPolicyRevisionResponseDto,
+  EventQueryPolicyStateResponseDto,
   EventQueryUsageResponseDto,
 } from "@/shared/api/generated/models";
-import { eventCatalogRepository } from "@/shared/api/repository/event-catalog";
-import type { EventCatalogDefinition } from "@/shared/api/repository/event-catalog/event-catalog-contract";
 import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
 import { eventQueryRepository } from "../api/event-query-repository";
-import {
-  eventQueryPolicyHardLimitViolations,
-  eventQueryPolicyImpact,
-} from "../model/event-query-policy";
 import EventQueryPreview from "./EventQueryPreview.vue";
-import EventQueryPolicyWorkspace from "./EventQueryPolicyWorkspace.vue";
 
 const props = defineProps<{
   projectId: string;
@@ -32,125 +24,57 @@ const loading = ref(true);
 const saving = ref(false);
 const publishing = ref(false);
 const error = ref("");
-const definitions = ref<EventCatalogDefinition[]>([]);
-const draftVersion = ref(0);
-const published = ref<EventQueryPolicyRevisionResponseDto | null>(null);
-const document = ref<EventQueryPolicyDocumentDto>({
-  enabled: false,
-  items: [],
-});
-const savedDocumentSnapshot = ref("");
-const diagnostics = ref<EventQueryPolicyDiagnosticDto[]>([]);
+const success = ref("");
+const state = ref<EventQueryPolicyStateResponseDto | null>(null);
+const masterEnabled = ref(false);
+const savedMasterEnabled = ref(false);
 const usage = ref<EventQueryUsageResponseDto | null>(null);
-let loadGeneration = 0;
+let generation = 0;
 
-const publishedItems = computed(() => published.value?.document.items ?? []);
-const documentSnapshot = computed(() => JSON.stringify(document.value));
-const globalDiagnostics = computed(() =>
-  diagnostics.value.filter(
-    (diagnostic) => !diagnostic.location.startsWith("items["),
-  ),
-);
-const hardLimitViolations = computed(() =>
-  eventQueryPolicyHardLimitViolations(document.value),
-);
-const publishImpact = computed(() =>
-  eventQueryPolicyImpact(published.value?.document ?? null, document.value),
+const dirty = computed(
+  () =>
+    Boolean(state.value) && masterEnabled.value !== savedMasterEnabled.value,
 );
 const canPublish = computed(
   () =>
     props.canManage &&
-    draftVersion.value > 0 &&
-    documentSnapshot.value === savedDocumentSnapshot.value &&
-    diagnostics.value.length === 0 &&
-    hardLimitViolations.value.length === 0 &&
+    Boolean(state.value?.version) &&
+    !dirty.value &&
     !saving.value &&
     !publishing.value,
 );
 
-function cloneDocument(value: EventQueryPolicyDocumentDto) {
-  return JSON.parse(JSON.stringify(value)) as EventQueryPolicyDocumentDto;
+function isCurrent(requestGeneration: number, projectId: string) {
+  return requestGeneration === generation && projectId === props.projectId;
 }
 
 async function load() {
-  const generation = ++loadGeneration;
+  const requestGeneration = ++generation;
   const projectId = props.projectId;
   loading.value = true;
   saving.value = false;
   publishing.value = false;
   error.value = "";
-  definitions.value = [];
-  draftVersion.value = 0;
-  published.value = null;
-  document.value = { enabled: false, items: [] };
-  savedDocumentSnapshot.value = "";
-  diagnostics.value = [];
+  success.value = "";
+  state.value = null;
   usage.value = null;
   try {
-    const [state, catalog] = await Promise.all([
-      eventQueryRepository.getPolicy(projectId),
-      props.canReadCatalog === false
-        ? Promise.resolve([])
-        : eventCatalogRepository.listDefinitions(projectId, "ACTIVE"),
-    ]);
-    if (generation !== loadGeneration || projectId !== props.projectId) return;
-    const policyDocument = state.draft?.document ?? state.published?.document;
-    const fallbackDefinitions = (policyDocument?.items ?? []).map(
-      (item) =>
-        ({
-          definitionKeyId: `policy:${item.stableCode}`,
-          projectId,
-          code: item.stableCode,
-          lifecycle: "ACTIVE",
-          lifecycleVersion: 1,
-          lifecycleUpdatedAt: state.draft?.updatedAt ?? "",
-          metadata: {
-            name: item.stableCode,
-            description: item.descriptionForAI,
-            concurrencyToken: state.draft?.updatedAt ?? "",
-          },
-          policy: {
-            version: 1,
-            updatedAt: state.draft?.updatedAt ?? "",
-            enabled: true,
-            clientIngestible: false,
-            countsAsActivity: true,
-          },
-          currentSchema: {
-            revisionId: `policy:${item.stableCode}`,
-            revisionNumber: 1,
-            publishedAt: state.published?.publishedAt ?? "",
-            payloadSchema: { type: "object", properties: {} },
-          },
-          origin: "CUSTOM",
-          readOnly: true,
-        }) as EventCatalogDefinition,
-    );
-    definitions.value = [
-      ...catalog,
-      ...fallbackDefinitions.filter(
-        (fallback) =>
-          !catalog.some((definition) => definition.code === fallback.code),
-      ),
-    ];
-    published.value = state.published ?? null;
-    draftVersion.value = state.draft?.version ?? 0;
-    document.value = cloneDocument(
-      state.draft?.document ??
-        state.published?.document ?? { enabled: false, items: [] },
-    );
-    savedDocumentSnapshot.value = JSON.stringify(document.value);
-    if (props.canPreview) void loadUsage(projectId, generation);
+    const nextState = await eventQueryRepository.getPolicy(projectId);
+    if (!isCurrent(requestGeneration, projectId)) return;
+    state.value = nextState;
+    masterEnabled.value = nextState.masterEnabled;
+    savedMasterEnabled.value = nextState.masterEnabled;
+    if (props.canPreview) void loadUsage(projectId, requestGeneration);
   } catch (cause) {
-    if (generation !== loadGeneration || projectId !== props.projectId) return;
+    if (!isCurrent(requestGeneration, projectId)) return;
     error.value =
       cause instanceof Error ? cause.message : "Не удалось загрузить политику";
   } finally {
-    if (generation === loadGeneration) loading.value = false;
+    if (isCurrent(requestGeneration, projectId)) loading.value = false;
   }
 }
 
-async function loadUsage(projectId: string, generation: number) {
+async function loadUsage(projectId: string, requestGeneration: number) {
   const to = new Date();
   const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1_000);
   try {
@@ -158,71 +82,72 @@ async function loadUsage(projectId: string, generation: number) {
       from: from.toISOString(),
       to: to.toISOString(),
     });
-    if (generation === loadGeneration && projectId === props.projectId) {
-      usage.value = response;
-    }
+    if (isCurrent(requestGeneration, projectId)) usage.value = response;
   } catch {
-    if (generation === loadGeneration) usage.value = null;
+    if (isCurrent(requestGeneration, projectId)) usage.value = null;
   }
 }
 
 async function save() {
-  if (!props.canManage || saving.value || loading.value) return;
+  const current = state.value;
+  if (!props.canManage || !current || !dirty.value || saving.value) return;
+  const requestGeneration = generation;
   const projectId = props.projectId;
-  const generation = loadGeneration;
-  const draft = cloneDocument(document.value);
-  const expectedVersion = draftVersion.value;
   saving.value = true;
   error.value = "";
+  success.value = "";
   try {
-    const validation = await eventQueryRepository.validate(projectId, {
-      document: draft,
+    const response = await eventQueryRepository.patchProject(projectId, {
+      expectedVersion: current.version,
+      masterEnabled: masterEnabled.value,
     });
-    if (generation !== loadGeneration || projectId !== props.projectId) return;
-    diagnostics.value = validation.errors;
-    if (!validation.valid) return;
-    const saved = await eventQueryRepository.saveDraft(projectId, {
-      expectedVersion,
-      document: draft,
-    });
-    if (generation !== loadGeneration || projectId !== props.projectId) return;
-    draftVersion.value = saved.version;
-    document.value = cloneDocument(saved.document);
-    savedDocumentSnapshot.value = JSON.stringify(document.value);
+    if (!isCurrent(requestGeneration, projectId)) return;
+    state.value = {
+      ...current,
+      version: response.version,
+      masterEnabled: response.masterEnabled,
+    };
+    masterEnabled.value = response.masterEnabled;
+    savedMasterEnabled.value = response.masterEnabled;
+    success.value = "Черновик master-настройки сохранён.";
   } catch (cause) {
-    if (generation !== loadGeneration || projectId !== props.projectId) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось сохранить черновик";
-  } finally {
-    if (generation === loadGeneration && projectId === props.projectId) {
-      saving.value = false;
-    }
-  }
-}
-
-async function publishPolicy() {
-  if (!canPublish.value) return;
-  const projectId = props.projectId;
-  const generation = loadGeneration;
-  const expectedDraftVersion = draftVersion.value;
-  publishing.value = true;
-  error.value = "";
-  try {
-    const response = await eventQueryRepository.publish(projectId, {
-      expectedDraftVersion,
-    });
-    if (generation !== loadGeneration || projectId !== props.projectId) return;
-    published.value = response;
-  } catch (cause) {
-    if (generation !== loadGeneration || projectId !== props.projectId) return;
+    if (!isCurrent(requestGeneration, projectId)) return;
     error.value =
       cause instanceof Error
         ? cause.message
-        : "Не удалось опубликовать политику";
+        : "Не удалось сохранить master-настройку";
   } finally {
-    if (generation === loadGeneration && projectId === props.projectId) {
-      publishing.value = false;
-    }
+    if (isCurrent(requestGeneration, projectId)) saving.value = false;
+  }
+}
+
+async function publish() {
+  const current = state.value;
+  if (!current || !canPublish.value) return;
+  const requestGeneration = generation;
+  const projectId = props.projectId;
+  publishing.value = true;
+  error.value = "";
+  success.value = "";
+  try {
+    await eventQueryRepository.publish(projectId, {
+      expectedVersion: current.version,
+    });
+    if (!isCurrent(requestGeneration, projectId)) return;
+    const next = await eventQueryRepository.getPolicy(projectId);
+    if (!isCurrent(requestGeneration, projectId)) return;
+    state.value = next;
+    masterEnabled.value = next.masterEnabled;
+    savedMasterEnabled.value = next.masterEnabled;
+    success.value = "Master-настройка опубликована.";
+  } catch (cause) {
+    if (!isCurrent(requestGeneration, projectId)) return;
+    error.value =
+      cause instanceof Error
+        ? cause.message
+        : "Не удалось опубликовать master-настройку";
+  } finally {
+    if (isCurrent(requestGeneration, projectId)) publishing.value = false;
   }
 }
 
@@ -241,15 +166,15 @@ watch(() => props.projectId, load);
   >
     <ProjectSettingsSectionHeader
       v-model:expanded="expanded"
-      title="Доступ ИИ к событиям"
-      description="Read-only доступ только к опубликованным типам событий и безопасным полям текущего пользователя."
+      title="Доступ AI к событиям"
+      description="Master-настройка, безопасный preview и потребление Event Query."
       icon="pi pi-shield"
       tone="violet"
       content-id="event-query-policy-settings"
     >
       <template #actions>
-        <span v-if="published" class="revision-badge">
-          Опубликована ревизия {{ published.version }}
+        <span v-if="state?.currentRevision" class="revision-badge">
+          Опубликована ревизия {{ state.currentRevision.version }}
         </span>
         <span v-else class="revision-badge muted">Не опубликовано</span>
       </template>
@@ -260,27 +185,80 @@ watch(() => props.projectId, load);
         {{ error }}
         <Button label="Повторить" text size="small" @click="load" />
       </Message>
+      <Message v-if="success" severity="success" :closable="false">{{
+        success
+      }}</Message>
       <div v-if="loading" class="policy-loading">
-        <Skeleton height="4rem" />
-        <Skeleton v-for="index in 3" :key="index" height="5rem" />
+        <Skeleton height="5rem" />
+        <Skeleton height="7rem" />
       </div>
-      <template v-else>
+      <template v-else-if="state">
         <div class="master-control">
           <div>
-            <strong>Разрешить Lola запрашивать продуктовые события</strong>
+            <strong>Разрешить AI доступ к событиям проекта</strong>
             <p>
-              Идентификаторы проекта и пользователя подставляет сервер. SQL,
-              произвольные таблицы и технические логи недоступны.
+              Это общий выключатель. Разрешения и безопасные поля настраиваются
+              отдельно внутри каждого события.
             </p>
           </div>
           <label class="switch-label">
             <input
-              v-model="document.enabled"
+              v-model="masterEnabled"
               type="checkbox"
-              :disabled="!canManage"
+              :disabled="!canManage || saving || publishing"
             />
-            {{ document.enabled ? "Включено" : "Выключено" }}
+            {{ masterEnabled ? "Включено" : "Выключено" }}
           </label>
+        </div>
+
+        <div class="policy-summary">
+          <div>
+            <span>Настроено событий</span>
+            <strong>{{ state.counts.configuredDraftItems ?? 0 }}</strong>
+          </div>
+          <div>
+            <span>Доступно внутреннему AI</span>
+            <strong>{{ state.counts.enabledDraftItems ?? 0 }}</strong>
+          </div>
+          <div>
+            <span>Доступно в Chat/Voice</span>
+            <strong>{{
+              state.counts.endUserConversationDraftItems ?? 0
+            }}</strong>
+          </div>
+          <RouterLink v-if="canReadCatalog !== false" :to="{ name: 'events' }">
+            Настроить события
+          </RouterLink>
+        </div>
+
+        <Message
+          v-for="diagnostic in state.diagnostics"
+          :key="`${diagnostic.code}:${diagnostic.location}`"
+          severity="error"
+          :closable="false"
+        >
+          <strong>{{ diagnostic.location }}</strong> — {{ diagnostic.message }}
+        </Message>
+
+        <div class="master-actions">
+          <span v-if="dirty"
+            >Есть неопубликованное изменение master-доступа</span
+          >
+          <Button
+            data-test="save-policy"
+            label="Сохранить"
+            severity="secondary"
+            :loading="saving"
+            :disabled="!dirty || !canManage || publishing"
+            @click="save"
+          />
+          <Button
+            data-test="publish-policy"
+            label="Опубликовать"
+            :loading="publishing"
+            :disabled="!canPublish"
+            @click="publish"
+          />
         </div>
 
         <div v-if="usage" class="usage-card">
@@ -289,14 +267,14 @@ watch(() => props.projectId, load);
           </div>
           <div>
             <span>Данные событий: оценка вклада</span>
-            <strong
-              >{{ formatBytes(usage.resultBytes) }} ·
+            <strong>
+              {{ formatBytes(usage.resultBytes) }} ·
               {{ usage.estimatedAddedInputTokens.toLocaleString("ru-RU") }}
-              токенов</strong
-            >
+              токенов
+            </strong>
           </div>
           <div>
-            <span>Связанное потребление ИИ</span>
+            <span>Связанное потребление AI</span>
             <strong>
               {{ usage.exactAiUsage?.totalTokens.toLocaleString("ru-RU") ?? 0 }}
               токенов
@@ -309,79 +287,12 @@ watch(() => props.projectId, load);
             </strong>
           </div>
           <p>
-            Вклад Event Query — оценка сериализованных данных. Токены и
-            стоимость берутся из provider usage только для связанных Chat, Voice
-            и AI Review запусков.
+            Оценочный вклад данных не прибавляется повторно к точным provider
+            tokens и стоимости.
           </p>
         </div>
 
-        <EventQueryPolicyWorkspace
-          v-model="document"
-          :definitions="definitions"
-          :published-items="publishedItems"
-          :diagnostics="diagnostics"
-          :can-manage="canManage"
-          @edited="diagnostics = []"
-        />
-
-        <div class="policy-actions">
-          <Message
-            v-for="violation in hardLimitViolations"
-            :key="violation"
-            severity="error"
-            :closable="false"
-          >
-            {{ violation }}
-          </Message>
-          <Message
-            v-for="diagnostic in globalDiagnostics"
-            :key="`${diagnostic.code}:${diagnostic.location}`"
-            class="global-diagnostic"
-            severity="error"
-            :closable="false"
-          >
-            <strong>{{ diagnostic.location }}</strong> —
-            {{ diagnostic.message }}
-          </Message>
-          <div class="publish-impact" data-test="publish-impact">
-            <strong>Влияние публикации</strong>
-            <span>
-              Добавлено {{ publishImpact.addedEvents }}, изменено
-              {{ publishImpact.changedEvents }}, удалено
-              {{ publishImpact.removedEvents
-              }}<template v-if="publishImpact.enabledChanged"
-                >, переключён master-доступ</template
-              >.
-            </span>
-          </div>
-          <Button
-            data-test="save-policy"
-            label="Проверить и сохранить черновик"
-            icon="pi pi-save"
-            severity="secondary"
-            :loading="saving"
-            :disabled="!canManage || loading"
-            @click="save"
-          />
-          <Button
-            data-test="publish-policy"
-            label="Опубликовать"
-            icon="pi pi-send"
-            :loading="publishing"
-            :disabled="!canPublish"
-            @click="publishPolicy"
-          />
-          <small>
-            Черновик {{ draftVersion || "ещё не создан" }} · максимум 50 типов
-            событий, до 50 безопасных полей на тип.
-          </small>
-        </div>
-
-        <EventQueryPreview
-          v-if="canPreview && published?.document.enabled"
-          :project-id="projectId"
-          :items="published.document.items"
-        />
+        <EventQueryPreview v-if="canPreview" :project-id="projectId" />
       </template>
     </div>
   </section>
@@ -406,18 +317,8 @@ watch(() => props.projectId, load);
   background: var(--surface-subtle);
   color: var(--text-tertiary);
 }
-.publish-impact {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-}
-.publish-impact strong {
-  color: var(--text-primary);
-}
 .master-control,
-.policy-actions {
+.master-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -440,38 +341,49 @@ watch(() => props.projectId, load);
   gap: 8px;
   white-space: nowrap;
 }
+.policy-summary,
 .usage-card {
   display: grid;
-  grid-template-columns: 0.55fr 1fr 1.3fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   padding: 14px;
   border-radius: 14px;
   background: var(--surface-subtle);
 }
+.policy-summary span,
+.policy-summary strong,
 .usage-card span,
 .usage-card strong {
   display: block;
 }
+.policy-summary span,
 .usage-card span {
   color: var(--text-tertiary);
   font-size: 0.68rem;
 }
+.policy-summary a {
+  align-self: center;
+  justify-self: end;
+}
 .usage-card p {
   grid-column: 1 / -1;
 }
-.policy-actions {
-  justify-content: flex-start;
+.master-actions {
+  justify-content: flex-end;
   flex-wrap: wrap;
 }
-.policy-actions small {
-  color: var(--text-tertiary);
-}
-.global-diagnostic {
-  flex-basis: 100%;
+.master-actions span {
+  margin-right: auto;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
 }
 @media (max-width: 900px) {
+  .policy-summary,
   .usage-card {
     grid-template-columns: 1fr;
+  }
+  .policy-summary a {
+    justify-self: start;
   }
 }
 @media (max-width: 600px) {

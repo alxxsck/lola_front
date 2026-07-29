@@ -3,10 +3,9 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
-import {
-  pluralizeRu,
-  type AiUsageRangeKey,
-} from "./ai-usage.model";
+import { eventQueryRepository } from "@/features/event-query/api/event-query-repository";
+import type { EventQueryRequestHistoryResponseDto } from "@/shared/api/generated/models";
+import { pluralizeRu, type AiUsageRangeKey } from "./ai-usage.model";
 import { fetchEndUserAiUsageReport } from "./end-user-ai-usage.api";
 import {
   END_USER_AI_USAGE_CATEGORY_LABELS,
@@ -23,6 +22,10 @@ const props = defineProps<{
 
 const windowKey = ref<AiUsageRangeKey>("7d");
 const report = ref<EndUserAiUsageReport | null>(null);
+const eventQueryRequests = ref<EventQueryRequestHistoryResponseDto | null>(
+  null,
+);
+const eventQueryRequestsError = ref("");
 const loading = ref(true);
 const error = ref("");
 let requestGeneration = 0;
@@ -103,12 +106,40 @@ function categoryCost(category: EndUserAiUsageCategoryRow) {
   return `${category.records} операций`;
 }
 
+function requestCost(
+  request: EventQueryRequestHistoryResponseDto["items"][number],
+) {
+  const billed =
+    typeof request.linkedAiUsage.billedCostUsd === "string"
+      ? Number(request.linkedAiUsage.billedCostUsd)
+      : 0;
+  const estimated =
+    typeof request.linkedAiUsage.estimatedCostUsd === "string"
+      ? Number(request.linkedAiUsage.estimatedCostUsd)
+      : 0;
+  if (billed) return `${formatMoney(billed)} по данным провайдера`;
+  if (estimated) return `${formatMoney(estimated)} оценка`;
+  return "Стоимость не связана";
+}
+
+function formatBytes(value: number) {
+  return value < 1024 ? `${value} Б` : `${(value / 1024).toFixed(1)} КБ`;
+}
+
+function formatRequestDate(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 async function load(nextWindow = windowKey.value) {
   controller?.abort();
   controller = new AbortController();
   const generation = ++requestGeneration;
   loading.value = true;
   error.value = "";
+  eventQueryRequestsError.value = "";
   try {
     const nextReport = await fetchEndUserAiUsageReport(
       props.projectId,
@@ -116,7 +147,27 @@ async function load(nextWindow = windowKey.value) {
       nextWindow,
       controller.signal,
     );
-    if (generation === requestGeneration) report.value = nextReport;
+    if (generation !== requestGeneration) return;
+    report.value = nextReport;
+    try {
+      eventQueryRequests.value = await eventQueryRepository.listRequests(
+        props.projectId,
+        {
+          from: nextReport.range.from ?? "1970-01-01T00:00:00.000Z",
+          to: nextReport.range.to,
+          endUserId: props.endUserId,
+          audience: "END_USER_CONVERSATION",
+          limit: 20,
+        },
+      );
+    } catch (cause) {
+      if (generation !== requestGeneration || controller.signal.aborted) return;
+      eventQueryRequests.value = null;
+      eventQueryRequestsError.value =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось загрузить историю запросов к событиям";
+    }
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration) return;
     error.value =
@@ -132,6 +183,7 @@ function selectWindow(nextWindow: AiUsageRangeKey) {
   if (nextWindow === windowKey.value) return;
   windowKey.value = nextWindow;
   report.value = null;
+  eventQueryRequests.value = null;
   void load(nextWindow);
 }
 
@@ -139,6 +191,7 @@ watch(
   () => [props.projectId, props.endUserId] as const,
   () => {
     report.value = null;
+    eventQueryRequests.value = null;
     void load();
   },
 );
@@ -236,6 +289,55 @@ onBeforeUnmount(() => controller?.abort());
         class="tts-pricing-note"
         data-testid="end-user-tts-pricing"
       />
+
+      <section class="event-query-history">
+        <div>
+          <span class="usage-kicker">Event Query</span>
+          <h4>Запросы пользователя к событиям</h4>
+          <p>
+            Токены и стоимость ниже уже входят в общие Chat/Voice расходы и не
+            суммируются повторно.
+          </p>
+        </div>
+        <Message
+          v-if="eventQueryRequestsError"
+          severity="warn"
+          :closable="false"
+        >
+          {{ eventQueryRequestsError }}
+        </Message>
+        <div
+          v-else-if="eventQueryRequests?.items.length"
+          class="request-history-list"
+        >
+          <article
+            v-for="request in eventQueryRequests.items"
+            :key="request.id"
+          >
+            <header>
+              <strong>{{ request.eventCodes.join(", ") }}</strong>
+              <span>{{ formatRequestDate(request.createdAt) }}</span>
+            </header>
+            <div>
+              <span>{{ request.mode }} · {{ request.status }}</span>
+              <span>
+                {{ formatCount(request.linkedAiUsage.totalTokens) }} токенов ·
+                {{ requestCost(request) }}
+              </span>
+              <span>
+                {{ formatBytes(request.resultBytes) }} данных · оценочный вклад
+                {{ formatCount(request.estimatedAddedInputTokens) }} токенов
+              </span>
+            </div>
+          </article>
+          <small v-if="eventQueryRequests.pageInfo.hasMore">
+            Показаны последние 20 запросов за выбранный период.
+          </small>
+        </div>
+        <p v-else class="usage-empty">
+          За выбранный период запросов к событиям не было.
+        </p>
+      </section>
 
       <div v-if="report.totals.unpricedRecords" class="completeness-note">
         <i class="pi pi-info-circle" />
@@ -363,6 +465,48 @@ h3 i {
   display: grid;
   gap: 11px;
   margin-top: 18px;
+}
+.event-query-history {
+  display: grid;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.event-query-history h4,
+.event-query-history p {
+  margin: 4px 0 0;
+}
+.event-query-history p {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+}
+.request-history-list {
+  display: grid;
+  gap: 8px;
+}
+.request-history-list article {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+.request-history-list article header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.request-history-list article header span,
+.request-history-list article div,
+.request-history-list > small {
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+}
+.request-history-list article div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
 }
 .category-row {
   display: grid;

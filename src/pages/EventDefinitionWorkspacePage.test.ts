@@ -108,6 +108,11 @@ function mountWorkspace() {
           template:
             '<div data-test="schema-authoring-stub" :data-can-edit="canEdit" :data-can-publish="canPublish" />',
         },
+        EventQueryEventAccess: {
+          props: ["definition"],
+          template:
+            '<div data-test="event-query-access-section" :data-event-code="definition.code" />',
+        },
       },
     },
   });
@@ -263,6 +268,27 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     await flushPromises();
     expect(wrapper.get('[data-test="usage-section"]').isVisible()).toBe(true);
     expect(mocks.getUsage).toHaveBeenCalledWith("project-1", "event-key-1");
+  });
+
+  it("configures AI access inside the current event instead of a project-wide event list", async () => {
+    mocks.auth!.project = {
+      id: "project-1",
+      effectivePermissionCodes: [
+        "project.event_catalog.read",
+        "project.event_catalog.write",
+        "project.event_query_policy.manage",
+        "project.event_query_policy.preview",
+      ],
+    };
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    const tab = wrapper.get('button[role="tab"][data-section="ai-access"]');
+    await tab.trigger("click");
+
+    const section = wrapper.get('[data-test="event-query-access-section"]');
+    expect(section.isVisible()).toBe(true);
+    expect(section.attributes("data-event-code")).toBe("deposit.succeeded");
   });
 
   it("saves rename and description through metadata command without changing the schema revision", async () => {
@@ -723,6 +749,42 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       "Активные ожидания: 1",
     );
     expect(mocks.archive).not.toHaveBeenCalled();
+  });
+
+  it("explains Event Query history and disables permanent deletion", async () => {
+    mocks.getUsage.mockResolvedValue({
+      definitionKeyId: "event-key-1",
+      evaluatedAt: "now",
+      lifecycleVersion: 2,
+      policyVersion: 3,
+      eventLogs: { exists: false },
+      eventQueryPolicy: {
+        currentGrantEnabled: false,
+        currentConversationGrantEnabled: false,
+        publishedRevisionHistoryExists: true,
+        publishedRevisionHistoryCount: 2,
+      },
+      scenarios: { total: 0, items: [], truncated: false },
+      scenarioDraftDependencyCount: 0,
+      publishedScenarioRevisionCount: 0,
+      activeWaitCount: 0,
+      canArchive: true,
+      canDelete: false,
+      archiveBlockers: [],
+      archiveEffects: [],
+      deleteBlockers: ["EVENT_QUERY_POLICY_HISTORY"],
+    });
+    const wrapper = mountWorkspace();
+    await flushPromises();
+    await button(wrapper, "Удалить").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(
+      "Событие использовалось в опубликованной политике доступа AI и не может быть удалено",
+    );
+    expect(
+      button(wrapper, "Удалить навсегда").attributes("disabled"),
+    ).toBeDefined();
   });
 
   it("requires code and reason, then hard-deletes with usage OCC and verifies list absence", async () => {

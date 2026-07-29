@@ -7,6 +7,11 @@
  */
 
 export interface PublishEventQueryPolicyDto {
-  /** @minimum 1 */
-  expectedDraftVersion: number;
+  /**
+   * @deprecated
+   * @minimum 1
+   */
+  expectedDraftVersion?: number;
+  /** @minimum 0 */
+  expectedVersion?: number;
 }

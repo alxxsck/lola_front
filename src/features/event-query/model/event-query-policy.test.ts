@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  eventQueryPolicyHardLimitViolations,
-  eventQueryPolicyImpact,
-  eventPolicyState,
+  eventQueryPolicyItemFromConfiguration,
+  eventQueryPolicyItemPatch,
   flattenSchemaFields,
   schemaTypeToSemanticType,
 } from "./event-query-policy";
@@ -37,69 +36,31 @@ describe("event query policy presentation", () => {
     expect(schemaTypeToSemanticType("string")).toBe("STRING");
   });
 
-  it("distinguishes disabled, draft, published and invalid definitions", () => {
-    const draftItem = { stableCode: "deposit.completed" };
-    expect(eventPolicyState("game.started", [], [], [])).toBe("disabled");
-    expect(eventPolicyState("deposit.completed", [draftItem], [], [])).toBe(
-      "draft",
-    );
-    expect(
-      eventPolicyState("deposit.completed", [draftItem], [draftItem], []),
-    ).toBe("published");
-    expect(
-      eventPolicyState(
-        "deposit.completed",
-        [draftItem],
-        [draftItem],
-        [{ location: "items[0].safeFields[0]" }],
-      ),
-    ).toBe("invalid");
-  });
-
-  it("summarizes publish impact without exposing schema payloads", () => {
-    const existing = {
+  it("parses server-owned per-Event configuration and builds a typed PATCH", () => {
+    const item = eventQueryPolicyItemFromConfiguration("deposit.completed", {
       stableCode: "deposit.completed",
-      descriptionForAI: "Депозит",
-      allowedModes: ["SUMMARY" as const],
-      maxInteractiveLookbackHours: 24,
-      maxVerificationLookbackHours: 24,
+      descriptionForAI: "Факт успешного депозита",
+      allowedModes: ["SUMMARY"],
+      maxInteractiveLookbackHours: 168,
+      maxVerificationLookbackHours: 720,
       safeFields: [],
-    };
+    });
+    expect(item?.stableCode).toBe("deposit.completed");
+    expect(eventQueryPolicyItemPatch(item!, false, true, 7)).toEqual({
+      expectedVersion: 7,
+      enabled: false,
+      endUserConversationEnabled: true,
+      descriptionForAI: "Факт успешного депозита",
+      allowedModes: ["SUMMARY"],
+      maxInteractiveLookbackHours: 168,
+      maxVerificationLookbackHours: 720,
+      safeFields: [],
+    });
     expect(
-      eventQueryPolicyImpact(
-        { enabled: false, items: [existing] },
-        {
-          enabled: true,
-          items: [
-            { ...existing, descriptionForAI: "Успешный депозит" },
-            { ...existing, stableCode: "game.started" },
-          ],
-        },
-      ),
-    ).toEqual({
-      enabledChanged: true,
-      addedEvents: 1,
-      changedEvents: 1,
-      removedEvents: 0,
-    });
-  });
-
-  it("blocks documents that exceed platform hard limits before publish", () => {
-    const item = {
-      stableCode: "deposit.completed",
-      descriptionForAI: "Депозит",
-      allowedModes: ["SUMMARY" as const],
-      maxInteractiveLookbackHours: 24,
-      maxVerificationLookbackHours: 24,
-      safeFields: [],
-    };
-    const violations = eventQueryPolicyHardLimitViolations({
-      enabled: true,
-      items: Array.from({ length: 51 }, (_, index) => ({
-        ...item,
-        stableCode: `event.${index}`,
-      })),
-    });
-    expect(violations).toEqual(["Не более 50 типов событий в одной политике."]);
+      eventQueryPolicyItemFromConfiguration("deposit.completed", {
+        descriptionForAI: "Broken",
+        allowedModes: [],
+      }),
+    ).toBeNull();
   });
 });
