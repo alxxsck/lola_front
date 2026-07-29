@@ -191,9 +191,6 @@
   --project-tone-blue-foreground: #397dad;
   --project-tone-blue-soft: #e8f2fb;
   --project-assistant-on-orbit: var(--on-action-primary);
-  --ai-credits-surface: #7566a0;
-  --ai-credits-text: #ffffff;
-  --ai-credits-muted: #ffffff;
 }
 
 :root.lola-dark {
@@ -340,9 +337,6 @@
   --project-tone-blue-foreground: var(--status-info);
   --project-tone-blue-soft: var(--status-info-soft);
   --project-assistant-on-orbit: var(--on-brand);
-  --ai-credits-surface: #332b4d;
-  --ai-credits-text: var(--text-primary);
-  --ai-credits-muted: var(--text-secondary);
 
   --accent-strong: var(--brand-hover);
   --violet: var(--status-violet);

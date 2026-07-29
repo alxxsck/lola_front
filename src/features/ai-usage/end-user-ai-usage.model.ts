@@ -2,6 +2,7 @@ import {
   AI_USAGE_CATEGORY_LABELS,
   type AiUsageCategory,
   type AiUsageRangeKey,
+  type AiTextToSpeechPricingContext,
 } from "./ai-usage.model";
 
 export type EndUserAiUsageCategory = AiUsageCategory;
@@ -42,6 +43,7 @@ export interface EndUserAiUsageReport {
   };
   totals: EndUserAiUsageTotals;
   categories: EndUserAiUsageCategoryRow[];
+  textToSpeechPricing: AiTextToSpeechPricingContext;
 }
 
 export const END_USER_AI_USAGE_WINDOWS: ReadonlyArray<{

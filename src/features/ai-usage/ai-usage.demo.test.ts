@@ -13,6 +13,10 @@ describe('AI usage demo report', () => {
 
     expect(report.breakdown.every((row) => row.provider === 'xai')).toBe(true)
     expect(JSON.stringify(report).toLowerCase()).not.toContain('elevenlabs')
+    expect(report.totals.providerBilledUnits).toBe(0)
+    expect(
+      report.breakdown.every((row) => row.providerBilledUnits === 0),
+    ).toBe(true)
     expect(getModelBreakdown(report.breakdown).map((row) => row.operation)).toEqual(
       ['response'],
     )

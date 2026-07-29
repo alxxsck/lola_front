@@ -1,5 +1,6 @@
 import { aiUsageReport } from '@/shared/api/generated/lola-backend'
 import { isMockMode } from '@/shared/config/data-mode'
+import { isValidTextToSpeechRate } from '@/features/ai-pricing/ai-pricing.model'
 import type {
   AiUsageBreakdown,
   AiUsageCategory,
@@ -11,6 +12,18 @@ import type {
 } from './ai-usage.model'
 import { AI_USAGE_CATEGORIES } from './ai-usage.model'
 
+export function buildDemoTextToSpeechPricingContext(): AiTextToSpeechPricingContext {
+  return {
+    current: {
+      rate: '15',
+      currency: 'usd',
+      unit: 'per_million_input_characters',
+      effectiveFrom: '2026-07-29T10:00:00.000Z',
+    },
+    sourceUrl: 'https://docs.x.ai/developers/pricing',
+  }
+}
+
 const demoReport = (projectId: string): AiUsageReport => ({
   projectId,
   totals: {
@@ -19,7 +32,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
     providerReportedUsageRecords: 136,
     estimatedCostRecords: 74,
     inputCharacters: 18_460,
-    providerBilledUnits: 19_120,
+    providerBilledUnits: 0,
     totalTokens: 184_720,
     inputTokens: 127_980,
     cachedInputTokens: 38_420,
@@ -170,7 +183,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       currency: 'usd',
       records: 24,
       inputCharacters: 18_460,
-      providerBilledUnits: 19_120,
+      providerBilledUnits: 0,
       totalTokens: 0,
       inputTokens: 0,
       cachedInputTokens: 0,
@@ -228,7 +241,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       currency: 'usd',
       records: 24,
       inputCharacters: 18_460,
-      providerBilledUnits: 19_120,
+      providerBilledUnits: 0,
       totalTokens: 0,
       inputTokens: 0,
       cachedInputTokens: 0,
@@ -252,15 +265,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       effectiveCost: 0.2769,
     },
   ],
-  textToSpeechPricing: {
-    current: {
-      rate: '15',
-      currency: 'usd',
-      unit: 'per_million_input_characters',
-      effectiveFrom: '2026-07-29T10:00:00.000Z',
-    },
-    sourceUrl: 'https://docs.x.ai/developers/pricing',
-  },
+  textToSpeechPricing: buildDemoTextToSpeechPricingContext(),
 })
 
 const totalsIntegerKeys = [
@@ -452,7 +457,7 @@ function parseHttpsUrl(value: unknown): string | undefined {
   }
 }
 
-function parseTextToSpeechPricing(
+export function parseTextToSpeechPricing(
   value: unknown,
 ): AiTextToSpeechPricingContext | undefined {
   if (!isRecord(value)) return undefined
@@ -464,8 +469,7 @@ function parseTextToSpeechPricing(
   const { rate, currency, unit, effectiveFrom } = value.current
   if (
     !boundedString(rate, 1, 64) ||
-    !/^\d+(?:\.\d+)?$/.test(rate) ||
-    Number(rate) <= 0 ||
+    !isValidTextToSpeechRate(rate) ||
     currency !== 'usd' ||
     unit !== 'per_million_input_characters' ||
     !boundedString(effectiveFrom, 1, 64)

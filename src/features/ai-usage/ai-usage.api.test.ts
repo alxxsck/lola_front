@@ -157,6 +157,13 @@ describe('AI usage API response validation', () => {
         ...response.textToSpeechPricing,
         current: {
           ...response.textToSpeechPricing.current,
+          rate: '0.1234567890123',
+        },
+      },
+      {
+        ...response.textToSpeechPricing,
+        current: {
+          ...response.textToSpeechPricing.current,
           unit: 'per_thousand_characters',
         },
       },

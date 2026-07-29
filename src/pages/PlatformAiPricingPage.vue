@@ -5,6 +5,7 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { isValidTextToSpeechRate } from '@/features/ai-pricing/ai-pricing.model'
 import {
   fetchTextToSpeechPricing,
   publishTextToSpeechPricing,
@@ -74,20 +75,6 @@ function actorLabel(revision: TextToSpeechPricingRevision): string {
     SYSTEM: 'System',
   }[revision.createdBy.type]
   return `${type} · ${revision.createdBy.id}`
-}
-
-function isValidRate(value: string): boolean {
-  if (value.length > 64 || !/^\d+(?:\.\d{1,12})?$/.test(value)) return false
-  const [whole = '', fraction = ''] = value.split('.')
-  const normalizedWhole = whole.replace(/^0+(?=\d)/, '')
-  const hasNonZeroDigit = /[1-9]/.test(`${normalizedWhole}${fraction}`)
-  if (!hasNonZeroDigit) return false
-  const maximum = '1000000'
-  if (normalizedWhole.length !== maximum.length) {
-    return normalizedWhole.length < maximum.length
-  }
-  if (normalizedWhole !== maximum) return normalizedWhole < maximum
-  return !/[1-9]/.test(fraction)
 }
 
 function clearSensitiveState(): void {
@@ -195,7 +182,7 @@ function preparePublication(): void {
   if (publicationOutcomeUnknown.value) return
   const normalizedRate = rate.value.trim()
   const normalizedReason = reason.value.trim().normalize('NFC')
-  if (!isValidRate(normalizedRate)) {
+  if (!isValidTextToSpeechRate(normalizedRate)) {
     validationError.value =
       'Укажите положительную ставку не более 1 000 000, до 12 знаков после запятой.'
     return
