@@ -108,9 +108,6 @@ const canManageEventQueryPolicy = computed(() =>
     "project.event_query_policy.manage",
   ),
 );
-const canReadEventCatalog = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.event_catalog.read"),
-);
 const toast = useToast();
 const loading = ref(true);
 const saving = ref(false);
@@ -694,7 +691,6 @@ onBeforeUnmount(() => {
           :project-id="project.id"
           :can-preview="canPreviewEventQueries"
           :can-manage="canManageEventQueryPolicy"
-          :can-read-catalog="canReadEventCatalog"
         />
 
         <form
@@ -931,6 +927,7 @@ onBeforeUnmount(() => {
     <AiUsageSection
       v-if="!loading && project && canReadAiUsage"
       :project-id="project.id"
+      :can-read-event-query-usage="canPreviewEventQueries"
     />
   </div>
 </template>

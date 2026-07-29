@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
+import ToggleSwitch from "primevue/toggleswitch";
 import type {
   EventQueryPolicyItemStateResponseDto,
   EventQueryPolicyItemDto,
@@ -29,8 +30,7 @@ const enabled = ref(false);
 const endUserConversationEnabled = ref(false);
 const savedSnapshot = ref("");
 const loading = ref(true);
-const saving = ref(false);
-const publishing = ref(false);
+const applying = ref(false);
 const error = ref("");
 const success = ref("");
 let generation = 0;
@@ -66,17 +66,19 @@ const publishedSnapshot = computed(() => {
     item: publishedItem,
   });
 });
-const canPublish = computed(
+const pendingPublication = computed(
+  () =>
+    Boolean(item.value) &&
+    savedSnapshot.value !== publishedSnapshot.value &&
+    (state.value?.draftVersion ?? 0) > 0,
+);
+const canApply = computed(
   () =>
     props.canManage &&
     !archived.value &&
-    !dirty.value &&
     Boolean(item.value) &&
-    (state.value?.draftVersion ?? 0) > 0 &&
-    state.value?.diagnostics.length === 0 &&
-    savedSnapshot.value !== publishedSnapshot.value &&
-    !saving.value &&
-    !publishing.value,
+    (dirty.value || pendingPublication.value) &&
+    !applying.value,
 );
 
 function isCurrent(
@@ -139,10 +141,10 @@ async function refreshConflict(
   if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
   state.value = next;
   error.value =
-    "Настройки изменились на сервере. Ваши значения сохранены в форме; проверьте их и нажмите «Сохранить» ещё раз.";
+    "Настройки изменились на сервере. Ваши значения остались в форме; проверьте их и нажмите «Применить настройки» ещё раз.";
 }
 
-async function save() {
+async function apply() {
   const currentState = state.value;
   const currentItem = item.value;
   if (
@@ -150,66 +152,43 @@ async function save() {
     archived.value ||
     !currentState ||
     !currentItem ||
-    saving.value
+    !canApply.value
   ) {
     return;
   }
   const requestGeneration = generation;
   const projectId = props.projectId;
   const definitionKeyId = props.definition.definitionKeyId;
-  const patch = eventQueryPolicyItemPatch(
-    currentItem,
-    enabled.value,
-    endUserConversationEnabled.value,
-    currentState.draftVersion,
-  );
-  saving.value = true;
+  applying.value = true;
   error.value = "";
   success.value = "";
   try {
-    const validation = await eventQueryRepository.validateItem(
-      projectId,
-      definitionKeyId,
-      { patch: patch as unknown as Record<string, unknown> },
-    );
-    if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-    state.value = { ...currentState, diagnostics: validation.errors };
-    if (!validation.valid) return;
-    await eventQueryRepository.patchItem(projectId, definitionKeyId, patch);
-    if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-    const next = await eventQueryRepository.getItem(projectId, definitionKeyId);
-    if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-    applyState(next);
-    success.value = "Черновик настроек события сохранён.";
-  } catch (cause) {
-    if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-    if (cause instanceof ApiError && cause.status === 409) {
-      await refreshConflict(projectId, definitionKeyId, requestGeneration);
-    } else {
-      error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось сохранить настройки доступа AI";
+    let expectedVersion = currentState.draftVersion;
+    if (dirty.value) {
+      const patch = eventQueryPolicyItemPatch(
+        currentItem,
+        enabled.value,
+        endUserConversationEnabled.value,
+        expectedVersion,
+      );
+      const validation = await eventQueryRepository.validateItem(
+        projectId,
+        definitionKeyId,
+        { patch: patch as unknown as Record<string, unknown> },
+      );
+      if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
+      state.value = { ...currentState, diagnostics: validation.errors };
+      if (!validation.valid) return;
+      const saved = await eventQueryRepository.patchItem(
+        projectId,
+        definitionKeyId,
+        patch,
+      );
+      if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
+      expectedVersion = saved.version;
     }
-  } finally {
-    if (isCurrent(requestGeneration, projectId, definitionKeyId)) {
-      saving.value = false;
-    }
-  }
-}
-
-async function publish() {
-  const currentState = state.value;
-  if (!currentState || !canPublish.value) return;
-  const requestGeneration = generation;
-  const projectId = props.projectId;
-  const definitionKeyId = props.definition.definitionKeyId;
-  publishing.value = true;
-  error.value = "";
-  success.value = "";
-  try {
     await eventQueryRepository.publishItem(projectId, definitionKeyId, {
-      expectedVersion: currentState.draftVersion,
+      expectedVersion,
       expectedPolicyVersion:
         typeof currentState.publishedPolicyVersion === "number"
           ? currentState.publishedPolicyVersion
@@ -219,7 +198,7 @@ async function publish() {
     const next = await eventQueryRepository.getItem(projectId, definitionKeyId);
     if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
     applyState(next);
-    success.value = "Настройки события опубликованы.";
+    success.value = "Настройки доступа AI применены.";
   } catch (cause) {
     if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
     if (cause instanceof ApiError && cause.status === 409) {
@@ -228,11 +207,11 @@ async function publish() {
       error.value =
         cause instanceof Error
           ? cause.message
-          : "Не удалось опубликовать настройки события";
+          : "Не удалось применить настройки доступа AI";
     }
   } finally {
     if (isCurrent(requestGeneration, projectId, definitionKeyId)) {
-      publishing.value = false;
+      applying.value = false;
     }
   }
 }
@@ -270,87 +249,86 @@ watch(
         success
       }}</Message>
 
-      <div class="state-grid">
-        <article>
-          <span>Черновик</span>
-          <strong>v{{ state.draftVersion }}</strong>
-          <small>{{
-            state.configured.enabled ? "AI включён" : "AI выключен"
-          }}</small>
-        </article>
-        <article>
-          <span>Опубликовано</span>
-          <strong>{{
-            state.publishedPolicyVersion
-              ? `v${state.publishedPolicyVersion}`
-              : "Нет"
-          }}</strong>
+      <div
+        class="effective-state"
+        :class="{ enabled: state.effective.internalAi }"
+      >
+        <span class="effective-icon">
+          <i
+            :class="
+              state.effective.internalAi
+                ? 'pi pi-check-circle'
+                : 'pi pi-lock'
+            "
+          />
+        </span>
+        <div>
+          <strong>
+            {{
+              state.effective.internalAi
+                ? "AI может использовать это событие"
+                : "Доступ к событию выключен"
+            }}
+          </strong>
           <small>
             {{
-              state.published?.enabled
-                ? state.published.endUserConversationEnabled
-                  ? "AI + Chat/Voice"
-                  : "Только внутренний AI"
-                : "Выключено"
+              state.effective.endUserConversation
+                ? "Пользователь также может спрашивать о нём в Chat и Voice."
+                : "В Chat и Voice событие пользователю недоступно."
             }}
           </small>
-        </article>
-        <article>
-          <span>Действует сейчас</span>
-          <strong>{{
-            state.effective.internalAi ? "AI включён" : "Выключено"
-          }}</strong>
-          <small>
-            Chat/Voice:
-            {{
-              state.effective.endUserConversation ? "доступно" : "недоступно"
-            }}
-          </small>
-        </article>
+        </div>
       </div>
 
       <div class="grant-list">
-        <label class="grant-option">
-          <input
+        <div class="grant-option">
+          <span>
+            <strong>Доступно для AI</strong>
+            <small>
+              Lola сможет использовать событие в AI-анализах и при проверке
+              обращений.
+            </small>
+          </span>
+          <ToggleSwitch
             v-model="enabled"
+            input-id="event-query-enabled"
             data-test="event-query-enabled"
-            type="checkbox"
-            :disabled="!canManage || archived || saving || publishing"
+            :disabled="!canManage || archived || applying"
+            aria-label="Разрешить AI использовать событие"
           />
+        </div>
+        <div class="grant-option" :class="{ disabled: !enabled }">
           <span>
-            <strong>Разрешить AI использовать событие</strong>
+            <strong>Доступно пользователю в Chat и Voice</strong>
             <small>
-              Для AI Analysis, проверки обращений и других внутренних
-              AI-потребителей.
+              Пользователь сможет спрашивать Lola о факте этого события. Работает
+              только вместе с доступом для AI.
             </small>
           </span>
-        </label>
-        <label class="grant-option">
-          <input
+          <ToggleSwitch
             v-model="endUserConversationEnabled"
+            input-id="event-query-conversation-enabled"
             data-test="event-query-conversation-enabled"
-            type="checkbox"
-            :disabled="
-              !canManage || archived || !enabled || saving || publishing
-            "
+            :disabled="!canManage || archived || !enabled || applying"
+            aria-label="Разрешить пользователю спрашивать о событии"
           />
-          <span>
-            <strong
-              >Разрешить пользователю спрашивать об этом событии в чате</strong
-            >
-            <small>
-              Действует для Chat и Voice только вместе с основным разрешением.
-              Сохранённое значение не стирается при выключении AI.
-            </small>
-          </span>
-        </label>
+        </div>
       </div>
 
-      <EventQueryEventEditor
-        v-model="item"
-        :schema-fields="schemaFields"
-        :disabled="!canManage || archived || saving || publishing"
-      />
+      <section class="data-access-editor">
+        <header>
+          <strong>Какие данные получит AI</strong>
+          <p>
+            Настройте понятное описание события, допустимые режимы, период и
+            безопасные поля payload.
+          </p>
+        </header>
+        <EventQueryEventEditor
+          v-model="item"
+          :schema-fields="schemaFields"
+          :disabled="!canManage || archived || applying"
+        />
+      </section>
 
       <Message
         v-for="diagnostic in state.diagnostics"
@@ -362,22 +340,18 @@ watch(
       </Message>
 
       <footer class="access-actions">
-        <span v-if="dirty">Есть несохранённые изменения</span>
-        <span v-else>Черновик сохранён</span>
+        <span v-if="dirty">Настройки ещё не применены</span>
+        <span v-else-if="pendingPublication">
+          Изменения сохранены, но ещё не действуют
+        </span>
+        <span v-else>Настройки применены</span>
         <Button
-          data-test="save-event-query"
-          label="Сохранить"
-          severity="secondary"
-          :loading="saving"
-          :disabled="!canManage || archived || !dirty || publishing"
-          @click="save"
-        />
-        <Button
-          data-test="publish-event-query"
-          label="Опубликовать"
-          :loading="publishing"
-          :disabled="!canPublish"
-          @click="publish"
+          data-test="apply-event-query"
+          label="Применить настройки"
+          icon="pi pi-check"
+          :loading="applying"
+          :disabled="!canApply"
+          @click="apply"
         />
       </footer>
     </template>
@@ -391,21 +365,38 @@ watch(
   display: grid;
   gap: 16px;
 }
-.state-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-.state-grid article {
-  display: grid;
-  gap: 4px;
-  padding: 14px;
+.effective-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
   border: 1px solid var(--border-default);
   border-radius: 14px;
   background: var(--surface-subtle);
 }
-.state-grid span,
-.state-grid small,
+.effective-state.enabled {
+  border-color: var(--status-success-border);
+  background: var(--status-success-soft);
+}
+.effective-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 11px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+}
+.effective-state.enabled .effective-icon {
+  color: var(--status-success-text);
+}
+.effective-state > div,
+.grant-option span {
+  display: grid;
+  gap: 4px;
+}
+.effective-state small,
 .grant-option small,
 .access-actions span {
   color: var(--text-secondary);
@@ -413,18 +404,26 @@ watch(
 }
 .grant-option {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
   padding: 16px;
   border: 1px solid var(--border-default);
   border-radius: 14px;
 }
-.grant-option input {
-  margin-top: 3px;
+.grant-option.disabled {
+  background: var(--surface-subtle);
+  opacity: 0.68;
 }
-.grant-option span {
+.data-access-editor {
   display: grid;
-  gap: 4px;
+  gap: 14px;
+  padding-top: 4px;
+}
+.data-access-editor > header p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
 }
 .access-actions {
   display: flex;
@@ -437,8 +436,13 @@ watch(
   margin-right: auto;
 }
 @media (max-width: 760px) {
-  .state-grid {
-    grid-template-columns: 1fr;
+  .grant-option,
+  .access-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .access-actions :deep(.p-button) {
+    width: 100%;
   }
 }
 </style>

@@ -37,7 +37,6 @@ function mountSection() {
       projectId: "project-1",
       canManage: true,
       canPreview: true,
-      canReadCatalog: true,
     },
     global: {
       stubs: {
@@ -52,7 +51,12 @@ function mountSection() {
           template:
             '<div><h2>Доступ AI к событиям</h2><slot name="actions" /></div>',
         },
-        RouterLink: { template: "<a><slot /></a>" },
+        ToggleSwitch: {
+          props: ["modelValue", "disabled"],
+          emits: ["update:modelValue"],
+          template:
+            '<input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
+        },
         EventQueryPreview: { template: '<div data-test="preview" />' },
       },
     },
@@ -79,50 +83,42 @@ describe("EventQueryPolicySection", () => {
       documentHash: "hash-2",
       document: { enabled: false, items: [] },
     });
-    vi.mocked(eventQueryRepository.usage).mockResolvedValue({
-      from: "2026-06-28T00:00:00.000Z",
-      to: "2026-07-28T00:00:00.000Z",
-      scope: { endUserId: null, audience: null },
-      calls: 3,
-      estimatedAddedInputTokens: 72,
-      resultBytes: 288,
-      byOrigin: {},
-      byAudience: {},
-    });
   });
 
-  it("shows only master state, counts, usage and navigation to Events", async () => {
+  it("shows only the master switch and safe preview", async () => {
     const wrapper = mountSection();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Опубликована ревизия 2");
-    expect(wrapper.text()).toContain("12");
-    expect(wrapper.text()).toContain("8");
-    expect(wrapper.text()).toContain("3");
-    expect(wrapper.text()).toContain("Настроить события");
-    expect(wrapper.find('[data-test="policy-description"]').exists()).toBe(
-      false,
-    );
+    expect(wrapper.text()).toContain("Разрешить AI получать данные событий");
+    expect(wrapper.find('[data-test="preview"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("ревизия");
+    expect(wrapper.text()).not.toContain("Настроено событий");
+    expect(wrapper.text()).not.toContain("Запросы за 30 дней");
   });
 
-  it("patches and publishes only the Project master setting", async () => {
+  it("applies the Project master setting behind one action", async () => {
+    vi.mocked(eventQueryRepository.getPolicy)
+      .mockResolvedValueOnce(structuredClone(state))
+      .mockResolvedValueOnce({
+        ...structuredClone(state),
+        masterEnabled: false,
+        version: 5,
+      });
     const wrapper = mountSection();
     await flushPromises();
 
     await wrapper.get('.master-control input[type="checkbox"]').setValue(false);
-    await wrapper.get('button[data-test="save-policy"]').trigger("click");
+    await wrapper.get('button[data-test="apply-policy"]').trigger("click");
     await flushPromises();
 
     expect(eventQueryRepository.patchProject).toHaveBeenCalledWith(
       "project-1",
       { expectedVersion: 4, masterEnabled: false },
     );
-
-    await wrapper.get('button[data-test="publish-policy"]').trigger("click");
-    await flushPromises();
     expect(eventQueryRepository.publish).toHaveBeenCalledWith("project-1", {
       expectedVersion: 5,
     });
+    expect(wrapper.text()).not.toContain("Опубликовать");
   });
 
   it("reloads isolated state when the active Project changes", async () => {

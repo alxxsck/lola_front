@@ -93,6 +93,12 @@ function mountAccess() {
         },
         Message: { template: '<div class="message"><slot /></div>' },
         Skeleton: { template: '<div class="skeleton" />' },
+        ToggleSwitch: {
+          props: ["modelValue", "disabled"],
+          emits: ["update:modelValue"],
+          template:
+            '<input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
+        },
       },
     },
   });
@@ -128,14 +134,14 @@ describe("EventQueryEventAccess", () => {
     });
   });
 
-  it("saves only the current Event with both independent grants", async () => {
+  it("applies only the current Event with both independent grants", async () => {
     const wrapper = mountAccess();
     await flushPromises();
 
     await wrapper
       .get('[data-test="event-query-conversation-enabled"]')
       .setValue(true);
-    await wrapper.get('button[data-test="save-event-query"]').trigger("click");
+    await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
     await flushPromises();
 
     expect(eventQueryRepository.validateItem).toHaveBeenCalledWith(
@@ -159,6 +165,14 @@ describe("EventQueryEventAccess", () => {
         descriptionForAI: "Успешный депозит",
       }),
     );
+    expect(eventQueryRepository.publishItem).toHaveBeenCalledWith(
+      "project-1",
+      "definition-1",
+      { expectedVersion: 5, expectedPolicyVersion: 3 },
+    );
+    expect(wrapper.text()).not.toContain("Опубликовать");
+    expect(wrapper.text()).not.toContain("Черновик");
+    expect(wrapper.text()).not.toContain("v4");
   });
 
   it("preserves the conversation preference when base access is disabled", async () => {
@@ -178,7 +192,7 @@ describe("EventQueryEventAccess", () => {
         .get('[data-test="event-query-conversation-enabled"]')
         .attributes("disabled"),
     ).toBeDefined();
-    await wrapper.get('button[data-test="save-event-query"]').trigger("click");
+    await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
     await flushPromises();
 
     expect(eventQueryRepository.patchItem).toHaveBeenCalledWith(
@@ -191,7 +205,7 @@ describe("EventQueryEventAccess", () => {
     );
   });
 
-  it("publishes one saved Event with item and policy OCC versions", async () => {
+  it("applies an already saved Event without exposing OCC versions", async () => {
     vi.mocked(eventQueryRepository.getItem)
       .mockResolvedValueOnce({
         ...structuredClone(state),
@@ -205,7 +219,7 @@ describe("EventQueryEventAccess", () => {
     await flushPromises();
 
     await wrapper
-      .get('button[data-test="publish-event-query"]')
+      .get('button[data-test="apply-event-query"]')
       .trigger("click");
     await flushPromises();
 

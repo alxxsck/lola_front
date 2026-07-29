@@ -6,14 +6,38 @@ import AiModalityChart from './components/AiModalityChart.vue'
 
 config.global.stubs.ProjectSettingsSectionHeader = false
 
-const mocks = vi.hoisted(() => ({ fetchReport: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  fetchReport: vi.fn(),
+  fetchEventQueryUsage: vi.fn(),
+}))
 
 vi.mock('./ai-usage.api', () => ({ fetchAiUsageReport: mocks.fetchReport }))
+vi.mock('@/features/event-query/api/event-query-repository', () => ({
+  eventQueryRepository: { usage: mocks.fetchEventQueryUsage },
+}))
 vi.mock('@/shared/config/data-mode', () => ({ isMockMode: false }))
 
 describe('AiUsageSection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.fetchEventQueryUsage.mockResolvedValue({
+      from: '2026-07-29T00:00:00.000Z',
+      to: '2026-07-29T12:00:00.000Z',
+      scope: { endUserId: null, audience: null },
+      calls: 6,
+      resultBytes: 3_300,
+      estimatedAddedInputTokens: 1_119,
+      exactAiUsage: {
+        records: 6,
+        inputTokens: 60_000,
+        outputTokens: 14_546,
+        totalTokens: 74_546,
+        billedCostUsd: '0.0295008',
+        estimatedCostUsd: null,
+      },
+      byOrigin: {},
+      byAudience: {},
+    })
     mocks.fetchReport.mockResolvedValue({
       projectId: 'project-1',
       totals: {
@@ -181,6 +205,34 @@ describe('AiUsageSection', () => {
     expect(wrapper.text()).not.toContain('character-cost')
     expect(wrapper.text()).not.toContain('Расчётная стоимость может отличаться')
     expect(wrapper.findAll('.metric-switch button')[1]!.attributes('disabled')).toBeUndefined()
+  })
+
+  it('shows Event Query consumption inside the Grok panel', async () => {
+    const wrapper = shallowMount(AiUsageSection, {
+      props: {
+        projectId: 'project-1',
+        canReadEventQueryUsage: true,
+      },
+    })
+    await flushPromises()
+
+    expect(mocks.fetchEventQueryUsage).toHaveBeenCalledWith(
+      'project-1',
+      expect.objectContaining({
+        from: expect.any(String),
+        to: expect.any(String),
+      }),
+    )
+    expect(wrapper.get('.xai-panel').text()).toContain('Запросы к событиям')
+    expect(wrapper.get('.event-query-usage').text()).toContain('6')
+    expect(wrapper.get('.event-query-usage').text()).toContain('3,2 КБ')
+    expect(wrapper.get('.event-query-usage').text()).toContain(
+      '1,1\u00a0тыс. токенов',
+    )
+    expect(wrapper.get('.event-query-usage').text()).toContain(
+      '74,5\u00a0тыс. токенов',
+    )
+    expect(wrapper.get('.event-query-usage').text()).toContain('0,03\u00a0$')
   })
 
   it('uses one token and cost switch for both Grok charts', async () => {
