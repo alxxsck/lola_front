@@ -4,6 +4,7 @@ import type {
   AiUsageBreakdown,
   AiUsageCategory,
   AiUsageCategoryBreakdown,
+  AiUsageEventQueryBreakdown,
   AiUsageRangeQuery,
   AiUsageReport,
   AiUsageTotals,
@@ -12,6 +13,20 @@ import { AI_USAGE_CATEGORIES } from './ai-usage.model'
 
 const demoReport = (projectId: string): AiUsageReport => ({
   projectId,
+  eventQuery: {
+    calls: 6,
+    resultBytes: 3_300,
+    estimatedAddedInputTokens: 1_119,
+    linkedUsageIncludedInProviderTotals: true,
+    linkedAiUsage: {
+      records: 6,
+      inputTokens: 60_000,
+      outputTokens: 14_546,
+      totalTokens: 74_546,
+      billedCostUsd: 0.0295008,
+      estimatedCostUsd: null,
+    },
+  },
   totals: {
     records: 210,
     unpricedRecords: 0,
@@ -344,6 +359,59 @@ function parseCategory(
   } as unknown as AiUsageCategoryBreakdown
 }
 
+function nullableDecimal(value: unknown): number | null | undefined {
+  if (value === null) return null
+  return decimal(value)
+}
+
+export function parseAiUsageEventQueryBreakdown(
+  value: unknown,
+): AiUsageEventQueryBreakdown | undefined {
+  if (!isRecord(value) || !isRecord(value.linkedAiUsage)) return undefined
+  const calls = safeInteger(value.calls)
+  const resultBytes = safeInteger(value.resultBytes)
+  const estimatedAddedInputTokens = safeInteger(
+    value.estimatedAddedInputTokens,
+  )
+  const records = safeInteger(value.linkedAiUsage.records)
+  const inputTokens = safeInteger(value.linkedAiUsage.inputTokens)
+  const outputTokens = safeInteger(value.linkedAiUsage.outputTokens)
+  const totalTokens = safeInteger(value.linkedAiUsage.totalTokens)
+  const billedCostUsd = nullableDecimal(value.linkedAiUsage.billedCostUsd)
+  const estimatedCostUsd = nullableDecimal(
+    value.linkedAiUsage.estimatedCostUsd,
+  )
+  if (
+    calls === undefined ||
+    resultBytes === undefined ||
+    estimatedAddedInputTokens === undefined ||
+    records === undefined ||
+    inputTokens === undefined ||
+    outputTokens === undefined ||
+    totalTokens === undefined ||
+    billedCostUsd === undefined ||
+    estimatedCostUsd === undefined ||
+    typeof value.linkedUsageIncludedInProviderTotals !== 'boolean'
+  ) {
+    return undefined
+  }
+  return {
+    calls,
+    resultBytes,
+    estimatedAddedInputTokens,
+    linkedUsageIncludedInProviderTotals:
+      value.linkedUsageIncludedInProviderTotals,
+    linkedAiUsage: {
+      records,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      billedCostUsd,
+      estimatedCostUsd,
+    },
+  }
+}
+
 export function parseAiUsageReport(
   value: unknown,
   projectId: string,
@@ -358,6 +426,12 @@ export function parseAiUsageReport(
     return undefined
   const totals = parseTotals(value.totals)
   if (!totals) return undefined
+  const eventQuery = parseAiUsageEventQueryBreakdown(
+    isRecord(value.providers) && isRecord(value.providers.xai)
+      ? value.providers.xai.eventQuery
+      : undefined,
+  )
+  if (!eventQuery) return undefined
   const breakdown: AiUsageBreakdown[] = []
   for (const item of value.breakdown) {
     const parsed = parseBreakdown(item)
@@ -370,7 +444,7 @@ export function parseAiUsageReport(
     if (!parsed) return undefined
     categories.push(parsed)
   }
-  return { projectId, totals, breakdown, categories }
+  return { projectId, totals, breakdown, categories, eventQuery }
 }
 
 export async function fetchAiUsageReport(

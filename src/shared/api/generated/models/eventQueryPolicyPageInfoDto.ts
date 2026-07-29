@@ -5,10 +5,9 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryPolicyPageInfoDtoNextCursor } from "./eventQueryPolicyPageInfoDtoNextCursor";
 
 export interface EventQueryPolicyPageInfoDto {
   hasMore: boolean;
   /** @nullable */
-  nextCursor?: EventQueryPolicyPageInfoDtoNextCursor;
+  nextCursor?: string | null;
 }

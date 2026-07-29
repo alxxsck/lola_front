@@ -4,6 +4,7 @@ import {
   AI_USAGE_CATEGORIES,
   type AiUsageRangeKey,
 } from "./ai-usage.model";
+import { parseAiUsageEventQueryBreakdown } from "./ai-usage.api";
 import type {
   EndUserAiUsageCategory,
   EndUserAiUsageCategoryRow,
@@ -114,7 +115,11 @@ export function parseEndUserAiUsageReport(
     return undefined;
   const totals = parseTotals(source.totals);
   const parsedCategories = source.categories.map(parseCategory);
-  if (!totals || parsedCategories.some((item) => !item)) return undefined;
+  const providers = record(source.providers);
+  const xai = record(providers?.xai);
+  const eventQuery = parseAiUsageEventQueryBreakdown(xai?.eventQuery);
+  if (!totals || !eventQuery || parsedCategories.some((item) => !item))
+    return undefined;
   return {
     projectId,
     endUserId,
@@ -126,6 +131,7 @@ export function parseEndUserAiUsageReport(
     },
     totals,
     categories: parsedCategories as EndUserAiUsageCategoryRow[],
+    eventQuery,
   };
 }
 
@@ -225,6 +231,20 @@ function demoReport(
       unpricedRecords: 0,
     },
     categories,
+    eventQuery: {
+      calls: 6,
+      resultBytes: 3_300,
+      estimatedAddedInputTokens: 1_119,
+      linkedUsageIncludedInProviderTotals: true,
+      linkedAiUsage: {
+        records: 6,
+        inputTokens: 60_000,
+        outputTokens: 14_546,
+        totalTokens: 74_546,
+        billedCostUsd: 0.0295008,
+        estimatedCostUsd: null,
+      },
+    },
   };
 }
 

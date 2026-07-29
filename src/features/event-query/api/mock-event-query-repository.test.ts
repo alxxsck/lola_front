@@ -10,12 +10,11 @@ describe("mock event query repository", () => {
     });
     const stableCodes = catalog.items.map((item) => item.eventCode);
 
-    expect(policy.masterEnabled).toBe(true);
-    expect(catalog.publishedMasterEnabled).toBe(true);
+    expect(policy.configured.masterEnabled).toBe(true);
     expect(stableCodes).toContain("registration_completed");
 
     const preview = await mockEventQueryRepository.preview("project-demo", {
-      endUserId: "user-demo",
+      endUserId: "00000000-0000-4000-8000-000000000001",
       query: {
         eventCodes: ["registration_completed"],
         mode: "SUMMARY",

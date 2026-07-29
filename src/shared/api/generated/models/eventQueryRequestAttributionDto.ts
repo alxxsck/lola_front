@@ -5,24 +5,18 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryRequestAttributionDtoAiAnalysisRunId } from "./eventQueryRequestAttributionDtoAiAnalysisRunId";
-import type { EventQueryRequestAttributionDtoAiReviewRunId } from "./eventQueryRequestAttributionDtoAiReviewRunId";
-import type { EventQueryRequestAttributionDtoCaseId } from "./eventQueryRequestAttributionDtoCaseId";
-import type { EventQueryRequestAttributionDtoChatMessageId } from "./eventQueryRequestAttributionDtoChatMessageId";
-import type { EventQueryRequestAttributionDtoVoiceSessionId } from "./eventQueryRequestAttributionDtoVoiceSessionId";
-import type { EventQueryRequestAttributionDtoVoiceTurnId } from "./eventQueryRequestAttributionDtoVoiceTurnId";
 
 export interface EventQueryRequestAttributionDto {
   /** @nullable */
-  aiAnalysisRunId?: EventQueryRequestAttributionDtoAiAnalysisRunId;
+  aiAnalysisRunId?: string | null;
   /** @nullable */
-  aiReviewRunId?: EventQueryRequestAttributionDtoAiReviewRunId;
+  aiReviewRunId?: string | null;
   /** @nullable */
-  caseId?: EventQueryRequestAttributionDtoCaseId;
+  caseId?: string | null;
   /** @nullable */
-  chatMessageId?: EventQueryRequestAttributionDtoChatMessageId;
+  chatMessageId?: string | null;
   /** @nullable */
-  voiceSessionId?: EventQueryRequestAttributionDtoVoiceSessionId;
+  voiceSessionId?: string | null;
   /** @nullable */
-  voiceTurnId?: EventQueryRequestAttributionDtoVoiceTurnId;
+  voiceTurnId?: string | null;
 }

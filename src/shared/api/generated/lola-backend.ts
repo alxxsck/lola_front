@@ -33,6 +33,8 @@ import type {
   AiUsageReportParams,
   AiUsageReportResponseDto,
   AnalyzeEventSchemaDraftDto,
+  ApplyEventQueryPolicyItemDto,
+  ApplyEventQueryProjectPolicyDto,
   ApproveTelegramBroadcastDto,
   ArchiveEventDefinitionDto,
   ArchivePlatformRoleDto,
@@ -2080,6 +2082,10 @@ export const eventQueryPolicyGet = (
   );
 };
 
+/**
+ * @deprecated
+ * @summary Legacy draft-only Project policy update
+ */
 export const eventQueryPolicyPatchProject = (
   projectId: string,
   patchEventQueryProjectPolicyDto: BodyType<PatchEventQueryProjectPolicyDto>,
@@ -2096,6 +2102,29 @@ export const eventQueryPolicyPatchProject = (
   );
 };
 
+/**
+ * @summary Atomically validate and apply Project Event Query settings
+ */
+export const eventQueryPolicyApplyProject = (
+  projectId: string,
+  applyEventQueryProjectPolicyDto: BodyType<ApplyEventQueryProjectPolicyDto>,
+  options?: SecondParameter<typeof request<EventQueryPolicyStateResponseDto>>,
+) => {
+  return request<EventQueryPolicyStateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/apply`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: applyEventQueryProjectPolicyDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @deprecated
+ * @summary Legacy whole-document draft update
+ */
 export const eventQueryPolicySaveDraft = (
   projectId: string,
   saveEventQueryPolicyDraftDto: BodyType<SaveEventQueryPolicyDraftDto>,
@@ -2143,6 +2172,10 @@ export const eventQueryPolicyGetItem = (
   );
 };
 
+/**
+ * @deprecated
+ * @summary Legacy draft-only Event policy update
+ */
 export const eventQueryPolicyPatchItem = (
   projectId: string,
   definitionKeyId: string,
@@ -2162,6 +2195,32 @@ export const eventQueryPolicyPatchItem = (
   );
 };
 
+/**
+ * @summary Atomically validate and apply one Event Query policy item
+ */
+export const eventQueryPolicyApplyItem = (
+  projectId: string,
+  definitionKeyId: string,
+  applyEventQueryPolicyItemDto: BodyType<ApplyEventQueryPolicyItemDto>,
+  options?: SecondParameter<
+    typeof request<EventQueryPolicyItemStateResponseDto>
+  >,
+) => {
+  return request<EventQueryPolicyItemStateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/items/${definitionKeyId}/apply`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: applyEventQueryPolicyItemDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @deprecated
+ * @summary Legacy separate Event policy publication
+ */
 export const eventQueryPolicyPublishItem = (
   projectId: string,
   definitionKeyId: string,
@@ -2181,6 +2240,10 @@ export const eventQueryPolicyPublishItem = (
   );
 };
 
+/**
+ * @deprecated
+ * @summary Legacy separate Event policy validation
+ */
 export const eventQueryPolicyValidateItem = (
   projectId: string,
   definitionKeyId: string,
@@ -2216,6 +2279,10 @@ export const eventQueryPolicyPreview = (
   );
 };
 
+/**
+ * @deprecated
+ * @summary Legacy separate policy publication
+ */
 export const eventQueryPolicyPublish = (
   projectId: string,
   publishEventQueryPolicyDto: BodyType<PublishEventQueryPolicyDto>,
@@ -2251,6 +2318,10 @@ export const eventQueryPolicyListRequests = (
   );
 };
 
+/**
+ * @deprecated
+ * @summary Legacy standalone Event Query usage breakdown
+ */
 export const eventQueryPolicyUsage = (
   projectId: string,
   params: EventQueryPolicyUsageParams,
@@ -2266,6 +2337,10 @@ export const eventQueryPolicyUsage = (
   );
 };
 
+/**
+ * @deprecated
+ * @summary Legacy whole-document validation
+ */
 export const eventQueryPolicyValidate = (
   projectId: string,
   validateEventQueryPolicyDto: BodyType<ValidateEventQueryPolicyDto>,
@@ -5650,6 +5725,9 @@ export type EventQueryPolicyGetResult = NonNullable<
 export type EventQueryPolicyPatchProjectResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicyPatchProject>>
 >;
+export type EventQueryPolicyApplyProjectResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyApplyProject>>
+>;
 export type EventQueryPolicySaveDraftResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicySaveDraft>>
 >;
@@ -5661,6 +5739,9 @@ export type EventQueryPolicyGetItemResult = NonNullable<
 >;
 export type EventQueryPolicyPatchItemResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicyPatchItem>>
+>;
+export type EventQueryPolicyApplyItemResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyApplyItem>>
 >;
 export type EventQueryPolicyPublishItemResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicyPublishItem>>

@@ -1,6 +1,7 @@
 import {
   AI_USAGE_CATEGORY_LABELS,
   type AiUsageCategory,
+  type AiUsageEventQueryBreakdown,
   type AiUsageRangeKey,
 } from "./ai-usage.model";
 
@@ -42,6 +43,7 @@ export interface EndUserAiUsageReport {
   };
   totals: EndUserAiUsageTotals;
   categories: EndUserAiUsageCategoryRow[];
+  eventQuery: AiUsageEventQueryBreakdown;
 }
 
 export const END_USER_AI_USAGE_WINDOWS: ReadonlyArray<{

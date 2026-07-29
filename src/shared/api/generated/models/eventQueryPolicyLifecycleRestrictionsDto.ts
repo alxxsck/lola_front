@@ -6,9 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type EventQueryRequestAttributionDtoCaseId = {
-  [key: string]: unknown;
-} | null;
+export interface EventQueryPolicyLifecycleRestrictionsDto {
+  canApply: boolean;
+  canEnable: boolean;
+  readOnly: boolean;
+  reasons: string[];
+}

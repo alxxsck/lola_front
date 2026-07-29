@@ -1,8 +1,8 @@
 import type {
+  ApplyEventQueryPolicyItemDto,
   EventQueryPolicyFieldDto,
   EventQueryPolicyFieldDtoSemanticType,
   EventQueryPolicyItemDto,
-  PatchEventQueryPolicyItemDto,
 } from "@/shared/api/generated/models";
 
 export interface SchemaField {
@@ -114,14 +114,14 @@ export function eventQueryPolicyItemFromConfiguration(
   };
 }
 
-export function eventQueryPolicyItemPatch(
+export function eventQueryPolicyItemApply(
   item: EventQueryPolicyItemDto,
   enabled: boolean,
   endUserConversationEnabled: boolean,
-  expectedVersion: number,
-): PatchEventQueryPolicyItemDto {
+  concurrencyToken: string,
+): ApplyEventQueryPolicyItemDto {
   return {
-    expectedVersion,
+    concurrencyToken,
     enabled,
     endUserConversationEnabled,
     descriptionForAI: item.descriptionForAI,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   eventQueryPolicyItemFromConfiguration,
-  eventQueryPolicyItemPatch,
+  eventQueryPolicyItemApply,
   flattenSchemaFields,
   schemaTypeToSemanticType,
 } from "./event-query-policy";
@@ -36,7 +36,7 @@ describe("event query policy presentation", () => {
     expect(schemaTypeToSemanticType("string")).toBe("STRING");
   });
 
-  it("parses server-owned per-Event configuration and builds a typed PATCH", () => {
+  it("parses server-owned per-Event configuration and builds an atomic apply command", () => {
     const item = eventQueryPolicyItemFromConfiguration("deposit.completed", {
       stableCode: "deposit.completed",
       descriptionForAI: "Факт успешного депозита",
@@ -46,8 +46,10 @@ describe("event query policy presentation", () => {
       safeFields: [],
     });
     expect(item?.stableCode).toBe("deposit.completed");
-    expect(eventQueryPolicyItemPatch(item!, false, true, 7)).toEqual({
-      expectedVersion: 7,
+    expect(
+      eventQueryPolicyItemApply(item!, false, true, "eq-item-v1.token"),
+    ).toEqual({
+      concurrencyToken: "eq-item-v1.token",
       enabled: false,
       endUserConversationEnabled: true,
       descriptionForAI: "Факт успешного депозита",

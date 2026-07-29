@@ -6,9 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type EventQueryProjectDraftResponseDtoCurrentRevisionId = {
-  [key: string]: unknown;
-} | null;
+export interface EventQueryProjectConfiguredResponseDto {
+  masterEnabled: boolean;
+}

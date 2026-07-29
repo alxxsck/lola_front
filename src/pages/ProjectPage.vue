@@ -927,7 +927,6 @@ onBeforeUnmount(() => {
     <AiUsageSection
       v-if="!loading && project && canReadAiUsage"
       :project-id="project.id"
-      :can-read-event-query-usage="canPreviewEventQueries"
     />
   </div>
 </template>

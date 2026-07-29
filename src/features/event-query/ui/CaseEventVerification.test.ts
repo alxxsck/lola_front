@@ -19,12 +19,6 @@ vi.mock("../api/event-query-repository", () => ({
 const policy: EventQueryPolicyCatalogResponseDto = {
   audience: "INTERNAL_AI",
   effectiveOnly: true,
-  publishedMasterEnabled: true,
-  publishedPolicyRevision: {
-    id: "60000000-0000-4000-8000-000000000006",
-    version: 2,
-    publishedAt: "2026-07-28T10:00:00.000Z",
-  },
   items: [
     {
       definitionKeyId: "definition-1",

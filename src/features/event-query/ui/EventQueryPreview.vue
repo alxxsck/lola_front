@@ -7,6 +7,10 @@ import type {
   EventQueryRequestDto,
   EventQueryResultResponseDto,
 } from "@/shared/api/generated/models";
+import {
+  endUserProfileRepository,
+  type ResolvedEndUserIdentity,
+} from "@/features/end-user-profile/api/end-user-profile-repository";
 import { eventQueryRepository } from "../api/event-query-repository";
 import { eventQueryPolicyItemFromConfiguration } from "../model/event-query-policy";
 import {
@@ -27,6 +31,7 @@ const nextCursor = ref<string | null>(null);
 const loadingCatalog = ref(false);
 const catalogError = ref("");
 const endUserId = ref("");
+const resolvedIdentity = ref<ResolvedEndUserIdentity | null>(null);
 const eventCode = ref("");
 const mode = ref<"SUMMARY" | "AGGREGATE" | "LATEST">("SUMMARY");
 const timeRange = ref<EventQueryRange>("LAST_24_HOURS");
@@ -102,6 +107,11 @@ watch(eventCode, () => {
   result.value = null;
   error.value = "";
 });
+watch(endUserId, () => {
+  resolvedIdentity.value = null;
+  result.value = null;
+  error.value = "";
+});
 
 async function loadCatalog(append = false) {
   loadingCatalog.value = true;
@@ -161,9 +171,19 @@ async function preview() {
   error.value = "";
   result.value = null;
   try {
+    const identity = await endUserProfileRepository.resolveIdentity(
+      props.projectId,
+      endUserId.value,
+    );
+    if (!identity) {
+      error.value =
+        "Пользователь не найден. Укажите UUID Lola или точный ID пользователя в продукте.";
+      return;
+    }
+    resolvedIdentity.value = identity;
     result.value = await eventQueryRepository.preview(props.projectId, {
       audience: audience.value,
-      endUserId: endUserId.value.trim(),
+      endUserId: identity.endUserId,
       query: query.value,
     });
   } catch (cause) {
@@ -228,14 +248,18 @@ function formatBytes(value?: number) {
     }}</Message>
     <div class="preview-form">
       <label>
-        <span>End User ID</span>
+        <span>Пользователь</span>
         <input
           data-test="preview-end-user"
           v-model="endUserId"
           autocomplete="off"
-          placeholder="UUID пользователя"
+          placeholder="UUID или ID пользователя в продукте"
           :disabled="disabled || loading"
         />
+        <small v-if="resolvedIdentity" class="resolved-user">
+          Запрос будет выполнен для UUID
+          <code>{{ resolvedIdentity.endUserId }}</code>
+        </small>
       </label>
       <label>
         <span>Тип события</span>
@@ -404,6 +428,13 @@ function formatBytes(value?: number) {
 .catalog-controls label span {
   color: var(--text-secondary);
   font-size: 0.68rem;
+}
+.resolved-user {
+  color: var(--status-success-text);
+  font-size: 0.68rem;
+}
+.resolved-user code {
+  overflow-wrap: anywhere;
 }
 .preview-form input,
 .preview-form select,

@@ -4,16 +4,11 @@ import EndUserAiUsageCard from "./EndUserAiUsageCard.vue";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
-  requests: vi.fn(),
 }));
 
 vi.mock("./end-user-ai-usage.api", () => ({
   fetchEndUserAiUsageReport: mocks.fetch,
 }));
-vi.mock("@/features/event-query/api/event-query-repository", () => ({
-  eventQueryRepository: { listRequests: mocks.requests },
-}));
-
 const report = {
   projectId: "project-1",
   endUserId: "user-1",
@@ -83,46 +78,26 @@ const report = {
       effectiveCost: 0.0890324,
     },
   ],
+  eventQuery: {
+    calls: 6,
+    resultBytes: 3_300,
+    estimatedAddedInputTokens: 1_119,
+    linkedUsageIncludedInProviderTotals: true,
+    linkedAiUsage: {
+      records: 1,
+      totalTokens: 74_546,
+      inputTokens: 60_000,
+      outputTokens: 14_546,
+      billedCostUsd: 0.0295008,
+      estimatedCostUsd: null,
+    },
+  },
 };
 
 describe("End User AI consumption card", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.fetch.mockResolvedValue(report);
-    mocks.requests.mockResolvedValue({
-      items: [
-        {
-          id: "request-1",
-          createdAt: "2026-07-24T12:00:00.000Z",
-          endUserId: "user-1",
-          origin: "INTERACTIVE_TEXT",
-          audience: "END_USER_CONVERSATION",
-          mode: "SUMMARY",
-          eventCodes: ["deposit.completed"],
-          queryShape: { mode: "SUMMARY" },
-          policyRevisionId: null,
-          range: null,
-          snapshotReceivedAt: "2026-07-24T12:00:00.000Z",
-          status: "COMPLETED",
-          rejectionCode: null,
-          scannedRows: 2,
-          returnedRows: 1,
-          resultBytes: 96,
-          estimatedAddedInputTokens: 24,
-          durationMs: 18,
-          attribution: {},
-          linkedAiUsage: {
-            records: 1,
-            totalTokens: 840,
-            inputTokens: 710,
-            outputTokens: 130,
-            billedCostUsd: null,
-            estimatedCostUsd: null,
-          },
-        },
-      ],
-      pageInfo: { hasMore: false, nextCursor: null },
-    });
   });
 
   it("loads a Project-local 7 day report and keeps provider, estimated and unit costs separate", async () => {
@@ -145,16 +120,13 @@ describe("End User AI consumption card", () => {
     expect(wrapper.text()).toContain("Озвучивание");
     expect(wrapper.text()).toContain("Анализ и проверка обращений");
     expect(wrapper.text()).toContain("Europe/Madrid");
-    expect(wrapper.text()).toContain("Запросы пользователя к событиям");
-    expect(wrapper.text()).toContain("deposit.completed");
-    expect(wrapper.text()).toContain("840 токенов");
-    expect(mocks.requests).toHaveBeenCalledWith("project-1", {
-      from: report.range.from,
-      to: report.range.to,
-      endUserId: "user-1",
-      audience: "END_USER_CONVERSATION",
-      limit: 20,
-    });
+    expect(wrapper.text()).toContain("Поиск по данным событий");
+    expect(wrapper.text()).toContain("6 запросов");
+    expect(wrapper.text()).toContain("3,2 КБ");
+    expect(wrapper.text()).toContain("74,5\u00a0тыс.");
+    expect(wrapper.text()).not.toContain("deposit.completed");
+    expect(wrapper.text()).not.toContain("UNKNOWN");
+    expect(wrapper.text()).not.toContain("REJECTED");
   });
 
   it("requests a new server window when the administrator changes the period", async () => {

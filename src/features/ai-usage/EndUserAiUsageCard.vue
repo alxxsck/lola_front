@@ -3,8 +3,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
-import type { EventQueryRequestHistoryResponseDto } from "@/shared/api/generated/models";
-import { eventQueryRepository } from "@/features/event-query/api/event-query-repository";
 import type { AiUsageRangeKey } from "./ai-usage.model";
 import { fetchEndUserAiUsageReport } from "./end-user-ai-usage.api";
 import {
@@ -21,10 +19,6 @@ const props = defineProps<{
 
 const windowKey = ref<AiUsageRangeKey>("7d");
 const report = ref<EndUserAiUsageReport | null>(null);
-const eventQueryRequests = ref<EventQueryRequestHistoryResponseDto | null>(
-  null,
-);
-const eventQueryRequestsError = ref("");
 const loading = ref(true);
 const error = ref("");
 let requestGeneration = 0;
@@ -68,31 +62,34 @@ function categoryCost(category: EndUserAiUsageCategoryRow) {
   return `${category.records} операций`;
 }
 
-function requestCost(
-  request: EventQueryRequestHistoryResponseDto["items"][number],
-) {
-  const billed =
-    typeof request.linkedAiUsage.billedCostUsd === "string"
-      ? Number(request.linkedAiUsage.billedCostUsd)
-      : 0;
-  const estimated =
-    typeof request.linkedAiUsage.estimatedCostUsd === "string"
-      ? Number(request.linkedAiUsage.estimatedCostUsd)
-      : 0;
+function eventQueryCost(value: EndUserAiUsageReport["eventQuery"]) {
+  const billed = value.linkedAiUsage.billedCostUsd ?? 0;
+  const estimated = value.linkedAiUsage.estimatedCostUsd ?? 0;
   if (billed) return `${formatMoney(billed)} по данным провайдера`;
   if (estimated) return `${formatMoney(estimated)} оценка`;
   return "Стоимость не связана";
 }
 
-function formatBytes(value: number) {
-  return value < 1024 ? `${value} Б` : `${(value / 1024).toFixed(1)} КБ`;
+function eventQueryCalls(value: number) {
+  const remainder100 = value % 100;
+  const remainder10 = value % 10;
+  const noun =
+    remainder100 >= 11 && remainder100 <= 14
+      ? "запросов"
+      : remainder10 === 1
+        ? "запрос"
+        : remainder10 >= 2 && remainder10 <= 4
+          ? "запроса"
+          : "запросов";
+  return `${formatCount(value)} ${noun}`;
 }
 
-function formatRequestDate(value: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
+function formatBytes(value: number) {
+  return value < 1024
+    ? `${value} Б`
+    : `${new Intl.NumberFormat("ru-RU", {
+        maximumFractionDigits: 1,
+      }).format(value / 1024)} КБ`;
 }
 
 async function load(nextWindow = windowKey.value) {
@@ -101,7 +98,6 @@ async function load(nextWindow = windowKey.value) {
   const generation = ++requestGeneration;
   loading.value = true;
   error.value = "";
-  eventQueryRequestsError.value = "";
   try {
     const nextReport = await fetchEndUserAiUsageReport(
       props.projectId,
@@ -111,25 +107,6 @@ async function load(nextWindow = windowKey.value) {
     );
     if (generation !== requestGeneration) return;
     report.value = nextReport;
-    try {
-      eventQueryRequests.value = await eventQueryRepository.listRequests(
-        props.projectId,
-        {
-          from: nextReport.range.from ?? "1970-01-01T00:00:00.000Z",
-          to: nextReport.range.to,
-          endUserId: props.endUserId,
-          audience: "END_USER_CONVERSATION",
-          limit: 20,
-        },
-      );
-    } catch (cause) {
-      if (generation !== requestGeneration || controller.signal.aborted) return;
-      eventQueryRequests.value = null;
-      eventQueryRequestsError.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить историю запросов к событиям";
-    }
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration) return;
     error.value =
@@ -145,7 +122,6 @@ function selectWindow(nextWindow: AiUsageRangeKey) {
   if (nextWindow === windowKey.value) return;
   windowKey.value = nextWindow;
   report.value = null;
-  eventQueryRequests.value = null;
   void load(nextWindow);
 }
 
@@ -153,7 +129,6 @@ watch(
   () => [props.projectId, props.endUserId] as const,
   () => {
     report.value = null;
-    eventQueryRequests.value = null;
     void load();
   },
 );
@@ -253,52 +228,44 @@ onBeforeUnmount(() => controller?.abort());
       </div>
       <p v-else class="usage-empty">За выбранный период расходов пока нет.</p>
 
-      <section class="event-query-history">
+      <section class="event-query-summary">
         <div>
           <span class="usage-kicker">Event Query</span>
-          <h4>Запросы пользователя к событиям</h4>
+          <h4>Поиск по данным событий</h4>
           <p>
-            Токены и стоимость ниже уже входят в общие Chat/Voice расходы и не
-            суммируются повторно.
+            Сводное потребление за выбранный период. Связанные токены и
+            стоимость уже входят в общие Chat/Voice расходы.
           </p>
         </div>
-        <Message
-          v-if="eventQueryRequestsError"
-          severity="warn"
-          :closable="false"
-        >
-          {{ eventQueryRequestsError }}
-        </Message>
-        <div
-          v-else-if="eventQueryRequests?.items.length"
-          class="request-history-list"
-        >
-          <article
-            v-for="request in eventQueryRequests.items"
-            :key="request.id"
-          >
-            <header>
-              <strong>{{ request.eventCodes.join(", ") }}</strong>
-              <span>{{ formatRequestDate(request.createdAt) }}</span>
-            </header>
-            <div>
-              <span>{{ request.mode }} · {{ request.status }}</span>
-              <span>
-                {{ formatCount(request.linkedAiUsage.totalTokens) }} токенов ·
-                {{ requestCost(request) }}
-              </span>
-              <span>
-                {{ formatBytes(request.resultBytes) }} данных · оценочный вклад
-                {{ formatCount(request.estimatedAddedInputTokens) }} токенов
-              </span>
-            </div>
+        <div v-if="report.eventQuery.calls" class="event-query-metrics">
+          <article>
+            <small>Запросы к данным</small>
+            <strong>{{ eventQueryCalls(report.eventQuery.calls) }}</strong>
           </article>
-          <small v-if="eventQueryRequests.pageInfo.hasMore">
-            Показаны последние 20 запросов за выбранный период.
-          </small>
+          <article>
+            <small>Получено данных</small>
+            <strong>{{ formatBytes(report.eventQuery.resultBytes) }}</strong>
+          </article>
+          <article>
+            <small>Оценочный вклад данных</small>
+            <strong>
+              {{
+                formatCount(report.eventQuery.estimatedAddedInputTokens)
+              }}
+              токенов
+            </strong>
+          </article>
+          <article>
+            <small>Связано с Chat/Voice</small>
+            <strong>
+              {{ formatCount(report.eventQuery.linkedAiUsage.totalTokens) }}
+              токенов
+            </strong>
+            <span>{{ eventQueryCost(report.eventQuery) }}</span>
+          </article>
         </div>
         <p v-else class="usage-empty">
-          За выбранный период запросов к событиям не было.
+          За выбранный период поиск по данным событий не использовался.
         </p>
       </section>
 
@@ -429,47 +396,48 @@ h3 i {
   gap: 11px;
   margin-top: 18px;
 }
-.event-query-history {
+.event-query-summary {
   display: grid;
   gap: 12px;
   padding-top: 18px;
   border-top: 1px solid var(--line);
 }
-.event-query-history h4,
-.event-query-history p {
+.event-query-summary h4,
+.event-query-summary p {
   margin: 4px 0 0;
 }
-.event-query-history p {
+.event-query-summary p {
   color: var(--text-secondary);
   font-size: 0.68rem;
 }
-.request-history-list {
+.event-query-metrics {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
-.request-history-list article {
-  display: grid;
-  gap: 6px;
+.event-query-metrics article {
+  min-width: 0;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-subtle);
 }
-.request-history-list article header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+.event-query-metrics small,
+.event-query-metrics strong,
+.event-query-metrics span {
+  display: block;
 }
-.request-history-list article header span,
-.request-history-list article div,
-.request-history-list > small {
+.event-query-metrics small,
+.event-query-metrics span {
   color: var(--text-secondary);
   font-size: 0.66rem;
 }
-.request-history-list article div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
+.event-query-metrics strong {
+  margin-top: 6px;
+  font: 750 0.88rem var(--font-display);
+}
+.event-query-metrics span {
+  margin-top: 4px;
 }
 .category-row {
   display: grid;
@@ -543,9 +511,15 @@ footer strong {
   .usage-totals {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .event-query-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 560px) {
   .usage-totals {
+    grid-template-columns: 1fr;
+  }
+  .event-query-metrics {
     grid-template-columns: 1fr;
   }
   .category-row {

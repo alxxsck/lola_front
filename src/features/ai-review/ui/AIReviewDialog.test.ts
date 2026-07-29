@@ -72,8 +72,6 @@ describe("типизированный AI Review", () => {
     mocks.policy.mockResolvedValue({
       audience: "INTERNAL_AI",
       effectiveOnly: true,
-      publishedMasterEnabled: true,
-      publishedPolicyRevision: null,
       items: [
         {
           definitionKeyId: "definition-1",
@@ -154,8 +152,6 @@ describe("типизированный AI Review", () => {
     mocks.policy.mockResolvedValueOnce({
       audience: "INTERNAL_AI",
       effectiveOnly: true,
-      publishedMasterEnabled: true,
-      publishedPolicyRevision: null,
       items: [
         {
           definitionKeyId: "definition-501",

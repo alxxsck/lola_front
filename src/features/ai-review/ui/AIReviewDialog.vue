@@ -124,7 +124,7 @@ async function load() {
     ]);
     if (generation !== loadGeneration || projectId !== props.projectId) return;
     settings.value = nextSettings;
-    queryPolicyEnabled.value = catalog.publishedMasterEnabled;
+    queryPolicyEnabled.value = catalog.items.length > 0;
     const queryableCodes = new Set(catalog.items.map((item) => item.eventCode));
     options.value = catalog.items.map((item) => ({
       label: `${item.eventName} · ${item.eventCode}`,
@@ -162,17 +162,21 @@ async function searchCatalog(search: string) {
     });
     if (generation !== catalogGeneration || projectId !== props.projectId)
       return;
-    queryPolicyEnabled.value = catalog.publishedMasterEnabled;
     const selected = options.value.filter((option) =>
       form.eventCodes.includes(option.value),
     );
+    queryPolicyEnabled.value =
+      queryPolicyEnabled.value ||
+      selected.length > 0 ||
+      catalog.items.length > 0;
     const found = catalog.items.map((item) => ({
       label: `${item.eventName} · ${item.eventCode}`,
       value: item.eventCode,
     }));
     options.value = [...selected, ...found].filter(
       (option, index, all) =>
-        all.findIndex((candidate) => candidate.value === option.value) === index,
+        all.findIndex((candidate) => candidate.value === option.value) ===
+        index,
     );
   } catch (cause) {
     if (generation !== catalogGeneration) return;

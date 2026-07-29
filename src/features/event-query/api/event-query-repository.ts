@@ -2,30 +2,22 @@ import {
   caseVerificationEstimate,
   caseVerificationGet,
   caseVerificationStart,
+  eventQueryPolicyApplyItem,
+  eventQueryPolicyApplyProject,
   eventQueryPolicyGet,
   eventQueryPolicyGetItem,
   eventQueryPolicyListItems,
   eventQueryPolicyListRequests,
-  eventQueryPolicyPatchItem,
-  eventQueryPolicyPatchProject,
   eventQueryPolicyPreview,
-  eventQueryPolicyPublish,
-  eventQueryPolicyPublishItem,
-  eventQueryPolicyUsage,
-  eventQueryPolicyValidateItem,
 } from "@/shared/api/generated/lola-backend";
 import type {
+  ApplyEventQueryPolicyItemDto,
+  ApplyEventQueryProjectPolicyDto,
   EstimateCaseVerificationDto,
   EventQueryPolicyListItemsParams,
   EventQueryPolicyListRequestsParams,
-  EventQueryPolicyUsageParams,
-  PatchEventQueryPolicyItemDto,
-  PatchEventQueryProjectPolicyDto,
   PreviewEventQueryDto,
-  PublishEventQueryPolicyDto,
-  PublishEventQueryPolicyItemDto,
   StartCaseVerificationDto,
-  ValidateEventQueryPolicyItemDto,
 } from "@/shared/api/generated/models";
 import { isMockMode } from "@/shared/config/data-mode";
 import { mockEventQueryRepository } from "./mock-event-query-repository";
@@ -35,8 +27,8 @@ export const apiEventQueryRepository = {
     return eventQueryPolicyGet(projectId);
   },
 
-  patchProject(projectId: string, input: PatchEventQueryProjectPolicyDto) {
-    return eventQueryPolicyPatchProject(projectId, input);
+  applyProject(projectId: string, input: ApplyEventQueryProjectPolicyDto) {
+    return eventQueryPolicyApplyProject(projectId, input);
   },
 
   listItems(projectId: string, params: EventQueryPolicyListItemsParams) {
@@ -47,40 +39,16 @@ export const apiEventQueryRepository = {
     return eventQueryPolicyGetItem(projectId, definitionKeyId);
   },
 
-  patchItem(
+  applyItem(
     projectId: string,
     definitionKeyId: string,
-    input: PatchEventQueryPolicyItemDto,
+    input: ApplyEventQueryPolicyItemDto,
   ) {
-    return eventQueryPolicyPatchItem(projectId, definitionKeyId, input);
-  },
-
-  validateItem(
-    projectId: string,
-    definitionKeyId: string,
-    input: ValidateEventQueryPolicyItemDto,
-  ) {
-    return eventQueryPolicyValidateItem(projectId, definitionKeyId, input);
-  },
-
-  publishItem(
-    projectId: string,
-    definitionKeyId: string,
-    input: PublishEventQueryPolicyItemDto,
-  ) {
-    return eventQueryPolicyPublishItem(projectId, definitionKeyId, input);
-  },
-
-  publish(projectId: string, input: PublishEventQueryPolicyDto) {
-    return eventQueryPolicyPublish(projectId, input);
+    return eventQueryPolicyApplyItem(projectId, definitionKeyId, input);
   },
 
   preview(projectId: string, input: PreviewEventQueryDto) {
     return eventQueryPolicyPreview(projectId, input);
-  },
-
-  usage(projectId: string, params: EventQueryPolicyUsageParams) {
-    return eventQueryPolicyUsage(projectId, params);
   },
 
   listRequests(projectId: string, params: EventQueryPolicyListRequestsParams) {

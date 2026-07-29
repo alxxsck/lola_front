@@ -7,6 +7,7 @@ import ToggleSwitch from "primevue/toggleswitch";
 import type { EventQueryPolicyStateResponseDto } from "@/shared/api/generated/models";
 import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
 import { eventQueryRepository } from "../api/event-query-repository";
+import { projectPolicyConflictState } from "../model/event-query-conflict";
 import EventQueryPreview from "./EventQueryPreview.vue";
 
 const props = defineProps<{
@@ -18,7 +19,6 @@ const props = defineProps<{
 const expanded = ref(false);
 const loading = ref(true);
 const applying = ref(false);
-const applyPending = ref(false);
 const error = ref("");
 const success = ref("");
 const state = ref<EventQueryPolicyStateResponseDto | null>(null);
@@ -32,10 +32,7 @@ const dirty = computed(
 );
 const canApply = computed(
   () =>
-    props.canManage &&
-    Boolean(state.value) &&
-    (dirty.value || applyPending.value) &&
-    !applying.value,
+    props.canManage && Boolean(state.value) && dirty.value && !applying.value,
 );
 
 function isCurrent(requestGeneration: number, projectId: string) {
@@ -47,7 +44,6 @@ async function load() {
   const projectId = props.projectId;
   loading.value = true;
   applying.value = false;
-  applyPending.value = false;
   error.value = "";
   success.value = "";
   state.value = null;
@@ -55,8 +51,8 @@ async function load() {
     const nextState = await eventQueryRepository.getPolicy(projectId);
     if (!isCurrent(requestGeneration, projectId)) return;
     state.value = nextState;
-    masterEnabled.value = nextState.masterEnabled;
-    savedMasterEnabled.value = nextState.masterEnabled;
+    masterEnabled.value = nextState.configured.masterEnabled;
+    savedMasterEnabled.value = nextState.configured.masterEnabled;
   } catch (cause) {
     if (!isCurrent(requestGeneration, projectId)) return;
     error.value =
@@ -75,40 +71,31 @@ async function apply() {
   error.value = "";
   success.value = "";
   try {
-    let expectedVersion = current.version;
-    if (dirty.value) {
-      const response = await eventQueryRepository.patchProject(projectId, {
-        expectedVersion,
-        masterEnabled: masterEnabled.value,
-      });
-      if (!isCurrent(requestGeneration, projectId)) return;
-      expectedVersion = response.version;
-      state.value = {
-        ...current,
-        version: response.version,
-        masterEnabled: response.masterEnabled,
-      };
-      savedMasterEnabled.value = response.masterEnabled;
-      applyPending.value = true;
-    }
-
-    await eventQueryRepository.publish(projectId, { expectedVersion });
-    if (!isCurrent(requestGeneration, projectId)) return;
-    const next = await eventQueryRepository.getPolicy(projectId);
+    const next = await eventQueryRepository.applyProject(projectId, {
+      concurrencyToken: current.concurrencyToken,
+      masterEnabled: masterEnabled.value,
+    });
     if (!isCurrent(requestGeneration, projectId)) return;
     state.value = next;
-    masterEnabled.value = next.masterEnabled;
-    savedMasterEnabled.value = next.masterEnabled;
-    applyPending.value = false;
+    masterEnabled.value = next.configured.masterEnabled;
+    savedMasterEnabled.value = next.configured.masterEnabled;
     success.value = masterEnabled.value
       ? "Доступ AI к событиям включён."
       : "Доступ AI к событиям выключен.";
   } catch (cause) {
     if (!isCurrent(requestGeneration, projectId)) return;
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось применить настройку доступа";
+    const currentState = projectPolicyConflictState(cause);
+    if (currentState) {
+      state.value = currentState;
+      savedMasterEnabled.value = currentState.configured.masterEnabled;
+      error.value =
+        "Настройку изменил другой администратор. Ваш выбор сохранён в форме; проверьте его и примените ещё раз.";
+    } else {
+      error.value =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось применить настройку доступа";
+    }
   } finally {
     if (isCurrent(requestGeneration, projectId)) applying.value = false;
   }
@@ -135,14 +122,7 @@ watch(() => props.projectId, load);
     <div id="event-query-policy-settings" v-show="expanded" class="policy-body">
       <Message v-if="error" severity="error" :closable="false">
         {{ error }}
-        <Button
-          v-if="applyPending"
-          label="Повторить"
-          text
-          size="small"
-          @click="apply"
-        />
-        <Button v-else label="Обновить" text size="small" @click="load" />
+        <Button label="Обновить" text size="small" @click="load" />
       </Message>
       <Message v-if="success" severity="success" :closable="false">
         {{ success }}
@@ -177,7 +157,7 @@ watch(() => props.projectId, load);
         <footer v-if="canManage" class="master-actions">
           <span>
             {{
-              dirty || applyPending
+              dirty
                 ? "Изменение ещё не применено"
                 : "Настройка действует в проекте"
             }}

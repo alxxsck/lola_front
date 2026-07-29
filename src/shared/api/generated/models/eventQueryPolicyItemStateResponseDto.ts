@@ -9,25 +9,16 @@ import type { EventQueryPolicyItemConfiguredResponseDto } from "./eventQueryPoli
 import type { EventQueryPolicyDiagnosticDto } from "./eventQueryPolicyDiagnosticDto";
 import type { EventQueryPolicyItemEffectiveResponseDto } from "./eventQueryPolicyItemEffectiveResponseDto";
 import type { EventQueryPolicyItemStateResponseDtoLifecycle } from "./eventQueryPolicyItemStateResponseDtoLifecycle";
-import type { EventQueryPolicyItemStateResponseDtoPublished } from "./eventQueryPolicyItemStateResponseDtoPublished";
-import type { EventQueryPolicyItemStateResponseDtoPublishedPolicyVersion } from "./eventQueryPolicyItemStateResponseDtoPublishedPolicyVersion";
+import type { EventQueryPolicyLifecycleRestrictionsDto } from "./eventQueryPolicyLifecycleRestrictionsDto";
 
 export interface EventQueryPolicyItemStateResponseDto {
+  /** Opaque optimistic-concurrency token; no internal revision numbers are exposed. */
+  concurrencyToken: string;
   configured: EventQueryPolicyItemConfiguredResponseDto;
   definitionKeyId: string;
   diagnostics: EventQueryPolicyDiagnosticDto[];
-  /** @minimum 0 */
-  draftVersion: number;
   effective: EventQueryPolicyItemEffectiveResponseDto;
   eventCode: string;
   lifecycle: EventQueryPolicyItemStateResponseDtoLifecycle;
-  /** @minimum 0 */
-  policyDraftVersion: number;
-  /** @nullable */
-  published?: EventQueryPolicyItemStateResponseDtoPublished;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  publishedPolicyVersion?: EventQueryPolicyItemStateResponseDtoPublishedPolicyVersion;
+  lifecycleRestrictions: EventQueryPolicyLifecycleRestrictionsDto;
 }

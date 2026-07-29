@@ -8,14 +8,10 @@
 import type { EventQueryPolicyCatalogResponseDtoAudience } from "./eventQueryPolicyCatalogResponseDtoAudience";
 import type { EventQueryPolicyCatalogItemDto } from "./eventQueryPolicyCatalogItemDto";
 import type { EventQueryPolicyPageInfoDto } from "./eventQueryPolicyPageInfoDto";
-import type { EventQueryPolicyCatalogResponseDtoPublishedPolicyRevision } from "./eventQueryPolicyCatalogResponseDtoPublishedPolicyRevision";
 
 export interface EventQueryPolicyCatalogResponseDto {
   audience: EventQueryPolicyCatalogResponseDtoAudience;
   effectiveOnly: boolean;
   items: EventQueryPolicyCatalogItemDto[];
   pageInfo: EventQueryPolicyPageInfoDto;
-  publishedMasterEnabled: boolean;
-  /** @nullable */
-  publishedPolicyRevision?: EventQueryPolicyCatalogResponseDtoPublishedPolicyRevision;
 }

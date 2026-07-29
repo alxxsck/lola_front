@@ -3,8 +3,6 @@ import { computed, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Skeleton from 'primevue/skeleton'
-import type { EventQueryUsageResponseDto } from '@/shared/api/generated/models'
-import { eventQueryRepository } from '@/features/event-query/api/event-query-repository'
 import { isMockMode } from '@/shared/config/data-mode'
 import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue'
 import { fetchAiUsageReport } from './ai-usage.api'
@@ -30,23 +28,15 @@ import {
   type AiUsageReport,
 } from './ai-usage.model'
 
-const props = defineProps<{
-  projectId: string
-  canReadEventQueryUsage?: boolean
-}>()
+const props = defineProps<{ projectId: string }>()
 
 const range = shallowRef<AiUsageRangeKey>('today')
 const expanded = shallowRef(false)
 const usageMetric = shallowRef<AiUsageMetric>('tokens')
 const report = shallowRef<AiUsageReport | null>(null)
-const eventQueryUsage = shallowRef<EventQueryUsageResponseDto | null>(null)
 const loading = shallowRef(false)
 const error = shallowRef('')
 const cache = new Map<AiUsageRangeKey, AiUsageReport>()
-const eventQueryCache = new Map<
-  AiUsageRangeKey,
-  EventQueryUsageResponseDto | null
->()
 let activeRequest: AbortController | undefined
 let requestGeneration = 0
 
@@ -77,6 +67,7 @@ const caseIntelligenceUsage = computed(() =>
 const caseIntelligenceBreakdown = computed(() =>
   xAiBreakdown.value.filter((item) => item.operation.startsWith('case_')),
 )
+const eventQueryUsage = computed(() => report.value?.eventQuery ?? null)
 const xAiCurrency = computed(() => getUsageCurrency(xAiBreakdown.value))
 const xAiCostAvailable = computed(
   () => Boolean(xAiCurrency.value) && xAiModels.value.some(hasUsageCost),
@@ -111,15 +102,12 @@ const xAiCachedShare = computed(() => {
   return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(share)}% входящих`
 })
 const eventQueryCost = computed(() => {
-  const exact = eventQueryUsage.value?.exactAiUsage
-  if (!exact) return 0
-  const billed = Number(exact.billedCostUsd ?? 0)
-  const estimated = Number(exact.estimatedCostUsd ?? 0)
+  const linked = eventQueryUsage.value?.linkedAiUsage
+  if (!linked) return 0
+  const billed = linked.billedCostUsd ?? 0
+  const estimated = linked.estimatedCostUsd ?? 0
   return billed > 0 ? billed : estimated
 })
-const eventQueryRangeLabel = computed(() =>
-  range.value === 'all' ? 'за последние 90 дней' : 'за выбранный период',
-)
 const creditsPerThousandCharacters = computed(() => {
   if (!elevenLabsUsage.value.inputCharacters) return '—'
   const credits =
@@ -148,17 +136,6 @@ function formatBytes(value: number) {
     : `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(value / 1024)} КБ`
 }
 
-function eventQueryUsageRange(key: AiUsageRangeKey) {
-  if (key !== 'all') {
-    const value = getAiUsageRange(key)
-    return { from: value.from!, to: value.to! }
-  }
-  const to = new Date()
-  const from = new Date(to)
-  from.setDate(from.getDate() - 90)
-  return { from: from.toISOString(), to: to.toISOString() }
-}
-
 watch(xAiCostAvailable, (available) => {
   if (!available && usageMetric.value === 'cost') usageMetric.value = 'tokens'
 })
@@ -166,15 +143,12 @@ watch(xAiCostAvailable, (available) => {
 async function load(force = false) {
   const requestedRange = range.value
   const cached = cache.get(requestedRange)
-  const hasCachedEventQuery =
-    !props.canReadEventQueryUsage || eventQueryCache.has(requestedRange)
-  if (cached && hasCachedEventQuery && !force) {
+  if (cached && !force) {
     activeRequest?.abort()
     activeRequest = undefined
     requestGeneration += 1
     loading.value = false
     report.value = cached
-    eventQueryUsage.value = eventQueryCache.get(requestedRange) ?? null
     error.value = ''
     return
   }
@@ -186,26 +160,16 @@ async function load(force = false) {
   loading.value = true
   error.value = ''
   if (!cached) report.value = null
-  if (!eventQueryCache.has(requestedRange)) eventQueryUsage.value = null
 
   try {
-    const [nextReport, nextEventQueryUsage] = await Promise.all([
-      fetchAiUsageReport(
-        props.projectId,
-        getAiUsageRange(requestedRange),
-        controller.signal,
-      ),
-      props.canReadEventQueryUsage
-        ? eventQueryRepository
-            .usage(props.projectId, eventQueryUsageRange(requestedRange))
-            .catch(() => null)
-        : Promise.resolve(null),
-    ])
+    const nextReport = await fetchAiUsageReport(
+      props.projectId,
+      getAiUsageRange(requestedRange),
+      controller.signal,
+    )
     if (generation !== requestGeneration) return
     cache.set(requestedRange, nextReport)
-    eventQueryCache.set(requestedRange, nextEventQueryUsage)
     report.value = nextReport
-    eventQueryUsage.value = nextEventQueryUsage
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration) return
     error.value =
@@ -224,12 +188,10 @@ function selectRange(nextRange: AiUsageRangeKey) {
 }
 
 watch(
-  () => [props.projectId, props.canReadEventQueryUsage],
+  () => props.projectId,
   () => {
     cache.clear()
-    eventQueryCache.clear()
     report.value = null
-    eventQueryUsage.value = null
     void load()
   },
 )
@@ -465,8 +427,8 @@ onBeforeUnmount(() => {
                 <span class="provider-kicker">Event Query</span>
                 <h4 id="event-query-usage-title">Запросы к событиям</h4>
                 <p>
-                  Вклад данных событий {{ eventQueryRangeLabel }}. Связанные
-                  токены и стоимость уже входят в итог Grok выше.
+                  Вклад данных событий за выбранный период. Связанные токены и
+                  стоимость уже входят в итог Grok выше.
                 </p>
               </div>
             </header>
@@ -495,7 +457,7 @@ onBeforeUnmount(() => {
                 <strong>
                   {{
                     formatTokenCount(
-                      eventQueryUsage.exactAiUsage?.totalTokens ?? 0,
+                      eventQueryUsage.linkedAiUsage.totalTokens,
                     )
                   }}
                   токенов

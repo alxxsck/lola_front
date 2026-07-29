@@ -8,6 +8,7 @@
 import type { AiUsageBreakdownResponseDto } from "./aiUsageBreakdownResponseDto";
 import type { AiUsageCategoryBreakdownResponseDto } from "./aiUsageCategoryBreakdownResponseDto";
 import type { AiUsageRecordResponseDto } from "./aiUsageRecordResponseDto";
+import type { AiUsageProviderBreakdownsResponseDto } from "./aiUsageProviderBreakdownsResponseDto";
 import type { AiUsageRangeResponseDto } from "./aiUsageRangeResponseDto";
 import type { AiUsageTotalsResponseDto } from "./aiUsageTotalsResponseDto";
 
@@ -18,6 +19,7 @@ export interface AiUsageReportResponseDto {
   /** @nullable */
   nextCursor: string | null;
   projectId: string;
+  providers: AiUsageProviderBreakdownsResponseDto;
   range: AiUsageRangeResponseDto;
   totals: AiUsageTotalsResponseDto;
 }

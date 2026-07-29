@@ -8,10 +8,8 @@
 import type { EventQueryRequestAttributionDto } from "./eventQueryRequestAttributionDto";
 import type { EventQueryRequestHistoryItemDtoAudience } from "./eventQueryRequestHistoryItemDtoAudience";
 import type { EventQueryLinkedAiUsageDto } from "./eventQueryLinkedAiUsageDto";
-import type { EventQueryRequestHistoryItemDtoPolicyRevisionId } from "./eventQueryRequestHistoryItemDtoPolicyRevisionId";
 import type { EventQueryRequestHistoryItemDtoQueryShape } from "./eventQueryRequestHistoryItemDtoQueryShape";
 import type { EventQueryRequestHistoryItemDtoRange } from "./eventQueryRequestHistoryItemDtoRange";
-import type { EventQueryRequestHistoryItemDtoRejectionCode } from "./eventQueryRequestHistoryItemDtoRejectionCode";
 
 export interface EventQueryRequestHistoryItemDto {
   attribution: EventQueryRequestAttributionDto;
@@ -28,12 +26,12 @@ export interface EventQueryRequestHistoryItemDto {
   mode: string;
   origin: string;
   /** @nullable */
-  policyRevisionId?: EventQueryRequestHistoryItemDtoPolicyRevisionId;
+  policyRevisionId?: string | null;
   queryShape: EventQueryRequestHistoryItemDtoQueryShape;
   /** @nullable */
   range?: EventQueryRequestHistoryItemDtoRange;
   /** @nullable */
-  rejectionCode?: EventQueryRequestHistoryItemDtoRejectionCode;
+  rejectionCode?: string | null;
   /** @minimum 0 */
   resultBytes: number;
   /** @minimum 0 */

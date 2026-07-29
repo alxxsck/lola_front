@@ -156,7 +156,9 @@ async function loadPolicy(search = policySearch.value.trim()) {
     });
     if (!isCurrentScope(scope)) return;
     policySearchActive.value = Boolean(search);
-    policyEnabled.value = catalog.publishedMasterEnabled;
+    if (!search || catalog.items.length > 0) {
+      policyEnabled.value = catalog.items.length > 0;
+    }
     policyItems.value = catalog.items.flatMap((candidate) => {
       const item = eventQueryPolicyItemFromConfiguration(
         candidate.eventCode,

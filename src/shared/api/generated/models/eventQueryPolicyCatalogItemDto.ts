@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryPolicyCatalogItemDtoConfiguration } from "./eventQueryPolicyCatalogItemDtoConfiguration";
+import type { EventQueryPolicyItemConfigurationDto } from "./eventQueryPolicyItemConfigurationDto";
 import type { EventQueryPolicyItemEffectiveResponseDto } from "./eventQueryPolicyItemEffectiveResponseDto";
 import type { EventQueryPolicyCatalogItemDtoLifecycle } from "./eventQueryPolicyCatalogItemDtoLifecycle";
 
 export interface EventQueryPolicyCatalogItemDto {
-  configuration: EventQueryPolicyCatalogItemDtoConfiguration;
+  configuration: EventQueryPolicyItemConfigurationDto;
   definitionKeyId: string;
   effective: EventQueryPolicyItemEffectiveResponseDto;
   eventCode: string;

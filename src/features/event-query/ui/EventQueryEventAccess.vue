@@ -8,12 +8,12 @@ import type {
   EventQueryPolicyItemStateResponseDto,
   EventQueryPolicyItemDto,
 } from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
 import type { EventCatalogDefinition } from "@/shared/api/repository/event-catalog";
 import { eventQueryRepository } from "../api/event-query-repository";
+import { eventPolicyConflictState } from "../model/event-query-conflict";
 import {
   eventQueryPolicyItemFromConfiguration,
-  eventQueryPolicyItemPatch,
+  eventQueryPolicyItemApply,
   flattenSchemaFields,
 } from "../model/event-query-policy";
 import EventQueryEventEditor from "./EventQueryEventEditor.vue";
@@ -38,7 +38,8 @@ let generation = 0;
 const archived = computed(
   () =>
     props.definition.lifecycle === "ARCHIVED" ||
-    state.value?.lifecycle === "ARCHIVED",
+    state.value?.lifecycle === "ARCHIVED" ||
+    state.value?.lifecycleRestrictions.readOnly === true,
 );
 const schemaFields = computed(() =>
   flattenSchemaFields(props.definition.currentSchema.payloadSchema),
@@ -53,31 +54,13 @@ const formSnapshot = computed(() =>
 const dirty = computed(
   () => Boolean(item.value) && formSnapshot.value !== savedSnapshot.value,
 );
-const publishedSnapshot = computed(() => {
-  const published = state.value?.published;
-  if (!published) return "";
-  const publishedItem = eventQueryPolicyItemFromConfiguration(
-    state.value?.eventCode ?? props.definition.code,
-    published.configuration,
-  );
-  return JSON.stringify({
-    enabled: published.enabled,
-    endUserConversationEnabled: published.endUserConversationEnabled,
-    item: publishedItem,
-  });
-});
-const pendingPublication = computed(
-  () =>
-    Boolean(item.value) &&
-    savedSnapshot.value !== publishedSnapshot.value &&
-    (state.value?.draftVersion ?? 0) > 0,
-);
 const canApply = computed(
   () =>
     props.canManage &&
     !archived.value &&
+    state.value?.lifecycleRestrictions.canApply === true &&
     Boolean(item.value) &&
-    (dirty.value || pendingPublication.value) &&
+    dirty.value &&
     !applying.value,
 );
 
@@ -108,6 +91,21 @@ function applyState(next: EventQueryPolicyItemStateResponseDto) {
   savedSnapshot.value = formSnapshot.value;
 }
 
+function configuredSnapshot(next: EventQueryPolicyItemStateResponseDto) {
+  const configuredItem = eventQueryPolicyItemFromConfiguration(
+    next.eventCode,
+    next.configured.configuration,
+  );
+  if (!configuredItem) {
+    throw new Error("Сервер вернул некорректную конфигурацию доступа AI");
+  }
+  return JSON.stringify({
+    enabled: next.configured.enabled,
+    endUserConversationEnabled: next.configured.endUserConversationEnabled,
+    item: configuredItem,
+  });
+}
+
 async function load() {
   const requestGeneration = ++generation;
   const projectId = props.projectId;
@@ -132,18 +130,6 @@ async function load() {
   }
 }
 
-async function refreshConflict(
-  projectId: string,
-  definitionKeyId: string,
-  requestGeneration: number,
-) {
-  const next = await eventQueryRepository.getItem(projectId, definitionKeyId);
-  if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-  state.value = next;
-  error.value =
-    "Настройки изменились на сервере. Ваши значения остались в форме; проверьте их и нажмите «Применить настройки» ещё раз.";
-}
-
 async function apply() {
   const currentState = state.value;
   const currentItem = item.value;
@@ -163,46 +149,27 @@ async function apply() {
   error.value = "";
   success.value = "";
   try {
-    let expectedVersion = currentState.draftVersion;
-    if (dirty.value) {
-      const patch = eventQueryPolicyItemPatch(
+    const next = await eventQueryRepository.applyItem(
+      projectId,
+      definitionKeyId,
+      eventQueryPolicyItemApply(
         currentItem,
         enabled.value,
         endUserConversationEnabled.value,
-        expectedVersion,
-      );
-      const validation = await eventQueryRepository.validateItem(
-        projectId,
-        definitionKeyId,
-        { patch: patch as unknown as Record<string, unknown> },
-      );
-      if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-      state.value = { ...currentState, diagnostics: validation.errors };
-      if (!validation.valid) return;
-      const saved = await eventQueryRepository.patchItem(
-        projectId,
-        definitionKeyId,
-        patch,
-      );
-      if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-      expectedVersion = saved.version;
-    }
-    await eventQueryRepository.publishItem(projectId, definitionKeyId, {
-      expectedVersion,
-      expectedPolicyVersion:
-        typeof currentState.publishedPolicyVersion === "number"
-          ? currentState.publishedPolicyVersion
-          : 0,
-    });
-    if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-    const next = await eventQueryRepository.getItem(projectId, definitionKeyId);
+        currentState.concurrencyToken,
+      ),
+    );
     if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
     applyState(next);
     success.value = "Настройки доступа AI применены.";
   } catch (cause) {
     if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
-    if (cause instanceof ApiError && cause.status === 409) {
-      await refreshConflict(projectId, definitionKeyId, requestGeneration);
+    const current = eventPolicyConflictState(cause);
+    if (current) {
+      state.value = current;
+      savedSnapshot.value = configuredSnapshot(current);
+      error.value =
+        "Настройки изменил другой администратор. Ваши значения сохранены в форме; проверьте их и примените ещё раз.";
     } else {
       error.value =
         cause instanceof Error
@@ -256,9 +223,7 @@ watch(
         <span class="effective-icon">
           <i
             :class="
-              state.effective.internalAi
-                ? 'pi pi-check-circle'
-                : 'pi pi-lock'
+              state.effective.internalAi ? 'pi pi-check-circle' : 'pi pi-lock'
             "
           />
         </span>
@@ -293,7 +258,12 @@ watch(
             v-model="enabled"
             input-id="event-query-enabled"
             data-test="event-query-enabled"
-            :disabled="!canManage || archived || applying"
+            :disabled="
+              !canManage ||
+              archived ||
+              (!state.lifecycleRestrictions.canEnable && !enabled) ||
+              applying
+            "
             aria-label="Разрешить AI использовать событие"
           />
         </div>
@@ -301,8 +271,8 @@ watch(
           <span>
             <strong>Доступно пользователю в Chat и Voice</strong>
             <small>
-              Пользователь сможет спрашивать Lola о факте этого события. Работает
-              только вместе с доступом для AI.
+              Пользователь сможет спрашивать Lola о факте этого события.
+              Работает только вместе с доступом для AI.
             </small>
           </span>
           <ToggleSwitch
@@ -341,9 +311,6 @@ watch(
 
       <footer class="access-actions">
         <span v-if="dirty">Настройки ещё не применены</span>
-        <span v-else-if="pendingPublication">
-          Изменения сохранены, но ещё не действуют
-        </span>
         <span v-else>Настройки применены</span>
         <Button
           data-test="apply-event-query"

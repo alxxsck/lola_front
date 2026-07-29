@@ -1,34 +1,23 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api/http/api-error";
 import { eventQueryRepository } from "../api/event-query-repository";
 import EventQueryPolicySection from "./EventQueryPolicySection.vue";
 
 vi.mock("../api/event-query-repository", () => ({
   eventQueryRepository: {
+    applyProject: vi.fn(),
     getPolicy: vi.fn(),
-    patchProject: vi.fn(),
-    publish: vi.fn(),
-    usage: vi.fn(),
     listItems: vi.fn(),
     preview: vi.fn(),
   },
 }));
 
 const state = {
-  counts: {
-    configuredDraftItems: 12,
-    enabledDraftItems: 8,
-    endUserConversationDraftItems: 3,
-  },
-  currentRevision: {
-    id: "policy-1",
-    version: 2,
-    publishedAt: "2026-07-28T10:00:00.000Z",
-    itemCount: 8,
-  },
+  concurrencyToken: "eq-project-v1.initial",
+  configured: { masterEnabled: true },
   diagnostics: [],
-  masterEnabled: true,
-  version: 4,
+  effective: { masterEnabled: true },
 };
 
 function mountSection() {
@@ -69,19 +58,11 @@ describe("EventQueryPolicySection", () => {
     vi.mocked(eventQueryRepository.getPolicy).mockResolvedValue(
       structuredClone(state),
     );
-    vi.mocked(eventQueryRepository.patchProject).mockResolvedValue({
-      version: 5,
-      masterEnabled: false,
-      currentRevisionId: null,
-      updatedAt: "2026-07-28T11:00:00.000Z",
-    });
-    vi.mocked(eventQueryRepository.publish).mockResolvedValue({
-      id: "policy-2",
-      version: 3,
-      publishedAt: "2026-07-28T11:00:00.000Z",
-      compilerVersion: "1",
-      documentHash: "hash-2",
-      document: { enabled: false, items: [] },
+    vi.mocked(eventQueryRepository.applyProject).mockResolvedValue({
+      concurrencyToken: "eq-project-v1.applied",
+      configured: { masterEnabled: false },
+      diagnostics: [],
+      effective: { masterEnabled: false },
     });
   });
 
@@ -97,13 +78,6 @@ describe("EventQueryPolicySection", () => {
   });
 
   it("applies the Project master setting behind one action", async () => {
-    vi.mocked(eventQueryRepository.getPolicy)
-      .mockResolvedValueOnce(structuredClone(state))
-      .mockResolvedValueOnce({
-        ...structuredClone(state),
-        masterEnabled: false,
-        version: 5,
-      });
     const wrapper = mountSection();
     await flushPromises();
 
@@ -111,13 +85,14 @@ describe("EventQueryPolicySection", () => {
     await wrapper.get('button[data-test="apply-policy"]').trigger("click");
     await flushPromises();
 
-    expect(eventQueryRepository.patchProject).toHaveBeenCalledWith(
+    expect(eventQueryRepository.applyProject).toHaveBeenCalledWith(
       "project-1",
-      { expectedVersion: 4, masterEnabled: false },
+      {
+        concurrencyToken: "eq-project-v1.initial",
+        masterEnabled: false,
+      },
     );
-    expect(eventQueryRepository.publish).toHaveBeenCalledWith("project-1", {
-      expectedVersion: 5,
-    });
+    expect(eventQueryRepository.getPolicy).toHaveBeenCalledTimes(1);
     expect(wrapper.text()).not.toContain("Опубликовать");
   });
 
@@ -126,9 +101,9 @@ describe("EventQueryPolicySection", () => {
       .mockResolvedValueOnce(structuredClone(state))
       .mockResolvedValueOnce({
         ...structuredClone(state),
-        masterEnabled: false,
-        version: 1,
-        currentRevision: null,
+        concurrencyToken: "eq-project-v1.project-2",
+        configured: { masterEnabled: false },
+        effective: { masterEnabled: false },
       });
     const wrapper = mountSection();
     await flushPromises();
@@ -145,5 +120,48 @@ describe("EventQueryPolicySection", () => {
           .element as HTMLInputElement
       ).checked,
     ).toBe(false);
+  });
+
+  it("keeps the local choice and retries with the replacement token after 409", async () => {
+    vi.mocked(eventQueryRepository.applyProject)
+      .mockRejectedValueOnce(
+        new ApiError(409, "Conflict", {
+          current: {
+            ...structuredClone(state),
+            concurrencyToken: "eq-project-v1.current",
+          },
+        }),
+      )
+      .mockResolvedValueOnce({
+        concurrencyToken: "eq-project-v1.applied",
+        configured: { masterEnabled: false },
+        diagnostics: [],
+        effective: { masterEnabled: false },
+      });
+    const wrapper = mountSection();
+    await flushPromises();
+
+    await wrapper.get('.master-control input[type="checkbox"]').setValue(false);
+    await wrapper.get('button[data-test="apply-policy"]').trigger("click");
+    await flushPromises();
+
+    expect(
+      (
+        wrapper.get('.master-control input[type="checkbox"]')
+          .element as HTMLInputElement
+      ).checked,
+    ).toBe(false);
+    expect(wrapper.text()).toContain("другой администратор");
+
+    await wrapper.get('button[data-test="apply-policy"]').trigger("click");
+    await flushPromises();
+
+    expect(eventQueryRepository.applyProject).toHaveBeenLastCalledWith(
+      "project-1",
+      {
+        concurrencyToken: "eq-project-v1.current",
+        masterEnabled: false,
+      },
+    );
   });
 });

@@ -119,6 +119,20 @@ describe('AI usage model', () => {
       totals,
       breakdown: [breakdown(), breakdown({ currency: 'eur' })],
       categories: [],
+      eventQuery: {
+        calls: 0,
+        resultBytes: 0,
+        estimatedAddedInputTokens: 0,
+        linkedUsageIncludedInProviderTotals: true,
+        linkedAiUsage: {
+          records: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          billedCostUsd: null,
+          estimatedCostUsd: null,
+        },
+      },
     }
 
     expect(aggregateModelUsage(report.breakdown)).toHaveLength(2)

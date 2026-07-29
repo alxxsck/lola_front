@@ -1866,6 +1866,7 @@
               "MEMORY",
               "AI_REVIEW",
               "AI_ANALYSIS",
+              "CASE_INTELLIGENCE",
               "PROJECT_OVERHEAD"
             ],
             "type": "string"
@@ -1963,6 +1964,85 @@
         ],
         "type": "object"
       },
+      "AiUsageEventQueryBreakdownResponseDto": {
+        "properties": {
+          "calls": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "estimatedAddedInputTokens": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "linkedAiUsage": {
+            "$ref": "#/components/schemas/AiUsageEventQueryLinkedUsageResponseDto"
+          },
+          "linkedUsageIncludedInProviderTotals": {
+            "description": "Always true: linked tokens and cost are attribution of existing xAI records and must not be added again.",
+            "type": "boolean"
+          },
+          "resultBytes": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "calls",
+          "resultBytes",
+          "estimatedAddedInputTokens",
+          "linkedAiUsage",
+          "linkedUsageIncludedInProviderTotals"
+        ],
+        "type": "object"
+      },
+      "AiUsageEventQueryLinkedUsageResponseDto": {
+        "properties": {
+          "billedCostUsd": {
+            "nullable": true,
+            "type": "string"
+          },
+          "estimatedCostUsd": {
+            "nullable": true,
+            "type": "string"
+          },
+          "inputTokens": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "outputTokens": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "records": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalTokens": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "records",
+          "totalTokens",
+          "inputTokens",
+          "outputTokens",
+          "estimatedCostUsd",
+          "billedCostUsd"
+        ],
+        "type": "object"
+      },
+      "AiUsageProviderBreakdownsResponseDto": {
+        "properties": {
+          "xai": {
+            "$ref": "#/components/schemas/AiUsageXaiProviderBreakdownResponseDto"
+          }
+        },
+        "required": [
+          "xai"
+        ],
+        "type": "object"
+      },
       "AiUsageRangeResponseDto": {
         "properties": {
           "from": {
@@ -1996,6 +2076,7 @@
               "MEMORY",
               "AI_REVIEW",
               "AI_ANALYSIS",
+              "CASE_INTELLIGENCE",
               "PROJECT_OVERHEAD"
             ],
             "type": "string"
@@ -2116,6 +2197,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "providers": {
+            "$ref": "#/components/schemas/AiUsageProviderBreakdownsResponseDto"
+          },
           "range": {
             "$ref": "#/components/schemas/AiUsageRangeResponseDto"
           },
@@ -2129,6 +2213,7 @@
           "totals",
           "breakdown",
           "categories",
+          "providers",
           "items",
           "nextCursor"
         ],
@@ -2264,6 +2349,17 @@
           "providerReportedCostRecords",
           "estimatedRecords",
           "providerUnitOnlyRecords"
+        ],
+        "type": "object"
+      },
+      "AiUsageXaiProviderBreakdownResponseDto": {
+        "properties": {
+          "eventQuery": {
+            "$ref": "#/components/schemas/AiUsageEventQueryBreakdownResponseDto"
+          }
+        },
+        "required": [
+          "eventQuery"
         ],
         "type": "object"
       },
@@ -2566,6 +2662,80 @@
         },
         "required": [
           "error"
+        ],
+        "type": "object"
+      },
+      "ApplyEventQueryPolicyItemDto": {
+        "properties": {
+          "allowedModes": {
+            "items": {
+              "enum": [
+                "SUMMARY",
+                "AGGREGATE",
+                "LATEST"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "concurrencyToken": {
+            "description": "Opaque token returned by the latest CMS-facing Event policy read or apply.",
+            "type": "string"
+          },
+          "descriptionForAI": {
+            "example": "A deposit was credited to the current End User.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "endUserConversationEnabled": {
+            "type": "boolean"
+          },
+          "maxInteractiveLookbackHours": {
+            "maximum": 744,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxVerificationLookbackHours": {
+            "maximum": 2160,
+            "minimum": 1,
+            "type": "number"
+          },
+          "safeFields": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyFieldDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "descriptionForAI",
+          "allowedModes",
+          "safeFields",
+          "maxInteractiveLookbackHours",
+          "maxVerificationLookbackHours",
+          "concurrencyToken",
+          "enabled",
+          "endUserConversationEnabled"
+        ],
+        "type": "object"
+      },
+      "ApplyEventQueryProjectPolicyDto": {
+        "properties": {
+          "concurrencyToken": {
+            "description": "Opaque token returned by the latest CMS-facing Project policy read or apply.",
+            "type": "string"
+          },
+          "masterEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "concurrencyToken",
+          "masterEnabled"
         ],
         "type": "object"
       },
@@ -9179,6 +9349,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "providers": {
+            "$ref": "#/components/schemas/AiUsageProviderBreakdownsResponseDto"
+          },
           "range": {
             "$ref": "#/components/schemas/EndUserAiUsageRangeResponseDto"
           },
@@ -9202,6 +9375,7 @@
           "totals",
           "breakdown",
           "categories",
+          "providers",
           "items",
           "nextCursor",
           "endUserId",
@@ -11785,11 +11959,11 @@
         "properties": {
           "billedCostUsd": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "estimatedCostUsd": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "inputTokens": {
             "minimum": 0,
@@ -11845,8 +12019,7 @@
       "EventQueryPolicyCatalogItemDto": {
         "properties": {
           "configuration": {
-            "additionalProperties": true,
-            "type": "object"
+            "$ref": "#/components/schemas/EventQueryPolicyItemConfigurationDto"
           },
           "definitionKeyId": {
             "format": "uuid",
@@ -11903,48 +12076,13 @@
           },
           "pageInfo": {
             "$ref": "#/components/schemas/EventQueryPolicyPageInfoDto"
-          },
-          "publishedMasterEnabled": {
-            "type": "boolean"
-          },
-          "publishedPolicyRevision": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/EventQueryPolicyCatalogRevisionDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
           }
         },
         "required": [
           "audience",
           "effectiveOnly",
-          "publishedMasterEnabled",
           "items",
           "pageInfo"
-        ],
-        "type": "object"
-      },
-      "EventQueryPolicyCatalogRevisionDto": {
-        "properties": {
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "publishedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "publishedAt"
         ],
         "type": "object"
       },
@@ -12058,11 +12196,55 @@
         ],
         "type": "object"
       },
+      "EventQueryPolicyItemConfigurationDto": {
+        "properties": {
+          "allowedModes": {
+            "items": {
+              "enum": [
+                "SUMMARY",
+                "AGGREGATE",
+                "LATEST"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "descriptionForAI": {
+            "example": "A deposit was credited to the current End User.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "maxInteractiveLookbackHours": {
+            "maximum": 744,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxVerificationLookbackHours": {
+            "maximum": 2160,
+            "minimum": 1,
+            "type": "number"
+          },
+          "safeFields": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyFieldDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "descriptionForAI",
+          "allowedModes",
+          "safeFields",
+          "maxInteractiveLookbackHours",
+          "maxVerificationLookbackHours"
+        ],
+        "type": "object"
+      },
       "EventQueryPolicyItemConfiguredResponseDto": {
         "properties": {
           "configuration": {
-            "additionalProperties": true,
-            "type": "object"
+            "$ref": "#/components/schemas/EventQueryPolicyItemConfigurationDto"
           },
           "enabled": {
             "type": "boolean"
@@ -12168,12 +12350,12 @@
           }
         },
         "required": [
-          "stableCode",
           "descriptionForAI",
           "allowedModes",
           "safeFields",
           "maxInteractiveLookbackHours",
-          "maxVerificationLookbackHours"
+          "maxVerificationLookbackHours",
+          "stableCode"
         ],
         "type": "object"
       },
@@ -12194,6 +12376,10 @@
       },
       "EventQueryPolicyItemStateResponseDto": {
         "properties": {
+          "concurrencyToken": {
+            "description": "Opaque optimistic-concurrency token; no internal revision numbers are exposed.",
+            "type": "string"
+          },
           "configured": {
             "$ref": "#/components/schemas/EventQueryPolicyItemConfiguredResponseDto"
           },
@@ -12206,10 +12392,6 @@
               "$ref": "#/components/schemas/EventQueryPolicyDiagnosticDto"
             },
             "type": "array"
-          },
-          "draftVersion": {
-            "minimum": 0,
-            "type": "number"
           },
           "effective": {
             "$ref": "#/components/schemas/EventQueryPolicyItemEffectiveResponseDto"
@@ -12224,34 +12406,45 @@
             ],
             "type": "string"
           },
-          "policyDraftVersion": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "published": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/EventQueryPolicyItemConfiguredResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "publishedPolicyVersion": {
-            "minimum": 1,
-            "nullable": true,
-            "type": "object"
+          "lifecycleRestrictions": {
+            "$ref": "#/components/schemas/EventQueryPolicyLifecycleRestrictionsDto"
           }
         },
         "required": [
           "definitionKeyId",
           "eventCode",
           "lifecycle",
-          "draftVersion",
-          "policyDraftVersion",
           "configured",
           "effective",
-          "diagnostics"
+          "lifecycleRestrictions",
+          "diagnostics",
+          "concurrencyToken"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyLifecycleRestrictionsDto": {
+        "properties": {
+          "canApply": {
+            "type": "boolean"
+          },
+          "canEnable": {
+            "type": "boolean"
+          },
+          "readOnly": {
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "readOnly",
+          "canApply",
+          "canEnable",
+          "reasons"
         ],
         "type": "object"
       },
@@ -12262,7 +12455,7 @@
           },
           "nextCursor": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           }
         },
         "required": [
@@ -12305,47 +12498,12 @@
       },
       "EventQueryPolicyStateResponseDto": {
         "properties": {
-          "counts": {
-            "additionalProperties": false,
-            "properties": {
-              "configuredDraftItems": {
-                "type": "number"
-              },
-              "enabledDraftItems": {
-                "type": "number"
-              },
-              "endUserConversationDraftItems": {
-                "type": "number"
-              }
-            },
-            "type": "object"
+          "concurrencyToken": {
+            "description": "Opaque optimistic-concurrency token; no internal revision numbers are exposed.",
+            "type": "string"
           },
-          "currentRevision": {
-            "additionalProperties": false,
-            "nullable": true,
-            "properties": {
-              "compilerVersion": {
-                "type": "string"
-              },
-              "documentHash": {
-                "type": "string"
-              },
-              "id": {
-                "format": "uuid",
-                "type": "string"
-              },
-              "itemCount": {
-                "type": "number"
-              },
-              "publishedAt": {
-                "format": "date-time",
-                "type": "string"
-              },
-              "version": {
-                "type": "number"
-              }
-            },
-            "type": "object"
+          "configured": {
+            "$ref": "#/components/schemas/EventQueryProjectConfiguredResponseDto"
           },
           "diagnostics": {
             "items": {
@@ -12353,19 +12511,15 @@
             },
             "type": "array"
           },
-          "masterEnabled": {
-            "type": "boolean"
-          },
-          "version": {
-            "minimum": 0,
-            "type": "number"
+          "effective": {
+            "$ref": "#/components/schemas/EventQueryProjectEffectiveResponseDto"
           }
         },
         "required": [
-          "version",
-          "masterEnabled",
-          "counts",
-          "diagnostics"
+          "configured",
+          "effective",
+          "diagnostics",
+          "concurrencyToken"
         ],
         "type": "object"
       },
@@ -12387,12 +12541,23 @@
         ],
         "type": "object"
       },
+      "EventQueryProjectConfiguredResponseDto": {
+        "properties": {
+          "masterEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "masterEnabled"
+        ],
+        "type": "object"
+      },
       "EventQueryProjectDraftResponseDto": {
         "properties": {
           "currentRevisionId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "masterEnabled": {
             "type": "boolean"
@@ -12410,6 +12575,17 @@
           "version",
           "masterEnabled",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EventQueryProjectEffectiveResponseDto": {
+        "properties": {
+          "masterEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "masterEnabled"
         ],
         "type": "object"
       },
@@ -12457,31 +12633,31 @@
           "aiAnalysisRunId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "aiReviewRunId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "caseId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "chatMessageId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "voiceSessionId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "voiceTurnId": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           }
         },
         "type": "object"
@@ -12592,7 +12768,7 @@
           "policyRevisionId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "queryShape": {
             "additionalProperties": true,
@@ -12615,7 +12791,7 @@
           },
           "rejectionCode": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "resultBytes": {
             "minimum": 0,
@@ -34421,6 +34597,7 @@
         ]
       },
       "patch": {
+        "deprecated": true,
         "operationId": "EventQueryPolicy_patchProject",
         "parameters": [
           {
@@ -34459,6 +34636,57 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy draft-only Project policy update",
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/apply": {
+      "post": {
+        "operationId": "EventQueryPolicy_applyProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyEventQueryProjectPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atomically validate and apply Project Event Query settings",
         "tags": [
           "End User Event Query"
         ],
@@ -34470,6 +34698,7 @@
     },
     "/api/v1/admin/projects/{projectId}/event-query-policy/draft": {
       "put": {
+        "deprecated": true,
         "operationId": "EventQueryPolicy_saveDraft",
         "parameters": [
           {
@@ -34508,6 +34737,7 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy whole-document draft update",
         "tags": [
           "End User Event Query"
         ],
@@ -34665,6 +34895,7 @@
         ]
       },
       "patch": {
+        "deprecated": true,
         "operationId": "EventQueryPolicy_patchItem",
         "parameters": [
           {
@@ -34711,6 +34942,65 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy draft-only Event policy update",
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/items/{definitionKeyId}/apply": {
+      "post": {
+        "operationId": "EventQueryPolicy_applyItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyEventQueryPolicyItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyItemStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atomically validate and apply one Event Query policy item",
         "tags": [
           "End User Event Query"
         ],
@@ -34722,6 +35012,7 @@
     },
     "/api/v1/admin/projects/{projectId}/event-query-policy/items/{definitionKeyId}/publish": {
       "post": {
+        "deprecated": true,
         "operationId": "EventQueryPolicy_publishItem",
         "parameters": [
           {
@@ -34768,6 +35059,7 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy separate Event policy publication",
         "tags": [
           "End User Event Query"
         ],
@@ -34779,6 +35071,7 @@
     },
     "/api/v1/admin/projects/{projectId}/event-query-policy/items/{definitionKeyId}/validate": {
       "post": {
+        "deprecated": true,
         "operationId": "EventQueryPolicy_validateItem",
         "parameters": [
           {
@@ -34825,6 +35118,7 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy separate Event policy validation",
         "tags": [
           "End User Event Query"
         ],
@@ -34885,6 +35179,7 @@
     },
     "/api/v1/admin/projects/{projectId}/event-query-policy/publish": {
       "post": {
+        "deprecated": true,
         "operationId": "EventQueryPolicy_publish",
         "parameters": [
           {
@@ -34923,6 +35218,7 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy separate policy publication",
         "tags": [
           "End User Event Query"
         ],
@@ -35059,6 +35355,7 @@
     },
     "/api/v1/admin/projects/{projectId}/event-query-policy/usage": {
       "get": {
+        "deprecated": true,
         "operationId": "EventQueryPolicy_usage",
         "parameters": [
           {
@@ -35126,6 +35423,7 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy standalone Event Query usage breakdown",
         "tags": [
           "End User Event Query"
         ],
@@ -35137,6 +35435,7 @@
     },
     "/api/v1/admin/projects/{projectId}/event-query-policy/validate": {
       "post": {
+        "deprecated": true,
         "operationId": "EventQueryPolicy_validate",
         "parameters": [
           {
@@ -35175,6 +35474,7 @@
             "bearer": []
           }
         ],
+        "summary": "Legacy whole-document validation",
         "tags": [
           "End User Event Query"
         ],

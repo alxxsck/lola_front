@@ -6,39 +6,29 @@ import AiModalityChart from './components/AiModalityChart.vue'
 
 config.global.stubs.ProjectSettingsSectionHeader = false
 
-const mocks = vi.hoisted(() => ({
-  fetchReport: vi.fn(),
-  fetchEventQueryUsage: vi.fn(),
-}))
+const mocks = vi.hoisted(() => ({ fetchReport: vi.fn() }))
 
 vi.mock('./ai-usage.api', () => ({ fetchAiUsageReport: mocks.fetchReport }))
-vi.mock('@/features/event-query/api/event-query-repository', () => ({
-  eventQueryRepository: { usage: mocks.fetchEventQueryUsage },
-}))
 vi.mock('@/shared/config/data-mode', () => ({ isMockMode: false }))
 
 describe('AiUsageSection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.fetchEventQueryUsage.mockResolvedValue({
-      from: '2026-07-29T00:00:00.000Z',
-      to: '2026-07-29T12:00:00.000Z',
-      scope: { endUserId: null, audience: null },
-      calls: 6,
-      resultBytes: 3_300,
-      estimatedAddedInputTokens: 1_119,
-      exactAiUsage: {
-        records: 6,
-        inputTokens: 60_000,
-        outputTokens: 14_546,
-        totalTokens: 74_546,
-        billedCostUsd: '0.0295008',
-        estimatedCostUsd: null,
-      },
-      byOrigin: {},
-      byAudience: {},
-    })
     mocks.fetchReport.mockResolvedValue({
+      eventQuery: {
+        calls: 6,
+        resultBytes: 3_300,
+        estimatedAddedInputTokens: 1_119,
+        linkedUsageIncludedInProviderTotals: true,
+        linkedAiUsage: {
+          records: 6,
+          inputTokens: 60_000,
+          outputTokens: 14_546,
+          totalTokens: 74_546,
+          billedCostUsd: 0.0295008,
+          estimatedCostUsd: null,
+        },
+      },
       projectId: 'project-1',
       totals: {
         records: 2,
@@ -209,20 +199,11 @@ describe('AiUsageSection', () => {
 
   it('shows Event Query consumption inside the Grok panel', async () => {
     const wrapper = shallowMount(AiUsageSection, {
-      props: {
-        projectId: 'project-1',
-        canReadEventQueryUsage: true,
-      },
+      props: { projectId: 'project-1' },
     })
     await flushPromises()
 
-    expect(mocks.fetchEventQueryUsage).toHaveBeenCalledWith(
-      'project-1',
-      expect.objectContaining({
-        from: expect.any(String),
-        to: expect.any(String),
-      }),
-    )
+    expect(mocks.fetchReport).toHaveBeenCalledTimes(1)
     expect(wrapper.get('.xai-panel').text()).toContain('Запросы к событиям')
     expect(wrapper.get('.event-query-usage').text()).toContain('6')
     expect(wrapper.get('.event-query-usage').text()).toContain('3,2 КБ')

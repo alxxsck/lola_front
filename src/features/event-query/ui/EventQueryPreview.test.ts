@@ -1,10 +1,14 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import { eventQueryRepository } from "../api/event-query-repository";
 import EventQueryPreview from "./EventQueryPreview.vue";
 
 vi.mock("../api/event-query-repository", () => ({
   eventQueryRepository: { listItems: vi.fn(), preview: vi.fn() },
+}));
+vi.mock("@/features/end-user-profile/api/end-user-profile-repository", () => ({
+  endUserProfileRepository: { resolveIdentity: vi.fn() },
 }));
 
 const aggregateItem = {
@@ -60,11 +64,13 @@ function mountPreview() {
 describe("EventQueryPreview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(endUserProfileRepository.resolveIdentity).mockResolvedValue({
+      endUserId: "00000000-0000-4000-8000-000000000001",
+      externalUserId: "player-42",
+    });
     vi.mocked(eventQueryRepository.listItems).mockResolvedValue({
       audience: "INTERNAL_AI",
       effectiveOnly: true,
-      publishedMasterEnabled: true,
-      publishedPolicyRevision: null,
       items: [aggregateItem, summaryItem].map((item, index) => {
         const { stableCode, ...configuration } = item;
         return {
@@ -107,16 +113,20 @@ describe("EventQueryPreview", () => {
       "30 дней",
     );
 
-    await wrapper.get('[data-test="preview-end-user"]').setValue("user-1");
+    await wrapper.get('[data-test="preview-end-user"]').setValue("player-42");
     await wrapper
       .findAll("button")
       .find((button) => button.text() === "Выполнить preview")!
       .trigger("click");
     await flushPromises();
 
+    expect(endUserProfileRepository.resolveIdentity).toHaveBeenCalledWith(
+      "project-1",
+      "player-42",
+    );
     expect(eventQueryRepository.preview).toHaveBeenCalledWith("project-1", {
       audience: "INTERNAL_AI",
-      endUserId: "user-1",
+      endUserId: "00000000-0000-4000-8000-000000000001",
       query: expect.objectContaining({
         eventCodes: ["deposit.completed"],
         mode: "AGGREGATE",
@@ -130,6 +140,27 @@ describe("EventQueryPreview", () => {
         ],
       }),
     });
+  });
+
+  it("does not execute preview when the user identity cannot be resolved", async () => {
+    vi.mocked(endUserProfileRepository.resolveIdentity).mockResolvedValueOnce(
+      null,
+    );
+    const wrapper = mountPreview();
+    await flushPromises();
+    await wrapper.get('[data-test="preview-event"]').setValue("game.started");
+    await wrapper
+      .get('[data-test="preview-end-user"]')
+      .setValue("unknown-player");
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Выполнить preview")!
+      .trigger("click");
+    await flushPromises();
+
+    expect(eventQueryRepository.preview).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("Пользователь не найден");
   });
 
   it("normalizes mode and lookback when the selected event changes", async () => {

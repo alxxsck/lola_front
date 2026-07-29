@@ -5,11 +5,10 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryProjectDraftResponseDtoCurrentRevisionId } from "./eventQueryProjectDraftResponseDtoCurrentRevisionId";
 
 export interface EventQueryProjectDraftResponseDto {
   /** @nullable */
-  currentRevisionId?: EventQueryProjectDraftResponseDtoCurrentRevisionId;
+  currentRevisionId?: string | null;
   masterEnabled: boolean;
   updatedAt: string;
   /** @minimum 1 */

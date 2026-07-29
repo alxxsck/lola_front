@@ -31,6 +31,24 @@ const response = {
     unpricedRecords: 0,
   },
   categories: [{ ...summary, category: "CHAT", currency: "usd" }],
+  providers: {
+    xai: {
+      eventQuery: {
+        calls: 6,
+        resultBytes: 3_300,
+        estimatedAddedInputTokens: 1_119,
+        linkedUsageIncludedInProviderTotals: true,
+        linkedAiUsage: {
+          records: 1,
+          totalTokens: 74_546,
+          inputTokens: 60_000,
+          outputTokens: 14_546,
+          billedCostUsd: "0.029500800000",
+          estimatedCostUsd: null,
+        },
+      },
+    },
+  },
   breakdown: [],
   items: [],
   nextCursor: null,
@@ -49,6 +67,14 @@ describe("End User AI consumption response validation", () => {
         effectiveCost: 0.15,
       },
       categories: [{ category: "CHAT", totalTokens: 10_000 }],
+      eventQuery: {
+        calls: 6,
+        resultBytes: 3_300,
+        linkedAiUsage: {
+          totalTokens: 74_546,
+          billedCostUsd: 0.0295008,
+        },
+      },
     });
   });
 

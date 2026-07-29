@@ -1,15 +1,14 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api/http/api-error";
 import type { EventCatalogDefinition } from "@/shared/api/repository/event-catalog";
 import { eventQueryRepository } from "../api/event-query-repository";
 import EventQueryEventAccess from "./EventQueryEventAccess.vue";
 
 vi.mock("../api/event-query-repository", () => ({
   eventQueryRepository: {
+    applyItem: vi.fn(),
     getItem: vi.fn(),
-    patchItem: vi.fn(),
-    validateItem: vi.fn(),
-    publishItem: vi.fn(),
   },
 }));
 
@@ -59,20 +58,19 @@ const state = {
   definitionKeyId: "definition-1",
   eventCode: "deposit.completed",
   lifecycle: "ACTIVE" as const,
-  draftVersion: 4,
-  policyDraftVersion: 2,
-  publishedPolicyVersion: 3 as never,
+  concurrencyToken: "eq-item-v1.initial",
   configured: {
     enabled: true,
     endUserConversationEnabled: false,
     configuration,
   },
-  published: {
-    enabled: true,
-    endUserConversationEnabled: false,
-    configuration,
-  },
   effective: { internalAi: true, endUserConversation: false },
+  lifecycleRestrictions: {
+    canApply: true,
+    canEnable: true,
+    readOnly: false,
+    reasons: [],
+  },
   diagnostics: [],
 };
 
@@ -110,27 +108,14 @@ describe("EventQueryEventAccess", () => {
     vi.mocked(eventQueryRepository.getItem).mockResolvedValue(
       structuredClone(state),
     );
-    vi.mocked(eventQueryRepository.validateItem).mockResolvedValue({
-      valid: true,
-      errors: [],
-    });
-    vi.mocked(eventQueryRepository.patchItem).mockResolvedValue({
-      definitionKeyId: "definition-1",
-      eventCode: "deposit.completed",
-      lifecycle: "ACTIVE",
-      version: 5,
-      enabled: true,
-      endUserConversationEnabled: true,
-      configuration,
-      diagnostics: [],
-    });
-    vi.mocked(eventQueryRepository.publishItem).mockResolvedValue({
-      id: "policy-4",
-      version: 4,
-      publishedAt: "2026-07-28T11:00:00.000Z",
-      compilerVersion: "1",
-      documentHash: "hash-4",
-      document: { enabled: true, items: [] },
+    vi.mocked(eventQueryRepository.applyItem).mockResolvedValue({
+      ...structuredClone(state),
+      concurrencyToken: "eq-item-v1.applied",
+      configured: {
+        ...state.configured,
+        endUserConversationEnabled: true,
+      },
+      effective: { internalAi: true, endUserConversation: true },
     });
   });
 
@@ -144,31 +129,15 @@ describe("EventQueryEventAccess", () => {
     await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
     await flushPromises();
 
-    expect(eventQueryRepository.validateItem).toHaveBeenCalledWith(
-      "project-1",
-      "definition-1",
-      {
-        patch: expect.objectContaining({
-          expectedVersion: 4,
-          enabled: true,
-          endUserConversationEnabled: true,
-        }),
-      },
-    );
-    expect(eventQueryRepository.patchItem).toHaveBeenCalledWith(
+    expect(eventQueryRepository.applyItem).toHaveBeenCalledWith(
       "project-1",
       "definition-1",
       expect.objectContaining({
-        expectedVersion: 4,
+        concurrencyToken: "eq-item-v1.initial",
         enabled: true,
         endUserConversationEnabled: true,
         descriptionForAI: "Успешный депозит",
       }),
-    );
-    expect(eventQueryRepository.publishItem).toHaveBeenCalledWith(
-      "project-1",
-      "definition-1",
-      { expectedVersion: 5, expectedPolicyVersion: 3 },
     );
     expect(wrapper.text()).not.toContain("Опубликовать");
     expect(wrapper.text()).not.toContain("Черновик");
@@ -195,38 +164,73 @@ describe("EventQueryEventAccess", () => {
     await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
     await flushPromises();
 
-    expect(eventQueryRepository.patchItem).toHaveBeenCalledWith(
+    expect(eventQueryRepository.applyItem).toHaveBeenCalledWith(
       "project-1",
       "definition-1",
       expect.objectContaining({
+        concurrencyToken: "eq-item-v1.initial",
         enabled: false,
         endUserConversationEnabled: true,
       }),
     );
   });
 
-  it("applies an already saved Event without exposing OCC versions", async () => {
-    vi.mocked(eventQueryRepository.getItem)
+  it("does not call apply when the Event form is unchanged", async () => {
+    const wrapper = mountAccess();
+    await flushPromises();
+
+    await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
+    await flushPromises();
+
+    expect(eventQueryRepository.applyItem).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Event form and retries with the replacement token after 409", async () => {
+    vi.mocked(eventQueryRepository.applyItem)
+      .mockRejectedValueOnce(
+        new ApiError(409, "Conflict", {
+          current: {
+            ...structuredClone(state),
+            concurrencyToken: "eq-item-v1.current",
+          },
+        }),
+      )
       .mockResolvedValueOnce({
         ...structuredClone(state),
+        concurrencyToken: "eq-item-v1.applied",
         configured: {
           ...state.configured,
           endUserConversationEnabled: true,
         },
-      })
-      .mockResolvedValueOnce(structuredClone(state));
+        effective: { internalAi: true, endUserConversation: true },
+      });
     const wrapper = mountAccess();
     await flushPromises();
 
     await wrapper
-      .get('button[data-test="apply-event-query"]')
-      .trigger("click");
+      .get('[data-test="event-query-conversation-enabled"]')
+      .setValue(true);
+    await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
     await flushPromises();
 
-    expect(eventQueryRepository.publishItem).toHaveBeenCalledWith(
+    expect(
+      (
+        wrapper.get('[data-test="event-query-conversation-enabled"]')
+          .element as HTMLInputElement
+      ).checked,
+    ).toBe(true);
+    expect(wrapper.text()).toContain("другой администратор");
+
+    await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
+    await flushPromises();
+
+    expect(eventQueryRepository.applyItem).toHaveBeenLastCalledWith(
       "project-1",
       "definition-1",
-      { expectedVersion: 4, expectedPolicyVersion: 3 },
+      expect.objectContaining({
+        concurrencyToken: "eq-item-v1.current",
+        endUserConversationEnabled: true,
+      }),
     );
   });
 });

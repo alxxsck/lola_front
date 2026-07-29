@@ -1,16 +1,13 @@
 import type {
   EstimateCaseVerificationDto,
-  EventQueryPolicyDocumentDto,
   EventQueryPolicyItemDto,
   EventQueryPolicyItemStateResponseDto,
   EventQueryPolicyStateResponseDto,
-  EventQueryPolicyUsageParams,
   PreviewEventQueryDto,
   StartCaseVerificationDto,
 } from "@/shared/api/generated/models";
 import type { EventQueryRepository } from "./event-query-repository";
 
-const publishedAt = "2026-07-28T10:00:00.000Z";
 const policyRevisionId = "event-query-policy-demo-1";
 const safeFields = [
   {
@@ -43,33 +40,25 @@ const queryableEvents: EventQueryPolicyItemDto[] = [
   })),
 }));
 
-let draftVersion = 1;
-const draftDocument: EventQueryPolicyDocumentDto = {
-  enabled: true,
-  items: structuredClone(queryableEvents),
-};
-let publishedDocument: EventQueryPolicyDocumentDto =
-  structuredClone(draftDocument);
+let masterEnabled = true;
+let projectTokenVersion = 1;
+const itemTokenVersions = new Map<string, number>();
+const itemSettings = new Map<
+  string,
+  {
+    enabled: boolean;
+    endUserConversationEnabled: boolean;
+    item: EventQueryPolicyItemDto;
+  }
+>();
 const runs = new Map<string, ReturnType<typeof verificationRun>>();
 
 function policyState(): EventQueryPolicyStateResponseDto {
   return {
-    counts: {
-      configuredDraftItems: draftDocument.items.length,
-      enabledDraftItems: draftDocument.items.length,
-      endUserConversationDraftItems: draftDocument.items.length,
-    },
-    currentRevision: {
-      compilerVersion: "demo-1",
-      documentHash: "demo-policy-document-hash",
-      id: policyRevisionId,
-      itemCount: publishedDocument.items.length,
-      publishedAt,
-      version: 1,
-    },
+    concurrencyToken: `eq-project-v1.demo-${projectTokenVersion}`,
+    configured: { masterEnabled },
     diagnostics: [],
-    masterEnabled: draftDocument.enabled,
-    version: draftVersion,
+    effective: { masterEnabled },
   };
 }
 
@@ -85,27 +74,42 @@ function configuration(item: EventQueryPolicyItemDto) {
 
 function itemState(
   definitionKeyId: string,
-  item = queryableEvents[0]!,
 ): EventQueryPolicyItemStateResponseDto {
+  const fallbackIndex = Math.max(
+    Number(definitionKeyId.replace("demo-event-", "")) - 1,
+    0,
+  );
+  const fallbackItem = queryableEvents[fallbackIndex] ?? queryableEvents[0]!;
+  const settings = itemSettings.get(definitionKeyId) ?? {
+    enabled: true,
+    endUserConversationEnabled: true,
+    item: structuredClone(fallbackItem),
+  };
+  const tokenVersion = itemTokenVersions.get(definitionKeyId) ?? 1;
   return {
+    concurrencyToken: `eq-item-v1.demo-${definitionKeyId}-${tokenVersion}`,
     configured: {
-      enabled: true,
-      endUserConversationEnabled: true,
-      configuration: configuration(item),
+      enabled: settings.enabled,
+      endUserConversationEnabled: settings.endUserConversationEnabled,
+      configuration: configuration(settings.item),
     },
     definitionKeyId,
     diagnostics: [],
-    draftVersion,
-    effective: { internalAi: true, endUserConversation: true },
-    eventCode: item.stableCode,
-    lifecycle: "ACTIVE",
-    policyDraftVersion: draftVersion,
-    published: {
-      enabled: true,
-      endUserConversationEnabled: true,
-      configuration: configuration(item),
+    effective: {
+      internalAi: masterEnabled && settings.enabled,
+      endUserConversation:
+        masterEnabled &&
+        settings.enabled &&
+        settings.endUserConversationEnabled,
     },
-    publishedPolicyVersion: 1 as never,
+    eventCode: settings.item.stableCode,
+    lifecycle: "ACTIVE",
+    lifecycleRestrictions: {
+      canApply: true,
+      canEnable: true,
+      readOnly: false,
+      reasons: [],
+    },
   };
 }
 
@@ -176,15 +180,12 @@ export const mockEventQueryRepository: EventQueryRepository = {
     return policyState();
   },
 
-  async patchProject(_projectId, input) {
-    draftVersion += 1;
-    draftDocument.enabled = input.masterEnabled;
-    return {
-      version: draftVersion,
-      masterEnabled: input.masterEnabled,
-      currentRevisionId: null,
-      updatedAt: new Date().toISOString(),
-    };
+  async applyProject(_projectId, input) {
+    if (masterEnabled !== input.masterEnabled) {
+      masterEnabled = input.masterEnabled;
+      projectTokenVersion += 1;
+    }
+    return policyState();
   },
 
   async listItems(_projectId, params) {
@@ -196,24 +197,30 @@ export const mockEventQueryRepository: EventQueryRepository = {
           item.stableCode.toLocaleLowerCase("ru-RU").includes(query) ||
           item.descriptionForAI.toLocaleLowerCase("ru-RU").includes(query),
       )
-      .map((item, index) => ({
-        definitionKeyId: `demo-event-${index + 1}`,
-        eventCode: item.stableCode,
-        eventName: item.descriptionForAI,
-        lifecycle: "ACTIVE" as const,
-        configuration: configuration(item),
-        effective: { internalAi: true, endUserConversation: true },
-        queryable: true,
-      }));
+      .map((item) => {
+        const sourceIndex = queryableEvents.findIndex(
+          (candidate) => candidate.stableCode === item.stableCode,
+        );
+        const definitionKeyId = `demo-event-${sourceIndex + 1}`;
+        const current = itemState(definitionKeyId);
+        const queryable =
+          params.audience === "END_USER_CONVERSATION"
+            ? current.effective.endUserConversation
+            : current.effective.internalAi;
+        return {
+          definitionKeyId,
+          eventCode: current.eventCode,
+          eventName: item.descriptionForAI,
+          lifecycle: "ACTIVE" as const,
+          configuration: current.configured.configuration,
+          effective: current.effective,
+          queryable,
+        };
+      })
+      .filter((item) => params.effective === false || item.queryable);
     return {
       audience: params.audience,
       effectiveOnly: params.effective ?? true,
-      publishedMasterEnabled: publishedDocument.enabled,
-      publishedPolicyRevision: {
-        id: policyRevisionId,
-        version: 1,
-        publishedAt,
-      },
       items,
       pageInfo: { hasMore: false, nextCursor: null },
     };
@@ -223,101 +230,32 @@ export const mockEventQueryRepository: EventQueryRepository = {
     return itemState(definitionKeyId);
   },
 
-  async patchItem(_projectId, definitionKeyId, input) {
-    draftVersion += 1;
+  async applyItem(_projectId, definitionKeyId, input) {
     const current = itemState(definitionKeyId);
-    return {
-      definitionKeyId,
-      eventCode: current.eventCode,
-      lifecycle: current.lifecycle,
-      version: draftVersion,
-      enabled: input.enabled ?? current.configured.enabled,
-      endUserConversationEnabled:
-        input.endUserConversationEnabled ??
-        current.configured.endUserConversationEnabled,
-      configuration: {
-        ...current.configured.configuration,
-        ...(input.descriptionForAI !== undefined
-          ? { descriptionForAI: input.descriptionForAI }
-          : {}),
-        ...(input.allowedModes !== undefined
-          ? { allowedModes: input.allowedModes }
-          : {}),
-        ...(input.safeFields !== undefined
-          ? { safeFields: input.safeFields }
-          : {}),
-        ...(input.maxInteractiveLookbackHours !== undefined
-          ? {
-              maxInteractiveLookbackHours: input.maxInteractiveLookbackHours,
-            }
-          : {}),
-        ...(input.maxVerificationLookbackHours !== undefined
-          ? {
-              maxVerificationLookbackHours: input.maxVerificationLookbackHours,
-            }
-          : {}),
+    itemSettings.set(definitionKeyId, {
+      enabled: input.enabled,
+      endUserConversationEnabled: input.endUserConversationEnabled,
+      item: {
+        stableCode: current.eventCode,
+        descriptionForAI: input.descriptionForAI,
+        allowedModes: [...input.allowedModes],
+        safeFields: input.safeFields.map((field) => ({
+          ...field,
+          operations: [...field.operations],
+        })),
+        maxInteractiveLookbackHours: input.maxInteractiveLookbackHours,
+        maxVerificationLookbackHours: input.maxVerificationLookbackHours,
       },
-      diagnostics: [],
-    };
-  },
-
-  async validateItem() {
-    return { valid: true, errors: [] };
-  },
-
-  async publishItem() {
-    return {
-      compilerVersion: "demo-1",
-      document: structuredClone(publishedDocument),
-      documentHash: "demo-policy-document-hash",
-      id: policyRevisionId,
-      publishedAt: new Date().toISOString(),
-      version: 1,
-    };
-  },
-
-  async publish() {
-    publishedDocument = structuredClone(draftDocument);
-    return {
-      compilerVersion: "demo-1",
-      document: structuredClone(publishedDocument),
-      documentHash: "demo-policy-document-hash",
-      id: policyRevisionId,
-      publishedAt: new Date().toISOString(),
-      version: 1,
-    };
+    });
+    itemTokenVersions.set(
+      definitionKeyId,
+      (itemTokenVersions.get(definitionKeyId) ?? 1) + 1,
+    );
+    return itemState(definitionKeyId);
   },
 
   async preview(_projectId: string, input: PreviewEventQueryDto) {
     return result(input.query.eventCodes[0] ?? "event");
-  },
-
-  async usage(_projectId: string, params: EventQueryPolicyUsageParams) {
-    return {
-      byAudience: {
-        END_USER_CONVERSATION: {
-          calls: 3,
-          estimatedAddedInputTokens: 72,
-          resultBytes: 288,
-        },
-      },
-      byOrigin: {
-        "user-request": {
-          calls: 3,
-          estimatedAddedInputTokens: 72,
-          resultBytes: 288,
-        },
-      },
-      calls: 3,
-      estimatedAddedInputTokens: 72,
-      from: params.from,
-      resultBytes: 288,
-      scope: {
-        endUserId: params.endUserId ?? null,
-        audience: params.audience ?? null,
-      },
-      to: params.to,
-    };
   },
 
   async listRequests(_projectId, params) {

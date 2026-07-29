@@ -38,6 +38,24 @@ const currentTotals = {
 const response = {
   projectId: "project-1",
   range: { from: null, to: null },
+  providers: {
+    xai: {
+      eventQuery: {
+        calls: 6,
+        resultBytes: 3_300,
+        estimatedAddedInputTokens: 1_119,
+        linkedUsageIncludedInProviderTotals: true,
+        linkedAiUsage: {
+          records: 6,
+          inputTokens: 60_000,
+          outputTokens: 14_546,
+          totalTokens: 74_546,
+          billedCostUsd: "0.029500800000",
+          estimatedCostUsd: null,
+        },
+      },
+    },
+  },
   totals: currentTotals,
   breakdown: [
     {
@@ -80,6 +98,13 @@ describe("AI usage API response validation", () => {
   it("normalizes decimal strings without exposing raw ledger rows", () => {
     expect(parseAiUsageReport(response, "project-1")).toMatchObject({
       projectId: "project-1",
+      eventQuery: {
+        calls: 6,
+        linkedAiUsage: {
+          totalTokens: 74_546,
+          billedCostUsd: 0.0295008,
+        },
+      },
       totals: {
         inputCharacters: 0,
         providerBilledUnits: 0,

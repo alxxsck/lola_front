@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface EventQueryLinkedAiUsageDto {
+export interface AiUsageEventQueryLinkedUsageResponseDto {
   /** @nullable */
-  billedCostUsd?: string | null;
+  billedCostUsd: string | null;
   /** @nullable */
-  estimatedCostUsd?: string | null;
+  estimatedCostUsd: string | null;
   /** @minimum 0 */
   inputTokens: number;
   /** @minimum 0 */

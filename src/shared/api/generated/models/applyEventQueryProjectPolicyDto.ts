@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface EventQueryPolicyCatalogRevisionDto {
-  id: string;
-  publishedAt: string;
-  /** @minimum 1 */
-  version: number;
+export interface ApplyEventQueryProjectPolicyDto {
+  /** Opaque token returned by the latest CMS-facing Project policy read or apply. */
+  concurrencyToken: string;
+  masterEnabled: boolean;
 }

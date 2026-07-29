@@ -100,11 +100,27 @@ export interface AiProviderUsage {
   billedCost: number
 }
 
+export interface AiUsageEventQueryBreakdown {
+  calls: number
+  resultBytes: number
+  estimatedAddedInputTokens: number
+  linkedUsageIncludedInProviderTotals: boolean
+  linkedAiUsage: {
+    records: number
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+    billedCostUsd: number | null
+    estimatedCostUsd: number | null
+  }
+}
+
 export interface AiUsageReport {
   projectId: string
   totals: AiUsageTotals
   breakdown: AiUsageBreakdown[]
   categories: AiUsageCategoryBreakdown[]
+  eventQuery: AiUsageEventQueryBreakdown
 }
 
 export interface AiModelUsage {
