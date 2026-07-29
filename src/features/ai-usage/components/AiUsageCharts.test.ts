@@ -1,14 +1,12 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type {
-  AiCreditUsage,
   AiModelUsage,
   AiProviderUsage,
   AiUsageBreakdown,
 } from '../ai-usage.model'
 import AiModalityChart from './AiModalityChart.vue'
 import AiModelUsageChart from './AiModelUsageChart.vue'
-import ElevenLabsCreditChart from './ElevenLabsCreditChart.vue'
 
 const xAiRow: AiModelUsage = {
   key: 'xai\u0000grok-4.5\u0000usd',
@@ -39,16 +37,6 @@ const voiceRow: AiModelUsage = {
   durationSeconds: 170.35,
   estimatedCost: 0.197958333333,
   billedCost: 0,
-}
-
-const elevenLabsRow: AiCreditUsage = {
-  key: 'elevenlabs\u0000eleven_v3\u0000speech',
-  provider: 'elevenlabs',
-  model: 'eleven_v3',
-  operation: 'speech',
-  records: 3,
-  inputCharacters: 1_200,
-  providerBilledUnits: 1_250,
 }
 
 const emptyXAiUsage: AiProviderUsage = {
@@ -132,19 +120,6 @@ describe('AI usage charts', () => {
 
     await wrapper.setProps({ metric: 'cost' })
     expect(wrapper.text()).toContain('0,20 $')
-  })
-
-  it('shows ElevenLabs credit usage by model and operation', () => {
-    const wrapper = mount(ElevenLabsCreditChart, {
-      props: { rows: [elevenLabsRow] },
-    })
-
-    expect(wrapper.text()).toContain('Куда расходуются credits')
-    expect(wrapper.text()).toContain('eleven_v3')
-    expect(wrapper.text()).toContain('Text to Speech')
-    expect(wrapper.text()).toContain('1,3 тыс. credits')
-    expect(wrapper.text()).toContain('1,2 тыс. символов')
-    expect(wrapper.text()).toContain('а не USD')
   })
 
   it('keeps the Grok modality empty state provider-specific', () => {
@@ -253,6 +228,29 @@ describe('AI usage charts', () => {
     expect(wrapper.text()).toContain('0,06 $')
   })
 
+  it('labels speech operations as text-to-speech in a cost breakdown', () => {
+    const wrapper = mount(AiModalityChart, {
+      props: {
+        totals: { ...emptyXAiUsage, records: 1, estimatedCost: 0.018 },
+        breakdown: [
+          {
+            ...xAiBreakdown,
+            model: null,
+            operation: 'speech',
+            records: 1,
+            totalTokens: 0,
+            estimatedCost: 0.018,
+            billedCost: 0,
+          },
+        ],
+        metric: 'cost',
+        currency: 'USD',
+      },
+    })
+
+    expect(wrapper.text()).toContain('Озвучивание текста')
+  })
+
   it('assigns a distinct theme series token to every visible cost operation', () => {
     const breakdown = Array.from({ length: 6 }, (_, index) => ({
       ...xAiBreakdown,
@@ -269,7 +267,9 @@ describe('AI usage charts', () => {
       },
     })
 
-    const colors = wrapper.findAll('.donut-segment').map((segment) => segment.attributes('stroke'))
+    const colors = wrapper
+      .findAll('.donut-segment')
+      .map((segment) => segment.attributes('stroke'))
     expect(new Set(colors).size).toBe(6)
   })
 })

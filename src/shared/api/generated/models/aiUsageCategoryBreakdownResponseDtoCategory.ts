@@ -16,5 +16,6 @@ export const AiUsageCategoryBreakdownResponseDtoCategory = {
   SPEECH: "SPEECH",
   MEMORY: "MEMORY",
   AI_REVIEW: "AI_REVIEW",
+  CASE_INTELLIGENCE: "CASE_INTELLIGENCE",
   PROJECT_OVERHEAD: "PROJECT_OVERHEAD",
 } as const;

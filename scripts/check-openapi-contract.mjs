@@ -1029,6 +1029,48 @@ for (const deprecatedOperation of [
 
 requireSchemaProperties("CmsLoginRequestDto", ["identifier", "secret"]);
 requireRequiredProperties("CmsLoginRequestDto", ["identifier", "secret"]);
+requireSchemaProperties("AiUsageReportResponseDto", [
+  "breakdown",
+  "categories",
+  "items",
+  "textToSpeechPricing",
+]);
+requireRequiredProperties("AiUsageReportResponseDto", ["textToSpeechPricing"]);
+requireSchemaProperties("AiTextToSpeechPricingContextResponseDto", [
+  "current",
+  "sourceUrl",
+]);
+requireRequiredProperties("AiTextToSpeechPricingContextResponseDto", [
+  "current",
+  "sourceUrl",
+]);
+requireSchemaProperties("AiTextToSpeechCurrentPricingResponseDto", [
+  "rate",
+  "currency",
+  "unit",
+  "effectiveFrom",
+]);
+requireRequiredProperties("AiTextToSpeechCurrentPricingResponseDto", [
+  "rate",
+  "currency",
+  "unit",
+  "effectiveFrom",
+]);
+for (const schemaName of [
+  "AiUsageCategoryBreakdownResponseDto",
+  "AiUsageRecordResponseDto",
+]) {
+  const categories = new Set(
+    contractSchema(schemaName).properties?.category?.enum ?? [],
+  );
+  for (const requiredCategory of ["VOICE", "SPEECH", "CASE_INTELLIGENCE"]) {
+    if (!categories.has(requiredCategory)) {
+      throw new Error(
+        `${schemaName}.category no longer exposes ${requiredCategory}`,
+      );
+    }
+  }
+}
 requireSchemaProperties("PasswordSetupRequestDto", [
   "setupToken",
   "newPassword",

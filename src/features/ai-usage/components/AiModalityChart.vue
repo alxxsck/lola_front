@@ -11,6 +11,7 @@ import {
   getUsageCost,
   getModalityUsage,
   pluralizeRu,
+  usageOperationLabel,
 } from '../ai-usage.model'
 
 const props = defineProps<{
@@ -46,29 +47,35 @@ const modalities = computed(() =>
 const operations = computed(() => {
   const values = new Map<string, number>()
   for (const item of props.breakdown) {
-    values.set(item.operation, (values.get(item.operation) ?? 0) + getUsageCost(item))
+    values.set(
+      item.operation,
+      (values.get(item.operation) ?? 0) + getUsageCost(item),
+    )
   }
   const sorted = [...values]
     .filter(([, value]) => value > 0)
     .sort((left, right) => right[1] - left[1])
-  const grouped = sorted.length <= operationColors.length
-    ? sorted
-    : [
-        ...sorted.slice(0, operationColors.length - 1),
-        [
-          '__other__',
-          sorted
-            .slice(operationColors.length - 1)
-            .reduce((sum, [, value]) => sum + value, 0),
-        ] as [string, number],
-      ]
-  return grouped
-    .map(([operation, value], index) => ({
-      key: operation,
-      label: operation === '__other__' ? 'Остальное' : operationLabel(operation),
-      color: operationColors[index]!,
-      value,
-    }))
+  const grouped =
+    sorted.length <= operationColors.length
+      ? sorted
+      : [
+          ...sorted.slice(0, operationColors.length - 1),
+          [
+            '__other__',
+            sorted
+              .slice(operationColors.length - 1)
+              .reduce((sum, [, value]) => sum + value, 0),
+          ] as [string, number],
+        ]
+  return grouped.map(([operation, value], index) => ({
+    key: operation,
+    label:
+      operation === '__other__'
+        ? 'Остальное'
+        : usageOperationLabel(operation.toLowerCase()),
+    color: operationColors[index]!,
+    value,
+  }))
 })
 const chartItems = computed(() =>
   props.metric === 'cost' ? operations.value : modalities.value,
@@ -104,28 +111,12 @@ const totalCaption = computed(() =>
 )
 
 function formatValue(value: number, key?: string): string {
-  if (props.metric === 'cost') return formatMoney(value, props.currency ?? 'USD')
+  if (props.metric === 'cost')
+    return formatMoney(value, props.currency ?? 'USD')
   if (key === 'audio' && value === 0 && props.totals.durationSeconds > 0) {
     return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(props.totals.durationSeconds)} сек. аудио · токены не переданы`
   }
   return `${formatTokenCount(value)} токенов`
-}
-
-function operationLabel(operation: string): string {
-  const normalized = operation.toLowerCase()
-  const labels: Record<string, string> = {
-    responses: 'Текст',
-    response: 'Текст',
-    web_search: 'Web search',
-    knowledge_search: 'Knowledge search',
-    realtime_response: 'Голосовой ответ',
-    voice_response: 'Голосовой ответ',
-    realtime_text_input: 'Текстовые команды Voice',
-    transcription: 'Транскрипция',
-    input_transcription: 'Входная транскрипция',
-    output_transcription: 'Выходная транскрипция',
-  }
-  return labels[normalized] ?? operation.replaceAll(/[_-]+/g, ' ')
 }
 
 function percentage(itemValue: number): string {
@@ -139,9 +130,15 @@ function percentage(itemValue: number): string {
   <section class="chart-card" aria-labelledby="modality-usage-title">
     <header class="chart-header">
       <div>
-        <span class="chart-kicker">{{ metric === 'cost' ? 'Операции' : 'Форматы' }}</span>
+        <span class="chart-kicker">{{
+          metric === 'cost' ? 'Операции' : 'Форматы'
+        }}</span>
         <h3 id="modality-usage-title">
-          {{ metric === 'cost' ? 'Структура стоимости Grok' : 'Форматы токенов Grok' }}
+          {{
+            metric === 'cost'
+              ? 'Структура стоимости Grok'
+              : 'Форматы токенов Grok'
+          }}
         </h3>
       </div>
       <div class="chart-summary">
@@ -184,7 +181,11 @@ function percentage(itemValue: number): string {
       </div>
     </div>
     <div v-else class="chart-empty">
-      <i class="pi pi-chart-pie" /><span>{{ metric === 'cost' ? 'Оценка стоимости пока отсутствует' : 'Детализация по форматам пока отсутствует' }}</span>
+      <i class="pi pi-chart-pie" /><span>{{
+        metric === 'cost'
+          ? 'Оценка стоимости пока отсутствует'
+          : 'Детализация по форматам пока отсутствует'
+      }}</span>
     </div>
 
     <footer v-if="metric === 'tokens'" class="cache-row">
@@ -193,7 +194,12 @@ function percentage(itemValue: number): string {
     </footer>
     <footer v-else class="cache-row">
       <span><i class="pi pi-receipt" /> Фактическая и расчётная стоимость</span>
-      <strong>{{ totals.records }} {{ pluralizeRu(totals.records, 'операция', 'операции', 'операций') }}</strong>
+      <strong
+        >{{ totals.records }}
+        {{
+          pluralizeRu(totals.records, 'операция', 'операции', 'операций')
+        }}</strong
+      >
     </footer>
   </section>
 </template>

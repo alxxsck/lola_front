@@ -1720,6 +1720,59 @@
         ],
         "type": "object"
       },
+      "AiTextToSpeechCurrentPricingResponseDto": {
+        "properties": {
+          "currency": {
+            "enum": [
+              "usd"
+            ],
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rate": {
+            "example": "15",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "per_million_input_characters"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "rate",
+          "currency",
+          "unit",
+          "effectiveFrom"
+        ],
+        "type": "object"
+      },
+      "AiTextToSpeechPricingContextResponseDto": {
+        "properties": {
+          "current": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiTextToSpeechCurrentPricingResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "sourceUrl": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current",
+          "sourceUrl"
+        ],
+        "type": "object"
+      },
       "AiUsageBreakdownResponseDto": {
         "properties": {
           "billedCost": {
@@ -1872,6 +1925,7 @@
               "SPEECH",
               "MEMORY",
               "AI_REVIEW",
+              "CASE_INTELLIGENCE",
               "PROJECT_OVERHEAD"
             ],
             "type": "string"
@@ -2001,6 +2055,7 @@
               "SPEECH",
               "MEMORY",
               "AI_REVIEW",
+              "CASE_INTELLIGENCE",
               "PROJECT_OVERHEAD"
             ],
             "type": "string"
@@ -2125,6 +2180,9 @@
           "range": {
             "$ref": "#/components/schemas/AiUsageRangeResponseDto"
           },
+          "textToSpeechPricing": {
+            "$ref": "#/components/schemas/AiTextToSpeechPricingContextResponseDto"
+          },
           "totals": {
             "$ref": "#/components/schemas/AiUsageTotalsResponseDto"
           }
@@ -2133,6 +2191,7 @@
           "projectId",
           "range",
           "totals",
+          "textToSpeechPricing",
           "breakdown",
           "categories",
           "items",
@@ -9187,6 +9246,9 @@
           "range": {
             "$ref": "#/components/schemas/EndUserAiUsageRangeResponseDto"
           },
+          "textToSpeechPricing": {
+            "$ref": "#/components/schemas/AiTextToSpeechPricingContextResponseDto"
+          },
           "totals": {
             "$ref": "#/components/schemas/AiUsageTotalsResponseDto"
           },
@@ -9205,6 +9267,7 @@
           "projectId",
           "range",
           "totals",
+          "textToSpeechPricing",
           "breakdown",
           "categories",
           "items",

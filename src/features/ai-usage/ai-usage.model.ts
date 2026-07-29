@@ -80,8 +80,10 @@ export interface AiUsageBreakdown {
   effectiveCost: number
 }
 
-export interface AiUsageCategoryBreakdown
-  extends Omit<AiUsageBreakdown, 'provider' | 'model' | 'operation'> {
+export interface AiUsageCategoryBreakdown extends Omit<
+  AiUsageBreakdown,
+  'provider' | 'model' | 'operation'
+> {
   category: AiUsageCategory
 }
 
@@ -117,6 +119,17 @@ export interface AiUsageReport {
   totals: AiUsageTotals
   breakdown: AiUsageBreakdown[]
   categories: AiUsageCategoryBreakdown[]
+  textToSpeechPricing: AiTextToSpeechPricingContext
+}
+
+export interface AiTextToSpeechPricingContext {
+  current: {
+    rate: string
+    currency: 'usd'
+    unit: 'per_million_input_characters'
+    effectiveFrom: string
+  } | null
+  sourceUrl: string
 }
 
 export interface AiModelUsage {
@@ -140,16 +153,6 @@ export interface AiModalityUsage {
   key: 'text' | 'audio' | 'image'
   label: string
   tokens: number
-}
-
-export interface AiCreditUsage {
-  key: string
-  provider: string
-  model: string
-  operation: string
-  records: number
-  inputCharacters: number
-  providerBilledUnits: number
 }
 
 export const AI_USAGE_RANGE_OPTIONS: ReadonlyArray<{
@@ -240,6 +243,31 @@ export function getProviderBreakdown(
   )
 }
 
+const VOICE_OPERATIONS = new Set([
+  'realtime_response',
+  'realtime_transcription',
+  'realtime_text_input',
+  'realtime_speech',
+])
+
+export function getModelBreakdown(
+  breakdown: readonly AiUsageBreakdown[],
+): AiUsageBreakdown[] {
+  return breakdown.filter(
+    (item) =>
+      item.provider.toLowerCase() === 'xai' &&
+      item.operation !== 'speech' &&
+      !VOICE_OPERATIONS.has(item.operation),
+  )
+}
+
+export function getCategoryUsage(
+  report: AiUsageReport,
+  category: AiUsageCategory,
+): AiUsageCategoryBreakdown | undefined {
+  return report.categories.find((item) => item.category === category)
+}
+
 export function aggregateProviderUsage(
   breakdown: readonly AiUsageBreakdown[],
 ): AiProviderUsage {
@@ -279,36 +307,6 @@ export function aggregateProviderUsage(
   return totals
 }
 
-export function aggregateCreditUsage(
-  breakdown: readonly AiUsageBreakdown[],
-): AiCreditUsage[] {
-  const rows = new Map<string, AiCreditUsage>()
-
-  for (const item of breakdown) {
-    if (item.model === null) continue
-    const key = `${item.provider}\u0000${item.model}\u0000${item.operation}`
-    const current = rows.get(key)
-    if (current) {
-      current.records += item.records
-      current.inputCharacters += item.inputCharacters
-      current.providerBilledUnits += item.providerBilledUnits
-      continue
-    }
-
-    rows.set(key, {
-      key,
-      provider: item.provider,
-      model: item.model,
-      operation: item.operation,
-      records: item.records,
-      inputCharacters: item.inputCharacters,
-      providerBilledUnits: item.providerBilledUnits,
-    })
-  }
-
-  return [...rows.values()]
-}
-
 export function getModalityUsage(
   totals: AiUsageTotals | AiProviderUsage,
 ): AiModalityUsage[] {
@@ -338,7 +336,9 @@ export function getReportCurrency(report: AiUsageReport): string | undefined {
 export function getUsageCurrency(
   breakdown: readonly AiUsageBreakdown[],
 ): string | undefined {
-  const currencies = new Set(breakdown.map((item) => item.currency.toUpperCase()))
+  const currencies = new Set(
+    breakdown.map((item) => item.currency.toUpperCase()),
+  )
   if (currencies.size === 0) return 'USD'
   return currencies.size === 1 ? currencies.values().next().value : undefined
 }
@@ -373,6 +373,34 @@ export function formatMoney(value: number, currency: string): string {
   })
   if (value > 0 && value < 0.01) return `< ${formatter.format(0.01)}`
   return formatter.format(value)
+}
+
+export function formatDuration(value: number): string {
+  const seconds = Math.max(0, Math.round(value))
+  const minutes = Math.floor(seconds / 60)
+  const remainder = seconds % 60
+  if (!minutes) return `${remainder} сек`
+  if (!remainder) return `${minutes} мин`
+  return `${minutes} мин ${remainder} сек`
+}
+
+export function usageOperationLabel(operation: string): string {
+  const labels: Record<string, string> = {
+    responses: 'Текст',
+    response: 'Текст',
+    web_search: 'Web search',
+    knowledge_search: 'Knowledge search',
+    realtime_response: 'Голосовой ответ',
+    voice_response: 'Голосовой ответ',
+    realtime_text_input: 'Текстовые команды Voice',
+    speech: 'Озвучивание текста',
+    transcription: 'Транскрипция',
+    input_transcription: 'Входная транскрипция',
+    output_transcription: 'Выходная транскрипция',
+    case_router: 'Маршрутизация',
+    case_aggregator: 'Агрегация',
+  }
+  return labels[operation] ?? operation.replaceAll(/[_-]+/g, ' ')
 }
 
 export function pluralizeRu(

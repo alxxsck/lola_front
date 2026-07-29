@@ -6,6 +6,7 @@ import type {
   AiUsageCategoryBreakdown,
   AiUsageRangeQuery,
   AiUsageReport,
+  AiTextToSpeechPricingContext,
   AiUsageTotals,
 } from './ai-usage.model'
 import { AI_USAGE_CATEGORIES } from './ai-usage.model'
@@ -45,7 +46,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
     {
       provider: 'xai',
       model: 'grok-4.5',
-      operation: 'responses',
+      operation: 'response',
       currency: 'usd',
       records: 112,
       inputCharacters: 0,
@@ -75,7 +76,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
     {
       provider: 'xai',
       model: 'grok-voice-think-fast-1.0',
-      operation: 'voice_response',
+      operation: 'realtime_response',
       currency: 'usd',
       records: 51,
       inputCharacters: 0,
@@ -105,7 +106,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
     {
       provider: 'xai',
       model: 'grok-voice-think-fast-1.0',
-      operation: 'scripted_intro',
+      operation: 'realtime_text_input',
       currency: 'usd',
       records: 9,
       inputCharacters: 0,
@@ -135,7 +136,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
     {
       provider: 'xai',
       model: 'grok-voice-think-fast-1.0',
-      operation: 'input_transcription',
+      operation: 'realtime_transcription',
       currency: 'usd',
       records: 14,
       inputCharacters: 0,
@@ -193,7 +194,73 @@ const demoReport = (projectId: string): AiUsageReport => ({
       effectiveCost: 0.2769,
     },
   ],
-  categories: [],
+  categories: [
+    {
+      category: 'VOICE',
+      currency: 'usd',
+      records: 74,
+      inputCharacters: 0,
+      providerBilledUnits: 0,
+      totalTokens: 76_300,
+      inputTokens: 49_880,
+      cachedInputTokens: 12_820,
+      cacheWriteInputTokens: 0,
+      outputTokens: 26_420,
+      reasoningTokens: 0,
+      inputTextTokens: 20_500,
+      cachedInputTextTokens: 5_500,
+      outputTextTokens: 12_880,
+      inputAudioTokens: 29_380,
+      cachedInputAudioTokens: 7_320,
+      outputAudioTokens: 13_540,
+      inputImageTokens: 0,
+      cachedInputImageTokens: 0,
+      outputImageTokens: 0,
+      durationSeconds: 428,
+      estimatedCost: 1.108099,
+      billedCost: 0,
+      providerReportedCost: 0,
+      estimatedFallbackCost: 1.108099,
+      effectiveCost: 1.108099,
+    },
+    {
+      category: 'SPEECH',
+      currency: 'usd',
+      records: 24,
+      inputCharacters: 18_460,
+      providerBilledUnits: 19_120,
+      totalTokens: 0,
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      cacheWriteInputTokens: 0,
+      outputTokens: 0,
+      reasoningTokens: 0,
+      inputTextTokens: 0,
+      cachedInputTextTokens: 0,
+      outputTextTokens: 0,
+      inputAudioTokens: 0,
+      cachedInputAudioTokens: 0,
+      outputAudioTokens: 0,
+      inputImageTokens: 0,
+      cachedInputImageTokens: 0,
+      outputImageTokens: 0,
+      durationSeconds: 0,
+      estimatedCost: 0.2769,
+      billedCost: 0,
+      providerReportedCost: 0,
+      estimatedFallbackCost: 0.2769,
+      effectiveCost: 0.2769,
+    },
+  ],
+  textToSpeechPricing: {
+    current: {
+      rate: '15',
+      currency: 'usd',
+      unit: 'per_million_input_characters',
+      effectiveFrom: '2026-07-29T10:00:00.000Z',
+    },
+    sourceUrl: 'https://docs.x.ai/developers/pricing',
+  },
 })
 
 const totalsIntegerKeys = [
@@ -356,9 +423,7 @@ function parseBreakdown(value: unknown): AiUsageBreakdown | undefined {
 
 const usageCategories = new Set<AiUsageCategory>(AI_USAGE_CATEGORIES)
 
-function parseCategory(
-  value: unknown,
-): AiUsageCategoryBreakdown | undefined {
+function parseCategory(value: unknown): AiUsageCategoryBreakdown | undefined {
   if (!isRecord(value)) return undefined
   if (
     typeof value.category !== 'string' ||
@@ -375,6 +440,47 @@ function parseCategory(
   } as unknown as AiUsageCategoryBreakdown
 }
 
+function parseHttpsUrl(value: unknown): string | undefined {
+  if (!boundedString(value, 1, 2_048)) return undefined
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && !url.username && !url.password
+      ? value
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function parseTextToSpeechPricing(
+  value: unknown,
+): AiTextToSpeechPricingContext | undefined {
+  if (!isRecord(value)) return undefined
+  const sourceUrl = parseHttpsUrl(value.sourceUrl)
+  if (!sourceUrl) return undefined
+  if (value.current === null) return { current: null, sourceUrl }
+  if (!isRecord(value.current)) return undefined
+
+  const { rate, currency, unit, effectiveFrom } = value.current
+  if (
+    !boundedString(rate, 1, 64) ||
+    !/^\d+(?:\.\d+)?$/.test(rate) ||
+    Number(rate) <= 0 ||
+    currency !== 'usd' ||
+    unit !== 'per_million_input_characters' ||
+    !boundedString(effectiveFrom, 1, 64)
+  )
+    return undefined
+  const date = new Date(effectiveFrom)
+  if (!Number.isFinite(date.getTime()) || date.toISOString() !== effectiveFrom)
+    return undefined
+
+  return {
+    current: { rate, currency, unit, effectiveFrom },
+    sourceUrl,
+  }
+}
+
 export function parseAiUsageReport(
   value: unknown,
   projectId: string,
@@ -389,6 +495,10 @@ export function parseAiUsageReport(
     return undefined
   const totals = parseTotals(value.totals)
   if (!totals) return undefined
+  const textToSpeechPricing = parseTextToSpeechPricing(
+    value.textToSpeechPricing,
+  )
+  if (!textToSpeechPricing) return undefined
   const breakdown: AiUsageBreakdown[] = []
   for (const item of value.breakdown) {
     const parsed = parseBreakdown(item)
@@ -401,7 +511,13 @@ export function parseAiUsageReport(
     if (!parsed) return undefined
     categories.push(parsed)
   }
-  return { projectId, totals, breakdown, categories }
+  return {
+    projectId,
+    totals,
+    breakdown,
+    categories,
+    textToSpeechPricing,
+  }
 }
 
 export async function fetchAiUsageReport(
