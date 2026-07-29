@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   start: vi.fn(),
   get: vi.fn(),
   definitions: vi.fn(),
+  policy: vi.fn(),
   push: vi.fn(),
 }));
 
@@ -21,6 +22,9 @@ vi.mock("../api/ai-review-repository", () => ({
 }));
 vi.mock("@/shared/api/repository/event-catalog", () => ({
   eventCatalogRepository: { listDefinitions: mocks.definitions },
+}));
+vi.mock("@/features/event-query/api/event-query-repository", () => ({
+  eventQueryRepository: { getPolicy: mocks.policy },
 }));
 vi.mock("vue-router", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
@@ -74,6 +78,14 @@ describe("типизированный AI Review", () => {
         policy: { enabled: true },
       },
     ]);
+    mocks.policy.mockResolvedValue({
+      published: {
+        document: {
+          enabled: true,
+          items: [{ stableCode: "deposit.failed" }],
+        },
+      },
+    });
     mocks.estimate.mockResolvedValue({
       eventCount: 40,
       redactedBytes: 30000,
@@ -116,12 +128,17 @@ describe("типизированный AI Review", () => {
     expect(start?.attributes("disabled")).toBeDefined();
   });
 
-  it("показывает активные события, даже если приём новых событий выключен", async () => {
+  it("показывает только queryable события, независимо от приёма новых событий", async () => {
     mocks.definitions.mockResolvedValue([
       {
         code: "deposit.failed",
         metadata: { name: "Ошибка депозита" },
         policy: { enabled: false },
+      },
+      {
+        code: "internal.debug",
+        metadata: { name: "Внутреннее событие" },
+        policy: { enabled: true },
       },
     ]);
 
@@ -129,6 +146,7 @@ describe("типизированный AI Review", () => {
     await flushPromises();
 
     expect(mocks.definitions).toHaveBeenCalledWith("project-1", "ACTIVE");
+    expect(mocks.policy).toHaveBeenCalledWith("project-1");
     expect(
       wrapper.getComponent({ name: "MultiSelect" }).props("options"),
     ).toEqual([

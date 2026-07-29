@@ -54,6 +54,8 @@ import type {
   AudienceEvaluationResponseDto,
   BreakGlassLoginDto,
   BreakGlassLoginResponseDto,
+  CaseVerificationEstimateResponseDto,
+  CaseVerificationRunResponseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   ChatSend200,
@@ -138,6 +140,7 @@ import type {
   EndUserPageResponseDto,
   EndUserResponseDto,
   EndVoiceSessionDto,
+  EstimateCaseVerificationDto,
   EvaluateAudienceUserDto,
   EventCatalogDefinitionResponseDto,
   EventCatalogDiscardSchemaDraftParams,
@@ -154,10 +157,16 @@ import type {
   EventIngestionPolicyMutationResponseDto,
   EventLogPageResponseDto,
   EventLogResponseDto,
+  EventQueryPolicyDraftResponseDto,
+  EventQueryPolicyRevisionResponseDto,
+  EventQueryPolicyStateResponseDto,
+  EventQueryPolicyUsageParams,
+  EventQueryPolicyValidationResponseDto,
+  EventQueryResultResponseDto,
+  EventQueryUsageResponseDto,
   EventSchemaDraftResponseDto,
   EventSchemaImpactResponseDto,
   EventSchemaPublishResponseDto,
-  EventsListParams,
   ExtendConversationAISuspensionDto,
   FirstPlatformOperatorDto,
   FirstPlatformOperatorProvision201,
@@ -195,7 +204,6 @@ import type {
   KnowledgeDocumentMutationResponseDto,
   KnowledgeListParams,
   KnowledgeUploadFileBody,
-  LegacyEventLogPageResponseDto,
   LinkEndUserCaseMessageDto,
   ListMessagesDto,
   ListThreadMessagesDto,
@@ -224,6 +232,7 @@ import type {
   PlatformRoleResponseDto,
   PlatformTranslationUsageUsageReportParams,
   PreviewEndUserCasePolicyDto,
+  PreviewEventQueryDto,
   PreviewScenarioGoalDto,
   PreviewScenarioGoalResponseDto,
   PreviewScenarioRuleDto,
@@ -250,6 +259,7 @@ import type {
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
   PublishEndUserCasePolicyDto,
+  PublishEventQueryPolicyDto,
   PublishEventSchemaDraftDto,
   PublishScenarioDto,
   PublishScenarioResponseDto,
@@ -267,6 +277,7 @@ import type {
   RotateTelegramChannelDto,
   SaveAttributeContractDraftDto,
   SaveEndUserCasePolicyDraftDto,
+  SaveEventQueryPolicyDraftDto,
   SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
   ScenarioAdmissionDecisionPageResponseDto,
@@ -298,6 +309,7 @@ import type {
   SplitEndUserCaseResponseDto,
   StartAIReviewDto,
   StartAdminVoiceConversationDto,
+  StartCaseVerificationDto,
   StartConversationAISuspensionDto,
   StartVoiceSessionDto,
   SyncAttributeSnapshotDto,
@@ -359,6 +371,7 @@ import type {
   UserMemoryFactListResponseDto,
   UserMemorySettingsResponseDto,
   ValidateAttributeContractDto,
+  ValidateEventQueryPolicyDto,
   ValidateScenarioDraftDto,
   ValidateScenarioDraftResponseDto,
   ValidateScenarioRuleDto,
@@ -1451,6 +1464,57 @@ export const endUserCasesTimeline = (
   );
 };
 
+export const caseVerificationStart = (
+  projectId: string,
+  caseId: string,
+  startCaseVerificationDto: BodyType<StartCaseVerificationDto>,
+  options?: SecondParameter<typeof request<CaseVerificationRunResponseDto>>,
+) => {
+  return request<CaseVerificationRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/verification-runs`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: startCaseVerificationDto,
+    },
+    options,
+  );
+};
+
+export const caseVerificationGet = (
+  projectId: string,
+  caseId: string,
+  runId: string,
+  options?: SecondParameter<typeof request<CaseVerificationRunResponseDto>>,
+) => {
+  return request<CaseVerificationRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/verification-runs/${runId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const caseVerificationEstimate = (
+  projectId: string,
+  caseId: string,
+  estimateCaseVerificationDto: BodyType<EstimateCaseVerificationDto>,
+  options?: SecondParameter<
+    typeof request<CaseVerificationEstimateResponseDto>
+  >,
+) => {
+  return request<CaseVerificationEstimateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/verification/estimate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: estimateCaseVerificationDto,
+    },
+    options,
+  );
+};
+
 export const endUserCasesWorkflow = (
   projectId: string,
   caseId: string,
@@ -1961,6 +2025,102 @@ export const adminEventLogsGet = (
     {
       url: `/api/v1/admin/projects/${projectId}/event-logs/${eventId}`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyGet = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EventQueryPolicyStateResponseDto>>,
+) => {
+  return request<EventQueryPolicyStateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicySaveDraft = (
+  projectId: string,
+  saveEventQueryPolicyDraftDto: BodyType<SaveEventQueryPolicyDraftDto>,
+  options?: SecondParameter<typeof request<EventQueryPolicyDraftResponseDto>>,
+) => {
+  return request<EventQueryPolicyDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveEventQueryPolicyDraftDto,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyPreview = (
+  projectId: string,
+  previewEventQueryDto: BodyType<PreviewEventQueryDto>,
+  options?: SecondParameter<typeof request<EventQueryResultResponseDto>>,
+) => {
+  return request<EventQueryResultResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: previewEventQueryDto,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyPublish = (
+  projectId: string,
+  publishEventQueryPolicyDto: BodyType<PublishEventQueryPolicyDto>,
+  options?: SecondParameter<
+    typeof request<EventQueryPolicyRevisionResponseDto>
+  >,
+) => {
+  return request<EventQueryPolicyRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishEventQueryPolicyDto,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyUsage = (
+  projectId: string,
+  params: EventQueryPolicyUsageParams,
+  options?: SecondParameter<typeof request<EventQueryUsageResponseDto>>,
+) => {
+  return request<EventQueryUsageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/usage`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyValidate = (
+  projectId: string,
+  validateEventQueryPolicyDto: BodyType<ValidateEventQueryPolicyDto>,
+  options?: SecondParameter<
+    typeof request<EventQueryPolicyValidationResponseDto>
+  >,
+) => {
+  return request<EventQueryPolicyValidationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/validate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: validateEventQueryPolicyDto,
     },
     options,
   );
@@ -4715,17 +4875,6 @@ export const eventsIngest = (
   );
 };
 
-export const eventsList = (
-  projectId: string,
-  params?: EventsListParams,
-  options?: SecondParameter<typeof request<LegacyEventLogPageResponseDto>>,
-) => {
-  return request<LegacyEventLogPageResponseDto>(
-    { url: `/api/v1/events/admin/${projectId}`, method: "GET", params },
-    options,
-  );
-};
-
 export const eventsIngestClient = (
   ingestClientEventDto: BodyType<IngestClientEventDto>,
   options?: SecondParameter<typeof request<EventIngestResponseDto>>,
@@ -5226,6 +5375,15 @@ export type EndUserCasesSplitResult = NonNullable<
 export type EndUserCasesTimelineResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesTimeline>>
 >;
+export type CaseVerificationStartResult = NonNullable<
+  Awaited<ReturnType<typeof caseVerificationStart>>
+>;
+export type CaseVerificationGetResult = NonNullable<
+  Awaited<ReturnType<typeof caseVerificationGet>>
+>;
+export type CaseVerificationEstimateResult = NonNullable<
+  Awaited<ReturnType<typeof caseVerificationEstimate>>
+>;
 export type EndUserCasesWorkflowResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesWorkflow>>
 >;
@@ -5321,6 +5479,24 @@ export type AdminEventLogsListResult = NonNullable<
 >;
 export type AdminEventLogsGetResult = NonNullable<
   Awaited<ReturnType<typeof adminEventLogsGet>>
+>;
+export type EventQueryPolicyGetResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyGet>>
+>;
+export type EventQueryPolicySaveDraftResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicySaveDraft>>
+>;
+export type EventQueryPolicyPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyPreview>>
+>;
+export type EventQueryPolicyPublishResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyPublish>>
+>;
+export type EventQueryPolicyUsageResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyUsage>>
+>;
+export type EventQueryPolicyValidateResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyValidate>>
 >;
 export type IntegrationActivityListResult = NonNullable<
   Awaited<ReturnType<typeof integrationActivityList>>
@@ -5863,9 +6039,6 @@ export type ProfileSnapshotSyncResult = NonNullable<
 >;
 export type EventsIngestResult = NonNullable<
   Awaited<ReturnType<typeof eventsIngest>>
->;
-export type EventsListResult = NonNullable<
-  Awaited<ReturnType<typeof eventsList>>
 >;
 export type EventsIngestClientResult = NonNullable<
   Awaited<ReturnType<typeof eventsIngestClient>>

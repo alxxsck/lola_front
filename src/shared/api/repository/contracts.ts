@@ -315,10 +315,6 @@ export interface LolaRepository {
     session: ActiveSession,
     action: ManualAction,
   ): Promise<{ commandId: string; status: string }>;
-  getEventLogs(
-    projectId: string,
-    request?: EventLogsPageRequest,
-  ): Promise<Page<EventLog>>;
   getEventLogPage(
     projectId: string,
     filters?: EventLogFilters,

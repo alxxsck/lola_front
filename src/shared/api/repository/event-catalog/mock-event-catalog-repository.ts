@@ -70,12 +70,15 @@ function emptyImpact(
     impact: {
       consumers: [],
       activeWaits: [],
+      eventQueryPolicies: [],
       summary: {
         consumerCount: 0,
         activeWaitCount: 0,
         blockingConsumerCount: 0,
         blockingActiveWaitCount: 0,
         legacyExactCount: 0,
+        eventQueryPolicyCount: 0,
+        blockingEventQueryPolicyCount: 0,
       },
     },
   };
@@ -279,6 +282,7 @@ export const mockEventCatalogRepository: EventCatalogRepository = {
       impact: analysis.impact,
       automaticallyExtendedBindings: 0,
       automaticallyExtendedWaits: 0,
+      automaticallyExtendedEventQueryPolicies: 0,
     };
   },
   async discardSchemaDraft(projectId, definitionKeyId, command) {

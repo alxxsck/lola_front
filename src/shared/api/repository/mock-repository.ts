@@ -871,7 +871,7 @@ export const mockRepository: LolaRepository = {
     await pause();
     return { commandId: uid("cmd"), status: "delivered" };
   },
-  async getEventLogs(_projectId, request) {
+  async getEventLogPage(_projectId, filters) {
     await pause();
     const data = readDemo();
     const logs = data.activity
@@ -906,33 +906,7 @@ export const mockRepository: LolaRepository = {
         payload: { demo: true },
         context: { locale: "ru" },
       }));
-    const search = request?.search?.trim().toLowerCase();
     const filtered = logs.filter(
-      (item) =>
-        (!request?.status || item.status === request.status) &&
-        (!search ||
-          [item.id, item.eventCode, item.eventName, item.userExternalId].some(
-            (value) => value.toLowerCase().includes(search),
-          )),
-    );
-    const page = request?.page ?? 1;
-    const limit = request?.limit ?? 12;
-    const totalPages = Math.ceil(filtered.length / limit);
-    return {
-      items: filtered.slice((page - 1) * limit, page * limit),
-      pagination: {
-        page,
-        limit,
-        total: filtered.length,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1 && filtered.length > 0,
-      },
-    };
-  },
-  async getEventLogPage(_projectId, filters) {
-    const { items } = await this.getEventLogs(_projectId, { limit: 100 });
-    const filtered = items.filter(
       (item) =>
         (!filters?.eventCode || filters.eventCode.includes(item.eventCode)) &&
         (!filters?.externalUserId ||
@@ -954,7 +928,7 @@ export const mockRepository: LolaRepository = {
   },
   async getEventLog(projectId, eventId) {
     const item = (
-      await this.getEventLogs(projectId, { limit: 100 })
+      await this.getEventLogPage(projectId, { limit: 100 })
     ).items.find((event) => event.id === eventId);
     if (!item) throw new Error("Event log not found");
     return item;
@@ -981,24 +955,26 @@ export const mockRepository: LolaRepository = {
           conversationPolicy: scenario.conversationPolicy,
           startedAt: item.timestamp,
           currentStep: 1,
-          steps: ["SHOW_ASSISTANT", "PLAY_ANIMATION", "SAY"].map((actionType, index) => ({
-            id: `step_${index}`,
-            position: index,
-            nodeKey: `step_${index}`,
-            actionType,
-            executor: "FRONTEND",
-            status: index === 2 ? "WAITING_ACK" : "SUCCEEDED",
-            command:
-              index === 2
-                ? {
-                    id: "cmd_demo",
-                    type: actionType,
-                    status: "SENT",
-                    sequence: 3,
-                    createdAt: item.timestamp,
-                  }
-                : undefined,
-          })),
+          steps: ["SHOW_ASSISTANT", "PLAY_ANIMATION", "SAY"].map(
+            (actionType, index) => ({
+              id: `step_${index}`,
+              position: index,
+              nodeKey: `step_${index}`,
+              actionType,
+              executor: "FRONTEND",
+              status: index === 2 ? "WAITING_ACK" : "SUCCEEDED",
+              command:
+                index === 2
+                  ? {
+                      id: "cmd_demo",
+                      type: actionType,
+                      status: "SENT",
+                      sequence: 3,
+                      createdAt: item.timestamp,
+                    }
+                  : undefined,
+            }),
+          ),
         };
       });
   },

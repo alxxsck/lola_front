@@ -16,6 +16,8 @@ export interface AIReviewRunResponseDto {
   estimatedInputTokens: number;
   eventCount: number;
   id: string;
+  limitations: string[];
+  policyRevisionId?: string;
   proposalId?: string;
   redactedBytes: number;
   status: AIReviewRunResponseDtoStatus;

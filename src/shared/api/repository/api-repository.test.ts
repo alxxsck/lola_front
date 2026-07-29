@@ -21,7 +21,6 @@ import {
   adminConversationsListMessages,
   adminEventLogsGet,
   adminEventLogsList,
-  eventsList,
   platformOperationsUsersPage,
   scenarioRunsPage,
   platformOperationsActivitySettings,
@@ -61,7 +60,6 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   platformOperationsUsers: vi.fn(),
   platformOperationsUsersPage: vi.fn(),
   adminMessagingSend: vi.fn(),
-  eventsList: vi.fn(),
   scenarioRunsList: vi.fn(),
   presenceList: vi.fn(),
   adminConversationsList: vi.fn(),
@@ -965,43 +963,6 @@ describe("api repository adapter", () => {
       pageInfo: { hasMore: true, nextCursor: "cursor-2" },
     });
     vi.mocked(adminEventLogsGet).mockResolvedValue(eventLog);
-    vi.mocked(eventsList).mockResolvedValue({
-      items: [eventLog as never],
-      pagination: {
-        page: 2,
-        limit: 25,
-        total: 61,
-        totalPages: 3,
-        hasNextPage: true,
-        hasPreviousPage: true,
-      },
-    });
-
-    await expect(
-      apiRepository.getEventLogs("project-1", {
-        page: 2,
-        limit: 25,
-        search: "deposit",
-        status: "FAILED",
-      }),
-    ).resolves.toEqual({
-      items: [expect.objectContaining({ id: "log-1", eventCode: "deposit" })],
-      pagination: {
-        page: 2,
-        limit: 25,
-        total: 61,
-        totalPages: 3,
-        hasNextPage: true,
-        hasPreviousPage: true,
-      },
-    });
-    expect(eventsList).toHaveBeenCalledWith("project-1", {
-      page: 2,
-      limit: 25,
-      search: "deposit",
-      status: "FAILED",
-    });
-
     await expect(
       apiRepository.getEventLogPage("project-1", {
         eventCode: ["deposit", "purchase"],
@@ -1055,7 +1016,6 @@ describe("api repository adapter", () => {
         items: [{ id: "failed-event-log-1" }] as never,
         nextCursor: "failed-event-log-2",
       });
-    const getEventLogs = vi.spyOn(apiRepository, "getEventLogs");
     vi.spyOn(apiRepository, "getScenarioRuns").mockResolvedValue([
       { status: "FAILED" },
       { status: "COMPLETED" },
@@ -1074,7 +1034,6 @@ describe("api repository adapter", () => {
       status: ["FAILED"],
       limit: 1,
     });
-    expect(getEventLogs).not.toHaveBeenCalled();
   });
 
   it("loads dashboard sources only when their exact Project Permissions are effective", async () => {

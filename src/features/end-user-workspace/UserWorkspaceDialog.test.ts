@@ -511,7 +511,7 @@ describe("единое рабочее пространство пользова�
       "project.ai_review.read",
       "project.ai_review.run",
       "project.settings.read",
-      "project.event_catalog.read",
+      "project.event_query_policy.preview",
       "project.ai_proposals.read",
     );
     const wrapper = mountWorkspace();

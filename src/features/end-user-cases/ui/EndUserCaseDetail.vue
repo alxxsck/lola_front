@@ -5,6 +5,8 @@ import Message from "primevue/message";
 import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import { formatDate } from "@/shared/lib/format";
+import CaseEventVerification from "@/features/event-query/ui/CaseEventVerification.vue";
+import type { CaseVerificationRunResponseDto } from "@/shared/api/generated/models";
 import type { EndUserCaseDetailBundle } from "../api/end-user-cases-repository";
 import type { EndUserCaseStatus } from "../model/end-user-case";
 import {
@@ -30,6 +32,10 @@ const props = defineProps<{
   canReadConversation?: boolean;
   canReadProposals?: boolean;
   error?: string | null;
+  projectId?: string;
+  canVerifyEvents?: boolean;
+  canPreviewEvents?: boolean;
+  verificationRun?: CaseVerificationRunResponseDto | null;
 }>();
 defineEmits<{
   retry: [];
@@ -40,6 +46,7 @@ defineEmits<{
   requestMerge: [];
   requestSplit: [];
   loadMoreMessages: [];
+  verificationCompleted: [run: CaseVerificationRunResponseDto];
 }>();
 
 type RelatedTab = "messages" | "proposals" | "history";
@@ -317,6 +324,20 @@ const hasMessageGap = (
             <span>{{ value.case.workSummary.limitations.join(" · ") }}</span>
           </div>
         </template>
+      </section>
+
+      <section v-if="projectId" class="verification-wrapper">
+        <CaseEventVerification
+          :project-id="projectId"
+          :case-id="value.case.id"
+          :case-created-at="value.case.createdAt"
+          :case-status="value.case.status"
+          :can-verify="canVerifyEvents === true"
+          :can-preview="canPreviewEvents === true"
+          :run-id="value.case.latestVerificationRunId"
+          :initial-run="verificationRun"
+          @completed="$emit('verificationCompleted', $event)"
+        />
       </section>
 
       <section
@@ -629,6 +650,9 @@ const hasMessageGap = (
   border: 1px solid var(--border-default);
   border-radius: 18px;
   background: var(--surface-card);
+}
+.verification-wrapper {
+  display: contents;
 }
 .kicker,
 .badges,
