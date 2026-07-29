@@ -1,33 +1,62 @@
 # Text-to-Speech в Lola CMS
 
-Обычная команда `SPEAK_TEXT` синтезируется через ElevenLabs `eleven_v3`. Этот поток отделён от голосовых сессий xAI/Grok: изменение TTS-голоса, языка или voice settings не меняет голосовой чат и модель `grok-voice-think-fast-1.0`.
+Команда `SPEAK_TEXT` синтезирует речь через xAI Text-to-Speech. Голос берётся из
+`Project.settings.voice`: одна настройка используется и для голосового чата, и для команд
+«Озвучить текст». Backend обращается к обоим xAI audio API с одним `XAI_API_KEY`; ключ, исходный
+текст и аудиопоток не попадают в административный браузер.
 
-## CMS API
+## Настройка голоса
 
-- `GET /api/v1/admin/projects/{projectId}/speech-synthesis` — сохранённые overrides, состояние интеграции, server defaults и capabilities;
-- `PATCH /api/v1/admin/projects/{projectId}/speech-synthesis` — controlled merge только TTS-настроек;
-- `GET /api/v1/admin/projects/{projectId}/speech-synthesis/voices` — актуальные default voices ElevenLabs и явно назначенные проекту голоса с `search`, `limit` и cursor pagination;
-- `GET /api/v1/admin/projects/{projectId}/ai-usage` — токены xAI, символы и billed units ElevenLabs, estimated/billed cost.
-- `GET /api/v1/admin/provider-billing/elevenlabs` и `POST .../sync` — workspace usage/subscription snapshot только для platform admin; эти данные не распределяются искусственно по проектам.
+На странице Project используется одна секция «Голос Lola»:
 
-OpenAPI snapshot хранится в `openapi/lola-backend.json`, клиент и DTO генерируются в `src/shared/api/generated`. Ручное редактирование generated-файлов не допускается.
+- `GET /api/v1/admin/projects/{projectId}/voice-catalog` возвращает актуальный каталог xAI;
+- Project PATCH сохраняет выбранный `settings.voice`;
+- селектор остаётся доступным при выключенных голосовых диалогах, потому что голос всё равно нужен
+  для `SPEAK_TEXT`;
+- параметры голосового чата — включение диалогов, транскрипты и instructions — не превращаются в
+  отдельные TTS-настройки;
+- отдельного TTS language/stability блока нет: язык определяет backend, а подача задаётся текстом и
+  поддерживаемыми xAI speech tags.
 
-## UI и сохранение
+Чтение и изменение настроек защищены `project.settings.read/write`. Сохранённый голос остаётся
+видимым, даже если каталог временно недоступен. OpenAPI snapshot хранится в
+`openapi/lola-backend.json`, а клиент генерируется в `src/shared/api/generated`; generated-файлы
+вручную не редактируются.
 
-Text-to-Speech имеет отдельную форму и отдельную кнопку сохранения. Общий Project PATCH продолжает сохранять `settings` проекта, включая описание, подключение и голосовые настройки Grok. Backend игнорирует только входящий `settings.speechSynthesis` и сохраняет его актуальную DB-версию: изменить этот блок можно исключительно через dedicated TTS endpoint. Селект загружает первую страницу из 20 голосов, включая server default и назначенные проекту голоса; ElevenLabs API key не попадает в браузер.
+## Потребление
 
-CMS показывает только настройки, опубликованные в `integration.capabilities.settings`, и использует переданные backend диапазоны. Текущий контракт включает:
+Project и End User отчёты получают готовые агрегаты от backend. CMS не вычисляет стоимость из
+текущей ставки:
 
-- `voiceId`: голос из общего или project-specific allowlist; `null` включает server default;
-- `languageOverride`: двухбуквенный ISO 639-1; `null` включает auto-detection;
-- `stability`: `0..1`.
+- модели Grok показывают токены и фактическую стоимость, которую вернул xAI Responses API;
+- голосовой чат показывает длительность, число операций и расчёт по публичному тарифу xAI
+  Realtime;
+- озвучивание текста показывает входные символы, число генераций и расчётную стоимость.
 
-Темп и манера речи для `eleven_v3` задаются audio tags в тексте. `similarityBoost`, `style`, `speed`, `seed`, `applyTextNormalization` и `applyLanguageTextNormalization` не входят в публичные настройки CMS и не отправляются провайдеру.
+xAI Text-to-Speech не возвращает per-request фактическую стоимость. Backend фиксирует число входных
+символов, применённую revision ставки и рассчитанную USD-сумму в момент успешной операции. Поэтому
+последующее изменение ставки влияет только на новые операции: уже сохранённая история не
+пересчитывается.
 
-Если backend возвращает `configured: false`, форма остаётся видимой для диагностики, но сохранение блокируется. API key никогда не передаётся браузеру.
+В CMS фактические и расчётные суммы показаны раздельно. TTS не изображается как модель Grok или
+строка с `0 tokens`; в карточке пользователя он называется «Озвучивание текста».
 
-## Usage
+## Ставка Text-to-Speech
 
-ElevenLabs не возвращает token usage, поэтому CMS показывает `inputCharacters` и официальный response header `character-cost` как `providerBilledUnits` отдельно от токенов xAI. ElevenLabs-only график автоматически открывается на «Символах», а строка модели не показывается как `0 tokens`. Для ElevenLabs backend выставляет `costStatus=PROVIDER_REPORTED_USAGE`, а `estimatedCost` и `billedCost` оставляет `null`: invoice-exact сумму отдельного TTS-запроса провайдер не сообщает.
+Backend передаёт текущую ставку, дату начала действия и официальный pricing URL вместе с usage
+report. Эти данные служат пояснением к расходу, а не основанием для клиентского пересчёта.
 
-Для Grok backend сохраняет точную стоимость из `cost_in_usd_ticks` в `billedCost`, а стоимость Voice рассчитывает по длительности отправленного и полученного аудио и записывает в `estimatedCost`. CMS складывает обе части в итогах и графиках и отдельно предупреждает, что Voice рассчитан по публичному тарифу xAI Realtime. ElevenLabs по-прежнему учитывается через `providerBilledUnits`, потому что провайдер не сообщает точную USD-сумму отдельной TTS-операции. Workspace credits, subscription limits и overage доступны только в отдельном platform-admin billing snapshot и не прибавляются к расходам проекта.
+Platform Operator с правами `platform.ai_pricing.read/write` работает с append-only revision ledger:
+
+```http
+GET  /api/v1/admin/ai-pricing/xai/text-to-speech
+POST /api/v1/admin/ai-pricing/xai/text-to-speech/revisions
+```
+
+Новая revision содержит decimal-ставку за 1 000 000 входных символов и обязательную причину.
+Provider, currency, unit и effective time назначает backend. Редактирование, удаление и backdate не
+поддерживаются. Если официальный тариф xAI изменился, оператор проверяет pricing URL и публикует
+новую revision после confirmation и fresh-auth проверки.
+
+Если active revision отсутствует, новые TTS-операции блокируются fail-closed, а сохранённая история
+остаётся доступной.

@@ -149,7 +149,7 @@ describe("ProjectPage voice instructions", () => {
     ).toBeDefined();
   });
 
-  it("has no independently protected ElevenLabs speech settings section", async () => {
+  it("has no separate legacy speech settings section", async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 

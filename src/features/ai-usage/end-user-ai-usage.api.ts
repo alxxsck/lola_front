@@ -1,6 +1,9 @@
 import { endUserAiUsageReport } from "@/shared/api/generated/lola-backend";
 import { isMockMode } from "@/shared/config/data-mode";
-import { parseTextToSpeechPricing } from "./ai-usage.api";
+import {
+  buildDemoTextToSpeechPricingContext,
+  parseTextToSpeechPricing,
+} from "./ai-usage.api";
 import {
   AI_USAGE_CATEGORIES,
   type AiUsageRangeKey,
@@ -82,7 +85,7 @@ function parseCategory(value: unknown): EndUserAiUsageCategoryRow | undefined {
     !summary ||
     typeof source.category !== "string" ||
     !categories.has(source.category as EndUserAiUsageCategory) ||
-    typeof source.currency !== "string"
+    source.currency !== "usd"
   )
     return undefined;
   return {
@@ -235,15 +238,7 @@ export function buildEndUserAiUsageDemoReport(
       unpricedRecords: 0,
     },
     categories,
-    textToSpeechPricing: {
-      current: {
-        rate: "15",
-        currency: "usd",
-        unit: "per_million_input_characters",
-        effectiveFrom: "2026-07-01T00:00:00.000Z",
-      },
-      sourceUrl: "https://docs.x.ai/developers/pricing",
-    },
+    textToSpeechPricing: buildDemoTextToSpeechPricingContext(),
   };
 }
 

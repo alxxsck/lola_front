@@ -1074,8 +1074,10 @@ test("online session opens the shared live conversation workspace", async ({
     name: /Рабочее пространство пользователя/,
   });
   await expect(workspace).toBeVisible();
+  const openChat = workspace.getByRole("button", { name: "Открыть чат" });
+  if (await openChat.isVisible()) await openChat.click();
   await expect(
-    workspace.getByText("Первый депозит", { exact: true }),
+    workspace.getByRole("heading", { name: "Первый депозит" }),
   ).toBeVisible();
   await expect(
     workspace.getByText("Как лучше пополнить баланс?"),
@@ -1091,10 +1093,10 @@ test("online session opens the shared live conversation workspace", async ({
     ).toContainText("Текущий");
     await workspace
       .locator(".mobile-workspace-nav button")
-      .filter({ hasText: "Профиль" })
+      .filter({ hasText: "Чат" })
       .click();
     await expect(
-      workspace.getByText("ID продукта", { exact: true }),
+      workspace.getByRole("textbox", { name: "Ответ пользователю" }),
     ).toBeVisible();
   }
 
@@ -1112,6 +1114,46 @@ test("online session opens the shared live conversation workspace", async ({
       { width: 390, height: 844 },
     ]) {
       await page.setViewportSize(viewport);
+      const currentChatTab = workspace
+        .locator(".mobile-workspace-nav button")
+        .filter({ hasText: "Чат" });
+      if (await currentChatTab.isVisible()) await currentChatTab.click();
+      await workspace.getByRole("button", { name: "К профилю" }).click();
+
+      if (process.env.VITE_DATA_MODE !== "api") {
+        const consumption = workspace.locator(
+          '[aria-labelledby="end-user-ai-usage-title"]',
+        );
+        await expect(consumption).toBeVisible();
+        await expect(
+          consumption.getByRole("heading", { name: "AI и речь" }),
+        ).toBeVisible();
+        const speechUsage = consumption.locator(
+          '[data-usage-category="SPEECH"]',
+        );
+        await expect(speechUsage).toContainText("Озвучивание текста");
+        await expect(speechUsage).toContainText("1 980 символов");
+        await expect(speechUsage).toContainText("4 генерации");
+        await expect(
+          consumption.getByTestId("end-user-tts-pricing"),
+        ).toContainText(
+          "История рассчитана по ставке, действовавшей в момент каждой операции",
+        );
+        expect(
+          await consumption.evaluate(
+            (element) => element.scrollWidth <= element.clientWidth,
+          ),
+        ).toBe(true);
+        await consumption.scrollIntoViewIfNeeded();
+        await page.screenshot({
+          animations: "disabled",
+          path: testInfo.outputPath(
+            `operator-workspace-profile-${viewport.width}x${viewport.height}.png`,
+          ),
+        });
+      }
+
+      await workspace.getByRole("button", { name: "Открыть чат" }).click();
       const chatTab = workspace
         .locator(".mobile-workspace-nav button")
         .filter({ hasText: "Чат" });
@@ -1122,15 +1164,6 @@ test("online session opens the shared live conversation workspace", async ({
       await expect(
         workspace.getByRole("button", { name: "Отправить", exact: true }),
       ).toBeVisible();
-      if (viewport.width === 1440) {
-        await workspace.getByRole("button", { name: "Скрыть профиль" }).click();
-        await expect(
-          workspace.getByRole("region", { name: "Профиль пользователя" }),
-        ).toBeHidden();
-        await workspace
-          .getByRole("button", { name: "Показать профиль" })
-          .click();
-      }
       expect(
         await workspace.evaluate(
           (element) => element.scrollWidth <= element.clientWidth,

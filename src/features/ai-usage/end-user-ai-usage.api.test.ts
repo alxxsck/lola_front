@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildDemoTextToSpeechPricingContext } from "./ai-usage.api";
 import {
   buildEndUserAiUsageDemoReport,
   parseEndUserAiUsageReport,
@@ -115,6 +116,18 @@ describe("End User AI consumption response validation", () => {
         "user-1",
       ),
     ).toBeUndefined();
+    expect(
+      parseEndUserAiUsageReport(
+        {
+          ...response,
+          categories: [
+            { ...summary, category: "CHAT", currency: "not-a-currency" },
+          ],
+        },
+        "project-1",
+        "user-1",
+      ),
+    ).toBeUndefined();
   });
 
   it("rejects an absent or unsafe TTS pricing explanation", () => {
@@ -162,5 +175,8 @@ describe("End User AI consumption response validation", () => {
       providerUnitOnlyRecords: 0,
     });
     expect(demo.textToSpeechPricing.current?.rate).toBe("15");
+    expect(demo.textToSpeechPricing).toEqual(
+      buildDemoTextToSpeechPricingContext(),
+    );
   });
 });

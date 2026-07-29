@@ -424,7 +424,7 @@ footer {
 footer strong {
   color: var(--text-primary);
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .usage-card > header {
     align-items: flex-start;
     flex-direction: column;

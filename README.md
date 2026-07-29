@@ -80,6 +80,10 @@ traceability, но не заменяет authoritative content-addressed `contra
 
 API-режим подключает авторизацию и существующие CRUD endpoints проектов, UI elements, event definitions, scenarios и users. Функции без backend-контракта остаются только в mock implementation и явно сообщают об отсутствии API.
 
-Настройки ElevenLabs для обычного `SPEAK_TEXT` вынесены в отдельный блок Text-to-Speech и сохраняются только через dedicated speech-synthesis API. Они не меняют голосовые сессии xAI/Grok. Контракты, диапазоны настроек, каталог голосов и отображение usage описаны в [docs/text-to-speech.ru.md](docs/text-to-speech.ru.md).
+`SPEAK_TEXT` и голосовой чат используют xAI, один `XAI_API_KEY` на backend и общую Project-настройку
+«Голос Lola». Фактические расходы моделей и расчётные расходы Voice/Text-to-Speech показываются
+раздельно; история TTS фиксирует ставку в момент операции и не пересчитывается задним числом.
+Контракты, каталог голосов, consumption и append-only управление ставкой описаны в
+[docs/text-to-speech.ru.md](docs/text-to-speech.ru.md).
 
 Полный MVP scope и требуемые backend-контракты описаны в [docs/cms-mvp-spec.md](docs/cms-mvp-spec.md). Матрица покрытия актуального ТЗ перед презентацией — в [docs/cms-coverage-audit.md](docs/cms-coverage-audit.md).

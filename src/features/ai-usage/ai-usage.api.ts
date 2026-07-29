@@ -11,6 +11,18 @@ import type {
 } from './ai-usage.model'
 import { AI_USAGE_CATEGORIES } from './ai-usage.model'
 
+export function buildDemoTextToSpeechPricingContext(): AiTextToSpeechPricingContext {
+  return {
+    current: {
+      rate: '15',
+      currency: 'usd',
+      unit: 'per_million_input_characters',
+      effectiveFrom: '2026-07-29T10:00:00.000Z',
+    },
+    sourceUrl: 'https://docs.x.ai/developers/pricing',
+  }
+}
+
 const demoReport = (projectId: string): AiUsageReport => ({
   projectId,
   totals: {
@@ -252,15 +264,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       effectiveCost: 0.2769,
     },
   ],
-  textToSpeechPricing: {
-    current: {
-      rate: '15',
-      currency: 'usd',
-      unit: 'per_million_input_characters',
-      effectiveFrom: '2026-07-29T10:00:00.000Z',
-    },
-    sourceUrl: 'https://docs.x.ai/developers/pricing',
-  },
+  textToSpeechPricing: buildDemoTextToSpeechPricingContext(),
 })
 
 const totalsIntegerKeys = [
@@ -464,7 +468,7 @@ export function parseTextToSpeechPricing(
   const { rate, currency, unit, effectiveFrom } = value.current
   if (
     !boundedString(rate, 1, 64) ||
-    !/^\d+(?:\.\d+)?$/.test(rate) ||
+    !/^\d+(?:\.\d{1,12})?$/.test(rate) ||
     Number(rate) <= 0 ||
     currency !== 'usd' ||
     unit !== 'per_million_input_characters' ||
