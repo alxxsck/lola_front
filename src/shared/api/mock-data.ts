@@ -202,7 +202,6 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
       'FRONTEND',
       {
         text: { type: 'string', minLength: 1, maxLength: 2000 },
-        voice: { type: 'string', enum: demoVoiceIds },
         waitForCompletion: { type: 'boolean', default: true },
       },
       ['text'],
@@ -212,12 +211,6 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
           label: 'Текст для озвучивания',
           control: 'textarea',
           supportsTemplates: true,
-        },
-        {
-          key: 'voice',
-          label: 'Голос',
-          control: 'select',
-          options: demoVoiceIds,
         },
         {
           key: 'waitForCompletion',

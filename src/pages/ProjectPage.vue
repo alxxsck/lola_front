@@ -144,9 +144,13 @@ const form = reactive<ProjectForm>({
   voiceInstructions: "",
 });
 const voiceOptions = computed(() => {
+  const currentSupported = voiceCatalogItems.value.some(
+    (voice) => voice.id === form.voice,
+  );
   const options = voiceCatalogItems.value.map((voice) => ({
     label: `${voice.name} · ${voice.language}`,
     value: voice.id,
+    disabled: false,
   }));
   if (
     isVoiceId(form.voice) &&
@@ -155,14 +159,40 @@ const voiceOptions = computed(() => {
     options.unshift({
       label: `Текущий голос · ${form.voice}`,
       value: form.voice,
+      disabled:
+        !voiceCatalogLoading.value &&
+        !voiceCatalogError.value &&
+        !voiceCatalogStale.value &&
+        !currentSupported,
     });
   }
   return options;
 });
+const voiceCatalogIsAuthoritative = computed(
+  () =>
+    !voiceCatalogLoading.value &&
+    !voiceCatalogError.value &&
+    !voiceCatalogStale.value,
+);
+const currentVoiceSupported = computed(() =>
+  voiceCatalogItems.value.some((voice) => voice.id === form.voice),
+);
 const hasValidVoiceOption = computed(
   () =>
     isVoiceId(form.voice) &&
-    voiceOptions.value.some((option) => option.value === form.voice),
+    (currentVoiceSupported.value || !voiceCatalogIsAuthoritative.value),
+);
+const savedVoiceUnsupported = computed(
+  () =>
+    isVoiceId(form.voice) &&
+    voiceCatalogIsAuthoritative.value &&
+    !currentVoiceSupported.value,
+);
+const voiceSelectorDisabled = computed(
+  () =>
+    saving.value ||
+    !canEditSettings.value ||
+    (!hasValidVoiceOption.value && voiceCatalogItems.value.length === 0),
 );
 
 const formSnapshot = computed(() => JSON.stringify(form));
@@ -881,10 +911,9 @@ onBeforeUnmount(() => {
                     :options="voiceOptions"
                     option-label="label"
                     option-value="value"
+                    option-disabled="disabled"
                     :loading="voiceCatalogLoading"
-                    :disabled="
-                      saving || !canEditSettings || !hasValidVoiceOption
-                    "
+                    :disabled="voiceSelectorDisabled"
                   />
                   <small class="field-hint"
                     >Используется в голосовом чате и командах «Озвучить
@@ -910,6 +939,13 @@ onBeforeUnmount(() => {
                     class="voice-catalog-status warning"
                     role="status"
                     >Показан последний доступный каталог голосов xAI.</small
+                  >
+                  <small
+                    v-else-if="savedVoiceUnsupported"
+                    class="voice-catalog-status warning"
+                    role="status"
+                    >Сохранённый голос больше недоступен. Выберите новый перед
+                    сохранением.</small
                   >
                 </div>
                 <div

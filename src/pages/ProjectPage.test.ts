@@ -527,6 +527,39 @@ describe("ProjectPage voice instructions", () => {
     expect(wrapper.text()).toContain("Каталог недоступен");
   });
 
+  it("requires a replacement when a fresh catalog no longer supports the saved voice", async () => {
+    mocks.getProject.mockResolvedValue(
+      project({ settings: { voiceEnabled: false, voice: "retired-voice" } }),
+    );
+
+    const wrapper = shallowMount(ProjectPage);
+    await flushPromises();
+
+    const voice = wrapper
+      .findAllComponents(Select)
+      .find((component) => component.attributes("id") === "voice")!;
+    expect(voice.attributes("modelvalue")).toBe("retired-voice");
+    expect(voice.attributes("disabled")).toBe("false");
+    expect(wrapper.text()).toContain(
+      "Сохранённый голос больше недоступен. Выберите новый",
+    );
+
+    await wrapper.get("form").trigger("submit");
+    expect(mocks.updateProject).not.toHaveBeenCalled();
+
+    voice.vm.$emit("update:modelValue", "rex");
+    await wrapper.vm.$nextTick();
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(mocks.updateProject).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        settings: expect.objectContaining({ voice: "rex" }),
+      }),
+    );
+  });
+
   it("shows the saved voice read-only without Project settings write permission", async () => {
     mocks.permissions = ["project.settings.read"];
     const wrapper = shallowMount(ProjectPage);
