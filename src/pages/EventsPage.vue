@@ -980,26 +980,29 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
         />
       </label>
       <div class="toolbar-result">
-        <span
-          class="result-count"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {{ filteredEvents.length }} из {{ events.length }}
-        </span>
-        <span v-if="activeFilterCount" class="active-filter-count">
-          Фильтров: {{ activeFilterCount }}
-        </span>
-        <Button
-          v-if="hasActiveFilters"
-          label="Сбросить"
-          icon="pi pi-filter-slash"
-          severity="secondary"
-          text
-          size="small"
-          @click="resetFilters"
-        />
+        <span class="toolbar-result-label">Результат</span>
+        <div class="toolbar-result-content">
+          <span
+            class="result-count"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {{ filteredEvents.length }} из {{ events.length }}
+          </span>
+          <span v-if="activeFilterCount" class="active-filter-count">
+            Фильтров: {{ activeFilterCount }}
+          </span>
+          <Button
+            v-if="hasActiveFilters"
+            label="Сбросить"
+            icon="pi pi-filter-slash"
+            severity="secondary"
+            text
+            size="small"
+            @click="resetFilters"
+          />
+        </div>
       </div>
     </div>
 
@@ -1727,9 +1730,9 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
 .toolbar {
   display: grid;
   grid-template-columns:
-    minmax(240px, 1.45fr)
-    repeat(4, minmax(145px, 1fr))
-    auto;
+    minmax(240px, 420px)
+    repeat(4, minmax(145px, 220px))
+    minmax(100px, 1fr);
   align-items: end;
   gap: 10px;
   padding: 14px 15px;
@@ -1740,7 +1743,8 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   min-width: 0;
   gap: 6px;
 }
-.catalog-control > span:first-child {
+.catalog-control > span:first-child,
+.toolbar-result-label {
   color: var(--text-secondary);
   font-size: 0.63rem;
   font-weight: 700;
@@ -1775,6 +1779,11 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   font-size: 0.73rem;
 }
 .toolbar-result {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+.toolbar-result-content {
   display: flex;
   min-height: 42px;
   align-items: center;
@@ -2521,7 +2530,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   .toolbar-result {
     grid-column: auto;
   }
-  .toolbar-result {
+  .toolbar-result-content {
     justify-content: space-between;
   }
   .events-list {

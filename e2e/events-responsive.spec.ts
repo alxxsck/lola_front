@@ -122,3 +122,53 @@ test("event cards use a readable one-column mobile composition", async ({
     expect(layout.switchAspectRatio).toBeGreaterThanOrEqual(1.5);
   }
 });
+
+test("event filters stay compact and aligned on wide screens", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 2048, height: 1000 });
+  await page.goto("/events");
+  await expect(
+    page.getByRole("heading", { name: "События", level: 1 }),
+  ).toBeVisible();
+
+  const toolbar = page.locator(".toolbar");
+  await expect(toolbar).toBeVisible();
+
+  const layout = await toolbar.evaluate((element) => {
+    const controls = [
+      ...element.querySelectorAll<HTMLElement>(".catalog-control"),
+    ];
+    const result = element.querySelector<HTMLElement>(".toolbar-result");
+    const resultContent = element.querySelector<HTMLElement>(
+      ".toolbar-result-content",
+    );
+    const resultLabel = element.querySelector<HTMLElement>(
+      ".toolbar-result-label",
+    );
+    const controlBottoms = [
+      ...controls.map((control) => control.getBoundingClientRect().bottom),
+      result?.getBoundingClientRect().bottom ?? 0,
+    ];
+
+    return {
+      toolbarOverflow: element.scrollWidth - element.clientWidth,
+      searchWidth: Math.round(controls[0]?.getBoundingClientRect().width ?? 0),
+      selectWidths: controls
+        .slice(1)
+        .map((control) => Math.round(control.getBoundingClientRect().width)),
+      resultLabel: resultLabel?.textContent?.trim() ?? "",
+      resultContentHeight: Math.round(
+        resultContent?.getBoundingClientRect().height ?? 0,
+      ),
+      bottomSpread: Math.max(...controlBottoms) - Math.min(...controlBottoms),
+    };
+  });
+
+  expect(layout.toolbarOverflow).toBe(0);
+  expect(layout.searchWidth).toBeLessThanOrEqual(420);
+  expect(layout.selectWidths.every((width) => width <= 220)).toBe(true);
+  expect(layout.resultLabel).toBe("Результат");
+  expect(layout.resultContentHeight).toBeGreaterThanOrEqual(42);
+  expect(layout.bottomSpread).toBeLessThanOrEqual(1);
+});
