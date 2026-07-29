@@ -12203,6 +12203,40 @@
           "estimatedAddedInputTokens": {
             "type": "number"
           },
+          "exactAiUsage": {
+            "additionalProperties": false,
+            "properties": {
+              "billedCostUsd": {
+                "nullable": true,
+                "type": "string"
+              },
+              "estimatedCostUsd": {
+                "nullable": true,
+                "type": "string"
+              },
+              "inputTokens": {
+                "type": "number"
+              },
+              "outputTokens": {
+                "type": "number"
+              },
+              "records": {
+                "type": "number"
+              },
+              "totalTokens": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "records",
+              "totalTokens",
+              "inputTokens",
+              "outputTokens",
+              "estimatedCostUsd",
+              "billedCostUsd"
+            ],
+            "type": "object"
+          },
           "from": {
             "format": "date-time",
             "type": "string"

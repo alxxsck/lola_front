@@ -15,6 +15,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  frontend-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint architecture and source
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm test
+
   verify:
     runs-on: ubuntu-latest
     env:
@@ -60,3 +84,9 @@ jobs:
         env:
           LOLA_BACKEND_DIR: ${{ github.workspace }}/backend
         run: npm run api:check
+
+      - name: Build production frontend
+        working-directory: frontend
+        env:
+          LOLA_BACKEND_DIR: ${{ github.workspace }}/backend
+        run: npm run build

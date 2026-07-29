@@ -6,11 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EventQueryUsageResponseDtoByOrigin } from "./eventQueryUsageResponseDtoByOrigin";
+import type { EventQueryUsageResponseDtoExactAiUsage } from "./eventQueryUsageResponseDtoExactAiUsage";
 
 export interface EventQueryUsageResponseDto {
   byOrigin: EventQueryUsageResponseDtoByOrigin;
   calls: number;
   estimatedAddedInputTokens: number;
+  exactAiUsage?: EventQueryUsageResponseDtoExactAiUsage;
   from: string;
   resultBytes: number;
   to: string;

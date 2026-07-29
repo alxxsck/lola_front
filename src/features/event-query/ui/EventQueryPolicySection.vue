@@ -6,7 +6,6 @@ import Skeleton from "primevue/skeleton";
 import type {
   EventQueryPolicyDiagnosticDto,
   EventQueryPolicyDocumentDto,
-  EventQueryPolicyItemDto,
   EventQueryPolicyRevisionResponseDto,
   EventQueryUsageResponseDto,
 } from "@/shared/api/generated/models";
@@ -15,11 +14,11 @@ import type { EventCatalogDefinition } from "@/shared/api/repository/event-catal
 import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
 import { eventQueryRepository } from "../api/event-query-repository";
 import {
-  eventPolicyState,
-  flattenSchemaFields,
+  eventQueryPolicyHardLimitViolations,
+  eventQueryPolicyImpact,
 } from "../model/event-query-policy";
-import EventQueryEventEditor from "./EventQueryEventEditor.vue";
 import EventQueryPreview from "./EventQueryPreview.vue";
+import EventQueryPolicyWorkspace from "./EventQueryPolicyWorkspace.vue";
 
 const props = defineProps<{
   projectId: string;
@@ -42,23 +41,9 @@ const document = ref<EventQueryPolicyDocumentDto>({
 });
 const savedDocumentSnapshot = ref("");
 const diagnostics = ref<EventQueryPolicyDiagnosticDto[]>([]);
-const selectedCode = ref("");
 const usage = ref<EventQueryUsageResponseDto | null>(null);
 let loadGeneration = 0;
 
-const selectedDefinition = computed(() =>
-  definitions.value.find(
-    (definition) => definition.code === selectedCode.value,
-  ),
-);
-const selectedItemIndex = computed(() =>
-  document.value.items.findIndex(
-    (item) => item.stableCode === selectedCode.value,
-  ),
-);
-const selectedItem = computed(
-  () => document.value.items[selectedItemIndex.value] ?? null,
-);
 const publishedItems = computed(() => published.value?.document.items ?? []);
 const documentSnapshot = computed(() => JSON.stringify(document.value));
 const globalDiagnostics = computed(() =>
@@ -66,33 +51,25 @@ const globalDiagnostics = computed(() =>
     (diagnostic) => !diagnostic.location.startsWith("items["),
   ),
 );
+const hardLimitViolations = computed(() =>
+  eventQueryPolicyHardLimitViolations(document.value),
+);
+const publishImpact = computed(() =>
+  eventQueryPolicyImpact(published.value?.document ?? null, document.value),
+);
 const canPublish = computed(
   () =>
     props.canManage &&
     draftVersion.value > 0 &&
     documentSnapshot.value === savedDocumentSnapshot.value &&
     diagnostics.value.length === 0 &&
+    hardLimitViolations.value.length === 0 &&
     !saving.value &&
     !publishing.value,
 );
 
 function cloneDocument(value: EventQueryPolicyDocumentDto) {
   return JSON.parse(JSON.stringify(value)) as EventQueryPolicyDocumentDto;
-}
-
-function defaultItem(
-  definition: EventCatalogDefinition,
-): EventQueryPolicyItemDto {
-  return {
-    stableCode: definition.code,
-    descriptionForAI:
-      definition.metadata.description ??
-      `Событие «${definition.metadata.name}».`,
-    allowedModes: ["SUMMARY"],
-    maxInteractiveLookbackHours: 168,
-    maxVerificationLookbackHours: 720,
-    safeFields: [],
-  };
 }
 
 async function load() {
@@ -108,7 +85,6 @@ async function load() {
   document.value = { enabled: false, items: [] };
   savedDocumentSnapshot.value = "";
   diagnostics.value = [];
-  selectedCode.value = "";
   usage.value = null;
   try {
     const [state, catalog] = await Promise.all([
@@ -164,8 +140,6 @@ async function load() {
         state.published?.document ?? { enabled: false, items: [] },
     );
     savedDocumentSnapshot.value = JSON.stringify(document.value);
-    selectedCode.value =
-      document.value.items[0]?.stableCode ?? definitions.value[0]?.code ?? "";
     if (props.canPreview) void loadUsage(projectId, generation);
   } catch (cause) {
     if (generation !== loadGeneration || projectId !== props.projectId) return;
@@ -190,34 +164,6 @@ async function loadUsage(projectId: string, generation: number) {
   } catch {
     if (generation === loadGeneration) usage.value = null;
   }
-}
-
-function selectDefinition(definition: EventCatalogDefinition) {
-  selectedCode.value = definition.code;
-}
-
-function setDefinitionEnabled(
-  definition: EventCatalogDefinition,
-  enabled: boolean,
-) {
-  const items = document.value.items.filter(
-    (item) => item.stableCode !== definition.code,
-  );
-  if (enabled) items.push(defaultItem(definition));
-  document.value = { ...document.value, items };
-  diagnostics.value = [];
-  selectedCode.value = definition.code;
-}
-
-function updateSelectedItem(value: EventQueryPolicyItemDto) {
-  if (selectedItemIndex.value < 0) return;
-  document.value = {
-    ...document.value,
-    items: document.value.items.map((item, index) =>
-      index === selectedItemIndex.value ? value : item,
-    ),
-  };
-  diagnostics.value = [];
 }
 
 async function save() {
@@ -278,22 +224,6 @@ async function publishPolicy() {
       publishing.value = false;
     }
   }
-}
-
-function status(definition: EventCatalogDefinition) {
-  return eventPolicyState(
-    definition.code,
-    document.value.items,
-    publishedItems.value,
-    diagnostics.value,
-  );
-}
-
-function diagnosticsForSelected() {
-  if (selectedItemIndex.value < 0) return [];
-  return diagnostics.value.filter((diagnostic) =>
-    diagnostic.location.startsWith(`items[${selectedItemIndex.value}]`),
-  );
 }
 
 function formatBytes(value: number) {
@@ -365,90 +295,44 @@ watch(() => props.projectId, load);
               токенов</strong
             >
           </div>
+          <div>
+            <span>Связанное потребление ИИ</span>
+            <strong>
+              {{ usage.exactAiUsage?.totalTokens.toLocaleString("ru-RU") ?? 0 }}
+              токенов
+              <template v-if="usage.exactAiUsage?.billedCostUsd">
+                · ${{ usage.exactAiUsage.billedCostUsd }}
+              </template>
+              <template v-else-if="usage.exactAiUsage?.estimatedCostUsd">
+                · ≈ ${{ usage.exactAiUsage.estimatedCostUsd }}
+              </template>
+            </strong>
+          </div>
           <p>
-            Это оценка сериализованных данных, не точная цена. Точное
-            потребление ответа ИИ смотрите в связанной AI-сессии.
+            Вклад Event Query — оценка сериализованных данных. Токены и
+            стоимость берутся из provider usage только для связанных Chat, Voice
+            и AI Review запусков.
           </p>
         </div>
 
-        <div class="policy-workspace">
-          <nav aria-label="Типы событий" class="definition-list">
-            <button
-              v-for="definition in definitions"
-              :key="definition.definitionKeyId"
-              type="button"
-              :class="{ selected: selectedCode === definition.code }"
-              @click="selectDefinition(definition)"
-            >
-              <span>
-                <strong>{{ definition.metadata.name }}</strong>
-                <code>{{ definition.code }}</code>
-              </span>
-              <span class="policy-state" :data-state="status(definition)">
-                {{ status(definition) }}
-              </span>
-            </button>
-          </nav>
-
-          <div v-if="selectedDefinition" class="definition-editor">
-            <div class="definition-heading">
-              <div>
-                <h4>{{ selectedDefinition.metadata.name }}</h4>
-                <code>{{ selectedDefinition.code }}</code>
-              </div>
-              <label>
-                <input
-                  type="checkbox"
-                  :checked="Boolean(selectedItem)"
-                  :disabled="!canManage"
-                  @change="
-                    setDefinitionEnabled(
-                      selectedDefinition,
-                      ($event.target as HTMLInputElement).checked,
-                    )
-                  "
-                />
-                Доступно ИИ
-              </label>
-            </div>
-            <div class="schema-summary">
-              <span
-                v-for="field in flattenSchemaFields(
-                  selectedDefinition.currentSchema.payloadSchema,
-                )"
-                :key="field.path"
-              >
-                <code>{{ field.path }}</code> {{ field.schemaType }}
-              </span>
-            </div>
-            <EventQueryEventEditor
-              v-if="selectedItem"
-              :model-value="selectedItem"
-              :schema-fields="
-                flattenSchemaFields(
-                  selectedDefinition.currentSchema.payloadSchema,
-                )
-              "
-              :disabled="!canManage"
-              @update:model-value="updateSelectedItem"
-            />
-            <Message v-else severity="secondary" :closable="false">
-              Этот Event Definition не передаётся модели и не может быть выбран
-              для AI Review или проверки обращения.
-            </Message>
-            <Message
-              v-for="diagnostic in diagnosticsForSelected()"
-              :key="`${diagnostic.code}:${diagnostic.location}`"
-              severity="error"
-              :closable="false"
-            >
-              <strong>{{ diagnostic.location }}</strong> —
-              {{ diagnostic.message }}
-            </Message>
-          </div>
-        </div>
+        <EventQueryPolicyWorkspace
+          v-model="document"
+          :definitions="definitions"
+          :published-items="publishedItems"
+          :diagnostics="diagnostics"
+          :can-manage="canManage"
+          @edited="diagnostics = []"
+        />
 
         <div class="policy-actions">
+          <Message
+            v-for="violation in hardLimitViolations"
+            :key="violation"
+            severity="error"
+            :closable="false"
+          >
+            {{ violation }}
+          </Message>
           <Message
             v-for="diagnostic in globalDiagnostics"
             :key="`${diagnostic.code}:${diagnostic.location}`"
@@ -459,6 +343,17 @@ watch(() => props.projectId, load);
             <strong>{{ diagnostic.location }}</strong> —
             {{ diagnostic.message }}
           </Message>
+          <div class="publish-impact" data-test="publish-impact">
+            <strong>Влияние публикации</strong>
+            <span>
+              Добавлено {{ publishImpact.addedEvents }}, изменено
+              {{ publishImpact.changedEvents }}, удалено
+              {{ publishImpact.removedEvents
+              }}<template v-if="publishImpact.enabledChanged"
+                >, переключён master-доступ</template
+              >.
+            </span>
+          </div>
           <Button
             data-test="save-policy"
             label="Проверить и сохранить черновик"
@@ -499,8 +394,7 @@ watch(() => props.projectId, load);
   gap: 16px;
   padding-top: 18px;
 }
-.revision-badge,
-.policy-state {
+.revision-badge {
   padding: 5px 9px;
   border-radius: 999px;
   background: var(--status-violet-soft);
@@ -512,8 +406,17 @@ watch(() => props.projectId, load);
   background: var(--surface-subtle);
   color: var(--text-tertiary);
 }
+.publish-impact {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+.publish-impact strong {
+  color: var(--text-primary);
+}
 .master-control,
-.definition-heading,
 .policy-actions {
   display: flex;
   align-items: center;
@@ -553,84 +456,8 @@ watch(() => props.projectId, load);
   color: var(--text-tertiary);
   font-size: 0.68rem;
 }
-.policy-workspace {
-  display: grid;
-  grid-template-columns: minmax(210px, 0.7fr) minmax(0, 1.7fr);
-  overflow: hidden;
-  border: 1px solid var(--border-default);
-  border-radius: 16px;
-}
-.definition-list {
-  padding: 8px;
-  border-right: 1px solid var(--border-default);
-  background: var(--surface-subtle);
-}
-.definition-list button {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 11px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-}
-.definition-list button.selected {
-  background: var(--surface-card);
-  box-shadow: var(--shadow-xs);
-}
-.definition-list button > span:first-child,
-.definition-list strong,
-.definition-list code {
-  display: block;
-  min-width: 0;
-}
-.definition-list code {
-  overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: 0.66rem;
-  text-overflow: ellipsis;
-}
-.policy-state[data-state="disabled"] {
-  background: var(--surface-muted);
-  color: var(--text-tertiary);
-}
-.policy-state[data-state="draft"] {
-  background: var(--status-warning-soft);
-  color: var(--status-warning-text);
-}
-.policy-state[data-state="invalid"] {
-  background: var(--status-danger-soft);
-  color: var(--status-danger-text);
-}
-.policy-state[data-state="published"] {
-  background: var(--status-success-soft);
-  color: var(--status-success-text);
-}
-.definition-editor {
-  display: grid;
-  min-width: 0;
-  gap: 14px;
-  padding: 18px;
-}
-.definition-heading h4 {
-  margin: 0 0 3px;
-}
-.schema-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.schema-summary span {
-  padding: 5px 8px;
-  border-radius: 8px;
-  background: var(--surface-subtle);
-  color: var(--text-tertiary);
-  font-size: 0.66rem;
+.usage-card p {
+  grid-column: 1 / -1;
 }
 .policy-actions {
   justify-content: flex-start;
@@ -643,18 +470,12 @@ watch(() => props.projectId, load);
   flex-basis: 100%;
 }
 @media (max-width: 900px) {
-  .policy-workspace,
   .usage-card {
     grid-template-columns: 1fr;
   }
-  .definition-list {
-    border-right: 0;
-    border-bottom: 1px solid var(--border-default);
-  }
 }
 @media (max-width: 600px) {
-  .master-control,
-  .definition-heading {
+  .master-control {
     align-items: flex-start;
     flex-direction: column;
   }

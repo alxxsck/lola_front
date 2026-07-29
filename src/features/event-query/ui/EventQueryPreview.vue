@@ -8,6 +8,11 @@ import type {
   EventQueryResultResponseDto,
 } from "@/shared/api/generated/models";
 import { eventQueryRepository } from "../api/event-query-repository";
+import {
+  eventQueryPeriodOptions,
+  eventQueryTimeRange,
+  type EventQueryRange,
+} from "../model/event-query-range";
 
 const props = defineProps<{
   projectId: string;
@@ -18,10 +23,7 @@ const props = defineProps<{
 const endUserId = ref("");
 const eventCode = ref("");
 const mode = ref<"SUMMARY" | "AGGREGATE" | "LATEST">("SUMMARY");
-type PreviewTimeRange =
-  "POLICY_MAX" | "LAST_24_HOURS" | "LAST_7_DAYS" | "LAST_30_DAYS";
-
-const timeRange = ref<PreviewTimeRange>("LAST_24_HOURS");
+const timeRange = ref<EventQueryRange>("LAST_24_HOURS");
 const result = ref<EventQueryResultResponseDto | null>(null);
 const loading = ref(false);
 const error = ref("");
@@ -31,20 +33,7 @@ const selected = computed(() =>
 );
 const periodOptions = computed(() => {
   const maxHours = selected.value?.maxInteractiveLookbackHours ?? 24;
-  const presets = [
-    { value: "LAST_24_HOURS" as const, label: "24 часа", hours: 24 },
-    { value: "LAST_7_DAYS" as const, label: "7 дней", hours: 168 },
-    { value: "LAST_30_DAYS" as const, label: "30 дней", hours: 720 },
-  ].filter((item) => item.hours <= maxHours);
-  return presets.length
-    ? presets
-    : [
-        {
-          value: "POLICY_MAX" as const,
-          label: `${maxHours} ч. (лимит политики)`,
-          hours: maxHours,
-        },
-      ];
+  return eventQueryPeriodOptions({ maxHours });
 });
 const aggregateMetric = computed(() => {
   const field = selected.value?.safeFields.find((candidate) =>
@@ -70,16 +59,10 @@ const aggregateGroupBy = computed(() => {
   return currencyField ? [currencyField] : undefined;
 });
 const normalizedTimeRange = computed(() => {
-  if (timeRange.value !== "POLICY_MAX") {
-    return { kind: timeRange.value };
-  }
-  const to = new Date();
-  const hours = selected.value?.maxInteractiveLookbackHours ?? 1;
-  return {
-    kind: "EXPLICIT" as const,
-    from: new Date(to.getTime() - hours * 60 * 60 * 1_000).toISOString(),
-    to: to.toISOString(),
-  };
+  return eventQueryTimeRange(
+    timeRange.value,
+    selected.value?.maxInteractiveLookbackHours ?? 1,
+  );
 });
 const query = computed<EventQueryRequestDto>(() => ({
   eventCodes: eventCode.value ? [eventCode.value] : [],

@@ -726,6 +726,7 @@ export * from "./eventQueryTimeRangeDto";
 export * from "./eventQueryTimeRangeDtoKind";
 export * from "./eventQueryUsageResponseDto";
 export * from "./eventQueryUsageResponseDtoByOrigin";
+export * from "./eventQueryUsageResponseDtoExactAiUsage";
 export * from "./eventSchemaActiveWaitImpactResponseDto";
 export * from "./eventSchemaActiveWaitImpactResponseDtoMatchingMode";
 export * from "./eventSchemaActiveWaitImpactResponseDtoResolutionActionsItem";

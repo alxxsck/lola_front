@@ -1,5 +1,6 @@
 import type {
   EventQueryPolicyDiagnosticDto,
+  EventQueryPolicyDocumentDto,
   EventQueryPolicyFieldDtoSemanticType,
 } from "@/shared/api/generated/models";
 
@@ -66,4 +67,63 @@ export function eventPolicyState(
   return publishedItems.some((item) => item.stableCode === code)
     ? "published"
     : "draft";
+}
+
+export interface EventQueryPolicyImpact {
+  enabledChanged: boolean;
+  addedEvents: number;
+  changedEvents: number;
+  removedEvents: number;
+}
+
+export function eventQueryPolicyImpact(
+  published: EventQueryPolicyDocumentDto | null,
+  draft: EventQueryPolicyDocumentDto,
+): EventQueryPolicyImpact {
+  const publishedByCode = new Map(
+    (published?.items ?? []).map((item) => [item.stableCode, item]),
+  );
+  const draftByCode = new Map(
+    draft.items.map((item) => [item.stableCode, item]),
+  );
+  let addedEvents = 0;
+  let changedEvents = 0;
+  for (const [code, item] of draftByCode) {
+    const previous = publishedByCode.get(code);
+    if (!previous) addedEvents += 1;
+    else if (JSON.stringify(previous) !== JSON.stringify(item))
+      changedEvents += 1;
+  }
+  let removedEvents = 0;
+  for (const code of publishedByCode.keys()) {
+    if (!draftByCode.has(code)) removedEvents += 1;
+  }
+  return {
+    enabledChanged: published !== null && published.enabled !== draft.enabled,
+    addedEvents,
+    changedEvents,
+    removedEvents,
+  };
+}
+
+export function eventQueryPolicyHardLimitViolations(
+  document: EventQueryPolicyDocumentDto,
+): string[] {
+  const violations: string[] = [];
+  if (document.items.length > 50) {
+    violations.push("Не более 50 типов событий в одной политике.");
+  }
+  for (const item of document.items) {
+    if (item.safeFields.length > 50) {
+      violations.push(
+        `${item.stableCode}: не более 50 безопасных полей на тип события.`,
+      );
+    }
+    if (item.descriptionForAI.length > 500) {
+      violations.push(
+        `${item.stableCode}: описание для ИИ не должно превышать 500 символов.`,
+      );
+    }
+  }
+  return violations;
 }

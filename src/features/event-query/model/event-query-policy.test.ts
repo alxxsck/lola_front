@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  eventQueryPolicyHardLimitViolations,
+  eventQueryPolicyImpact,
   eventPolicyState,
   flattenSchemaFields,
   schemaTypeToSemanticType,
@@ -52,5 +54,52 @@ describe("event query policy presentation", () => {
         [{ location: "items[0].safeFields[0]" }],
       ),
     ).toBe("invalid");
+  });
+
+  it("summarizes publish impact without exposing schema payloads", () => {
+    const existing = {
+      stableCode: "deposit.completed",
+      descriptionForAI: "Депозит",
+      allowedModes: ["SUMMARY" as const],
+      maxInteractiveLookbackHours: 24,
+      maxVerificationLookbackHours: 24,
+      safeFields: [],
+    };
+    expect(
+      eventQueryPolicyImpact(
+        { enabled: false, items: [existing] },
+        {
+          enabled: true,
+          items: [
+            { ...existing, descriptionForAI: "Успешный депозит" },
+            { ...existing, stableCode: "game.started" },
+          ],
+        },
+      ),
+    ).toEqual({
+      enabledChanged: true,
+      addedEvents: 1,
+      changedEvents: 1,
+      removedEvents: 0,
+    });
+  });
+
+  it("blocks documents that exceed platform hard limits before publish", () => {
+    const item = {
+      stableCode: "deposit.completed",
+      descriptionForAI: "Депозит",
+      allowedModes: ["SUMMARY" as const],
+      maxInteractiveLookbackHours: 24,
+      maxVerificationLookbackHours: 24,
+      safeFields: [],
+    };
+    const violations = eventQueryPolicyHardLimitViolations({
+      enabled: true,
+      items: Array.from({ length: 51 }, (_, index) => ({
+        ...item,
+        stableCode: `event.${index}`,
+      })),
+    });
+    expect(violations).toEqual(["Не более 50 типов событий в одной политике."]);
   });
 });

@@ -10,6 +10,11 @@ import type {
   EventQueryPolicyItemDto,
 } from "@/shared/api/generated/models";
 import { eventQueryRepository } from "../api/event-query-repository";
+import {
+  eventQueryPeriodOptions,
+  eventQueryTimeRange,
+  type EventQueryRange,
+} from "../model/event-query-range";
 
 const props = defineProps<{
   projectId: string;
@@ -40,13 +45,7 @@ const loadingEvidence = ref(false);
 const policyItems = ref<EventQueryPolicyItemDto[]>([]);
 const policyEnabled = ref(false);
 const eventCode = ref("");
-type VerificationRange =
-  | "POLICY_MAX"
-  | "CURRENT_CASE_WINDOW"
-  | "LAST_24_HOURS"
-  | "LAST_7_DAYS"
-  | "LAST_30_DAYS";
-const range = ref<VerificationRange>("CURRENT_CASE_WINDOW");
+const range = ref<EventQueryRange>("CURRENT_CASE_WINDOW");
 const dialogVisible = ref(false);
 const estimating = ref(false);
 const running = ref(false);
@@ -67,48 +66,18 @@ const selectedItem = computed(() =>
 );
 const periodOptions = computed(() => {
   const maxHours = selectedItem.value?.maxVerificationLookbackHours ?? 24;
-  const options: Array<{
-    value: VerificationRange;
-    label: string;
-    hours: number;
-  }> = [];
-  const createdAt = props.caseCreatedAt
-    ? new Date(props.caseCreatedAt).getTime()
-    : Number.NaN;
-  const caseHours = Math.max(0, (Date.now() - createdAt) / 3_600_000);
-  if (Number.isFinite(caseHours) && caseHours <= maxHours) {
-    options.push({
-      value: "CURRENT_CASE_WINDOW",
-      label: "С открытия обращения",
-      hours: caseHours,
-    });
-  }
-  const presets = [
-    { value: "LAST_24_HOURS" as const, label: "24 часа", hours: 24 },
-    { value: "LAST_7_DAYS" as const, label: "7 дней", hours: 168 },
-    { value: "LAST_30_DAYS" as const, label: "30 дней", hours: 720 },
-  ].filter((option) => option.hours <= maxHours);
-  options.push(...presets);
-  if (!presets.some((option) => option.hours === maxHours)) {
-    options.push({
-      value: "POLICY_MAX",
-      label: `${maxHours} ч. (лимит политики)`,
-      hours: maxHours,
-    });
-  }
-  return options;
+  return eventQueryPeriodOptions({
+    maxHours,
+    caseCreatedAt: props.caseCreatedAt,
+  });
 });
 const normalizedTimeRange = computed<
   EstimateCaseVerificationDto["queries"][number]["query"]["timeRange"]
 >(() => {
-  if (range.value !== "POLICY_MAX") return { kind: range.value };
-  const to = new Date();
-  const hours = selectedItem.value?.maxVerificationLookbackHours ?? 1;
-  return {
-    kind: "EXPLICIT",
-    from: new Date(to.getTime() - hours * 3_600_000).toISOString(),
-    to: to.toISOString(),
-  };
+  return eventQueryTimeRange(
+    range.value,
+    selectedItem.value?.maxVerificationLookbackHours ?? 1,
+  );
 });
 const state = computed<VerificationState>(() => {
   if (loadingEvidence.value) return "RUNNING";
