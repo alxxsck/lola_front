@@ -386,7 +386,17 @@ export function formatDuration(value: number): string {
 
 export function usageOperationLabel(operation: string): string {
   const labels: Record<string, string> = {
+    responses: 'Текст',
+    response: 'Текст',
+    web_search: 'Web search',
+    knowledge_search: 'Knowledge search',
+    realtime_response: 'Голосовой ответ',
+    voice_response: 'Голосовой ответ',
+    realtime_text_input: 'Текстовые команды Voice',
     speech: 'Озвучивание текста',
+    transcription: 'Транскрипция',
+    input_transcription: 'Входная транскрипция',
+    output_transcription: 'Выходная транскрипция',
     case_router: 'Маршрутизация',
     case_aggregator: 'Агрегация',
   }

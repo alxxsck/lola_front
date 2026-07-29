@@ -7,25 +7,19 @@ import { TranslationUsagePanel } from '@/features/scenario-localization/ui'
 import { isMockMode } from '@/shared/config/data-mode'
 import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue'
 import { fetchAiUsageReport } from './ai-usage.api'
-import AiModelUsageChart from './components/AiModelUsageChart.vue'
-import AiModalityChart from './components/AiModalityChart.vue'
+import AiModelUsageSlice from './components/AiModelUsageSlice.vue'
+import AiSpeechUsageSlice from './components/AiSpeechUsageSlice.vue'
+import AiVoiceUsageSlice from './components/AiVoiceUsageSlice.vue'
 import {
   AI_USAGE_RANGE_OPTIONS,
-  aggregateModelUsage,
   aggregateProviderUsage,
-  formatDuration,
   formatMoney,
   formatTokenCount,
   getAiUsageRange,
   getCategoryUsage,
-  getModelBreakdown,
   getProviderBreakdown,
-  getUsageCost,
   getUsageCurrency,
-  hasUsageCost,
   pluralizeRu,
-  usageOperationLabel,
-  type AiUsageMetric,
   type AiUsageRangeKey,
   type AiUsageReport,
 } from './ai-usage.model'
@@ -34,7 +28,6 @@ const props = defineProps<{ projectId: string }>()
 
 const range = shallowRef<AiUsageRangeKey>('today')
 const expanded = shallowRef(false)
-const usageMetric = shallowRef<AiUsageMetric>('tokens')
 const report = shallowRef<AiUsageReport | null>(null)
 const loading = shallowRef(false)
 const error = shallowRef('')
@@ -46,10 +39,7 @@ const totals = computed(() => report.value?.totals)
 const xAiBreakdown = computed(() =>
   report.value ? getProviderBreakdown(report.value.breakdown, 'xai') : [],
 )
-const modelBreakdown = computed(() => getModelBreakdown(xAiBreakdown.value))
 const xAiUsage = computed(() => aggregateProviderUsage(xAiBreakdown.value))
-const modelUsage = computed(() => aggregateProviderUsage(modelBreakdown.value))
-const xAiModels = computed(() => aggregateModelUsage(modelBreakdown.value))
 const voiceUsage = computed(() =>
   report.value ? getCategoryUsage(report.value, 'VOICE') : undefined,
 )
@@ -61,56 +51,11 @@ const caseIntelligenceUsage = computed(() =>
     ? getCategoryUsage(report.value, 'CASE_INTELLIGENCE')
     : undefined,
 )
-const caseIntelligenceBreakdown = computed(() =>
-  modelBreakdown.value.filter((item) => item.operation.startsWith('case_')),
-)
-const modelCurrency = computed(() => getUsageCurrency(modelBreakdown.value))
-const xAiCurrency = computed(
-  () => getUsageCurrency(xAiBreakdown.value) ?? 'USD',
-)
-const modelCostAvailable = computed(
-  () => Boolean(modelCurrency.value) && xAiModels.value.some(hasUsageCost),
-)
-const cachedShare = computed(() => {
-  if (!modelUsage.value.inputTokens) return '0% входящих'
-  const share =
-    (modelUsage.value.cachedInputTokens / modelUsage.value.inputTokens) * 100
-  return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(share)}% входящих`
-})
-const currentSpeechPricing = computed(
-  () => report.value?.textToSpeechPricing.current ?? null,
-)
-const currentSpeechRate = computed(() => {
-  const current = currentSpeechPricing.value
-  if (!current) return 'Текущая ставка не настроена'
-  return `${formatMoney(Number(current.rate), current.currency)} за 1 000 000 входных символов`
-})
-const currentSpeechRateDate = computed(() => {
-  const current = currentSpeechPricing.value
-  if (!current) return ''
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(current.effectiveFrom))
-})
-
-function selectUsageMetric(metric: AiUsageMetric) {
-  if (metric === 'cost' && !modelCostAvailable.value) return
-  usageMetric.value = metric
-}
+const xAiCurrency = computed(() => getUsageCurrency(xAiBreakdown.value))
 
 function operationCount(value: number) {
   return `${formatTokenCount(value)} ${pluralizeRu(value, 'операция', 'операции', 'операций')}`
 }
-
-function generationCount(value: number) {
-  return `${formatTokenCount(value)} ${pluralizeRu(value, 'генерация', 'генерации', 'генераций')}`
-}
-
-watch(modelCostAvailable, (available) => {
-  if (!available && usageMetric.value === 'cost') usageMetric.value = 'tokens'
-})
 
 async function load(force = false) {
   const requestedRange = range.value
@@ -263,7 +208,9 @@ onBeforeUnmount(() => {
               <article class="summary-card actual-cost">
                 <span class="summary-label">Фактически по данным xAI</span>
                 <strong>{{
-                  formatMoney(xAiUsage.providerReportedCost, xAiCurrency)
+                  xAiCurrency
+                    ? formatMoney(xAiUsage.providerReportedCost, xAiCurrency)
+                    : 'Несколько валют'
                 }}</strong>
                 <small
                   >{{ totals.providerReportedCostRecords ?? 0 }} операций с
@@ -273,7 +220,9 @@ onBeforeUnmount(() => {
               <article class="summary-card estimated-cost">
                 <span class="summary-label">Расчёт по тарифу</span>
                 <strong>{{
-                  formatMoney(xAiUsage.estimatedFallbackCost, xAiCurrency)
+                  xAiCurrency
+                    ? formatMoney(xAiUsage.estimatedFallbackCost, xAiCurrency)
+                    : 'Несколько валют'
                 }}</strong>
                 <small
                   >{{ totals.estimatedCostRecords ?? 0 }} операций рассчитано
@@ -283,7 +232,9 @@ onBeforeUnmount(() => {
               <article class="summary-card effective-cost">
                 <span class="summary-label">Общий расход</span>
                 <strong>{{
-                  formatMoney(xAiUsage.effectiveCost, xAiCurrency)
+                  xAiCurrency
+                    ? formatMoney(xAiUsage.effectiveCost, xAiCurrency)
+                    : 'Несколько валют'
                 }}</strong>
                 <small>Сумма фактической и расчётной частей</small>
               </article>
@@ -301,240 +252,20 @@ onBeforeUnmount(() => {
               </span>
             </div>
 
-            <section
-              class="usage-slice model-slice"
-              aria-labelledby="model-usage-title"
-            >
-              <header class="slice-header">
-                <div>
-                  <span class="provider-kicker">Models & inference</span>
-                  <h4 id="model-usage-title">Модели Grok</h4>
-                  <p>
-                    Токены и provider-reported стоимость модельных операций.
-                  </p>
-                </div>
-                <div
-                  class="metric-switch"
-                  role="group"
-                  aria-label="Показатель графиков Grok"
-                >
-                  <button
-                    type="button"
-                    :class="{ active: usageMetric === 'tokens' }"
-                    :aria-pressed="usageMetric === 'tokens'"
-                    @click="selectUsageMetric('tokens')"
-                  >
-                    Токены
-                  </button>
-                  <button
-                    type="button"
-                    :class="{ active: usageMetric === 'cost' }"
-                    :aria-pressed="usageMetric === 'cost'"
-                    :disabled="!modelCostAvailable"
-                    @click="selectUsageMetric('cost')"
-                  >
-                    Стоимость
-                  </button>
-                </div>
-              </header>
+            <AiModelUsageSlice
+              :breakdown="xAiBreakdown"
+              :case-usage="caseIntelligenceUsage"
+            />
 
-              <div class="slice-summary">
-                <article>
-                  <small>Всего токенов</small>
-                  <strong>{{
-                    formatTokenCount(modelUsage.totalTokens)
-                  }}</strong>
-                </article>
-                <article>
-                  <small>Операции моделей</small>
-                  <strong>{{ operationCount(modelUsage.records) }}</strong>
-                </article>
-                <article>
-                  <small>Входящий кэш</small>
-                  <strong>{{
-                    formatTokenCount(modelUsage.cachedInputTokens)
-                  }}</strong>
-                  <span>{{ cachedShare }}</span>
-                </article>
-              </div>
-
-              <section
-                v-if="caseIntelligenceUsage"
-                class="case-usage"
-                aria-labelledby="case-intelligence-usage-title"
-              >
-                <header>
-                  <span class="provider-mark case-mark">
-                    <i class="pi pi-briefcase" />
-                  </span>
-                  <div>
-                    <span class="provider-kicker">AI-кейсы</span>
-                    <h5 id="case-intelligence-usage-title">
-                      Анализ и проверка обращений
-                    </h5>
-                  </div>
-                </header>
-                <div class="case-summary">
-                  <article>
-                    <small>Стоимость</small>
-                    <strong>{{
-                      formatMoney(
-                        getUsageCost(caseIntelligenceUsage),
-                        caseIntelligenceUsage.currency,
-                      )
-                    }}</strong>
-                  </article>
-                  <article>
-                    <small>Токены</small>
-                    <strong>{{
-                      formatTokenCount(caseIntelligenceUsage.totalTokens)
-                    }}</strong>
-                  </article>
-                  <article>
-                    <small>Операции</small>
-                    <strong>{{
-                      formatTokenCount(caseIntelligenceUsage.records)
-                    }}</strong>
-                  </article>
-                </div>
-                <div
-                  v-if="caseIntelligenceBreakdown.length"
-                  class="case-operations"
-                >
-                  <div
-                    v-for="item in caseIntelligenceBreakdown"
-                    :key="`${item.operation}:${item.model}:${item.currency}`"
-                  >
-                    <span>{{ usageOperationLabel(item.operation) }}</span>
-                    <small>{{ operationCount(item.records) }}</small>
-                    <strong>{{
-                      formatMoney(getUsageCost(item), item.currency)
-                    }}</strong>
-                  </div>
-                </div>
-              </section>
-
-              <div class="xai-charts">
-                <AiModelUsageChart :rows="xAiModels" :metric="usageMetric" />
-                <AiModalityChart
-                  :totals="modelUsage"
-                  :breakdown="modelBreakdown"
-                  :metric="usageMetric"
-                  :currency="modelCurrency"
-                />
-              </div>
-            </section>
-
-            <section
-              class="usage-slice voice-slice"
-              aria-labelledby="voice-usage-title"
-            >
-              <header class="slice-header">
-                <div>
-                  <span class="provider-kicker">Realtime</span>
-                  <h4 id="voice-usage-title">Голосовой чат</h4>
-                  <p>
-                    Расход интерактивного аудио и текстовых событий Realtime.
-                  </p>
-                </div>
-                <span class="slice-icon"><i class="pi pi-microphone" /></span>
-              </header>
-              <div class="slice-summary">
-                <article>
-                  <small>Длительность</small>
-                  <strong>{{
-                    formatDuration(voiceUsage?.durationSeconds ?? 0)
-                  }}</strong>
-                </article>
-                <article>
-                  <small>Операции</small>
-                  <strong>{{
-                    operationCount(voiceUsage?.records ?? 0)
-                  }}</strong>
-                </article>
-                <article>
-                  <small>Расчётная стоимость</small>
-                  <strong>{{
-                    formatMoney(
-                      voiceUsage?.estimatedFallbackCost ?? 0,
-                      voiceUsage?.currency ?? xAiCurrency,
-                    )
-                  }}</strong>
-                </article>
-              </div>
-              <p class="calculation-note">
-                <i class="pi pi-info-circle" />
-                Расчёт по публичному тарифу xAI.
-              </p>
-            </section>
-
-            <section
-              class="usage-slice speech-slice"
-              aria-labelledby="speech-usage-title"
-            >
-              <header class="slice-header">
-                <div>
-                  <span class="provider-kicker">Text to Speech</span>
-                  <h4 id="speech-usage-title">Озвучивание текста</h4>
-                  <p>
-                    Расчёт по входным символам; xAI не возвращает per-request
-                    фактическую стоимость.
-                  </p>
-                </div>
-                <span class="slice-icon"><i class="pi pi-volume-up" /></span>
-              </header>
-              <div class="slice-summary">
-                <article>
-                  <small>Входной текст</small>
-                  <strong>{{
-                    formatTokenCount(speechUsage?.inputCharacters ?? 0)
-                  }}</strong>
-                  <span>символов</span>
-                </article>
-                <article>
-                  <small>Генерации</small>
-                  <strong>{{
-                    generationCount(speechUsage?.records ?? 0)
-                  }}</strong>
-                </article>
-                <article>
-                  <small>Расчётная стоимость</small>
-                  <strong>{{
-                    formatMoney(
-                      speechUsage?.estimatedFallbackCost ?? 0,
-                      speechUsage?.currency ?? xAiCurrency,
-                    )
-                  }}</strong>
-                </article>
-              </div>
-
-              <aside
-                class="pricing-context"
-                aria-label="Тариф озвучивания текста"
-              >
-                <i class="pi pi-info-circle" />
-                <div>
-                  <strong>{{ currentSpeechRate }}</strong>
-                  <span v-if="currentSpeechRateDate">
-                    Действует с {{ currentSpeechRateDate }}.
-                  </span>
-                  <span>
-                    История рассчитана по ставке, действовавшей в момент каждой
-                    операции.
-                  </span>
-                  <span>
-                    Если ставка xAI изменилась, сообщите администрации.
-                  </span>
-                  <a
-                    :href="report.textToSpeechPricing.sourceUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Проверить тариф xAI
-                  </a>
-                </div>
-              </aside>
-            </section>
+            <AiVoiceUsageSlice
+              :usage="voiceUsage"
+              :fallback-currency="xAiCurrency"
+            />
+            <AiSpeechUsageSlice
+              :usage="speechUsage"
+              :pricing="report.textToSpeechPricing"
+              :fallback-currency="xAiCurrency"
+            />
           </section>
         </div>
 

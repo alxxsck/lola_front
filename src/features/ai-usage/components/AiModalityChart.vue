@@ -11,6 +11,7 @@ import {
   getUsageCost,
   getModalityUsage,
   pluralizeRu,
+  usageOperationLabel,
 } from '../ai-usage.model'
 
 const props = defineProps<{
@@ -68,7 +69,10 @@ const operations = computed(() => {
         ]
   return grouped.map(([operation, value], index) => ({
     key: operation,
-    label: operation === '__other__' ? 'Остальное' : operationLabel(operation),
+    label:
+      operation === '__other__'
+        ? 'Остальное'
+        : usageOperationLabel(operation.toLowerCase()),
     color: operationColors[index]!,
     value,
   }))
@@ -113,24 +117,6 @@ function formatValue(value: number, key?: string): string {
     return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(props.totals.durationSeconds)} сек. аудио · токены не переданы`
   }
   return `${formatTokenCount(value)} токенов`
-}
-
-function operationLabel(operation: string): string {
-  const normalized = operation.toLowerCase()
-  const labels: Record<string, string> = {
-    responses: 'Текст',
-    response: 'Текст',
-    web_search: 'Web search',
-    knowledge_search: 'Knowledge search',
-    realtime_response: 'Голосовой ответ',
-    voice_response: 'Голосовой ответ',
-    realtime_text_input: 'Текстовые команды Voice',
-    speech: 'Озвучивание текста',
-    transcription: 'Транскрипция',
-    input_transcription: 'Входная транскрипция',
-    output_transcription: 'Выходная транскрипция',
-  }
-  return labels[normalized] ?? operation.replaceAll(/[_-]+/g, ' ')
 }
 
 function percentage(itemValue: number): string {

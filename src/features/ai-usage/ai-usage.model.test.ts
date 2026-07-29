@@ -209,6 +209,8 @@ describe('AI usage model', () => {
   it('labels speech as text-to-speech and formats duration without token language', () => {
     expect(usageOperationLabel('speech')).toBe('Озвучивание текста')
     expect(usageOperationLabel('case_router')).toBe('Маршрутизация')
+    expect(usageOperationLabel('realtime_response')).toBe('Голосовой ответ')
+    expect(usageOperationLabel('knowledge_search')).toBe('Knowledge search')
     expect(formatDuration(95)).toBe('1 мин 35 сек')
   })
 

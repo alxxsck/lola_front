@@ -5,6 +5,11 @@ import AiModelUsageChart from './components/AiModelUsageChart.vue'
 import AiModalityChart from './components/AiModalityChart.vue'
 
 config.global.stubs.ProjectSettingsSectionHeader = false
+config.global.stubs.AiModelUsageSlice = false
+config.global.stubs.AiVoiceUsageSlice = false
+config.global.stubs.AiSpeechUsageSlice = false
+config.global.stubs.AiModelUsageChart = false
+config.global.stubs.AiModalityChart = false
 
 const mocks = vi.hoisted(() => ({ fetchReport: vi.fn() }))
 
@@ -217,6 +222,10 @@ describe('AiUsageSection', () => {
     expect(wrapper.getComponent(AiModelUsageChart).props('rows')).toHaveLength(
       1,
     )
+    const ids = wrapper
+      .findAll('[id]')
+      .map((element) => element.attributes('id'))
+    expect(new Set(ids).size).toBe(ids.length)
   })
 
   it('shows provider-reported and calculated xAI totals separately', async () => {
@@ -229,6 +238,30 @@ describe('AiUsageSection', () => {
     expect(wrapper.get('.estimated-cost').text()).toContain('0,10 $')
     expect(wrapper.get('.effective-cost').text()).toContain('0,22 $')
     expect(wrapper.get('.effective-cost').text()).not.toContain('фактически')
+  })
+
+  it('never combines mixed currencies under a fabricated USD label', async () => {
+    const report = baseReport()
+    report.breakdown.push({
+      ...report.breakdown[0]!,
+      currency: 'eur',
+      billedCost: 1,
+      providerReportedCost: 1,
+      effectiveCost: 1,
+    })
+    mocks.fetchReport.mockResolvedValue(report)
+
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: 'project-1' },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('.actual-cost').text()).toContain('Несколько валют')
+    expect(wrapper.get('.estimated-cost').text()).toContain('Несколько валют')
+    expect(wrapper.get('.effective-cost').text()).toContain('Несколько валют')
+    expect(
+      wrapper.findAll('.metric-switch button')[1]!.attributes(),
+    ).toHaveProperty('disabled')
   })
 
   it('presents Voice as duration-based calculated usage without a hardcoded rate', async () => {
