@@ -1,71 +1,34 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eventQueryRepository } from "../api/event-query-repository";
-import { eventCatalogRepository } from "@/shared/api/repository/event-catalog";
-import type { EventQueryPolicyDocumentDto } from "@/shared/api/generated/models";
 import EventQueryPolicySection from "./EventQueryPolicySection.vue";
 
 vi.mock("../api/event-query-repository", () => ({
   eventQueryRepository: {
     getPolicy: vi.fn(),
-    saveDraft: vi.fn(),
-    validate: vi.fn(),
+    patchProject: vi.fn(),
     publish: vi.fn(),
-    preview: vi.fn(),
     usage: vi.fn(),
+    listItems: vi.fn(),
+    preview: vi.fn(),
   },
-}));
-vi.mock("@/shared/api/repository/event-catalog", () => ({
-  eventCatalogRepository: { listDefinitions: vi.fn() },
 }));
 
-const definition = {
-  definitionKeyId: "definition-1",
-  projectId: "project-1",
-  code: "deposit.completed",
-  lifecycle: "ACTIVE",
-  lifecycleVersion: 1,
-  lifecycleUpdatedAt: "2026-07-28T10:00:00.000Z",
-  metadata: {
-    name: "Депозит зачислен",
-    description: null,
-    concurrencyToken: "2026-07-28T10:00:00.000Z",
+const state = {
+  counts: {
+    configuredDraftItems: 12,
+    enabledDraftItems: 8,
+    endUserConversationDraftItems: 3,
   },
-  policy: {
-    version: 1,
-    updatedAt: "2026-07-28T10:00:00.000Z",
-    enabled: true,
-    clientIngestible: false,
-    countsAsActivity: true,
-  },
-  currentSchema: {
-    revisionId: "revision-1",
-    revisionNumber: 1,
+  currentRevision: {
+    id: "policy-1",
+    version: 2,
     publishedAt: "2026-07-28T10:00:00.000Z",
-    payloadSchema: {
-      type: "object",
-      properties: {
-        amount: { type: "number" },
-        currency: { type: "string" },
-      },
-    },
+    itemCount: 8,
   },
-  origin: "CUSTOM",
-  readOnly: false,
-} as const;
-
-const document: EventQueryPolicyDocumentDto = {
-  enabled: true,
-  items: [
-    {
-      stableCode: "deposit.completed",
-      descriptionForAI: "Факт успешного зачисления депозита",
-      allowedModes: ["SUMMARY", "AGGREGATE"],
-      maxInteractiveLookbackHours: 168,
-      maxVerificationLookbackHours: 720,
-      safeFields: [],
-    },
-  ],
+  diagnostics: [],
+  masterEnabled: true,
+  version: 4,
 };
 
 function mountSection() {
@@ -87,50 +50,26 @@ function mountSection() {
         Message: { template: '<div class="message"><slot /></div>' },
         ProjectSettingsSectionHeader: {
           template:
-            '<div><h2>Доступ ИИ к событиям</h2><slot name="actions" /><slot /></div>',
+            '<div><h2>Доступ AI к событиям</h2><slot name="actions" /></div>',
         },
+        RouterLink: { template: "<a><slot /></a>" },
+        EventQueryPreview: { template: '<div data-test="preview" />' },
       },
     },
   });
 }
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((resolvePromise) => {
-    resolve = resolvePromise;
-  });
-  return { promise, resolve };
-}
-
 describe("EventQueryPolicySection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(eventCatalogRepository.listDefinitions).mockResolvedValue([
-      definition as never,
-    ]);
-    vi.mocked(eventQueryRepository.getPolicy).mockResolvedValue({
-      draft: {
-        version: 3,
-        updatedAt: "2026-07-28T10:00:00.000Z",
-        document,
-      },
-      published: {
-        id: "policy-1",
-        version: 2,
-        publishedAt: "2026-07-27T10:00:00.000Z",
-        compilerVersion: "1",
-        documentHash: "hash",
-        document,
-      },
-    });
-    vi.mocked(eventQueryRepository.validate).mockResolvedValue({
-      valid: true,
-      errors: [],
-    });
-    vi.mocked(eventQueryRepository.saveDraft).mockResolvedValue({
-      version: 4,
+    vi.mocked(eventQueryRepository.getPolicy).mockResolvedValue(
+      structuredClone(state),
+    );
+    vi.mocked(eventQueryRepository.patchProject).mockResolvedValue({
+      version: 5,
+      masterEnabled: false,
+      currentRevisionId: null,
       updatedAt: "2026-07-28T11:00:00.000Z",
-      document,
     });
     vi.mocked(eventQueryRepository.publish).mockResolvedValue({
       id: "policy-2",
@@ -138,139 +77,62 @@ describe("EventQueryPolicySection", () => {
       publishedAt: "2026-07-28T11:00:00.000Z",
       compilerVersion: "1",
       documentHash: "hash-2",
-      document,
+      document: { enabled: false, items: [] },
+    });
+    vi.mocked(eventQueryRepository.usage).mockResolvedValue({
+      from: "2026-06-28T00:00:00.000Z",
+      to: "2026-07-28T00:00:00.000Z",
+      scope: { endUserId: null, audience: null },
+      calls: 3,
+      estimatedAddedInputTokens: 72,
+      resultBytes: 288,
+      byOrigin: {},
+      byAudience: {},
     });
   });
 
-  it("shows published state, catalog schema and performs validate-save-publish", async () => {
+  it("shows only master state, counts, usage and navigation to Events", async () => {
     const wrapper = mountSection();
     await flushPromises();
 
     expect(wrapper.text()).toContain("Опубликована ревизия 2");
-    expect(wrapper.text()).toContain("Депозит зачислен");
-    expect(wrapper.text()).toContain("published");
-    expect(wrapper.text()).toContain("amount");
-    expect(wrapper.text()).toContain("number");
+    expect(wrapper.text()).toContain("12");
+    expect(wrapper.text()).toContain("8");
+    expect(wrapper.text()).toContain("3");
+    expect(wrapper.text()).toContain("Настроить события");
+    expect(wrapper.find('[data-test="policy-description"]').exists()).toBe(
+      false,
+    );
+  });
 
-    await wrapper
-      .get('[data-test="policy-description"]')
-      .setValue("Новое описание");
+  it("patches and publishes only the Project master setting", async () => {
+    const wrapper = mountSection();
+    await flushPromises();
+
+    await wrapper.get('.master-control input[type="checkbox"]').setValue(false);
     await wrapper.get('button[data-test="save-policy"]').trigger("click");
     await flushPromises();
 
-    expect(eventQueryRepository.validate).toHaveBeenCalledWith(
+    expect(eventQueryRepository.patchProject).toHaveBeenCalledWith(
       "project-1",
-      expect.objectContaining({
-        document: expect.objectContaining({
-          items: [
-            expect.objectContaining({ descriptionForAI: "Новое описание" }),
-          ],
-        }),
-      }),
-    );
-    expect(eventQueryRepository.saveDraft).toHaveBeenCalledWith(
-      "project-1",
-      expect.objectContaining({ expectedVersion: 3 }),
+      { expectedVersion: 4, masterEnabled: false },
     );
 
     await wrapper.get('button[data-test="publish-policy"]').trigger("click");
     await flushPromises();
-
     expect(eventQueryRepository.publish).toHaveBeenCalledWith("project-1", {
-      expectedDraftVersion: 4,
+      expectedVersion: 5,
     });
-  });
-
-  it("renders server diagnostics at their exact location and blocks publish", async () => {
-    vi.mocked(eventQueryRepository.validate).mockResolvedValue({
-      valid: false,
-      errors: [
-        {
-          code: "FIELD_NOT_SAFE",
-          location: "items[0].safeFields[0]",
-          message: "Поле запрещено политикой схемы",
-        },
-      ],
-    });
-    const wrapper = mountSection();
-    await flushPromises();
-
-    await wrapper.get('button[data-test="save-policy"]').trigger("click");
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("Поле запрещено политикой схемы");
-    expect(
-      wrapper.get('button[data-test="publish-policy"]').attributes(),
-    ).toHaveProperty("disabled");
-    expect(eventQueryRepository.saveDraft).not.toHaveBeenCalled();
-  });
-
-  it("requires changed policy content to be saved before publishing", async () => {
-    const wrapper = mountSection();
-    await flushPromises();
-
-    expect(
-      wrapper.get('button[data-test="publish-policy"]').attributes(),
-    ).not.toHaveProperty("disabled");
-
-    await wrapper
-      .get('[data-test="policy-description"]')
-      .setValue("Несохранённое описание");
-
-    expect(
-      wrapper.get('button[data-test="publish-policy"]').attributes(),
-    ).toHaveProperty("disabled");
-    await wrapper.get('button[data-test="publish-policy"]').trigger("click");
-    expect(eventQueryRepository.publish).not.toHaveBeenCalled();
-  });
-
-  it("shows global validation diagnostics outside a field editor", async () => {
-    vi.mocked(eventQueryRepository.validate).mockResolvedValue({
-      valid: false,
-      errors: [
-        {
-          code: "POLICY_DISABLED",
-          location: "enabled",
-          message: "Политика должна быть включена",
-        },
-      ],
-    });
-    const wrapper = mountSection();
-    await flushPromises();
-
-    await wrapper.get('button[data-test="save-policy"]').trigger("click");
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("enabled");
-    expect(wrapper.text()).toContain("Политика должна быть включена");
   });
 
   it("reloads isolated state when the active Project changes", async () => {
-    const secondDocument = {
-      enabled: true,
-      items: [
-        {
-          ...document.items[0]!,
-          descriptionForAI: "Политика второго проекта",
-        },
-      ],
-    };
     vi.mocked(eventQueryRepository.getPolicy)
+      .mockResolvedValueOnce(structuredClone(state))
       .mockResolvedValueOnce({
-        draft: {
-          version: 3,
-          updatedAt: "2026-07-28T10:00:00.000Z",
-          document,
-        },
-        published: null,
-      })
-      .mockResolvedValueOnce({
-        draft: {
-          version: 1,
-          updatedAt: "2026-07-28T12:00:00.000Z",
-          document: secondDocument,
-        },
-        published: null,
+        ...structuredClone(state),
+        masterEnabled: false,
+        version: 1,
+        currentRevision: null,
       });
     const wrapper = mountSection();
     await flushPromises();
@@ -282,92 +144,10 @@ describe("EventQueryPolicySection", () => {
       "project-2",
     );
     expect(
-      wrapper.get('[data-test="policy-description"]').element,
-    ).toHaveProperty("value", "Политика второго проекта");
-  });
-
-  it("ignores a late save response after the active Project changes", async () => {
-    const lateSave =
-      deferred<Awaited<ReturnType<typeof eventQueryRepository.saveDraft>>>();
-    const secondDocument = {
-      enabled: true,
-      items: [
-        {
-          ...document.items[0]!,
-          descriptionForAI: "Политика второго проекта",
-        },
-      ],
-    };
-    vi.mocked(eventQueryRepository.saveDraft).mockReturnValueOnce(
-      lateSave.promise,
-    );
-    vi.mocked(eventQueryRepository.getPolicy)
-      .mockResolvedValueOnce({
-        draft: {
-          version: 3,
-          updatedAt: "2026-07-28T10:00:00.000Z",
-          document,
-        },
-        published: null,
-      })
-      .mockResolvedValueOnce({
-        draft: {
-          version: 1,
-          updatedAt: "2026-07-28T12:00:00.000Z",
-          document: secondDocument,
-        },
-        published: null,
-      });
-    const wrapper = mountSection();
-    await flushPromises();
-
-    await wrapper.get('button[data-test="save-policy"]').trigger("click");
-    await flushPromises();
-    await wrapper.setProps({ projectId: "project-2" });
-    await flushPromises();
-
-    lateSave.resolve({
-      version: 4,
-      updatedAt: "2026-07-28T13:00:00.000Z",
-      document: {
-        ...document,
-        items: [
-          {
-            ...document.items[0]!,
-            descriptionForAI: "Поздний ответ первого проекта",
-          },
-        ],
-      },
-    });
-    await flushPromises();
-
-    expect(
-      wrapper.get('[data-test="policy-description"]').element,
-    ).toHaveProperty("value", "Политика второго проекта");
-  });
-
-  it("ignores a late publish response after the active Project changes", async () => {
-    const latePublish =
-      deferred<Awaited<ReturnType<typeof eventQueryRepository.publish>>>();
-    vi.mocked(eventQueryRepository.publish).mockReturnValueOnce(
-      latePublish.promise,
-    );
-    const wrapper = mountSection();
-    await flushPromises();
-
-    await wrapper.get('button[data-test="publish-policy"]').trigger("click");
-    await wrapper.setProps({ projectId: "project-2" });
-    await flushPromises();
-    latePublish.resolve({
-      id: "late-policy",
-      version: 99,
-      publishedAt: "2026-07-28T14:00:00.000Z",
-      compilerVersion: "1",
-      documentHash: "late-hash",
-      document,
-    });
-    await flushPromises();
-
-    expect(wrapper.text()).not.toContain("Опубликована ревизия 99");
+      (
+        wrapper.get('.master-control input[type="checkbox"]')
+          .element as HTMLInputElement
+      ).checked,
+    ).toBe(false);
   });
 });

@@ -3,20 +3,29 @@ import {
   caseVerificationGet,
   caseVerificationStart,
   eventQueryPolicyGet,
+  eventQueryPolicyGetItem,
+  eventQueryPolicyListItems,
+  eventQueryPolicyListRequests,
+  eventQueryPolicyPatchItem,
+  eventQueryPolicyPatchProject,
   eventQueryPolicyPreview,
   eventQueryPolicyPublish,
-  eventQueryPolicySaveDraft,
+  eventQueryPolicyPublishItem,
   eventQueryPolicyUsage,
-  eventQueryPolicyValidate,
+  eventQueryPolicyValidateItem,
 } from "@/shared/api/generated/lola-backend";
 import type {
   EstimateCaseVerificationDto,
+  EventQueryPolicyListItemsParams,
+  EventQueryPolicyListRequestsParams,
   EventQueryPolicyUsageParams,
+  PatchEventQueryPolicyItemDto,
+  PatchEventQueryProjectPolicyDto,
   PreviewEventQueryDto,
   PublishEventQueryPolicyDto,
-  SaveEventQueryPolicyDraftDto,
+  PublishEventQueryPolicyItemDto,
   StartCaseVerificationDto,
-  ValidateEventQueryPolicyDto,
+  ValidateEventQueryPolicyItemDto,
 } from "@/shared/api/generated/models";
 import { isMockMode } from "@/shared/config/data-mode";
 import { mockEventQueryRepository } from "./mock-event-query-repository";
@@ -26,12 +35,40 @@ export const apiEventQueryRepository = {
     return eventQueryPolicyGet(projectId);
   },
 
-  saveDraft(projectId: string, input: SaveEventQueryPolicyDraftDto) {
-    return eventQueryPolicySaveDraft(projectId, input);
+  patchProject(projectId: string, input: PatchEventQueryProjectPolicyDto) {
+    return eventQueryPolicyPatchProject(projectId, input);
   },
 
-  validate(projectId: string, input: ValidateEventQueryPolicyDto) {
-    return eventQueryPolicyValidate(projectId, input);
+  listItems(projectId: string, params: EventQueryPolicyListItemsParams) {
+    return eventQueryPolicyListItems(projectId, params);
+  },
+
+  getItem(projectId: string, definitionKeyId: string) {
+    return eventQueryPolicyGetItem(projectId, definitionKeyId);
+  },
+
+  patchItem(
+    projectId: string,
+    definitionKeyId: string,
+    input: PatchEventQueryPolicyItemDto,
+  ) {
+    return eventQueryPolicyPatchItem(projectId, definitionKeyId, input);
+  },
+
+  validateItem(
+    projectId: string,
+    definitionKeyId: string,
+    input: ValidateEventQueryPolicyItemDto,
+  ) {
+    return eventQueryPolicyValidateItem(projectId, definitionKeyId, input);
+  },
+
+  publishItem(
+    projectId: string,
+    definitionKeyId: string,
+    input: PublishEventQueryPolicyItemDto,
+  ) {
+    return eventQueryPolicyPublishItem(projectId, definitionKeyId, input);
   },
 
   publish(projectId: string, input: PublishEventQueryPolicyDto) {
@@ -44,6 +81,10 @@ export const apiEventQueryRepository = {
 
   usage(projectId: string, params: EventQueryPolicyUsageParams) {
     return eventQueryPolicyUsage(projectId, params);
+  },
+
+  listRequests(projectId: string, params: EventQueryPolicyListRequestsParams) {
+    return eventQueryPolicyListRequests(projectId, params);
   },
 
   estimateCaseVerification(

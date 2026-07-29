@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryPolicyRevisionResponseDto } from "./eventQueryPolicyRevisionResponseDto";
 
 /**
  * @nullable
  */
-export type EventQueryPolicyStateResponseDtoPublished =
-  EventQueryPolicyRevisionResponseDto | null;
+export type EventQueryLinkedAiUsageDtoEstimatedCostUsd = {
+  [key: string]: unknown;
+} | null;

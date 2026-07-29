@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import type {
@@ -8,6 +8,7 @@ import type {
   EventQueryResultResponseDto,
 } from "@/shared/api/generated/models";
 import { eventQueryRepository } from "../api/event-query-repository";
+import { eventQueryPolicyItemFromConfiguration } from "../model/event-query-policy";
 import {
   eventQueryPeriodOptions,
   eventQueryTimeRange,
@@ -16,10 +17,15 @@ import {
 
 const props = defineProps<{
   projectId: string;
-  items: EventQueryPolicyItemDto[];
   disabled?: boolean;
 }>();
 
+const items = ref<EventQueryPolicyItemDto[]>([]);
+const audience = ref<"INTERNAL_AI" | "END_USER_CONVERSATION">("INTERNAL_AI");
+const search = ref("");
+const nextCursor = ref<string | null>(null);
+const loadingCatalog = ref(false);
+const catalogError = ref("");
 const endUserId = ref("");
 const eventCode = ref("");
 const mode = ref<"SUMMARY" | "AGGREGATE" | "LATEST">("SUMMARY");
@@ -29,7 +35,7 @@ const loading = ref(false);
 const error = ref("");
 
 const selected = computed(() =>
-  props.items.find((item) => item.stableCode === eventCode.value),
+  items.value.find((item) => item.stableCode === eventCode.value),
 );
 const periodOptions = computed(() => {
   const maxHours = selected.value?.maxInteractiveLookbackHours ?? 24;
@@ -97,6 +103,58 @@ watch(eventCode, () => {
   error.value = "";
 });
 
+async function loadCatalog(append = false) {
+  loadingCatalog.value = true;
+  catalogError.value = "";
+  try {
+    const response = await eventQueryRepository.listItems(props.projectId, {
+      audience: audience.value,
+      effective: true,
+      query: search.value.trim() || undefined,
+      limit: 50,
+      cursor: append ? (nextCursor.value ?? undefined) : undefined,
+    });
+    const parsed = response.items.flatMap((candidate) => {
+      const item = eventQueryPolicyItemFromConfiguration(
+        candidate.eventCode,
+        candidate.configuration,
+      );
+      return item ? [item] : [];
+    });
+    items.value = append ? [...items.value, ...parsed] : parsed;
+    nextCursor.value =
+      typeof response.pageInfo.nextCursor === "string"
+        ? response.pageInfo.nextCursor
+        : null;
+    if (!items.value.some((item) => item.stableCode === eventCode.value)) {
+      eventCode.value = items.value[0]?.stableCode ?? "";
+    }
+  } catch (cause) {
+    catalogError.value =
+      cause instanceof Error
+        ? cause.message
+        : "Не удалось загрузить каталог доступных событий";
+  } finally {
+    loadingCatalog.value = false;
+  }
+}
+
+watch(audience, () => {
+  result.value = null;
+  error.value = "";
+  void loadCatalog();
+});
+watch(
+  () => props.projectId,
+  () => {
+    items.value = [];
+    eventCode.value = "";
+    result.value = null;
+    void loadCatalog();
+  },
+);
+onMounted(() => void loadCatalog());
+
 async function preview() {
   if (!endUserId.value.trim() || !eventCode.value) return;
   loading.value = true;
@@ -104,6 +162,7 @@ async function preview() {
   result.value = null;
   try {
     result.value = await eventQueryRepository.preview(props.projectId, {
+      audience: audience.value,
       endUserId: endUserId.value.trim(),
       query: query.value,
     });
@@ -133,6 +192,37 @@ function formatBytes(value?: number) {
       </div>
       <span class="readonly-badge">read-only</span>
     </div>
+    <div class="catalog-controls">
+      <label>
+        <span>Режим проверки</span>
+        <select v-model="audience" :disabled="disabled || loadingCatalog">
+          <option value="INTERNAL_AI">Как внутренний AI-анализ</option>
+          <option value="END_USER_CONVERSATION">
+            Как ответ пользователю в Chat/Voice
+          </option>
+        </select>
+      </label>
+      <label>
+        <span>Поиск события</span>
+        <input
+          v-model="search"
+          data-test="preview-event-search"
+          placeholder="Название или код"
+          :disabled="disabled || loadingCatalog"
+          @keydown.enter.prevent="loadCatalog()"
+        />
+      </label>
+      <Button
+        label="Найти"
+        severity="secondary"
+        :loading="loadingCatalog"
+        :disabled="disabled"
+        @click="loadCatalog()"
+      />
+    </div>
+    <Message v-if="catalogError" severity="error" :closable="false">
+      {{ catalogError }}
+    </Message>
     <Message v-if="error" severity="error" :closable="false">{{
       error
     }}</Message>
@@ -197,6 +287,14 @@ function formatBytes(value?: number) {
         </select>
       </label>
     </div>
+    <Button
+      v-if="nextCursor"
+      label="Показать ещё события"
+      text
+      severity="secondary"
+      :loading="loadingCatalog"
+      @click="loadCatalog(true)"
+    />
     <Button
       label="Выполнить preview"
       icon="pi pi-search"
@@ -287,17 +385,30 @@ function formatBytes(value?: number) {
   font-weight: 700;
 }
 .preview-form,
+.catalog-controls,
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
-.preview-form label {
+.catalog-controls {
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+  align-items: end;
+}
+.preview-form label,
+.catalog-controls label {
   display: grid;
   gap: 6px;
 }
+.preview-form label span,
+.catalog-controls label span {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+}
 .preview-form input,
-.preview-form select {
+.preview-form select,
+.catalog-controls input,
+.catalog-controls select {
   min-width: 0;
   padding: 10px;
   border: 1px solid var(--border-default);
@@ -334,12 +445,14 @@ function formatBytes(value?: number) {
 }
 @media (max-width: 900px) {
   .preview-form,
+  .catalog-controls,
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 560px) {
   .preview-form,
+  .catalog-controls,
   .metric-grid {
     grid-template-columns: 1fr;
   }

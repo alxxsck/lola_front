@@ -158,11 +158,18 @@ import type {
   EventIngestionPolicyMutationResponseDto,
   EventLogPageResponseDto,
   EventLogResponseDto,
+  EventQueryPolicyCatalogResponseDto,
   EventQueryPolicyDraftResponseDto,
+  EventQueryPolicyItemDraftMutationResponseDto,
+  EventQueryPolicyItemStateResponseDto,
+  EventQueryPolicyListItemsParams,
+  EventQueryPolicyListRequestsParams,
   EventQueryPolicyRevisionResponseDto,
   EventQueryPolicyStateResponseDto,
   EventQueryPolicyUsageParams,
   EventQueryPolicyValidationResponseDto,
+  EventQueryProjectDraftResponseDto,
+  EventQueryRequestHistoryResponseDto,
   EventQueryResultResponseDto,
   EventQueryUsageResponseDto,
   EventSchemaDraftResponseDto,
@@ -226,6 +233,8 @@ import type {
   OperationalTelegramWebhookIngest200,
   PasswordEstablishedResponseDto,
   PasswordSetupRequestDto,
+  PatchEventQueryPolicyItemDto,
+  PatchEventQueryProjectPolicyDto,
   PlatformCreateProject201,
   PlatformOperationsUsersPageParams,
   PlatformPermissionCatalogResponseDto,
@@ -262,6 +271,7 @@ import type {
   PublishAttributeContractResponseDto,
   PublishEndUserCasePolicyDto,
   PublishEventQueryPolicyDto,
+  PublishEventQueryPolicyItemDto,
   PublishEventSchemaDraftDto,
   PublishScenarioDto,
   PublishScenarioResponseDto,
@@ -374,6 +384,7 @@ import type {
   UserMemorySettingsResponseDto,
   ValidateAttributeContractDto,
   ValidateEventQueryPolicyDto,
+  ValidateEventQueryPolicyItemDto,
   ValidateScenarioDraftDto,
   ValidateScenarioDraftResponseDto,
   ValidateScenarioRuleDto,
@@ -2069,6 +2080,22 @@ export const eventQueryPolicyGet = (
   );
 };
 
+export const eventQueryPolicyPatchProject = (
+  projectId: string,
+  patchEventQueryProjectPolicyDto: BodyType<PatchEventQueryProjectPolicyDto>,
+  options?: SecondParameter<typeof request<EventQueryProjectDraftResponseDto>>,
+) => {
+  return request<EventQueryProjectDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: patchEventQueryProjectPolicyDto,
+    },
+    options,
+  );
+};
+
 export const eventQueryPolicySaveDraft = (
   projectId: string,
   saveEventQueryPolicyDraftDto: BodyType<SaveEventQueryPolicyDraftDto>,
@@ -2080,6 +2107,94 @@ export const eventQueryPolicySaveDraft = (
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       data: saveEventQueryPolicyDraftDto,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyListItems = (
+  projectId: string,
+  params: EventQueryPolicyListItemsParams,
+  options?: SecondParameter<typeof request<EventQueryPolicyCatalogResponseDto>>,
+) => {
+  return request<EventQueryPolicyCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/items`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyGetItem = (
+  projectId: string,
+  definitionKeyId: string,
+  options?: SecondParameter<
+    typeof request<EventQueryPolicyItemStateResponseDto>
+  >,
+) => {
+  return request<EventQueryPolicyItemStateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/items/${definitionKeyId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyPatchItem = (
+  projectId: string,
+  definitionKeyId: string,
+  patchEventQueryPolicyItemDto: BodyType<PatchEventQueryPolicyItemDto>,
+  options?: SecondParameter<
+    typeof request<EventQueryPolicyItemDraftMutationResponseDto>
+  >,
+) => {
+  return request<EventQueryPolicyItemDraftMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/items/${definitionKeyId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: patchEventQueryPolicyItemDto,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyPublishItem = (
+  projectId: string,
+  definitionKeyId: string,
+  publishEventQueryPolicyItemDto: BodyType<PublishEventQueryPolicyItemDto>,
+  options?: SecondParameter<
+    typeof request<EventQueryPolicyRevisionResponseDto>
+  >,
+) => {
+  return request<EventQueryPolicyRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/items/${definitionKeyId}/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishEventQueryPolicyItemDto,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyValidateItem = (
+  projectId: string,
+  definitionKeyId: string,
+  validateEventQueryPolicyItemDto: BodyType<ValidateEventQueryPolicyItemDto>,
+  options?: SecondParameter<
+    typeof request<EventQueryPolicyValidationResponseDto>
+  >,
+) => {
+  return request<EventQueryPolicyValidationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/items/${definitionKeyId}/validate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: validateEventQueryPolicyItemDto,
     },
     options,
   );
@@ -2114,6 +2229,23 @@ export const eventQueryPolicyPublish = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: publishEventQueryPolicyDto,
+    },
+    options,
+  );
+};
+
+export const eventQueryPolicyListRequests = (
+  projectId: string,
+  params: EventQueryPolicyListRequestsParams,
+  options?: SecondParameter<
+    typeof request<EventQueryRequestHistoryResponseDto>
+  >,
+) => {
+  return request<EventQueryRequestHistoryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/event-query-policy/requests`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -5515,14 +5647,35 @@ export type AdminEventLogsGetResult = NonNullable<
 export type EventQueryPolicyGetResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicyGet>>
 >;
+export type EventQueryPolicyPatchProjectResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyPatchProject>>
+>;
 export type EventQueryPolicySaveDraftResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicySaveDraft>>
+>;
+export type EventQueryPolicyListItemsResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyListItems>>
+>;
+export type EventQueryPolicyGetItemResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyGetItem>>
+>;
+export type EventQueryPolicyPatchItemResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyPatchItem>>
+>;
+export type EventQueryPolicyPublishItemResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyPublishItem>>
+>;
+export type EventQueryPolicyValidateItemResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyValidateItem>>
 >;
 export type EventQueryPolicyPreviewResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicyPreview>>
 >;
 export type EventQueryPolicyPublishResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicyPublish>>
+>;
+export type EventQueryPolicyListRequestsResult = NonNullable<
+  Awaited<ReturnType<typeof eventQueryPolicyListRequests>>
 >;
 export type EventQueryPolicyUsageResult = NonNullable<
   Awaited<ReturnType<typeof eventQueryPolicyUsage>>

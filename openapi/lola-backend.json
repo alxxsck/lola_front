@@ -1865,6 +1865,7 @@
               "SPEECH",
               "MEMORY",
               "AI_REVIEW",
+              "AI_ANALYSIS",
               "PROJECT_OVERHEAD"
             ],
             "type": "string"
@@ -1994,6 +1995,7 @@
               "SPEECH",
               "MEMORY",
               "AI_REVIEW",
+              "AI_ANALYSIS",
               "PROJECT_OVERHEAD"
             ],
             "type": "string"
@@ -11186,6 +11188,30 @@
         ],
         "type": "object"
       },
+      "EventDefinitionUsageEventQueryPolicyResponseDto": {
+        "properties": {
+          "currentConversationGrantEnabled": {
+            "type": "boolean"
+          },
+          "currentGrantEnabled": {
+            "type": "boolean"
+          },
+          "publishedRevisionHistoryCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "publishedRevisionHistoryExists": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "currentGrantEnabled",
+          "currentConversationGrantEnabled",
+          "publishedRevisionHistoryExists",
+          "publishedRevisionHistoryCount"
+        ],
+        "type": "object"
+      },
       "EventDefinitionUsageResponseDto": {
         "properties": {
           "activeWaitCount": {
@@ -11197,6 +11223,15 @@
               "enum": [
                 "SCENARIO_DEPENDENCIES",
                 "ACTIVE_WAITS"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "archiveEffects": {
+            "items": {
+              "enum": [
+                "EVENT_QUERY_ACCESS_WILL_BE_REVOKED"
               ],
               "type": "string"
             },
@@ -11217,7 +11252,8 @@
               "enum": [
                 "SCENARIO_DEPENDENCIES",
                 "ACTIVE_WAITS",
-                "EVENT_LOGS"
+                "EVENT_LOGS",
+                "EVENT_QUERY_POLICY_HISTORY"
               ],
               "type": "string"
             },
@@ -11229,6 +11265,9 @@
           },
           "eventLogs": {
             "$ref": "#/components/schemas/EventDefinitionUsageEventLogsResponseDto"
+          },
+          "eventQueryPolicy": {
+            "$ref": "#/components/schemas/EventDefinitionUsageEventQueryPolicyResponseDto"
           },
           "lifecycleVersion": {
             "minimum": 1,
@@ -11260,9 +11299,11 @@
           "scenarioDraftDependencyCount",
           "publishedScenarioRevisionCount",
           "activeWaitCount",
+          "eventQueryPolicy",
           "canArchive",
           "canDelete",
           "archiveBlockers",
+          "archiveEffects",
           "deleteBlockers"
         ],
         "type": "object"
@@ -11740,6 +11781,41 @@
         ],
         "type": "object"
       },
+      "EventQueryLinkedAiUsageDto": {
+        "properties": {
+          "billedCostUsd": {
+            "nullable": true,
+            "type": "object"
+          },
+          "estimatedCostUsd": {
+            "nullable": true,
+            "type": "object"
+          },
+          "inputTokens": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "outputTokens": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "records": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalTokens": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "records",
+          "totalTokens",
+          "inputTokens",
+          "outputTokens"
+        ],
+        "type": "object"
+      },
       "EventQueryMetricDto": {
         "properties": {
           "currencyField": {
@@ -11763,6 +11839,112 @@
         },
         "required": [
           "operation"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyCatalogItemDto": {
+        "properties": {
+          "configuration": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "effective": {
+            "$ref": "#/components/schemas/EventQueryPolicyItemEffectiveResponseDto"
+          },
+          "eventCode": {
+            "type": "string"
+          },
+          "eventName": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "queryable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "eventCode",
+          "eventName",
+          "lifecycle",
+          "configuration",
+          "effective",
+          "queryable"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyCatalogResponseDto": {
+        "properties": {
+          "audience": {
+            "enum": [
+              "INTERNAL_AI",
+              "END_USER_CONVERSATION"
+            ],
+            "type": "string"
+          },
+          "effectiveOnly": {
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyCatalogItemDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/EventQueryPolicyPageInfoDto"
+          },
+          "publishedMasterEnabled": {
+            "type": "boolean"
+          },
+          "publishedPolicyRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventQueryPolicyCatalogRevisionDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "audience",
+          "effectiveOnly",
+          "publishedMasterEnabled",
+          "items",
+          "pageInfo"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyCatalogRevisionDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "publishedAt"
         ],
         "type": "object"
       },
@@ -11876,6 +12058,75 @@
         ],
         "type": "object"
       },
+      "EventQueryPolicyItemConfiguredResponseDto": {
+        "properties": {
+          "configuration": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "endUserConversationEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "endUserConversationEnabled",
+          "configuration"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyItemDraftMutationResponseDto": {
+        "properties": {
+          "configuration": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyDiagnosticDto"
+            },
+            "type": "array"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "endUserConversationEnabled": {
+            "type": "boolean"
+          },
+          "eventCode": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "eventCode",
+          "lifecycle",
+          "version",
+          "enabled",
+          "endUserConversationEnabled",
+          "configuration",
+          "diagnostics"
+        ],
+        "type": "object"
+      },
       "EventQueryPolicyItemDto": {
         "properties": {
           "allowedModes": {
@@ -11926,6 +12177,99 @@
         ],
         "type": "object"
       },
+      "EventQueryPolicyItemEffectiveResponseDto": {
+        "properties": {
+          "endUserConversation": {
+            "type": "boolean"
+          },
+          "internalAi": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "internalAi",
+          "endUserConversation"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyItemStateResponseDto": {
+        "properties": {
+          "configured": {
+            "$ref": "#/components/schemas/EventQueryPolicyItemConfiguredResponseDto"
+          },
+          "definitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyDiagnosticDto"
+            },
+            "type": "array"
+          },
+          "draftVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "effective": {
+            "$ref": "#/components/schemas/EventQueryPolicyItemEffectiveResponseDto"
+          },
+          "eventCode": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "policyDraftVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "published": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventQueryPolicyItemConfiguredResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "publishedPolicyVersion": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "definitionKeyId",
+          "eventCode",
+          "lifecycle",
+          "draftVersion",
+          "policyDraftVersion",
+          "configured",
+          "effective",
+          "diagnostics"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicyPageInfoDto": {
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "hasMore"
+        ],
+        "type": "object"
+      },
       "EventQueryPolicyRevisionResponseDto": {
         "properties": {
           "compilerVersion": {
@@ -11961,25 +12305,68 @@
       },
       "EventQueryPolicyStateResponseDto": {
         "properties": {
-          "draft": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/EventQueryPolicyDraftResponseDto"
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "configuredDraftItems": {
+                "type": "number"
+              },
+              "enabledDraftItems": {
+                "type": "number"
+              },
+              "endUserConversationDraftItems": {
+                "type": "number"
               }
-            ],
-            "nullable": true,
+            },
             "type": "object"
           },
-          "published": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/EventQueryPolicyRevisionResponseDto"
-              }
-            ],
+          "currentRevision": {
+            "additionalProperties": false,
             "nullable": true,
+            "properties": {
+              "compilerVersion": {
+                "type": "string"
+              },
+              "documentHash": {
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "itemCount": {
+                "type": "number"
+              },
+              "publishedAt": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "version": {
+                "type": "number"
+              }
+            },
             "type": "object"
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyDiagnosticDto"
+            },
+            "type": "array"
+          },
+          "masterEnabled": {
+            "type": "boolean"
+          },
+          "version": {
+            "minimum": 0,
+            "type": "number"
           }
         },
+        "required": [
+          "version",
+          "masterEnabled",
+          "counts",
+          "diagnostics"
+        ],
         "type": "object"
       },
       "EventQueryPolicyValidationResponseDto": {
@@ -11997,6 +12384,32 @@
         "required": [
           "valid",
           "errors"
+        ],
+        "type": "object"
+      },
+      "EventQueryProjectDraftResponseDto": {
+        "properties": {
+          "currentRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "masterEnabled": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "masterEnabled",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -12037,6 +12450,40 @@
           "from",
           "to"
         ],
+        "type": "object"
+      },
+      "EventQueryRequestAttributionDto": {
+        "properties": {
+          "aiAnalysisRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "aiReviewRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "caseId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "chatMessageId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "voiceSessionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "voiceTurnId": {
+            "nullable": true,
+            "type": "object"
+          }
+        },
         "type": "object"
       },
       "EventQueryRequestDto": {
@@ -12092,6 +12539,140 @@
           "eventCodes",
           "mode",
           "timeRange"
+        ],
+        "type": "object"
+      },
+      "EventQueryRequestHistoryItemDto": {
+        "properties": {
+          "attribution": {
+            "$ref": "#/components/schemas/EventQueryRequestAttributionDto"
+          },
+          "audience": {
+            "enum": [
+              "INTERNAL_AI",
+              "END_USER_CONVERSATION"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "durationMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "estimatedAddedInputTokens": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "eventCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "linkedAiUsage": {
+            "$ref": "#/components/schemas/EventQueryLinkedAiUsageDto"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "queryShape": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "range": {
+            "additionalProperties": false,
+            "nullable": true,
+            "properties": {
+              "from": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "to": {
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "rejectionCode": {
+            "nullable": true,
+            "type": "object"
+          },
+          "resultBytes": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "returnedRows": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "scannedRows": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "snapshotReceivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "endUserId",
+          "origin",
+          "audience",
+          "mode",
+          "eventCodes",
+          "queryShape",
+          "snapshotReceivedAt",
+          "status",
+          "scannedRows",
+          "returnedRows",
+          "resultBytes",
+          "estimatedAddedInputTokens",
+          "durationMs",
+          "attribution",
+          "linkedAiUsage"
+        ],
+        "type": "object"
+      },
+      "EventQueryRequestHistoryResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryRequestHistoryItemDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/EventQueryPolicyPageInfoDto"
+          }
+        },
+        "required": [
+          "items",
+          "pageInfo"
         ],
         "type": "object"
       },
@@ -12287,6 +12868,29 @@
       },
       "EventQueryUsageResponseDto": {
         "properties": {
+          "byAudience": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "calls": {
+                  "type": "number"
+                },
+                "estimatedAddedInputTokens": {
+                  "type": "number"
+                },
+                "resultBytes": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "calls",
+                "estimatedAddedInputTokens",
+                "resultBytes"
+              ],
+              "type": "object"
+            },
+            "type": "object"
+          },
           "byOrigin": {
             "additionalProperties": {
               "additionalProperties": false,
@@ -12357,6 +12961,25 @@
           "resultBytes": {
             "type": "number"
           },
+          "scope": {
+            "additionalProperties": false,
+            "properties": {
+              "audience": {
+                "enum": [
+                  "INTERNAL_AI",
+                  "END_USER_CONVERSATION"
+                ],
+                "nullable": true,
+                "type": "string"
+              },
+              "endUserId": {
+                "format": "uuid",
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
           "to": {
             "format": "date-time",
             "type": "string"
@@ -12365,10 +12988,12 @@
         "required": [
           "from",
           "to",
+          "scope",
           "calls",
           "estimatedAddedInputTokens",
           "resultBytes",
-          "byOrigin"
+          "byOrigin",
+          "byAudience"
         ],
         "type": "object"
       },
@@ -15879,6 +16504,72 @@
         ],
         "type": "object"
       },
+      "PatchEventQueryPolicyItemDto": {
+        "properties": {
+          "allowedModes": {
+            "items": {
+              "enum": [
+                "SUMMARY",
+                "AGGREGATE",
+                "LATEST"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "descriptionForAI": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "endUserConversationEnabled": {
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxInteractiveLookbackHours": {
+            "maximum": 744,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxVerificationLookbackHours": {
+            "maximum": 2160,
+            "minimum": 1,
+            "type": "number"
+          },
+          "safeFields": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyFieldDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "PatchEventQueryProjectPolicyDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "masterEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "masterEnabled"
+        ],
+        "type": "object"
+      },
       "PlatformPermissionCatalogResponseDto": {
         "properties": {
           "groups": {
@@ -16073,6 +16764,14 @@
       },
       "PreviewEventQueryDto": {
         "properties": {
+          "audience": {
+            "default": "INTERNAL_AI",
+            "enum": [
+              "INTERNAL_AI",
+              "END_USER_CONVERSATION"
+            ],
+            "type": "string"
+          },
           "endUserId": {
             "format": "uuid",
             "type": "string"
@@ -18008,12 +18707,31 @@
       "PublishEventQueryPolicyDto": {
         "properties": {
           "expectedDraftVersion": {
+            "deprecated": true,
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "PublishEventQueryPolicyItemDto": {
+        "properties": {
+          "expectedPolicyVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "expectedVersion": {
             "minimum": 1,
             "type": "number"
           }
         },
         "required": [
-          "expectedDraftVersion"
+          "expectedVersion",
+          "expectedPolicyVersion"
         ],
         "type": "object"
       },
@@ -25010,6 +25728,15 @@
         "required": [
           "document"
         ],
+        "type": "object"
+      },
+      "ValidateEventQueryPolicyItemDto": {
+        "properties": {
+          "patch": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
         "type": "object"
       },
       "ValidateScenarioDraftDto": {
@@ -33692,6 +34419,53 @@
             "scope": "PROJECT"
           }
         ]
+      },
+      "patch": {
+        "operationId": "EventQueryPolicy_patchProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchEventQueryProjectPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryProjectDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
+          "scope": "PROJECT"
+        }
       }
     },
     "/api/v1/admin/projects/{projectId}/event-query-policy/draft": {
@@ -33723,6 +34497,323 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EventQueryPolicyDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/items": {
+      "get": {
+        "operationId": "EventQueryPolicy_listItems",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "audience",
+            "required": true,
+            "schema": {
+              "enum": [
+                "INTERNAL_AI",
+                "END_USER_CONVERSATION"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "effective",
+            "required": false,
+            "schema": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.event_query_policy.preview",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.event_query_policy.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/items/{definitionKeyId}": {
+      "get": {
+        "operationId": "EventQueryPolicy_getItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyItemStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.event_query_policy.preview",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.event_query_policy.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "EventQueryPolicy_patchItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchEventQueryPolicyItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyItemDraftMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/items/{definitionKeyId}/publish": {
+      "post": {
+        "operationId": "EventQueryPolicy_publishItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishEventQueryPolicyItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/items/{definitionKeyId}/validate": {
+      "post": {
+        "operationId": "EventQueryPolicy_validateItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionKeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateEventQueryPolicyItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryPolicyValidationResponseDto"
                 }
               }
             },
@@ -33841,6 +34932,131 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/event-query-policy/requests": {
+      "get": {
+        "operationId": "EventQueryPolicy_listRequests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "audience",
+            "required": false,
+            "schema": {
+              "enum": [
+                "INTERNAL_AI",
+                "END_USER_CONVERSATION"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "origin",
+            "required": false,
+            "schema": {
+              "maxLength": 40,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "maxLength": 40,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventCode",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventQueryRequestHistoryResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Event Query"
+        ],
+        "x-iam-permission": {
+          "code": "project.event_query_policy.preview",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/event-query-policy/usage": {
       "get": {
         "operationId": "EventQueryPolicy_usage",
@@ -33868,6 +35084,27 @@
             "required": true,
             "schema": {
               "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "audience",
+            "required": false,
+            "schema": {
+              "enum": [
+                "INTERNAL_AI",
+                "END_USER_CONVERSATION"
+              ],
               "type": "string"
             }
           }

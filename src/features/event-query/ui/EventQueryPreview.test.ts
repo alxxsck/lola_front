@@ -4,7 +4,7 @@ import { eventQueryRepository } from "../api/event-query-repository";
 import EventQueryPreview from "./EventQueryPreview.vue";
 
 vi.mock("../api/event-query-repository", () => ({
-  eventQueryRepository: { preview: vi.fn() },
+  eventQueryRepository: { listItems: vi.fn(), preview: vi.fn() },
 }));
 
 const aggregateItem = {
@@ -42,7 +42,6 @@ function mountPreview() {
   return mount(EventQueryPreview, {
     props: {
       projectId: "project-1",
-      items: [aggregateItem, summaryItem] as never,
     },
     global: {
       stubs: {
@@ -61,6 +60,25 @@ function mountPreview() {
 describe("EventQueryPreview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(eventQueryRepository.listItems).mockResolvedValue({
+      audience: "INTERNAL_AI",
+      effectiveOnly: true,
+      publishedMasterEnabled: true,
+      publishedPolicyRevision: null,
+      items: [aggregateItem, summaryItem].map((item, index) => {
+        const { stableCode, ...configuration } = item;
+        return {
+          definitionKeyId: `definition-${index + 1}`,
+          eventCode: stableCode,
+          eventName: stableCode,
+          lifecycle: "ACTIVE",
+          configuration,
+          effective: { internalAi: true, endUserConversation: true },
+          queryable: true,
+        };
+      }),
+      pageInfo: { hasMore: false, nextCursor: null },
+    } as never);
     vi.mocked(eventQueryRepository.preview).mockResolvedValue({
       status: "COMPLETED",
       complete: true,
@@ -79,6 +97,7 @@ describe("EventQueryPreview", () => {
 
   it("builds a valid aggregate query and caps periods by policy", async () => {
     const wrapper = mountPreview();
+    await flushPromises();
     await wrapper
       .get('[data-test="preview-event"]')
       .setValue("deposit.completed");
@@ -89,10 +108,14 @@ describe("EventQueryPreview", () => {
     );
 
     await wrapper.get('[data-test="preview-end-user"]').setValue("user-1");
-    await wrapper.get("button").trigger("click");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Выполнить preview")!
+      .trigger("click");
     await flushPromises();
 
     expect(eventQueryRepository.preview).toHaveBeenCalledWith("project-1", {
+      audience: "INTERNAL_AI",
       endUserId: "user-1",
       query: expect.objectContaining({
         eventCodes: ["deposit.completed"],
@@ -111,6 +134,7 @@ describe("EventQueryPreview", () => {
 
   it("normalizes mode and lookback when the selected event changes", async () => {
     const wrapper = mountPreview();
+    await flushPromises();
     await wrapper
       .get('[data-test="preview-event"]')
       .setValue("deposit.completed");

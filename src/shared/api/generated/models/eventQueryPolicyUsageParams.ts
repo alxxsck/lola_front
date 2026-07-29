@@ -5,8 +5,11 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EventQueryPolicyUsageAudience } from "./eventQueryPolicyUsageAudience";
 
 export type EventQueryPolicyUsageParams = {
   from: string;
   to: string;
+  endUserId?: string;
+  audience?: EventQueryPolicyUsageAudience;
 };

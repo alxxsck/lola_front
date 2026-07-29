@@ -367,9 +367,16 @@ export const mockEventCatalogRepository: EventCatalogRepository = {
       scenarioDraftDependencyCount: 0,
       publishedScenarioRevisionCount: 0,
       activeWaitCount: 0,
+      eventQueryPolicy: {
+        currentGrantEnabled: false,
+        currentConversationGrantEnabled: false,
+        publishedRevisionHistoryExists: false,
+        publishedRevisionHistoryCount: 0,
+      },
       canArchive: true,
       canDelete: true,
       archiveBlockers: [],
+      archiveEffects: [],
       deleteBlockers: [],
     };
   },

@@ -9,7 +9,6 @@ import Message from "primevue/message";
 import MultiSelect from "primevue/multiselect";
 import ProgressSpinner from "primevue/progressspinner";
 import Textarea from "primevue/textarea";
-import { eventCatalogRepository } from "@/shared/api/repository/event-catalog";
 import { eventQueryRepository } from "@/features/event-query/api/event-query-repository";
 import { aiReviewRepository } from "../api/ai-review-repository";
 import type {
@@ -42,9 +41,11 @@ const form = reactive({
   instruction: "",
 });
 let pollTimer: ReturnType<typeof setTimeout> | undefined;
+let catalogSearchTimer: ReturnType<typeof setTimeout> | undefined;
 let pollFailures = 0;
 let estimateGeneration = 0;
 let loadGeneration = 0;
+let catalogGeneration = 0;
 
 const scopeReady = computed(
   () =>
@@ -78,6 +79,8 @@ watch(
     run.value = null;
     confirmedExpensive.value = false;
     submissionKey.value = "";
+    form.eventCodes = [];
+    options.value = [];
     estimating.value = false;
     starting.value = false;
     pollFailures = 0;
@@ -97,7 +100,10 @@ watch(
   },
   { deep: true },
 );
-onBeforeUnmount(stopPolling);
+onBeforeUnmount(() => {
+  stopPolling();
+  if (catalogSearchTimer) clearTimeout(catalogSearchTimer);
+});
 
 async function load() {
   const generation = ++loadGeneration;
@@ -108,32 +114,22 @@ async function load() {
   estimate.value = null;
   pollFailures = 0;
   try {
-    const [nextSettings, queryPolicy] = await Promise.all([
+    const [nextSettings, catalog] = await Promise.all([
       aiReviewRepository.getSettings(projectId),
-      eventQueryRepository.getPolicy(projectId),
+      eventQueryRepository.listItems(projectId, {
+        audience: "INTERNAL_AI",
+        effective: true,
+        limit: 100,
+      }),
     ]);
-    const definitions = await eventCatalogRepository
-      .listDefinitions(projectId, "ACTIVE")
-      .catch(() => []);
     if (generation !== loadGeneration || projectId !== props.projectId) return;
     settings.value = nextSettings;
-    queryPolicyEnabled.value = queryPolicy.published?.document.enabled === true;
-    const queryableCodes = new Set(
-      queryPolicy.published?.document.items.map((item) => item.stableCode) ??
-        [],
-    );
-    options.value =
-      queryPolicy.published?.document.items.map((item) => {
-        const definition = definitions.find(
-          (candidate) => candidate.code === item.stableCode,
-        );
-        return {
-          label: definition
-            ? `${definition.metadata.name} · ${item.stableCode}`
-            : `${item.descriptionForAI} · ${item.stableCode}`,
-          value: item.stableCode,
-        };
-      }) ?? [];
+    queryPolicyEnabled.value = catalog.publishedMasterEnabled;
+    const queryableCodes = new Set(catalog.items.map((item) => item.eventCode));
+    options.value = catalog.items.map((item) => ({
+      label: `${item.eventName} · ${item.eventCode}`,
+      value: item.eventCode,
+    }));
     form.eventCodes = form.eventCodes.filter((code) =>
       queryableCodes.has(code),
     );
@@ -143,6 +139,45 @@ async function load() {
       cause instanceof Error ? cause.message : "Не удалось открыть AI Review";
   } finally {
     if (generation === loadGeneration) loading.value = false;
+  }
+}
+
+function scheduleCatalogSearch(event: { value: string }) {
+  if (catalogSearchTimer) clearTimeout(catalogSearchTimer);
+  catalogSearchTimer = setTimeout(
+    () => void searchCatalog(event.value.trim()),
+    250,
+  );
+}
+
+async function searchCatalog(search: string) {
+  const generation = ++catalogGeneration;
+  const projectId = props.projectId;
+  try {
+    const catalog = await eventQueryRepository.listItems(projectId, {
+      audience: "INTERNAL_AI",
+      effective: true,
+      ...(search ? { search } : {}),
+      limit: 100,
+    });
+    if (generation !== catalogGeneration || projectId !== props.projectId)
+      return;
+    queryPolicyEnabled.value = catalog.publishedMasterEnabled;
+    const selected = options.value.filter((option) =>
+      form.eventCodes.includes(option.value),
+    );
+    const found = catalog.items.map((item) => ({
+      label: `${item.eventName} · ${item.eventCode}`,
+      value: item.eventCode,
+    }));
+    options.value = [...selected, ...found].filter(
+      (option, index, all) =>
+        all.findIndex((candidate) => candidate.value === option.value) === index,
+    );
+  } catch (cause) {
+    if (generation !== catalogGeneration) return;
+    error.value =
+      cause instanceof Error ? cause.message : "Не удалось найти события";
   }
 }
 
@@ -346,6 +381,7 @@ function formatRange(value: string) {
               maxWidth: '100%',
             }"
             :disabled="running"
+            @filter="scheduleCatalogSearch"
           />
         </label>
         <label>

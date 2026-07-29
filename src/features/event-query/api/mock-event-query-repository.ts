@@ -1,14 +1,12 @@
 import type {
   EstimateCaseVerificationDto,
   EventQueryPolicyDocumentDto,
-  EventQueryPolicyDraftResponseDto,
   EventQueryPolicyItemDto,
+  EventQueryPolicyItemStateResponseDto,
   EventQueryPolicyStateResponseDto,
   EventQueryPolicyUsageParams,
   PreviewEventQueryDto,
-  SaveEventQueryPolicyDraftDto,
   StartCaseVerificationDto,
-  ValidateEventQueryPolicyDto,
 } from "@/shared/api/generated/models";
 import type { EventQueryRepository } from "./event-query-repository";
 
@@ -46,7 +44,7 @@ const queryableEvents: EventQueryPolicyItemDto[] = [
 }));
 
 let draftVersion = 1;
-let draftDocument: EventQueryPolicyDocumentDto = {
+const draftDocument: EventQueryPolicyDocumentDto = {
   enabled: true,
   items: structuredClone(queryableEvents),
 };
@@ -56,19 +54,58 @@ const runs = new Map<string, ReturnType<typeof verificationRun>>();
 
 function policyState(): EventQueryPolicyStateResponseDto {
   return {
-    draft: {
-      document: structuredClone(draftDocument),
-      updatedAt: publishedAt,
-      version: draftVersion,
+    counts: {
+      configuredDraftItems: draftDocument.items.length,
+      enabledDraftItems: draftDocument.items.length,
+      endUserConversationDraftItems: draftDocument.items.length,
     },
-    published: {
+    currentRevision: {
       compilerVersion: "demo-1",
-      document: structuredClone(publishedDocument),
       documentHash: "demo-policy-document-hash",
       id: policyRevisionId,
+      itemCount: publishedDocument.items.length,
       publishedAt,
       version: 1,
     },
+    diagnostics: [],
+    masterEnabled: draftDocument.enabled,
+    version: draftVersion,
+  };
+}
+
+function configuration(item: EventQueryPolicyItemDto) {
+  return structuredClone({
+    descriptionForAI: item.descriptionForAI,
+    allowedModes: item.allowedModes,
+    safeFields: item.safeFields,
+    maxInteractiveLookbackHours: item.maxInteractiveLookbackHours,
+    maxVerificationLookbackHours: item.maxVerificationLookbackHours,
+  });
+}
+
+function itemState(
+  definitionKeyId: string,
+  item = queryableEvents[0]!,
+): EventQueryPolicyItemStateResponseDto {
+  return {
+    configured: {
+      enabled: true,
+      endUserConversationEnabled: true,
+      configuration: configuration(item),
+    },
+    definitionKeyId,
+    diagnostics: [],
+    draftVersion,
+    effective: { internalAi: true, endUserConversation: true },
+    eventCode: item.stableCode,
+    lifecycle: "ACTIVE",
+    policyDraftVersion: draftVersion,
+    published: {
+      enabled: true,
+      endUserConversationEnabled: true,
+      configuration: configuration(item),
+    },
+    publishedPolicyVersion: 1 as never,
   };
 }
 
@@ -139,28 +176,104 @@ export const mockEventQueryRepository: EventQueryRepository = {
     return policyState();
   },
 
-  async saveDraft(_projectId: string, input: SaveEventQueryPolicyDraftDto) {
+  async patchProject(_projectId, input) {
     draftVersion += 1;
-    draftDocument = structuredClone(input.document);
+    draftDocument.enabled = input.masterEnabled;
     return {
-      document: structuredClone(draftDocument),
-      updatedAt: new Date().toISOString(),
       version: draftVersion,
-    } satisfies EventQueryPolicyDraftResponseDto;
+      masterEnabled: input.masterEnabled,
+      currentRevisionId: null,
+      updatedAt: new Date().toISOString(),
+    };
   },
 
-  async validate(_projectId: string, input: ValidateEventQueryPolicyDto) {
-    const errors =
-      input.document.enabled && input.document.items.length === 0
-        ? [
-            {
-              code: "EVENT_REQUIRED",
-              location: "items",
-              message: "Добавьте хотя бы один тип события.",
-            },
-          ]
-        : [];
-    return { errors, valid: errors.length === 0 };
+  async listItems(_projectId, params) {
+    const query = params.query?.toLocaleLowerCase("ru-RU");
+    const items = queryableEvents
+      .filter(
+        (item) =>
+          !query ||
+          item.stableCode.toLocaleLowerCase("ru-RU").includes(query) ||
+          item.descriptionForAI.toLocaleLowerCase("ru-RU").includes(query),
+      )
+      .map((item, index) => ({
+        definitionKeyId: `demo-event-${index + 1}`,
+        eventCode: item.stableCode,
+        eventName: item.descriptionForAI,
+        lifecycle: "ACTIVE" as const,
+        configuration: configuration(item),
+        effective: { internalAi: true, endUserConversation: true },
+        queryable: true,
+      }));
+    return {
+      audience: params.audience,
+      effectiveOnly: params.effective ?? true,
+      publishedMasterEnabled: publishedDocument.enabled,
+      publishedPolicyRevision: {
+        id: policyRevisionId,
+        version: 1,
+        publishedAt,
+      },
+      items,
+      pageInfo: { hasMore: false, nextCursor: null },
+    };
+  },
+
+  async getItem(_projectId, definitionKeyId) {
+    return itemState(definitionKeyId);
+  },
+
+  async patchItem(_projectId, definitionKeyId, input) {
+    draftVersion += 1;
+    const current = itemState(definitionKeyId);
+    return {
+      definitionKeyId,
+      eventCode: current.eventCode,
+      lifecycle: current.lifecycle,
+      version: draftVersion,
+      enabled: input.enabled ?? current.configured.enabled,
+      endUserConversationEnabled:
+        input.endUserConversationEnabled ??
+        current.configured.endUserConversationEnabled,
+      configuration: {
+        ...current.configured.configuration,
+        ...(input.descriptionForAI !== undefined
+          ? { descriptionForAI: input.descriptionForAI }
+          : {}),
+        ...(input.allowedModes !== undefined
+          ? { allowedModes: input.allowedModes }
+          : {}),
+        ...(input.safeFields !== undefined
+          ? { safeFields: input.safeFields }
+          : {}),
+        ...(input.maxInteractiveLookbackHours !== undefined
+          ? {
+              maxInteractiveLookbackHours: input.maxInteractiveLookbackHours,
+            }
+          : {}),
+        ...(input.maxVerificationLookbackHours !== undefined
+          ? {
+              maxVerificationLookbackHours: input.maxVerificationLookbackHours,
+            }
+          : {}),
+      },
+      diagnostics: [],
+    };
+  },
+
+  async validateItem() {
+    return { valid: true, errors: [] };
+  },
+
+  async publishItem() {
+    return {
+      compilerVersion: "demo-1",
+      document: structuredClone(publishedDocument),
+      documentHash: "demo-policy-document-hash",
+      id: policyRevisionId,
+      publishedAt: new Date().toISOString(),
+      version: 1,
+    };
   },
 
   async publish() {
@@ -181,6 +294,13 @@ export const mockEventQueryRepository: EventQueryRepository = {
 
   async usage(_projectId: string, params: EventQueryPolicyUsageParams) {
     return {
+      byAudience: {
+        END_USER_CONVERSATION: {
+          calls: 3,
+          estimatedAddedInputTokens: 72,
+          resultBytes: 288,
+        },
+      },
       byOrigin: {
         "user-request": {
           calls: 3,
@@ -192,7 +312,55 @@ export const mockEventQueryRepository: EventQueryRepository = {
       estimatedAddedInputTokens: 72,
       from: params.from,
       resultBytes: 288,
+      scope: {
+        endUserId: params.endUserId ?? null,
+        audience: params.audience ?? null,
+      },
       to: params.to,
+    };
+  },
+
+  async listRequests(_projectId, params) {
+    return {
+      items: [
+        {
+          id: "demo-event-query-request-1",
+          createdAt: params.to,
+          endUserId: params.endUserId ?? "00000000-0000-4000-8000-000000000001",
+          origin: "INTERACTIVE_TEXT",
+          audience: "END_USER_CONVERSATION",
+          mode: "SUMMARY",
+          eventCodes: [queryableEvents[0]!.stableCode],
+          queryShape: { mode: "SUMMARY", eventCodeCount: 1 },
+          policyRevisionId: policyRevisionId as never,
+          range: { from: params.from, to: params.to },
+          snapshotReceivedAt: params.to,
+          status: "COMPLETED",
+          rejectionCode: null,
+          scannedRows: 1,
+          returnedRows: 1,
+          resultBytes: 96,
+          estimatedAddedInputTokens: 24,
+          durationMs: 18,
+          attribution: {
+            caseId: null,
+            aiReviewRunId: null,
+            aiAnalysisRunId: null,
+            chatMessageId: null,
+            voiceSessionId: null,
+            voiceTurnId: null,
+          },
+          linkedAiUsage: {
+            records: 1,
+            totalTokens: 840,
+            inputTokens: 710,
+            outputTokens: 130,
+            estimatedCostUsd: "0.0042" as never,
+            billedCostUsd: null,
+          },
+        },
+      ],
+      pageInfo: { hasMore: false, nextCursor: null },
     };
   },
 

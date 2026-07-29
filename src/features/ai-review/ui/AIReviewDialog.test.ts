@@ -20,11 +20,8 @@ vi.mock("../api/ai-review-repository", () => ({
     get: mocks.get,
   },
 }));
-vi.mock("@/shared/api/repository/event-catalog", () => ({
-  eventCatalogRepository: { listDefinitions: mocks.definitions },
-}));
 vi.mock("@/features/event-query/api/event-query-repository", () => ({
-  eventQueryRepository: { getPolicy: mocks.policy },
+  eventQueryRepository: { listItems: mocks.policy },
 }));
 vi.mock("vue-router", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
@@ -53,6 +50,7 @@ function mountDialog() {
         MultiSelect: {
           name: "MultiSelect",
           props: ["modelValue", "options"],
+          emits: ["filter"],
           template: "<div />",
         },
         ProgressSpinner: true,
@@ -71,20 +69,23 @@ describe("типизированный AI Review", () => {
       dailyRunLimit: 25,
       limits: { dailyRunLimit: { min: 1, max: 1000 } },
     });
-    mocks.definitions.mockResolvedValue([
-      {
-        code: "deposit.failed",
-        metadata: { name: "Ошибка депозита" },
-        policy: { enabled: true },
-      },
-    ]);
     mocks.policy.mockResolvedValue({
-      published: {
-        document: {
-          enabled: true,
-          items: [{ stableCode: "deposit.failed" }],
+      audience: "INTERNAL_AI",
+      effectiveOnly: true,
+      publishedMasterEnabled: true,
+      publishedPolicyRevision: null,
+      items: [
+        {
+          definitionKeyId: "definition-1",
+          eventCode: "deposit.failed",
+          eventName: "Ошибка депозита",
+          lifecycle: "ACTIVE",
+          configuration: {},
+          effective: { internalAi: true, endUserConversation: false },
+          queryable: true,
         },
-      },
+      ],
+      pageInfo: { hasMore: false, nextCursor: null },
     });
     mocks.estimate.mockResolvedValue({
       eventCount: 40,
@@ -129,24 +130,14 @@ describe("типизированный AI Review", () => {
   });
 
   it("показывает только queryable события, независимо от приёма новых событий", async () => {
-    mocks.definitions.mockResolvedValue([
-      {
-        code: "deposit.failed",
-        metadata: { name: "Ошибка депозита" },
-        policy: { enabled: false },
-      },
-      {
-        code: "internal.debug",
-        metadata: { name: "Внутреннее событие" },
-        policy: { enabled: true },
-      },
-    ]);
-
     const wrapper = mountDialog();
     await flushPromises();
 
-    expect(mocks.definitions).toHaveBeenCalledWith("project-1", "ACTIVE");
-    expect(mocks.policy).toHaveBeenCalledWith("project-1");
+    expect(mocks.policy).toHaveBeenCalledWith("project-1", {
+      audience: "INTERNAL_AI",
+      effective: true,
+      limit: 100,
+    });
     expect(
       wrapper.getComponent({ name: "MultiSelect" }).props("options"),
     ).toEqual([
@@ -155,6 +146,44 @@ describe("типизированный AI Review", () => {
         value: "deposit.failed",
       },
     ]);
+  });
+
+  it("ищет события на сервере за пределами первой страницы", async () => {
+    const wrapper = mountDialog();
+    await flushPromises();
+    mocks.policy.mockResolvedValueOnce({
+      audience: "INTERNAL_AI",
+      effectiveOnly: true,
+      publishedMasterEnabled: true,
+      publishedPolicyRevision: null,
+      items: [
+        {
+          definitionKeyId: "definition-501",
+          eventCode: "withdrawal.completed",
+          eventName: "Вывод завершён",
+          lifecycle: "ACTIVE",
+          configuration: {},
+          effective: { internalAi: true, endUserConversation: false },
+          queryable: true,
+        },
+      ],
+      pageInfo: { hasMore: false, nextCursor: null },
+    });
+    vi.useFakeTimers();
+
+    wrapper
+      .getComponent({ name: "MultiSelect" })
+      .vm.$emit("filter", { value: "withdrawal" });
+    await vi.advanceTimersByTimeAsync(250);
+    await flushPromises();
+
+    expect(mocks.policy).toHaveBeenLastCalledWith("project-1", {
+      audience: "INTERNAL_AI",
+      effective: true,
+      search: "withdrawal",
+      limit: 100,
+    });
+    vi.useRealTimers();
   });
 
   it("повторяет неоднозначный start с тем же idempotency key", async () => {

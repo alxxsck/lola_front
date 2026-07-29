@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
+import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import type {
   CaseVerificationEstimateResponseDto,
@@ -10,6 +11,7 @@ import type {
   EventQueryPolicyItemDto,
 } from "@/shared/api/generated/models";
 import { eventQueryRepository } from "../api/event-query-repository";
+import { eventQueryPolicyItemFromConfiguration } from "../model/event-query-policy";
 import {
   eventQueryPeriodOptions,
   eventQueryTimeRange,
@@ -44,6 +46,8 @@ const loadingPolicy = ref(true);
 const loadingEvidence = ref(false);
 const policyItems = ref<EventQueryPolicyItemDto[]>([]);
 const policyEnabled = ref(false);
+const policySearch = ref("");
+const policySearchActive = ref(false);
 const eventCode = ref("");
 const range = ref<EventQueryRange>("CURRENT_CASE_WINDOW");
 const dialogVisible = ref(false);
@@ -57,6 +61,7 @@ const run = ref<CaseVerificationRunResponseDto | null>(
 const pendingIdempotencyKey = ref<string | null>(null);
 let evidenceGeneration = 0;
 let scopeGeneration = 0;
+let policySearchTimer: ReturnType<typeof setTimeout> | undefined;
 
 const terminalCase = computed(() =>
   ["RESOLVED", "UNRESOLVED", "CANCELLED"].includes(props.caseStatus),
@@ -87,7 +92,8 @@ const state = computed<VerificationState>(() => {
   if (run.value?.evaluation) return run.value.evaluation;
   if (
     !loadingPolicy.value &&
-    (!policyEnabled.value || !policyItems.value.length)
+    (!policyEnabled.value ||
+      (!policyItems.value.length && !policySearchActive.value))
   ) {
     return "NOT_CONFIGURED";
   }
@@ -137,15 +143,27 @@ function normalizeRange() {
   }
 }
 
-async function loadPolicy() {
+async function loadPolicy(search = policySearch.value.trim()) {
   const scope = captureScope();
   loadingPolicy.value = true;
   error.value = "";
   try {
-    const state = await eventQueryRepository.getPolicy(scope.projectId);
+    const catalog = await eventQueryRepository.listItems(scope.projectId, {
+      audience: "INTERNAL_AI",
+      effective: true,
+      ...(search ? { search } : {}),
+      limit: 100,
+    });
     if (!isCurrentScope(scope)) return;
-    policyEnabled.value = state.published?.document.enabled === true;
-    policyItems.value = state.published?.document.items ?? [];
+    policySearchActive.value = Boolean(search);
+    policyEnabled.value = catalog.publishedMasterEnabled;
+    policyItems.value = catalog.items.flatMap((candidate) => {
+      const item = eventQueryPolicyItemFromConfiguration(
+        candidate.eventCode,
+        candidate.configuration,
+      );
+      return item ? [item] : [];
+    });
     if (
       !policyItems.value.some((item) => item.stableCode === eventCode.value)
     ) {
@@ -161,6 +179,11 @@ async function loadPolicy() {
   } finally {
     if (isCurrentScope(scope)) loadingPolicy.value = false;
   }
+}
+
+function schedulePolicySearch() {
+  if (policySearchTimer) clearTimeout(policySearchTimer);
+  policySearchTimer = setTimeout(() => void loadPolicy(), 250);
 }
 
 async function loadEvidence() {
@@ -296,6 +319,8 @@ watch(
     run.value = props.initialRun ?? null;
     pendingIdempotencyKey.value = null;
     dialogVisible.value = false;
+    policySearch.value = "";
+    policySearchActive.value = false;
     void loadPolicy();
     void loadEvidence();
   },
@@ -319,6 +344,9 @@ watch([eventCode, periodOptions], () => {
 onMounted(() => {
   void loadPolicy();
   void loadEvidence();
+});
+onBeforeUnmount(() => {
+  if (policySearchTimer) clearTimeout(policySearchTimer);
 });
 </script>
 
@@ -346,6 +374,18 @@ onMounted(() => {
     }}</Message>
 
     <div v-if="state === 'READY'" class="verification-controls">
+      <label>
+        <span>Найти событие</span>
+        <InputText
+          v-model="policySearch"
+          placeholder="Название или код"
+          :disabled="estimating"
+          @input="schedulePolicySearch"
+        />
+        <small v-if="policySearchActive && !policyItems.length">
+          По запросу ничего не найдено
+        </small>
+      </label>
       <label>
         <span>Целевое событие</span>
         <select v-model="eventCode" :disabled="estimating">
@@ -515,7 +555,7 @@ onMounted(() => {
 .consumption-grid,
 .estimate-metrics {
   display: grid;
-  grid-template-columns: 1fr 0.8fr auto;
+  grid-template-columns: minmax(160px, 0.8fr) 1fr 0.8fr auto;
   align-items: end;
   gap: 10px;
 }
@@ -526,13 +566,17 @@ onMounted(() => {
   display: grid;
   gap: 7px;
 }
-.verification-controls select {
+.verification-controls select,
+.verification-controls :deep(.p-inputtext) {
   width: 100%;
   padding: 10px;
   border: 1px solid var(--border-default);
   border-radius: 10px;
   background: var(--surface-card);
   color: var(--text-primary);
+}
+.verification-controls small {
+  color: var(--text-secondary);
 }
 .consumption-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));

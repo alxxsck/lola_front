@@ -4,10 +4,14 @@ import { mockEventQueryRepository } from "./mock-event-query-repository";
 describe("mock event query repository", () => {
   it("exposes only an enabled typed policy and safe result shapes", async () => {
     const policy = await mockEventQueryRepository.getPolicy("project-demo");
-    const stableCodes =
-      policy.published?.document.items.map((item) => item.stableCode) ?? [];
+    const catalog = await mockEventQueryRepository.listItems("project-demo", {
+      audience: "INTERNAL_AI",
+      effective: true,
+    });
+    const stableCodes = catalog.items.map((item) => item.eventCode);
 
-    expect(policy.published?.document.enabled).toBe(true);
+    expect(policy.masterEnabled).toBe(true);
+    expect(catalog.publishedMasterEnabled).toBe(true);
     expect(stableCodes).toContain("registration_completed");
 
     const preview = await mockEventQueryRepository.preview("project-demo", {
