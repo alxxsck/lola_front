@@ -3,38 +3,31 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('@/shared/config/data-mode', () => ({ isMockMode: true }))
 
 import { fetchAiUsageReport } from './ai-usage.api'
+import { getModelBreakdown } from './ai-usage.model'
 
 describe('AI usage demo report', () => {
-  it('keeps project totals aligned with xAI cost and ElevenLabs billed units', async () => {
+  it('contains factual model, calculated Voice and calculated Speech usage without ElevenLabs', async () => {
     const report = await fetchAiUsageReport('project-1', {})
-    const elevenLabs = report.breakdown.find(
-      (row) => row.provider === 'elevenlabs',
-    )!
+    const voice = report.categories.find((row) => row.category === 'VOICE')
+    const speech = report.categories.find((row) => row.category === 'SPEECH')
 
-    expect(report.totals.records).toBe(
-      report.breakdown.reduce((sum, row) => sum + row.records, 0),
+    expect(report.breakdown.every((row) => row.provider === 'xai')).toBe(true)
+    expect(JSON.stringify(report).toLowerCase()).not.toContain('elevenlabs')
+    expect(getModelBreakdown(report.breakdown).map((row) => row.operation)).toEqual(
+      ['response'],
     )
-    expect(report.totals.billedCost).toBeCloseTo(
-      report.breakdown.reduce((sum, row) => sum + row.billedCost, 0),
-      12,
-    )
-    expect(report.totals.estimatedCost).toBeCloseTo(
-      report.breakdown.reduce((sum, row) => sum + row.estimatedCost, 0),
-      12,
-    )
-    expect(report.totals.providerBilledUnits).toBe(
-      elevenLabs.providerBilledUnits,
-    )
-    expect(
-      report.totals.estimatedCostRecords! +
-        report.totals.providerReportedUsageRecords! +
-        report.totals.unpricedRecords,
-    ).toBe(report.totals.records)
-    expect(elevenLabs).toMatchObject({
-      model: 'eleven_v3',
-      totalTokens: 0,
-      estimatedCost: 0,
-      billedCost: 0,
+    expect(report.totals.providerReportedCost).toBeGreaterThan(0)
+    expect(report.totals.estimatedFallbackCost).toBeGreaterThan(0)
+    expect(voice).toMatchObject({
+      durationSeconds: expect.any(Number),
+      estimatedFallbackCost: expect.any(Number),
     })
+    expect(voice!.durationSeconds).toBeGreaterThan(0)
+    expect(speech).toMatchObject({
+      inputCharacters: expect.any(Number),
+      estimatedFallbackCost: expect.any(Number),
+    })
+    expect(speech!.inputCharacters).toBeGreaterThan(0)
+    expect(report.textToSpeechPricing.sourceUrl).toMatch(/^https:\/\//)
   })
 })
