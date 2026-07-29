@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import {
   formatMoney,
   formatTokenCount,
@@ -7,27 +6,13 @@ import {
   type AiTextToSpeechPricingContext,
   type AiUsageCategoryBreakdown,
 } from '../ai-usage.model'
+import AiTtsPricingContext from './AiTtsPricingContext.vue'
 
 const props = defineProps<{
   usage?: AiUsageCategoryBreakdown
   pricing: AiTextToSpeechPricingContext
   fallbackCurrency?: string
 }>()
-
-const currentRate = computed(() => {
-  const current = props.pricing.current
-  if (!current) return 'Текущая ставка не настроена'
-  return `${formatMoney(Number(current.rate), current.currency)} за 1 000 000 входных символов`
-})
-const currentRateDate = computed(() => {
-  const current = props.pricing.current
-  if (!current) return ''
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(current.effectiveFrom))
-})
 
 function generationCount(value: number) {
   return `${formatTokenCount(value)} ${pluralizeRu(value, 'генерация', 'генерации', 'генераций')}`
@@ -71,20 +56,7 @@ function generationCount(value: number) {
       </article>
     </div>
 
-    <aside class="pricing-context" aria-label="Тариф озвучивания текста">
-      <i class="pi pi-info-circle" />
-      <div>
-        <strong>{{ currentRate }}</strong>
-        <span v-if="currentRateDate"> Действует с {{ currentRateDate }}. </span>
-        <span>
-          История рассчитана по ставке, действовавшей в момент каждой операции.
-        </span>
-        <span> Если ставка xAI изменилась, сообщите администрации. </span>
-        <a :href="pricing.sourceUrl" target="_blank" rel="noopener noreferrer">
-          Проверить тариф xAI
-        </a>
-      </div>
-    </aside>
+    <AiTtsPricingContext class="pricing-context" :pricing="pricing" />
   </section>
 </template>
 
@@ -175,35 +147,7 @@ function generationCount(value: number) {
 }
 
 .pricing-context {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 11px 13px;
   margin-top: 12px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-violet) 30%, var(--border-default));
-  border-radius: 12px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
-  font-size: 0.7rem;
-  line-height: 1.45;
-}
-
-.pricing-context > div {
-  display: grid;
-  gap: 3px;
-}
-
-.pricing-context a {
-  width: fit-content;
-  margin-top: 3px;
-  color: var(--text-link);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.pricing-context a:hover {
-  text-decoration: underline;
 }
 
 @media (max-width: 650px) {

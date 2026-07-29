@@ -167,10 +167,10 @@ export const AI_USAGE_RANGE_OPTIONS: ReadonlyArray<{
 
 export const AI_USAGE_CATEGORY_LABELS: Record<AiUsageCategory, string> = {
   CHAT: 'Чат с Lola',
-  VOICE: 'Голос',
-  SPEECH: 'Озвучивание',
+  VOICE: 'Голосовой чат',
+  SPEECH: 'Озвучивание текста',
   MEMORY: 'Память Lola',
-  AI_REVIEW: 'AI Review',
+  AI_REVIEW: 'Проверка сообщений',
   CASE_INTELLIGENCE: 'Анализ и проверка обращений',
   PROJECT_OVERHEAD: 'Системные операции',
 }

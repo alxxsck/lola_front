@@ -8,6 +8,7 @@ config.global.stubs.ProjectSettingsSectionHeader = false
 config.global.stubs.AiModelUsageSlice = false
 config.global.stubs.AiVoiceUsageSlice = false
 config.global.stubs.AiSpeechUsageSlice = false
+config.global.stubs.AiTtsPricingContext = false
 config.global.stubs.AiModelUsageChart = false
 config.global.stubs.AiModalityChart = false
 

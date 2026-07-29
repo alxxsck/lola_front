@@ -20,19 +20,19 @@ const report = {
     timezone: "Europe/Madrid",
   },
   totals: {
-    records: 6,
+    records: 28,
     totalTokens: 12_500,
     inputTokens: 9_500,
     outputTokens: 3_000,
     inputCharacters: 880,
-    providerBilledUnits: 920,
+    providerBilledUnits: 0,
     durationSeconds: 40,
     providerReportedCost: 0.12,
     estimatedFallbackCost: 0.03,
     effectiveCost: 0.15,
-    providerReportedCostRecords: 3,
-    estimatedRecords: 2,
-    providerUnitOnlyRecords: 1,
+    providerReportedCostRecords: 27,
+    estimatedRecords: 1,
+    providerUnitOnlyRecords: 0,
     unpricedRecords: 0,
   },
   categories: [
@@ -58,11 +58,11 @@ const report = {
       inputTokens: 0,
       outputTokens: 0,
       inputCharacters: 880,
-      providerBilledUnits: 920,
+      providerBilledUnits: 0,
       durationSeconds: 0,
       providerReportedCost: 0,
-      estimatedFallbackCost: 0,
-      effectiveCost: 0,
+      estimatedFallbackCost: 0.0132,
+      effectiveCost: 0.0132,
     },
     {
       category: "CASE_INTELLIGENCE" as const,
@@ -79,6 +79,15 @@ const report = {
       effectiveCost: 0.0890324,
     },
   ],
+  textToSpeechPricing: {
+    current: {
+      rate: "15",
+      currency: "usd" as const,
+      unit: "per_million_input_characters" as const,
+      effectiveFrom: "2026-07-29T10:00:00.000Z",
+    },
+    sourceUrl: "https://docs.x.ai/developers/pricing",
+  },
 };
 
 describe("End User AI consumption card", () => {
@@ -87,7 +96,7 @@ describe("End User AI consumption card", () => {
     mocks.fetch.mockResolvedValue(report);
   });
 
-  it("loads a Project-local 7 day report and keeps provider, estimated and unit costs separate", async () => {
+  it("loads a Project-local report with factual, calculated and operation totals", async () => {
     const wrapper = mount(EndUserAiUsageCard, {
       props: { projectId: "project-1", endUserId: "user-1" },
     });
@@ -100,13 +109,72 @@ describe("End User AI consumption card", () => {
       expect.any(AbortSignal),
     );
     expect(wrapper.text()).toContain("12,5");
-    expect(wrapper.text()).toContain("По данным xAI");
-    expect(wrapper.text()).toContain("Оценка по тарифу");
-    expect(wrapper.text()).toContain("Единицы ElevenLabs");
+    expect(wrapper.text()).toContain("Фактически по данным xAI");
+    expect(wrapper.text()).toContain("Расчёт по тарифу");
+    expect(wrapper.text()).toContain("Операции AI и речи");
+    expect(wrapper.text()).not.toContain("ElevenLabs");
     expect(wrapper.text()).toContain("Чат с Lola");
-    expect(wrapper.text()).toContain("Озвучивание");
+    expect(wrapper.text()).toContain("Озвучивание текста");
     expect(wrapper.text()).toContain("Анализ и проверка обращений");
     expect(wrapper.text()).toContain("Europe/Madrid");
+  });
+
+  it("shows speech characters, generations and calculated cost without token or provider-unit copy", async () => {
+    const wrapper = mount(EndUserAiUsageCard, {
+      props: { projectId: "project-1", endUserId: "user-1" },
+    });
+    await flushPromises();
+
+    const speech = wrapper.get('[data-usage-category="SPEECH"]');
+    expect(speech.text()).toContain("Озвучивание текста");
+    expect(speech.text()).toContain("880 символов");
+    expect(speech.text()).toContain("1 генерация");
+    expect(speech.text()).toContain("0,0132 $");
+    expect(speech.text()).toContain("расчёт");
+    expect(speech.text()).not.toMatch(/0 токен|единиц|provider/i);
+  });
+
+  it("explains immutable historical pricing without exposing platform controls", async () => {
+    const wrapper = mount(EndUserAiUsageCard, {
+      props: { projectId: "project-1", endUserId: "user-1" },
+    });
+    await flushPromises();
+
+    const pricing = wrapper.get('[data-testid="end-user-tts-pricing"]');
+    expect(pricing.text()).toContain(
+      "15,00 $ за 1 000 000 входных символов",
+    );
+    expect(pricing.text()).toContain("29.07.2026");
+    expect(pricing.text()).toContain(
+      "История рассчитана по ставке, действовавшей в момент каждой операции",
+    );
+    expect(pricing.text()).toContain(
+      "Если ставка xAI изменилась, сообщите администрации",
+    );
+    expect(pricing.get("a").attributes()).toMatchObject({
+      href: "https://docs.x.ai/developers/pricing",
+      target: "_blank",
+      rel: "noopener noreferrer",
+    });
+    expect(pricing.find("button").exists()).toBe(false);
+  });
+
+  it("does not render an empty speech row or pricing note without speech usage", async () => {
+    mocks.fetch.mockResolvedValueOnce({
+      ...report,
+      categories: report.categories.filter(
+        (category) => category.category !== "SPEECH",
+      ),
+    });
+    const wrapper = mount(EndUserAiUsageCard, {
+      props: { projectId: "project-1", endUserId: "user-1" },
+    });
+    await flushPromises();
+
+    expect(wrapper.find('[data-usage-category="SPEECH"]').exists()).toBe(false);
+    expect(
+      wrapper.find('[data-testid="end-user-tts-pricing"]').exists(),
+    ).toBe(false);
   });
 
   it("requests a new server window when the administrator changes the period", async () => {

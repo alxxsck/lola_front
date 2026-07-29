@@ -19,7 +19,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
     providerReportedUsageRecords: 136,
     estimatedCostRecords: 74,
     inputCharacters: 18_460,
-    providerBilledUnits: 19_120,
+    providerBilledUnits: 0,
     totalTokens: 184_720,
     inputTokens: 127_980,
     cachedInputTokens: 38_420,
@@ -170,7 +170,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       currency: 'usd',
       records: 24,
       inputCharacters: 18_460,
-      providerBilledUnits: 19_120,
+      providerBilledUnits: 0,
       totalTokens: 0,
       inputTokens: 0,
       cachedInputTokens: 0,
@@ -228,7 +228,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       currency: 'usd',
       records: 24,
       inputCharacters: 18_460,
-      providerBilledUnits: 19_120,
+      providerBilledUnits: 0,
       totalTokens: 0,
       inputTokens: 0,
       cachedInputTokens: 0,
@@ -452,7 +452,7 @@ function parseHttpsUrl(value: unknown): string | undefined {
   }
 }
 
-function parseTextToSpeechPricing(
+export function parseTextToSpeechPricing(
   value: unknown,
 ): AiTextToSpeechPricingContext | undefined {
   if (!isRecord(value)) return undefined

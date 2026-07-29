@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AI_USAGE_CATEGORY_LABELS,
   aggregateModelUsage,
   aggregateProviderUsage,
   formatDuration,
@@ -86,6 +87,17 @@ function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
 }
 
 describe('AI usage model', () => {
+  it('uses user-facing labels for every end-user AI and speech category', () => {
+    expect(AI_USAGE_CATEGORY_LABELS).toMatchObject({
+      CHAT: 'Чат с Lola',
+      VOICE: 'Голосовой чат',
+      SPEECH: 'Озвучивание текста',
+      MEMORY: 'Память Lola',
+      AI_REVIEW: 'Проверка сообщений',
+      CASE_INTELLIGENCE: 'Анализ и проверка обращений',
+    })
+  })
+
   it('builds calendar ranges in the browser timezone', () => {
     const now = new Date(2026, 6, 14, 15, 30)
     const expectedStart = new Date(now)
