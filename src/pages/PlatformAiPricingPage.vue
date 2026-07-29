@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import { useAuthStore } from '@/features/auth/auth.store'
 import {
@@ -20,6 +21,7 @@ const loadingMore = ref(false)
 const publishing = ref(false)
 const error = ref('')
 const freshAuthRequired = ref(false)
+const publicationOutcomeUnknown = ref(false)
 const notice = ref('')
 const rate = ref('')
 const reason = ref('')
@@ -30,6 +32,7 @@ const pendingPublication = ref<{
   changeReason: string
 } | null>(null)
 let loadGeneration = 0
+let mutationGeneration = 0
 let activeRequest: AbortController | undefined
 
 const permissions = computed(() => auth.user?.platformPermissionCodes ?? [])
@@ -41,12 +44,16 @@ const canWrite = computed(() =>
 )
 
 function formatMoney(value: string, currency: string): string {
-  return new Intl.NumberFormat('ru-RU', {
+  const formatter = new Intl.NumberFormat('ru-RU', {
     style: 'currency',
     currency: /^[a-z]{3}$/i.test(currency) ? currency.toUpperCase() : 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 12,
-  }).format(Number(value))
+  })
+  const formatExactDecimal = formatter.format as unknown as (
+    exactDecimal: string,
+  ) => string
+  return formatExactDecimal(value)
 }
 
 function formatDate(value: string): string {
@@ -72,6 +79,8 @@ function clearSensitiveState(): void {
   activeRequest?.abort()
   activeRequest = undefined
   loadGeneration += 1
+  mutationGeneration += 1
+  publishing.value = false
   state.value = null
   rate.value = ''
   reason.value = ''
@@ -81,9 +90,25 @@ function clearSensitiveState(): void {
   notice.value = ''
   error.value = ''
   freshAuthRequired.value = false
+  publicationOutcomeUnknown.value = false
 }
 
-async function load(): Promise<void> {
+async function refreshAuthorityAfterForbidden(): Promise<void> {
+  state.value = null
+  confirmationOpen.value = false
+  pendingPublication.value = null
+  try {
+    await auth.refreshContext()
+  } catch {
+    await router.replace({ name: 'login' })
+    return
+  }
+  if (auth.isAuthenticated && !canRead.value) {
+    await router.replace(auth.authenticatedLandingPath)
+  }
+}
+
+async function load(): Promise<boolean> {
   activeRequest?.abort()
   const controller = new AbortController()
   activeRequest = controller
@@ -96,14 +121,20 @@ async function load(): Promise<void> {
       { limit: 50 },
       controller.signal,
     )
-    if (generation === loadGeneration) state.value = next
+    if (generation !== loadGeneration) return false
+    state.value = next
+    publicationOutcomeUnknown.value = false
+    return true
   } catch (cause) {
-    if (controller.signal.aborted || generation !== loadGeneration) return
+    if (controller.signal.aborted || generation !== loadGeneration) return false
     const normalized = normalizeApiError(cause)
-    error.value =
-      normalized.status === 403
-        ? 'Недостаточно прав для просмотра тарифов AI.'
-        : 'Не удалось загрузить тарифы AI.'
+    if (normalized.status === 403) {
+      error.value = 'Недостаточно прав для просмотра тарифов AI.'
+      await refreshAuthorityAfterForbidden()
+    } else {
+      error.value = 'Не удалось загрузить тарифы AI.'
+    }
+    return false
   } finally {
     if (generation === loadGeneration) loading.value = false
   }
@@ -138,6 +169,7 @@ async function loadMore(): Promise<void> {
 }
 
 function preparePublication(): void {
+  if (publicationOutcomeUnknown.value) return
   const normalizedRate = rate.value.trim()
   const normalizedReason = reason.value.trim().normalize('NFC')
   if (
@@ -172,18 +204,41 @@ async function confirmPublication(): Promise<void> {
   if (!input || publishing.value) return
   confirmationOpen.value = false
   pendingPublication.value = null
+  const authorityKey = currentAuthorityKey()
+  const generation = ++mutationGeneration
   publishing.value = true
   error.value = ''
   freshAuthRequired.value = false
   notice.value = ''
   try {
     await publishTextToSpeechPricing(input)
+    if (
+      generation !== mutationGeneration ||
+      authorityKey !== currentAuthorityKey()
+    )
+      return
     rate.value = ''
     reason.value = ''
-    notice.value =
-      'Новая ставка опубликована. Исторические операции не пересчитаны.'
-    await load()
+    const refreshed = await load()
+    if (
+      generation !== mutationGeneration ||
+      authorityKey !== currentAuthorityKey()
+    )
+      return
+    if (refreshed) {
+      notice.value =
+        'Новая ставка опубликована. Исторические операции не пересчитаны.'
+    } else {
+      publicationOutcomeUnknown.value = true
+      error.value =
+        'Ставка опубликована, но состояние не удалось перечитать. Обновите историю перед новой публикацией.'
+    }
   } catch (cause) {
+    if (
+      generation !== mutationGeneration ||
+      authorityKey !== currentAuthorityKey()
+    )
+      return
     const normalized = normalizeApiError(cause)
     if (
       normalized.status === 428 ||
@@ -199,12 +254,26 @@ async function confirmPublication(): Promise<void> {
     } else if (normalized.status === 403) {
       error.value =
         'Недостаточно прав для публикации ставки. Действие не повторялось.'
+      await refreshAuthorityAfterForbidden()
+    } else if (normalized.status === 0 || normalized.status >= 500) {
+      publicationOutcomeUnknown.value = true
+      error.value =
+        'Результат публикации неизвестен. Обновите историю перед новой попыткой.'
     } else {
       error.value = 'Не удалось опубликовать ставку. Действие не повторялось.'
     }
   } finally {
-    publishing.value = false
+    if (generation === mutationGeneration) publishing.value = false
   }
+}
+
+function currentAuthorityKey(): string {
+  return [
+    auth.isAuthenticated,
+    auth.user?.id ?? '',
+    canRead.value,
+    canWrite.value,
+  ].join(':')
 }
 
 async function requireFreshLogin(): Promise<void> {
@@ -250,6 +319,7 @@ watch(canWrite, (allowed) => {
 onBeforeUnmount(() => {
   activeRequest?.abort()
   loadGeneration += 1
+  mutationGeneration += 1
 })
 </script>
 
@@ -388,9 +458,11 @@ onBeforeUnmount(() => {
           {{ validationError }}
         </Message>
         <Button
+          data-testid="prepare-pricing"
           type="submit"
           label="Проверить и продолжить"
           :loading="publishing"
+          :disabled="publicationOutcomeUnknown"
         />
       </form>
 
@@ -431,16 +503,17 @@ onBeforeUnmount(() => {
       </section>
     </section>
 
-    <div
-      v-if="confirmationOpen && pendingPublication"
-      class="confirmation-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="pricing-confirmation-title"
+    <Dialog
+      v-model:visible="confirmationOpen"
+      modal
+      header="Подтвердите новую ставку"
+      :closable="!publishing"
+      :dismissable-mask="false"
+      class="pricing-confirmation"
+      @hide="cancelConfirmation"
     >
-      <section class="confirmation card">
+      <section v-if="pendingPublication" class="confirmation">
         <span class="confirmation-icon"><i class="pi pi-shield" /></span>
-        <h2 id="pricing-confirmation-title">Подтвердите новую ставку</h2>
         <p>
           Новая ставка применяется только к следующим операциям. История не
           пересчитывается.
@@ -464,7 +537,7 @@ onBeforeUnmount(() => {
           />
         </div>
       </section>
-    </div>
+    </Dialog>
   </section>
 </template>
 
@@ -509,8 +582,7 @@ onBeforeUnmount(() => {
 
 .pricing-header h2,
 .publish-form h3,
-.history h3,
-.confirmation h2 {
+.history h3 {
   margin: 0;
 }
 
@@ -700,20 +772,8 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
-.confirmation-backdrop {
-  position: fixed;
-  z-index: 1000;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: color-mix(in srgb, var(--surface-emphasis) 65%, transparent);
-}
-
 .confirmation {
-  width: min(460px, 100%);
-  padding: 24px;
-  box-shadow: var(--shadow-overlay);
+  max-width: 460px;
 }
 
 .confirmation-icon {

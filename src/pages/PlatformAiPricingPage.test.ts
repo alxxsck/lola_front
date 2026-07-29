@@ -81,7 +81,17 @@ async function mountPage(write = true) {
   await router.push('/platform/ai-pricing')
   await router.isReady()
   const wrapper = mount(RouterView, {
-    global: { plugins: [pinia, router, PrimeVue] },
+    global: {
+      plugins: [pinia, router, PrimeVue],
+      stubs: {
+        Dialog: {
+          props: ['visible'],
+          emits: ['update:visible', 'hide'],
+          template:
+            '<div v-if="visible" role="dialog"><slot /><slot name="footer" /></div>',
+        },
+      },
+    },
   })
   await flushPromises()
   return { auth, router, wrapper }
@@ -160,6 +170,25 @@ describe('Platform AI pricing page', () => {
     expect(wrapper.text()).toContain('до 12 знаков после запятой')
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
     expect(api.publish).not.toHaveBeenCalled()
+
+    await wrapper.get('[data-testid="pricing-rate"]').setValue('15')
+    await wrapper.get('[data-testid="pricing-reason"]').setValue(' ')
+    await wrapper.get('form').trigger('submit')
+
+    expect(wrapper.text()).toContain('причину изменения от 3 до 500 символов')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(api.publish).not.toHaveBeenCalled()
+  })
+
+  it('preserves the exact backend decimal when rendering a rate', async () => {
+    api.fetch.mockResolvedValue({
+      ...state,
+      current: { ...revision, rate: '999999.999999999999' },
+      history: [{ ...revision, rate: '999999.999999999999' }],
+    })
+    const { wrapper } = await mountPage(false)
+
+    expect(wrapper.text()).toContain('999 999,999999999999 $')
   })
 
   it('warns that TTS is blocked when no active revision exists', async () => {
@@ -244,6 +273,72 @@ describe('Platform AI pricing page', () => {
       query: { redirect: '/platform/ai-pricing' },
     })
     expect(api.publish).toHaveBeenCalledOnce()
+  })
+
+  it('does not apply a publication result after authority changes', async () => {
+    let resolvePublication!: (value: typeof state) => void
+    api.publish.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePublication = resolve
+      }),
+    )
+    const { auth, router, wrapper } = await mountPage()
+
+    await wrapper.get('[data-testid="pricing-rate"]').setValue('16')
+    await wrapper
+      .get('[data-testid="pricing-reason"]')
+      .setValue('Проверенная новая ставка')
+    await wrapper.get('form').trigger('submit')
+    await wrapper.get('[data-testid="confirm-pricing"]').trigger('click')
+    auth.user!.platformPermissionCodes = ['platform.ai_pricing.write']
+    await flushPromises()
+    resolvePublication(state)
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('security-settings')
+    expect(api.fetch).toHaveBeenCalledOnce()
+    expect(wrapper.text()).not.toContain('Новая ставка опубликована')
+  })
+
+  it('blocks duplicate publication after an unknown transport outcome until refresh', async () => {
+    api.publish.mockRejectedValue(new ApiError(0, 'network timeout'))
+    const { wrapper } = await mountPage()
+
+    await wrapper.get('[data-testid="pricing-rate"]').setValue('16')
+    await wrapper
+      .get('[data-testid="pricing-reason"]')
+      .setValue('Проверенная новая ставка')
+    await wrapper.get('form').trigger('submit')
+    await wrapper.get('[data-testid="confirm-pricing"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Результат публикации неизвестен')
+    expect(
+      wrapper.get('[data-testid="prepare-pricing"]').attributes(),
+    ).toHaveProperty('disabled')
+    expect(api.publish).toHaveBeenCalledOnce()
+  })
+
+  it('scrubs history and refreshes authority after a forbidden read', async () => {
+    api.fetch
+      .mockResolvedValueOnce(state)
+      .mockRejectedValueOnce(new ApiError(403, 'unsafe backend text'))
+    const { auth, wrapper } = await mountPage()
+    const refreshContext = vi
+      .spyOn(auth, 'refreshContext')
+      .mockImplementation(async () => {
+        auth.user!.platformPermissionCodes = []
+      })
+
+    const refresh = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Обновить'))
+    await refresh!.trigger('click')
+    await flushPromises()
+
+    expect(refreshContext).toHaveBeenCalledOnce()
+    expect(wrapper.text()).not.toContain('Первичная проверенная ставка')
+    expect(wrapper.text()).not.toContain('unsafe backend text')
   })
 
   it('scrubs pricing data and redirects when read permission is lost', async () => {
