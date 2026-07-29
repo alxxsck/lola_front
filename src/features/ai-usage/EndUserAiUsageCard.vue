@@ -137,14 +137,16 @@ function formatRequestDate(value: string) {
 async function load(nextWindow = windowKey.value) {
   controller?.abort();
   controller = new AbortController();
+  const requestedProjectId = props.projectId;
+  const requestedEndUserId = props.endUserId;
   const generation = ++requestGeneration;
   loading.value = true;
   error.value = "";
   eventQueryRequestsError.value = "";
   try {
     const nextReport = await fetchEndUserAiUsageReport(
-      props.projectId,
-      props.endUserId,
+      requestedProjectId,
+      requestedEndUserId,
       nextWindow,
       controller.signal,
     );
@@ -152,16 +154,26 @@ async function load(nextWindow = windowKey.value) {
     report.value = nextReport;
     if (props.canReadEventQueryHistory) {
       try {
-        eventQueryRequests.value = await eventQueryRepository.listRequests(
-          props.projectId,
+        const nextEventQueryRequests =
+          await eventQueryRepository.listRequests(
+          requestedProjectId,
           {
             from: nextReport.range.from ?? "1970-01-01T00:00:00.000Z",
             to: nextReport.range.to,
-            endUserId: props.endUserId,
+            endUserId: requestedEndUserId,
             audience: "END_USER_CONVERSATION",
             limit: 20,
           },
         );
+        if (
+          generation !== requestGeneration ||
+          controller.signal.aborted ||
+          props.projectId !== requestedProjectId ||
+          props.endUserId !== requestedEndUserId ||
+          !props.canReadEventQueryHistory
+        )
+          return;
+        eventQueryRequests.value = nextEventQueryRequests;
       } catch (cause) {
         if (generation !== requestGeneration || controller.signal.aborted)
           return;

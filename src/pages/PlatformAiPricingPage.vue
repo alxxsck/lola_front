@@ -6,7 +6,7 @@ import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import { useAuthStore } from '@/features/auth/auth.store'
 import {
-  formatExactCurrencyRate,
+  formatExactCurrencyRate as formatMoney,
   isValidTextToSpeechRate,
 } from '@/features/ai-pricing/ai-pricing.model'
 import {
@@ -47,10 +47,6 @@ const canRead = computed(() =>
 const canWrite = computed(() =>
   permissions.value.includes('platform.ai_pricing.write'),
 )
-
-function formatMoney(value: string, currency: string): string {
-  return formatExactCurrencyRate(value, currency)
-}
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat('ru-RU', {

@@ -94,44 +94,56 @@ const report = {
   },
 };
 
+function eventQueryHistory(eventCode: string) {
+  return {
+    items: [
+      {
+        id: `request-${eventCode}`,
+        createdAt: "2026-07-24T12:00:00.000Z",
+        endUserId: "user-1",
+        origin: "INTERACTIVE_TEXT",
+        audience: "END_USER_CONVERSATION",
+        mode: "SUMMARY",
+        eventCodes: [eventCode],
+        queryShape: { mode: "SUMMARY" },
+        policyRevisionId: null,
+        range: null,
+        snapshotReceivedAt: "2026-07-24T12:00:00.000Z",
+        status: "COMPLETED",
+        rejectionCode: null,
+        scannedRows: 2,
+        returnedRows: 1,
+        resultBytes: 96,
+        estimatedAddedInputTokens: 24,
+        durationMs: 18,
+        attribution: {},
+        linkedAiUsage: {
+          records: 1,
+          totalTokens: 840,
+          inputTokens: 710,
+          outputTokens: 130,
+          billedCostUsd: null,
+          estimatedCostUsd: null,
+        },
+      },
+    ],
+    pageInfo: { hasMore: false, nextCursor: null },
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
 describe("End User AI consumption card", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.fetch.mockResolvedValue(report);
-    mocks.requests.mockResolvedValue({
-      items: [
-        {
-          id: "request-1",
-          createdAt: "2026-07-24T12:00:00.000Z",
-          endUserId: "user-1",
-          origin: "INTERACTIVE_TEXT",
-          audience: "END_USER_CONVERSATION",
-          mode: "SUMMARY",
-          eventCodes: ["deposit.completed"],
-          queryShape: { mode: "SUMMARY" },
-          policyRevisionId: null,
-          range: null,
-          snapshotReceivedAt: "2026-07-24T12:00:00.000Z",
-          status: "COMPLETED",
-          rejectionCode: null,
-          scannedRows: 2,
-          returnedRows: 1,
-          resultBytes: 96,
-          estimatedAddedInputTokens: 24,
-          durationMs: 18,
-          attribution: {},
-          linkedAiUsage: {
-            records: 1,
-            totalTokens: 840,
-            inputTokens: 710,
-            outputTokens: 130,
-            billedCostUsd: null,
-            estimatedCostUsd: null,
-          },
-        },
-      ],
-      pageInfo: { hasMore: false, nextCursor: null },
-    });
+    mocks.requests.mockResolvedValue(eventQueryHistory("deposit.completed"));
   });
 
   it("loads a Project-local report with factual, calculated and operation totals", async () => {
@@ -291,5 +303,33 @@ describe("End User AI consumption card", () => {
     expect(mocks.fetch).toHaveBeenCalledOnce();
     expect(mocks.requests).not.toHaveBeenCalled();
     expect(wrapper.text()).not.toContain("Запросы пользователя к событиям");
+  });
+
+  it("ignores a stale Event Query response after switching the end user", async () => {
+    const first = deferred<ReturnType<typeof eventQueryHistory>>();
+    const second = deferred<ReturnType<typeof eventQueryHistory>>();
+    mocks.requests
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+
+    const wrapper = mount(EndUserAiUsageCard, {
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        canReadEventQueryHistory: true,
+      },
+    });
+    await flushPromises();
+
+    await wrapper.setProps({ endUserId: "user-2" });
+    await flushPromises();
+    second.resolve(eventQueryHistory("user-2.current"));
+    await flushPromises();
+    expect(wrapper.text()).toContain("user-2.current");
+
+    first.resolve(eventQueryHistory("user-1.stale"));
+    await flushPromises();
+    expect(wrapper.text()).toContain("user-2.current");
+    expect(wrapper.text()).not.toContain("user-1.stale");
   });
 });
