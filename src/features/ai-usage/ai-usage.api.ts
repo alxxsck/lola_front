@@ -1,5 +1,6 @@
 import { aiUsageReport } from '@/shared/api/generated/lola-backend'
 import { isMockMode } from '@/shared/config/data-mode'
+import { isValidTextToSpeechRate } from '@/features/ai-pricing/ai-pricing.model'
 import type {
   AiUsageBreakdown,
   AiUsageCategory,
@@ -468,8 +469,7 @@ export function parseTextToSpeechPricing(
   const { rate, currency, unit, effectiveFrom } = value.current
   if (
     !boundedString(rate, 1, 64) ||
-    !/^\d+(?:\.\d{1,12})?$/.test(rate) ||
-    Number(rate) <= 0 ||
+    !isValidTextToSpeechRate(rate) ||
     currency !== 'usd' ||
     unit !== 'per_million_input_characters' ||
     !boundedString(effectiveFrom, 1, 64)
