@@ -55,6 +55,10 @@ export const useAuthStore = defineStore("auth", () => {
       )
     )
       return "/platform/notification-operations";
+    if (
+      user.value?.platformPermissionCodes?.includes("platform.ai_pricing.read")
+    )
+      return "/platform/ai-pricing";
     return "/settings/security";
   });
 

@@ -74,7 +74,7 @@ describe("xAI Text-to-Speech pricing API", () => {
     expect(
       parseTextToSpeechPricing({
         ...state,
-        current: { ...revision, provider: "elevenlabs" },
+        current: { ...revision, provider: "other" },
       }),
     ).toBeUndefined();
     expect(
@@ -87,6 +87,12 @@ describe("xAI Text-to-Speech pricing API", () => {
       parseTextToSpeechPricing({
         ...state,
         sourceUrl: "javascript:alert(1)",
+      }),
+    ).toBeUndefined();
+    expect(
+      parseTextToSpeechPricing({
+        ...state,
+        sourceUrl: "https://user:secret@docs.x.ai/developers/pricing",
       }),
     ).toBeUndefined();
   });

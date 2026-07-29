@@ -111,6 +111,12 @@ export const router = createRouter({
           },
         },
         {
+          path: "platform/ai-pricing",
+          name: "platform-ai-pricing",
+          component: () => import("@/pages/PlatformAiPricingPage.vue"),
+          meta: { platformPermission: "platform.ai_pricing.read" },
+        },
+        {
           path: "project",
           name: "project",
           component: () => import("@/pages/ProjectPage.vue"),
