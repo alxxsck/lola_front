@@ -47,21 +47,28 @@ test("policy lifecycle and preview expose only typed safe event data", async ({
 }, testInfo) => {
   await page.goto("/project");
   await page
-    .getByRole("button", { name: "Развернуть раздел «Доступ ИИ к событиям»" })
+    .getByRole("button", { name: "Развернуть раздел «Доступ AI к событиям»" })
     .click();
 
-  await expect(page.getByText("Опубликована ревизия 1")).toBeVisible();
+  const policy = page.locator(".event-query-policy");
+  const masterAccess = policy.getByRole("switch", {
+    name: "Разрешить AI получать данные событий",
+  });
+  await expect(masterAccess).toBeChecked();
   await expect(
-    page.getByText("SQL, произвольные таблицы и технические логи недоступны."),
+    policy.getByText("Исходный payload событий не показывается."),
   ).toBeVisible();
-  await expect(page.getByText("Данные событий: оценка вклада")).toBeVisible();
 
-  await page
-    .getByRole("button", { name: "Проверить и сохранить черновик" })
-    .click();
-  await page.getByRole("button", { name: "Опубликовать" }).click();
+  await masterAccess.click();
+  await policy.getByRole("button", { name: "Применить" }).click();
+  await expect(
+    policy.getByText("Доступ AI к событиям выключен."),
+  ).toBeVisible();
+  await masterAccess.click();
+  await policy.getByRole("button", { name: "Применить" }).click();
+  await expect(policy.getByText("Доступ AI к событиям включён.")).toBeVisible();
 
-  await page.getByLabel("End User ID").fill("user_89421");
+  await page.getByLabel("Пользователь", { exact: true }).fill("user_89421");
   await page.getByLabel("Тип события").selectOption("registration_completed");
   await page.getByRole("button", { name: "Выполнить preview" }).click();
 
@@ -85,23 +92,9 @@ test("policy lifecycle and preview expose only typed safe event data", async ({
       const bounds = element.getBoundingClientRect();
       return bounds.left < 0 || bounds.right > window.innerWidth;
     }).length,
-    clippedEditorControls: (() => {
-      const editor = document.querySelector(".definition-editor");
-      if (!editor) return -1;
-      const editorBounds = editor.getBoundingClientRect();
-      return Array.from(
-        editor.querySelectorAll("button, input, select, textarea, fieldset"),
-      ).filter((element) => {
-        const bounds = element.getBoundingClientRect();
-        return (
-          bounds.left < editorBounds.left || bounds.right > editorBounds.right
-        );
-      }).length;
-    })(),
   }));
   expect(geometry.scrollWidth).toBe(geometry.clientWidth);
   expect(geometry.clippedControls).toBe(0);
-  expect(geometry.clippedEditorControls).toBe(0);
 
   const accessibility = await new AxeBuilder({ page })
     .include(".event-query-policy")

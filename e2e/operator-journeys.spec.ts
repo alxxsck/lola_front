@@ -587,6 +587,11 @@ test("content locales are configured through the Locale Attribute journey", asyn
   await expect(
     page.getByRole("heading", { name: "Языки контента", level: 2 }),
   ).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Развернуть раздел «Языки контента»",
+    })
+    .click();
   await page.getByRole("link", { name: "Настроить языки" }).click();
 
   await expect(page).toHaveURL(/\/profile-fields\/new\?semanticRole=LOCALE$/);
@@ -681,14 +686,19 @@ test("EUAP workspace, Current Profiles and Segment Library expose their primary 
   await expect(page.locator("tbody tr").first()).toBeVisible();
   await page.locator("tbody tr").first().click();
   const workspace = page.getByRole("dialog");
+  await expect(workspace.getByText("Версия профиля")).toBeVisible();
   if (testInfo.project.name === "mobile-chromium") {
-    await page
-      .locator(".mobile-workspace-nav button", { hasText: "Профиль" })
-      .click();
+    await workspace.getByRole("button", { name: "Открыть чат" }).click();
+    const mobileWorkspaceNav = workspace.getByRole("navigation", {
+      name: "Разделы рабочего пространства",
+    });
+    await expect(
+      mobileWorkspaceNav.getByRole("button", { name: "Диалоги" }),
+    ).toBeVisible();
+    await expect(
+      mobileWorkspaceNav.getByRole("button", { name: "Чат" }),
+    ).toBeVisible();
   }
-  await expect(
-    workspace.getByText("Версия профиля"),
-  ).toBeVisible();
 
   await page.goto("/segments");
   await expect(
@@ -753,6 +763,7 @@ test("contextual scenario documentation is discoverable from scenarios and event
 test("new scenario authoring journey remains usable at the active viewport", async ({
   page,
 }) => {
+  await installScenarioAuthoringFixtures(page);
   await page.goto("/scenarios/new");
   await expect(page.locator(".scenario-studio")).toBeVisible();
   await expect(page.getByRole("button", { name: /Запуск/ })).toBeVisible();
@@ -774,6 +785,7 @@ test("action editor gives configuration the primary desktop area and keeps the g
     testInfo.project.name !== "chromium",
     "Desktop composition is covered on the desktop project",
   );
+  await installScenarioAuthoringFixtures(page);
   await page.goto("/scenarios/new");
   await page.getByRole("button", { name: /Действия/ }).click();
   await page
@@ -840,6 +852,7 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
     testInfo.project.name !== "mobile-chromium",
     "Mobile composition is covered on the mobile project",
   );
+  await installScenarioAuthoringFixtures(page);
   await page.goto("/scenarios/new");
   await page.getByRole("button", { name: /Действия/ }).click();
   const mobileLibrary = page.locator(".mobile-library");
@@ -920,7 +933,8 @@ test("scenario author can save, validate, preview, publish and safely roll back 
     .locator(".action-empty-options button", { hasText: "Показать Lola" })
     .click();
   await page.getByRole("button", { name: /Условия/ }).click();
-  await page.getByRole("button", { name: "Активен 3 дня подряд" }).click();
+  await page.locator(".recipe-panel > summary").click();
+  await page.getByRole("button", { name: /Активен 3 дня подряд/ }).click();
 
   await page.getByRole("button", { name: "Проверить условия" }).click();
   await expect(page.getByText("Правило прошло проверку.")).toBeVisible();
@@ -962,6 +976,7 @@ test("scenario author can save, validate, preview, publish and safely roll back 
 test("scenario authoring supports keyboard focus, narrow reflow and reduced motion", async ({
   page,
 }) => {
+  await installScenarioAuthoringFixtures(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto("/scenarios/new");

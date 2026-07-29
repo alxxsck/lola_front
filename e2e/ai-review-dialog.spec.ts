@@ -20,16 +20,17 @@ test("AI Review keeps selected events and its dropdown inside the dialog", async
   const events = dialog.locator(".p-multiselect");
   await events.click();
 
-  for (const option of [
-    "Регистрация завершена · registration_completed",
-    "Ошибка пополнения · deposit_failed",
-    "Нужно подтвердить почту · email_confirmation_required",
-  ]) {
-    await page.getByRole("option", { name: option }).click({ force: true });
-  }
-
   const dropdown = page.locator(".p-multiselect-overlay");
   await expect(dropdown).toBeVisible();
+  for (const eventCode of [
+    "registration_completed",
+    "deposit_failed",
+    "email_confirmation_required",
+  ]) {
+    await dropdown
+      .getByRole("option", { name: new RegExp(`· ${eventCode}$`) })
+      .click();
+  }
 
   const [dialogBox, eventsBox, dropdownBox] = await Promise.all([
     dialog.boundingBox(),
