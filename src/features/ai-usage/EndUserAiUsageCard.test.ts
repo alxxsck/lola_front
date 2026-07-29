@@ -136,7 +136,11 @@ describe("End User AI consumption card", () => {
 
   it("loads a Project-local report with factual, calculated and operation totals", async () => {
     const wrapper = mount(EndUserAiUsageCard, {
-      props: { projectId: "project-1", endUserId: "user-1" },
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        canReadEventQueryHistory: true,
+      },
     });
     await flushPromises();
 
@@ -169,7 +173,11 @@ describe("End User AI consumption card", () => {
 
   it("shows speech characters, generations and calculated cost without token or provider-unit copy", async () => {
     const wrapper = mount(EndUserAiUsageCard, {
-      props: { projectId: "project-1", endUserId: "user-1" },
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        canReadEventQueryHistory: true,
+      },
     });
     await flushPromises();
 
@@ -184,7 +192,11 @@ describe("End User AI consumption card", () => {
 
   it("explains immutable historical pricing without exposing platform controls", async () => {
     const wrapper = mount(EndUserAiUsageCard, {
-      props: { projectId: "project-1", endUserId: "user-1" },
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        canReadEventQueryHistory: true,
+      },
     });
     await flushPromises();
 
@@ -213,7 +225,11 @@ describe("End User AI consumption card", () => {
       ),
     });
     const wrapper = mount(EndUserAiUsageCard, {
-      props: { projectId: "project-1", endUserId: "user-1" },
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        canReadEventQueryHistory: true,
+      },
     });
     await flushPromises();
 
@@ -225,7 +241,11 @@ describe("End User AI consumption card", () => {
 
   it("requests a new server window when the administrator changes the period", async () => {
     const wrapper = mount(EndUserAiUsageCard, {
-      props: { projectId: "project-1", endUserId: "user-1" },
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        canReadEventQueryHistory: true,
+      },
     });
     await flushPromises();
     await wrapper.get('button[data-window="today"]').trigger("click");
@@ -241,7 +261,11 @@ describe("End User AI consumption card", () => {
 
   it("does not leave a stale report under a failed new period", async () => {
     const wrapper = mount(EndUserAiUsageCard, {
-      props: { projectId: "project-1", endUserId: "user-1" },
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        canReadEventQueryHistory: true,
+      },
     });
     await flushPromises();
     mocks.fetch.mockRejectedValueOnce(new Error("Новый период недоступен"));
@@ -252,5 +276,20 @@ describe("End User AI consumption card", () => {
     expect(wrapper.text()).toContain("Новый период недоступен");
     expect(wrapper.text()).toContain("Повторить");
     expect(wrapper.text()).not.toContain("12,5");
+  });
+
+  it("does not request or render Event Query history without preview permission", async () => {
+    const wrapper = mount(EndUserAiUsageCard, {
+      props: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        canReadEventQueryHistory: false,
+      },
+    });
+    await flushPromises();
+
+    expect(mocks.fetch).toHaveBeenCalledOnce();
+    expect(mocks.requests).not.toHaveBeenCalled();
+    expect(wrapper.text()).not.toContain("Запросы пользователя к событиям");
   });
 });

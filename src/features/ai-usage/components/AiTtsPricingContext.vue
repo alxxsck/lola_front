@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { formatExactCurrencyRate } from '@/features/ai-pricing/ai-pricing.model'
 import type { AiTextToSpeechPricingContext } from '../ai-usage.model'
 
 const props = defineProps<{
@@ -9,16 +10,7 @@ const props = defineProps<{
 const currentRate = computed(() => {
   const current = props.pricing.current
   if (!current) return 'Текущая ставка не настроена'
-  const formatter = new Intl.NumberFormat('ru-RU', {
-    style: 'currency',
-    currency: current.currency.toUpperCase(),
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 12,
-  })
-  const formatExactDecimal = formatter.format as unknown as (
-    exactDecimal: string,
-  ) => string
-  return `${formatExactDecimal(current.rate)} за 1 000 000 входных символов`
+  return `${formatExactCurrencyRate(current.rate, current.currency)} за 1 000 000 входных символов`
 })
 
 const currentRateDate = computed(() => {

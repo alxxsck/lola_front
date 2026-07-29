@@ -18,6 +18,7 @@ import AiTtsPricingContext from "./components/AiTtsPricingContext.vue";
 const props = defineProps<{
   projectId: string;
   endUserId: string;
+  canReadEventQueryHistory: boolean;
 }>();
 
 const windowKey = ref<AiUsageRangeKey>("7d");
@@ -149,24 +150,29 @@ async function load(nextWindow = windowKey.value) {
     );
     if (generation !== requestGeneration) return;
     report.value = nextReport;
-    try {
-      eventQueryRequests.value = await eventQueryRepository.listRequests(
-        props.projectId,
-        {
-          from: nextReport.range.from ?? "1970-01-01T00:00:00.000Z",
-          to: nextReport.range.to,
-          endUserId: props.endUserId,
-          audience: "END_USER_CONVERSATION",
-          limit: 20,
-        },
-      );
-    } catch (cause) {
-      if (generation !== requestGeneration || controller.signal.aborted) return;
+    if (props.canReadEventQueryHistory) {
+      try {
+        eventQueryRequests.value = await eventQueryRepository.listRequests(
+          props.projectId,
+          {
+            from: nextReport.range.from ?? "1970-01-01T00:00:00.000Z",
+            to: nextReport.range.to,
+            endUserId: props.endUserId,
+            audience: "END_USER_CONVERSATION",
+            limit: 20,
+          },
+        );
+      } catch (cause) {
+        if (generation !== requestGeneration || controller.signal.aborted)
+          return;
+        eventQueryRequests.value = null;
+        eventQueryRequestsError.value =
+          cause instanceof Error
+            ? cause.message
+            : "Не удалось загрузить историю запросов к событиям";
+      }
+    } else {
       eventQueryRequests.value = null;
-      eventQueryRequestsError.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить историю запросов к событиям";
     }
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration) return;
@@ -188,7 +194,12 @@ function selectWindow(nextWindow: AiUsageRangeKey) {
 }
 
 watch(
-  () => [props.projectId, props.endUserId] as const,
+  () =>
+    [
+      props.projectId,
+      props.endUserId,
+      props.canReadEventQueryHistory,
+    ] as const,
   () => {
     report.value = null;
     eventQueryRequests.value = null;
@@ -290,7 +301,7 @@ onBeforeUnmount(() => controller?.abort());
         data-testid="end-user-tts-pricing"
       />
 
-      <section class="event-query-history">
+      <section v-if="canReadEventQueryHistory" class="event-query-history">
         <div>
           <span class="usage-kicker">Event Query</span>
           <h4>Запросы пользователя к событиям</h4>

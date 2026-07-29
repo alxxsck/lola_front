@@ -56,7 +56,10 @@ watch(costAvailable, (available) => {
 </script>
 
 <template>
-  <section class="usage-slice model-slice" aria-labelledby="model-slice-title">
+  <section
+    class="ai-usage-slice model-slice"
+    aria-labelledby="model-slice-title"
+  >
     <header class="slice-header">
       <div>
         <span class="provider-kicker">Models & inference</span>
@@ -160,51 +163,16 @@ watch(costAvailable, (available) => {
   </section>
 </template>
 
-<style scoped>
-.usage-slice {
-  min-width: 0;
-  padding: 18px;
-  margin-top: 16px;
-  border: 1px solid var(--border-default);
-  border-radius: 17px;
-  background: var(--surface-card);
-}
+<style src="./ai-usage-slice.css"></style>
 
-.slice-header,
+<style scoped>
 .case-usage > header {
   display: flex;
   align-items: center;
 }
 
-.slice-header {
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.slice-header h4,
 .case-usage h5 {
   margin: 0;
-}
-
-.slice-header h4 {
-  font-size: 0.95rem;
-}
-
-.slice-header p {
-  margin: 3px 0 0;
-  color: var(--text-small-muted);
-  font-size: 0.7rem;
-  line-height: 1.45;
-}
-
-.provider-kicker {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--text-small-muted);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
 }
 
 .metric-switch {
@@ -240,7 +208,6 @@ watch(costAvailable, (available) => {
   opacity: 0.42;
 }
 
-.slice-summary,
 .case-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -248,7 +215,6 @@ watch(costAvailable, (available) => {
   margin-top: 14px;
 }
 
-.slice-summary article,
 .case-summary article {
   min-width: 0;
   padding: 13px;
@@ -257,26 +223,11 @@ watch(costAvailable, (available) => {
   background: var(--surface-subtle);
 }
 
-.slice-summary small,
 .case-summary small {
   display: block;
   color: var(--text-small-muted);
   font-size: 0.66rem;
   font-weight: 600;
-}
-
-.slice-summary strong {
-  display: block;
-  margin-top: 6px;
-  font: 700 1rem var(--font-display);
-  overflow-wrap: anywhere;
-}
-
-.slice-summary span {
-  display: block;
-  margin-top: 3px;
-  color: var(--text-small-muted);
-  font-size: 0.61rem;
 }
 
 .case-usage {
@@ -366,15 +317,6 @@ watch(costAvailable, (available) => {
 }
 
 @media (max-width: 650px) {
-  .usage-slice {
-    padding: 16px;
-  }
-
-  .slice-header {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
   .metric-switch {
     width: 100%;
   }
@@ -383,7 +325,6 @@ watch(costAvailable, (available) => {
     flex: 1;
   }
 
-  .slice-summary,
   .case-summary {
     grid-template-columns: 1fr;
   }

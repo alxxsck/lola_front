@@ -5,7 +5,10 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import { useAuthStore } from '@/features/auth/auth.store'
-import { isValidTextToSpeechRate } from '@/features/ai-pricing/ai-pricing.model'
+import {
+  formatExactCurrencyRate,
+  isValidTextToSpeechRate,
+} from '@/features/ai-pricing/ai-pricing.model'
 import {
   fetchTextToSpeechPricing,
   publishTextToSpeechPricing,
@@ -46,16 +49,7 @@ const canWrite = computed(() =>
 )
 
 function formatMoney(value: string, currency: string): string {
-  const formatter = new Intl.NumberFormat('ru-RU', {
-    style: 'currency',
-    currency: /^[a-z]{3}$/i.test(currency) ? currency.toUpperCase() : 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 12,
-  })
-  const formatExactDecimal = formatter.format as unknown as (
-    exactDecimal: string,
-  ) => string
-  return formatExactDecimal(value)
+  return formatExactCurrencyRate(value, currency)
 }
 
 function formatDate(value: string): string {

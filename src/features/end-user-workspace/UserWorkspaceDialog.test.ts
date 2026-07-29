@@ -226,9 +226,13 @@ describe("единое рабочее пространство пользова�
             template: '<div data-testid="user-memory-panel" />',
           },
           EndUserAiUsageCard: {
-            props: ["projectId", "endUserId"],
+            props: [
+              "projectId",
+              "endUserId",
+              "canReadEventQueryHistory",
+            ],
             template:
-              '<div data-testid="end-user-ai-usage" :data-project-id="projectId" :data-end-user-id="endUserId" />',
+              '<div data-testid="end-user-ai-usage" :data-project-id="projectId" :data-end-user-id="endUserId" :data-can-read-event-query-history="String(canReadEventQueryHistory)" />',
           },
           AIReviewDialog: true,
         },
@@ -263,6 +267,7 @@ describe("единое рабочее пространство пользова�
     ).toMatchObject({
       "data-project-id": "project-1",
       "data-end-user-id": "user-1",
+      "data-can-read-event-query-history": "false",
     });
     expect(wrapper.text()).not.toContain("Сообщение пользователя");
 
@@ -273,6 +278,18 @@ describe("единое рабочее пространство пользова�
 
     await wrapper.get('[data-action="open-profile"]').trigger("click");
     expect(wrapper.get('[data-testid="profile-overview"]')).toBeTruthy();
+  });
+
+  it("passes Event Query preview authority to the AI usage card", async () => {
+    mocks.permissions.push("project.event_query_policy.preview");
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    expect(
+      wrapper
+        .get('[data-testid="end-user-ai-usage"]')
+        .attributes("data-can-read-event-query-history"),
+    ).toBe("true");
   });
 
   it("размещает историю синхронизации в карточке доступного профиля", async () => {

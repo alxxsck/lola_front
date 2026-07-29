@@ -249,6 +249,34 @@ describe('AI usage API response validation', () => {
     })
   })
 
+  it('preserves project AI analysis usage returned by the backend', () => {
+    const responseWithAnalysisUsage = {
+      ...response,
+      categories: [
+        {
+          ...response.breakdown[0],
+          category: 'AI_ANALYSIS',
+          records: 7,
+          totalTokens: 12_345,
+          billedCost: '0.041200000000',
+        },
+      ],
+    }
+
+    expect(
+      parseAiUsageReport(responseWithAnalysisUsage, 'project-1'),
+    ).toMatchObject({
+      categories: [
+        {
+          category: 'AI_ANALYSIS',
+          records: 7,
+          totalTokens: 12_345,
+          billedCost: 0.0412,
+        },
+      ],
+    })
+  })
+
   it('parses provider-reported xAI billed cost when estimated cost is zero', () => {
     const providerReportedResponse = {
       ...response,

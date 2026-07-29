@@ -102,6 +102,39 @@ describe("End User AI consumption response validation", () => {
     });
   });
 
+  it("preserves AI analysis usage attributed to the end user", () => {
+    const responseWithAnalysisUsage = {
+      ...response,
+      categories: [
+        ...response.categories,
+        {
+          ...summary,
+          category: "AI_ANALYSIS",
+          currency: "usd",
+          records: 5,
+          totalTokens: 9_876,
+        },
+      ],
+    };
+
+    expect(
+      parseEndUserAiUsageReport(
+        responseWithAnalysisUsage,
+        "project-1",
+        "user-1",
+      ),
+    ).toMatchObject({
+      categories: [
+        { category: "CHAT" },
+        {
+          category: "AI_ANALYSIS",
+          records: 5,
+          totalTokens: 9_876,
+        },
+      ],
+    });
+  });
+
   it("rejects cross-user responses and unknown UI categories", () => {
     expect(
       parseEndUserAiUsageReport(response, "project-1", "another-user"),

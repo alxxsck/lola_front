@@ -94,6 +94,7 @@ describe('AI usage model', () => {
       SPEECH: 'Озвучивание текста',
       MEMORY: 'Память Lola',
       AI_REVIEW: 'Проверка сообщений',
+      AI_ANALYSIS: 'AI-анализ',
       CASE_INTELLIGENCE: 'Анализ и проверка обращений',
     })
   })

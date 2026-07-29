@@ -164,6 +164,12 @@ const canReadUserMemory = computed(() =>
 const canReadAiUsage = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
 );
+const canReadEventQueryHistory = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.event_query_policy.preview",
+  ),
+);
 const canReadConversations = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.read"),
 );
@@ -761,6 +767,7 @@ function displayField(
             v-if="canReadAiUsage && endUserId"
             :project-id="projectId"
             :end-user-id="endUserId"
+            :can-read-event-query-history="canReadEventQueryHistory"
           />
           <section v-else class="profile-card profile-empty-card">
             <i class="pi pi-lock" />

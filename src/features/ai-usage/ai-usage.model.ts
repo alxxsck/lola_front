@@ -6,6 +6,7 @@ export const AI_USAGE_CATEGORIES = [
   'SPEECH',
   'MEMORY',
   'AI_REVIEW',
+  'AI_ANALYSIS',
   'CASE_INTELLIGENCE',
   'PROJECT_OVERHEAD',
 ] as const
@@ -171,6 +172,7 @@ export const AI_USAGE_CATEGORY_LABELS: Record<AiUsageCategory, string> = {
   SPEECH: 'Озвучивание текста',
   MEMORY: 'Память Lola',
   AI_REVIEW: 'Проверка сообщений',
+  AI_ANALYSIS: 'AI-анализ',
   CASE_INTELLIGENCE: 'Анализ и проверка обращений',
   PROJECT_OVERHEAD: 'Системные операции',
 }

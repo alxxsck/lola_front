@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { isValidTextToSpeechRate } from './ai-pricing.model'
+import {
+  formatExactCurrencyRate,
+  isValidTextToSpeechRate,
+} from './ai-pricing.model'
 
 describe('AI pricing decimal contract', () => {
   it.each([
@@ -23,5 +26,12 @@ describe('AI pricing decimal contract', () => {
     '123456789012345678901.1',
   ])('rejects unsupported rate %s', (rate) => {
     expect(isValidTextToSpeechRate(rate)).toBe(false)
+  })
+
+  it('formats an exact decimal rate without converting it through Number', () => {
+    expect(formatExactCurrencyRate('15.000000000001', 'usd')).toBe(
+      '15,000000000001 $',
+    )
+    expect(formatExactCurrencyRate('15', 'not-a-currency')).toBe('15,00 $')
   })
 })
