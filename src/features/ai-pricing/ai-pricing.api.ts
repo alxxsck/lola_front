@@ -46,7 +46,12 @@ function boundedText(value: unknown, maximum: number): value is string {
 function safeHttpsUrl(value: unknown): value is string {
   if (!boundedText(value, 2_048)) return false;
   try {
-    return new URL(value).protocol === "https:";
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.username.length === 0 &&
+      url.password.length === 0
+    );
   } catch {
     return false;
   }

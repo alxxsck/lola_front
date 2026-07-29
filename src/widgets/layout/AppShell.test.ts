@@ -350,6 +350,53 @@ describe("AppShell", () => {
     expect(wrapper.text()).not.toContain("Доставка и восстановление");
   });
 
+  it("shows AI pricing only to the exact Platform reader", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+        platformPermissionCodes: ["platform.ai_pricing.read"],
+      },
+      project: null,
+      projects: [],
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: "/platform/ai-pricing",
+          component: { template: "<div />" },
+        },
+      ],
+    });
+    await router.push("/platform/ai-pricing");
+    await router.isReady();
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: { template: "<div />" },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    expect(
+      wrapper.findAll(".sidebar-scroll nav a").map((link) => link.text()),
+    ).toEqual(["Тарифы AI"]);
+
+    auth.user!.platformPermissionCodes = ["platform.ai_pricing.write"];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).not.toContain("Тарифы AI");
+  });
+
   it("shows Project administrators only with the exact selected-Project read Permission", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
