@@ -954,6 +954,119 @@
         ],
         "type": "object"
       },
+      "AiPricingRevisionActorDto": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CMS_USER",
+              "BREAK_GLASS",
+              "SYSTEM"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ],
+        "type": "object"
+      },
+      "AiPricingRevisionResponseDto": {
+        "properties": {
+          "changeReason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/AiPricingRevisionActorDto"
+          },
+          "currency": {
+            "example": "usd",
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "operation": {
+            "example": "speech",
+            "type": "string"
+          },
+          "provider": {
+            "example": "xai",
+            "type": "string"
+          },
+          "rate": {
+            "example": "15",
+            "type": "string"
+          },
+          "sourceUrl": {
+            "format": "uri",
+            "type": "string"
+          },
+          "unit": {
+            "example": "per_million_input_characters",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "operation",
+          "currency",
+          "unit",
+          "rate",
+          "effectiveFrom",
+          "sourceUrl",
+          "changeReason",
+          "createdBy",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "AiPricingRevisionStateResponseDto": {
+        "properties": {
+          "current": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiPricingRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/AiPricingRevisionResponseDto"
+            },
+            "type": "array"
+          },
+          "sourceUrl": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current",
+          "history",
+          "hasMore",
+          "sourceUrl"
+        ],
+        "type": "object"
+      },
       "AIProposalDetailResponseDto": {
         "properties": {
           "caseLinkState": {
@@ -17593,6 +17706,24 @@
         ],
         "type": "object"
       },
+      "PublishAiPricingRevisionDto": {
+        "properties": {
+          "changeReason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "type": "string"
+          },
+          "ratePerMillionCharacters": {
+            "example": "15.00",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ratePerMillionCharacters",
+          "changeReason"
+        ],
+        "type": "object"
+      },
       "PublishAttributeContractDto": {
         "additionalProperties": false,
         "properties": {
@@ -25131,6 +25262,77 @@
   },
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1/admin/ai-pricing/xai/text-to-speech": {
+      "get": {
+        "operationId": "AiPricingRevision_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPricingRevisionStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI pricing"
+        ],
+        "x-iam-permission": {
+          "code": "platform.ai_pricing.read",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/ai-pricing/xai/text-to-speech/revisions": {
+      "post": {
+        "operationId": "AiPricingRevision_publish",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishAiPricingRevisionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPricingRevisionStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI pricing"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "platform.ai_pricing.write",
+          "scope": "PLATFORM"
+        }
+      }
+    },
     "/api/v1/admin/platform/bootstrap/first-operator": {
       "post": {
         "operationId": "FirstPlatformOperator_provision",

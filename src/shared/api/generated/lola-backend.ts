@@ -29,6 +29,7 @@ import type {
   AdminEventLogsListParams,
   AdminSpeechVoicesParams,
   AiCapabilityPreviewResponseDto,
+  AiPricingRevisionStateResponseDto,
   AiUsageReportParams,
   AiUsageReportResponseDto,
   AnalyzeEventSchemaDraftDto,
@@ -256,6 +257,7 @@ import type {
   ProjectRoleListResponseDto,
   ProjectRoleResponseDto,
   ProviderBillingSnapshotResponseDto,
+  PublishAiPricingRevisionDto,
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
   PublishEndUserCasePolicyDto,
@@ -381,6 +383,30 @@ import type {
 import { request } from "../http/orval-mutator";
 import type { BodyType } from "../http/orval-mutator";
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+export const aiPricingRevisionGet = (
+  options?: SecondParameter<typeof request<AiPricingRevisionStateResponseDto>>,
+) => {
+  return request<AiPricingRevisionStateResponseDto>(
+    { url: `/api/v1/admin/ai-pricing/xai/text-to-speech`, method: "GET" },
+    options,
+  );
+};
+
+export const aiPricingRevisionPublish = (
+  publishAiPricingRevisionDto: BodyType<PublishAiPricingRevisionDto>,
+  options?: SecondParameter<typeof request<AiPricingRevisionStateResponseDto>>,
+) => {
+  return request<AiPricingRevisionStateResponseDto>(
+    {
+      url: `/api/v1/admin/ai-pricing/xai/text-to-speech/revisions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishAiPricingRevisionDto,
+    },
+    options,
+  );
+};
 
 /**
  * @summary Provision the first Platform Operator
@@ -5165,6 +5191,12 @@ export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
   return request<void>({ url: `/health`, method: "GET" }, options);
 };
 
+export type AiPricingRevisionGetResult = NonNullable<
+  Awaited<ReturnType<typeof aiPricingRevisionGet>>
+>;
+export type AiPricingRevisionPublishResult = NonNullable<
+  Awaited<ReturnType<typeof aiPricingRevisionPublish>>
+>;
 export type FirstPlatformOperatorProvisionResult = NonNullable<
   Awaited<ReturnType<typeof firstPlatformOperatorProvision>>
 >;
