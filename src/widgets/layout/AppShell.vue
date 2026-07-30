@@ -20,7 +20,7 @@ import AIProposalBadge from "@/features/ai-proposals/ui/AIProposalBadge.vue";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
-import { openProjectInNewTab } from "@/shared/api/http/auth-session";
+import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
 import ThemeSwitch from "./ThemeSwitch.vue";
 
 const route = useRoute();
@@ -270,7 +270,7 @@ function isNavigationItemActive(to: string): boolean {
 const profileItems = computed(() => [
   { label: auth.user?.email, disabled: true },
   { separator: true },
-  ...(auth.projects.length > 1
+  ...(auth.projects.length > 0
     ? [
         {
           label: "Переключить проект",

@@ -210,7 +210,7 @@ export const authApi = {
       sessionStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(context));
       return { kind: "AUTHENTICATED", context };
     }
-    clearAuthSession();
+    clearLocalAuthSession();
     clearPendingMfaCeremonies();
     try {
       const response = await initialAccessLogin({

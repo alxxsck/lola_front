@@ -19,6 +19,7 @@ interface AccessTokenMessage {
   type: "ACCESS_TOKEN";
   accessToken: string;
   expiresAt: number;
+  issuedAt: number;
 }
 
 interface AccessTokenRequestMessage {
@@ -62,6 +63,7 @@ export function createAccessTokenCoordinator({
 }: AccessTokenCoordinatorOptions = {}): AccessTokenCoordinator {
   let accessToken: string | null = null;
   let accessExpiresAt = 0;
+  let accessIssuedAt = 0;
   let revision = 0;
   const tokenWaiters = new Set<(available: boolean) => void>();
   const remoteClearListeners = new Set<() => void>();
@@ -73,12 +75,18 @@ export function createAccessTokenCoordinator({
   function applyToken(message: AccessTokenMessage): void {
     if (
       message.expiresAt <= now() ||
+      (accessToken !== null &&
+        (message.issuedAt < accessIssuedAt ||
+          (message.issuedAt === accessIssuedAt &&
+            message.accessToken !== accessToken))) ||
       (accessToken === message.accessToken &&
-        accessExpiresAt === message.expiresAt)
+        accessExpiresAt === message.expiresAt &&
+        accessIssuedAt === message.issuedAt)
     )
       return;
     accessToken = message.accessToken;
     accessExpiresAt = message.expiresAt;
+    accessIssuedAt = message.issuedAt;
     revision += 1;
     for (const resolve of tokenWaiters) resolve(true);
     tokenWaiters.clear();
@@ -88,10 +96,12 @@ export function createAccessTokenCoordinator({
     accessToken: string;
     expiresIn: number;
   }): void {
+    const issuedAt = Math.max(now(), accessIssuedAt + 1);
     const message: AccessTokenMessage = {
       type: "ACCESS_TOKEN",
       accessToken: tokens.accessToken,
-      expiresAt: now() + tokens.expiresIn * 1_000,
+      expiresAt: issuedAt + tokens.expiresIn * 1_000,
+      issuedAt,
     };
     applyToken(message);
     channel?.postMessage(message);
@@ -100,6 +110,7 @@ export function createAccessTokenCoordinator({
   function clearLocal(): void {
     accessToken = null;
     accessExpiresAt = 0;
+    accessIssuedAt = 0;
     revision += 1;
     for (const resolve of tokenWaiters) resolve(false);
     tokenWaiters.clear();
@@ -122,7 +133,9 @@ export function createAccessTokenCoordinator({
       "accessToken" in value &&
       typeof value.accessToken === "string" &&
       "expiresAt" in value &&
-      typeof value.expiresAt === "number"
+      typeof value.expiresAt === "number" &&
+      "issuedAt" in value &&
+      typeof value.issuedAt === "number"
     );
   }
 
@@ -135,6 +148,7 @@ export function createAccessTokenCoordinator({
           type: "ACCESS_TOKEN",
           accessToken: token,
           expiresAt: accessExpiresAt,
+          issuedAt: accessIssuedAt,
         });
       return;
     }

@@ -10,8 +10,12 @@ const REPLY_TRANSLATION_DRAFT_PREFIX = "lola:reply-translation-draft:";
 const AUTH_CHANNEL_NAME = "lola-cms-auth-session-v1";
 
 function browserChannel(): AccessTokenChannel | undefined {
-  if (typeof BroadcastChannel === "undefined") return undefined;
-  return new BroadcastChannel(AUTH_CHANNEL_NAME);
+  if (
+    typeof window === "undefined" ||
+    typeof window.BroadcastChannel === "undefined"
+  )
+    return undefined;
+  return new window.BroadcastChannel(AUTH_CHANNEL_NAME);
 }
 
 function browserLock(): AccessTokenLock | undefined {
@@ -50,21 +54,11 @@ export function storeAccessToken(tokens: {
   accessTokens.store(tokens);
 }
 
-export function storeSelectedProjectId(projectId: string): void {
-  sessionStorage.setItem(PROJECT_KEY, projectId);
-}
-
-export function openProjectInNewTab(
+export function storeSelectedProjectId(
   projectId: string,
-  path = "/overview",
-): boolean {
-  if (typeof window === "undefined") return false;
-  const tab = window.open("", "_blank");
-  if (!tab) return false;
-  tab.sessionStorage.setItem(PROJECT_KEY, projectId);
-  tab.opener = null;
-  tab.location.replace(new URL(path, window.location.origin).toString());
-  return true;
+  storage: Pick<Storage, "setItem"> = sessionStorage,
+): void {
+  storage.setItem(PROJECT_KEY, projectId);
 }
 
 function clearTabSessionStorage(): void {

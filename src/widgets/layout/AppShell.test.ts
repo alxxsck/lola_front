@@ -1,9 +1,70 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
-import { createMemoryHistory, createRouter } from "vue-router";
+import { createPinia, setActivePinia, type Pinia } from "pinia";
+import {
+  createMemoryHistory,
+  createRouter,
+  type Router,
+} from "vue-router";
 import { describe, expect, it, vi } from "vitest";
 import AppShell from "./AppShell.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
+
+function project(id: string, name: string) {
+  return {
+    id,
+    name,
+    slug: name.toLowerCase().replaceAll(" ", "-"),
+    status: "ACTIVE" as const,
+    supportedLocales: ["ru"],
+    effectivePermissionCodes: [],
+  };
+}
+
+function authenticateWithProjects(
+  auth: ReturnType<typeof useAuthStore>,
+  projects: ReturnType<typeof project>[],
+) {
+  auth.$patch({
+    phase: "AUTHENTICATED",
+    user: {
+      id: "operator-1",
+      email: "operator@example.com",
+      name: "Оператор",
+    },
+    projects,
+    project: projects[0] ?? null,
+  });
+}
+
+const projectMenuStub = {
+  props: ["model"],
+  template: `
+    <div>
+      <template v-for="group in model" :key="group.label">
+        <button
+          v-for="item in group.items ?? []"
+          :key="item.label"
+          type="button"
+          @click="item.command?.()"
+        >{{ group.label }}: {{ item.label }}</button>
+      </template>
+    </div>
+  `,
+};
+
+function mountProjectMenu(pinia: Pinia, router: Router) {
+  return mount(AppShell, {
+    global: {
+      plugins: [pinia, router],
+      stubs: {
+        Button: { template: '<button type="button"><slot /></button>' },
+        Avatar: { template: "<span />" },
+        Menu: projectMenuStub,
+        Tag: { template: "<span />" },
+      },
+    },
+  });
+}
 
 describe("AppShell", () => {
   it("opens personal security settings from the profile menu", async () => {
@@ -59,32 +120,10 @@ describe("AppShell", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
-    const firstProject = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      supportedLocales: ["ru"],
-      effectivePermissionCodes: [],
-    };
-    const secondProject = {
-      id: "project-2",
-      name: "Project Two",
-      slug: "project-two",
-      status: "ACTIVE" as const,
-      supportedLocales: ["ru"],
-      effectivePermissionCodes: [],
-    };
-    auth.$patch({
-      phase: "AUTHENTICATED",
-      user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Оператор",
-      },
-      projects: [firstProject, secondProject],
-      project: firstProject,
-    });
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One"),
+      project("project-2", "Project Two"),
+    ]);
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -94,31 +133,7 @@ describe("AppShell", () => {
     });
     await router.push("/scenarios");
     await router.isReady();
-    const wrapper = mount(AppShell, {
-      global: {
-        plugins: [pinia, router],
-        stubs: {
-          Button: { template: '<button type="button"><slot /></button>' },
-          Avatar: { template: "<span />" },
-          Menu: {
-            props: ["model"],
-            template: `
-              <div>
-                <template v-for="group in model" :key="group.label">
-                  <button
-                    v-for="item in group.items ?? []"
-                    :key="item.label"
-                    type="button"
-                    @click="item.command?.()"
-                  >{{ group.label }}: {{ item.label }}</button>
-                </template>
-              </div>
-            `,
-          },
-          Tag: { template: "<span />" },
-        },
-      },
-    });
+    const wrapper = mountProjectMenu(pinia, router);
 
     const switchButton = wrapper
       .findAll("button")
@@ -141,32 +156,7 @@ describe("AppShell", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
-    const firstProject = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      supportedLocales: ["ru"],
-      effectivePermissionCodes: [],
-    };
-    const secondProject = {
-      id: "project-2",
-      name: "Project Two",
-      slug: "project-two",
-      status: "ACTIVE" as const,
-      supportedLocales: ["ru"],
-      effectivePermissionCodes: [],
-    };
-    auth.$patch({
-      phase: "AUTHENTICATED",
-      user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Оператор",
-      },
-      projects: [firstProject, secondProject],
-      project: firstProject,
-    });
+    authenticateWithProjects(auth, [project("project-1", "Project One")]);
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [{ path: "/overview", component: { template: "<div />" } }],
@@ -183,38 +173,14 @@ describe("AppShell", () => {
     const open = vi
       .spyOn(window, "open")
       .mockReturnValue(openedTab as unknown as Window);
-    const wrapper = mount(AppShell, {
-      global: {
-        plugins: [pinia, router],
-        stubs: {
-          Button: { template: '<button type="button"><slot /></button>' },
-          Avatar: { template: "<span />" },
-          Menu: {
-            props: ["model"],
-            template: `
-              <div>
-                <template v-for="group in model" :key="group.label">
-                  <button
-                    v-for="item in group.items ?? []"
-                    :key="item.label"
-                    type="button"
-                    @click="item.command?.()"
-                  >{{ group.label }}: {{ item.label }}</button>
-                </template>
-              </div>
-            `,
-          },
-          Tag: { template: "<span />" },
-        },
-      },
-    });
+    const wrapper = mountProjectMenu(pinia, router);
 
     const openButton = wrapper
       .findAll("button")
       .find(
         (button) =>
           button.text() ===
-          "Открыть проект в новой вкладке: Project Two",
+          "Открыть проект в новой вкладке: Project One",
       );
     expect(openButton).toBeDefined();
     await openButton!.trigger("click");
@@ -222,13 +188,13 @@ describe("AppShell", () => {
     expect(open).toHaveBeenCalledWith("", "_blank");
     expect(setItem).toHaveBeenCalledWith(
       "lola-cms-selected-project-v1",
-      "project-2",
+      "project-1",
     );
     expect(openedTab.opener).toBeNull();
     expect(replace).toHaveBeenCalledWith(
       expect.stringMatching(/\/overview$/),
     );
-    expect(replace.mock.calls[0]?.[0]).not.toContain("project-2");
+    expect(replace.mock.calls[0]?.[0]).not.toContain("project-1");
     expect(auth.project?.id).toBe("project-1");
   });
 

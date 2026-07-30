@@ -35,6 +35,13 @@ class ChannelHub {
     this.listeners.set(channel, new Set());
     return channel;
   }
+
+  broadcast(message: unknown): void {
+    for (const listeners of this.listeners.values()) {
+      for (const listener of listeners)
+        listener({ data: message } as MessageEvent<unknown>);
+    }
+  }
 }
 
 function serialLock(): AccessTokenLock {
@@ -150,5 +157,36 @@ describe("access token coordination", () => {
 
     expect(first.get()).toBeNull();
     expect(second.get()).toBe("shared-access");
+  });
+
+  it("does not replace a fresh token with a late stale-tab response", () => {
+    const hub = new ChannelHub();
+    const lock = serialLock();
+    let now = 1_000;
+    const first = createAccessTokenCoordinator({
+      channel: hub.create(),
+      lock,
+      responseTimeoutMs: 10,
+      now: () => now,
+    });
+    const second = createAccessTokenCoordinator({
+      channel: hub.create(),
+      lock,
+      responseTimeoutMs: 10,
+      now: () => now,
+    });
+    first.store({ accessToken: "stale-access", expiresIn: 60 });
+    now = 2_000;
+    second.store({ accessToken: "fresh-access", expiresIn: 60 });
+
+    hub.broadcast({
+      type: "ACCESS_TOKEN",
+      accessToken: "stale-access",
+      expiresAt: 61_000,
+      issuedAt: 1_000,
+    });
+
+    expect(first.get()).toBe("fresh-access");
+    expect(second.get()).toBe("fresh-access");
   });
 });
