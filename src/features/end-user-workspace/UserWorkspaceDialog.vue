@@ -24,6 +24,10 @@ import { useConversationAISuspensionStore } from "@/features/conversation-ai-sus
 import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
 import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
 import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
+import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
+import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
+import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
+import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
 import type {
   ExtendConversationAISuspensionDto,
   ProfileProjectionResponseDto,
@@ -32,6 +36,7 @@ import type {
 } from "@/shared/api/generated/models";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import { formatDate, relativeTime } from "@/shared/lib/format";
+import { localeDisplayName } from "@/shared/lib/locale";
 import type { ConversationMessage } from "@/shared/types/domain";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
@@ -91,8 +96,11 @@ const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
 const aiReviewVisible = ref(false);
 const liveMessageIds = ref<string[]>([]);
 const telegramDraftDirty = ref(false);
+const sendWithoutTranslationVisible = ref(false);
+const sendWithoutTranslationReason = ref("");
 let profileRequest = 0;
 let unsubscribeMessage: (() => void) | undefined;
+let unsubscribeTranslation: (() => void) | undefined;
 let unsubscribeReconcile: (() => void) | undefined;
 let unsubscribeRealtimeState: (() => void) | undefined;
 let presenceTimer: ReturnType<typeof setInterval> | undefined;
@@ -170,6 +178,45 @@ const canReadConversations = computed(() =>
 const canReply = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.reply"),
 );
+const canManageTranslation = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.translation.create"),
+);
+const canReplyWithoutTranslation = computed(() =>
+  Boolean(
+    canReply.value &&
+    hasProjectPermission(
+      projectPermissions.value,
+      "project.conversations.reply_without_translation",
+    ),
+  ),
+);
+const translation = createConversationTranslationController({
+  projectId: () => props.projectId,
+  endUserId: () => props.endUserId ?? undefined,
+  conversationId: () => selectedConversation.value?.id,
+  selectedCaseId: () => props.preferredEndUserCaseId,
+  sourceText: () => replyText.value,
+  reconcileMessages: () => consoleState.reconcileSelected(),
+});
+const visibleTranslationMessageIds = computed(() =>
+  messages.value
+    .filter(
+      (message) =>
+        ["USER", "ASSISTANT", "SCENARIO"].includes(message.author) &&
+        message.status === "COMPLETED" &&
+        !message.translation &&
+        !translation.messageTranslations.value.has(message.id),
+    )
+    .slice(-50)
+    .map((message) => message.id),
+);
+
+async function setTranslationEnabled(enabled: boolean): Promise<void> {
+  await translation.updatePreference({ enabled });
+  if (enabled && translation.state.value?.preference.enabled) {
+    await translation.translateMessages(visibleTranslationMessageIds.value);
+  }
+}
 const canStartAIReview = computed(
   () =>
     hasProjectPermission(projectPermissions.value, "project.ai_review.read") &&
@@ -220,10 +267,21 @@ watch(conversations, (value) => suspensionStore.ingestConversations(value), {
 watch(
   () => selectedConversation.value?.id,
   async (conversationId) => {
+    sendWithoutTranslationReason.value = "";
+    sendWithoutTranslationVisible.value = false;
     if (!conversationId || !props.endUserId || !visible.value) return;
     liveMessageIds.value = [];
     if (conversationAISuspensionEnabled)
       void suspensionStore.loadDetail(props.endUserId, conversationId);
+    if (canManageTranslation.value) {
+      await translation.load();
+      if (
+        canManageTranslation.value &&
+        translation.state.value?.preference.enabled
+      ) {
+        void translation.translateMessages(visibleTranslationMessageIds.value);
+      }
+    }
     mobilePane.value = "CHAT";
     await nextTick();
     scrollToLatest(false);
@@ -250,9 +308,19 @@ onMounted(() => {
       ["conversation.message.upserted.v1"],
       handleMessageUpsert,
     );
-    unsubscribeReconcile = cmsRealtimeClient.reconcile(() =>
-      visible.value ? consoleState.reconcileSelected() : undefined,
+    unsubscribeTranslation = cmsRealtimeClient.subscribe(
+      ["conversation.message.translation.upserted.v1"],
+      (value) => {
+        translation.mergeRealtimeTranslation(value);
+      },
     );
+    unsubscribeReconcile = cmsRealtimeClient.reconcile(async () => {
+      if (!visible.value) return;
+      await consoleState.reconcileSelected();
+      if (canManageTranslation.value && selectedConversation.value) {
+        await translation.load();
+      }
+    });
   }
   if (canReadConversations.value) {
     presenceTimer = setInterval(() => {
@@ -263,6 +331,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   unsubscribeRealtimeState?.();
   unsubscribeMessage?.();
+  unsubscribeTranslation?.();
   unsubscribeReconcile?.();
   if (presenceTimer) clearInterval(presenceTimer);
   closeWorkspace();
@@ -362,6 +431,8 @@ function closeWorkspace(): void {
   newChatOpen.value = false;
   liveMessageIds.value = [];
   telegramDraftDirty.value = false;
+  sendWithoutTranslationReason.value = "";
+  sendWithoutTranslationVisible.value = false;
 }
 
 async function openChat(): Promise<void> {
@@ -440,12 +511,22 @@ function handleMessageUpsert(value: unknown): void {
   )
     return;
   const nearLatest = isNearLatest();
-  const isNewMessage = !messages.value.some(
+  const previousMessage = messages.value.find(
     (message) => message.id === event.message.id,
   );
+  const isNewMessage = !previousMessage;
   if (!consoleState.upsertMessage(messageFromEvent(event), !nearLatest)) return;
   if (isNewMessage)
     liveMessageIds.value = [...liveMessageIds.value, event.message.id];
+  if (
+    previousMessage?.status !== "COMPLETED" &&
+    ["USER", "ASSISTANT", "SCENARIO"].includes(event.message.role) &&
+    event.message.status === "COMPLETED" &&
+    canManageTranslation.value &&
+    translation.state.value?.preference.enabled
+  ) {
+    void translation.translateMessage(event.message.id);
+  }
   if (nearLatest) void nextTick(() => scrollToLatest(false));
 }
 
@@ -477,8 +558,25 @@ async function handleHistoryScroll(force = false): Promise<void> {
     return;
   const previousHeight = element.scrollHeight;
   const previousTop = element.scrollTop;
+  const previousIds = new Set(messages.value.map((message) => message.id));
   const added = await consoleState.loadOlderMessages();
   if (!added) return;
+  if (
+    canManageTranslation.value &&
+    translation.state.value?.preference.enabled
+  ) {
+    const newEligibleIds = messages.value
+      .filter(
+        (message) =>
+          !previousIds.has(message.id) &&
+          ["USER", "ASSISTANT", "SCENARIO"].includes(message.author) &&
+          message.status === "COMPLETED" &&
+          !message.translation,
+      )
+      .slice(0, 50)
+      .map((message) => message.id);
+    void translation.translateMessages(newEligibleIds);
+  }
   await nextTick();
   element.scrollTop = previousTop + element.scrollHeight - previousHeight;
 }
@@ -505,10 +603,106 @@ async function createConversation(): Promise<void> {
 
 async function sendReply(): Promise<void> {
   if (!canReply.value) return;
+  const translationState = translation.state.value;
+  const translationEnabled = translationState?.preference.enabled ?? false;
+  const workingLocale = translationState?.preference.workingLocale ?? null;
+  const sameLanguage =
+    Boolean(workingLocale) && translation.targetLocale.value === workingLocale;
+  if (translationEnabled && sameLanguage) {
+    await consoleState.sendReply();
+    return;
+  }
+  if (
+    translationEnabled &&
+    translationState?.availability.available &&
+    translation.targetLocale.value &&
+    canManageTranslation.value
+  ) {
+    await translation.createReplyPreview();
+    return;
+  }
+  if (translationEnabled) return;
   await consoleState.sendReply();
 }
 
-function openSuspension(mode: SuspensionMode, combined = false): void {
+async function sendTranslatedReply(editedText?: string): Promise<void> {
+  if (
+    !canReply.value ||
+    translation.savingPreference.value ||
+    translation.previewStale.value
+  ) {
+    return;
+  }
+  const beforeEdit = translation.readyDraft.value;
+  if (
+    beforeEdit &&
+    editedText?.trim() &&
+    editedText.trim() !==
+      (beforeEdit.editedTranslatedText ?? beforeEdit.translatedText ?? "")
+  ) {
+    await translation.editReplyTranslation(editedText);
+  } else {
+    await translation.flushReplyEdit();
+  }
+  const ready = translation.readyDraft.value;
+  if (!ready) return;
+  const result = await consoleState.sendReply({
+    replyTranslationDraftId: ready.id,
+  });
+  if (repository.mode === "mock" && result?.messageId) {
+    const saved = messages.value.find(
+      (message) => message.id === result.messageId,
+    );
+    if (saved) {
+      const deliveredText =
+        ready.editedTranslatedText ??
+        ready.deliveredTextPreview ??
+        ready.translatedText ??
+        "";
+      consoleState.upsertMessage({
+        ...saved,
+        text: deliveredText,
+        translation: {
+          id: ready.id,
+          direction: "OUTBOUND",
+          status: "COMPLETED",
+          originalText: ready.sourceText ?? "",
+          translatedText: ready.translatedText ?? null,
+          deliveredText,
+          viewText: deliveredText,
+          sourceLocale: ready.sourceLocale,
+          targetLocale: ready.targetLocale,
+          errorCode: null,
+          warnings: ready.editedTranslatedText ? ["OPERATOR_EDITED"] : [],
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    }
+  }
+  if (!replyText.value.trim()) await translation.load();
+}
+
+async function sendReplyWithoutTranslation(): Promise<void> {
+  const reason = sendWithoutTranslationReason.value.trim();
+  if (!canReplyWithoutTranslation.value || !reason) return;
+  await consoleState.sendReply({ sendWithoutTranslationReason: reason });
+  if (!replyText.value.trim()) {
+    sendWithoutTranslationReason.value = "";
+    sendWithoutTranslationVisible.value = false;
+    translation.clearReplyDraft();
+  }
+}
+
+function setSendWithoutTranslationVisible(value: boolean): void {
+  sendWithoutTranslationVisible.value = value;
+  if (!value) sendWithoutTranslationReason.value = "";
+}
+
+async function openSuspension(
+  mode: SuspensionMode,
+  combined = false,
+): Promise<void> {
+  if (combined) await translation.flushReplyEdit();
   combinedSend.value = combined;
   suspensionDialogMode.value = mode;
   suspensionDialogVisible.value = true;
@@ -525,9 +719,19 @@ async function submitSuspension(value: {
   const endUserId = props.endUserId;
   if (!conversation || !endUserId) return;
   if (combinedSend.value && suspensionDialogMode.value === "START") {
+    const readyDraft = translation.readyDraft.value;
+    if (
+      !readyDraft ||
+      translation.savingPreference.value ||
+      translation.editingReply.value ||
+      translation.previewStale.value
+    ) {
+      return;
+    }
     const result = await consoleState.suspendAndSendReply(
       value.command as StartConversationAISuspensionDto,
       value.key,
+      { replyTranslationDraftId: readyDraft.id },
     );
     if (!result) return;
     if (result.aiSuspension) {
@@ -538,6 +742,7 @@ async function submitSuspension(value: {
         result.aiSuspension.inFlightCancellation?.status,
       );
     }
+    if (!replyText.value.trim()) translation.clearReplyDraft();
   } else {
     const succeeded =
       suspensionDialogMode.value === "START"
@@ -977,6 +1182,24 @@ function displayField(
             />
           </div>
         </div>
+        <ConversationTranslationBanner
+          v-if="selectedConversation && canManageTranslation"
+          :state="translation.state.value"
+          :loading="translation.loading.value"
+          :saving="translation.savingPreference.value"
+          :can-manage="canManageTranslation"
+          :eligible-count="visibleTranslationMessageIds.length"
+          @reload="translation.load"
+          @update-enabled="setTranslationEnabled"
+          @update-target-locale="
+            translation.updatePreference({
+              endUserLocaleOverride: $event,
+            })
+          "
+          @translate-visible="
+            translation.translateMessages(visibleTranslationMessageIds)
+          "
+        />
         <Message
           v-if="conversationError"
           severity="warn"
@@ -984,6 +1207,14 @@ function displayField(
           class="chat-error"
         >
           {{ conversationError }}
+        </Message>
+        <Message
+          v-if="translation.error.value"
+          severity="warn"
+          :closable="false"
+          class="chat-error"
+        >
+          {{ translation.error.value }}
         </Message>
         <ConversationAISuspensionBanner
           v-if="
@@ -1047,14 +1278,15 @@ function displayField(
                 formatDate(message.createdAt)
               }}</time>
             </div>
-            <p>
-              {{
-                message.text ||
-                (message.status === "WRITING"
-                  ? "Lola печатает…"
-                  : "Сообщение без текста")
-              }}
-            </p>
+            <TranslatedMessageBody
+              :message="message"
+              :requested="translation.messageTranslations.value.get(message.id)"
+              :busy="translation.translatingMessageIds.value.has(message.id)"
+              :can-translate="canManageTranslation"
+              @translate="translation.translateMessage"
+              @retry="translation.retryMessage"
+              @reconcile="translation.reconcileMessage"
+            />
             <small v-if="message.status === 'FAILED'"
               ><i class="pi pi-exclamation-circle" /> Не доставлено</small
             >
@@ -1102,15 +1334,88 @@ function displayField(
               !onlineSession || selectedConversation.status !== 'ACTIVE'
             "
           />
+          <ReplyTranslationPreview
+            v-if="
+              canManageTranslation &&
+              translation.state.value?.preference.enabled &&
+              translation.targetLocale.value !==
+                translation.state.value.preference.workingLocale
+            "
+            :draft="translation.draft.value"
+            :target-locale="translation.targetLocale.value"
+            :busy="
+              translation.previewing.value ||
+              translation.editingReply.value ||
+              translation.savingPreference.value ||
+              sendingReply
+            "
+            :stale="translation.previewStale.value"
+            :disabled="
+              !replyText.trim() ||
+              !onlineSession ||
+              selectedConversation.status !== 'ACTIVE' ||
+              translation.savingPreference.value
+            "
+            @preview="translation.createReplyPreview"
+            @reconcile="translation.reconcileReplyPreview"
+            @retry="translation.retryReplyPreview"
+            @save-edit="translation.editReplyTranslation"
+            @send="sendTranslatedReply"
+          />
           <div class="composer-footer">
-            <span>Отправка сообщения сама по себе не меняет режим AI.</span>
+            <span>
+              {{
+                translation.state.value?.preference.enabled
+                  ? "Оригинал сохранится для оператора; пользователь получит только проверенный перевод."
+                  : "Отправка сообщения сама по себе не меняет режим AI."
+              }}
+            </span>
             <div>
+              <Button
+                v-if="
+                  canReplyWithoutTranslation &&
+                  translation.state.value?.preference.enabled
+                "
+                type="button"
+                icon="pi pi-ellipsis-h"
+                severity="secondary"
+                text
+                rounded
+                aria-label="Другие варианты отправки"
+                title="Другие варианты отправки"
+                :disabled="!replyText.trim() || !onlineSession"
+                @click="sendWithoutTranslationVisible = true"
+              />
               <Button
                 v-if="
                   canReply &&
                   conversationAISuspensionEnabled &&
                   canManageSuspension &&
-                  !isSuspended()
+                  !isSuspended() &&
+                  translation.state.value?.preference.enabled &&
+                  translation.readyDraft.value
+                "
+                type="button"
+                label="Приостановить AI и отправить перевод"
+                icon="pi pi-pause-circle"
+                severity="secondary"
+                text
+                :disabled="
+                  !onlineSession ||
+                  sendingReply ||
+                  translation.savingPreference.value ||
+                  translation.editingReply.value ||
+                  translation.previewStale.value
+                "
+                @click="openSuspension('START', true)"
+              />
+              <Button
+                v-if="
+                  canReply &&
+                  conversationAISuspensionEnabled &&
+                  canManageSuspension &&
+                  !isSuspended() &&
+                  !translation.state.value?.preference.enabled
                 "
                 type="button"
                 label="Приостановить AI и отправить"
@@ -1121,7 +1426,13 @@ function displayField(
                 @click="openSuspension('START', true)"
               />
               <Button
-                v-if="canReply"
+                v-if="
+                  canReply &&
+                  (!translation.state.value?.preference.enabled ||
+                    (translation.targetLocale.value &&
+                      translation.targetLocale.value ===
+                        translation.state.value?.preference.workingLocale))
+                "
                 type="submit"
                 label="Отправить"
                 icon="pi pi-send"
@@ -1179,6 +1490,54 @@ function displayField(
             :loading="creatingConversation"
             :disabled="!newChatText.trim() || !onlineSession"
             @click="createConversation"
+          />
+        </div>
+      </div>
+    </Dialog>
+
+    <Dialog
+      v-model:visible="sendWithoutTranslationVisible"
+      @update:visible="setSendWithoutTranslationVisible"
+      modal
+      header="Отправить без перевода?"
+      :style="{ width: 'min(500px, 94vw)' }"
+    >
+      <div class="send-without-translation">
+        <Message severity="warn" :closable="false">
+          Пользователь получит исходный русский текст вместо
+          {{
+            translation.targetLocale.value
+              ? `перевода на ${localeDisplayName(translation.targetLocale.value)}`
+              : "перевода"
+          }}.
+        </Message>
+        <div class="field">
+          <label for="send-without-translation-reason"
+            >Причина исключения</label
+          >
+          <Textarea
+            id="send-without-translation-reason"
+            v-model="sendWithoutTranslationReason"
+            rows="3"
+            maxlength="500"
+            placeholder="Почему сообщение нужно отправить без перевода?"
+          />
+          <small>{{ sendWithoutTranslationReason.length }}/500</small>
+        </div>
+        <div class="send-without-translation__actions">
+          <Button
+            label="Отмена"
+            severity="secondary"
+            text
+            @click="setSendWithoutTranslationVisible(false)"
+          />
+          <Button
+            label="Отправить исходный текст"
+            icon="pi pi-send"
+            severity="danger"
+            :loading="sendingReply"
+            :disabled="!sendWithoutTranslationReason.trim()"
+            @click="sendReplyWithoutTranslation"
           />
         </div>
       </div>
@@ -1641,6 +2000,8 @@ function displayField(
   cursor: pointer;
 }
 .composer {
+  display: grid;
+  gap: 8px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
@@ -1650,7 +2011,6 @@ function displayField(
 .composer-footer {
   justify-content: space-between;
   gap: 12px;
-  margin-top: 8px;
 }
 .composer-footer > span {
   max-width: 340px;
@@ -1663,6 +2023,28 @@ function displayField(
 }
 .chat-error {
   margin-bottom: 8px;
+}
+.send-without-translation {
+  display: grid;
+  gap: 16px;
+}
+.send-without-translation .field {
+  display: grid;
+  gap: 6px;
+}
+.send-without-translation .field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.send-without-translation .field small {
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  text-align: right;
+}
+.send-without-translation__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 .profile-summary {
   display: grid;

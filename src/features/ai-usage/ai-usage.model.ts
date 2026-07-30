@@ -137,6 +137,23 @@ export interface AiUsageReport {
   categories: AiUsageCategoryBreakdown[];
   eventQuery: AiUsageEventQueryBreakdown;
   textToSpeechPricing: AiTextToSpeechPricingContext;
+  workloads: AiUsageWorkload[];
+}
+
+export interface AiUsageWorkload {
+  workload:
+    | "ASSISTANT"
+    | "SCENARIO_AUTHORING"
+    | "CONVERSATION_INBOUND"
+    | "CONVERSATION_OUTBOUND";
+  requestedModel: string | null;
+  appliedModel: string | null;
+  reasoningEffort: "none" | "low" | "medium" | "high" | null;
+  reasoningTokens: number;
+  requests: number;
+  averageLatencyMs: number | null;
+  effectiveCostUsd: number;
+  isOther: boolean;
 }
 
 export interface AiTextToSpeechPricingContext {

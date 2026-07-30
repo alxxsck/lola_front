@@ -5,7 +5,8 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiModelSettingsCatalogWorkload } from "./aiModelSettingsCatalogWorkload";
 
-export type TranslationUsageResponseDtoTargetLocalesItem = {
-  [key: string]: unknown;
+export type AiModelSettingsCatalogParams = {
+  workload: AiModelSettingsCatalogWorkload;
 };

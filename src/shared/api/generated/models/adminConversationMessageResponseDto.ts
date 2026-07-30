@@ -7,6 +7,7 @@
  */
 import type { MessageRole } from "./messageRole";
 import type { MessageStatus } from "./messageStatus";
+import type { AdminConversationMessageTranslationResponseDto } from "./adminConversationMessageTranslationResponseDto";
 
 export interface AdminConversationMessageResponseDto {
   createdAt: string;
@@ -15,5 +16,6 @@ export interface AdminConversationMessageResponseDto {
   status: MessageStatus;
   text: string;
   threadId: string;
+  translation?: AdminConversationMessageTranslationResponseDto;
   updatedAt: string;
 }

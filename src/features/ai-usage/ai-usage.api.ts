@@ -10,6 +10,7 @@ import type {
   AiUsageReport,
   AiTextToSpeechPricingContext,
   AiUsageTotals,
+  AiUsageWorkload,
 } from "./ai-usage.model";
 import { AI_USAGE_CATEGORIES } from "./ai-usage.model";
 
@@ -70,6 +71,30 @@ const demoReport = (projectId: string): AiUsageReport => ({
     estimatedFallbackCost: 1.384999,
     effectiveCost: 1.561499,
   },
+  workloads: [
+    {
+      workload: "ASSISTANT",
+      requestedModel: "grok-4.5",
+      appliedModel: "grok-4.5",
+      reasoningEffort: "low",
+      reasoningTokens: 8_120,
+      requests: 112,
+      averageLatencyMs: 780,
+      effectiveCostUsd: 0.1765,
+      isOther: false,
+    },
+    {
+      workload: "CONVERSATION_INBOUND",
+      requestedModel: "grok-4.3",
+      appliedModel: "grok-4.3",
+      reasoningEffort: "low",
+      reasoningTokens: 1_240,
+      requests: 48,
+      averageLatencyMs: 460,
+      effectiveCostUsd: 0.0412,
+      isOther: false,
+    },
+  ],
   breakdown: [
     {
       provider: "xai",
@@ -557,6 +582,67 @@ export function parseTextToSpeechPricing(
   };
 }
 
+const workloadNames = new Set<AiUsageWorkload["workload"]>([
+  "ASSISTANT",
+  "SCENARIO_AUTHORING",
+  "CONVERSATION_INBOUND",
+  "CONVERSATION_OUTBOUND",
+]);
+const reasoningEfforts = new Set(["none", "low", "medium", "high"]);
+
+function parseWorkloads(value: unknown): AiUsageWorkload[] | undefined {
+  if (value === undefined) return [];
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.items) ||
+    value.items.length > 104
+  ) {
+    return undefined;
+  }
+  const items: AiUsageWorkload[] = [];
+  for (const item of value.items) {
+    if (!isRecord(item)) return undefined;
+    const requests = safeInteger(item.requests);
+    const reasoningTokens = safeInteger(item.reasoningTokens);
+    const averageLatencyMs =
+      item.averageLatencyMs === null
+        ? null
+        : safeInteger(item.averageLatencyMs);
+    const effectiveCostUsd = decimal(item.effectiveCostUsd);
+    if (
+      typeof item.workload !== "string" ||
+      !workloadNames.has(item.workload as AiUsageWorkload["workload"]) ||
+      (item.requestedModel !== null &&
+        !boundedString(item.requestedModel, 1, 160)) ||
+      (item.appliedModel !== null &&
+        !boundedString(item.appliedModel, 1, 160)) ||
+      (item.reasoningEffort !== null &&
+        (typeof item.reasoningEffort !== "string" ||
+          !reasoningEfforts.has(item.reasoningEffort))) ||
+      requests === undefined ||
+      reasoningTokens === undefined ||
+      averageLatencyMs === undefined ||
+      effectiveCostUsd === undefined ||
+      typeof item.isOther !== "boolean"
+    ) {
+      return undefined;
+    }
+    items.push({
+      workload: item.workload as AiUsageWorkload["workload"],
+      requestedModel: item.requestedModel as string | null,
+      appliedModel: item.appliedModel as string | null,
+      reasoningEffort:
+        item.reasoningEffort as AiUsageWorkload["reasoningEffort"],
+      reasoningTokens,
+      requests,
+      averageLatencyMs,
+      effectiveCostUsd,
+      isOther: item.isOther,
+    });
+  }
+  return items;
+}
+
 export function parseAiUsageReport(
   value: unknown,
   projectId: string,
@@ -581,6 +667,8 @@ export function parseAiUsageReport(
     value.textToSpeechPricing,
   );
   if (!textToSpeechPricing) return undefined;
+  const workloads = parseWorkloads(value.workloads);
+  if (!workloads) return undefined;
   const breakdown: AiUsageBreakdown[] = [];
   for (const item of value.breakdown) {
     const parsed = parseBreakdown(item);
@@ -600,6 +688,7 @@ export function parseAiUsageReport(
     categories,
     eventQuery,
     textToSpeechPricing,
+    workloads,
   };
 }
 

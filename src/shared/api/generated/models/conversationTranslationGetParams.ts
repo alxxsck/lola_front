@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type TranslationUsageResponseDtoStatusesItem = {
-  [key: string]: unknown;
+export type ConversationTranslationGetParams = {
+  selectedCaseId?: string;
 };

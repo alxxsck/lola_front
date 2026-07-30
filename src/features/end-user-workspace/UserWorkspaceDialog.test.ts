@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   reconcile: vi.fn(),
   updateVisible: vi.fn(),
   messageHandler: undefined as ((value: unknown) => void) | undefined,
+  translationHandler: undefined as ((value: unknown) => void) | undefined,
   stateHandler: undefined as ((value: string) => void) | undefined,
   permissions: [
     "project.profiles.read",
@@ -109,10 +110,15 @@ describe("единое рабочее пространство пользова�
       "project.ai_usage.read",
     );
     mocks.messageHandler = undefined;
+    mocks.translationHandler = undefined;
     mocks.stateHandler = undefined;
     mocks.subscribe.mockImplementation(
-      (_events: string[], handler: (value: unknown) => void) => {
-        mocks.messageHandler = handler;
+      (events: string[], handler: (value: unknown) => void) => {
+        if (events.includes("conversation.message.translation.upserted.v1")) {
+          mocks.translationHandler = handler;
+        } else {
+          mocks.messageHandler = handler;
+        }
         return vi.fn();
       },
     );
@@ -444,6 +450,49 @@ describe("единое рабочее пространство пользова�
     mocks.messageHandler?.({ ...base, conversationId: current.id });
     await flushPromises();
     expect(wrapper.text()).toContain("Live-сообщение");
+  });
+
+  it("принимает только translation realtime выбранного диалога", async () => {
+    mocks.permissions.push("project.translation.create");
+    const wrapper = mountWorkspace();
+    await flushPromises();
+    await wrapper.get('[data-action="open-chat"]').trigger("click");
+    await flushPromises();
+
+    expect(mocks.subscribe).toHaveBeenCalledWith(
+      ["conversation.message.translation.upserted.v1"],
+      expect.any(Function),
+    );
+    const event = {
+      contractVersion: 1,
+      projectId: "project-1",
+      endUserId: "user-1",
+      conversationId: current.id,
+      messageId: "user-message",
+      translation: {
+        id: "translation-1",
+        sourceMessageId: "user-message",
+        status: "COMPLETED",
+        sourceLocale: "de",
+        detectedSourceLocale: "de",
+        targetLocale: "ru",
+        translatedText: "Переведённое сообщение",
+        warnings: [],
+        errorCode: null,
+        updatedAt: "2026-07-20T13:02:00.000Z",
+      },
+    };
+
+    mocks.translationHandler?.({
+      ...event,
+      conversationId: "another-conversation",
+    });
+    await flushPromises();
+    expect(wrapper.text()).not.toContain("Переведённое сообщение");
+
+    mocks.translationHandler?.(event);
+    await flushPromises();
+    expect(wrapper.text()).toContain("Переведённое сообщение");
   });
 
   it("снимает подписку с выбранного диалога при закрытии", async () => {

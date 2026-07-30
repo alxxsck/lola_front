@@ -12,6 +12,7 @@ import type { AiUsageProviderBreakdownsResponseDto } from "./aiUsageProviderBrea
 import type { AiUsageRangeResponseDto } from "./aiUsageRangeResponseDto";
 import type { AiTextToSpeechPricingContextResponseDto } from "./aiTextToSpeechPricingContextResponseDto";
 import type { AiUsageTotalsResponseDto } from "./aiUsageTotalsResponseDto";
+import type { ProjectAiUsageWorkloadProjectionResponseDto } from "./projectAiUsageWorkloadProjectionResponseDto";
 
 export interface AiUsageReportResponseDto {
   breakdown: AiUsageBreakdownResponseDto[];
@@ -24,4 +25,6 @@ export interface AiUsageReportResponseDto {
   range: AiUsageRangeResponseDto;
   textToSpeechPricing: AiTextToSpeechPricingContextResponseDto;
   totals: AiUsageTotalsResponseDto;
+  /** Bounded cross-ledger workload projection. Present on the Project-level AI Usage report. */
+  workloads?: ProjectAiUsageWorkloadProjectionResponseDto;
 }

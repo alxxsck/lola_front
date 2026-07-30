@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/shared/api/http/api-error'
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api/http/api-error";
 
 const mocks = vi.hoisted(() => ({
   sendAdminMessage: vi.fn(),
@@ -7,9 +7,9 @@ const mocks = vi.hoisted(() => ({
   getConversations: vi.fn(),
   getConversation: vi.fn(),
   getSessions: vi.fn(),
-}))
+}));
 
-vi.mock('@/shared/api/repository', () => ({
+vi.mock("@/shared/api/repository", () => ({
   repository: {
     sendAdminMessage: mocks.sendAdminMessage,
     getMessages: mocks.getMessages,
@@ -17,723 +17,979 @@ vi.mock('@/shared/api/repository', () => ({
     getConversation: mocks.getConversation,
     getSessions: mocks.getSessions,
   },
-}))
+}));
 
-import { useAdminConversationConsole } from './use-admin-conversation-console'
+import { useAdminConversationConsole } from "./use-admin-conversation-console";
 
 function conversation(
   id: string,
-  status: 'ACTIVE' | 'ARCHIVED' = 'ACTIVE',
+  status: "ACTIVE" | "ARCHIVED" = "ACTIVE",
   isCurrent = false,
 ) {
   return {
     id,
-    userId: 'user-1',
+    userId: "user-1",
     title: `Диалог ${id}`,
     status,
-    lastMessageAt: '2026-07-20T13:00:00.000Z',
+    lastMessageAt: "2026-07-20T13:00:00.000Z",
     messageCount: 1,
     isCurrent,
     currentInteractionSessionCount: isCurrent ? 1 : 0,
     aiSuspension: {
-      mode: 'AUTOMATIC' as const,
-      lifecycle: 'NONE' as const,
-      version: '0',
+      mode: "AUTOMATIC" as const,
+      lifecycle: "NONE" as const,
+      version: "0",
       suspendedUntil: null,
-      serverTime: '2026-07-20T13:00:00.000Z',
+      serverTime: "2026-07-20T13:00:00.000Z",
     },
-  }
+  };
 }
 
-describe('панель ответа администратором', () => {
+describe("панель ответа администратором", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.getSessions.mockResolvedValue([])
-    mocks.getConversations.mockResolvedValue({ items: [], nextCursor: null })
-    mocks.getMessages.mockResolvedValue({ items: [], nextCursor: null })
-  })
+    vi.clearAllMocks();
+    mocks.getSessions.mockResolvedValue([]);
+    mocks.getConversations.mockResolvedValue({ items: [], nextCursor: null });
+    mocks.getMessages.mockResolvedValue({ items: [], nextCursor: null });
+  });
 
-  it('не повторяет составную операцию при двойном нажатии', async () => {
-    let finish!: (value: { deliveryStatus: string }) => void
+  it("при reconciliation заменяет realtime projection authoritative REST-версией", async () => {
+    const selected = conversation("conversation-1", "ACTIVE", true);
+    const stale = {
+      id: "message-1",
+      conversationId: selected.id,
+      author: "USER" as const,
+      text: "Guten Tag",
+      status: "COMPLETED" as const,
+      createdAt: "2026-07-20T12:00:00.000Z",
+      updatedAt: "2026-07-20T13:05:00.000Z",
+      translation: {
+        id: "translation-1",
+        direction: "INBOUND" as const,
+        status: "PENDING" as const,
+        originalText: "Guten Tag",
+        translatedText: null,
+        deliveredText: null,
+        viewText: "Guten Tag",
+        sourceLocale: "de",
+        targetLocale: "ru",
+        errorCode: null,
+        warnings: [],
+        updatedAt: "2026-07-20T13:05:00.000Z",
+      },
+    };
+    const completed = {
+      ...stale,
+      updatedAt: "2026-07-20T13:00:00.000Z",
+      translation: {
+        ...stale.translation,
+        status: "COMPLETED" as const,
+        translatedText: "Добрый день",
+        viewText: "Добрый день",
+        updatedAt: "2026-07-20T13:00:00.000Z",
+      },
+    };
+    mocks.getConversation.mockResolvedValue(selected);
+    mocks.getMessages.mockResolvedValue({
+      items: [completed],
+      nextCursor: null,
+    });
+    mocks.getConversations.mockResolvedValue({
+      items: [selected],
+      nextCursor: null,
+    });
+    const console = useAdminConversationConsole({
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
+    console.selectedConversation.value = selected;
+    console.messages.value = [stale];
+
+    await console.reconcileSelected();
+
+    expect(console.messages.value[0]?.translation?.status).toBe("COMPLETED");
+    expect(console.messages.value[0]?.translation?.translatedText).toBe(
+      "Добрый день",
+    );
+  });
+
+  it("не повторяет составную операцию при двойном нажатии", async () => {
+    let finish!: (value: { deliveryStatus: string }) => void;
     mocks.sendAdminMessage.mockReturnValue(
       new Promise((resolve) => {
-        finish = resolve
+        finish = resolve;
       }),
-    )
-    mocks.getMessages.mockResolvedValue({ items: [], nextCursor: null })
+    );
+    mocks.getMessages.mockResolvedValue({ items: [], nextCursor: null });
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
       updateRoute: vi.fn(),
-    })
+    });
     console.selectedConversation.value = {
-      id: 'conversation-1',
-      userId: 'user-1',
-      title: 'Диалог',
-      status: 'ACTIVE',
-      lastMessageAt: '2026-07-20T13:00:00.000Z',
+      id: "conversation-1",
+      userId: "user-1",
+      title: "Диалог",
+      status: "ACTIVE",
+      lastMessageAt: "2026-07-20T13:00:00.000Z",
       messageCount: 1,
       isCurrent: true,
       currentInteractionSessionCount: 1,
       aiSuspension: {
-        mode: 'AUTOMATIC',
-        lifecycle: 'NONE',
-        version: '0',
+        mode: "AUTOMATIC",
+        lifecycle: "NONE",
+        version: "0",
         suspendedUntil: null,
-        serverTime: '2026-07-20T13:00:00.000Z',
+        serverTime: "2026-07-20T13:00:00.000Z",
       },
-    }
+    };
     console.onlineSession.value = {
-      id: 'session-1',
-      userId: 'user-1',
-      externalId: 'external-user-1',
-      userName: 'Пользователь',
-      device: 'Телефон',
-      status: 'ONLINE',
-      startedAt: '2026-07-20T13:00:00.000Z',
-      lastSeenAt: '2026-07-20T13:00:00.000Z',
-    }
-    console.replyText.value = 'Здравствуйте'
+      id: "session-1",
+      userId: "user-1",
+      externalId: "external-user-1",
+      userName: "Пользователь",
+      device: "Телефон",
+      status: "ONLINE",
+      startedAt: "2026-07-20T13:00:00.000Z",
+      lastSeenAt: "2026-07-20T13:00:00.000Z",
+    };
+    console.replyText.value = "Здравствуйте";
 
     const first = console.suspendAndSendReply(
-      { durationSeconds: 3_600, reason: 'OPERATOR_TAKEOVER' },
-      'key-1',
-    )
+      { durationSeconds: 3_600, reason: "OPERATOR_TAKEOVER" },
+      "key-1",
+    );
     const duplicateRequest = console.suspendAndSendReply(
-      { durationSeconds: 3_600, reason: 'OPERATOR_TAKEOVER' },
-      'key-1',
-    )
+      { durationSeconds: 3_600, reason: "OPERATOR_TAKEOVER" },
+      "key-1",
+    );
 
-    await Promise.resolve()
-    const requestCount = mocks.sendAdminMessage.mock.calls.length
-    finish({ deliveryStatus: 'DELIVERED' })
-    const [, duplicate] = await Promise.all([first, duplicateRequest])
-    expect(requestCount).toBe(1)
-    expect(duplicate).toBeNull()
-  })
+    await Promise.resolve();
+    const requestCount = mocks.sendAdminMessage.mock.calls.length;
+    finish({ deliveryStatus: "DELIVERED" });
+    const [, duplicate] = await Promise.all([first, duplicateRequest]);
+    expect(requestCount).toBe(1);
+    expect(duplicate).toBeNull();
+  });
 
-  it('игнорирует запоздалую страницу диалогов предыдущего пользователя', async () => {
-    let activeUser = 'user-1'
+  it("передаёт ready translation draft в атомарную отправку", async () => {
+    mocks.sendAdminMessage.mockResolvedValue({
+      deliveryStatus: "DELIVERED",
+      threadId: "conversation-1",
+    });
+    const console = useAdminConversationConsole({
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+      updateRoute: vi.fn(),
+    });
+    console.selectedConversation.value = conversation(
+      "conversation-1",
+      "ACTIVE",
+      true,
+    );
+    console.onlineSession.value = {
+      id: "session-1",
+      userId: "user-1",
+      externalId: "external-user-1",
+      userName: "Пользователь",
+      device: "Телефон",
+      status: "ONLINE",
+      startedAt: "2026-07-20T13:00:00.000Z",
+      lastSeenAt: "2026-07-20T13:00:00.000Z",
+    };
+    console.replyText.value = "Здравствуйте";
+
+    await console.sendReply({ replyTranslationDraftId: "draft-1" });
+
+    expect(mocks.sendAdminMessage).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      expect.objectContaining({
+        text: "Здравствуйте",
+        replyTranslationDraftId: "draft-1",
+      }),
+    );
+  });
+
+  it("атомарно передаёт suspension и ready translation draft", async () => {
+    mocks.sendAdminMessage.mockResolvedValue({
+      deliveryStatus: "DELIVERED",
+      threadId: "conversation-1",
+    });
+    const console = useAdminConversationConsole({
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+      updateRoute: vi.fn(),
+    });
+    console.selectedConversation.value = conversation(
+      "conversation-1",
+      "ACTIVE",
+      true,
+    );
+    console.onlineSession.value = {
+      id: "session-1",
+      userId: "user-1",
+      externalId: "external-user-1",
+      userName: "Пользователь",
+      device: "Телефон",
+      status: "ONLINE",
+      startedAt: "2026-07-20T13:00:00.000Z",
+      lastSeenAt: "2026-07-20T13:00:00.000Z",
+    };
+    console.replyText.value = "Здравствуйте";
+
+    await console.suspendAndSendReply(
+      { durationSeconds: 3_600, reason: "OPERATOR_TAKEOVER" },
+      "key-translation-suspension",
+      { replyTranslationDraftId: "draft-1" },
+    );
+
+    expect(mocks.sendAdminMessage).toHaveBeenCalledTimes(1);
+    expect(mocks.sendAdminMessage).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      expect.objectContaining({
+        aiSuspension: {
+          durationSeconds: 3_600,
+          reason: "OPERATOR_TAKEOVER",
+        },
+        replyTranslationDraftId: "draft-1",
+      }),
+    );
+  });
+
+  it("передаёт обязательную причину override без перевода", async () => {
+    mocks.sendAdminMessage.mockResolvedValue({
+      deliveryStatus: "DELIVERED",
+      threadId: "conversation-1",
+    });
+    const console = useAdminConversationConsole({
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+      updateRoute: vi.fn(),
+    });
+    console.selectedConversation.value = conversation(
+      "conversation-1",
+      "ACTIVE",
+      true,
+    );
+    console.onlineSession.value = {
+      id: "session-1",
+      userId: "user-1",
+      externalId: "external-user-1",
+      userName: "Пользователь",
+      device: "Телефон",
+      status: "ONLINE",
+      startedAt: "2026-07-20T13:00:00.000Z",
+      lastSeenAt: "2026-07-20T13:00:00.000Z",
+    };
+    console.replyText.value = "Срочное сообщение";
+
+    await console.sendReply({
+      sendWithoutTranslationReason: "Инцидент: провайдер недоступен",
+    });
+
+    expect(mocks.sendAdminMessage).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      expect.objectContaining({
+        sendWithoutTranslation: {
+          reason: "Инцидент: провайдер недоступен",
+        },
+      }),
+    );
+  });
+
+  it("игнорирует запоздалую страницу диалогов предыдущего пользователя", async () => {
+    let activeUser = "user-1";
     let finish!: (value: {
-      items: unknown[]
-      nextCursor: string | null
-    }) => void
+      items: unknown[];
+      nextCursor: string | null;
+    }) => void;
     mocks.getConversations.mockReturnValue(
       new Promise((resolve) => {
-        finish = resolve
+        finish = resolve;
       }),
-    )
+    );
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
+      projectId: () => "project-1",
       endUserId: () => activeUser,
       updateRoute: vi.fn(),
-    })
+    });
     console.conversations.value = [
       {
-        id: 'conversation-1',
-        userId: 'user-1',
-        title: 'Старый диалог',
-        status: 'ACTIVE',
-        lastMessageAt: '2026-07-20T13:00:00.000Z',
+        id: "conversation-1",
+        userId: "user-1",
+        title: "Старый диалог",
+        status: "ACTIVE",
+        lastMessageAt: "2026-07-20T13:00:00.000Z",
         messageCount: 1,
         isCurrent: true,
         currentInteractionSessionCount: 1,
         aiSuspension: {
-          mode: 'AUTOMATIC',
-          lifecycle: 'NONE',
-          version: '0',
+          mode: "AUTOMATIC",
+          lifecycle: "NONE",
+          version: "0",
           suspendedUntil: null,
-          serverTime: '2026-07-20T13:00:00.000Z',
+          serverTime: "2026-07-20T13:00:00.000Z",
         },
       },
-    ]
-    console.nextConversationCursor.value = 'next-user-1'
-    const pending = console.loadMoreConversations()
+    ];
+    console.nextConversationCursor.value = "next-user-1";
+    const pending = console.loadMoreConversations();
 
-    activeUser = 'user-2'
-    console.reset()
+    activeUser = "user-2";
+    console.reset();
     console.conversations.value = [
       {
-        id: 'conversation-2',
-        userId: 'user-2',
-        title: 'Новый диалог',
-        status: 'ACTIVE',
-        lastMessageAt: '2026-07-20T13:00:00.000Z',
+        id: "conversation-2",
+        userId: "user-2",
+        title: "Новый диалог",
+        status: "ACTIVE",
+        lastMessageAt: "2026-07-20T13:00:00.000Z",
         messageCount: 1,
         isCurrent: true,
         currentInteractionSessionCount: 1,
         aiSuspension: {
-          mode: 'AUTOMATIC',
-          lifecycle: 'NONE',
-          version: '0',
+          mode: "AUTOMATIC",
+          lifecycle: "NONE",
+          version: "0",
           suspendedUntil: null,
-          serverTime: '2026-07-20T13:00:00.000Z',
+          serverTime: "2026-07-20T13:00:00.000Z",
         },
       },
-    ]
+    ];
     finish({
       items: [
         {
-          id: 'conversation-old-page',
-          userId: 'user-1',
-          title: 'Запоздалый диалог',
-          status: 'ACTIVE',
-          lastMessageAt: '2026-07-20T13:00:00.000Z',
+          id: "conversation-old-page",
+          userId: "user-1",
+          title: "Запоздалый диалог",
+          status: "ACTIVE",
+          lastMessageAt: "2026-07-20T13:00:00.000Z",
           messageCount: 1,
           isCurrent: false,
           currentInteractionSessionCount: 0,
           aiSuspension: {
-            mode: 'AUTOMATIC',
-            lifecycle: 'NONE',
-            version: '0',
+            mode: "AUTOMATIC",
+            lifecycle: "NONE",
+            version: "0",
             suspendedUntil: null,
-            serverTime: '2026-07-20T13:00:00.000Z',
+            serverTime: "2026-07-20T13:00:00.000Z",
           },
         },
       ],
       nextCursor: null,
-    })
-    await pending
+    });
+    await pending;
 
     expect(console.conversations.value.map((item) => item.id)).toEqual([
-      'conversation-2',
-    ])
-  })
+      "conversation-2",
+    ]);
+  });
 
-  it('отличает подтверждённый отказ сервера от неизвестного результата', async () => {
+  it("отличает подтверждённый отказ сервера от неизвестного результата", async () => {
     mocks.sendAdminMessage.mockRejectedValue(
-      new ApiError(422, 'invalid', undefined, 'request-1'),
-    )
+      new ApiError(422, "invalid", undefined, "request-1"),
+    );
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
       updateRoute: vi.fn(),
-    })
+    });
     console.selectedConversation.value = {
-      id: 'conversation-1',
-      userId: 'user-1',
-      title: 'Диалог',
-      status: 'ACTIVE',
-      lastMessageAt: '2026-07-20T13:00:00.000Z',
+      id: "conversation-1",
+      userId: "user-1",
+      title: "Диалог",
+      status: "ACTIVE",
+      lastMessageAt: "2026-07-20T13:00:00.000Z",
       messageCount: 1,
       isCurrent: true,
       currentInteractionSessionCount: 1,
       aiSuspension: {
-        mode: 'AUTOMATIC',
-        lifecycle: 'NONE',
-        version: '0',
+        mode: "AUTOMATIC",
+        lifecycle: "NONE",
+        version: "0",
         suspendedUntil: null,
-        serverTime: '2026-07-20T13:00:00.000Z',
+        serverTime: "2026-07-20T13:00:00.000Z",
       },
-    }
+    };
     console.onlineSession.value = {
-      id: 'session-1',
-      userId: 'user-1',
-      externalId: 'external-user-1',
-      userName: 'Пользователь',
-      device: 'Телефон',
-      status: 'ONLINE',
-      startedAt: '2026-07-20T13:00:00.000Z',
-      lastSeenAt: '2026-07-20T13:00:00.000Z',
-    }
-    console.replyText.value = 'Здравствуйте'
+      id: "session-1",
+      userId: "user-1",
+      externalId: "external-user-1",
+      userName: "Пользователь",
+      device: "Телефон",
+      status: "ONLINE",
+      startedAt: "2026-07-20T13:00:00.000Z",
+      lastSeenAt: "2026-07-20T13:00:00.000Z",
+    };
+    console.replyText.value = "Здравствуйте";
 
     const result = await console.suspendAndSendReply(
-      { durationSeconds: 3_600, reason: 'OPERATOR_TAKEOVER' },
-      'key-1',
-    )
+      { durationSeconds: 3_600, reason: "OPERATOR_TAKEOVER" },
+      "key-1",
+    );
 
-    expect(result).toBeNull()
+    expect(result).toBeNull();
     expect(console.combinedSuspensionError.value).toMatchObject({
-      kind: 'INVALID',
-      requestId: 'request-1',
-    })
-    expect(console.conversationError.value).not.toContain('неизвестен')
-  })
+      kind: "INVALID",
+      requestId: "request-1",
+    });
+    expect(console.conversationError.value).not.toContain("неизвестен");
+  });
 
-  it('не применяет ответ составной операции после перехода к другому пользователю', async () => {
-    let activeUser = 'user-1'
-    let finish!: (value: Record<string, unknown>) => void
+  it("не применяет ответ составной операции после перехода к другому пользователю", async () => {
+    let activeUser = "user-1";
+    let finish!: (value: Record<string, unknown>) => void;
     mocks.sendAdminMessage.mockReturnValue(
       new Promise((resolve) => {
-        finish = resolve
+        finish = resolve;
       }),
-    )
+    );
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
+      projectId: () => "project-1",
       endUserId: () => activeUser,
       updateRoute: vi.fn(),
-    })
+    });
     console.selectedConversation.value = {
-      id: 'conversation-1',
-      userId: 'user-1',
-      title: 'Старый диалог',
-      status: 'ACTIVE',
-      lastMessageAt: '2026-07-20T13:00:00.000Z',
+      id: "conversation-1",
+      userId: "user-1",
+      title: "Старый диалог",
+      status: "ACTIVE",
+      lastMessageAt: "2026-07-20T13:00:00.000Z",
       messageCount: 1,
       isCurrent: true,
       currentInteractionSessionCount: 1,
       aiSuspension: {
-        mode: 'AUTOMATIC',
-        lifecycle: 'NONE',
-        version: '0',
+        mode: "AUTOMATIC",
+        lifecycle: "NONE",
+        version: "0",
         suspendedUntil: null,
-        serverTime: '2026-07-20T13:00:00.000Z',
+        serverTime: "2026-07-20T13:00:00.000Z",
       },
-    }
+    };
     console.onlineSession.value = {
-      id: 'session-1',
-      userId: 'user-1',
-      externalId: 'external-user-1',
-      userName: 'Пользователь',
-      device: 'Телефон',
-      status: 'ONLINE',
-      startedAt: '2026-07-20T13:00:00.000Z',
-      lastSeenAt: '2026-07-20T13:00:00.000Z',
-    }
-    console.replyText.value = 'Ответ старому пользователю'
+      id: "session-1",
+      userId: "user-1",
+      externalId: "external-user-1",
+      userName: "Пользователь",
+      device: "Телефон",
+      status: "ONLINE",
+      startedAt: "2026-07-20T13:00:00.000Z",
+      lastSeenAt: "2026-07-20T13:00:00.000Z",
+    };
+    console.replyText.value = "Ответ старому пользователю";
     const pending = console.suspendAndSendReply(
-      { durationSeconds: 3_600, reason: 'OPERATOR_TAKEOVER' },
-      'key-1',
-    )
+      { durationSeconds: 3_600, reason: "OPERATOR_TAKEOVER" },
+      "key-1",
+    );
 
-    activeUser = 'user-2'
-    console.reset()
-    console.replyText.value = 'Черновик нового пользователя'
+    activeUser = "user-2";
+    console.reset();
+    console.replyText.value = "Черновик нового пользователя";
     finish({
       duplicate: false,
-      messageId: 'message-1',
-      threadId: 'conversation-1',
+      messageId: "message-1",
+      threadId: "conversation-1",
       commandIds: [],
-      status: 'COMPLETED',
-      deliveryStatus: 'DELIVERED',
-    })
-    await pending
+      status: "COMPLETED",
+      deliveryStatus: "DELIVERED",
+    });
+    await pending;
 
-    expect(console.replyText.value).toBe('Черновик нового пользователя')
-    expect(mocks.getMessages).not.toHaveBeenCalled()
-    expect(console.combinedSuspensionError.value).toBeNull()
-  })
+    expect(console.replyText.value).toBe("Черновик нового пользователя");
+    expect(mocks.getMessages).not.toHaveBeenCalled();
+    expect(console.combinedSuspensionError.value).toBeNull();
+  });
 
-  it('по умолчанию открывает текущий диалог и первую страницу сообщений', async () => {
+  it("по умолчанию открывает текущий диалог и первую страницу сообщений", async () => {
     const oldConversation = {
-      id: 'old',
-      userId: 'user-1',
-      title: 'Старый',
-      status: 'ACTIVE' as const,
-      lastMessageAt: '2026-07-20T12:00:00.000Z',
+      id: "old",
+      userId: "user-1",
+      title: "Старый",
+      status: "ACTIVE" as const,
+      lastMessageAt: "2026-07-20T12:00:00.000Z",
       messageCount: 1,
       isCurrent: false,
       currentInteractionSessionCount: 0,
       aiSuspension: {
-        mode: 'AUTOMATIC' as const,
-        lifecycle: 'NONE' as const,
-        version: '0',
+        mode: "AUTOMATIC" as const,
+        lifecycle: "NONE" as const,
+        version: "0",
         suspendedUntil: null,
-        serverTime: '2026-07-20T13:00:00.000Z',
+        serverTime: "2026-07-20T13:00:00.000Z",
       },
-    }
+    };
     const current = {
       ...oldConversation,
-      id: 'current',
-      title: 'Текущий',
+      id: "current",
+      title: "Текущий",
       isCurrent: true,
       currentInteractionSessionCount: 2,
-    }
+    };
     mocks.getConversations.mockResolvedValue({
       items: [oldConversation, current],
-      nextCursor: 'next-page',
-    })
+      nextCursor: "next-page",
+    });
     mocks.getSessions.mockResolvedValue([
       {
-        id: 'session-1',
-        userId: 'user-1',
-        status: 'ONLINE',
-        currentConversationId: 'current',
+        id: "session-1",
+        userId: "user-1",
+        status: "ONLINE",
+        currentConversationId: "current",
       },
-    ])
+    ]);
     mocks.getMessages.mockResolvedValue({
       items: [
         {
-          id: 'message-2',
-          conversationId: 'current',
-          author: 'USER',
-          status: 'COMPLETED',
-          text: 'Новое',
-          createdAt: '2026-07-20T13:00:00.000Z',
+          id: "message-2",
+          conversationId: "current",
+          author: "USER",
+          status: "COMPLETED",
+          text: "Новое",
+          createdAt: "2026-07-20T13:00:00.000Z",
         },
       ],
-      nextCursor: 'older',
-    })
+      nextCursor: "older",
+    });
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
 
-    await console.loadConversations('user-1')
+    await console.loadConversations("user-1");
 
-    expect(console.selectedConversation.value?.id).toBe('current')
-    expect(console.onlineSession.value?.id).toBe('session-1')
-    expect(console.nextConversationCursor.value).toBe('next-page')
+    expect(console.selectedConversation.value?.id).toBe("current");
+    expect(console.onlineSession.value?.id).toBe("session-1");
+    expect(console.nextConversationCursor.value).toBe("next-page");
     expect(mocks.getMessages).toHaveBeenCalledWith(
-      'project-1',
-      'user-1',
-      'current',
+      "project-1",
+      "user-1",
+      "current",
       { limit: 50 },
-    )
-  })
+    );
+  });
 
-  it('добавляет предыдущую страницу в начало, сортирует и убирает дубликаты', async () => {
+  it("добавляет предыдущую страницу в начало, сортирует и убирает дубликаты", async () => {
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
     console.selectedConversation.value = {
-      id: 'conversation-1',
-      userId: 'user-1',
-      title: 'Диалог',
-      status: 'ACTIVE',
-      lastMessageAt: '2026-07-20T13:00:00.000Z',
+      id: "conversation-1",
+      userId: "user-1",
+      title: "Диалог",
+      status: "ACTIVE",
+      lastMessageAt: "2026-07-20T13:00:00.000Z",
       messageCount: 2,
       isCurrent: true,
       currentInteractionSessionCount: 1,
       aiSuspension: {
-        mode: 'AUTOMATIC',
-        lifecycle: 'NONE',
-        version: '0',
+        mode: "AUTOMATIC",
+        lifecycle: "NONE",
+        version: "0",
         suspendedUntil: null,
-        serverTime: '2026-07-20T13:00:00.000Z',
+        serverTime: "2026-07-20T13:00:00.000Z",
       },
-    }
+    };
     console.messages.value = [
       {
-        id: 'new',
-        conversationId: 'conversation-1',
-        author: 'USER',
-        status: 'COMPLETED',
-        text: 'Новое',
-        createdAt: '2026-07-20T13:00:00.000Z',
+        id: "new",
+        conversationId: "conversation-1",
+        author: "USER",
+        status: "COMPLETED",
+        text: "Новое",
+        createdAt: "2026-07-20T13:00:00.000Z",
       },
-    ]
-    console.nextMessageCursor.value = 'older-cursor'
+    ];
+    console.nextMessageCursor.value = "older-cursor";
     mocks.getMessages.mockResolvedValue({
       items: [
         {
-          id: 'new',
-          conversationId: 'conversation-1',
-          author: 'USER',
-          status: 'COMPLETED',
-          text: 'Дубликат',
-          createdAt: '2026-07-20T13:00:00.000Z',
+          id: "new",
+          conversationId: "conversation-1",
+          author: "USER",
+          status: "COMPLETED",
+          text: "Дубликат",
+          createdAt: "2026-07-20T13:00:00.000Z",
         },
         {
-          id: 'old',
-          conversationId: 'conversation-1',
-          author: 'ASSISTANT',
-          status: 'COMPLETED',
-          text: 'Старое',
-          createdAt: '2026-07-20T12:00:00.000Z',
+          id: "old",
+          conversationId: "conversation-1",
+          author: "ASSISTANT",
+          status: "COMPLETED",
+          text: "Старое",
+          createdAt: "2026-07-20T12:00:00.000Z",
         },
       ],
       nextCursor: null,
-    })
+    });
 
-    await expect(console.loadOlderMessages()).resolves.toBe(1)
+    await expect(console.loadOlderMessages()).resolves.toBe(1);
     expect(console.messages.value.map((message) => message.id)).toEqual([
-      'old',
-      'new',
-    ])
-    expect(console.nextMessageCursor.value).toBeNull()
-  })
+      "old",
+      "new",
+    ]);
+    expect(console.nextMessageCursor.value).toBeNull();
+  });
 
-  it('обновляет live-сообщение по id без повторного счётчика', () => {
+  it("обновляет live-сообщение по id без повторного счётчика", () => {
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
     console.selectedConversation.value = {
-      id: 'conversation-1',
-      userId: 'user-1',
-      title: 'Диалог',
-      status: 'ACTIVE',
-      lastMessageAt: '2026-07-20T12:00:00.000Z',
+      id: "conversation-1",
+      userId: "user-1",
+      title: "Диалог",
+      status: "ACTIVE",
+      lastMessageAt: "2026-07-20T12:00:00.000Z",
       messageCount: 0,
       isCurrent: true,
       currentInteractionSessionCount: 1,
       aiSuspension: {
-        mode: 'AUTOMATIC',
-        lifecycle: 'NONE',
-        version: '0',
+        mode: "AUTOMATIC",
+        lifecycle: "NONE",
+        version: "0",
         suspendedUntil: null,
-        serverTime: '2026-07-20T13:00:00.000Z',
+        serverTime: "2026-07-20T13:00:00.000Z",
       },
-    }
+    };
     const writing = {
-      id: 'message-1',
-      conversationId: 'conversation-1',
-      author: 'ASSISTANT' as const,
-      status: 'WRITING' as const,
-      text: '',
-      createdAt: '2026-07-20T13:00:00.000Z',
-    }
-    expect(console.upsertMessage(writing)).toBe(true)
-    console.upsertMessage({ ...writing, status: 'COMPLETED', text: 'Готово' })
+      id: "message-1",
+      conversationId: "conversation-1",
+      author: "ASSISTANT" as const,
+      status: "WRITING" as const,
+      text: "",
+      createdAt: "2026-07-20T13:00:00.000Z",
+    };
+    expect(console.upsertMessage(writing)).toBe(true);
+    console.upsertMessage({ ...writing, status: "COMPLETED", text: "Готово" });
 
     expect(console.messages.value).toEqual([
-      { ...writing, status: 'COMPLETED', text: 'Готово' },
-    ])
-    expect(console.selectedConversation.value.messageCount).toBe(1)
-    expect(console.newMessageCount.value).toBe(1)
-  })
+      { ...writing, status: "COMPLETED", text: "Готово" },
+    ]);
+    expect(console.selectedConversation.value.messageCount).toBe(1);
+    expect(console.newMessageCount.value).toBe(1);
+  });
 
-  it('создаёт отдельный диалог только через явную политику create_new', async () => {
+  it("создаёт отдельный диалог только через явную политику create_new", async () => {
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
     console.onlineSession.value = {
-      id: 'session-1',
-      userId: 'user-1',
-      status: 'ONLINE',
-    } as typeof console.onlineSession.value
-    mocks.sendAdminMessage.mockResolvedValue({ threadId: 'conversation-new' })
-    mocks.getConversation.mockResolvedValue(conversation('conversation-new'))
+      id: "session-1",
+      userId: "user-1",
+      status: "ONLINE",
+    } as typeof console.onlineSession.value;
+    mocks.sendAdminMessage.mockResolvedValue({ threadId: "conversation-new" });
+    mocks.getConversation.mockResolvedValue(conversation("conversation-new"));
 
-    await expect(console.sendNewConversation(' Новый вопрос ')).resolves.toBe(
-      'conversation-new',
-    )
-    expect(mocks.sendAdminMessage).toHaveBeenCalledWith('project-1', 'user-1', {
-      text: 'Новый вопрос',
-      conversationPolicy: 'create_new',
-      interactionSessionId: 'session-1',
+    await expect(console.sendNewConversation(" Новый вопрос ")).resolves.toBe(
+      "conversation-new",
+    );
+    expect(mocks.sendAdminMessage).toHaveBeenCalledWith("project-1", "user-1", {
+      text: "Новый вопрос",
+      conversationPolicy: "create_new",
+      interactionSessionId: "session-1",
       idempotencyKey: expect.any(String),
-    })
-    expect(console.conversations.value[0]?.id).toBe('conversation-new')
-    expect(console.selectedConversation.value?.id).toBe('conversation-new')
-    expect(mocks.getConversations).not.toHaveBeenCalled()
-  })
+    });
+    expect(console.conversations.value[0]?.id).toBe("conversation-new");
+    expect(console.selectedConversation.value?.id).toBe("conversation-new");
+    expect(mocks.getConversations).not.toHaveBeenCalled();
+  });
 
-  it('повторяет неизвестный результат обычной отправки с тем же idempotency key', async () => {
+  it("повторяет неизвестный результат обычной отправки с тем же idempotency key", async () => {
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-      endUserCaseId: () => 'case-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+      endUserCaseId: () => "case-1",
+    });
     console.selectedConversation.value = {
-      id: 'conversation-1',
-      userId: 'user-1',
-      title: 'Диалог',
-      status: 'ACTIVE',
-      lastMessageAt: '2026-07-20T13:00:00.000Z',
+      id: "conversation-1",
+      userId: "user-1",
+      title: "Диалог",
+      status: "ACTIVE",
+      lastMessageAt: "2026-07-20T13:00:00.000Z",
       messageCount: 1,
       isCurrent: true,
       currentInteractionSessionCount: 1,
       aiSuspension: {
-        mode: 'AUTOMATIC',
-        lifecycle: 'NONE',
-        version: '0',
+        mode: "AUTOMATIC",
+        lifecycle: "NONE",
+        version: "0",
         suspendedUntil: null,
-        serverTime: '2026-07-20T13:00:00.000Z',
+        serverTime: "2026-07-20T13:00:00.000Z",
       },
-    }
+    };
     console.onlineSession.value = {
-      id: 'session-1',
-      userId: 'user-1',
-      status: 'ONLINE',
-    } as typeof console.onlineSession.value
-    console.replyText.value = 'Повторяемый ответ'
+      id: "session-1",
+      userId: "user-1",
+      status: "ONLINE",
+    } as typeof console.onlineSession.value;
+    mocks.getConversation.mockResolvedValue(console.selectedConversation.value);
+    mocks.getConversations.mockResolvedValue({
+      items: [console.selectedConversation.value],
+      nextCursor: null,
+    });
+    mocks.getSessions.mockResolvedValue([
+      {
+        id: "session-1",
+        userId: "user-1",
+        status: "ONLINE",
+      },
+    ]);
+    console.replyText.value = "Повторяемый ответ";
     mocks.sendAdminMessage
-      .mockRejectedValueOnce(new TypeError('network'))
-      .mockResolvedValueOnce({ threadId: 'conversation-1' })
+      .mockRejectedValueOnce(new TypeError("network"))
+      .mockResolvedValueOnce({ threadId: "conversation-1" });
 
-    await console.sendReply()
-    await console.sendReply()
+    await console.sendReply();
+    await console.sendReply();
 
-    expect(mocks.sendAdminMessage).toHaveBeenCalledTimes(2)
+    expect(mocks.sendAdminMessage).toHaveBeenCalledTimes(2);
     expect(mocks.sendAdminMessage.mock.calls[0]?.[2].idempotencyKey).toBe(
       mocks.sendAdminMessage.mock.calls[1]?.[2].idempotencyKey,
-    )
+    );
     expect(mocks.sendAdminMessage.mock.calls[0]?.[2].endUserCaseId).toBe(
-      'case-1',
-    )
-  })
+      "case-1",
+    );
+  });
 
-  it('не позволяет запоздалому WRITING отменить подтверждённый COMPLETED', () => {
+  it("после unknown send сверяет REST и не повторяет уже доставленное сообщение", async () => {
+    const selected = conversation("conversation-1", "ACTIVE", true);
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
+    console.selectedConversation.value = selected;
+    console.onlineSession.value = {
+      id: "session-1",
+      userId: "user-1",
+      status: "ONLINE",
+    } as typeof console.onlineSession.value;
+    console.replyText.value = "Переведите этот ответ";
+    mocks.sendAdminMessage.mockRejectedValueOnce(new TypeError("network"));
+    mocks.getConversation.mockResolvedValue(selected);
+    mocks.getConversations.mockResolvedValue({
+      items: [selected],
+      nextCursor: null,
+    });
+    mocks.getMessages.mockResolvedValue({
+      items: [
+        {
+          id: "delivered-message",
+          conversationId: selected.id,
+          author: "ADMIN",
+          text: "Übersetzte Antwort",
+          status: "COMPLETED",
+          createdAt: "2026-07-20T13:01:00.000Z",
+          translation: {
+            id: "draft-1",
+            direction: "OUTBOUND",
+            status: "COMPLETED",
+            originalText: "Переведите этот ответ",
+            translatedText: "Übersetzte Antwort",
+            deliveredText: "Übersetzte Antwort",
+            viewText: "Переведите этот ответ",
+            sourceLocale: "ru",
+            targetLocale: "de",
+            errorCode: null,
+            warnings: [],
+            updatedAt: "2026-07-20T13:01:00.000Z",
+          },
+        },
+      ],
+      nextCursor: null,
+    });
+
+    await console.sendReply({ replyTranslationDraftId: "draft-1" });
+    await console.sendReply({ replyTranslationDraftId: "draft-1" });
+
+    expect(mocks.getMessages).toHaveBeenCalled();
+    expect(console.replyText.value).toBe("");
+    expect(console.conversationError.value).toBe("");
+    expect(mocks.sendAdminMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("не позволяет запоздалому WRITING отменить подтверждённый COMPLETED", () => {
+    const console = useAdminConversationConsole({
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
     console.selectedConversation.value = {
-      id: 'conversation-1',
-      userId: 'user-1',
-      title: 'Диалог',
-      status: 'ACTIVE',
-      lastMessageAt: '2026-07-20T13:00:00.000Z',
+      id: "conversation-1",
+      userId: "user-1",
+      title: "Диалог",
+      status: "ACTIVE",
+      lastMessageAt: "2026-07-20T13:00:00.000Z",
       messageCount: 1,
       isCurrent: true,
       currentInteractionSessionCount: 1,
       aiSuspension: {
-        mode: 'AUTOMATIC',
-        lifecycle: 'NONE',
-        version: '0',
+        mode: "AUTOMATIC",
+        lifecycle: "NONE",
+        version: "0",
         suspendedUntil: null,
-        serverTime: '2026-07-20T13:00:00.000Z',
+        serverTime: "2026-07-20T13:00:00.000Z",
       },
-    }
+    };
     const completed = {
-      id: 'message-1',
-      conversationId: 'conversation-1',
-      author: 'ASSISTANT' as const,
-      status: 'COMPLETED' as const,
-      text: 'Готово',
-      createdAt: '2026-07-20T13:00:00.000Z',
-      updatedAt: '2026-07-20T13:01:00.000Z',
-    }
-    expect(console.upsertMessage(completed)).toBe(true)
+      id: "message-1",
+      conversationId: "conversation-1",
+      author: "ASSISTANT" as const,
+      status: "COMPLETED" as const,
+      text: "Готово",
+      createdAt: "2026-07-20T13:00:00.000Z",
+      updatedAt: "2026-07-20T13:01:00.000Z",
+    };
+    expect(console.upsertMessage(completed)).toBe(true);
 
     expect(
       console.upsertMessage({
         ...completed,
-        status: 'WRITING',
-        text: '',
-        updatedAt: '2026-07-20T13:00:30.000Z',
+        status: "WRITING",
+        text: "",
+        updatedAt: "2026-07-20T13:00:30.000Z",
       }),
-    ).toBe(false)
-    expect(console.messages.value[0]?.status).toBe('COMPLETED')
-  })
+    ).toBe(false);
+    expect(console.messages.value[0]?.status).toBe("COMPLETED");
+  });
 
-  it('открывает текущий диалог online-сессии, даже если он вне первой страницы', async () => {
-    const firstPage = conversation('first-page')
-    const current = { ...conversation('current-outside', 'ACTIVE', true) }
+  it("открывает текущий диалог online-сессии, даже если он вне первой страницы", async () => {
+    const firstPage = conversation("first-page");
+    const current = { ...conversation("current-outside", "ACTIVE", true) };
     mocks.getConversations.mockResolvedValue({
       items: [firstPage],
-      nextCursor: 'next-page',
-    })
+      nextCursor: "next-page",
+    });
     mocks.getSessions.mockResolvedValue([
       {
-        id: 'session-1',
-        userId: 'user-1',
-        status: 'ONLINE',
+        id: "session-1",
+        userId: "user-1",
+        status: "ONLINE",
         currentConversationId: current.id,
       },
-    ])
-    mocks.getConversation.mockResolvedValue(current)
+    ]);
+    mocks.getConversation.mockResolvedValue(current);
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
 
-    await console.loadConversations('user-1')
+    await console.loadConversations("user-1");
 
     expect(mocks.getConversation).toHaveBeenCalledWith(
-      'project-1',
-      'user-1',
-      'current-outside',
-    )
-    expect(console.selectedConversation.value?.id).toBe('current-outside')
+      "project-1",
+      "user-1",
+      "current-outside",
+    );
+    expect(console.selectedConversation.value?.id).toBe("current-outside");
     expect(console.conversations.value.map((item) => item.id)).toEqual([
-      'current-outside',
-      'first-page',
-    ])
-  })
+      "current-outside",
+      "first-page",
+    ]);
+  });
 
-  it('догружает и поднимает все текущие диалоги нескольких online-сессий', async () => {
+  it("догружает и поднимает все текущие диалоги нескольких online-сессий", async () => {
     mocks.getConversations.mockResolvedValue({
-      items: [conversation('regular')],
-      nextCursor: 'next-page',
-    })
+      items: [conversation("regular")],
+      nextCursor: "next-page",
+    });
     mocks.getSessions.mockResolvedValue([
       {
-        id: 'session-1',
-        userId: 'user-1',
-        status: 'ONLINE',
-        currentConversationId: 'current-a',
+        id: "session-1",
+        userId: "user-1",
+        status: "ONLINE",
+        currentConversationId: "current-a",
       },
       {
-        id: 'session-2',
-        userId: 'user-1',
-        status: 'ONLINE',
-        currentConversationId: 'current-b',
+        id: "session-2",
+        userId: "user-1",
+        status: "ONLINE",
+        currentConversationId: "current-b",
       },
-    ])
+    ]);
     mocks.getConversation.mockImplementation(
       (_projectId, _endUserId, conversationId: string) =>
-        Promise.resolve(conversation(conversationId, 'ACTIVE', true)),
-    )
+        Promise.resolve(conversation(conversationId, "ACTIVE", true)),
+    );
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
 
-    await console.loadConversations('user-1')
+    await console.loadConversations("user-1");
 
     expect(console.conversations.value.map((item) => item.id)).toEqual([
-      'current-b',
-      'current-a',
-      'regular',
-    ])
+      "current-b",
+      "current-a",
+      "regular",
+    ]);
     expect(
       console.conversations.value
         .filter((item) => item.isCurrent)
         .map((item) => item.id),
-    ).toEqual(['current-b', 'current-a'])
-  })
+    ).toEqual(["current-b", "current-a"]);
+  });
 
-  it('переходит к безопасному fallback при устаревшем deep-link', async () => {
+  it("переходит к безопасному fallback при устаревшем deep-link", async () => {
     mocks.getConversations.mockResolvedValue({
-      items: [conversation('active')],
+      items: [conversation("active")],
       nextCursor: null,
-    })
-    mocks.getConversation.mockRejectedValue(new Error('not found'))
+    });
+    mocks.getConversation.mockRejectedValue(new Error("not found"));
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
 
-    await console.loadConversations('user-1', 'deleted-conversation')
+    await console.loadConversations("user-1", "deleted-conversation");
 
-    expect(console.selectedConversation.value?.id).toBe('active')
-    expect(console.conversationError.value).toBe('')
-  })
+    expect(console.selectedConversation.value?.id).toBe("active");
+    expect(console.conversationError.value).toBe("");
+  });
 
-  it('очищает старый Current при переносе active session в другой диалог', async () => {
+  it("очищает старый Current при переносе active session в другой диалог", async () => {
     mocks.getConversations.mockResolvedValue({
       items: [
-        conversation('conversation-a', 'ACTIVE', true),
-        conversation('conversation-b'),
+        conversation("conversation-a", "ACTIVE", true),
+        conversation("conversation-b"),
       ],
       nextCursor: null,
-    })
+    });
     mocks.getSessions.mockResolvedValueOnce([
       {
-        id: 'session-1',
-        userId: 'user-1',
-        status: 'ONLINE',
-        currentConversationId: 'conversation-a',
+        id: "session-1",
+        userId: "user-1",
+        status: "ONLINE",
+        currentConversationId: "conversation-a",
       },
-    ])
+    ]);
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
-    await console.loadConversations('user-1')
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
+    await console.loadConversations("user-1");
     mocks.getConversations.mockResolvedValue({
       items: [
-        conversation('conversation-a'),
-        conversation('conversation-b', 'ACTIVE', true),
+        conversation("conversation-a"),
+        conversation("conversation-b", "ACTIVE", true),
       ],
       nextCursor: null,
-    })
+    });
     mocks.getSessions.mockResolvedValue([
       {
-        id: 'session-1',
-        userId: 'user-1',
-        status: 'ONLINE',
-        currentConversationId: 'conversation-b',
+        id: "session-1",
+        userId: "user-1",
+        status: "ONLINE",
+        currentConversationId: "conversation-b",
       },
-    ])
+    ]);
 
-    await console.refreshPresence()
+    await console.refreshPresence();
 
     expect(
       console.conversations.value.map((item) => ({
@@ -742,140 +998,140 @@ describe('панель ответа администратором', () => {
         count: item.currentInteractionSessionCount,
       })),
     ).toEqual([
-      { id: 'conversation-b', isCurrent: true, count: 1 },
-      { id: 'conversation-a', isCurrent: false, count: 0 },
-    ])
-  })
+      { id: "conversation-b", isCurrent: true, count: 1 },
+      { id: "conversation-a", isCurrent: false, count: 0 },
+    ]);
+  });
 
-  it('сохраняет REST Current baseline при временно отсутствующем presence connection', async () => {
+  it("сохраняет REST Current baseline при временно отсутствующем presence connection", async () => {
     mocks.getConversations.mockResolvedValue({
-      items: [conversation('rest-current', 'ACTIVE', true)],
+      items: [conversation("rest-current", "ACTIVE", true)],
       nextCursor: null,
-    })
-    mocks.getSessions.mockResolvedValue([])
+    });
+    mocks.getSessions.mockResolvedValue([]);
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
 
-    await console.loadConversations('user-1')
+    await console.loadConversations("user-1");
 
     expect(console.conversations.value[0]).toMatchObject({
-      id: 'rest-current',
+      id: "rest-current",
       isCurrent: true,
       currentInteractionSessionCount: 1,
-    })
-  })
+    });
+  });
 
-  it('предпочитает последний активный диалог архивному при отсутствии current', async () => {
+  it("предпочитает последний активный диалог архивному при отсутствии current", async () => {
     mocks.getConversations.mockResolvedValue({
-      items: [conversation('archived', 'ARCHIVED'), conversation('active')],
+      items: [conversation("archived", "ARCHIVED"), conversation("active")],
       nextCursor: null,
-    })
+    });
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
 
-    await console.loadConversations('user-1')
+    await console.loadConversations("user-1");
 
-    expect(console.selectedConversation.value?.id).toBe('active')
-  })
+    expect(console.selectedConversation.value?.id).toBe("active");
+  });
 
-  it('не теряет live-сообщение, пришедшее во время загрузки REST-истории', async () => {
-    let resolveMessages!: (value: { items: never[]; nextCursor: null }) => void
+  it("не теряет live-сообщение, пришедшее во время загрузки REST-истории", async () => {
+    let resolveMessages!: (value: { items: never[]; nextCursor: null }) => void;
     mocks.getMessages.mockReturnValue(
       new Promise((resolve) => {
-        resolveMessages = resolve
+        resolveMessages = resolve;
       }),
-    )
-    const selected = conversation('conversation-1', 'ACTIVE', true)
+    );
+    const selected = conversation("conversation-1", "ACTIVE", true);
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
-    const loading = console.loadMessages(selected)
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
+    const loading = console.loadMessages(selected);
     const liveMessage = {
-      id: 'live-message',
+      id: "live-message",
       conversationId: selected.id,
-      author: 'USER' as const,
-      status: 'COMPLETED' as const,
-      text: 'Сообщение из WebSocket',
-      createdAt: '2026-07-20T13:01:00.000Z',
-    }
+      author: "USER" as const,
+      status: "COMPLETED" as const,
+      text: "Сообщение из WebSocket",
+      createdAt: "2026-07-20T13:01:00.000Z",
+    };
 
-    expect(console.upsertMessage(liveMessage)).toBe(true)
-    resolveMessages({ items: [], nextCursor: null })
-    await loading
+    expect(console.upsertMessage(liveMessage)).toBe(true);
+    resolveMessages({ items: [], nextCursor: null });
+    await loading;
 
-    expect(console.messages.value).toEqual([liveMessage])
-  })
+    expect(console.messages.value).toEqual([liveMessage]);
+  });
 
-  it('начинает REST snapshot только после подтверждения realtime watch', async () => {
-    const order: string[] = []
+  it("начинает REST snapshot только после подтверждения realtime watch", async () => {
+    const order: string[] = [];
     mocks.getMessages.mockImplementation(() => {
-      order.push('rest-get')
-      return Promise.resolve({ items: [], nextCursor: null })
-    })
+      order.push("rest-get");
+      return Promise.resolve({ items: [], nextCursor: null });
+    });
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
       beforeLoadMessages: async () => {
-        order.push('watch-ack')
+        order.push("watch-ack");
       },
-    })
+    });
 
-    await console.loadMessages(conversation('conversation-1'))
+    await console.loadMessages(conversation("conversation-1"));
 
-    expect(order).toEqual(['watch-ack', 'rest-get'])
-  })
+    expect(order).toEqual(["watch-ack", "rest-get"]);
+  });
 
-  it('сохраняет новый текст, набранный пока предыдущий ответ отправлялся', async () => {
-    let finishSend!: (value: { threadId: string }) => void
+  it("сохраняет новый текст, набранный пока предыдущий ответ отправлялся", async () => {
+    let finishSend!: (value: { threadId: string }) => void;
     mocks.sendAdminMessage.mockReturnValue(
       new Promise((resolve) => {
-        finishSend = resolve
+        finishSend = resolve;
       }),
-    )
+    );
     mocks.getConversation.mockResolvedValue(
-      conversation('conversation-1', 'ACTIVE', true),
-    )
+      conversation("conversation-1", "ACTIVE", true),
+    );
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
     console.selectedConversation.value = conversation(
-      'conversation-1',
-      'ACTIVE',
+      "conversation-1",
+      "ACTIVE",
       true,
-    )
+    );
     console.onlineSession.value = {
-      id: 'session-1',
-      userId: 'user-1',
-      status: 'ONLINE',
-    } as typeof console.onlineSession.value
-    console.replyText.value = 'Первый ответ'
-    const sending = console.sendReply()
-    await Promise.resolve()
-    console.replyText.value = 'Следующий черновик'
+      id: "session-1",
+      userId: "user-1",
+      status: "ONLINE",
+    } as typeof console.onlineSession.value;
+    console.replyText.value = "Первый ответ";
+    const sending = console.sendReply();
+    await Promise.resolve();
+    console.replyText.value = "Следующий черновик";
 
-    finishSend({ threadId: 'conversation-1' })
-    await sending
+    finishSend({ threadId: "conversation-1" });
+    await sending;
 
-    expect(console.replyText.value).toBe('Следующий черновик')
-  })
+    expect(console.replyText.value).toBe("Следующий черновик");
+  });
 
-  it('учитывает черновик в невыбранном диалоге при закрытии workspace', async () => {
-    const first = conversation('first', 'ACTIVE', true)
-    const second = conversation('second')
+  it("учитывает черновик в невыбранном диалоге при закрытии workspace", async () => {
+    const first = conversation("first", "ACTIVE", true);
+    const second = conversation("second");
     const console = useAdminConversationConsole({
-      projectId: () => 'project-1',
-      endUserId: () => 'user-1',
-    })
-    await console.loadMessages(first)
-    console.replyText.value = 'Незавершённый ответ'
-    await console.loadMessages(second)
+      projectId: () => "project-1",
+      endUserId: () => "user-1",
+    });
+    await console.loadMessages(first);
+    console.replyText.value = "Незавершённый ответ";
+    await console.loadMessages(second);
 
-    expect(console.hasAnyDraft()).toBe(true)
-  })
-})
+    expect(console.hasAnyDraft()).toBe(true);
+  });
+});

@@ -369,6 +369,20 @@ export interface ConversationMessage {
   status: "PENDING" | "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
   createdAt: string;
   updatedAt?: string;
+  translation?: {
+    id: string;
+    direction: "INBOUND" | "OUTBOUND";
+    status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+    originalText: string;
+    translatedText: string | null;
+    deliveredText: string | null;
+    viewText: string;
+    sourceLocale: string | null;
+    targetLocale: string;
+    errorCode: string | null;
+    warnings: string[];
+    updatedAt: string;
+  };
 }
 
 export interface ActivityItem {
@@ -569,6 +583,8 @@ export interface AdminMessageRequest {
   interactionSessionId?: string;
   actions?: DirectAdminAction[];
   aiSuspension?: AdminMessageAISuspensionDto;
+  replyTranslationDraftId?: string;
+  sendWithoutTranslation?: { reason: string };
   idempotencyKey?: string;
 }
 export interface AdminMessageResult {

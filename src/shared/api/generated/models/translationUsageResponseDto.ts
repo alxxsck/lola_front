@@ -5,16 +5,30 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { TranslationUsageResponseDtoBudget } from "./translationUsageResponseDtoBudget";
-import type { TranslationUsageResponseDtoSeriesItem } from "./translationUsageResponseDtoSeriesItem";
-import type { TranslationUsageResponseDtoStatusesItem } from "./translationUsageResponseDtoStatusesItem";
-import type { TranslationUsageResponseDtoTargetLocalesItem } from "./translationUsageResponseDtoTargetLocalesItem";
-import type { TranslationUsageResponseDtoTotals } from "./translationUsageResponseDtoTotals";
+import type { TranslationUsageAppliedModelBreakdownResponseDto } from "./translationUsageAppliedModelBreakdownResponseDto";
+import type { TranslationBudgetSummaryResponseDto } from "./translationBudgetSummaryResponseDto";
+import type { TranslationUsageFailureCategoryResponseDto } from "./translationUsageFailureCategoryResponseDto";
+import type { TranslationUsageRequestedModelBreakdownResponseDto } from "./translationUsageRequestedModelBreakdownResponseDto";
+import type { TranslationUsageReasoningBreakdownResponseDto } from "./translationUsageReasoningBreakdownResponseDto";
+import type { TranslationUsageSeriesResponseDto } from "./translationUsageSeriesResponseDto";
+import type { TranslationUsageSourceLocaleBreakdownResponseDto } from "./translationUsageSourceLocaleBreakdownResponseDto";
+import type { TranslationUsageStatusBreakdownResponseDto } from "./translationUsageStatusBreakdownResponseDto";
+import type { TranslationUsageSurfaceBreakdownResponseDto } from "./translationUsageSurfaceBreakdownResponseDto";
+import type { TranslationUsageTargetLocaleBreakdownResponseDto } from "./translationUsageTargetLocaleBreakdownResponseDto";
+import type { TranslationUsageAggregateResponseDto } from "./translationUsageAggregateResponseDto";
+import type { TranslationUsageWorkloadBreakdownResponseDto } from "./translationUsageWorkloadBreakdownResponseDto";
 
 export interface TranslationUsageResponseDto {
-  budget?: TranslationUsageResponseDtoBudget;
-  series: TranslationUsageResponseDtoSeriesItem[];
-  statuses: TranslationUsageResponseDtoStatusesItem[];
-  targetLocales: TranslationUsageResponseDtoTargetLocalesItem[];
-  totals: TranslationUsageResponseDtoTotals;
+  appliedProviderModels: TranslationUsageAppliedModelBreakdownResponseDto[];
+  budget?: TranslationBudgetSummaryResponseDto;
+  failureCategories: TranslationUsageFailureCategoryResponseDto[];
+  providerModels: TranslationUsageRequestedModelBreakdownResponseDto[];
+  reasoningEfforts: TranslationUsageReasoningBreakdownResponseDto[];
+  series: TranslationUsageSeriesResponseDto[];
+  sourceLocales: TranslationUsageSourceLocaleBreakdownResponseDto[];
+  statuses: TranslationUsageStatusBreakdownResponseDto[];
+  surfaces: TranslationUsageSurfaceBreakdownResponseDto[];
+  targetLocales: TranslationUsageTargetLocaleBreakdownResponseDto[];
+  totals: TranslationUsageAggregateResponseDto;
+  workloads: TranslationUsageWorkloadBreakdownResponseDto[];
 }

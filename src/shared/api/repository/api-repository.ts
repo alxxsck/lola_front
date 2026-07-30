@@ -463,6 +463,12 @@ export const apiRepository: LolaRepository = {
         ...(message.conversationId
           ? { conversationId: message.conversationId }
           : { conversationPolicy: message.conversationPolicy }),
+        ...(message.replyTranslationDraftId
+          ? { replyTranslationDraftId: message.replyTranslationDraftId }
+          : {}),
+        ...(message.sendWithoutTranslation
+          ? { sendWithoutTranslation: message.sendWithoutTranslation }
+          : {}),
         endUserCaseId: message.endUserCaseId,
         interactionSessionId: message.interactionSessionId,
         actions: message.actions,

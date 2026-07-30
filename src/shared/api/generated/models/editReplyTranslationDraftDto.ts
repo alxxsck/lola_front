@@ -6,4 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type TranslationUsageResponseDtoBudget = { [key: string]: unknown };
+export interface EditReplyTranslationDraftDto {
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   * @nullable
+   */
+  editedTranslatedText?: string | null;
+  expectedUpdatedAt: string;
+}

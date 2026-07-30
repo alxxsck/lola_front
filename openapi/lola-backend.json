@@ -449,6 +449,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "translation": {
+            "$ref": "#/components/schemas/AdminConversationMessageTranslationResponseDto"
+          },
           "updatedAt": {
             "format": "date-time",
             "type": "string"
@@ -480,6 +483,85 @@
         },
         "required": [
           "items"
+        ],
+        "type": "object"
+      },
+      "AdminConversationMessageTranslationResponseDto": {
+        "properties": {
+          "configRevision": {
+            "type": "string"
+          },
+          "deliveredText": {
+            "nullable": true,
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "INBOUND",
+              "OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "originalText": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "sourceLocale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "COMPLETED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "targetLocale": {
+            "type": "string"
+          },
+          "translatedText": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "viewText": {
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "viewText",
+          "originalText",
+          "targetLocale",
+          "direction",
+          "status",
+          "warnings",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -733,6 +815,41 @@
         ],
         "type": "object"
       },
+      "AdminMessagingErrorResponseDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "TRANSLATION_DRAFT_REQUIRES_EXACT_CONVERSATION",
+              "TRANSLATION_SEND_WITHOUT_PERMISSION_REQUIRED",
+              "TRANSLATION_DELIVERY_UNAVAILABLE",
+              "TRANSLATION_DRAFT_ALREADY_CONSUMED",
+              "TRANSLATION_DELIVERY_MODE_CONFLICT",
+              "TRANSLATION_SEND_WITHOUT_REASON_INVALID",
+              "TRANSLATION_EXPLICIT_OVERRIDE_REQUIRED",
+              "TRANSLATION_PREVIEW_REQUIRED",
+              "TRANSLATION_DRAFT_STALE",
+              "REPLY_TRANSLATION_DRAFT_EXPIRED",
+              "REPLY_TRANSLATION_DRAFT_NOT_FOUND",
+              "REPLY_TRANSLATION_DRAFT_SOURCE_MISMATCH",
+              "REPLY_TRANSLATION_DRAFT_CASE_CONTEXT_MISMATCH",
+              "REPLY_TRANSLATION_DRAFT_NOT_READY",
+              "REPLY_TRANSLATION_DRAFT_CONSUME_CONFLICT",
+              "TRANSLATION_ACTOR_INVALID"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
       "AdminStoredMessageResponseDto": {
         "properties": {
           "clientMessageId": {
@@ -951,6 +1068,176 @@
           "description",
           "parameters",
           "strict"
+        ],
+        "type": "object"
+      },
+      "AiModelCatalogItemResponseDto": {
+        "properties": {
+          "cachedInputPricePerMillion": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputPricePerMillion": {
+            "type": "string"
+          },
+          "lolaTested": {
+            "type": "boolean"
+          },
+          "outputPricePerMillion": {
+            "type": "string"
+          },
+          "providerAvailable": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "reasoningEfforts": {
+            "items": {
+              "enum": [
+                "none",
+                "low",
+                "medium",
+                "high"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reasoningRequired": {
+            "type": "boolean"
+          },
+          "selectable": {
+            "type": "boolean"
+          },
+          "workload": {
+            "enum": [
+              "ASSISTANT",
+              "TRANSLATION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "workload",
+          "reasoningEfforts",
+          "reasoningRequired",
+          "lolaTested",
+          "selectable",
+          "providerAvailable",
+          "inputPricePerMillion",
+          "cachedInputPricePerMillion",
+          "outputPricePerMillion"
+        ],
+        "type": "object"
+      },
+      "AiModelCatalogResponseDto": {
+        "properties": {
+          "fetchedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiModelCatalogItemResponseDto"
+            },
+            "type": "array"
+          },
+          "maxStaleAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "workload": {
+            "enum": [
+              "ASSISTANT",
+              "TRANSLATION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "workload",
+          "stale",
+          "fetchedAt",
+          "maxStaleAt",
+          "items"
+        ],
+        "type": "object"
+      },
+      "AiModelProfileDto": {
+        "properties": {
+          "modelId": {
+            "example": "grok-4.3",
+            "type": "string"
+          },
+          "reasoningEffort": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "modelId",
+          "reasoningEffort"
+        ],
+        "type": "object"
+      },
+      "AiModelProfileResponseDto": {
+        "properties": {
+          "modelId": {
+            "type": "string"
+          },
+          "reasoningEffort": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "modelId",
+          "reasoningEffort"
+        ],
+        "type": "object"
+      },
+      "AiModelSettingsResponseDto": {
+        "properties": {
+          "projectVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "resolved": {
+            "$ref": "#/components/schemas/ResolvedAiModelSettingsResponseDto"
+          },
+          "saved": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StoredAiModelSettingsResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "projectVersion",
+          "saved",
+          "resolved"
         ],
         "type": "object"
       },
@@ -1775,6 +2062,10 @@
       },
       "AiUsageBreakdownResponseDto": {
         "properties": {
+          "appliedModel": {
+            "nullable": true,
+            "type": "string"
+          },
           "billedCost": {
             "type": "string"
           },
@@ -1830,6 +2121,10 @@
             "nullable": true,
             "type": "string"
           },
+          "modelConfigRevision": {
+            "nullable": true,
+            "type": "string"
+          },
           "operation": {
             "type": "string"
           },
@@ -1856,11 +2151,25 @@
             "description": "Provider-reported currency cost.",
             "type": "string"
           },
+          "reasoningEffort": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
           "reasoningTokens": {
             "type": "number"
           },
           "records": {
             "type": "number"
+          },
+          "requestedModel": {
+            "nullable": true,
+            "type": "string"
           },
           "totalTokens": {
             "type": "number"
@@ -1893,6 +2202,10 @@
           "effectiveCost",
           "provider",
           "model",
+          "requestedModel",
+          "appliedModel",
+          "reasoningEffort",
+          "modelConfigRevision",
           "operation",
           "currency"
         ],
@@ -2124,6 +2437,10 @@
       },
       "AiUsageRecordResponseDto": {
         "properties": {
+          "appliedModel": {
+            "nullable": true,
+            "type": "string"
+          },
           "billedCost": {
             "nullable": true,
             "type": "string"
@@ -2165,6 +2482,10 @@
             "nullable": true,
             "type": "string"
           },
+          "modelConfigRevision": {
+            "nullable": true,
+            "type": "string"
+          },
           "occurredAt": {
             "format": "date-time",
             "type": "string"
@@ -2197,6 +2518,20 @@
             "additionalProperties": true,
             "type": "object"
           },
+          "reasoningEffort": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "requestedModel": {
+            "nullable": true,
+            "type": "string"
+          },
           "status": {
             "nullable": true,
             "type": "string"
@@ -2212,6 +2547,10 @@
           "category",
           "providerRequestId",
           "model",
+          "requestedModel",
+          "appliedModel",
+          "reasoningEffort",
+          "modelConfigRevision",
           "status",
           "inputCharacters",
           "providerBilledUnits",
@@ -2269,6 +2608,14 @@
           },
           "totals": {
             "$ref": "#/components/schemas/AiUsageTotalsResponseDto"
+          },
+          "workloads": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectAiUsageWorkloadProjectionResponseDto"
+              }
+            ],
+            "description": "Bounded cross-ledger workload projection. Present on the Project-level AI Usage report."
           }
         },
         "required": [
@@ -8440,6 +8787,173 @@
         ],
         "type": "object"
       },
+      "ConversationLanguageDecisionResponseDto": {
+        "properties": {
+          "conflictingLocale": {
+            "type": "string"
+          },
+          "locale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "needsConfirmation": {
+            "type": "boolean"
+          },
+          "source": {
+            "enum": [
+              "MANUAL",
+              "PROFILE",
+              "RECENT_MESSAGES",
+              "CASE_HINT",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale",
+          "source",
+          "needsConfirmation"
+        ],
+        "type": "object"
+      },
+      "ConversationMessageTranslationErrorResponseDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "TRANSLATION_DISABLED",
+              "TRANSLATION_MODEL_UNAVAILABLE",
+              "TRANSLATION_MODEL_PRICING_UNAVAILABLE",
+              "TRANSLATION_PRICING_NOT_CONFIGURED",
+              "TRANSLATION_PRICING_SNAPSHOT_INVALID",
+              "TRANSLATION_BUDGET_EXCEEDED",
+              "TRANSLATION_GLOBAL_BUDGET_EXCEEDED",
+              "TRANSLATION_LOCALE_INVALID",
+              "CONVERSATION_TRANSLATION_TARGET_LOCALE_INVALID",
+              "TRANSLATION_IDEMPOTENCY_KEY_REQUIRED",
+              "TRANSLATION_IDEMPOTENCY_KEY_INVALID",
+              "TRANSLATION_IDEMPOTENCY_CONFLICT",
+              "TRANSLATION_COMMAND_SNAPSHOT_INVALID",
+              "TRANSLATION_ACTOR_INVALID",
+              "PROJECT_NOT_FOUND",
+              "CHAT_MESSAGE_NOT_FOUND",
+              "CHAT_MESSAGE_NOT_COMPLETED",
+              "MESSAGE_TRANSLATION_BULK_INVALID",
+              "MESSAGE_TRANSLATION_NOT_RETRYABLE",
+              "MESSAGE_TRANSLATION_ATTEMPT_LIMIT_REACHED",
+              "MESSAGE_TRANSLATION_SOURCE_CHANGED",
+              "MESSAGE_TRANSLATION_RETRY_CONFLICT"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "ConversationMessageTranslationItemResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "messageId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "modelConfigRevision": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "skipReason": {
+            "enum": [
+              "UNSUPPORTED_ROLE",
+              "SAME_LANGUAGE",
+              "EMPTY_OR_NOISE",
+              "LANGUAGE_UNRESOLVED"
+            ],
+            "type": "string"
+          },
+          "sourceLocale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "SKIPPED",
+              "PENDING",
+              "RUNNING",
+              "COMPLETED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "targetLocale": {
+            "type": "string"
+          },
+          "translatedText": {
+            "nullable": true,
+            "type": "string"
+          },
+          "translationConfigRevision": {
+            "type": "string"
+          },
+          "translationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "messageId",
+          "state"
+        ],
+        "type": "object"
+      },
+      "ConversationMessageTranslationsResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationMessageTranslationItemResponseDto"
+            },
+            "type": "array"
+          },
+          "queued": {
+            "description": "True while at least one requested translation is pending or running.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "queued",
+          "items"
+        ],
+        "type": "object"
+      },
       "ConversationPolicy": {
         "enum": [
           "reuse_active",
@@ -8453,6 +8967,114 @@
           "CLOSED"
         ],
         "type": "string"
+      },
+      "ConversationTranslationBudgetResponseDto": {
+        "properties": {
+          "consumedMicros": {
+            "type": "string"
+          },
+          "hardExhausted": {
+            "type": "boolean"
+          },
+          "hardLimitMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "hardPercent": {
+            "nullable": true,
+            "type": "number"
+          },
+          "reservedMicros": {
+            "type": "string"
+          },
+          "softLimitMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "softPercent": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "consumedMicros",
+          "reservedMicros",
+          "softLimitMicros",
+          "hardLimitMicros",
+          "softPercent",
+          "hardPercent",
+          "hardExhausted"
+        ],
+        "type": "object"
+      },
+      "ConversationTranslationPreferenceResponseDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endUserLocaleOverride": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "version": {
+            "nullable": true,
+            "type": "number"
+          },
+          "workingLocale": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "workingLocale",
+          "endUserLocaleOverride",
+          "version",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ConversationTranslationResponseDto": {
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/TranslationAvailabilityResponseDto"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/ConversationTranslationBudgetResponseDto"
+          },
+          "configRevision": {
+            "type": "string"
+          },
+          "language": {
+            "$ref": "#/components/schemas/ConversationLanguageDecisionResponseDto"
+          },
+          "preference": {
+            "$ref": "#/components/schemas/ConversationTranslationPreferenceResponseDto"
+          },
+          "projectVersion": {
+            "type": "number"
+          },
+          "supportedLocales": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "availability",
+          "budget",
+          "projectVersion",
+          "supportedLocales",
+          "configRevision",
+          "preference",
+          "language"
+        ],
+        "type": "object"
       },
       "CountGtePredicateDto": {
         "properties": {
@@ -8484,6 +9106,30 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "CreateConversationMessageTranslationsDto": {
+        "properties": {
+          "messageIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "targetLocale": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "messageIds",
+          "targetLocale"
+        ],
         "type": "object"
       },
       "CreateCustomerDto": {
@@ -8873,6 +9519,35 @@
           "description",
           "permissionCodes",
           "reason"
+        ],
+        "type": "object"
+      },
+      "CreateReplyTranslationDraftDto": {
+        "properties": {
+          "endUserCaseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceLocale": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "sourceText": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "targetLocale": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceText",
+          "sourceLocale",
+          "targetLocale"
         ],
         "type": "object"
       },
@@ -9294,6 +9969,24 @@
         ],
         "type": "object"
       },
+      "EditReplyTranslationDraftDto": {
+        "properties": {
+          "editedTranslatedText": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedUpdatedAt"
+        ],
+        "type": "object"
+      },
       "EmailAIProposalPreferenceResponseDto": {
         "properties": {
           "channel": {
@@ -9434,6 +10127,14 @@
               "custom"
             ],
             "type": "string"
+          },
+          "workloads": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectAiUsageWorkloadProjectionResponseDto"
+              }
+            ],
+            "description": "Bounded cross-ledger workload projection. Present on the Project-level AI Usage report."
           }
         },
         "required": [
@@ -17939,6 +18640,108 @@
         ],
         "type": "object"
       },
+      "ProjectAiUsageWorkloadBreakdownResponseDto": {
+        "properties": {
+          "appliedModel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "averageLatencyMs": {
+            "description": "Average latency over the terminal records represented by this row.",
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "effectiveCostUsd": {
+            "example": "0.123000000000",
+            "type": "string"
+          },
+          "isOther": {
+            "description": "True for an exact per-workload aggregate outside that workload deterministic top 25.",
+            "type": "boolean"
+          },
+          "reasoningEffort": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "reasoningTokens": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "requestedModel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "requests": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "workload": {
+            "enum": [
+              "ASSISTANT",
+              "SCENARIO_AUTHORING",
+              "CONVERSATION_INBOUND",
+              "CONVERSATION_OUTBOUND"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "workload",
+          "requestedModel",
+          "appliedModel",
+          "reasoningEffort",
+          "requests",
+          "reasoningTokens",
+          "averageLatencyMs",
+          "effectiveCostUsd",
+          "isOther"
+        ],
+        "type": "object"
+      },
+      "ProjectAiUsageWorkloadProjectionResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAiUsageWorkloadBreakdownResponseDto"
+            },
+            "maxItems": 104,
+            "type": "array"
+          },
+          "range": {
+            "properties": {
+              "from": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "to": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "truncated": {
+                "description": "True when a wider legacy AI Usage query was safely clamped to the latest 366 days.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "truncated"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "ProjectAuditEventActorResponseDto": {
         "properties": {
           "displayName": {
@@ -18550,6 +19353,124 @@
           "ARCHIVED"
         ],
         "type": "string"
+      },
+      "ProjectTranslationGlossaryEntryDto": {
+        "properties": {
+          "behavior": {
+            "enum": [
+              "TRANSLATE_AS",
+              "KEEP"
+            ],
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "target": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "behavior"
+        ],
+        "type": "object"
+      },
+      "ProjectTranslationSettingsResponseDto": {
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/TranslationAvailabilityResponseDto"
+          },
+          "configRevision": {
+            "type": "string"
+          },
+          "projectVersion": {
+            "type": "number"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ProjectTranslationSettingsValueResponseDto"
+          },
+          "supportedLocales": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "projectVersion",
+          "supportedLocales",
+          "settings",
+          "configRevision",
+          "availability"
+        ],
+        "type": "object"
+      },
+      "ProjectTranslationSettingsValueResponseDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "formality": {
+            "enum": [
+              "AUTO",
+              "FORMAL",
+              "INFORMAL"
+            ],
+            "type": "string"
+          },
+          "glossary": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectTranslationGlossaryEntryDto"
+            },
+            "type": "array"
+          },
+          "inboundMode": {
+            "enum": [
+              "ON_DEMAND"
+            ],
+            "type": "string"
+          },
+          "outboundMode": {
+            "enum": [
+              "PREVIEW_REQUIRED"
+            ],
+            "type": "string"
+          },
+          "outgoingTone": {
+            "enum": [
+              "PRESERVE",
+              "FRIENDLY",
+              "NEUTRAL",
+              "PROFESSIONAL"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "workingLocale": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "enabled",
+          "workingLocale",
+          "outgoingTone",
+          "formality",
+          "glossary",
+          "inboundMode",
+          "outboundMode"
+        ],
+        "type": "object"
       },
       "PublishAiPricingRevisionDto": {
         "properties": {
@@ -19257,6 +20178,211 @@
           "version",
           "roleIds",
           "reason"
+        ],
+        "type": "object"
+      },
+      "ReplyTranslationDraftErrorResponseDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "TRANSLATION_DISABLED",
+              "TRANSLATION_MODEL_UNAVAILABLE",
+              "TRANSLATION_MODEL_PRICING_UNAVAILABLE",
+              "TRANSLATION_PRICING_NOT_CONFIGURED",
+              "TRANSLATION_BUDGET_EXCEEDED",
+              "TRANSLATION_GLOBAL_BUDGET_EXCEEDED",
+              "TRANSLATION_IDEMPOTENCY_KEY_REQUIRED",
+              "TRANSLATION_ACTOR_INVALID",
+              "PROJECT_NOT_FOUND",
+              "CONVERSATION_NOT_FOUND",
+              "END_USER_CASE_NOT_FOUND",
+              "REPLY_TRANSLATION_DRAFT_NOT_FOUND",
+              "REPLY_TRANSLATION_DRAFT_IDEMPOTENCY_CONFLICT",
+              "REPLY_TRANSLATION_DRAFT_RESERVATION_CONFLICT",
+              "REPLY_TRANSLATION_DRAFT_SOURCE_INVALID",
+              "REPLY_TRANSLATION_DRAFT_SOURCE_LOCALE_INVALID",
+              "REPLY_TRANSLATION_DRAFT_TARGET_LOCALE_INVALID",
+              "REPLY_TRANSLATION_DRAFT_TARGET_SAME_AS_SOURCE",
+              "REPLY_TRANSLATION_DRAFT_EXPIRED",
+              "REPLY_TRANSLATION_DRAFT_NOT_EDITABLE",
+              "REPLY_TRANSLATION_DRAFT_EDIT_VERSION_INVALID",
+              "REPLY_TRANSLATION_DRAFT_EDIT_VERSION_CONFLICT",
+              "REPLY_TRANSLATION_DRAFT_NOT_RETRYABLE",
+              "REPLY_TRANSLATION_DRAFT_ATTEMPT_LIMIT_REACHED",
+              "REPLY_TRANSLATION_DRAFT_RETRY_CONFLICT",
+              "REPLY_TRANSLATION_DRAFT_CONFIG_SNAPSHOT_INVALID",
+              "TRANSLATION_DRAFT_STALE",
+              "TRANSLATION_IDEMPOTENCY_CONFLICT"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "ReplyTranslationDraftResponseDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deliveredTextPreview": {
+            "nullable": true,
+            "type": "string"
+          },
+          "editedTranslatedText": {
+            "nullable": true,
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "modelConfigRevision": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "queued": {
+            "type": "boolean"
+          },
+          "sourceLocale": {
+            "type": "string"
+          },
+          "sourceText": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceTextHash": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "READY",
+              "FAILED",
+              "CONSUMED",
+              "EXPIRED"
+            ],
+            "type": "string"
+          },
+          "targetLocale": {
+            "type": "string"
+          },
+          "targetLocaleSource": {
+            "enum": [
+              "MANUAL",
+              "PROFILE",
+              "RECENT_MESSAGES",
+              "CASE_HINT",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "translatedText": {
+            "nullable": true,
+            "type": "string"
+          },
+          "translationConfigRevision": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "conversationId",
+          "status",
+          "queued",
+          "sourceTextHash",
+          "sourceLocale",
+          "targetLocale",
+          "targetLocaleSource",
+          "warnings",
+          "expiresAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ResolvedAiModelProfileResponseDto": {
+        "properties": {
+          "configRevision": {
+            "type": "string"
+          },
+          "modelId": {
+            "type": "string"
+          },
+          "reasoningEffort": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "PROJECT",
+              "DEPLOYMENT_DEFAULT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "modelId",
+          "reasoningEffort",
+          "source",
+          "configRevision"
+        ],
+        "type": "object"
+      },
+      "ResolvedAiModelSettingsResponseDto": {
+        "properties": {
+          "assistant": {
+            "$ref": "#/components/schemas/ResolvedAiModelProfileResponseDto"
+          },
+          "translation": {
+            "$ref": "#/components/schemas/ResolvedAiModelProfileResponseDto"
+          }
+        },
+        "required": [
+          "assistant",
+          "translation"
         ],
         "type": "object"
       },
@@ -22439,15 +23565,21 @@
             "format": "uuid",
             "type": "string"
           },
+          "replyTranslationDraftId": {
+            "description": "READY outbound translation draft consumed atomically with the ADMIN message.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "sendWithoutTranslation": {
+            "$ref": "#/components/schemas/SendAdminMessageWithoutTranslationDto"
+          },
           "text": {
+            "description": "Required unless replyTranslationDraftId is supplied. With a draft it must equal the draft source snapshot.",
             "maxLength": 10000,
             "minLength": 1,
             "type": "string"
           }
         },
-        "required": [
-          "text"
-        ],
         "type": "object"
       },
       "SendAdminMessageResponseDto": {
@@ -22480,6 +23612,19 @@
           "duplicate",
           "message",
           "commandIds"
+        ],
+        "type": "object"
+      },
+      "SendAdminMessageWithoutTranslationDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "type": "object"
       },
@@ -22817,6 +23962,28 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "StoredAiModelSettingsResponseDto": {
+        "properties": {
+          "assistant": {
+            "$ref": "#/components/schemas/AiModelProfileResponseDto"
+          },
+          "translation": {
+            "$ref": "#/components/schemas/AiModelProfileResponseDto"
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "assistant",
+          "translation"
+        ],
         "type": "object"
       },
       "SumGtePredicateDto": {
@@ -24315,6 +25482,65 @@
         ],
         "type": "string"
       },
+      "TranslationAvailabilityResponseDto": {
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "enum": [
+              "DEPLOYMENT_DISABLED",
+              "PROJECT_DISABLED"
+            ],
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "TranslationBudgetSummaryResponseDto": {
+        "properties": {
+          "consumedMicros": {
+            "type": "string"
+          },
+          "hardExhausted": {
+            "type": "boolean"
+          },
+          "hardLimitMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "hardPercent": {
+            "nullable": true,
+            "type": "number"
+          },
+          "reservedMicros": {
+            "type": "string"
+          },
+          "softLimitMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "softPercent": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "consumedMicros",
+          "reservedMicros",
+          "softLimitMicros",
+          "hardLimitMicros",
+          "softPercent",
+          "hardPercent",
+          "hardExhausted"
+        ],
+        "type": "object"
+      },
       "TranslationJobAcceptedResponseDto": {
         "properties": {
           "createdAt": {
@@ -24444,38 +25670,1284 @@
         ],
         "type": "object"
       },
+      "TranslationUsageAggregateResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageAppliedModelBreakdownResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "appliedProviderModel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "appliedProviderModel"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageFailureCategoryResponseDto": {
+        "properties": {
+          "category": {
+            "enum": [
+              "TIMEOUT",
+              "MODEL_UNAVAILABLE",
+              "BUDGET",
+              "VALIDATION",
+              "PROVIDER_UNAVAILABLE",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "failures": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "category",
+          "failures"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageReasoningBreakdownResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningEffort": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "type": "string"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "reasoningEffort"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageRequestedModelBreakdownResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "providerModel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "providerModel"
+        ],
+        "type": "object"
+      },
       "TranslationUsageResponseDto": {
         "properties": {
+          "appliedProviderModels": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationUsageAppliedModelBreakdownResponseDto"
+            },
+            "type": "array"
+          },
           "budget": {
-            "type": "object"
+            "$ref": "#/components/schemas/TranslationBudgetSummaryResponseDto"
+          },
+          "failureCategories": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationUsageFailureCategoryResponseDto"
+            },
+            "type": "array"
+          },
+          "providerModels": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationUsageRequestedModelBreakdownResponseDto"
+            },
+            "type": "array"
+          },
+          "reasoningEfforts": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationUsageReasoningBreakdownResponseDto"
+            },
+            "type": "array"
           },
           "series": {
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/TranslationUsageSeriesResponseDto"
+            },
+            "type": "array"
+          },
+          "sourceLocales": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationUsageSourceLocaleBreakdownResponseDto"
             },
             "type": "array"
           },
           "statuses": {
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/TranslationUsageStatusBreakdownResponseDto"
+            },
+            "type": "array"
+          },
+          "surfaces": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationUsageSurfaceBreakdownResponseDto"
             },
             "type": "array"
           },
           "targetLocales": {
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/TranslationUsageTargetLocaleBreakdownResponseDto"
             },
             "type": "array"
           },
           "totals": {
-            "type": "object"
+            "$ref": "#/components/schemas/TranslationUsageAggregateResponseDto"
+          },
+          "workloads": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationUsageWorkloadBreakdownResponseDto"
+            },
+            "type": "array"
           }
         },
         "required": [
           "totals",
           "series",
+          "surfaces",
+          "providerModels",
+          "appliedProviderModels",
+          "reasoningEfforts",
+          "sourceLocales",
           "targetLocales",
-          "statuses"
+          "statuses",
+          "workloads",
+          "failureCategories"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageSeriesResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "day": {
+            "example": "2026-07-30",
+            "format": "date",
+            "type": "string"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "day"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageSourceLocaleBreakdownResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "sourceLocale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "sourceLocale"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageStatusBreakdownResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "ADMITTED",
+              "SUCCESS",
+              "ERROR",
+              "CANCELLED",
+              "PROVIDER_OUTCOME_UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "status"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageSurfaceBreakdownResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "surface": {
+            "enum": [
+              "SCENARIO_AUTHORING",
+              "CONVERSATION_INBOUND",
+              "CONVERSATION_OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "surface"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageTargetLocaleBreakdownResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "targetLocale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "targetLocale"
+        ],
+        "type": "object"
+      },
+      "TranslationUsageWorkloadBreakdownResponseDto": {
+        "properties": {
+          "actualCostMicros": {
+            "nullable": true,
+            "type": "string"
+          },
+          "actualCostTicks": {
+            "nullable": true,
+            "type": "string"
+          },
+          "admitted": {
+            "description": "Financially admitted provider attempts that have not reached a terminal state.",
+            "type": "number"
+          },
+          "appliedModel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "billableCharacters": {
+            "type": "number"
+          },
+          "billingCurrency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "number"
+          },
+          "cacheHits": {
+            "type": "number"
+          },
+          "errors": {
+            "description": "Terminal attempts that did not succeed. ADMITTED attempts are not errors.",
+            "type": "number"
+          },
+          "estimatedCostMicros": {
+            "type": "string"
+          },
+          "estimatedSavingsMicros": {
+            "type": "string"
+          },
+          "failureRatePercent": {
+            "description": "Terminal failure percentage. ADMITTED attempts are excluded from the denominator.",
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "inputCharacters": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "isOther": {
+            "description": "True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows.",
+            "type": "boolean"
+          },
+          "latencyP50Ms": {
+            "description": "P50 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "latencyP95Ms": {
+            "description": "P95 latency over terminal attempts only.",
+            "nullable": true,
+            "type": "number"
+          },
+          "outputCharacters": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "reasoningEffort": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "reasoningTokens": {
+            "type": "number"
+          },
+          "requestedModel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "requests": {
+            "type": "number"
+          },
+          "successes": {
+            "type": "number"
+          },
+          "surface": {
+            "enum": [
+              "SCENARIO_AUTHORING",
+              "CONVERSATION_INBOUND",
+              "CONVERSATION_OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requests",
+          "successes",
+          "errors",
+          "admitted",
+          "inputCharacters",
+          "outputCharacters",
+          "billableCharacters",
+          "inputTokens",
+          "cachedInputTokens",
+          "outputTokens",
+          "totalTokens",
+          "reasoningTokens",
+          "cacheHits",
+          "estimatedCostMicros",
+          "estimatedSavingsMicros",
+          "actualCostMicros",
+          "actualCostTicks",
+          "billingCurrency",
+          "latencyP50Ms",
+          "latencyP95Ms",
+          "failureRatePercent",
+          "isOther",
+          "surface",
+          "requestedModel",
+          "appliedModel",
+          "reasoningEffort"
         ],
         "type": "object"
       },
@@ -24643,6 +27115,26 @@
         ],
         "type": "object"
       },
+      "UpdateAiModelSettingsDto": {
+        "properties": {
+          "assistant": {
+            "$ref": "#/components/schemas/AiModelProfileDto"
+          },
+          "expectedProjectVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "translation": {
+            "$ref": "#/components/schemas/AiModelProfileDto"
+          }
+        },
+        "required": [
+          "expectedProjectVersion",
+          "assistant",
+          "translation"
+        ],
+        "type": "object"
+      },
       "UpdateAIReviewSettingsDto": {
         "properties": {
           "dailyRunLimit": {
@@ -24686,6 +27178,36 @@
           "givenName",
           "familyName",
           "version"
+        ],
+        "type": "object"
+      },
+      "UpdateConversationTranslationPreferenceDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endUserLocaleOverride": {
+            "maxLength": 64,
+            "minLength": 1,
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedUpdatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "workingLocale": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "workingLocale",
+          "endUserLocaleOverride",
+          "expectedUpdatedAt"
         ],
         "type": "object"
       },
@@ -25026,6 +27548,76 @@
         },
         "required": [
           "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "UpdateProjectTranslationSettingsDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "expectedProjectVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "formality": {
+            "enum": [
+              "AUTO",
+              "FORMAL",
+              "INFORMAL"
+            ],
+            "type": "string"
+          },
+          "glossary": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectTranslationGlossaryEntryDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "inboundMode": {
+            "enum": [
+              "ON_DEMAND"
+            ],
+            "type": "string"
+          },
+          "outboundMode": {
+            "enum": [
+              "PREVIEW_REQUIRED"
+            ],
+            "type": "string"
+          },
+          "outgoingTone": {
+            "enum": [
+              "PRESERVE",
+              "FRIENDLY",
+              "NEUTRAL",
+              "PROFESSIONAL"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "workingLocale": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedProjectVersion",
+          "version",
+          "enabled",
+          "workingLocale",
+          "outgoingTone",
+          "formality",
+          "glossary",
+          "inboundMode",
+          "outboundMode"
         ],
         "type": "object"
       },
@@ -28765,6 +31357,143 @@
         ],
         "x-iam-permission": {
           "code": "project.settings.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-model-settings": {
+      "get": {
+        "operationId": "AiModelSettings_settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelSettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI model settings"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.read",
+          "scope": "PROJECT"
+        }
+      },
+      "put": {
+        "operationId": "AiModelSettings_updateSettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAiModelSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelSettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI model settings"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-models": {
+      "get": {
+        "operationId": "AiModelSettings_catalog",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workload",
+            "required": true,
+            "schema": {
+              "enum": [
+                "ASSISTANT",
+                "TRANSLATION"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI model settings"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.read",
           "scope": "PROJECT"
         }
       }
@@ -41722,6 +44451,92 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/translation-settings": {
+      "get": {
+        "operationId": "ProjectTranslationSettings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTranslationSettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Project translation settings"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.read",
+          "scope": "PROJECT"
+        }
+      },
+      "put": {
+        "operationId": "ProjectTranslationSettings_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectTranslationSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTranslationSettingsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Project translation settings"
+        ],
+        "x-iam-permission": {
+          "code": "project.settings.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/translation-usage": {
       "get": {
         "operationId": "Translation_usageReport",
@@ -42794,6 +45609,358 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/message-translations": {
+      "post": {
+        "operationId": "ConversationMessageTranslation_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated key. Reuse it only when retrying the same command.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationMessageTranslationsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Conversation message translations"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.conversations.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.translation.create",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/message-translations/{translationId}": {
+      "get": {
+        "operationId": "ConversationMessageTranslation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "translationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationItemResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Conversation message translations"
+        ],
+        "x-iam-permission": {
+          "code": "project.conversations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/message-translations/{translationId}/retry": {
+      "post": {
+        "operationId": "ConversationMessageTranslation_retry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "translationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated key. Reuse it only when retrying the same command.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationItemResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationItemResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessageTranslationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Conversation message translations"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.conversations.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.translation.create",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/messages": {
       "get": {
         "operationId": "AdminConversations_listMessages",
@@ -42874,6 +46041,646 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/reply-translation-drafts": {
+      "post": {
+        "operationId": "ReplyTranslationDraft_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated key. Reuse it only when retrying the same command.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReplyTranslationDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Reply translation drafts"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.conversations.reply",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.translation.create",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/reply-translation-drafts/{draftId}": {
+      "get": {
+        "operationId": "ReplyTranslationDraft_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Reply translation drafts"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.conversations.reply",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.translation.create",
+            "scope": "PROJECT"
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ReplyTranslationDraft_edit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditReplyTranslationDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Reply translation drafts"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.conversations.reply",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.translation.create",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/reply-translation-drafts/{draftId}/retry": {
+      "post": {
+        "operationId": "ReplyTranslationDraft_retry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated key. Reuse it only when retrying the same command.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyTranslationDraftErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Reply translation drafts"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.conversations.reply",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.translation.create",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/conversations/{conversationId}/translation": {
+      "get": {
+        "operationId": "ConversationTranslation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "selectedCaseId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationTranslationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Conversation translation"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.conversations.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.translation.create",
+            "scope": "PROJECT"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "ConversationTranslation_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "selectedCaseId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConversationTranslationPreferenceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationTranslationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Conversation translation"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.conversations.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.translation.create",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/users/{userId}/messages": {
       "post": {
         "operationId": "AdminMessaging_send",
@@ -42923,6 +46730,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SendAdminMessageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
                 }
               }
             },
