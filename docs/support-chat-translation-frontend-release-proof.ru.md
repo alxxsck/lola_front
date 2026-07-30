@@ -47,29 +47,35 @@
 - Vitest: `242/242` test files, `1465/1465` tests.
 - Focused post-merge translation regression: `12/12` files, `128/128` tests.
 - Playwright translation flow: `7 passed`, `1` ожидаемо skipped как mobile-only.
+- Playwright production API-mode: `2/2` — отдельные desktop и mobile прогоны с
+  двумя реальными CMS identities, двумя End Users/Conversations и real backend.
 - `vue-tsc`, ESLint, IAM architecture check: passed.
 - Production build: passed, `2776` modules transformed.
-- Visual QA: desktop `1440×1000/1100`, mobile `390×844`.
+- Visual QA: mock desktop `1440×1000/1100`, mobile `390×844`; дополнительно
+  production API-mode screenshots для desktop Chrome и Pixel 7.
 - Browser runtime errors in tested translation flows: none.
 - Backend public boundary contract: `5/5` — REST, Widget и realtime возвращают End User только
   delivered text без русского source и provider/model metadata.
+- Browser public boundary: real `/chat/conversations/:id/messages`, compatibility
+  `/chat/messages` и `/assistant` `chat.message` проверены на отсутствие source,
+  translation/provider/model/token/idempotency/config metadata.
 
 ## Матрица обязательных integration-сценариев
 
-| Сценарий                           | Доказательство                                                                                                                                                                                                |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Reload не создаёт повторную работу | controller recovery/idempotency tests; workspace восстанавливает пустой composer и persisted reply draft; persisted message projection не создаёт provider work; Playwright сохраняет conversation preference |
-| Older page переводится отдельно    | `UserWorkspaceDialog.test.ts`: command получает только id новой страницы                                                                                                                                      |
-| Future realtime                    | workspace integration: без authoritative source locale и foreign, и Cyrillic USER создают command; истинный same-language безопасно SKIP-ается backend                                                        |
-| Два Conversations и два End Users  | Playwright desktop/mobile: preference после reload остаётся в первом Conversation и не переносится в другой Conversation/End User                                                                             |
-| Provider/budget failure            | controller tests блокируют create до API и публикуют безопасное объяснение                                                                                                                                    |
-| Socket reconnect                   | workspace reconcile callback повторно получает authoritative REST projection                                                                                                                                  |
-| Public REST/Widget/realtime        | backend `test/conversation-translation-public-boundary.test.ts`, `5/5`; mock UI не используется как доказательство security boundary                                                                          |
+| Сценарий                                 | Доказательство                                                                                                                                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reload не создаёт повторную работу       | controller recovery/idempotency tests; workspace восстанавливает пустой composer и persisted reply draft; persisted message projection не создаёт provider work; Playwright сохраняет conversation preference |
+| Older page переводится отдельно          | `UserWorkspaceDialog.test.ts`: command получает только id новой страницы                                                                                                                                      |
+| Future realtime                          | workspace integration: без authoritative source locale и foreign, и Cyrillic USER создают command; истинный same-language безопасно SKIP-ается backend                                                        |
+| Два CMS Users, Conversations и End Users | API-mode Playwright desktop/mobile: opt-in первого CMS User не виден второму CMS User и не переносится в другой Conversation/End User                                                                         |
+| Provider/budget failure                  | API-mode browser подтверждает deployment/provider fail-closed UI и `422`; hard-budget exhaustion остаётся покрыт controller/unit/integration tests без ложного browser claim                                  |
+| Socket reconnect                         | workspace reconcile callback повторно получает authoritative REST projection                                                                                                                                  |
+| Public REST/Widget/realtime              | backend boundary `5/5` плюс API-mode Playwright desktop/mobile на production-shaped REST, compatibility Widget и реальном `/assistant` socket; mock UI не используется как security evidence                  |
 
-Остающийся environment gate: API-mode browser smoke с двумя реальными CMS identities и
-перехватом production-shaped network payload выполняется в интеграционном окружении с backend,
-поскольку mock mode не моделирует cookie-сессии двух CMS Users и не может доказать публичную
-серверную сериализацию.
+Environment gate закрыт тестом `e2e/support-chat-translation.api.spec.ts`, который runner
+запускает последовательно в `api-chromium` и `api-mobile-chromium` на новой изолированной
+PostgreSQL базе. Единственный browser route bridge — существующий phishing-resistant
+`/auth/refresh`; translation/chat/public/realtime запросы не мокируются.
 
 Production defaults to API mode. Mock translation data exists only when the existing explicit
 `VITE_DATA_MODE=mock` demo mode is selected and never invokes xAI.
