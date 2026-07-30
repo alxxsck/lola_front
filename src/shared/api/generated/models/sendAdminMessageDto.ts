@@ -8,6 +8,7 @@
 import type { DirectAdminActionDto } from "./directAdminActionDto";
 import type { AdminMessageAISuspensionDto } from "./adminMessageAISuspensionDto";
 import type { AdminConversationPolicy } from "./adminConversationPolicy";
+import type { SendAdminMessageWithoutTranslationDto } from "./sendAdminMessageWithoutTranslationDto";
 
 export interface SendAdminMessageDto {
   /** @maxItems 5 */
@@ -24,9 +25,13 @@ export interface SendAdminMessageDto {
   endUserCaseId?: string;
   /** Optional preferred online session. If omitted, backend selects the most recently active session. */
   interactionSessionId?: string;
+  /** READY outbound translation draft consumed atomically with the ADMIN message. */
+  replyTranslationDraftId?: string;
+  sendWithoutTranslation?: SendAdminMessageWithoutTranslationDto;
   /**
+   * Required unless replyTranslationDraftId is supplied. With a draft it must equal the draft source snapshot.
    * @minLength 1
    * @maxLength 10000
    */
-  text: string;
+  text?: string;
 }

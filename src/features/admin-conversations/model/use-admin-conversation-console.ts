@@ -60,6 +60,15 @@ function mergeMessages(
   return orderedMessages([...merged.values()]);
 }
 
+function reconcileMessages(
+  current: ConversationMessage[],
+  authoritative: ConversationMessage[],
+): ConversationMessage[] {
+  const reconciled = new Map(current.map((message) => [message.id, message]));
+  for (const message of authoritative) reconciled.set(message.id, message);
+  return orderedMessages([...reconciled.values()]);
+}
+
 type OnlineSession = Awaited<ReturnType<typeof repository.getSessions>>[number];
 
 export function useAdminConversationConsole(
@@ -92,11 +101,15 @@ export function useAdminConversationConsole(
   let replyAttempt: {
     conversationId: string;
     text: string;
+    replyTranslationDraftId?: string;
+    sendWithoutTranslationReason?: string;
     key: string;
   } | null = null;
   let newConversationAttempt: { text: string; key: string } | null = null;
 
-  function loadPresence(projectId: string): ReturnType<typeof repository.getSessions> {
+  function loadPresence(
+    projectId: string,
+  ): ReturnType<typeof repository.getSessions> {
     return options.canReadPresence?.() === false
       ? Promise.resolve([])
       : repository.getSessions(projectId);
@@ -525,7 +538,7 @@ export function useAdminConversationConsole(
       if (conversationPagesLoaded <= 1)
         nextConversationCursor.value = conversationPage.nextCursor;
       selectedConversation.value = freshConversation;
-      messages.value = mergeMessages(messages.value, page.items);
+      messages.value = reconcileMessages(messages.value, page.items);
       if (!messages.value.length || page.nextCursor)
         nextMessageCursor.value = page.nextCursor;
     } catch {
@@ -539,7 +552,10 @@ export function useAdminConversationConsole(
     }
   }
 
-  async function sendReply(): Promise<void> {
+  async function sendReply(delivery?: {
+    replyTranslationDraftId?: string;
+    sendWithoutTranslationReason?: string;
+  }) {
     const projectId = options.projectId();
     const endUserId = options.endUserId();
     const conversation = selectedConversation.value;
@@ -556,24 +572,54 @@ export function useAdminConversationConsole(
     sendingReply.value = true;
     conversationError.value = "";
     combinedSuspensionError.value = null;
+    const knownMessageIds = new Set(
+      messages.value.map((message) => message.id),
+    );
     try {
       const attempt =
         replyAttempt?.conversationId === conversation.id &&
-        replyAttempt.text === text
+        replyAttempt.text === text &&
+        replyAttempt.replyTranslationDraftId ===
+          delivery?.replyTranslationDraftId &&
+        replyAttempt.sendWithoutTranslationReason ===
+          delivery?.sendWithoutTranslationReason
           ? replyAttempt
           : {
               conversationId: conversation.id,
               text,
+              ...(delivery?.replyTranslationDraftId
+                ? {
+                    replyTranslationDraftId: delivery.replyTranslationDraftId,
+                  }
+                : {}),
+              ...(delivery?.sendWithoutTranslationReason
+                ? {
+                    sendWithoutTranslationReason:
+                      delivery.sendWithoutTranslationReason,
+                  }
+                : {}),
               key: globalThis.crypto.randomUUID(),
             };
       replyAttempt = attempt;
-      await repository.sendAdminMessage(projectId, endUserId, {
+      const result = await repository.sendAdminMessage(projectId, endUserId, {
         text,
         conversationId: conversation.id,
         ...(options.endUserCaseId?.()
           ? { endUserCaseId: options.endUserCaseId() }
           : {}),
         interactionSessionId: onlineSession.value.id,
+        ...(delivery?.replyTranslationDraftId
+          ? {
+              replyTranslationDraftId: delivery.replyTranslationDraftId,
+            }
+          : {}),
+        ...(delivery?.sendWithoutTranslationReason
+          ? {
+              sendWithoutTranslation: {
+                reason: delivery.sendWithoutTranslationReason,
+              },
+            }
+          : {}),
         idempotencyKey: attempt.key,
       });
       if (
@@ -585,12 +631,29 @@ export function useAdminConversationConsole(
       drafts.delete(conversation.id);
       replyAttempt = null;
       await reconcileSelected();
+      return result;
     } catch {
       if (
         generation === activeGeneration &&
         currentContext(projectId, endUserId, conversation.id)
-      )
-        conversationError.value = "Не удалось отправить сообщение";
+      ) {
+        await reconcileSelected();
+        const confirmed = messages.value.some(
+          (message) =>
+            !knownMessageIds.has(message.id) &&
+            message.author === "ADMIN" &&
+            (message.translation?.originalText === text ||
+              (!message.translation && message.text === text)),
+        );
+        if (confirmed) {
+          if (replyText.value.trim() === text) replyText.value = "";
+          drafts.delete(conversation.id);
+          replyAttempt = null;
+          conversationError.value = "";
+        } else {
+          conversationError.value = "Не удалось отправить сообщение";
+        }
+      }
     } finally {
       if (generation === activeGeneration) sendingReply.value = false;
     }
@@ -668,6 +731,7 @@ export function useAdminConversationConsole(
   async function suspendAndSendReply(
     aiSuspension: AdminMessageAISuspensionDto,
     idempotencyKey: string,
+    delivery?: { replyTranslationDraftId?: string },
   ) {
     const projectId = options.projectId();
     const endUserId = options.endUserId();
@@ -693,6 +757,9 @@ export function useAdminConversationConsole(
         conversationId: conversation.id,
         interactionSessionId: onlineSession.value.id,
         aiSuspension,
+        ...(delivery?.replyTranslationDraftId
+          ? { replyTranslationDraftId: delivery.replyTranslationDraftId }
+          : {}),
         idempotencyKey,
       });
       if (

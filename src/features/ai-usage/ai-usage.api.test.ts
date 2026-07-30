@@ -66,10 +66,34 @@ const response = {
     sourceUrl: "https://docs.x.ai/developers/pricing",
   },
   totals: currentTotals,
+  workloads: {
+    range: {
+      from: "2026-07-30T00:00:00.000Z",
+      to: "2026-07-30T23:59:59.999Z",
+      truncated: false,
+    },
+    items: [
+      {
+        workload: "CONVERSATION_OUTBOUND",
+        requestedModel: "grok-4.3",
+        appliedModel: "grok-4.3",
+        reasoningEffort: "low",
+        reasoningTokens: 24,
+        requests: 3,
+        averageLatencyMs: 420,
+        effectiveCostUsd: "0.003100000000",
+        isOther: false,
+      },
+    ],
+  },
   breakdown: [
     {
       provider: "xai",
       model: "grok-4.5",
+      requestedModel: "grok-4.5",
+      appliedModel: "grok-4.5",
+      modelConfigRevision: "model-config-1",
+      reasoningEffort: "none",
       operation: "responses",
       currency: "usd",
       records: 2,
@@ -119,6 +143,16 @@ describe("AI usage API response validation", () => {
         providerBilledUnits: 0,
         estimatedCost: 0.0012,
       },
+      workloads: [
+        {
+          workload: "CONVERSATION_OUTBOUND",
+          appliedModel: "grok-4.3",
+          reasoningEffort: "low",
+          reasoningTokens: 24,
+          requests: 3,
+          effectiveCostUsd: 0.0031,
+        },
+      ],
       breakdown: [
         {
           model: "grok-4.5",

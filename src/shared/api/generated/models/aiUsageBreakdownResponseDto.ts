@@ -5,8 +5,11 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiUsageBreakdownResponseDtoReasoningEffort } from "./aiUsageBreakdownResponseDtoReasoningEffort";
 
 export interface AiUsageBreakdownResponseDto {
+  /** @nullable */
+  appliedModel: string | null;
   billedCost: string;
   cachedInputAudioTokens: number;
   cachedInputImageTokens: number;
@@ -27,6 +30,8 @@ export interface AiUsageBreakdownResponseDto {
   inputTokens: number;
   /** @nullable */
   model: string | null;
+  /** @nullable */
+  modelConfigRevision: string | null;
   operation: string;
   outputAudioTokens: number;
   outputImageTokens: number;
@@ -36,7 +41,11 @@ export interface AiUsageBreakdownResponseDto {
   providerBilledUnits: string;
   /** Provider-reported currency cost. */
   providerReportedCost: string;
+  /** @nullable */
+  reasoningEffort: AiUsageBreakdownResponseDtoReasoningEffort;
   reasoningTokens: number;
   records: number;
+  /** @nullable */
+  requestedModel: string | null;
   totalTokens: number;
 }

@@ -165,6 +165,7 @@ describe("AI usage model", () => {
       totals,
       breakdown: [],
       categories: [speech],
+      workloads: [],
       eventQuery: {
         calls: 0,
         resultBytes: 0,
@@ -216,6 +217,7 @@ describe("AI usage model", () => {
       totals,
       breakdown: [breakdown(), breakdown({ currency: "eur" })],
       categories: [],
+      workloads: [],
       eventQuery: {
         calls: 0,
         resultBytes: 0,

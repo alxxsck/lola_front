@@ -22,6 +22,8 @@ import ScenarioAdmissionSettingsSection from "@/features/scenario-admission/Scen
 import UserMemorySettingsSection from "@/features/user-memory/ui/UserMemorySettingsSection.vue";
 import AIReviewSettingsSection from "@/features/ai-review/ui/AIReviewSettingsSection.vue";
 import EventQueryPolicySection from "@/features/event-query/ui/EventQueryPolicySection.vue";
+import AiModelSettingsSection from "@/features/translation-settings/ui/AiModelSettingsSection.vue";
+import TranslationSettingsSection from "@/features/translation-settings/ui/TranslationSettingsSection.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
@@ -114,6 +116,8 @@ const settingsProject = ref<Project | null>(null);
 const localeField = ref<AttributeContractDraftFieldDto | null>(null);
 const activitySettings = ref<ActivitySettings | null>(null);
 const initialSnapshot = ref("");
+const aiModelSettingsDirty = ref(false);
+const translationSettingsDirty = ref(false);
 const systemPromptControl = ref<HTMLElement | null>(null);
 const voiceCatalogItems = ref<ProjectVoiceCatalogItem[]>([]);
 const voiceCatalogLoading = ref(false);
@@ -197,6 +201,12 @@ const isDirty = computed(
   () =>
     Boolean(initialSnapshot.value) &&
     formSnapshot.value !== initialSnapshot.value,
+);
+const hasUnsavedChanges = computed(
+  () =>
+    isDirty.value ||
+    aiModelSettingsDirty.value ||
+    translationSettingsDirty.value,
 );
 const assistantInitial = computed(
   () => form.assistantName.trim().slice(0, 1).toUpperCase() || "L",
@@ -498,13 +508,13 @@ function resizeSystemPromptBy(offset: number) {
 
 function confirmDiscard() {
   return (
-    !isDirty.value ||
+    !hasUnsavedChanges.value ||
     window.confirm("Есть несохранённые изменения. Покинуть страницу?")
   );
 }
 
 function beforeUnload(event: BeforeUnloadEvent) {
-  if (!isDirty.value) return;
+  if (!hasUnsavedChanges.value) return;
   event.preventDefault();
 }
 
@@ -851,6 +861,22 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </section>
+
+          <AiModelSettingsSection
+            :project-id="project.id"
+            :editable="canEditSettings"
+            :project-version="project.version"
+            @changed="handleAISettingsVersion"
+            @dirty-change="aiModelSettingsDirty = $event"
+          />
+
+          <TranslationSettingsSection
+            :project-id="project.id"
+            :editable="canEditSettings"
+            :project-version="project.version"
+            @changed="handleAISettingsVersion"
+            @dirty-change="translationSettingsDirty = $event"
+          />
 
           <UserMemorySettingsSection
             :key="`memory-${project.version}`"

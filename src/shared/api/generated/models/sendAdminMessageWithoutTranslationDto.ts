@@ -6,4 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type TranslationUsageResponseDtoSeriesItem = { [key: string]: unknown };
+export interface SendAdminMessageWithoutTranslationDto {
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+}

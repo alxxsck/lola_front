@@ -28,6 +28,9 @@ import type {
   AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
   AiCapabilityPreviewResponseDto,
+  AiModelCatalogResponseDto,
+  AiModelSettingsCatalogParams,
+  AiModelSettingsResponseDto,
   AiPricingRevisionGetParams,
   AiPricingRevisionStateResponseDto,
   AiUsageReportParams,
@@ -100,7 +103,13 @@ import type {
   ConversationAISuspensionMutationResponseDto,
   ConversationAISuspensionResponseDto,
   ConversationAISuspensionsHistoryParams,
+  ConversationMessageTranslationItemResponseDto,
+  ConversationMessageTranslationsResponseDto,
+  ConversationTranslationGetParams,
+  ConversationTranslationPutParams,
+  ConversationTranslationResponseDto,
   CreateConversationDto,
+  CreateConversationMessageTranslationsDto,
   CreateCustomerDto,
   CreateEventCatalogDefinitionDto,
   CreateEventSchemaSuccessorDto,
@@ -112,6 +121,7 @@ import type {
   CreateProjectDto,
   CreateProjectMembershipDto,
   CreateProjectRoleDto,
+  CreateReplyTranslationDraftDto,
   CreateScenarioAuthoringDto,
   CreateScenarioAuthoringResponseDto,
   CreateSlackNotificationDestinationDto,
@@ -122,6 +132,7 @@ import type {
   DecideAIProposalDto,
   DeleteKnowledgeDocumentResponseDto,
   DisableTelegramChannelDto,
+  EditReplyTranslationDraftDto,
   EmailAIProposalPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
   EndUserAiUsageReportParams,
@@ -267,6 +278,7 @@ import type {
   ProjectResponseDto,
   ProjectRoleListResponseDto,
   ProjectRoleResponseDto,
+  ProjectTranslationSettingsResponseDto,
   PublishAiPricingRevisionDto,
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
@@ -282,6 +294,7 @@ import type {
   RemoveProjectMembershipDto,
   RenameConversationDto,
   ReplaceCmsUserPlatformRolesDto,
+  ReplyTranslationDraftResponseDto,
   RestoreEventDefinitionDto,
   ResumeConversationAIDto,
   RevokeCmsUserSessionDto,
@@ -357,7 +370,9 @@ import type {
   UnlinkEndUserCaseMessageDto,
   UpdateAIReviewSettingsDto,
   UpdateActivitySettingsDto,
+  UpdateAiModelSettingsDto,
   UpdateCmsUserProfileDto,
+  UpdateConversationTranslationPreferenceDto,
   UpdateEmailAIProposalPreferenceDto,
   UpdateEndUserCaseWorkflowDto,
   UpdateEventDefinitionMetadataDto,
@@ -368,6 +383,7 @@ import type {
   UpdateProjectMembershipDto,
   UpdateProjectRoleDto,
   UpdateProjectSettingsDto,
+  UpdateProjectTranslationSettingsDto,
   UpdateScenarioAdmissionSettingsDto,
   UpdateScenarioAuthoringMetadataDto,
   UpdateSlackNotificationDestinationDto,
@@ -903,6 +919,50 @@ export const userMemoryUpdateSettings = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateUserMemorySettingsDto,
+    },
+    options,
+  );
+};
+
+export const aiModelSettingsSettings = (
+  projectId: string,
+  options?: SecondParameter<typeof request<AiModelSettingsResponseDto>>,
+) => {
+  return request<AiModelSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-model-settings`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const aiModelSettingsUpdateSettings = (
+  projectId: string,
+  updateAiModelSettingsDto: BodyType<UpdateAiModelSettingsDto>,
+  options?: SecondParameter<typeof request<AiModelSettingsResponseDto>>,
+) => {
+  return request<AiModelSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-model-settings`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: updateAiModelSettingsDto,
+    },
+    options,
+  );
+};
+
+export const aiModelSettingsCatalog = (
+  projectId: string,
+  params: AiModelSettingsCatalogParams,
+  options?: SecondParameter<typeof request<AiModelCatalogResponseDto>>,
+) => {
+  return request<AiModelCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-models`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -3899,6 +3959,39 @@ export const translationRetryTarget = (
   );
 };
 
+export const projectTranslationSettingsGet = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<ProjectTranslationSettingsResponseDto>
+  >,
+) => {
+  return request<ProjectTranslationSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/translation-settings`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const projectTranslationSettingsPut = (
+  projectId: string,
+  updateProjectTranslationSettingsDto: BodyType<UpdateProjectTranslationSettingsDto>,
+  options?: SecondParameter<
+    typeof request<ProjectTranslationSettingsResponseDto>
+  >,
+) => {
+  return request<ProjectTranslationSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/translation-settings`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: updateProjectTranslationSettingsDto,
+    },
+    options,
+  );
+};
+
 export const translationUsageReport = (
   projectId: string,
   params: TranslationUsageReportParams,
@@ -4167,6 +4260,74 @@ export const adminConversationsGet = (
   );
 };
 
+export const conversationMessageTranslationCreate = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  createConversationMessageTranslationsDto: BodyType<CreateConversationMessageTranslationsDto>,
+  options?: SecondParameter<
+    typeof request<
+      | ConversationMessageTranslationsResponseDto
+      | ConversationMessageTranslationsResponseDto
+    >
+  >,
+) => {
+  return request<
+    | ConversationMessageTranslationsResponseDto
+    | ConversationMessageTranslationsResponseDto
+  >(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/message-translations`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createConversationMessageTranslationsDto,
+    },
+    options,
+  );
+};
+
+export const conversationMessageTranslationGet = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  translationId: string,
+  options?: SecondParameter<
+    typeof request<ConversationMessageTranslationItemResponseDto>
+  >,
+) => {
+  return request<ConversationMessageTranslationItemResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/message-translations/${translationId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const conversationMessageTranslationRetry = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  translationId: string,
+  options?: SecondParameter<
+    typeof request<
+      | ConversationMessageTranslationItemResponseDto
+      | ConversationMessageTranslationItemResponseDto
+    >
+  >,
+) => {
+  return request<
+    | ConversationMessageTranslationItemResponseDto
+    | ConversationMessageTranslationItemResponseDto
+  >(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/message-translations/${translationId}/retry`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
 export const adminConversationsListMessages = (
   projectId: string,
   userId: string,
@@ -4180,6 +4341,124 @@ export const adminConversationsListMessages = (
     {
       url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/messages`,
       method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const replyTranslationDraftCreate = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  createReplyTranslationDraftDto: BodyType<CreateReplyTranslationDraftDto>,
+  options?: SecondParameter<
+    typeof request<
+      ReplyTranslationDraftResponseDto | ReplyTranslationDraftResponseDto
+    >
+  >,
+) => {
+  return request<
+    ReplyTranslationDraftResponseDto | ReplyTranslationDraftResponseDto
+  >(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/reply-translation-drafts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createReplyTranslationDraftDto,
+    },
+    options,
+  );
+};
+
+export const replyTranslationDraftGet = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  draftId: string,
+  options?: SecondParameter<typeof request<ReplyTranslationDraftResponseDto>>,
+) => {
+  return request<ReplyTranslationDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/reply-translation-drafts/${draftId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const replyTranslationDraftEdit = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  draftId: string,
+  editReplyTranslationDraftDto: BodyType<EditReplyTranslationDraftDto>,
+  options?: SecondParameter<typeof request<ReplyTranslationDraftResponseDto>>,
+) => {
+  return request<ReplyTranslationDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/reply-translation-drafts/${draftId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: editReplyTranslationDraftDto,
+    },
+    options,
+  );
+};
+
+export const replyTranslationDraftRetry = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  draftId: string,
+  options?: SecondParameter<
+    typeof request<
+      ReplyTranslationDraftResponseDto | ReplyTranslationDraftResponseDto
+    >
+  >,
+) => {
+  return request<
+    ReplyTranslationDraftResponseDto | ReplyTranslationDraftResponseDto
+  >(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/reply-translation-drafts/${draftId}/retry`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const conversationTranslationGet = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  params?: ConversationTranslationGetParams,
+  options?: SecondParameter<typeof request<ConversationTranslationResponseDto>>,
+) => {
+  return request<ConversationTranslationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/translation`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const conversationTranslationPut = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  updateConversationTranslationPreferenceDto: BodyType<UpdateConversationTranslationPreferenceDto>,
+  params?: ConversationTranslationPutParams,
+  options?: SecondParameter<typeof request<ConversationTranslationResponseDto>>,
+) => {
+  return request<ConversationTranslationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/translation`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: updateConversationTranslationPreferenceDto,
       params,
     },
     options,
@@ -5450,6 +5729,15 @@ export type UserMemorySettingsResult = NonNullable<
 export type UserMemoryUpdateSettingsResult = NonNullable<
   Awaited<ReturnType<typeof userMemoryUpdateSettings>>
 >;
+export type AiModelSettingsSettingsResult = NonNullable<
+  Awaited<ReturnType<typeof aiModelSettingsSettings>>
+>;
+export type AiModelSettingsUpdateSettingsResult = NonNullable<
+  Awaited<ReturnType<typeof aiModelSettingsUpdateSettings>>
+>;
+export type AiModelSettingsCatalogResult = NonNullable<
+  Awaited<ReturnType<typeof aiModelSettingsCatalog>>
+>;
 export type AIProposalEventsReceivedResult = NonNullable<
   Awaited<ReturnType<typeof aIProposalEventsReceived>>
 >;
@@ -6005,6 +6293,12 @@ export type TranslationCancelResult = NonNullable<
 export type TranslationRetryTargetResult = NonNullable<
   Awaited<ReturnType<typeof translationRetryTarget>>
 >;
+export type ProjectTranslationSettingsGetResult = NonNullable<
+  Awaited<ReturnType<typeof projectTranslationSettingsGet>>
+>;
+export type ProjectTranslationSettingsPutResult = NonNullable<
+  Awaited<ReturnType<typeof projectTranslationSettingsPut>>
+>;
 export type TranslationUsageReportResult = NonNullable<
   Awaited<ReturnType<typeof translationUsageReport>>
 >;
@@ -6056,8 +6350,35 @@ export type AdminConversationsListResult = NonNullable<
 export type AdminConversationsGetResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationsGet>>
 >;
+export type ConversationMessageTranslationCreateResult = NonNullable<
+  Awaited<ReturnType<typeof conversationMessageTranslationCreate>>
+>;
+export type ConversationMessageTranslationGetResult = NonNullable<
+  Awaited<ReturnType<typeof conversationMessageTranslationGet>>
+>;
+export type ConversationMessageTranslationRetryResult = NonNullable<
+  Awaited<ReturnType<typeof conversationMessageTranslationRetry>>
+>;
 export type AdminConversationsListMessagesResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationsListMessages>>
+>;
+export type ReplyTranslationDraftCreateResult = NonNullable<
+  Awaited<ReturnType<typeof replyTranslationDraftCreate>>
+>;
+export type ReplyTranslationDraftGetResult = NonNullable<
+  Awaited<ReturnType<typeof replyTranslationDraftGet>>
+>;
+export type ReplyTranslationDraftEditResult = NonNullable<
+  Awaited<ReturnType<typeof replyTranslationDraftEdit>>
+>;
+export type ReplyTranslationDraftRetryResult = NonNullable<
+  Awaited<ReturnType<typeof replyTranslationDraftRetry>>
+>;
+export type ConversationTranslationGetResult = NonNullable<
+  Awaited<ReturnType<typeof conversationTranslationGet>>
+>;
+export type ConversationTranslationPutResult = NonNullable<
+  Awaited<ReturnType<typeof conversationTranslationPut>>
 >;
 export type AdminMessagingSendResult = NonNullable<
   Awaited<ReturnType<typeof adminMessagingSend>>

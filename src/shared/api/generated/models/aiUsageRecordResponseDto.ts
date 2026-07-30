@@ -8,8 +8,11 @@
 import type { AiUsageRecordResponseDtoCategory } from "./aiUsageRecordResponseDtoCategory";
 import type { AiUsageRecordResponseDtoProviderMetadata } from "./aiUsageRecordResponseDtoProviderMetadata";
 import type { AiUsageRecordResponseDtoRawUsage } from "./aiUsageRecordResponseDtoRawUsage";
+import type { AiUsageRecordResponseDtoReasoningEffort } from "./aiUsageRecordResponseDtoReasoningEffort";
 
 export interface AiUsageRecordResponseDto {
+  /** @nullable */
+  appliedModel: string | null;
   /** @nullable */
   billedCost: string | null;
   category: AiUsageRecordResponseDtoCategory;
@@ -22,6 +25,8 @@ export interface AiUsageRecordResponseDto {
   inputTokens: number;
   /** @nullable */
   model: string | null;
+  /** @nullable */
+  modelConfigRevision: string | null;
   occurredAt: string;
   operation: string;
   outputTokens: number;
@@ -33,6 +38,10 @@ export interface AiUsageRecordResponseDto {
   providerMetadata: AiUsageRecordResponseDtoProviderMetadata;
   providerRequestId: string;
   rawUsage: AiUsageRecordResponseDtoRawUsage;
+  /** @nullable */
+  reasoningEffort: AiUsageRecordResponseDtoReasoningEffort;
+  /** @nullable */
+  requestedModel: string | null;
   /** @nullable */
   status: string | null;
   totalTokens: number;

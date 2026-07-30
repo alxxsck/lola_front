@@ -250,6 +250,24 @@ export function mapConversationMessage(
     status: dto.status,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
+    ...(dto.translation
+      ? {
+          translation: {
+            id: dto.translation.id,
+            direction: dto.translation.direction,
+            status: dto.translation.status,
+            originalText: dto.translation.originalText,
+            translatedText: dto.translation.translatedText ?? null,
+            deliveredText: dto.translation.deliveredText ?? null,
+            viewText: dto.translation.viewText,
+            sourceLocale: dto.translation.sourceLocale ?? null,
+            targetLocale: dto.translation.targetLocale,
+            errorCode: dto.translation.errorCode ?? null,
+            warnings: dto.translation.warnings,
+            updatedAt: dto.translation.updatedAt,
+          },
+        }
+      : {}),
   };
 }
 

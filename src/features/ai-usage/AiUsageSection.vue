@@ -70,6 +70,16 @@ function formatBytes(value: number) {
     ? `${value} Б`
     : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value / 1024)} КБ`;
 }
+function workloadLabel(value: string) {
+  return (
+    {
+      ASSISTANT: "Основное общение",
+      SCENARIO_AUTHORING: "Переводы сценариев",
+      CONVERSATION_INBOUND: "Входящие сообщения",
+      CONVERSATION_OUTBOUND: "Исходящие ответы",
+    }[value] ?? value
+  );
+}
 async function load(force = false) {
   const requestedRange = range.value;
   const cached = cache.get(requestedRange);
@@ -269,6 +279,77 @@ onBeforeUnmount(() => {
               :breakdown="xAiBreakdown"
               :case-usage="caseIntelligenceUsage"
             />
+
+            <section
+              v-if="report.workloads?.length"
+              class="workload-usage"
+              aria-labelledby="workload-usage-title"
+            >
+              <header>
+                <div>
+                  <span class="provider-kicker">Фактически применено</span>
+                  <h4 id="workload-usage-title">Модели по назначению</h4>
+                  <p>
+                    Requested и applied model могут различаться при безопасном
+                    fallback.
+                  </p>
+                </div>
+              </header>
+              <div class="workload-grid">
+                <article
+                  v-for="item in report.workloads ?? []"
+                  :key="`${item.workload}:${item.appliedModel}:${item.reasoningEffort}:${item.isOther}`"
+                >
+                  <div>
+                    <strong>{{
+                      item.isOther
+                        ? `${workloadLabel(item.workload)} · Другие`
+                        : workloadLabel(item.workload)
+                    }}</strong>
+                    <span v-if="item.isOther"
+                      >Агрегированные редкие комбинации</span
+                    >
+                    <span v-else
+                      >{{ item.appliedModel ?? "Модель не зафиксирована" }} ·
+                      reasoning {{ item.reasoningEffort ?? "неизвестен" }}</span
+                    >
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>Запросы</dt>
+                      <dd>{{ formatTokenCount(item.requests) }}</dd>
+                    </div>
+                    <div>
+                      <dt>Reasoning</dt>
+                      <dd>{{ formatTokenCount(item.reasoningTokens) }}</dd>
+                    </div>
+                    <div>
+                      <dt>Средняя задержка</dt>
+                      <dd>
+                        {{
+                          item.averageLatencyMs === null
+                            ? "—"
+                            : `${item.averageLatencyMs} мс`
+                        }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Стоимость</dt>
+                      <dd>{{ formatMoney(item.effectiveCostUsd, "usd") }}</dd>
+                    </div>
+                  </dl>
+                  <small
+                    v-if="
+                      !item.isOther &&
+                      item.requestedModel &&
+                      item.requestedModel !== item.appliedModel
+                    "
+                  >
+                    Запрошено: {{ item.requestedModel }}
+                  </small>
+                </article>
+              </div>
+            </section>
 
             <section
               v-if="eventQueryUsage"
@@ -554,6 +635,63 @@ onBeforeUnmount(() => {
   border-radius: 16px;
   background: var(--surface-card);
 }
+.workload-usage {
+  padding: 16px;
+  margin-top: 14px;
+  border: 1px solid
+    color-mix(in srgb, var(--status-violet) 24%, var(--border-default));
+  border-radius: 16px;
+  background: var(--surface-card);
+}
+.workload-usage h4 {
+  margin: 0;
+  font-size: 0.88rem;
+}
+.workload-usage header p {
+  margin: 3px 0 0;
+  color: var(--text-small-muted);
+  font-size: 0.65rem;
+}
+.workload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 13px;
+}
+.workload-grid > article {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+.workload-grid > article > div {
+  display: grid;
+  gap: 3px;
+}
+.workload-grid span,
+.workload-grid small,
+.workload-grid dt {
+  color: var(--text-small-muted);
+  font-size: 0.61rem;
+}
+.workload-grid dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+.workload-grid dl > div {
+  min-width: 0;
+}
+.workload-grid dd {
+  margin: 3px 0 0;
+  overflow: hidden;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .event-query-usage > header {
   display: flex;
@@ -623,6 +761,11 @@ onBeforeUnmount(() => {
   border-top: 1px solid var(--border-subtle);
   color: var(--text-small-muted);
   font-size: 0.65rem;
+}
+@media (max-width: 760px) {
+  .workload-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .usage-footer i {
