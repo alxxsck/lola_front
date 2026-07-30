@@ -781,6 +781,37 @@ describe("conversation translation controller", () => {
     expect(translate.mock.calls[0][3]).toHaveLength(50);
   });
 
+  it("останавливает локальное ожидание массового перевода", async () => {
+    let finishTranslation!: (value: { items: []; queued: false }) => void;
+    const translate = vi.fn(
+      () =>
+        new Promise<{ items: []; queued: false }>((resolve) => {
+          finishTranslation = resolve;
+        }),
+    );
+    const controller = createConversationTranslationController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => "user-1",
+        conversationId: () => "conversation-1",
+        selectedCaseId: () => undefined,
+        sourceText: () => "",
+      },
+      api({ translateMessages: translate }),
+    );
+    await controller.load();
+
+    const request = controller.translateMessages(["message-1"]);
+    await nextTick();
+    expect(controller.translatingMessageIds.value.has("message-1")).toBe(true);
+
+    controller.cancelMessageTranslations();
+    finishTranslation({ items: [], queued: false });
+    await request;
+
+    expect(controller.translatingMessageIds.value.size).toBe(0);
+  });
+
   it("продолжает polling входящего перевода после transient GET error", async () => {
     vi.useFakeTimers();
     try {

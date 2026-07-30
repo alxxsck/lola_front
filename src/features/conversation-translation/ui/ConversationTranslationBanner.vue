@@ -82,7 +82,9 @@ function isSupportedLocale(
       <div>
         <strong>Перевод диалога</strong>
         <span v-if="loading">Определяем язык и загружаем настройки…</span>
-        <span v-else-if="!state">Настройки перевода недоступны.</span>
+        <span v-else-if="!state"
+          >Настройки ещё не загружены. Загрузим только по вашему действию.</span
+        >
         <span v-else-if="!state.availability.available">
           Перевод временно недоступен. Повторите попытку позже.
         </span>
@@ -172,10 +174,10 @@ function isSupportedLocale(
         :options="localeOptions"
         option-label="label"
         option-value="value"
-        placeholder="Язык пользователя"
+        placeholder="Язык ответа"
         size="small"
         :disabled="saving || !canManage"
-        aria-label="Язык пользователя"
+        aria-label="Мои ответы переводить на"
         @update:model-value="emit('updateTargetLocale', $event)"
       />
       <label>
@@ -196,8 +198,8 @@ function isSupportedLocale(
     </div>
     <Button
       v-else-if="!loading"
-      label="Повторить"
-      icon="pi pi-refresh"
+      label="Настроить"
+      icon="pi pi-sliders-h"
       size="small"
       text
       @click="emit('reload')"

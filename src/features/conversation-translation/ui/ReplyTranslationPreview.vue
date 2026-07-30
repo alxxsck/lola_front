@@ -230,7 +230,7 @@ watch(
   font-size: 0.76rem;
 }
 .reply-preview__processing {
-  min-height: 80px;
+  min-height: 64px;
   color: var(--status-violet-text);
   font-size: 0.67rem;
 }
@@ -293,8 +293,10 @@ watch(
   font-size: 0.61rem;
 }
 .reply-preview__ready :deep(textarea) {
-  min-height: 72px;
-  padding: 9px 0;
+  min-height: 48px;
+  max-height: 96px;
+  padding: 6px 0;
+  overflow-y: auto;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -312,12 +314,12 @@ watch(
   margin-right: auto;
 }
 .reply-preview__footer :deep(.p-button) {
-  min-height: 40px;
+  min-height: 36px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12px;
 }
 .reply-preview__footer :deep(.p-button:last-child) {
-  min-width: 170px;
+  min-width: 146px;
 }
 .reply-preview__warnings {
   color: var(--status-warning-text);
@@ -337,15 +339,21 @@ watch(
   }
 }
 @media (max-width: 620px) {
-  .reply-preview__start,
-  .reply-preview__footer {
+  .reply-preview__start {
     align-items: stretch;
     flex-direction: column;
   }
-  .reply-preview__start :deep(.p-button),
-  .reply-preview__footer :deep(.p-button) {
+  .reply-preview__start :deep(.p-button) {
     width: 100%;
-    min-height: 46px;
+    min-height: 42px;
+  }
+  .reply-preview__footer {
+    gap: 7px;
+  }
+  .reply-preview__footer :deep(.p-button) {
+    min-width: 0;
+    min-height: 40px;
+    flex: 1 1 0;
   }
   .reply-preview__footer span {
     display: none;

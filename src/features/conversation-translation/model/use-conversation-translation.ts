@@ -232,6 +232,16 @@ export function createConversationTranslationController(
     return key ? `lola:reply-translation-draft:${key}` : null;
   }
 
+  function hasStoredReplyDraft(): boolean {
+    const key = draftStorageKey();
+    if (!key) return false;
+    try {
+      return Boolean(globalThis.sessionStorage?.getItem(key));
+    } catch {
+      return false;
+    }
+  }
+
   function persistDraftEnvelope(
     value: ReplyTranslationDraftResponseDto | null,
   ): void {
@@ -393,9 +403,8 @@ export function createConversationTranslationController(
     );
   }
 
-  async function load(): Promise<void> {
-    const key = contextKey(context);
-    const requestGeneration = ++generation;
+  function reset(): void {
+    generation += 1;
     state.value = null;
     messageTranslations.value = new Map();
     translatingMessageIds.value = new Set();
@@ -407,8 +416,18 @@ export function createConversationTranslationController(
     previewStale.value = false;
     error.value = "";
     loading.value = false;
+  }
+
+  function cancelMessageTranslations(): void {
+    generation += 1;
+    translatingMessageIds.value = new Set();
+  }
+
+  async function load(): Promise<void> {
+    reset();
+    const key = contextKey(context);
+    const requestGeneration = generation;
     if (!key) {
-      state.value = null;
       return;
     }
     scrubUnsafeDraftEnvelope();
@@ -995,7 +1014,10 @@ export function createConversationTranslationController(
     editingReply,
     previewStale,
     error,
+    reset,
+    cancelMessageTranslations,
     load,
+    hasStoredReplyDraft,
     recoverReplyDraft,
     clearReplyDraft,
     updatePreference,

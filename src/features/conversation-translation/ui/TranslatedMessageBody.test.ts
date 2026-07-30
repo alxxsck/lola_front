@@ -18,7 +18,7 @@ function message(
 }
 
 describe("translated message body", () => {
-  it("показывает сохранённый перевод и переключается на оригинал без API", async () => {
+  it("показывает сохранённый перевод без локальных кнопок управления", () => {
     const wrapper = shallowMount(TranslatedMessageBody, {
       props: {
         message: message({
@@ -37,16 +37,14 @@ describe("translated message body", () => {
             updatedAt: "2026-07-30T10:00:01.000Z",
           },
         }),
-        canTranslate: true,
       },
     });
 
     expect(wrapper.text()).toContain("Добрый день");
-    await wrapper.get("button-stub").trigger("click");
-    expect(wrapper.text()).toContain("Guten Tag");
+    expect(wrapper.find("button-stub").exists()).toBe(false);
   });
 
-  it("для outbound сначала показывает исходник оператора, затем exact delivered edit", async () => {
+  it("для outbound показывает исходник оператора без локального переключателя", () => {
     const wrapper = shallowMount(TranslatedMessageBody, {
       props: {
         message: message({
@@ -67,17 +65,14 @@ describe("translated message body", () => {
             updatedAt: "2026-07-30T10:00:01.000Z",
           },
         }),
-        canTranslate: true,
       },
     });
 
     expect(wrapper.text()).toContain("Здравствуйте");
     expect(wrapper.text()).not.toContain("Guten Tag!");
     expect(wrapper.text()).not.toContain("Hallo");
-    await wrapper.get("button-stub").trigger("click");
-    expect(wrapper.text()).toContain("Guten Tag!");
-    expect(wrapper.text()).not.toContain("Hallo");
     expect(wrapper.text()).toContain("Изменено оператором");
+    expect(wrapper.find("button-stub").exists()).toBe(false);
   });
 
   it("в едином режиме показывает доставленный outbound как оригинал, а текст оператора как перевод", async () => {
@@ -101,7 +96,6 @@ describe("translated message body", () => {
             updatedAt: "2026-07-30T10:00:01.000Z",
           },
         }),
-        canTranslate: true,
         viewMode: "ORIGINAL",
       },
     });
@@ -129,7 +123,6 @@ describe("translated message body", () => {
           warnings: [],
           updatedAt: "2026-07-30T10:00:01.000Z",
         },
-        canTranslate: true,
       },
     });
 
@@ -138,7 +131,7 @@ describe("translated message body", () => {
     );
   });
 
-  it("предлагает ручную сверку pending после завершения локального polling", async () => {
+  it("не показывает ручную сверку pending внутри сообщения", () => {
     const wrapper = shallowMount(TranslatedMessageBody, {
       props: {
         message: message(),
@@ -153,13 +146,10 @@ describe("translated message body", () => {
           warnings: [],
           updatedAt: "2026-07-30T10:00:01.000Z",
         },
-        busy: false,
-        canTranslate: true,
       },
     });
 
-    await wrapper.get("button-stub").trigger("click");
-    expect(wrapper.emitted("reconcile")).toEqual([["message-1"]]);
+    expect(wrapper.find("button-stub").exists()).toBe(false);
   });
 
   it.each([
@@ -178,7 +168,6 @@ describe("translated message body", () => {
           translatedText: null,
           updatedAt: "2026-07-30T10:00:01.000Z",
         },
-        canTranslate: true,
       },
     });
 
@@ -196,7 +185,6 @@ describe("translated message body", () => {
           translatedText: null,
           updatedAt: "2026-07-30T10:00:01.000Z",
         },
-        canTranslate: true,
       },
     });
 
@@ -208,23 +196,20 @@ describe("translated message body", () => {
     );
   });
 
-  it("оставляет per-message перевод доступным без conversation opt-in", () => {
+  it("не предлагает per-message перевод без conversation opt-in", () => {
     const wrapper = shallowMount(TranslatedMessageBody, {
       props: {
         message: message(),
-        canTranslate: true,
       },
     });
 
-    expect(wrapper.find("button-stub").exists()).toBe(true);
+    expect(wrapper.find("button-stub").exists()).toBe(false);
   });
 
   it("не предлагает перевод для очевидного emoji/noise", () => {
     const wrapper = shallowMount(TranslatedMessageBody, {
       props: {
         message: message({ text: "👋✨" }),
-        canTranslate: true,
-        workingLocale: "ru",
       },
     });
 
@@ -238,31 +223,28 @@ describe("translated message body", () => {
     ["македонского", "Благодарам"],
     ["немецкого", "Danke!"],
   ])(
-    "сохраняет ручное действие для содержательного %s текста",
+    "не добавляет локальное действие для содержательного %s текста",
     (_label, text) => {
       const wrapper = shallowMount(TranslatedMessageBody, {
         props: {
           message: message({ text }),
-          canTranslate: true,
-          workingLocale: "ru",
         },
       });
 
-      expect(wrapper.find("button-stub").exists()).toBe(true);
+      expect(wrapper.find("button-stub").exists()).toBe(false);
     },
   );
 
   it.each(["ASSISTANT", "SCENARIO"] as const)(
-    "предлагает ручной перевод для %s",
+    "не добавляет локальный перевод для %s",
     (author) => {
       const wrapper = shallowMount(TranslatedMessageBody, {
         props: {
           message: message({ author }),
-          canTranslate: true,
         },
       });
 
-      expect(wrapper.find("button-stub").exists()).toBe(true);
+      expect(wrapper.find("button-stub").exists()).toBe(false);
     },
   );
 });

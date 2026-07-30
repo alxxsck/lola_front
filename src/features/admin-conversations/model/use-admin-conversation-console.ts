@@ -31,6 +31,7 @@ const messageStatusRank: Record<ConversationMessage["status"], number> = {
   FAILED: 2,
   CANCELLED: 2,
 };
+const MESSAGE_PAGE_SIZE = 20;
 
 function newerMessage(
   current: ConversationMessage,
@@ -396,7 +397,7 @@ export function useAdminConversationConsole(
         projectId,
         endUserId,
         conversation.id,
-        { limit: 50 },
+        { limit: MESSAGE_PAGE_SIZE },
       );
       if (
         request === messageRequestSequence &&
@@ -439,7 +440,7 @@ export function useAdminConversationConsole(
         endUserId,
         conversation.id,
         {
-          limit: 50,
+          limit: MESSAGE_PAGE_SIZE,
           cursor,
         },
       );
@@ -503,7 +504,7 @@ export function useAdminConversationConsole(
         await Promise.all([
           repository.getConversation(projectId, endUserId, conversation.id),
           repository.getMessages(projectId, endUserId, conversation.id, {
-            limit: 50,
+            limit: MESSAGE_PAGE_SIZE,
           }),
           repository.getSessions(projectId),
           repository.getConversations(projectId, endUserId, { limit: 30 }),

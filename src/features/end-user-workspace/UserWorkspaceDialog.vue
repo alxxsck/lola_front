@@ -108,6 +108,9 @@ const sendWithoutTranslationReason = ref("");
 const composerActionsVisible = ref(false);
 const conversationMenuVisible = ref(false);
 const ticketDrawerVisible = ref(false);
+const replyTemplateGalleryVisible = ref(false);
+const translationFeedbackEnabled = ref(false);
+const replyTranslationRequested = ref(false);
 let profileRequest = 0;
 let unsubscribeMessage: (() => void) | undefined;
 let unsubscribeTranslation: (() => void) | undefined;
@@ -225,6 +228,36 @@ const visibleTranslationMessageIds = computed(() =>
     .slice(-50)
     .map((message) => message.id),
 );
+const conversationLocale = computed(() => {
+  const translationLocale = translation.state.value?.language.locale;
+  if (translationLocale) return translationLocale;
+  for (let index = messages.value.length - 1; index >= 0; index -= 1) {
+    const message = messages.value[index];
+    if (message?.author !== "USER") continue;
+    if (message.translation?.sourceLocale) {
+      return message.translation.sourceLocale;
+    }
+    if (/\p{Script=Cyrillic}/u.test(message.text)) {
+      return "ru";
+    }
+  }
+  const localeField = detail.value?.fields.find(
+    (field) => field.key.toLocaleLowerCase() === "locale",
+  );
+  const localeValue = localeField?.value;
+  if (
+    localeValue &&
+    localeValue.type === "STRING" &&
+    typeof localeValue.value === "string"
+  ) {
+    return localeValue.value;
+  }
+  return null;
+});
+const workingLocaleLabel = computed(
+  () =>
+    translation.state.value?.preference.workingLocale?.toUpperCase() ?? "RU",
+);
 const filteredConversations = computed(() => {
   const query = conversationSearch.value.trim().toLocaleLowerCase("ru-RU");
   if (!query) return conversations.value;
@@ -266,10 +299,53 @@ const replyTemplates = [
 ] as const;
 
 async function setTranslationEnabled(enabled: boolean): Promise<void> {
+  if (!(await ensureTranslationLoaded())) return;
   await translation.updatePreference({ enabled });
   if (enabled && translation.state.value?.preference.enabled) {
     await translation.translateMessages(visibleTranslationMessageIds.value);
   }
+}
+
+async function ensureTranslationLoaded(): Promise<boolean> {
+  if (!canManageTranslation.value) return false;
+  translationFeedbackEnabled.value = true;
+  if (!translation.state.value && !translation.loading.value) {
+    await translation.load();
+  }
+  return Boolean(translation.state.value);
+}
+
+async function showTranslatedMessages(): Promise<void> {
+  if (!(await ensureTranslationLoaded())) return;
+  if (!translation.state.value?.preference.enabled) {
+    await translation.updatePreference({ enabled: true });
+  }
+  if (!translation.state.value?.preference.enabled) return;
+  await translation.translateMessages(visibleTranslationMessageIds.value);
+  messageViewMode.value = "TRANSLATED";
+}
+
+function toggleConversationMenu(): void {
+  conversationMenuVisible.value = !conversationMenuVisible.value;
+}
+
+async function prepareReplyTranslation(): Promise<void> {
+  if (!(await ensureTranslationLoaded())) return;
+  const targetLocale = translation.targetLocale.value;
+  const workingLocale = translation.state.value?.preference.workingLocale;
+  if (!targetLocale || targetLocale === workingLocale) {
+    conversationMenuVisible.value = true;
+    toast.add({
+      severity: "info",
+      summary: "Выберите язык перевода",
+      detail:
+        "В меню «⋯» задайте язык, на котором пользователь должен получить ответ.",
+      life: 5_000,
+    });
+    return;
+  }
+  replyTranslationRequested.value = true;
+  await translation.createReplyPreview();
 }
 const canStartAIReview = computed(
   () =>
@@ -318,6 +394,9 @@ const hasUnsavedDraft = computed(
 watch(conversations, (value) => suspensionStore.ingestConversations(value), {
   flush: "sync",
 });
+watch(replyText, (value) => {
+  if (!value.trim()) replyTranslationRequested.value = false;
+});
 watch(conversationError, (message) => {
   if (!message) return;
   toast.add({
@@ -342,7 +421,7 @@ watch(
 watch(
   () => translation.error.value,
   (message) => {
-    if (!message) return;
+    if (!message || !translationFeedbackEnabled.value) return;
     toast.add({
       severity: "warn",
       summary: message.startsWith("На сервере выключена обработка переводов")
@@ -356,24 +435,26 @@ watch(
 watch(
   () => selectedConversation.value?.id,
   async (conversationId) => {
-    messageViewMode.value = "TRANSLATED";
+    messageViewMode.value = "ORIGINAL";
+    translationFeedbackEnabled.value = false;
+    replyTranslationRequested.value = false;
+    translation.reset();
     composerActionsVisible.value = false;
     conversationMenuVisible.value = false;
     ticketDrawerVisible.value = false;
+    replyTemplateGalleryVisible.value = false;
     sendWithoutTranslationReason.value = "";
     sendWithoutTranslationVisible.value = false;
     if (!conversationId || !props.endUserId || !visible.value) return;
     liveMessageIds.value = [];
     if (conversationAISuspensionEnabled)
       void suspensionStore.loadDetail(props.endUserId, conversationId);
-    if (canManageTranslation.value) {
+    if (
+      canManageTranslation.value &&
+      translation.hasStoredReplyDraft()
+    ) {
       await translation.load();
-      if (
-        canManageTranslation.value &&
-        translation.state.value?.preference.enabled
-      ) {
-        void translation.translateMessages(visibleTranslationMessageIds.value);
-      }
+      replyTranslationRequested.value = Boolean(translation.draft.value);
     }
     mobilePane.value = "CHAT";
     await nextTick();
@@ -383,6 +464,7 @@ watch(
 watch(
   () => [visible.value, props.projectId, props.endUserId] as const,
   ([isVisible, , endUserId]) => {
+    document.body.classList.toggle("workspace-scroll-locked", isVisible);
     if (!isVisible || !endUserId) {
       closeWorkspace();
       return;
@@ -393,6 +475,7 @@ watch(
 );
 
 onMounted(() => {
+  document.body.classList.toggle("workspace-scroll-locked", visible.value);
   unsubscribeRealtimeState = cmsRealtimeClient.onState((state) => {
     realtimeState.value = state;
   });
@@ -410,7 +493,11 @@ onMounted(() => {
     unsubscribeReconcile = cmsRealtimeClient.reconcile(async () => {
       if (!visible.value) return;
       await consoleState.reconcileSelected();
-      if (canManageTranslation.value && selectedConversation.value) {
+      if (
+        canManageTranslation.value &&
+        selectedConversation.value &&
+        translationFeedbackEnabled.value
+      ) {
         await translation.load();
       }
     });
@@ -422,6 +509,7 @@ onMounted(() => {
   }
 });
 onBeforeUnmount(() => {
+  document.body.classList.remove("workspace-scroll-locked");
   unsubscribeRealtimeState?.();
   unsubscribeMessage?.();
   unsubscribeTranslation?.();
@@ -530,6 +618,10 @@ function closeWorkspace(): void {
   composerActionsVisible.value = false;
   conversationMenuVisible.value = false;
   ticketDrawerVisible.value = false;
+  replyTemplateGalleryVisible.value = false;
+  translationFeedbackEnabled.value = false;
+  replyTranslationRequested.value = false;
+  translation.reset();
 }
 
 async function openChat(): Promise<void> {
@@ -691,9 +783,12 @@ async function selectConversation(
   scrollToLatest(false);
 }
 
-function applyReplyTemplate(template = replyTemplates[0]): void {
+function applyReplyTemplate(
+  template: (typeof replyTemplates)[number] = replyTemplates[0],
+): void {
   replyText.value = template;
   composerActionsVisible.value = false;
+  replyTemplateGalleryVisible.value = false;
   toast.add({
     severity: "success",
     summary: "Шаблон добавлен",
@@ -784,36 +879,21 @@ async function createConversation(): Promise<void> {
 
 async function sendReply(): Promise<void> {
   if (!canReply.value) return;
-  const translationState = translation.state.value;
-  const translationEnabled = translationState?.preference.enabled ?? false;
-  const workingLocale = translationState?.preference.workingLocale ?? null;
-  const sameLanguage =
-    Boolean(workingLocale) && translation.targetLocale.value === workingLocale;
-  if (translationEnabled && sameLanguage) {
-    await consoleState.sendReply();
+  if (replyTranslationRequested.value) {
+    if (translation.readyDraft.value) {
+      await sendTranslatedReply();
+    } else {
+      await prepareReplyTranslation();
+    }
     return;
   }
-  if (
-    translationEnabled &&
-    translationState?.availability.available &&
-    translation.targetLocale.value &&
-    canManageTranslation.value
-  ) {
-    await translation.createReplyPreview();
-    return;
-  }
-  if (translationEnabled) return;
   await consoleState.sendReply();
 }
 
 function handleComposerEnter(event: KeyboardEvent): void {
   if (event.isComposing) return;
   event.preventDefault();
-  if (
-    translation.state.value?.preference.enabled &&
-    translation.readyDraft.value &&
-    !translation.previewStale.value
-  ) {
+  if (translation.readyDraft.value && !translation.previewStale.value) {
     void sendTranslatedReply();
     return;
   }
@@ -876,7 +956,7 @@ async function sendTranslatedReply(editedText?: string): Promise<void> {
   }
   if (!replyText.value.trim()) {
     translation.clearReplyDraft();
-    await translation.load();
+    replyTranslationRequested.value = false;
   }
 }
 
@@ -888,6 +968,7 @@ async function sendReplyWithoutTranslation(): Promise<void> {
     sendWithoutTranslationReason.value = "";
     sendWithoutTranslationVisible.value = false;
     translation.clearReplyDraft();
+    replyTranslationRequested.value = false;
   }
 }
 
@@ -961,6 +1042,7 @@ function displayField(
     :visible="visible"
     @update:visible="requestVisibility"
     modal
+    block-scroll
     maximizable
     :maximize-button-props="{
       'aria-label': 'Развернуть рабочее пространство',
@@ -994,12 +1076,21 @@ function displayField(
         <span class="avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
         <div class="workspace-identity">
           <h2>{{ displayName }}</h2>
-          <span>
+          <span class="workspace-identity-meta">
             {{
               workspaceMode === "CHAT"
-                ? `${detail?.externalUserId || endUserId || "—"} · ${onlineSession ? "пользователь онлайн" : "пользователь офлайн"}`
+                ? detail?.externalUserId || endUserId || "—"
                 : "Профиль пользователя"
             }}
+            <i
+              v-if="workspaceMode === 'CHAT'"
+              class="presence-dot"
+              :class="{ online: Boolean(onlineSession) }"
+              role="img"
+              :aria-label="
+                onlineSession ? 'Пользователь онлайн' : 'Пользователь офлайн'
+              "
+            />
           </span>
         </div>
         <div class="workspace-statuses">
@@ -1017,17 +1108,6 @@ function displayField(
             {{ realtimeStatus.label }}
           </span>
         </div>
-        <Button
-          v-if="workspaceMode === 'CHAT'"
-          label="Диалоги"
-          icon="pi pi-chevron-down"
-          icon-pos="right"
-          severity="secondary"
-          outlined
-          size="small"
-          class="workspace-dialogs"
-          @click="mobilePane = 'LIST'"
-        />
       </div>
     </template>
 
@@ -1225,9 +1305,7 @@ function displayField(
           <div>
             <strong>{{ displayName }}</strong>
             <small>
-              {{
-                `${(translation.state.value?.language.locale ?? "—").toUpperCase()} · ${onlineSession ? "онлайн" : "офлайн"}`
-              }}
+              {{ (conversationLocale ?? "—").toUpperCase() }}
             </small>
           </div>
           <span
@@ -1304,11 +1382,11 @@ function displayField(
               <span
                 v-else-if="
                   selectedConversation?.id === conversation.id &&
-                  translation.state.value?.language.locale
+                  conversationLocale
                 "
                 class="conversation-badge accent"
               >
-                {{ translation.state.value.language.locale.toUpperCase() }}
+                {{ conversationLocale.toUpperCase() }}
               </span>
             </span>
             <span
@@ -1368,19 +1446,16 @@ function displayField(
             </span>
           </div>
           <div
-            v-if="canManageTranslation && translation.state.value"
+            v-if="canManageTranslation"
             class="conversation-language-fact"
           >
             <span>Пользователь пишет на</span>
             <strong>{{
-              (translation.state.value.language.locale ?? "—").toUpperCase()
+              (conversationLocale ?? "—").toUpperCase()
             }}</strong>
           </div>
           <div
-            v-if="
-              canManageTranslation &&
-              translation.state.value?.preference.enabled
-            "
+            v-if="canManageTranslation"
             class="message-view-switch"
             role="group"
             aria-label="Режим отображения сообщений"
@@ -1399,14 +1474,11 @@ function displayField(
               data-action="show-translated-messages"
               :class="{ active: messageViewMode === 'TRANSLATED' }"
               :aria-pressed="messageViewMode === 'TRANSLATED'"
-              @click="messageViewMode = 'TRANSLATED'"
+              :disabled="translation.loading.value"
+              @click="showTranslatedMessages"
             >
               Перевод ·
-              {{
-                (
-                  translation.state.value.preference.workingLocale ?? ""
-                ).toUpperCase()
-              }}
+              {{ workingLocaleLabel }}
             </button>
           </div>
           <template
@@ -1446,7 +1518,7 @@ function displayField(
               aria-label="Другие действия с диалогом"
               aria-haspopup="menu"
               :aria-expanded="conversationMenuVisible"
-              @click="conversationMenuVisible = !conversationMenuVisible"
+              @click="toggleConversationMenu"
             >
               <i class="pi pi-ellipsis-h" aria-hidden="true" />
             </button>
@@ -1463,7 +1535,7 @@ function displayField(
                 :saving="translation.savingPreference.value"
                 :can-manage="canManageTranslation"
                 :eligible-count="visibleTranslationMessageIds.length"
-                @reload="translation.load"
+                @reload="ensureTranslationLoaded"
                 @update-enabled="setTranslationEnabled"
                 @update-target-locale="
                   translation.updatePreference({
@@ -1553,6 +1625,13 @@ function displayField(
                 {{ bulkTranslationCompleted }} из
                 {{ bulkTranslationIds.length }}
               </span>
+              <button
+                type="button"
+                class="bulk-translation-progress__cancel"
+                @click="translation.cancelMessageTranslations"
+              >
+                Отменить
+              </button>
             </div>
             <span class="bulk-translation-progress__track" aria-hidden="true">
               <i :style="{ width: `${bulkTranslationProgress}%` }" />
@@ -1599,15 +1678,7 @@ function displayField(
                 :requested="
                   translation.messageTranslations.value.get(message.id)
                 "
-                :busy="translation.translatingMessageIds.value.has(message.id)"
-                :can-translate="canManageTranslation"
-                :working-locale="
-                  translation.state.value?.preference.workingLocale ?? null
-                "
                 :view-mode="messageViewMode"
-                @translate="translation.translateMessage"
-                @retry="translation.retryMessage"
-                @reconcile="translation.reconcileMessage"
               />
               <small v-if="message.status === 'FAILED'"
                 ><i class="pi pi-exclamation-circle" /> Не доставлено</small
@@ -1653,15 +1724,7 @@ function displayField(
           <div class="composer-source">
             <div class="composer-label">
               <span>
-                Ваш текст
-                <template
-                  v-if="translation.state.value?.preference.workingLocale"
-                >
-                  ·
-                  {{
-                    translation.state.value.preference.workingLocale.toUpperCase()
-                  }}
-                </template>
+                Ваш текст · {{ workingLocaleLabel }}
               </span>
               <span v-if="!onlineSession" class="composer-label__offline">
                 <i class="pi pi-wifi" aria-hidden="true" /> Пользователь офлайн
@@ -1669,9 +1732,8 @@ function displayField(
             </div>
             <Textarea
               v-model="replyText"
-              rows="3"
+              rows="2"
               maxlength="10000"
-              auto-resize
               placeholder="Ответить от имени оператора"
               aria-label="Ответ пользователю"
               :disabled="
@@ -1687,9 +1749,8 @@ function displayField(
           <ReplyTranslationPreview
             v-if="
               canManageTranslation &&
-              translation.state.value?.preference.enabled &&
-              translation.targetLocale.value !==
-                translation.state.value.preference.workingLocale
+              replyTranslationRequested &&
+              translation.state.value
             "
             :draft="translation.draft.value"
             :target-locale="translation.targetLocale.value"
@@ -1710,17 +1771,49 @@ function displayField(
               translation.state.value?.budget.hardExhausted
             "
             :show-provider-details="canReadTranslationDetails"
-            @preview="translation.createReplyPreview"
+            @preview="prepareReplyTranslation"
             @reconcile="translation.reconcileReplyPreview"
             @retry="translation.retryReplyPreview"
             @save-edit="translation.editReplyTranslation"
             @send="sendTranslatedReply"
           />
+          <div
+            v-else-if="canManageTranslation && replyText.trim()"
+            class="composer-assist"
+          >
+            <div>
+              <span>Нужна языковая обработка?</span>
+              <strong>
+                {{
+                  translation.targetLocale.value
+                    ? `Перевод на ${translation.targetLocale.value.toUpperCase()}`
+                    : "Язык можно выбрать в меню ⋯"
+                }}
+              </strong>
+            </div>
+            <Button
+              type="button"
+              :label="
+                translation.targetLocale.value
+                  ? `Перевести на ${translation.targetLocale.value.toUpperCase()}`
+                  : 'Перевести ответ'
+              "
+              icon="pi pi-sparkles"
+              size="small"
+              :loading="translation.loading.value || translation.previewing.value"
+              :disabled="
+                messagesLoading ||
+                !onlineSession ||
+                selectedConversation.status !== 'ACTIVE'
+              "
+              @click="prepareReplyTranslation"
+            />
+          </div>
           <div class="composer-footer">
             <span>
               {{
-                translation.state.value?.preference.enabled
-                  ? `Шаг ${translation.readyDraft.value ? "2 из 2: перевод готов и проверен. Enter — отправить · Shift+Enter — перенос строки" : "1 из 2: сначала перевод — отправка без перевода доступна в меню «Действие»"}`
+                replyTranslationRequested
+                  ? `Шаг ${translation.readyDraft.value ? "2 из 2: перевод готов и проверен" : "1 из 2: сначала перевод, затем отправка"}`
                   : "Enter — отправить · Shift+Enter — перенос строки"
               }}
             </span>
@@ -1773,17 +1866,6 @@ function displayField(
                       <small>Live API пока принимает только текст</small>
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    @click="applyReplyTemplate()"
-                  >
-                    <i class="pi pi-align-left" aria-hidden="true" />
-                    <span>
-                      <strong>Шаблон ответа</strong>
-                      <small>Добавить текст в черновик</small>
-                    </span>
-                  </button>
                   <span class="menu-section-label">Интеграции</span>
                   <button
                     type="button"
@@ -1800,7 +1882,7 @@ function displayField(
                   <button
                     v-if="
                       canReplyWithoutTranslation &&
-                      translation.state.value?.preference.enabled
+                      replyTranslationRequested
                     "
                     type="button"
                     role="menuitem"
@@ -1826,16 +1908,20 @@ function displayField(
                   sendingReply ||
                   replyTranslationInFlight
                 "
-                @click="applyReplyTemplate()"
+                @click="replyTemplateGalleryVisible = true"
               />
               <Button
-                v-if="
-                  canReply &&
-                  (!translation.state.value?.preference.enabled ||
-                    (translation.targetLocale.value &&
-                      translation.targetLocale.value ===
-                        translation.state.value?.preference.workingLocale))
-                "
+                type="button"
+                label="Улучшить с AI"
+                icon="pi pi-sparkles"
+                severity="secondary"
+                text
+                class="composer-ai-action"
+                title="Скоро — функция пока недоступна"
+                disabled
+              />
+              <Button
+                v-if="canReply && !replyTranslationRequested"
                 type="submit"
                 label="Отправить"
                 icon="pi pi-send"
@@ -1859,6 +1945,45 @@ function displayField(
           :message-count="messages.length"
           @close="ticketDrawerVisible = false"
         />
+        <div
+          v-if="replyTemplateGalleryVisible"
+          class="template-gallery-backdrop"
+          @click.self="replyTemplateGalleryVisible = false"
+        >
+          <section
+            class="template-gallery"
+            data-testid="reply-template-gallery"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reply-template-gallery-title"
+          >
+            <header>
+              <div>
+                <span>Быстрые ответы</span>
+                <h3 id="reply-template-gallery-title">Галерея шаблонов</h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Закрыть галерею шаблонов"
+                @click="replyTemplateGalleryVisible = false"
+              >
+                <i class="pi pi-times" aria-hidden="true" />
+              </button>
+            </header>
+            <div class="template-gallery__grid">
+              <button
+                v-for="(template, index) in replyTemplates"
+                :key="template"
+                type="button"
+                @click="applyReplyTemplate(template)"
+              >
+                <span>Шаблон {{ index + 1 }}</span>
+                <strong>{{ template }}</strong>
+                <small>Выбрать и продолжить редактирование</small>
+              </button>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
 
@@ -2689,15 +2814,16 @@ function displayField(
 .composer-action-menu__panel {
   position: absolute;
   z-index: 5;
-  right: 0;
+  right: auto;
   bottom: calc(100% + 8px);
+  left: 0;
   width: 250px;
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 13px;
   background: var(--surface-card);
   box-shadow: var(--shadow);
-  transform-origin: bottom right;
+  transform-origin: bottom left;
   animation: action-menu-enter 0.14s ease-out;
 }
 .composer-action-menu__panel button {
@@ -2883,6 +3009,11 @@ function displayField(
   background: var(--surface-card);
   box-shadow: var(--shadow-dialog);
 }
+:global(body.p-overflow-hidden),
+:global(body.workspace-scroll-locked) {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
 :global(.user-workspace-dialog .p-dialog-header) {
   min-height: 64px;
   padding: 12px 16px;
@@ -2950,7 +3081,9 @@ function displayField(
   letter-spacing: 0;
 }
 .workspace-identity > span {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   margin-top: 1px;
   overflow: hidden;
   color: var(--text-tertiary);
@@ -2958,6 +3091,17 @@ function displayField(
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.presence-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+.presence-dot.online {
+  background: var(--status-success-text);
+  box-shadow: 0 0 0 3px var(--status-success-soft);
 }
 .workspace-statuses {
   margin-left: auto;
@@ -2981,7 +3125,8 @@ function displayField(
   min-height: 0;
   flex: 1;
   grid-template-columns: 272px minmax(0, 1fr);
-  height: auto;
+  height: 100%;
+  overflow: hidden;
   background: var(--surface-card);
 }
 .conversation-pane {
@@ -3023,6 +3168,7 @@ function displayField(
 .conversation-list {
   gap: 2px;
   padding: 0 8px 10px;
+  overscroll-behavior-y: contain;
 }
 .conversation-list button {
   gap: 5px;
@@ -3236,6 +3382,7 @@ function displayField(
   padding: 16px 24px;
   border-radius: 0;
   background: var(--surface-card);
+  overscroll-behavior-y: contain;
   scrollbar-gutter: stable;
 }
 .message-bubble {
@@ -3371,6 +3518,18 @@ function displayField(
   font-size: 13px;
   font-weight: 600;
 }
+.bulk-translation-progress__cancel {
+  margin-left: auto;
+  padding: 3px 5px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.bulk-translation-progress__cancel:hover {
+  text-decoration: underline;
+}
 .bulk-translation-progress__track {
   height: 4px;
   overflow: hidden;
@@ -3434,9 +3593,9 @@ function displayField(
 }
 .composer {
   grid-template-columns: minmax(0, 1fr);
-  gap: 9px;
-  margin: 0 18px 14px;
-  padding: 12px 14px 10px;
+  gap: 8px;
+  margin: 0 20px 14px;
+  padding: 10px 12px 9px;
   border: 1px solid var(--border-default);
   border-radius: 14px;
   background: var(--surface-subtle);
@@ -3452,8 +3611,8 @@ function displayField(
   gap: 7px;
 }
 .composer--translated .composer-source {
-  padding-right: 16px;
-  padding-bottom: 58px;
+  padding-right: 14px;
+  padding-bottom: 46px;
   border-right: 1px solid var(--border-subtle);
 }
 .composer-label {
@@ -3472,8 +3631,10 @@ function displayField(
   letter-spacing: 0;
 }
 .composer :deep(textarea) {
-  min-height: 72px;
-  padding: 9px 0;
+  min-height: 48px;
+  max-height: 96px;
+  padding: 6px 0;
+  overflow-y: auto;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -3485,10 +3646,46 @@ function displayField(
 .composer :deep(textarea:focus) {
   box-shadow: none;
 }
+.composer-assist {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px 7px 11px;
+  border: 1px solid var(--palette-violet-200);
+  border-radius: 10px;
+  background: var(--status-violet-soft);
+}
+.composer-assist > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.composer-assist span {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.composer-assist strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-assist :deep(.p-button) {
+  min-height: 34px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  font-size: 12px;
+}
 .composer-footer {
   grid-column: 1 / -1;
-  min-height: 48px;
-  padding-top: 10px;
+  min-height: 38px;
+  padding-top: 8px;
   border-top: 1px solid var(--border-subtle);
 }
 .composer-footer > span {
@@ -3504,7 +3701,7 @@ function displayField(
   bottom: 10px;
   left: 14px;
   width: calc(50% - 21px);
-  min-height: 50px;
+  min-height: 42px;
 }
 .composer--translated .composer-footer > span {
   display: none;
@@ -3514,12 +3711,15 @@ function displayField(
   justify-content: flex-start;
 }
 .composer-footer :deep(.p-button) {
-  min-height: 40px;
+  min-height: 36px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12px;
 }
 .composer-primary-action {
-  min-width: 160px;
+  min-width: 132px;
+}
+.composer-ai-action {
+  opacity: 0.58;
 }
 .composer--loading {
   position: relative;
@@ -3538,9 +3738,9 @@ function displayField(
   font-size: 12px;
 }
 .composer-action-menu__panel {
-  right: 0;
+  right: auto;
   bottom: calc(100% + 8px);
-  left: auto;
+  left: 0;
   width: 290px;
   padding: 8px;
   border-color: var(--border-default);
@@ -3573,6 +3773,95 @@ function displayField(
 .mobile-sheet-handle,
 .mobile-sheet-title {
   display: none;
+}
+.template-gallery-backdrop {
+  position: absolute;
+  z-index: 35;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--overlay-backdrop);
+}
+.template-gallery {
+  width: min(680px, 100%);
+  max-height: min(620px, calc(100dvh - 80px));
+  overflow-y: auto;
+  padding: 18px;
+  border: 1px solid var(--border-default);
+  border-radius: 18px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-dialog);
+}
+.template-gallery > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.template-gallery > header span {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.template-gallery > header h3 {
+  margin: 3px 0 0;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+.template-gallery > header button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.template-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.template-gallery__grid > button {
+  display: grid;
+  min-height: 126px;
+  align-content: start;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+.template-gallery__grid > button:hover {
+  border-color: var(--palette-violet-200);
+  background: var(--status-violet-soft);
+  transform: translateY(-1px);
+}
+.template-gallery__grid span,
+.template-gallery__grid small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+.template-gallery__grid span {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-weight: 700;
+}
+.template-gallery__grid strong {
+  font-size: 13px;
+  line-height: 1.45;
 }
 @keyframes skeleton-shimmer {
   from {
@@ -3876,6 +4165,28 @@ function displayField(
   }
   .composer-action-menu > :deep(.p-button) {
     width: 100%;
+  }
+  .composer-assist {
+    min-height: 42px;
+  }
+  .composer-ai-action {
+    flex: 1 1 auto;
+  }
+  .template-gallery-backdrop {
+    place-items: end stretch;
+    padding: 0;
+  }
+  .template-gallery {
+    width: 100%;
+    max-height: 78dvh;
+    padding: 16px;
+    border-radius: 20px 20px 0 0;
+  }
+  .template-gallery__grid {
+    grid-template-columns: 1fr;
+  }
+  .template-gallery__grid > button {
+    min-height: 96px;
   }
   .new-message-pill {
     bottom: 126px;

@@ -1,37 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
+import { computed } from "vue";
 import type { ConversationMessageTranslationItemResponseDto } from "@/shared/api/generated/models";
 import type { ConversationMessage } from "@/shared/types/domain";
-import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
 
 const props = defineProps<{
   message: ConversationMessage;
   requested?: ConversationMessageTranslationItemResponseDto;
-  busy?: boolean;
-  canTranslate: boolean;
-  workingLocale?: string | null;
   viewMode?: "ORIGINAL" | "TRANSLATED";
 }>();
-const emit = defineEmits<{
-  translate: [messageId: string];
-  retry: [messageId: string];
-  reconcile: [messageId: string];
-}>();
-const localOriginalOverride = ref<boolean | null>(null);
-watch(
-  () => props.viewMode,
-  () => {
-    localOriginalOverride.value = null;
-  },
-);
 const outbound = computed(
   () => props.message.translation?.direction === "OUTBOUND",
 );
 const originalVisible = computed(
-  () =>
-    localOriginalOverride.value ??
-    (props.viewMode ? props.viewMode === "ORIGINAL" : false),
+  () => props.viewMode === "ORIGINAL",
 );
 
 const status = computed(
@@ -77,18 +58,6 @@ const skippedText = computed(() =>
       : "Перевод пропущен без обращения к модели."
     : null,
 );
-const canRequest = computed(
-  () =>
-    props.canTranslate &&
-    isFrontendTranslationCandidate(props.message, props.workingLocale) &&
-    !props.requested &&
-    !props.message.translation,
-);
-const versionActionOverlaid = computed(
-  () =>
-    Boolean(props.viewMode && translatedText.value) &&
-    !props.message.translation?.warnings.includes("OPERATOR_EDITED"),
-);
 </script>
 
 <template>
@@ -103,89 +72,30 @@ const versionActionOverlaid = computed(
     </p>
     <div
       v-if="
-        canRequest ||
-        translatedText ||
         status === 'PENDING' ||
         status === 'RUNNING' ||
         status === 'FAILED' ||
-        status === 'SKIPPED'
+        status === 'SKIPPED' ||
+        (message.translation?.direction === 'OUTBOUND' &&
+          message.translation.warnings.includes('OPERATOR_EDITED'))
       "
-      class="translated-message__actions"
-      :class="{
-        'translated-message__actions--overlay': versionActionOverlaid,
-      }"
+      class="translated-message__status"
     >
-      <Button
-        v-if="canRequest"
-        label="Перевести"
-        icon="pi pi-language"
-        size="small"
-        text
-        :loading="busy"
-        @click="emit('translate', message.id)"
-      />
       <span
-        v-else-if="status === 'PENDING' || status === 'RUNNING'"
+        v-if="status === 'PENDING' || status === 'RUNNING'"
         role="status"
         aria-live="polite"
       >
         <i class="pi pi-spin pi-spinner" aria-hidden="true" />
         Переводим…
-        <Button
-          v-if="!busy"
-          label="Проверить статус"
-          icon="pi pi-refresh"
-          size="small"
-          text
-          @click="emit('reconcile', message.id)"
-        />
       </span>
-      <Button
-        v-else-if="status === 'FAILED' && canTranslate"
-        label="Повторить перевод"
-        icon="pi pi-refresh"
-        severity="danger"
-        size="small"
-        text
-        @click="emit('retry', message.id)"
-      />
+      <span v-else-if="status === 'FAILED'" class="is-error">
+        <i class="pi pi-exclamation-circle" aria-hidden="true" />
+        Не перевелось
+      </span>
       <span v-else-if="status === 'SKIPPED'" role="status" aria-live="polite">
         <i class="pi pi-info-circle" aria-hidden="true" />
         {{ skippedText }}
-      </span>
-      <Button
-        v-else-if="translatedText"
-        :icon="originalVisible ? 'pi pi-eye' : 'pi pi-language'"
-        :aria-pressed="originalVisible"
-        :aria-label="
-          outbound
-            ? originalVisible
-              ? 'Показать текст оператора'
-              : 'Показать доставленный текст'
-            : originalVisible
-              ? 'Показать перевод'
-              : 'Показать оригинал'
-        "
-        title="Показать вторую языковую версию"
-        size="small"
-        text
-        rounded
-        class="translated-message__version-toggle"
-        @click="localOriginalOverride = !originalVisible"
-      />
-      <span
-        v-if="translatedText && !viewMode"
-        class="translated-message__locale"
-      >
-        {{
-          originalVisible
-            ? outbound
-              ? `Перевод · ${requested?.targetLocale ?? message.translation?.targetLocale}`
-              : "Оригинал"
-            : outbound
-              ? "Оригинал оператора"
-              : `Перевод · ${requested?.targetLocale ?? message.translation?.targetLocale}`
-        }}
       </span>
       <span
         v-if="
@@ -208,50 +118,18 @@ const versionActionOverlaid = computed(
 .translated-message {
   position: relative;
 }
-.translated-message__actions {
+.translated-message__status {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 7px;
   margin-top: 7px;
-  min-height: 24px;
 }
-.translated-message__actions--overlay {
-  position: absolute;
-  right: -7px;
-  bottom: -7px;
-  min-height: 0;
-  margin: 0;
-}
-.translated-message__actions :deep(.p-button) {
-  padding: 2px 0;
-  font-size: 0.63rem;
-}
-.translated-message__version-toggle {
-  opacity: 0;
-  transition: opacity 0.16s ease;
-}
-.translated-message:hover .translated-message__version-toggle,
-.translated-message__version-toggle:focus-visible {
-  opacity: 1;
-}
-.translated-message__actions > span {
+.translated-message__status > span {
   color: var(--text-secondary);
   font-size: 0.61rem;
 }
-.translated-message__locale {
-  padding-left: 7px;
-  border-left: 1px solid var(--line);
-}
-@media (hover: none) {
-  .translated-message__version-toggle {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .translated-message__version-toggle {
-    transition: none;
-  }
+.translated-message__status .is-error {
+  color: var(--status-danger-text);
 }
 </style>

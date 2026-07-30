@@ -133,6 +133,7 @@ describe("единое рабочее пространство пользова�
   beforeEach(() => {
     vi.restoreAllMocks();
     sessionStorage.clear();
+    document.body.classList.remove("workspace-scroll-locked");
     Object.defineProperty(HTMLElement.prototype, "scrollTo", {
       configurable: true,
       value: vi.fn(),
@@ -238,9 +239,10 @@ describe("единое рабочее пространство пользова�
       global: {
         stubs: {
           Dialog: {
+            props: ["blockScroll"],
             emits: ["update:visible"],
             template:
-              '<section><button data-action="close-dialog" @click="$emit(\'update:visible\', false)">close</button><slot name="header"/><slot/></section>',
+              '<section :data-block-scroll="String(blockScroll)"><button data-action="close-dialog" @click="$emit(\'update:visible\', false)">close</button><slot name="header"/><slot/></section>',
           },
           Button: {
             props: ["label"],
@@ -424,6 +426,10 @@ describe("единое рабочее пространство пользова�
     );
 
     const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
     await flushPromises();
 
     expect(wrapper.get(".bulk-translation-progress").text()).toContain(
@@ -609,9 +615,19 @@ describe("единое рабочее пространство пользова�
 
   it("принимает только translation realtime выбранного диалога", async () => {
     mocks.permissions.push("project.translation.create");
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    vi.spyOn(conversationTranslationApi, "translateMessages").mockResolvedValue(
+      { items: [], queued: false },
+    );
     const wrapper = mountWorkspace();
     await flushPromises();
     await wrapper.get('[data-action="open-chat"]').trigger("click");
+    await flushPromises();
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
     await flushPromises();
 
     expect(mocks.subscribe).toHaveBeenCalledWith(
@@ -689,6 +705,11 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
+    expect(wrapper.text()).toContain("Guten Tag");
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
+    await flushPromises();
     expect(wrapper.text()).toContain("Добрый день");
     expect(translate).not.toHaveBeenCalled();
   });
@@ -732,6 +753,13 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
+    expect(wrapper.text()).toContain("Guten Tag");
+    expect(wrapper.text()).not.toContain("Добрый день");
+
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
+    await flushPromises();
     expect(wrapper.text()).toContain("Добрый день");
     expect(wrapper.text()).not.toContain("Guten Tag");
 
@@ -740,12 +768,80 @@ describe("единое рабочее пространство пользова�
       .trigger("click");
     expect(wrapper.text()).toContain("Guten Tag");
     expect(wrapper.text()).not.toContain("Добрый день");
+  });
+
+  it("не загружает настройки перевода до явного действия оператора", async () => {
+    mocks.permissions.push("project.translation.create");
+    const getTranslation = vi
+      .spyOn(conversationTranslationApi, "getConversation")
+      .mockRejectedValue(new Error("translation unavailable"));
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(getTranslation).not.toHaveBeenCalled();
+    expect(mocks.toastAdd).not.toHaveBeenCalledWith(
+      expect.objectContaining({ summary: "Ошибка перевода" }),
+    );
+
+    await wrapper
+      .get('button[aria-label="Другие действия с диалогом"]')
+      .trigger("click");
+    await flushPromises();
+    expect(getTranslation).not.toHaveBeenCalled();
 
     await wrapper
       .get('[data-action="show-translated-messages"]')
       .trigger("click");
-    expect(wrapper.text()).toContain("Добрый день");
-    expect(wrapper.text()).not.toContain("Guten Tag");
+    await flushPromises();
+
+    expect(getTranslation).toHaveBeenCalledTimes(1);
+    expect(mocks.toastAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it("оставляет перевод ответа доступным даже в русскоязычном диалоге", async () => {
+    mocks.permissions.push("project.translation.create");
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    await wrapper
+      .get('textarea[aria-label="Ответ пользователю"]')
+      .setValue("Проверяю ваш вопрос");
+
+    expect(
+      wrapper
+        .findAll("button")
+        .some((button) => button.text().includes("Перевести ответ")),
+    ).toBe(true);
+    const improve = wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Улучшить с AI"));
+    expect(improve?.attributes("disabled")).toBeDefined();
+  });
+
+  it("не показывает кнопку Диалоги в верхней панели и действия внутри сообщений", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(
+      wrapper
+        .get(".workspace-title")
+        .findAll("button")
+        .some((button) => button.text().trim() === "Диалоги"),
+    ).toBe(false);
+    expect(wrapper.find(".message-bubble button").exists()).toBe(false);
+  });
+
+  it("блокирует скролл страницы, пока рабочее пространство открыто", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(
+      wrapper.get("section[data-block-scroll]").attributes("data-block-scroll"),
+    ).toBeDefined();
+    expect(document.body.classList.contains("workspace-scroll-locked")).toBe(
+      true,
+    );
   });
 
   it("показывает ошибку перевода вне chat layout", async () => {
@@ -769,9 +865,12 @@ describe("единое рабочее пространство пользова�
     await flushPromises();
 
     await wrapper.get(".conversation-more").trigger("click");
-    wrapper
-      .getComponent(ConversationTranslationBanner)
-      .vm.$emit("translateVisible");
+    const translationBanner = wrapper.getComponent(
+      ConversationTranslationBanner,
+    );
+    translationBanner.vm.$emit("reload");
+    await flushPromises();
+    translationBanner.vm.$emit("translateVisible");
     await flushPromises();
 
     expect(mocks.toastAdd).toHaveBeenCalledWith(
@@ -892,6 +991,10 @@ describe("единое рабочее пространство пользова�
       });
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
+    await flushPromises();
     translate.mockClear();
 
     const older = wrapper
@@ -998,6 +1101,25 @@ describe("единое рабочее пространство пользова�
     expect(drawer.get("footer .primary").attributes("disabled")).toBeDefined();
   });
 
+  it("открывает галерею шаблонов только из отдельной кнопки", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    await wrapper.get(".composer-action-menu > button").trigger("click");
+    expect(wrapper.get(".composer-action-menu__panel").text()).not.toContain(
+      "Шаблон ответа",
+    );
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Шаблоны"))
+      ?.trigger("click");
+
+    expect(wrapper.get('[data-testid="reply-template-gallery"]').text()).toContain(
+      "Галерея шаблонов",
+    );
+  });
+
   it("после reconnect сверяет REST projection выбранного диалога", async () => {
     mocks.permissions.push("project.translation.create");
     vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
@@ -1014,7 +1136,7 @@ describe("единое рабочее пространство пользова�
       "project-1",
       "user-1",
       current.id,
-      { limit: 50 },
+      { limit: 20 },
     );
   });
 
