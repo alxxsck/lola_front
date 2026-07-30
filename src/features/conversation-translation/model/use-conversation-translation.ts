@@ -15,6 +15,7 @@ export interface ConversationTranslationContext {
   conversationId(): string | undefined;
   selectedCaseId(): string | undefined;
   sourceText(): string;
+  restoreSourceText?(value: string): void;
   reconcileMessages?(): Promise<void>;
 }
 
@@ -189,33 +190,51 @@ export function createConversationTranslationController(
         key,
         JSON.stringify({
           draftId: value.id,
+          sourceText: value.sourceText,
           sourceTextHash: value.sourceTextHash,
           targetLocale: value.targetLocale,
           expiresAt: value.expiresAt,
         }),
       );
     } catch {
-      // Recovery is best-effort; message content is never copied to storage.
+      // Same-tab CMS recovery is best-effort and cleared with the auth session.
     }
   }
 
   async function recoverReplyDraft(): Promise<void> {
     const storageKey = draftStorageKey();
-    if (!storageKey || !context.sourceText().trim()) return;
+    if (!storageKey) return;
     try {
       const raw = globalThis.sessionStorage?.getItem(storageKey);
       if (!raw) return;
       const envelope = JSON.parse(raw) as {
         draftId?: unknown;
         expiresAt?: unknown;
+        sourceText?: unknown;
+        targetLocale?: unknown;
       };
+      const expiresAt =
+        typeof envelope.expiresAt === "string"
+          ? Date.parse(envelope.expiresAt)
+          : Number.NaN;
       if (
         typeof envelope.draftId !== "string" ||
-        typeof envelope.expiresAt !== "string" ||
-        Date.parse(envelope.expiresAt) <= Date.now()
+        !Number.isFinite(expiresAt) ||
+        expiresAt <= Date.now() ||
+        typeof envelope.sourceText !== "string" ||
+        !envelope.sourceText.trim() ||
+        envelope.sourceText.length > 10_000 ||
+        typeof envelope.targetLocale !== "string"
       ) {
         globalThis.sessionStorage?.removeItem(storageKey);
         return;
+      }
+      const storedSourceText = envelope.sourceText.trim();
+      const existingSourceText = context.sourceText().trim();
+      if (existingSourceText && existingSourceText !== storedSourceText) return;
+      if (!existingSourceText) {
+        if (!context.restoreSourceText) return;
+        context.restoreSourceText(envelope.sourceText);
       }
       const ids = requiredContext();
       const key = contextKey(context);
@@ -228,7 +247,8 @@ export function createConversationTranslationController(
       );
       if (
         isCurrent(key, requestGeneration) &&
-        response.sourceText === context.sourceText().trim()
+        response.sourceText === context.sourceText().trim() &&
+        response.targetLocale === envelope.targetLocale
       ) {
         draft.value = response;
         persistDraftEnvelope(response);
@@ -829,6 +849,10 @@ export function createConversationTranslationController(
     () => context.sourceText(),
     (next, previous) => {
       if (next === previous || !draft.value) return;
+      if (!next.trim()) {
+        clearReplyDraft();
+        return;
+      }
       previewStale.value =
         next.trim() !== draft.value.sourceText ||
         draft.value.targetLocale !== targetLocale.value;

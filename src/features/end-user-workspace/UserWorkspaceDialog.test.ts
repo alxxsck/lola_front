@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import UserWorkspaceDialog from "./UserWorkspaceDialog.vue";
 import { conversationTranslationApi } from "@/features/conversation-translation/api/conversation-translation.api";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
+import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
 import type { ConversationTranslationResponseDto } from "@/shared/api/generated/models";
 
 const mocks = vi.hoisted(() => ({
@@ -127,6 +128,7 @@ function translationState(
 describe("единое рабочее пространство пользователя", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    sessionStorage.clear();
     Object.defineProperty(HTMLElement.prototype, "scrollTo", {
       configurable: true,
       value: vi.fn(),
@@ -587,6 +589,64 @@ describe("единое рабочее пространство пользова�
     expect(translate).not.toHaveBeenCalled();
   });
 
+  it("после reload восстанавливает composer из scoped translation draft", async () => {
+    mocks.permissions.push("project.translation.create");
+    const sourceText = "Пожалуйста, уточните номер заказа";
+    sessionStorage.setItem(
+      `lola:reply-translation-draft:project-1:user-1:${current.id}`,
+      JSON.stringify({
+        draftId: "draft-reload",
+        sourceText,
+        sourceTextHash: "hash-reload",
+        targetLocale: "de",
+        expiresAt: "2099-07-30T10:10:00.000Z",
+      }),
+    );
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    const getReplyDraft = vi
+      .spyOn(conversationTranslationApi, "getReplyDraft")
+      .mockResolvedValue({
+        conversationId: current.id,
+        createdAt: "2026-07-30T10:00:00.000Z",
+        deliveredTextPreview: "Bitte geben Sie die Bestellnummer an",
+        editedTranslatedText: null,
+        errorCode: null,
+        expiresAt: "2099-07-30T10:10:00.000Z",
+        id: "draft-reload",
+        model: "grok-4.3",
+        modelConfigRevision: "model-1",
+        provider: "xai",
+        queued: false,
+        sourceLocale: "ru",
+        sourceText,
+        sourceTextHash: "hash-reload",
+        status: "READY",
+        targetLocale: "de",
+        targetLocaleSource: "PROFILE",
+        translatedText: "Bitte geben Sie die Bestellnummer an",
+        translationConfigRevision: "translation-config-1",
+        updatedAt: "2026-07-30T10:00:01.000Z",
+        warnings: [],
+      });
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(
+      (
+        wrapper.get('textarea[aria-label="Ответ пользователю"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe(sourceText);
+    expect(
+      wrapper.getComponent(ReplyTranslationPreview).props("draft")
+        ?.translatedText,
+    ).toBe("Bitte geben Sie die Bestellnummer an");
+    expect(getReplyDraft).toHaveBeenCalledTimes(1);
+  });
+
   it("переводит только новую загруженную страницу истории", async () => {
     mocks.permissions.push("project.translation.create");
     vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
@@ -638,7 +698,7 @@ describe("единое рабочее пространство пользова�
     expect(translate.mock.calls[0]?.[3]).toEqual(["older-german"]);
   });
 
-  it("создаёт перевод только для foreign future realtime", async () => {
+  it("не отсекает substantive Cyrillic future realtime до backend", async () => {
     mocks.permissions.push("project.translation.create");
     vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
       translationState(false),
@@ -685,8 +745,11 @@ describe("единое рабочее пространство пользова�
     });
     await flushPromises();
 
-    expect(translate).toHaveBeenCalledTimes(1);
-    expect(translate.mock.calls[0]?.[3]).toEqual(["future-german"]);
+    expect(translate).toHaveBeenCalledTimes(2);
+    expect(translate.mock.calls.map((call) => call[3])).toEqual([
+      ["future-german"],
+      ["future-russian"],
+    ]);
   });
 
   it("после reconnect сверяет REST projection выбранного диалога", async () => {

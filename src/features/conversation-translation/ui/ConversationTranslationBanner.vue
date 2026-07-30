@@ -80,18 +80,21 @@ const localeOptions = computed<Array<{ label: string; value: string | null }>>(
           Перевод временно недоступен. Повторите попытку позже.
         </span>
         <span v-else-if="state.language.needsConfirmation">
-          По сообщениям:
-          {{
-            state.language.conflictingLocale
-              ? localeDisplayName(state.language.conflictingLocale)
-              : "другой язык"
-          }}
-          · в профиле:
-          {{
-            state.language.locale
-              ? localeDisplayName(state.language.locale)
-              : "не указан"
-          }}
+          Требуется подтверждение.
+          <template v-if="state.language.locale">
+            Текущий вариант:
+            {{ localeDisplayName(state.language.locale) }}
+            · {{ responseLocaleSource }}.
+          </template>
+          <template v-if="state.language.conflictingLocale">
+            Альтернативный:
+            {{ localeDisplayName(state.language.conflictingLocale) }}.
+          </template>
+          <template
+            v-if="!state.language.locale && !state.language.conflictingLocale"
+          >
+            Выберите язык вручную.
+          </template>
         </span>
         <span v-else>
           Язык ответов:
@@ -147,10 +150,6 @@ const localeOptions = computed<Array<{ label: string; value: string | null }>>(
         @click="emit('translateVisible')"
       />
       <Select
-        v-if="
-          !state.language.needsConfirmation ||
-          state.preference.endUserLocaleOverride
-        "
         :model-value="
           state.preference.endUserLocaleOverride ?? state.language.locale
         "

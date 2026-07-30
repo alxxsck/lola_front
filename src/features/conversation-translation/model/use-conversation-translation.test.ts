@@ -406,6 +406,8 @@ describe("conversation translation controller", () => {
         "lola:reply-translation-draft:project-1:user-1:conversation-1",
         JSON.stringify({
           draftId: "draft-1",
+          sourceText: "Здравствуйте",
+          targetLocale: "de",
           expiresAt: "2099-07-30T10:10:00.000Z",
         }),
       );
@@ -523,7 +525,9 @@ describe("conversation translation controller", () => {
     expect(create.mock.calls[0][7]).toBe(create.mock.calls[1][7]);
   });
 
-  it("не сохраняет текст ответа в recovery envelope", async () => {
+  it("сохраняет source в CMS-scoped session recovery envelope", async () => {
+    const storageKey =
+      "lola:reply-translation-draft:project-1:user-1:conversation-1";
     const controller = createConversationTranslationController(
       {
         projectId: () => "project-1",
@@ -541,11 +545,80 @@ describe("conversation translation controller", () => {
 
     await controller.createReplyPreview();
 
-    const stored = sessionStorage.getItem(
-      "lola:reply-translation-draft:project-1:user-1:conversation-1",
-    );
+    const stored = sessionStorage.getItem(storageKey);
     expect(stored).toContain("draft-1");
-    expect(stored).not.toContain("Секретный исходный текст");
+    expect(stored).toContain("Секретный исходный текст");
+    expect(localStorage.getItem(storageKey)).toBeNull();
+  });
+
+  it("после reload восстанавливает composer и draft без pre-seeded source", async () => {
+    const sourceText = ref("Секретный исходный текст");
+    const first = createConversationTranslationController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => "user-1",
+        conversationId: () => "conversation-1",
+        selectedCaseId: () => undefined,
+        sourceText: () => sourceText.value,
+      },
+      api({
+        createReplyDraft: vi
+          .fn()
+          .mockResolvedValue(readyDraft("Секретный исходный текст")),
+      }),
+    );
+    await first.createReplyPreview();
+
+    const restoredSourceText = ref("");
+    const getReplyDraft = vi
+      .fn()
+      .mockResolvedValue(readyDraft("Секретный исходный текст"));
+    const reloaded = createConversationTranslationController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => "user-1",
+        conversationId: () => "conversation-1",
+        selectedCaseId: () => undefined,
+        sourceText: () => restoredSourceText.value,
+        restoreSourceText: (value) => {
+          restoredSourceText.value = value;
+        },
+      },
+      api({ getReplyDraft }),
+    );
+
+    await reloaded.load();
+
+    expect(restoredSourceText.value).toBe("Секретный исходный текст");
+    expect(reloaded.readyDraft.value?.id).toBe("draft-1");
+    expect(getReplyDraft).toHaveBeenCalledTimes(1);
+  });
+
+  it("очищает recovery envelope при явном discard", async () => {
+    const sourceText = ref("Черновик");
+    const controller = createConversationTranslationController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => "user-1",
+        conversationId: () => "conversation-1",
+        selectedCaseId: () => undefined,
+        sourceText: () => sourceText.value,
+      },
+      api({
+        createReplyDraft: vi.fn().mockResolvedValue(readyDraft("Черновик")),
+      }),
+    );
+    await controller.createReplyPreview();
+
+    sourceText.value = "";
+    await nextTick();
+
+    expect(controller.draft.value).toBeNull();
+    expect(
+      sessionStorage.getItem(
+        "lola:reply-translation-draft:project-1:user-1:conversation-1",
+      ),
+    ).toBeNull();
   });
 
   it("ограничивает bulk текущей страницей из 50 сообщений", async () => {

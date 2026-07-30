@@ -21,19 +21,29 @@ describe("frontend translation eligibility", () => {
     },
   );
 
-  it("исключает уверенно русский текст для русского working locale", () => {
-    expect(
-      isFrontendTranslationCandidate(
-        message("Спасибо, возврат уже пришёл"),
-        "ru",
-      ),
-    ).toBe(false);
-  });
-
-  it.each(["Danke!", "ok", "ID 42", "Привет, invoice attached"])(
-    "оставляет кандидатом неопределённый или иностранный текст %j",
+  it.each([
+    "Спасибо, возврат уже пришёл",
+    "Благодаря",
+    "Хвала",
+    "Благодарам",
+    "Danke!",
+    "ok",
+    "ID 42",
+    "Привет, invoice attached",
+  ])(
+    "оставляет кандидатом содержательный текст без authoritative source locale %j",
     (text) => {
       expect(isFrontendTranslationCandidate(message(text), "ru")).toBe(true);
     },
   );
+
+  it("исключает authoritative same-language сообщение", () => {
+    expect(
+      isFrontendTranslationCandidate(
+        message("Спасибо, возврат уже пришёл"),
+        "ru",
+        "ru-RU",
+      ),
+    ).toBe(false);
+  });
 });

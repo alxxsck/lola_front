@@ -70,4 +70,67 @@ describe("conversation translation banner", () => {
     expect(wrapper.text()).toContain("выбран вручную");
     expect(wrapper.text()).not.toContain("из профиля");
   });
+
+  it("всегда предлагает supported locales, когда язык неизвестен", async () => {
+    const value = state("UNKNOWN");
+    value.language.locale = null;
+    value.language.needsConfirmation = true;
+    value.language.conflictingLocale = undefined;
+    const wrapper = shallowMount(ConversationTranslationBanner, {
+      props: {
+        state: value,
+        loading: false,
+        saving: false,
+        canManage: true,
+        eligibleCount: 0,
+      },
+      global: {
+        stubs: {
+          Select: {
+            props: ["modelValue", "options"],
+            emits: ["update:modelValue"],
+            template:
+              '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="option in options" :key="String(option.value)" :value="option.value">{{ option.label }}</option></select>',
+          },
+        },
+      },
+    });
+
+    const selector = wrapper.get("select");
+    expect(selector.findAll("option").map((option) => option.text())).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("ru"),
+        expect.stringContaining("de"),
+      ]),
+    );
+    await selector.setValue("de");
+    expect(wrapper.emitted("updateTargetLocale")).toEqual([["de"]]);
+  });
+
+  it.each([
+    ["PROFILE", "из профиля"],
+    ["RECENT_MESSAGES", "по последним сообщениям"],
+    ["CASE_HINT", "из обращения"],
+  ] as const)(
+    "объясняет конфликт через фактический source %s",
+    (source, explanation) => {
+      const value = state(source);
+      value.language.locale = "en";
+      value.language.conflictingLocale = "de";
+      value.language.needsConfirmation = true;
+      const wrapper = shallowMount(ConversationTranslationBanner, {
+        props: {
+          state: value,
+          loading: false,
+          saving: false,
+          canManage: true,
+          eligibleCount: 0,
+        },
+      });
+
+      expect(wrapper.text()).toContain(explanation);
+      expect(wrapper.text()).toContain("английский");
+      expect(wrapper.text()).toContain("немецкий");
+    },
+  );
 });

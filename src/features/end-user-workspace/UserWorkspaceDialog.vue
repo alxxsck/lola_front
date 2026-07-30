@@ -200,6 +200,9 @@ const translation = createConversationTranslationController({
   conversationId: () => selectedConversation.value?.id,
   selectedCaseId: () => props.preferredEndUserCaseId,
   sourceText: () => replyText.value,
+  restoreSourceText: (value) => {
+    replyText.value = value;
+  },
   reconcileMessages: () => consoleState.reconcileSelected(),
 });
 const visibleTranslationMessageIds = computed(() =>
@@ -686,7 +689,10 @@ async function sendTranslatedReply(editedText?: string): Promise<void> {
       });
     }
   }
-  if (!replyText.value.trim()) await translation.load();
+  if (!replyText.value.trim()) {
+    translation.clearReplyDraft();
+    await translation.load();
+  }
 }
 
 async function sendReplyWithoutTranslation(): Promise<void> {

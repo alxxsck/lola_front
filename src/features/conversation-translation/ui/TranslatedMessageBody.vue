@@ -50,6 +50,21 @@ const displayText = computed(() => {
     props.message.text
   );
 });
+const skipReasonLabels = {
+  SAME_LANGUAGE: "Язык сообщения совпадает с рабочим — перевод не требуется.",
+  EMPTY_OR_NOISE: "В сообщении нет текста для перевода.",
+  UNSUPPORTED_ROLE: "Этот тип сообщения нельзя перевести.",
+  LANGUAGE_UNRESOLVED:
+    "Язык сообщения не удалось определить. Выберите язык диалога вручную.",
+} as const;
+const skippedText = computed(() =>
+  props.requested?.state === "SKIPPED"
+    ? props.requested.skipReason
+      ? (skipReasonLabels[props.requested.skipReason] ??
+        "Перевод пропущен без обращения к модели.")
+      : "Перевод пропущен без обращения к модели."
+    : null,
+);
 const canRequest = computed(
   () =>
     props.canTranslate &&
@@ -75,7 +90,8 @@ const canRequest = computed(
         translatedText ||
         status === 'PENDING' ||
         status === 'RUNNING' ||
-        status === 'FAILED'
+        status === 'FAILED' ||
+        status === 'SKIPPED'
       "
       class="translated-message__actions"
     >
@@ -113,6 +129,10 @@ const canRequest = computed(
         text
         @click="emit('retry', message.id)"
       />
+      <span v-else-if="status === 'SKIPPED'" role="status" aria-live="polite">
+        <i class="pi pi-info-circle" aria-hidden="true" />
+        {{ skippedText }}
+      </span>
       <Button
         v-else-if="translatedText"
         :label="

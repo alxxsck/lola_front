@@ -15,13 +15,19 @@
 - automatic/manual pending reconciliation и unknown-outcome REST recovery без повторной доставки;
 - target locale selector строится из backend `supportedLocales`, без frontend allowlist;
 - язык ответа показывает источник решения: manual/profile/recent messages/case/unknown;
+- при UNKNOWN/conflict оператор всегда может выбрать любой backend-supported locale вручную,
+  а conflict copy показывает фактический `language.source`;
 - model/provider details fail-closed скрыты без `project.translation.read`;
-- очевидный noise и уверенно same-language сообщения отсекаются до bulk/realtime command,
-  а неоднозначный текст остаётся доступен для перевода;
+- очевидный noise и только authoritative same-language сообщения отсекаются до
+  bulk/realtime command; без достоверного source locale любой содержательный текст, включая
+  кириллицу, остаётся доступен для перевода;
 - provider unavailable и hard budget exhaustion блокируют provider work и никогда не
   отправляют исходный текст автоматически;
 - permission-guarded override без перевода с обязательной причиной;
-- recovery envelope без текста;
+- CMS-only reply recovery хранит source в same-tab `sessionStorage`, scoped по
+  project/end-user/conversation, валидирует срок/размер и очищается при auth clear,
+  consumed/expired draft и явном discard;
+- `SKIPPED` отображается как безопасное объяснение без утечки raw enum;
 - отдельные model profiles `Основная модель` / `Модель переводов`;
 - `grok-4.3 + reasoning low` как отображаемый translation default;
 - Project translation tone/formality, read-only Working Locale и glossary editor;
@@ -38,8 +44,8 @@
 
 ## Evidence
 
-- Vitest: `242/242` test files, `1446/1446` tests.
-- Focused post-merge translation regression: `12/12` files, `109/109` tests.
+- Vitest: `242/242` test files, `1465/1465` tests.
+- Focused post-merge translation regression: `12/12` files, `128/128` tests.
 - Playwright translation flow: `7 passed`, `1` ожидаемо skipped как mobile-only.
 - `vue-tsc`, ESLint, IAM architecture check: passed.
 - Production build: passed, `2776` modules transformed.
@@ -50,15 +56,15 @@
 
 ## Матрица обязательных integration-сценариев
 
-| Сценарий                           | Доказательство                                                                                                                                                    |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Reload не создаёт повторную работу | controller recovery/idempotency tests; workspace test повторно использует persisted message projection; Playwright сохраняет conversation preference через reload |
-| Older page переводится отдельно    | `UserWorkspaceDialog.test.ts`: command получает только id новой страницы                                                                                          |
-| Future realtime                    | workspace integration: foreign USER создаёт command, уверенно русский USER не создаёт                                                                             |
-| Два Conversations и два End Users  | Playwright desktop/mobile: preference после reload остаётся в первом Conversation и не переносится в другой Conversation/End User                                 |
-| Provider/budget failure            | controller tests блокируют create до API и публикуют безопасное объяснение                                                                                        |
-| Socket reconnect                   | workspace reconcile callback повторно получает authoritative REST projection                                                                                      |
-| Public REST/Widget/realtime        | backend `test/conversation-translation-public-boundary.test.ts`, `5/5`; mock UI не используется как доказательство security boundary                              |
+| Сценарий                           | Доказательство                                                                                                                                                                                                |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reload не создаёт повторную работу | controller recovery/idempotency tests; workspace восстанавливает пустой composer и persisted reply draft; persisted message projection не создаёт provider work; Playwright сохраняет conversation preference |
+| Older page переводится отдельно    | `UserWorkspaceDialog.test.ts`: command получает только id новой страницы                                                                                                                                      |
+| Future realtime                    | workspace integration: без authoritative source locale и foreign, и Cyrillic USER создают command; истинный same-language безопасно SKIP-ается backend                                                        |
+| Два Conversations и два End Users  | Playwright desktop/mobile: preference после reload остаётся в первом Conversation и не переносится в другой Conversation/End User                                                                             |
+| Provider/budget failure            | controller tests блокируют create до API и публикуют безопасное объяснение                                                                                                                                    |
+| Socket reconnect                   | workspace reconcile callback повторно получает authoritative REST projection                                                                                                                                  |
+| Public REST/Widget/realtime        | backend `test/conversation-translation-public-boundary.test.ts`, `5/5`; mock UI не используется как доказательство security boundary                                                                          |
 
 Остающийся environment gate: API-mode browser smoke с двумя реальными CMS identities и
 перехватом production-shaped network payload выполняется в интеграционном окружении с backend,

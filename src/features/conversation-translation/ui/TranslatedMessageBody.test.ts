@@ -128,6 +128,52 @@ describe("translated message body", () => {
     expect(wrapper.emitted("reconcile")).toEqual([["message-1"]]);
   });
 
+  it.each([
+    ["SAME_LANGUAGE", "Язык сообщения совпадает с рабочим"],
+    ["EMPTY_OR_NOISE", "В сообщении нет текста для перевода"],
+    ["UNSUPPORTED_ROLE", "Этот тип сообщения нельзя перевести"],
+    ["LANGUAGE_UNRESOLVED", "Язык сообщения не удалось определить"],
+  ] as const)("безопасно объясняет SKIPPED: %s", (skipReason, explanation) => {
+    const wrapper = shallowMount(TranslatedMessageBody, {
+      props: {
+        message: message(),
+        requested: {
+          messageId: "message-1",
+          state: "SKIPPED",
+          skipReason,
+          translatedText: null,
+          updatedAt: "2026-07-30T10:00:01.000Z",
+        },
+        canTranslate: true,
+      },
+    });
+
+    expect(wrapper.get('[role="status"]').text()).toContain(explanation);
+    expect(wrapper.text()).not.toContain(skipReason);
+  });
+
+  it("использует нейтральное объяснение для SKIPPED без reason", () => {
+    const wrapper = shallowMount(TranslatedMessageBody, {
+      props: {
+        message: message(),
+        requested: {
+          messageId: "message-1",
+          state: "SKIPPED",
+          translatedText: null,
+          updatedAt: "2026-07-30T10:00:01.000Z",
+        },
+        canTranslate: true,
+      },
+    });
+
+    expect(wrapper.get('[role="status"]').text()).toContain(
+      "Перевод пропущен без обращения к модели",
+    );
+    expect(wrapper.text()).not.toContain(
+      "Язык сообщения не удалось определить",
+    );
+  });
+
   it("оставляет per-message перевод доступным без conversation opt-in", () => {
     const wrapper = shallowMount(TranslatedMessageBody, {
       props: {
@@ -139,13 +185,10 @@ describe("translated message body", () => {
     expect(wrapper.find("button-stub").exists()).toBe(true);
   });
 
-  it.each([
-    ["очевидный emoji/noise", "👋✨"],
-    ["уверенно русский текст", "Спасибо, всё получилось"],
-  ])("не предлагает перевод для %s", (_label, text) => {
+  it("не предлагает перевод для очевидного emoji/noise", () => {
     const wrapper = shallowMount(TranslatedMessageBody, {
       props: {
-        message: message({ text }),
+        message: message({ text: "👋✨" }),
         canTranslate: true,
         workingLocale: "ru",
       },
@@ -154,17 +197,26 @@ describe("translated message body", () => {
     expect(wrapper.find("button-stub").exists()).toBe(false);
   });
 
-  it("сохраняет действие при неопределённом или иностранном тексте", () => {
-    const wrapper = shallowMount(TranslatedMessageBody, {
-      props: {
-        message: message({ text: "Danke!" }),
-        canTranslate: true,
-        workingLocale: "ru",
-      },
-    });
+  it.each([
+    ["русского", "Спасибо, всё получилось"],
+    ["болгарского", "Благодаря"],
+    ["сербского", "Хвала"],
+    ["македонского", "Благодарам"],
+    ["немецкого", "Danke!"],
+  ])(
+    "сохраняет ручное действие для содержательного %s текста",
+    (_label, text) => {
+      const wrapper = shallowMount(TranslatedMessageBody, {
+        props: {
+          message: message({ text }),
+          canTranslate: true,
+          workingLocale: "ru",
+        },
+      });
 
-    expect(wrapper.find("button-stub").exists()).toBe(true);
-  });
+      expect(wrapper.find("button-stub").exists()).toBe(true);
+    },
+  );
 
   it.each(["ASSISTANT", "SCENARIO"] as const)(
     "предлагает ручной перевод для %s",
