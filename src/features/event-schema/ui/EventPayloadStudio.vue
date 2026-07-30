@@ -194,6 +194,10 @@ function optionalInput(event: Event): string | undefined {
   return inputValue(event).trim() || undefined;
 }
 
+function optionalInputWhileTyping(event: Event): string | undefined {
+  return inputValue(event) || undefined;
+}
+
 function optionalNumber(event: Event): number | undefined {
   const value = inputValue(event);
   return value === "" ? undefined : Number(value);
@@ -453,6 +457,11 @@ watch(
                     :aria-label="`Название поля ${fieldLabel(field)}`"
                     placeholder="Сумма"
                     @input="
+                      updateField(field.id, {
+                        title: optionalInputWhileTyping($event),
+                      })
+                    "
+                    @change="
                       updateField(field.id, { title: optionalInput($event) })
                     "
                 /></label>
@@ -464,14 +473,16 @@ watch(
                     :aria-label="`Имя поля в данных ${fieldLabel(field)}`"
                     :aria-invalid="Boolean(fieldIssue(field))"
                     :aria-describedby="
-                      fieldIssue(field) ? `field-error-${field.id}` : undefined
+                      fieldIssue(field)
+                        ? `field-wire-help-${field.id} field-error-${field.id}`
+                        : `field-wire-help-${field.id}`
                     "
                     class="mono"
                     placeholder="amountMinor"
                     @input="
                       updateField(field.id, { wireKey: inputValue($event) })
                     "
-                  /><small
+                  /><small :id="`field-wire-help-${field.id}`"
                     >Латиницей, как его отправляет интеграция.</small
                   ></label
                 >
@@ -498,27 +509,6 @@ watch(
                     </option>
                   </select></label
                 >
-                <label class="checkbox-label"
-                  ><input
-                    type="checkbox"
-                    :checked="field.required"
-                    :aria-label="`Обязательное поле ${fieldLabel(field)}`"
-                    @change="
-                      updateField(field.id, {
-                        required: ($event.target as HTMLInputElement).checked,
-                      })
-                    "
-                  />
-                  Обязательно</label
-                >
-                <button
-                  type="button"
-                  class="icon-button"
-                  :aria-label="`Удалить поле ${fieldLabel(field)}`"
-                  @click="removeField(field.id)"
-                >
-                  ×
-                </button>
               </div>
               <p
                 v-if="fieldIssue(field)"
@@ -535,23 +525,46 @@ watch(
                   }"
                   >{{ capability(field).label }}</span
                 >
-                <button
-                  type="button"
-                  class="link-button"
-                  data-test="field-details"
-                  :aria-expanded="expandedFieldId === field.id"
-                  :aria-controls="`field-details-${field.id}`"
-                  @click="
-                    expandedFieldId =
-                      expandedFieldId === field.id ? null : field.id
-                  "
-                >
-                  {{
-                    expandedFieldId === field.id
-                      ? "Скрыть настройки"
-                      : "Дополнительные настройки"
-                  }}
-                </button>
+                <div class="field-actions">
+                  <label class="checkbox-label"
+                    ><input
+                      type="checkbox"
+                      :checked="field.required"
+                      :aria-label="`Обязательное поле ${fieldLabel(field)}`"
+                      @change="
+                        updateField(field.id, {
+                          required: ($event.target as HTMLInputElement).checked,
+                        })
+                      "
+                    />
+                    Обязательно</label
+                  >
+                  <button
+                    type="button"
+                    class="link-button"
+                    data-test="field-details"
+                    :aria-expanded="expandedFieldId === field.id"
+                    :aria-controls="`field-details-${field.id}`"
+                    @click="
+                      expandedFieldId =
+                        expandedFieldId === field.id ? null : field.id
+                    "
+                  >
+                    {{
+                      expandedFieldId === field.id
+                        ? "Скрыть настройки"
+                        : "Дополнительные настройки"
+                    }}
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-button"
+                    :aria-label="`Удалить поле ${fieldLabel(field)}`"
+                    @click="removeField(field.id)"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
               <div
                 v-if="expandedFieldId === field.id"
@@ -563,6 +576,11 @@ watch(
                     :value="field.description ?? ''"
                     :aria-label="`Описание поля ${fieldLabel(field)}`"
                     @input="
+                      updateField(field.id, {
+                        description: optionalInputWhileTyping($event),
+                      })
+                    "
+                    @change="
                       updateField(field.id, {
                         description: optionalInput($event),
                       })
@@ -1042,8 +1060,14 @@ watch(
 }
 .field-main {
   display: grid;
-  grid-template-columns: 1.15fr 1fr 0.78fr 120px 36px;
-  align-items: end;
+  grid-template-columns:
+    minmax(0, 1.35fr)
+    minmax(0, 1fr)
+    minmax(160px, 220px);
+  align-items: start;
+  justify-content: start;
+  max-width: 1092px;
+  column-gap: 16px;
 }
 .field-main label,
 .field-details label {
@@ -1095,6 +1119,14 @@ watch(
 }
 .field-meta .available {
   color: var(--status-success-text);
+}
+.field-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.field-actions .checkbox-label {
+  white-space: nowrap;
 }
 .field-details {
   display: grid;
@@ -1287,11 +1319,7 @@ watch(
 }
 @media (max-width: 820px) {
   .field-main {
-    grid-template-columns: 1fr 1fr;
-  }
-  .field-main .icon-button {
-    grid-column: 2;
-    justify-self: end;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .field-details {
     grid-template-columns: 1fr 1fr;
@@ -1307,13 +1335,31 @@ watch(
   .field-details {
     grid-template-columns: 1fr;
   }
-  .field-main .icon-button,
   .field-details .wide {
     grid-column: auto;
   }
   .field-meta {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .field-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) 36px;
+    gap: 8px 12px;
+  }
+  .field-actions .checkbox-label {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .field-actions .link-button {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+  .field-actions .icon-button {
+    grid-column: 2;
+    grid-row: 1;
   }
   .sample-issues,
   .sample-issues tbody,

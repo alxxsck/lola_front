@@ -18,6 +18,24 @@ function mountStudio(schema: Record<string, unknown>, options: { baseline?: Reco
 }
 
 describe('EventPayloadStudio', () => {
+  it('preserves spaces while the user types a field title', async () => {
+    const wrapper = mountStudio({
+      type: 'object',
+      properties: { game_name: { type: 'string', title: 'Название' } },
+    })
+    const title = wrapper.get<HTMLInputElement>('[data-test="field-title"]')
+
+    title.element.value = 'Название '
+    await title.trigger('input')
+
+    expect(wrapper.getComponent(EventPayloadStudio).props('modelValue').fields[0]?.title).toBe('Название ')
+
+    title.element.value = 'Название игры'
+    await title.trigger('input')
+
+    expect(wrapper.getComponent(EventPayloadStudio).props('modelValue').fields[0]?.title).toBe('Название игры')
+  })
+
   it('keeps a generated stable field key while the user edits the wire contract', async () => {
     const wrapper = mountStudio({ type: 'object', additionalProperties: false, properties: {}, required: [] })
 
