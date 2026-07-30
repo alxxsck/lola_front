@@ -3,12 +3,14 @@ import { computed, ref } from "vue";
 import Button from "primevue/button";
 import type { ConversationMessageTranslationItemResponseDto } from "@/shared/api/generated/models";
 import type { ConversationMessage } from "@/shared/types/domain";
+import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
 
 const props = defineProps<{
   message: ConversationMessage;
   requested?: ConversationMessageTranslationItemResponseDto;
   busy?: boolean;
   canTranslate: boolean;
+  workingLocale?: string | null;
 }>();
 const emit = defineEmits<{
   translate: [messageId: string];
@@ -51,8 +53,7 @@ const displayText = computed(() => {
 const canRequest = computed(
   () =>
     props.canTranslate &&
-    ["USER", "ASSISTANT", "SCENARIO"].includes(props.message.author) &&
-    props.message.status === "COMPLETED" &&
+    isFrontendTranslationCandidate(props.message, props.workingLocale) &&
     !props.requested &&
     !props.message.translation,
 );

@@ -274,6 +274,48 @@ describe("conversation translation controller", () => {
     expect(await controller.createReplyPreview()).toBeNull();
   });
 
+  it.each([
+    [
+      "provider unavailable",
+      { available: false, reason: "DEPLOYMENT_DISABLED" as const },
+      false,
+      "Перевод временно недоступен",
+    ],
+    [
+      "budget exhausted",
+      { available: true, reason: null },
+      true,
+      "Лимит переводов исчерпан",
+    ],
+  ])(
+    "не создаёт preview при %s",
+    async (_label, availability, hardExhausted, expectedError) => {
+      const unavailable = preference();
+      unavailable.availability = availability;
+      unavailable.budget.hardExhausted = hardExhausted;
+      const createReplyDraft = vi.fn();
+      const controller = createConversationTranslationController(
+        {
+          projectId: () => "project-1",
+          endUserId: () => "user-1",
+          conversationId: () => "conversation-1",
+          selectedCaseId: () => undefined,
+          sourceText: () => "Здравствуйте",
+        },
+        api({
+          getConversation: vi.fn().mockResolvedValue(unavailable),
+          createReplyDraft,
+        }),
+      );
+
+      await controller.load();
+
+      expect(await controller.createReplyPreview()).toBeNull();
+      expect(createReplyDraft).not.toHaveBeenCalled();
+      expect(controller.error.value).toContain(expectedError);
+    },
+  );
+
   it("мерджит только актуальный CMS translation realtime", async () => {
     const controller = createConversationTranslationController(
       {

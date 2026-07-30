@@ -26,10 +26,48 @@ const mockMessageTranslations = new Map<
 >();
 const mockDrafts = new Map<string, ReplyTranslationDraftResponseDto>();
 
+function mockPreferenceStorageKey(conversationId: string): string {
+  return `lola:mock-conversation-translation:${conversationId}`;
+}
+
+function readStoredMockPreference(
+  conversationId: string,
+): ConversationTranslationResponseDto | null {
+  try {
+    const raw = globalThis.sessionStorage?.getItem(
+      mockPreferenceStorageKey(conversationId),
+    );
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ConversationTranslationResponseDto;
+    return parsed?.preference?.workingLocale &&
+      typeof parsed.preference.enabled === "boolean"
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeMockPreference(
+  conversationId: string,
+  value: ConversationTranslationResponseDto,
+): void {
+  try {
+    globalThis.sessionStorage?.setItem(
+      mockPreferenceStorageKey(conversationId),
+      JSON.stringify(value),
+    );
+  } catch {
+    // Demo persistence is best-effort and contains no message content.
+  }
+}
+
 function mockPreference(
   conversationId: string,
 ): ConversationTranslationResponseDto {
-  const saved = mockPreferences.get(conversationId);
+  const saved =
+    mockPreferences.get(conversationId) ??
+    readStoredMockPreference(conversationId);
   if (saved) return saved;
   const value: ConversationTranslationResponseDto = {
     availability: { available: true, reason: null },
@@ -74,6 +112,7 @@ function mockPreference(
     projectVersion: 1,
   };
   mockPreferences.set(conversationId, value);
+  storeMockPreference(conversationId, value);
   return value;
 }
 
@@ -112,6 +151,7 @@ export const conversationTranslationApi = {
         },
       };
       mockPreferences.set(conversationId, next);
+      storeMockPreference(conversationId, next);
       return Promise.resolve(next);
     }
     return conversationTranslationPut(

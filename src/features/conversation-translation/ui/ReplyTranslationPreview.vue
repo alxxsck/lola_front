@@ -12,6 +12,7 @@ const props = defineProps<{
   busy: boolean;
   stale: boolean;
   disabled: boolean;
+  showProviderDetails?: boolean;
 }>();
 const emit = defineEmits<{
   preview: [];
@@ -124,7 +125,9 @@ watch(
           ><i class="pi pi-check-circle" aria-hidden="true" /> Перевод готов ·
           {{ localeDisplayName(draft.targetLocale) }}</span
         >
-        <small>{{ draft.model ?? "модель проекта" }}</small>
+        <small v-if="showProviderDetails">{{
+          draft.model ?? "модель проекта"
+        }}</small>
       </div>
       <Textarea
         v-model="editedText"

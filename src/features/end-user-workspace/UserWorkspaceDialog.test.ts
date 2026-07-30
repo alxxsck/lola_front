@@ -1,6 +1,9 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import UserWorkspaceDialog from "./UserWorkspaceDialog.vue";
+import { conversationTranslationApi } from "@/features/conversation-translation/api/conversation-translation.api";
+import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
+import type { ConversationTranslationResponseDto } from "@/shared/api/generated/models";
 
 const mocks = vi.hoisted(() => ({
   getConversations: vi.fn(),
@@ -19,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   messageHandler: undefined as ((value: unknown) => void) | undefined,
   translationHandler: undefined as ((value: unknown) => void) | undefined,
   stateHandler: undefined as ((value: string) => void) | undefined,
+  reconcileHandler: undefined as (() => Promise<void>) | undefined,
   permissions: [
     "project.profiles.read",
     "project.end_users.read",
@@ -92,8 +96,37 @@ const current = {
   aiSuspension: automatic,
 };
 
+function translationState(
+  enabled: boolean,
+): ConversationTranslationResponseDto {
+  return {
+    availability: { available: true, reason: null },
+    budget: {
+      consumedMicros: "0",
+      hardExhausted: false,
+      hardLimitMicros: null,
+      hardPercent: null,
+      reservedMicros: "0",
+      softLimitMicros: null,
+      softPercent: null,
+    },
+    configRevision: "translation-config-1",
+    supportedLocales: ["ru", "de", "en"],
+    language: { locale: "de", needsConfirmation: false, source: "PROFILE" },
+    preference: {
+      enabled,
+      endUserLocaleOverride: null,
+      updatedAt: "2026-07-30T10:00:00.000Z",
+      version: 1,
+      workingLocale: "ru",
+    },
+    projectVersion: 1,
+  };
+}
+
 describe("единое рабочее пространство пользователя", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     Object.defineProperty(HTMLElement.prototype, "scrollTo", {
       configurable: true,
       value: vi.fn(),
@@ -112,6 +145,7 @@ describe("единое рабочее пространство пользова�
     mocks.messageHandler = undefined;
     mocks.translationHandler = undefined;
     mocks.stateHandler = undefined;
+    mocks.reconcileHandler = undefined;
     mocks.subscribe.mockImplementation(
       (events: string[], handler: (value: unknown) => void) => {
         if (events.includes("conversation.message.translation.upserted.v1")) {
@@ -122,7 +156,10 @@ describe("единое рабочее пространство пользова�
         return vi.fn();
       },
     );
-    mocks.reconcile.mockReturnValue(vi.fn());
+    mocks.reconcile.mockImplementation((handler: () => Promise<void>) => {
+      mocks.reconcileHandler = handler;
+      return vi.fn();
+    });
     mocks.onState.mockImplementation((handler: (state: string) => void) => {
       mocks.stateHandler = handler;
       handler("CONNECTED");
@@ -210,6 +247,18 @@ describe("единое рабочее пространство пользова�
             emits: ["update:modelValue"],
             template:
               '<textarea :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+          },
+          Select: {
+            props: ["modelValue", "options"],
+            emits: ["update:modelValue"],
+            template:
+              '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="option in options" :key="String(option.value)" :value="option.value">{{ option.label }}</option></select>',
+          },
+          ToggleSwitch: {
+            props: ["modelValue"],
+            emits: ["update:modelValue"],
+            template:
+              '<input type="checkbox" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
           },
           Tag: { props: ["value"], template: "<span>{{ value }}</span>" },
           Skeleton: { template: "<span />" },
@@ -493,6 +542,171 @@ describe("единое рабочее пространство пользова�
     mocks.translationHandler?.(event);
     await flushPromises();
     expect(wrapper.text()).toContain("Переведённое сообщение");
+  });
+
+  it("не создаёт provider work для сохранённого перевода после повторной загрузки", async () => {
+    mocks.permissions.push("project.translation.create");
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    const translate = vi
+      .spyOn(conversationTranslationApi, "translateMessages")
+      .mockResolvedValue({ items: [], queued: false });
+    mocks.getMessages.mockResolvedValue({
+      items: [
+        {
+          id: "translated-message",
+          conversationId: current.id,
+          author: "USER",
+          status: "COMPLETED",
+          text: "Guten Tag",
+          createdAt: "2026-07-20T12:59:00.000Z",
+          translation: {
+            id: "translation-1",
+            direction: "INBOUND",
+            status: "COMPLETED",
+            originalText: "Guten Tag",
+            translatedText: "Добрый день",
+            deliveredText: null,
+            viewText: "Добрый день",
+            sourceLocale: "de",
+            targetLocale: "ru",
+            errorCode: null,
+            warnings: [],
+            updatedAt: "2026-07-20T13:00:00.000Z",
+          },
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Добрый день");
+    expect(translate).not.toHaveBeenCalled();
+  });
+
+  it("переводит только новую загруженную страницу истории", async () => {
+    mocks.permissions.push("project.translation.create");
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    const translate = vi
+      .spyOn(conversationTranslationApi, "translateMessages")
+      .mockResolvedValue({ items: [], queued: false });
+    mocks.getMessages
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "current-russian",
+            conversationId: current.id,
+            author: "USER",
+            status: "COMPLETED",
+            text: "Спасибо, всё получилось",
+            createdAt: "2026-07-20T12:59:00.000Z",
+          },
+        ],
+        nextCursor: "older",
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "older-german",
+            conversationId: current.id,
+            author: "USER",
+            status: "COMPLETED",
+            text: "Eine ältere Nachricht",
+            createdAt: "2026-07-19T12:59:00.000Z",
+          },
+        ],
+        nextCursor: null,
+      });
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    translate.mockClear();
+
+    const older = wrapper
+      .findAll("button")
+      .find((button) =>
+        button.text().includes("Показать предыдущие сообщения"),
+      );
+    await older?.trigger("click");
+    await flushPromises();
+
+    expect(translate).toHaveBeenCalledTimes(1);
+    expect(translate.mock.calls[0]?.[3]).toEqual(["older-german"]);
+  });
+
+  it("создаёт перевод только для foreign future realtime", async () => {
+    mocks.permissions.push("project.translation.create");
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(false),
+    );
+    vi.spyOn(
+      conversationTranslationApi,
+      "updateConversation",
+    ).mockResolvedValue(translationState(true));
+    const translate = vi
+      .spyOn(conversationTranslationApi, "translateMessages")
+      .mockResolvedValue({ items: [], queued: false });
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    wrapper
+      .getComponent(ConversationTranslationBanner)
+      .vm.$emit("updateEnabled", true);
+    await flushPromises();
+    translate.mockClear();
+
+    const event = {
+      contractVersion: 1,
+      projectId: "project-1",
+      endUserId: "user-1",
+      conversationId: current.id,
+      message: {
+        id: "future-german",
+        threadId: current.id,
+        role: "USER",
+        status: "COMPLETED",
+        text: "Danke für Ihre Hilfe",
+        createdAt: "2026-07-20T13:01:00.000Z",
+        updatedAt: "2026-07-20T13:01:00.000Z",
+      },
+    };
+    mocks.messageHandler?.(event);
+    await flushPromises();
+    mocks.messageHandler?.({
+      ...event,
+      message: {
+        ...event.message,
+        id: "future-russian",
+        text: "Спасибо за помощь",
+      },
+    });
+    await flushPromises();
+
+    expect(translate).toHaveBeenCalledTimes(1);
+    expect(translate.mock.calls[0]?.[3]).toEqual(["future-german"]);
+  });
+
+  it("после reconnect сверяет REST projection выбранного диалога", async () => {
+    mocks.permissions.push("project.translation.create");
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    mountWorkspace(current.id);
+    await flushPromises();
+    mocks.getMessages.mockClear();
+
+    await mocks.reconcileHandler?.();
+    await flushPromises();
+
+    expect(mocks.getMessages).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      current.id,
+      { limit: 50 },
+    );
   });
 
   it("снимает подписку с выбранного диалога при закрытии", async () => {

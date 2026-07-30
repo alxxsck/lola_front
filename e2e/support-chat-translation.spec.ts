@@ -101,3 +101,45 @@ test("stale preview recovers and same-language reply uses normal send", async ({
   await page.getByRole("button", { name: "Отправить", exact: true }).click();
   await expect(page.getByText("Ответ без перевода")).toBeVisible();
 });
+
+test("language source is explicit and conversation preference survives reload without leaking to another conversation", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Продолжить" }).click();
+  await page.goto("/users");
+  await page
+    .getByRole("button", { name: "Открыть профиль user_89421" })
+    .click();
+  await page.getByRole("button", { name: "Открыть чат" }).click();
+
+  const banner = page.getByRole("region", { name: "Перевод диалога" });
+  await expect(banner).toContainText(/Язык ответов: .*de.*из профиля/i);
+  const toggle = page.getByRole("switch", {
+    name: "Переводить этот диалог",
+  });
+  if (!(await toggle.isChecked())) await toggle.click();
+  await expect(toggle).toBeChecked();
+
+  await page.reload();
+  await expect(
+    page.getByRole("switch", { name: "Переводить этот диалог" }),
+  ).toBeChecked();
+
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Диалоги" }).click();
+  }
+  await page.getByRole("button", { name: /Знакомство с Lola/ }).click();
+  await expect(
+    page.getByRole("switch", { name: "Переводить этот диалог" }),
+  ).not.toBeChecked();
+
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "Открыть профиль user_11603" })
+    .click();
+  await page.getByRole("button", { name: "Открыть чат" }).click();
+  await expect(
+    page.getByRole("switch", { name: "Переводить этот диалог" }),
+  ).not.toBeChecked();
+});

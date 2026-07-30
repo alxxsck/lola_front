@@ -28,6 +28,36 @@ const draft: ReplyTranslationDraftResponseDto = {
 };
 
 describe("reply translation preview", () => {
+  it("скрывает provider model без явного права на детали", () => {
+    const wrapper = shallowMount(ReplyTranslationPreview, {
+      props: {
+        draft,
+        targetLocale: "de",
+        busy: false,
+        stale: false,
+        disabled: false,
+        showProviderDetails: false,
+      },
+    });
+
+    expect(wrapper.text()).not.toContain("grok-4.3");
+  });
+
+  it("показывает provider model только с явным правом на детали", () => {
+    const wrapper = shallowMount(ReplyTranslationPreview, {
+      props: {
+        draft,
+        targetLocale: "de",
+        busy: false,
+        stale: false,
+        disabled: false,
+        showProviderDetails: true,
+      },
+    });
+
+    expect(wrapper.text()).toContain("grok-4.3");
+  });
+
   it("оставляет recovery-action доступным для устаревшего preview", async () => {
     const wrapper = shallowMount(ReplyTranslationPreview, {
       props: {

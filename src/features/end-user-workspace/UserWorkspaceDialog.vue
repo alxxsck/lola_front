@@ -25,6 +25,7 @@ import ConversationAISuspensionBanner from "@/features/conversation-ai-suspensio
 import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
 import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
 import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
+import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
 import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
 import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
@@ -181,6 +182,9 @@ const canReply = computed(() =>
 const canManageTranslation = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.translation.create"),
 );
+const canReadTranslationDetails = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.translation.read"),
+);
 const canReplyWithoutTranslation = computed(() =>
   Boolean(
     canReply.value &&
@@ -202,10 +206,10 @@ const visibleTranslationMessageIds = computed(() =>
   messages.value
     .filter(
       (message) =>
-        ["USER", "ASSISTANT", "SCENARIO"].includes(message.author) &&
-        message.status === "COMPLETED" &&
-        !message.translation &&
-        !translation.messageTranslations.value.has(message.id),
+        isFrontendTranslationCandidate(
+          message,
+          translation.state.value?.preference.workingLocale,
+        ) && !translation.messageTranslations.value.has(message.id),
     )
     .slice(-50)
     .map((message) => message.id),
@@ -520,8 +524,10 @@ function handleMessageUpsert(value: unknown): void {
     liveMessageIds.value = [...liveMessageIds.value, event.message.id];
   if (
     previousMessage?.status !== "COMPLETED" &&
-    ["USER", "ASSISTANT", "SCENARIO"].includes(event.message.role) &&
-    event.message.status === "COMPLETED" &&
+    isFrontendTranslationCandidate(
+      messageFromEvent(event),
+      translation.state.value?.preference.workingLocale,
+    ) &&
     canManageTranslation.value &&
     translation.state.value?.preference.enabled
   ) {
@@ -569,9 +575,10 @@ async function handleHistoryScroll(force = false): Promise<void> {
       .filter(
         (message) =>
           !previousIds.has(message.id) &&
-          ["USER", "ASSISTANT", "SCENARIO"].includes(message.author) &&
-          message.status === "COMPLETED" &&
-          !message.translation,
+          isFrontendTranslationCandidate(
+            message,
+            translation.state.value?.preference.workingLocale,
+          ),
       )
       .slice(0, 50)
       .map((message) => message.id);
@@ -1283,6 +1290,9 @@ function displayField(
               :requested="translation.messageTranslations.value.get(message.id)"
               :busy="translation.translatingMessageIds.value.has(message.id)"
               :can-translate="canManageTranslation"
+              :working-locale="
+                translation.state.value?.preference.workingLocale ?? null
+              "
               @translate="translation.translateMessage"
               @retry="translation.retryMessage"
               @reconcile="translation.reconcileMessage"
@@ -1354,8 +1364,11 @@ function displayField(
               !replyText.trim() ||
               !onlineSession ||
               selectedConversation.status !== 'ACTIVE' ||
-              translation.savingPreference.value
+              translation.savingPreference.value ||
+              !translation.state.value?.availability.available ||
+              translation.state.value?.budget.hardExhausted
             "
+            :show-provider-details="canReadTranslationDetails"
             @preview="translation.createReplyPreview"
             @reconcile="translation.reconcileReplyPreview"
             @retry="translation.retryReplyPreview"

@@ -1,7 +1,7 @@
 # Перевод операторского чата: frontend release proof
 
 Дата: 30 июля 2026 года.
-Ветка: `codex/support-chat-translations-frontend`.
+Ветка: `main` после merge `codex/support-chat-translations-frontend`.
 
 ## Готовый функционал
 
@@ -14,6 +14,12 @@
 - preview-first outbound draft, edit-before-send, retry, reversible stale invalidation и atomic send;
 - automatic/manual pending reconciliation и unknown-outcome REST recovery без повторной доставки;
 - target locale selector строится из backend `supportedLocales`, без frontend allowlist;
+- язык ответа показывает источник решения: manual/profile/recent messages/case/unknown;
+- model/provider details fail-closed скрыты без `project.translation.read`;
+- очевидный noise и уверенно same-language сообщения отсекаются до bulk/realtime command,
+  а неоднозначный текст остаётся доступен для перевода;
+- provider unavailable и hard budget exhaustion блокируют provider work и никогда не
+  отправляют исходный текст автоматически;
 - permission-guarded override без перевода с обязательной причиной;
 - recovery envelope без текста;
 - отдельные model profiles `Основная модель` / `Модель переводов`;
@@ -32,15 +38,32 @@
 
 ## Evidence
 
-- Vitest: `485/485` suites, `1420/1420` tests.
-- Focused translation regression: `133/133`.
-- Playwright translation flow: `5 passed`, `1` ожидаемо skipped как mobile-only.
+- Vitest: `242/242` test files, `1446/1446` tests.
+- Focused post-merge translation regression: `12/12` files, `109/109` tests.
+- Playwright translation flow: `7 passed`, `1` ожидаемо skipped как mobile-only.
 - `vue-tsc`, ESLint, IAM architecture check: passed.
-- Production build: passed, `2775` modules transformed.
+- Production build: passed, `2776` modules transformed.
 - Visual QA: desktop `1440×1000/1100`, mobile `390×844`.
 - Browser runtime errors in tested translation flows: none.
 - Backend public boundary contract: `5/5` — REST, Widget и realtime возвращают End User только
   delivered text без русского source и provider/model metadata.
+
+## Матрица обязательных integration-сценариев
+
+| Сценарий                           | Доказательство                                                                                                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reload не создаёт повторную работу | controller recovery/idempotency tests; workspace test повторно использует persisted message projection; Playwright сохраняет conversation preference через reload |
+| Older page переводится отдельно    | `UserWorkspaceDialog.test.ts`: command получает только id новой страницы                                                                                          |
+| Future realtime                    | workspace integration: foreign USER создаёт command, уверенно русский USER не создаёт                                                                             |
+| Два Conversations и два End Users  | Playwright desktop/mobile: preference после reload остаётся в первом Conversation и не переносится в другой Conversation/End User                                 |
+| Provider/budget failure            | controller tests блокируют create до API и публикуют безопасное объяснение                                                                                        |
+| Socket reconnect                   | workspace reconcile callback повторно получает authoritative REST projection                                                                                      |
+| Public REST/Widget/realtime        | backend `test/conversation-translation-public-boundary.test.ts`, `5/5`; mock UI не используется как доказательство security boundary                              |
+
+Остающийся environment gate: API-mode browser smoke с двумя реальными CMS identities и
+перехватом production-shaped network payload выполняется в интеграционном окружении с backend,
+поскольку mock mode не моделирует cookie-сессии двух CMS Users и не может доказать публичную
+серверную сериализацию.
 
 Production defaults to API mode. Mock translation data exists only when the existing explicit
 `VITE_DATA_MODE=mock` demo mode is selected and never invokes xAI.

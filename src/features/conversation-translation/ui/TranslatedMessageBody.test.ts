@@ -139,6 +139,33 @@ describe("translated message body", () => {
     expect(wrapper.find("button-stub").exists()).toBe(true);
   });
 
+  it.each([
+    ["очевидный emoji/noise", "👋✨"],
+    ["уверенно русский текст", "Спасибо, всё получилось"],
+  ])("не предлагает перевод для %s", (_label, text) => {
+    const wrapper = shallowMount(TranslatedMessageBody, {
+      props: {
+        message: message({ text }),
+        canTranslate: true,
+        workingLocale: "ru",
+      },
+    });
+
+    expect(wrapper.find("button-stub").exists()).toBe(false);
+  });
+
+  it("сохраняет действие при неопределённом или иностранном тексте", () => {
+    const wrapper = shallowMount(TranslatedMessageBody, {
+      props: {
+        message: message({ text: "Danke!" }),
+        canTranslate: true,
+        workingLocale: "ru",
+      },
+    });
+
+    expect(wrapper.find("button-stub").exists()).toBe(true);
+  });
+
   it.each(["ASSISTANT", "SCENARIO"] as const)(
     "предлагает ручной перевод для %s",
     (author) => {

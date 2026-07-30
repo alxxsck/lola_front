@@ -156,6 +156,16 @@ export function createConversationTranslationController(
     return { projectId, endUserId, conversationId };
   }
 
+  function providerWorkUnavailableMessage(): string | null {
+    if (!state.value?.availability.available) {
+      return "Перевод временно недоступен. Исходный текст не будет отправлен автоматически.";
+    }
+    if (state.value.budget.hardExhausted) {
+      return "Лимит переводов исчерпан. Исходный текст не будет отправлен автоматически.";
+    }
+    return null;
+  }
+
   function draftStorageKey(): string | null {
     const key = contextKey(context);
     return key ? `lola:reply-translation-draft:${key}` : null;
@@ -429,6 +439,11 @@ export function createConversationTranslationController(
   }
 
   async function translateMessages(messageIds: string[]): Promise<void> {
+    const unavailableMessage = providerWorkUnavailableMessage();
+    if (unavailableMessage) {
+      error.value = unavailableMessage;
+      return;
+    }
     const locale = state.value?.preference.workingLocale;
     const eligible = [...new Set(messageIds)]
       .filter((messageId) => !translatingMessageIds.value.has(messageId))
@@ -502,6 +517,11 @@ export function createConversationTranslationController(
   }
 
   async function retryMessage(messageId: string): Promise<void> {
+    const unavailableMessage = providerWorkUnavailableMessage();
+    if (unavailableMessage) {
+      error.value = unavailableMessage;
+      return;
+    }
     const existing = messageTranslations.value.get(messageId);
     if (!existing?.translationId) return;
     const ids = requiredContext();
@@ -684,6 +704,11 @@ export function createConversationTranslationController(
     const current = state.value ?? (await load(), state.value);
     const locale = targetLocale.value;
     if (!current || !sourceText || !locale || previewing.value) return null;
+    const unavailableMessage = providerWorkUnavailableMessage();
+    if (unavailableMessage) {
+      error.value = unavailableMessage;
+      return null;
+    }
     const ids = requiredContext();
     const key = contextKey(context);
     const requestGeneration = generation;
@@ -768,6 +793,11 @@ export function createConversationTranslationController(
   }
 
   async function retryReplyPreview(): Promise<void> {
+    const unavailableMessage = providerWorkUnavailableMessage();
+    if (unavailableMessage) {
+      error.value = unavailableMessage;
+      return;
+    }
     const current = draft.value;
     if (!current || previewing.value) return;
     const ids = requiredContext();

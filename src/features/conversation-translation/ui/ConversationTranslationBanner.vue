@@ -20,6 +20,28 @@ const emit = defineEmits<{
   translateVisible: [];
 }>();
 
+const languageSourceLabels = {
+  MANUAL: "выбран вручную",
+  PROFILE: "из профиля",
+  RECENT_MESSAGES: "по последним сообщениям",
+  CASE_HINT: "из обращения",
+  UNKNOWN: "источник не определён",
+} as const;
+
+const responseLocale = computed(
+  () =>
+    props.state?.preference.endUserLocaleOverride ??
+    props.state?.language.locale ??
+    null,
+);
+const responseLocaleSource = computed(() =>
+  props.state?.preference.endUserLocaleOverride
+    ? languageSourceLabels.MANUAL
+    : props.state
+      ? languageSourceLabels[props.state.language.source]
+      : languageSourceLabels.UNKNOWN,
+);
+
 const localeOptions = computed<Array<{ label: string; value: string | null }>>(
   () => [
     { label: "Определять автоматически", value: null },
@@ -71,19 +93,20 @@ const localeOptions = computed<Array<{ label: string; value: string | null }>>(
               : "не указан"
           }}
         </span>
-        <span v-else-if="state.preference.enabled">
-          Пользователь:
+        <span v-else>
+          Язык ответов:
           {{
-            state.preference.endUserLocaleOverride
-              ? localeDisplayName(state.preference.endUserLocaleOverride)
-              : state.language.locale
-                ? localeDisplayName(state.language.locale)
-                : "язык не подтверждён"
+            responseLocale
+              ? `${localeDisplayName(responseLocale)} (${responseLocale})`
+              : "не подтверждён"
           }}
+          · {{ responseLocaleSource }}
           · рабочий язык:
           {{ localeDisplayName(state.preference.workingLocale) }}
+          <template v-if="!state.preference.enabled">
+            · перевод выключен
+          </template>
         </span>
-        <span v-else>Включите перевод только для этого диалога.</span>
       </div>
     </div>
     <div v-if="state" class="translation-banner__controls">
