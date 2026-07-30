@@ -82,6 +82,32 @@ describe("axios auth lifecycle", () => {
     expect(retryAuthorizations).toEqual(["Bearer fresh", "Bearer fresh"]);
   });
 
+  it("retries with a token synchronized by another tab without refreshing again", async () => {
+    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+    const refresh = vi.fn(async () => {
+      storeAccessToken({ accessToken: "unnecessary-refresh", expiresIn: 60 });
+    });
+    registerRefreshHandler(refresh);
+    let attempts = 0;
+    let retryAuthorization = "";
+    axiosInstance.defaults.adapter = async (config) => {
+      attempts += 1;
+      if (attempts === 1) {
+        storeAccessToken({ accessToken: "shared-fresh", expiresIn: 60 });
+        return reject(config, 401);
+      }
+      retryAuthorization = String(
+        AxiosHeaders.from(config.headers).get("Authorization") ?? "",
+      );
+      return response(config, 200);
+    };
+
+    await axiosInstance.get("/protected");
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(retryAuthorization).toBe("Bearer shared-fresh");
+  });
+
   it("retries a request at most once", async () => {
     storeAccessToken({ accessToken: "stale", expiresIn: 60 });
     const refresh = vi.fn(async () => {

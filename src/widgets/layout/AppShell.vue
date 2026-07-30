@@ -20,6 +20,7 @@ import AIProposalBadge from "@/features/ai-proposals/ui/AIProposalBadge.vue";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
+import { openProjectInNewTab } from "@/shared/api/http/auth-session";
 import ThemeSwitch from "./ThemeSwitch.vue";
 
 const route = useRoute();
@@ -266,9 +267,35 @@ function isNavigationItemActive(to: string): boolean {
   );
 }
 
-const profileItems = [
+const profileItems = computed(() => [
   { label: auth.user?.email, disabled: true },
   { separator: true },
+  ...(auth.projects.length > 1
+    ? [
+        {
+          label: "Переключить проект",
+          icon: "pi pi-briefcase",
+          items: auth.projects.map((project) => ({
+            label: project.name,
+            icon:
+              auth.project?.id === project.id
+                ? "pi pi-check"
+                : "pi pi-briefcase",
+            command: () => switchProject(project.id),
+          })),
+        },
+        {
+          label: "Открыть проект в новой вкладке",
+          icon: "pi pi-external-link",
+          items: auth.projects.map((project) => ({
+            label: project.name,
+            icon: "pi pi-external-link",
+            command: () => openProjectInNewTab(project.id),
+          })),
+        },
+        { separator: true },
+      ]
+    : []),
   {
     label: "Безопасность",
     icon: "pi pi-lock",
@@ -276,7 +303,14 @@ const profileItems = [
   },
   { label: "Выйти", icon: "pi pi-sign-out", command: () => logout(false) },
   { label: "Выйти везде", icon: "pi pi-shield", command: () => logout(true) },
-];
+]);
+
+async function switchProject(projectId: string) {
+  if (auth.project?.id === projectId) return;
+  projectActions.clear();
+  auth.selectProject(projectId);
+  await router.push("/overview");
+}
 
 async function logout(allDevices: boolean) {
   proposals.deactivate();

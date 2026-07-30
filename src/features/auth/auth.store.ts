@@ -4,6 +4,7 @@ import { authApi, type AuthContext, type MfaChallenge } from "./auth.api";
 import { registerUnauthorizedHandler } from "@/shared/api/http/axios-instance";
 import {
   clearAuthSession,
+  registerRemoteAuthSessionClearHandler,
   storeSelectedProjectId,
 } from "@/shared/api/http/auth-session";
 import { ApiError } from "@/shared/api/http/api-error";
@@ -77,6 +78,17 @@ export const useAuthStore = defineStore("auth", () => {
     clearAuthSession();
     clearLocalState();
     phase.value = "ANONYMOUS";
+  }
+
+  function resetRemoteAuthentication() {
+    setupAttemptId += 1;
+    setupToken.value = null;
+    mfaChallenge.value = null;
+    recoveryCodes.value = [];
+    authApi.cancelMfa();
+    clearLocalState();
+    phase.value = "ANONYMOUS";
+    restored.value = true;
   }
 
   function applyContext(context: AuthContext) {
@@ -302,6 +314,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   registerUnauthorizedHandler(resetAuthentication);
+  registerRemoteAuthSessionClearHandler(resetRemoteAuthentication);
 
   return {
     user,

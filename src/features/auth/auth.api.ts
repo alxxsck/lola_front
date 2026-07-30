@@ -20,6 +20,8 @@ import {
 } from "@/shared/api/http/axios-instance";
 import {
   clearAuthSession,
+  clearLocalAuthSession,
+  coordinateAccessTokenRefresh,
   getAccessToken,
   getSelectedProjectId,
   storeAccessToken,
@@ -160,7 +162,9 @@ function rememberAccess(response: CmsAuthenticatedResponseDto): void {
 }
 
 registerRefreshHandler(async () => {
-  rememberAccess(await initialAccessRefresh());
+  await coordinateAccessTokenRefresh(async () => {
+    rememberAccess(await initialAccessRefresh());
+  });
 });
 
 async function loadContext(): Promise<AuthContext> {
@@ -215,7 +219,7 @@ export const authApi = {
       });
       return response as AuthLoginResult;
     } catch (cause) {
-      clearAuthSession();
+      clearLocalAuthSession();
       throw cause;
     }
   },
@@ -291,11 +295,10 @@ export const authApi = {
       }
     }
     try {
-      const response = await initialAccessRefresh();
-      rememberAccess(response);
+      await refreshAccessToken();
       return await loadContext();
     } catch (cause) {
-      clearAuthSession();
+      clearLocalAuthSession();
       throw cause;
     }
   },

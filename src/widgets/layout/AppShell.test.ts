@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import AppShell from "./AppShell.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 
@@ -53,6 +53,183 @@ describe("AppShell", () => {
     await flushPromises();
 
     expect(router.currentRoute.value.path).toBe("/settings/security");
+  });
+
+  it("switches the current tab to another available Project from the profile menu", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    const firstProject = {
+      id: "project-1",
+      name: "Project One",
+      slug: "project-one",
+      status: "ACTIVE" as const,
+      supportedLocales: ["ru"],
+      effectivePermissionCodes: [],
+    };
+    const secondProject = {
+      id: "project-2",
+      name: "Project Two",
+      slug: "project-two",
+      status: "ACTIVE" as const,
+      supportedLocales: ["ru"],
+      effectivePermissionCodes: [],
+    };
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+      },
+      projects: [firstProject, secondProject],
+      project: firstProject,
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/overview", component: { template: "<div />" } },
+        { path: "/scenarios", component: { template: "<div />" } },
+      ],
+    });
+    await router.push("/scenarios");
+    await router.isReady();
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: {
+            props: ["model"],
+            template: `
+              <div>
+                <template v-for="group in model" :key="group.label">
+                  <button
+                    v-for="item in group.items ?? []"
+                    :key="item.label"
+                    type="button"
+                    @click="item.command?.()"
+                  >{{ group.label }}: {{ item.label }}</button>
+                </template>
+              </div>
+            `,
+          },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    const switchButton = wrapper
+      .findAll("button")
+      .find(
+        (button) =>
+          button.text() === "Переключить проект: Project Two",
+      );
+    expect(switchButton).toBeDefined();
+    await switchButton!.trigger("click");
+    await flushPromises();
+
+    expect(auth.project?.id).toBe("project-2");
+    expect(sessionStorage.getItem("lola-cms-selected-project-v1")).toBe(
+      "project-2",
+    );
+    expect(router.currentRoute.value.path).toBe("/overview");
+  });
+
+  it("opens another Project in a new tab without putting it in the URL", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    const firstProject = {
+      id: "project-1",
+      name: "Project One",
+      slug: "project-one",
+      status: "ACTIVE" as const,
+      supportedLocales: ["ru"],
+      effectivePermissionCodes: [],
+    };
+    const secondProject = {
+      id: "project-2",
+      name: "Project Two",
+      slug: "project-two",
+      status: "ACTIVE" as const,
+      supportedLocales: ["ru"],
+      effectivePermissionCodes: [],
+    };
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+      },
+      projects: [firstProject, secondProject],
+      project: firstProject,
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+    const setItem = vi.fn();
+    const replace = vi.fn();
+    const openedTab = {
+      sessionStorage: { setItem },
+      opener: window,
+      location: { replace },
+    };
+    const open = vi
+      .spyOn(window, "open")
+      .mockReturnValue(openedTab as unknown as Window);
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: {
+            props: ["model"],
+            template: `
+              <div>
+                <template v-for="group in model" :key="group.label">
+                  <button
+                    v-for="item in group.items ?? []"
+                    :key="item.label"
+                    type="button"
+                    @click="item.command?.()"
+                  >{{ group.label }}: {{ item.label }}</button>
+                </template>
+              </div>
+            `,
+          },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    const openButton = wrapper
+      .findAll("button")
+      .find(
+        (button) =>
+          button.text() ===
+          "Открыть проект в новой вкладке: Project Two",
+      );
+    expect(openButton).toBeDefined();
+    await openButton!.trigger("click");
+
+    expect(open).toHaveBeenCalledWith("", "_blank");
+    expect(setItem).toHaveBeenCalledWith(
+      "lola-cms-selected-project-v1",
+      "project-2",
+    );
+    expect(openedTab.opener).toBeNull();
+    expect(replace).toHaveBeenCalledWith(
+      expect.stringMatching(/\/overview$/),
+    );
+    expect(replace.mock.calls[0]?.[0]).not.toContain("project-2");
+    expect(auth.project?.id).toBe("project-1");
   });
 
   it("keeps navigation and account controls in separate sidebar regions", async () => {

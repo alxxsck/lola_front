@@ -138,7 +138,15 @@ axiosInstance.interceptors.response.use(
     if (canRetry) {
       config._authRetry = true;
       try {
-        await refreshAccessToken();
+        const currentToken = getAccessToken();
+        const requestAuthorization = AxiosHeaders.from(config.headers).get(
+          "Authorization",
+        );
+        if (
+          !currentToken ||
+          requestAuthorization === `Bearer ${currentToken}`
+        )
+          await refreshAccessToken();
         return await axiosInstance.request(config);
       } catch (refreshCause) {
         clearAuthSession();
