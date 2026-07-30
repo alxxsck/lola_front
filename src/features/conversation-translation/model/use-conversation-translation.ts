@@ -201,6 +201,26 @@ export function createConversationTranslationController(
     }
   }
 
+  function scrubUnsafeDraftEnvelope(): void {
+    const storageKey = draftStorageKey();
+    if (!storageKey) return;
+    try {
+      const raw = globalThis.sessionStorage?.getItem(storageKey);
+      if (!raw) return;
+      const envelope: unknown = JSON.parse(raw);
+      if (
+        !envelope ||
+        typeof envelope !== "object" ||
+        Array.isArray(envelope) ||
+        Object.hasOwn(envelope, "sourceText")
+      ) {
+        globalThis.sessionStorage?.removeItem(storageKey);
+      }
+    } catch {
+      globalThis.sessionStorage?.removeItem(storageKey);
+    }
+  }
+
   async function recoverReplyDraft(): Promise<void> {
     const storageKey = draftStorageKey();
     if (!storageKey) return;
@@ -331,6 +351,7 @@ export function createConversationTranslationController(
       state.value = null;
       return;
     }
+    scrubUnsafeDraftEnvelope();
     loading.value = true;
     try {
       const ids = requiredContext();

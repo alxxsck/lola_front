@@ -41,12 +41,19 @@ type TranslationState = {
 
 const forbiddenPublicKeys = [
   "sourceText",
+  "sourceTextHash",
   "originalText",
   "translatedText",
   "translation",
+  "translationConfigRevision",
   "providerRequestId",
   "provider",
   "model",
+  "modelConfigRevision",
+  "providerModel",
+  "requestConfigSnapshot",
+  "aiPricingRevisionId",
+  "reasoningEffort",
   "inputTokens",
   "outputTokens",
   "idempotencyKey",
@@ -54,6 +61,11 @@ const forbiddenPublicKeys = [
   "metadata",
   "configRevision",
   "workingLocale",
+  "sourceLocale",
+  "targetLocale",
+  "warnings",
+  "errorCode",
+  "failureCategory",
 ] as const;
 
 test.skip(
@@ -243,14 +255,173 @@ function waitForDeliveredMessage(
   });
 }
 
-function expectSafePublicPayload(payload: unknown, deliveredText: string) {
-  const serialized = JSON.stringify(payload);
-  expect(serialized).toContain(deliveredText);
-  for (const key of forbiddenPublicKeys) {
-    expect(serialized, `Public payload exposes ${key}`).not.toContain(
-      JSON.stringify(key),
+function publicRecord(value: unknown, label: string): Record<string, unknown> {
+  expect(value, `${label} must be an object`).toBeTruthy();
+  expect(Array.isArray(value), `${label} must not be an array`).toBe(false);
+  expect(typeof value, `${label} must be an object`).toBe("object");
+  return value as Record<string, unknown>;
+}
+
+function expectExactKeys(
+  value: Record<string, unknown>,
+  expectedKeys: string[],
+  label: string,
+) {
+  expect(
+    Object.keys(value).sort(),
+    `${label} has an unexpected public shape`,
+  ).toEqual([...expectedKeys].sort());
+}
+
+function expectNoForbiddenPublicKeys(value: unknown, path = "payload"): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      expectNoForbiddenPublicKeys(item, `${path}[${index}]`),
     );
+    return;
   }
+  if (!value || typeof value !== "object") return;
+  for (const [key, nested] of Object.entries(value)) {
+    expect(
+      forbiddenPublicKeys,
+      `${path}.${key} exposes an internal field`,
+    ).not.toContain(key);
+    expectNoForbiddenPublicKeys(nested, `${path}.${key}`);
+  }
+}
+
+function expectPublicContent(value: unknown, label: string): void {
+  if (value === null) return;
+  const content = publicRecord(value, label);
+  if (content.type === "text") {
+    expectExactKeys(content, ["type", "text"], label);
+    expect(typeof content.text).toBe("string");
+    return;
+  }
+  expect(["doc", "paragraph"], `${label}.type`).toContain(content.type);
+  expectExactKeys(content, ["type", "content"], label);
+  expect(Array.isArray(content.content), `${label}.content`).toBe(true);
+  (content.content as unknown[]).forEach((node, index) =>
+    expectPublicContent(node, `${label}.content[${index}]`),
+  );
+}
+
+function expectPublicConversationMessage(
+  value: unknown,
+  label: string,
+): Record<string, unknown> {
+  const message = publicRecord(value, label);
+  expectExactKeys(
+    message,
+    [
+      "id",
+      "threadId",
+      "role",
+      "status",
+      "text",
+      "content",
+      "commands",
+      "clientMessageId",
+      "createdAt",
+      "updatedAt",
+    ],
+    label,
+  );
+  expect(typeof message.id).toBe("string");
+  expect(typeof message.threadId).toBe("string");
+  expect(typeof message.role).toBe("string");
+  expect(typeof message.status).toBe("string");
+  expect(typeof message.text).toBe("string");
+  expectPublicContent(message.content, `${label}.content`);
+  expect(message.commands).toEqual([]);
+  expect([null, "string"]).toContain(
+    message.clientMessageId === null ? null : typeof message.clientMessageId,
+  );
+  expect(typeof message.createdAt).toBe("string");
+  expect(typeof message.updatedAt).toBe("string");
+  return message;
+}
+
+function expectSafeRealtimePayload(payload: unknown, deliveredText: string) {
+  expectNoForbiddenPublicKeys(payload);
+  const event = publicRecord(payload, "realtime");
+  expectExactKeys(event, ["role", "message"], "realtime");
+  expect(event.role).toBe("admin");
+  const message = expectPublicConversationMessage(
+    event.message,
+    "realtime.message",
+  );
+  expect(message.text).toBe(deliveredText);
+}
+
+function expectSafeConversationHistory(
+  payload: unknown,
+  deliveredText: string,
+) {
+  expectNoForbiddenPublicKeys(payload);
+  const page = publicRecord(payload, "conversationHistory");
+  expectExactKeys(page, ["items", "nextCursor"], "conversationHistory");
+  expect(Array.isArray(page.items)).toBe(true);
+  const messages = (page.items as unknown[]).map((message, index) =>
+    expectPublicConversationMessage(
+      message,
+      `conversationHistory.items[${index}]`,
+    ),
+  );
+  expect(messages.some((message) => message.text === deliveredText)).toBe(true);
+  expect([null, "string"]).toContain(
+    page.nextCursor === null ? null : typeof page.nextCursor,
+  );
+}
+
+function expectSafeWidgetMessages(payload: unknown, deliveredText: string) {
+  expectNoForbiddenPublicKeys(payload);
+  expect(Array.isArray(payload), "widgetMessages must be an array").toBe(true);
+  const messages = (payload as unknown[]).map((value, index) => {
+    const label = `widgetMessages[${index}]`;
+    const message = publicRecord(value, label);
+    const keys = Object.keys(message).filter((key) => key !== "threadId");
+    expect(keys.sort(), `${label} has an unexpected public shape`).toEqual(
+      [
+        "id",
+        "companyId",
+        "chatId",
+        "author",
+        "status",
+        "agenticSteps",
+        "content",
+        "data",
+        "threadMessagesCount",
+        "inReplyToMessageId",
+        "lastThreadMessageAt",
+        "createdAt",
+        "updatedAt",
+        "attachments",
+        "threadParticipants",
+        "mentions",
+        "reactions",
+        "isPinned",
+        "forwardCount",
+      ].sort(),
+    );
+    if ("threadId" in message) expect(typeof message.threadId).toBe("string");
+    expectExactKeys(
+      publicRecord(message.author, `${label}.author`),
+      ["id", "type"],
+      `${label}.author`,
+    );
+    const data = publicRecord(message.data, `${label}.data`);
+    expectExactKeys(data, ["commands", "sources"], `${label}.data`);
+    expect(data.commands).toEqual([]);
+    expect(data.sources).toEqual([]);
+    expectPublicContent(message.content, `${label}.content`);
+    return message;
+  });
+  expect(
+    messages.some((message) =>
+      JSON.stringify(message.content).includes(deliveredText),
+    ),
+  ).toBe(true);
 }
 
 test("real support chat translation fails closed, stays scoped and keeps public payloads minimal", async ({
@@ -476,9 +647,9 @@ test("real support chat translation fails closed, stays scoped and keeps public 
       "read widget-compatible messages",
     );
 
-    expectSafePublicPayload(realtimePayload, deliveredText);
-    expectSafePublicPayload(history, deliveredText);
-    expectSafePublicPayload(widgetMessages, deliveredText);
+    expectSafeRealtimePayload(realtimePayload, deliveredText);
+    expectSafeConversationHistory(history, deliveredText);
+    expectSafeWidgetMessages(widgetMessages, deliveredText);
   } finally {
     socket.close();
   }

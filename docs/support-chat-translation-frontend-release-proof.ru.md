@@ -28,7 +28,8 @@
   id/hash/locales/expiry без operator source plaintext; после reload composer
   восстанавливается исключительно из авторизованного CMS GET после проверки
   project/end-user/conversation scope, hash, locales и срока; legacy envelope с
-  plaintext и любое несовпадение очищаются fail-closed до восстановления;
+  plaintext синхронно очищается до первого network request, а любое несовпадение
+  очищается fail-closed до восстановления;
 - `SKIPPED` отображается как безопасное объяснение без утечки raw enum;
 - отдельные model profiles `Основная модель` / `Модель переводов`;
 - `grok-4.3 + reasoning low` как отображаемый translation default;
@@ -50,8 +51,8 @@
 
 ## Evidence
 
-- Vitest: `242/242` test files, `1470/1470` tests.
-- Focused post-merge translation regression: `12/12` files, `133/133` tests.
+- Vitest: `242/242` test files, `1471/1471` tests.
+- Focused post-merge translation regression: `12/12` files, `134/134` tests.
 - Playwright translation flow: `7 passed`, `1` ожидаемо skipped как mobile-only.
 - Playwright production API-mode: `2/2` — отдельные desktop и mobile прогоны с
   двумя реальными CMS identities, двумя End Users/Conversations и real backend.
@@ -65,8 +66,9 @@
   source и provider/model metadata.
 - Browser public boundary: real `/chat/conversations/:id/messages`, compatibility
   `/chat/messages` и `/assistant` `chat.message` для обычного admin delivery
-  подтверждают публичную схему и отсутствие запрещённых
-  translation/provider/model/token/idempotency/config полей. Этот browser smoke
+  подтверждают точные endpoint-specific public message/author/content/data shapes
+  и рекурсивное отсутствие запрещённых translation/provider/model/token/
+  idempotency/config полей. Этот browser smoke
   не подменяет backend `5/5` как доказательство изоляции translated source.
 
 ## Матрица обязательных integration-сценариев

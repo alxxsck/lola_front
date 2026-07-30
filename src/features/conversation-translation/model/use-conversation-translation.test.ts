@@ -640,6 +640,52 @@ describe("conversation translation controller", () => {
     expect(getReplyDraft).not.toHaveBeenCalled();
   });
 
+  it("удаляет legacy plaintext до завершения первого network request", async () => {
+    const storageKey =
+      "lola:reply-translation-draft:project-1:user-1:conversation-1";
+    sessionStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        draftId: "draft-1",
+        sourceText: "Секретный исходный текст",
+        sourceTextHash: "hash-1",
+        sourceLocale: "ru",
+        targetLocale: "de",
+        expiresAt: "2099-07-30T10:10:00.000Z",
+      }),
+    );
+    let resolveConversation!: (
+      value: ConversationTranslationResponseDto,
+    ) => void;
+    const pendingConversation = new Promise<ConversationTranslationResponseDto>(
+      (resolve) => {
+        resolveConversation = resolve;
+      },
+    );
+    const getReplyDraft = vi.fn();
+    const controller = createConversationTranslationController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => "user-1",
+        conversationId: () => "conversation-1",
+        selectedCaseId: () => undefined,
+        sourceText: () => "",
+      },
+      api({
+        getConversation: vi.fn().mockReturnValue(pendingConversation),
+        getReplyDraft,
+      }),
+    );
+
+    const load = controller.load();
+
+    expect(sessionStorage.getItem(storageKey)).toBeNull();
+    expect(getReplyDraft).not.toHaveBeenCalled();
+
+    resolveConversation(preference());
+    await load;
+  });
+
   it.each([
     ["отсутствует source", { sourceText: null }],
     ["не совпадает hash", { sourceTextHash: "unexpected-hash" }],
