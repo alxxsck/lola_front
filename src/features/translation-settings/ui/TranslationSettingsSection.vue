@@ -42,6 +42,9 @@ const formSnapshot = computed(() => JSON.stringify(form));
 const dirty = computed(
   () => Boolean(baseline.value) && baseline.value !== formSnapshot.value,
 );
+const deploymentUnavailable = computed(
+  () => current.value?.availability.reason === "DEPLOYMENT_DISABLED",
+);
 const glossaryValid = computed(() =>
   form.glossary.every(
     (entry) =>
@@ -214,7 +217,7 @@ watch(
           </div>
         </Message>
         <Message
-          v-if="!current.availability.available"
+          v-if="deploymentUnavailable"
           severity="warn"
           :closable="false"
         >
@@ -227,7 +230,7 @@ watch(
           </div>
           <ToggleSwitch
             v-model="form.enabled"
-            :disabled="saving || !editable || !current.availability.available"
+            :disabled="saving || !editable"
             aria-label="Разрешить переводы проекта"
           />
         </div>

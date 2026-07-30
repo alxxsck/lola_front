@@ -49,6 +49,62 @@ describe("project translation settings", () => {
     expect(wrapper.text()).toContain("проверки перед отправкой");
   });
 
+  it("позволяет включить переводы проекта, когда выключена только проектная настройка", async () => {
+    mocks.get.mockResolvedValueOnce({
+      availability: { available: false, reason: "PROJECT_DISABLED" },
+      configRevision: "translation-disabled",
+      projectVersion: 7,
+      supportedLocales: ["ru", "de"],
+      settings: {
+        enabled: false,
+        formality: "AUTO",
+        glossary: [],
+        inboundMode: "ON_DEMAND",
+        outboundMode: "PREVIEW_REQUIRED",
+        outgoingTone: "PRESERVE",
+        version: 1,
+        workingLocale: "ru",
+      },
+    });
+    const wrapper = shallowMount(TranslationSettingsSection, {
+      props: { projectId: "project-1", editable: true },
+    });
+    await flushPromises();
+
+    expect(
+      wrapper.get('[aria-label="Разрешить переводы проекта"]').attributes("disabled"),
+    ).not.toBe("true");
+    expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(false);
+  });
+
+  it("оставляет настройку проекта редактируемой при выключенном deployment gate", async () => {
+    mocks.get.mockResolvedValueOnce({
+      availability: { available: false, reason: "DEPLOYMENT_DISABLED" },
+      configRevision: "translation-deployment-disabled",
+      projectVersion: 7,
+      supportedLocales: ["ru", "de"],
+      settings: {
+        enabled: false,
+        formality: "AUTO",
+        glossary: [],
+        inboundMode: "ON_DEMAND",
+        outboundMode: "PREVIEW_REQUIRED",
+        outgoingTone: "PRESERVE",
+        version: 1,
+        workingLocale: "ru",
+      },
+    });
+    const wrapper = shallowMount(TranslationSettingsSection, {
+      props: { projectId: "project-1", editable: true },
+    });
+    await flushPromises();
+
+    expect(
+      wrapper.get('[aria-label="Разрешить переводы проекта"]').attributes("disabled"),
+    ).not.toBe("true");
+    expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(true);
+  });
+
   it("сохраняет tone и formality с project version", async () => {
     const wrapper = shallowMount(TranslationSettingsSection, {
       props: { projectId: "project-1", editable: true },
