@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import Button from "primevue/button";
 import type { ConversationMessageTranslationItemResponseDto } from "@/shared/api/generated/models";
 import type { ConversationMessage } from "@/shared/types/domain";
@@ -11,15 +11,27 @@ const props = defineProps<{
   busy?: boolean;
   canTranslate: boolean;
   workingLocale?: string | null;
+  viewMode?: "ORIGINAL" | "TRANSLATED";
 }>();
 const emit = defineEmits<{
   translate: [messageId: string];
   retry: [messageId: string];
   reconcile: [messageId: string];
 }>();
-const originalVisible = ref(false);
+const localOriginalOverride = ref<boolean | null>(null);
+watch(
+  () => props.viewMode,
+  () => {
+    localOriginalOverride.value = null;
+  },
+);
 const outbound = computed(
   () => props.message.translation?.direction === "OUTBOUND",
+);
+const originalVisible = computed(
+  () =>
+    localOriginalOverride.value ??
+    (props.viewMode ? props.viewMode === "ORIGINAL" : false),
 );
 
 const status = computed(
@@ -72,6 +84,11 @@ const canRequest = computed(
     !props.requested &&
     !props.message.translation,
 );
+const versionActionOverlaid = computed(
+  () =>
+    Boolean(props.viewMode && translatedText.value) &&
+    !props.message.translation?.warnings.includes("OPERATOR_EDITED"),
+);
 </script>
 
 <template>
@@ -94,6 +111,9 @@ const canRequest = computed(
         status === 'SKIPPED'
       "
       class="translated-message__actions"
+      :class="{
+        'translated-message__actions--overlay': versionActionOverlaid,
+      }"
     >
       <Button
         v-if="canRequest"
@@ -135,22 +155,28 @@ const canRequest = computed(
       </span>
       <Button
         v-else-if="translatedText"
-        :label="
+        :icon="originalVisible ? 'pi pi-eye' : 'pi pi-language'"
+        :aria-pressed="originalVisible"
+        :aria-label="
           outbound
             ? originalVisible
-              ? 'Показать оригинал'
-              : 'Показать перевод'
+              ? 'Показать текст оператора'
+              : 'Показать доставленный текст'
             : originalVisible
               ? 'Показать перевод'
               : 'Показать оригинал'
         "
-        :icon="originalVisible ? 'pi pi-eye' : 'pi pi-language'"
-        :aria-pressed="originalVisible"
+        title="Показать вторую языковую версию"
         size="small"
         text
-        @click="originalVisible = !originalVisible"
+        rounded
+        class="translated-message__version-toggle"
+        @click="localOriginalOverride = !originalVisible"
       />
-      <span v-if="translatedText" class="translated-message__locale">
+      <span
+        v-if="translatedText && !viewMode"
+        class="translated-message__locale"
+      >
         {{
           originalVisible
             ? outbound
@@ -179,6 +205,9 @@ const canRequest = computed(
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.translated-message {
+  position: relative;
+}
 .translated-message__actions {
   display: flex;
   align-items: center;
@@ -188,9 +217,24 @@ const canRequest = computed(
   margin-top: 7px;
   min-height: 24px;
 }
+.translated-message__actions--overlay {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  min-height: 0;
+  margin: 0;
+}
 .translated-message__actions :deep(.p-button) {
   padding: 2px 0;
   font-size: 0.63rem;
+}
+.translated-message__version-toggle {
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.translated-message:hover .translated-message__version-toggle,
+.translated-message__version-toggle:focus-visible {
+  opacity: 1;
 }
 .translated-message__actions > span {
   color: var(--text-secondary);
@@ -199,5 +243,15 @@ const canRequest = computed(
 .translated-message__locale {
   padding-left: 7px;
   border-left: 1px solid var(--line);
+}
+@media (hover: none) {
+  .translated-message__version-toggle {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .translated-message__version-toggle {
+    transition: none;
+  }
 }
 </style>

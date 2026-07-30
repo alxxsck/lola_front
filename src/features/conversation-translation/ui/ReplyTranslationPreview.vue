@@ -60,20 +60,21 @@ watch(
       class="reply-preview__start"
     >
       <div>
-        <i class="pi pi-language" aria-hidden="true" />
-        <span
-          >Ответ будет переведён на
-          <strong>{{
-            targetLocale ? localeDisplayName(targetLocale) : "язык пользователя"
-          }}</strong>
-          до отправки.</span
-        >
+        <span>Уйдёт пользователю</span>
+        <strong>{{
+          targetLocale
+            ? `${localeDisplayName(targetLocale)} · ${targetLocale.toUpperCase()}`
+            : "Язык не определён"
+        }}</strong>
       </div>
       <Button
         type="button"
-        label="Перевести и проверить"
+        :label="
+          targetLocale
+            ? `Перевести на ${targetLocale.toUpperCase()}`
+            : 'Перевести и проверить'
+        "
         icon="pi pi-sparkles"
-        size="small"
         :loading="busy"
         :disabled="disabled || !targetLocale"
         @click="emit('preview')"
@@ -86,8 +87,13 @@ watch(
     >
       <i class="pi pi-spin pi-spinner" aria-hidden="true" />
       <span
-        ><strong>Готовим перевод</strong
-        ><small>Обычно это занимает несколько секунд.</small></span
+        ><strong
+          >Переводим<template v-if="targetLocale">
+            на {{ targetLocale.toUpperCase() }}</template
+          >…</strong
+        ><small
+          >Ваш текст сохранён. Обычно это занимает несколько секунд.</small
+        ></span
       >
       <Button
         type="button"
@@ -122,8 +128,8 @@ watch(
     <div v-else-if="draft.status === 'READY'" class="reply-preview__ready">
       <div class="reply-preview__heading">
         <span
-          ><i class="pi pi-check-circle" aria-hidden="true" /> Перевод готов ·
-          {{ localeDisplayName(draft.targetLocale) }}</span
+          ><i class="pi pi-check-circle" aria-hidden="true" /> Уйдёт
+          пользователю · {{ draft.targetLocale.toUpperCase() }}</span
         >
         <small v-if="showProviderDetails">{{
           draft.model ?? "модель проекта"
@@ -146,7 +152,7 @@ watch(
         Перевод требует дополнительной проверки перед отправкой.
       </div>
       <div class="reply-preview__footer">
-        <span>Пользователь получит только перевод.</span>
+        <span>Шаг 2 из 2 · перевод можно исправить перед отправкой.</span>
         <Button
           type="button"
           label="Отправить перевод"
@@ -165,10 +171,10 @@ watch(
 .reply-preview {
   border: 1px solid
     color-mix(in srgb, var(--status-violet-text) 18%, var(--line));
-  border-radius: 13px;
+  border-radius: 14px;
   background: color-mix(
     in srgb,
-    var(--status-violet-soft) 42%,
+    var(--status-violet-soft) 34%,
     var(--surface-card)
   );
   overflow: hidden;
@@ -186,14 +192,27 @@ watch(
 .reply-preview__start,
 .reply-preview__processing,
 .reply-preview__ready {
-  padding: 10px 12px;
+  padding: 11px 12px;
 }
-.reply-preview__start > div,
+.reply-preview__start > div {
+  display: grid;
+  gap: 3px;
+}
+.reply-preview__start > div > span {
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.reply-preview__start > div > strong {
+  color: var(--text-primary);
+  font-size: 0.76rem;
+}
 .reply-preview__processing {
   color: var(--text-secondary);
   font-size: 0.67rem;
 }
-.reply-preview__start i,
 .reply-preview__processing > i,
 .reply-preview__heading i {
   margin-right: 6px;
@@ -208,7 +227,7 @@ watch(
 }
 .reply-preview__ready {
   display: grid;
-  gap: 8px;
+  gap: 9px;
 }
 .reply-preview__heading span {
   font-size: 0.69rem;
@@ -218,6 +237,14 @@ watch(
 .reply-preview__footer span {
   color: var(--text-secondary);
   font-size: 0.61rem;
+}
+.reply-preview__ready :deep(textarea) {
+  border-color: color-mix(in srgb, var(--status-violet-text) 18%, var(--line));
+  background: var(--surface-card);
+  line-height: 1.5;
+}
+.reply-preview__footer :deep(.p-button) {
+  min-width: 150px;
 }
 .reply-preview__warnings {
   color: var(--status-warning-text);
@@ -233,6 +260,11 @@ watch(
   .reply-preview__footer {
     align-items: stretch;
     flex-direction: column;
+  }
+  .reply-preview__start :deep(.p-button),
+  .reply-preview__footer :deep(.p-button) {
+    width: 100%;
+    min-height: 46px;
   }
 }
 </style>

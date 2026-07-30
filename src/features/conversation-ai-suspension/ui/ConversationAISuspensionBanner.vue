@@ -8,6 +8,7 @@ const props = defineProps<{
   entry: ConversationAISuspensionEntry
   canManage: boolean
   conversationOpen: boolean
+  compact?: boolean
 }>()
 
 defineEmits<{
@@ -61,7 +62,7 @@ const reasonLabel = computed(() => detail.value?.reason ? reasonLabels[detail.va
 </script>
 
 <template>
-  <section v-if="active" class="suspension-banner" aria-labelledby="suspension-title">
+  <section v-if="active" class="suspension-banner" :class="{ compact }" aria-labelledby="suspension-title">
     <div class="suspension-icon" aria-hidden="true"><i class="pi pi-pause-circle" /></div>
     <div class="suspension-copy">
       <h4 id="suspension-title">AI приостановлен в этом диалоге</h4>
@@ -89,27 +90,41 @@ const reasonLabel = computed(() => detail.value?.reason ? reasonLabels[detail.va
 
 <style scoped>
 .suspension-banner {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 8px 10px;
   border: 1px solid color-mix(in srgb, var(--status-danger) 42%, var(--border-default));
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
 }
-.suspension-icon { font-size: 1.35rem; }
-.suspension-copy h4 { margin: 0; font-size: .84rem; }
-.suspension-copy p { margin: 5px 0 0; font-size: .72rem; line-height: 1.45; }
+.suspension-icon { font-size: 1rem; }
+.suspension-copy { display: flex; align-items: center; flex: 1; flex-wrap: wrap; gap: 3px 8px; min-width: 0; }
+.suspension-copy h4 { margin: 0; font-size: .72rem; }
+.suspension-copy p { margin: 0; font-size: .64rem; line-height: 1.35; }
 .deadline { font-weight: 700; }
-.suspension-note { padding: 7px 9px; border-radius: 8px; background: color-mix(in srgb, var(--surface-card) 55%, transparent); color: var(--text-primary); white-space: pre-wrap; }
+.suspension-note { padding: 4px 7px; border-radius: 7px; background: color-mix(in srgb, var(--surface-card) 55%, transparent); color: var(--text-primary); white-space: pre-wrap; }
 .suspension-progress { display: flex; align-items: center; gap: 6px; }
 .suspension-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 6px; }
+.suspension-actions :deep(.p-button) { min-height: 32px; padding-block: .35rem; font-size: .65rem; }
+.suspension-banner.compact { flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; }
+.suspension-banner.compact .suspension-copy { flex: 0 1 auto; }
+.suspension-banner.compact .suspension-copy h4,
+.suspension-banner.compact .suspension-meta,
+.suspension-banner.compact .suspension-note,
+.suspension-banner.compact .suspension-progress,
+.suspension-banner.compact .suspension-readonly { display: none; }
+.suspension-banner.compact .suspension-actions { margin-left: auto; flex-wrap: nowrap; }
+.suspension-banner.compact .suspension-icon { font-size: .82rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 560px) {
-  .suspension-banner { grid-template-columns: auto minmax(0, 1fr); }
-  .suspension-actions { grid-column: 1 / -1; justify-content: stretch; }
+  .suspension-banner { align-items: flex-start; flex-wrap: wrap; }
+  .suspension-copy { align-items: flex-start; flex-direction: column; }
+  .suspension-meta,
+  .suspension-note { display: none; }
+  .suspension-actions { width: 100%; justify-content: stretch; }
   .suspension-actions :deep(.p-button) { flex: 1 1 140px; }
 }
 </style>

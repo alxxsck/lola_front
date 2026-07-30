@@ -56,7 +56,7 @@ const localeOptions = computed<Array<{ label: string; value: string | null }>>(
   () => [
     { label: "Определять автоматически", value: null },
     ...[...new Set(props.state?.supportedLocales ?? [])].map((locale) => ({
-      label: `${localeDisplayName(locale)} · ${locale}`,
+      label: `${localeDisplayName(locale)} · ${locale.toUpperCase()}`,
       value: locale,
     })),
   ],
@@ -107,12 +107,12 @@ function isSupportedLocale(
           Язык ответов:
           {{
             responseLocale
-              ? `${localeDisplayName(responseLocale)} (${responseLocale})`
+              ? `${localeDisplayName(responseLocale)} · ${responseLocale.toUpperCase()}`
               : "не подтверждён"
           }}
           · {{ responseLocaleSource }}
           · рабочий язык:
-          {{ localeDisplayName(state.preference.workingLocale) }}
+          {{ state.preference.workingLocale.toUpperCase() }}
           <template v-if="!state.preference.enabled">
             · перевод выключен
           </template>
@@ -158,10 +158,12 @@ function isSupportedLocale(
           state.preference.enabled &&
           eligibleCount
         "
-        :label="`Перевести видимые · ${eligibleCount}`"
         icon="pi pi-language"
         size="small"
         text
+        class="translation-banner__translate"
+        :aria-label="`Перевести ещё ${eligibleCount} сообщений`"
+        :title="`Перевести ещё ${eligibleCount} сообщений`"
         :disabled="saving || !canManage"
         @click="emit('translateVisible')"
       />
@@ -207,21 +209,13 @@ function isSupportedLocale(
 .translation-banner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 12px;
-  padding: 10px 16px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-violet-text) 18%, var(--line));
-  border-radius: 12px;
-  background: color-mix(
-    in srgb,
-    var(--status-violet-soft) 70%,
-    var(--surface-card)
-  );
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+  margin-left: auto;
 }
 .translation-banner.unavailable {
-  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
 }
 .translation-banner__main,
 .translation-banner__controls {
@@ -236,24 +230,35 @@ function isSupportedLocale(
   min-width: 0;
 }
 .translation-banner__main strong {
-  font-size: 0.73rem;
+  font-size: 0.67rem;
 }
 .translation-banner__main span {
+  max-width: 220px;
+  overflow: hidden;
   color: var(--text-secondary);
-  font-size: 0.65rem;
+  font-size: 0.59rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .translation-banner__icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--surface-card);
   color: var(--status-violet-text);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 .translation-banner__controls :deep(.p-select) {
-  width: 176px;
+  width: 152px;
+  min-height: 34px;
+  font-size: 0.66rem;
+}
+.translation-banner__controls :deep(.p-button) {
+  min-height: 34px;
+  font-size: 0.65rem;
 }
 .sr-only {
   position: absolute;
@@ -262,16 +267,26 @@ function isSupportedLocale(
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
 }
+@media (max-width: 1180px) {
+  .translation-banner__main > div {
+    display: none;
+  }
+}
 @media (max-width: 720px) {
   .translation-banner {
-    align-items: stretch;
-    flex-direction: column;
+    width: 100%;
+    margin-left: 0;
   }
   .translation-banner__controls {
-    justify-content: space-between;
+    width: 100%;
   }
   .translation-banner__controls :deep(.p-select) {
-    width: min(240px, calc(100vw - 130px));
+    width: min(210px, calc(100vw - 128px));
+  }
+  .translation-banner__translate {
+    width: 34px;
+    flex: 0 0 34px;
+    padding-inline: 0;
   }
 }
 </style>

@@ -336,6 +336,44 @@ describe("единое рабочее пространство пользова�
     expect(wrapper.get('[data-testid="profile-overview"]')).toBeTruthy();
   });
 
+  it("фильтрует список диалогов по названию без перезагрузки истории", async () => {
+    mocks.getConversations.mockResolvedValue({
+      items: [
+        current,
+        {
+          ...current,
+          id: "conversation-deposit",
+          title: "Депозит не зачислен",
+          isCurrent: false,
+          currentInteractionSessionCount: 0,
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(wrapper.get(".conversation-list").text()).toContain(
+      "Текущий разговор",
+    );
+    expect(wrapper.get(".conversation-list").text()).toContain(
+      "Депозит не зачислен",
+    );
+
+    await wrapper
+      .get('input[aria-label="Поиск по диалогам"]')
+      .setValue("депозит");
+
+    expect(wrapper.get(".conversation-list").text()).not.toContain(
+      "Текущий разговор",
+    );
+    expect(wrapper.get(".conversation-list").text()).toContain(
+      "Депозит не зачислен",
+    );
+    expect(mocks.getConversations).toHaveBeenCalledTimes(1);
+  });
+
   it("размещает историю синхронизации в карточке доступного профиля", async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
@@ -475,7 +513,7 @@ describe("единое рабочее пространство пользова�
     await flushPromises();
     expect(
       wrapper.get('[data-testid="live-connection-status"]').text(),
-    ).toContain("Ошибка live");
+    ).toContain("Ошибка связи");
     expect(wrapper.find(".realtime-message").exists()).toBe(false);
   });
 
@@ -593,21 +631,78 @@ describe("единое рабочее пространство пользова�
     expect(translate).not.toHaveBeenCalled();
   });
 
+  it("переключает все сообщения между оригиналом и рабочим переводом из шапки", async () => {
+    mocks.permissions.push("project.translation.create");
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    vi.spyOn(conversationTranslationApi, "translateMessages").mockResolvedValue(
+      { items: [], queued: false },
+    );
+    mocks.getMessages.mockResolvedValue({
+      items: [
+        {
+          id: "translated-message",
+          conversationId: current.id,
+          author: "USER",
+          status: "COMPLETED",
+          text: "Guten Tag",
+          createdAt: "2026-07-20T12:59:00.000Z",
+          translation: {
+            id: "translation-1",
+            direction: "INBOUND",
+            status: "COMPLETED",
+            originalText: "Guten Tag",
+            translatedText: "Добрый день",
+            deliveredText: null,
+            viewText: "Добрый день",
+            sourceLocale: "de",
+            targetLocale: "ru",
+            errorCode: null,
+            warnings: [],
+            updatedAt: "2026-07-20T13:00:00.000Z",
+          },
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Добрый день");
+    expect(wrapper.text()).not.toContain("Guten Tag");
+
+    await wrapper
+      .get('[data-action="show-original-messages"]')
+      .trigger("click");
+    expect(wrapper.text()).toContain("Guten Tag");
+    expect(wrapper.text()).not.toContain("Добрый день");
+
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
+    expect(wrapper.text()).toContain("Добрый день");
+    expect(wrapper.text()).not.toContain("Guten Tag");
+  });
+
   it("показывает ошибку перевода вне chat layout", async () => {
     mocks.permissions.push("project.translation.create");
     vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
       translationState(true),
     );
-    vi.spyOn(conversationTranslationApi, "translateMessages").mockRejectedValue({
-      response: {
-        data: {
-          error: {
-            code: "TRANSLATION_DISABLED",
-            requestId: "request-translation-disabled",
+    vi.spyOn(conversationTranslationApi, "translateMessages").mockRejectedValue(
+      {
+        response: {
+          data: {
+            error: {
+              code: "TRANSLATION_DISABLED",
+              requestId: "request-translation-disabled",
+            },
           },
         },
       },
-    });
+    );
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
@@ -666,6 +761,7 @@ describe("единое рабочее пространство пользова�
         updatedAt: "2026-07-30T10:00:01.000Z",
         warnings: [],
       });
+    mocks.sendAdminMessage.mockResolvedValue({ threadId: current.id });
 
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
@@ -681,6 +777,19 @@ describe("единое рабочее пространство пользова�
         ?.translatedText,
     ).toBe("Bitte geben Sie die Bestellnummer an");
     expect(getReplyDraft).toHaveBeenCalledTimes(1);
+
+    await wrapper
+      .get('textarea[aria-label="Ответ пользователю"]')
+      .trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(mocks.sendAdminMessage).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      expect.objectContaining({
+        replyTranslationDraftId: "draft-reload",
+      }),
+    );
   });
 
   it("переводит только новую загруженную страницу истории", async () => {

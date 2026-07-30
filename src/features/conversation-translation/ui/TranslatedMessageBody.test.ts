@@ -80,6 +80,40 @@ describe("translated message body", () => {
     expect(wrapper.text()).toContain("Изменено оператором");
   });
 
+  it("в едином режиме показывает доставленный outbound как оригинал, а текст оператора как перевод", async () => {
+    const wrapper = shallowMount(TranslatedMessageBody, {
+      props: {
+        message: message({
+          author: "ADMIN",
+          text: "Guten Tag!",
+          translation: {
+            id: "draft-1",
+            direction: "OUTBOUND",
+            status: "COMPLETED",
+            originalText: "Здравствуйте",
+            translatedText: "Hallo",
+            deliveredText: "Guten Tag!",
+            viewText: "Guten Tag!",
+            sourceLocale: "ru",
+            targetLocale: "de",
+            errorCode: null,
+            warnings: ["OPERATOR_EDITED"],
+            updatedAt: "2026-07-30T10:00:01.000Z",
+          },
+        }),
+        canTranslate: true,
+        viewMode: "ORIGINAL",
+      },
+    });
+
+    expect(wrapper.text()).toContain("Guten Tag!");
+    expect(wrapper.text()).not.toContain("Здравствуйте");
+
+    await wrapper.setProps({ viewMode: "TRANSLATED" });
+    expect(wrapper.text()).toContain("Здравствуйте");
+    expect(wrapper.text()).not.toContain("Guten Tag!");
+  });
+
   it("объявляет pending как live status", () => {
     const wrapper = shallowMount(TranslatedMessageBody, {
       props: {

@@ -77,7 +77,7 @@ onUnmounted(() => window.clearInterval(timer))
   <section class="page live-page">
     <header class="page-header">
       <div>
-        <div class="eyebrow live-label"><i /> Realtime</div>
+        <div class="eyebrow live-label"><i /> Онлайн</div>
         <h1>Сейчас онлайн</h1>
         <p class="subtitle">
           Наблюдайте за активными сессиями и помогайте пользователям в нужный
@@ -104,7 +104,7 @@ onUnmounted(() => window.clearInterval(timer))
           <div>
             <b>Сейчас в проекте</b
             ><small
-              ><i class="pi pi-wifi" /> presence подтверждён backend</small
+              ><i class="pi pi-wifi" /> статус подтверждён сервером</small
             >
           </div>
         </div>
@@ -116,7 +116,7 @@ onUnmounted(() => window.clearInterval(timer))
         </div>
         <div class="summary-main">
           <strong>{{ connections }}</strong>
-          <div><b>Realtime-каналы</b><small>вкладки и устройства</small></div>
+          <div><b>Активные подключения</b><small>вкладки и устройства</small></div>
         </div>
       </article>
     </div>
@@ -155,17 +155,17 @@ onUnmounted(() => window.clearInterval(timer))
             ><span class="mono">{{ session.externalId }}</span>
           </div>
           <Tag
-            :value="session.status === 'ONLINE' ? 'Онлайн' : 'Stale'"
+            :value="session.status === 'ONLINE' ? 'Онлайн' : 'Нет активности'"
             :severity="session.status === 'ONLINE' ? 'success' : 'warn'"
           />
         </div>
         <div class="session-context">
           <div>
-            <i class="pi pi-link" /><span>Interaction session</span
+            <i class="pi pi-link" /><span>Сессия взаимодействия</span
             ><strong class="mono">{{ session.id }}</strong>
           </div>
           <div>
-            <i class="pi pi-desktop" /><span>Transport</span
+            <i class="pi pi-desktop" /><span>Устройство</span
             ><strong>{{ session.device }}</strong>
           </div>
         </div>

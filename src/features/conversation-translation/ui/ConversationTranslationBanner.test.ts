@@ -50,7 +50,7 @@ describe("conversation translation banner", () => {
     });
 
     expect(wrapper.text()).toContain("Язык ответов");
-    expect(wrapper.text()).toContain("de");
+    expect(wrapper.text()).toContain("DE");
     expect(wrapper.text()).toContain(explanation);
   });
 
@@ -99,8 +99,8 @@ describe("conversation translation banner", () => {
     const selector = wrapper.get("select");
     expect(selector.findAll("option").map((option) => option.text())).toEqual(
       expect.arrayContaining([
-        expect.stringContaining("ru"),
-        expect.stringContaining("de"),
+        expect.stringContaining("RU"),
+        expect.stringContaining("DE"),
       ]),
     );
     await selector.setValue("de");

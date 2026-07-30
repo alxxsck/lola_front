@@ -9,6 +9,7 @@ const props = defineProps<{
   entry: ConversationAISuspensionEntry
   canManage: boolean
   conversationOpen: boolean
+  hideActiveStatus?: boolean
 }>()
 
 defineEmits<{
@@ -35,7 +36,7 @@ const hasActions = computed(() =>
 
 <template>
   <Tag
-    v-if="active"
+    v-if="active && !hideActiveStatus"
     value="AI приостановлен"
     severity="warn"
     rounded
