@@ -44,10 +44,10 @@ test("operator previews a translated reply and can inspect its Russian source", 
   ).toBeVisible();
 });
 
-test("translation settings stay usable on mobile", async ({
+test("translation settings stay usable across responsive layouts", async ({
   page,
 }, testInfo) => {
-  test.skip(!testInfo.project.name.includes("mobile"), "mobile-only assertion");
+  test.skip(!testInfo.project.name.includes("mobile"), "run once responsively");
   await page.goto("/login");
   await page.getByRole("button", { name: "Продолжить" }).click();
   await page.goto("/project");
@@ -58,13 +58,79 @@ test("translation settings stay usable on mobile", async ({
     page.getByText("Глоссарий проекта", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Русский · ru")).toBeVisible();
-  expect(
-    await page.evaluate(
+  await page.getByRole("button", { name: "Добавить термин" }).click();
+
+  const source = page.getByRole("textbox", { name: "Исходный термин 1" });
+  const behavior = page.getByRole("combobox", { name: "Правило термина 1" });
+  const target = page.getByRole("textbox", { name: "Перевод термина 1" });
+  const remove = page.getByRole("button", { name: "Удалить термин 1" });
+
+  async function glossaryBoxes() {
+    const [sourceBox, behaviorBox, targetBox, removeBox] = await Promise.all([
+      source.boundingBox(),
+      behavior.boundingBox(),
+      target.boundingBox(),
+      remove.boundingBox(),
+    ]);
+    if (!sourceBox || !behaviorBox || !targetBox || !removeBox) {
+      throw new Error("Glossary controls must be visible");
+    }
+    return { sourceBox, behaviorBox, targetBox, removeBox };
+  }
+
+  const hasNoHorizontalOverflow = () =>
+    page.evaluate(
       () =>
         document.documentElement.scrollWidth <=
         document.documentElement.clientWidth,
-    ),
-  ).toBe(true);
+    );
+
+  const mobileBoxes = await glossaryBoxes();
+  expect(mobileBoxes.sourceBox.width).toBeGreaterThan(200);
+  expect(
+    Math.abs(mobileBoxes.removeBox.y - mobileBoxes.sourceBox.y),
+  ).toBeLessThan(4);
+  expect(
+    mobileBoxes.sourceBox.x + mobileBoxes.sourceBox.width,
+  ).toBeLessThanOrEqual(mobileBoxes.removeBox.x);
+  expect(mobileBoxes.behaviorBox.y).toBeGreaterThan(mobileBoxes.sourceBox.y);
+  expect(mobileBoxes.targetBox.y).toBeGreaterThan(mobileBoxes.behaviorBox.y);
+  expect(await hasNoHorizontalOverflow()).toBe(true);
+
+  await page.setViewportSize({ width: 1024, height: 900 });
+  const tabletBoxes = await glossaryBoxes();
+  expect(
+    Math.abs(tabletBoxes.sourceBox.y - tabletBoxes.behaviorBox.y),
+  ).toBeLessThan(4);
+  expect(tabletBoxes.targetBox.y).toBeGreaterThan(tabletBoxes.sourceBox.y);
+  expect(tabletBoxes.targetBox.width).toBeGreaterThan(
+    tabletBoxes.sourceBox.width,
+  );
+  expect(
+    Math.abs(tabletBoxes.removeBox.y - tabletBoxes.targetBox.y),
+  ).toBeLessThan(4);
+  expect(
+    tabletBoxes.targetBox.x + tabletBoxes.targetBox.width,
+  ).toBeLessThanOrEqual(tabletBoxes.removeBox.x);
+  expect(await hasNoHorizontalOverflow()).toBe(true);
+
+  await page.setViewportSize({ width: 2048, height: 1000 });
+  const desktopBoxes = await glossaryBoxes();
+  expect(desktopBoxes.sourceBox.width).toBeGreaterThan(250);
+  expect(desktopBoxes.targetBox.width).toBeGreaterThan(250);
+  expect(
+    Math.abs(desktopBoxes.behaviorBox.y - desktopBoxes.sourceBox.y),
+  ).toBeLessThan(4);
+  expect(
+    Math.abs(desktopBoxes.targetBox.y - desktopBoxes.sourceBox.y),
+  ).toBeLessThan(4);
+  expect(
+    Math.abs(desktopBoxes.removeBox.y - desktopBoxes.sourceBox.y),
+  ).toBeLessThan(4);
+  expect(
+    desktopBoxes.targetBox.x + desktopBoxes.targetBox.width,
+  ).toBeLessThanOrEqual(desktopBoxes.removeBox.x);
+  expect(await hasNoHorizontalOverflow()).toBe(true);
 });
 
 test("stale preview recovers and same-language reply uses normal send", async ({

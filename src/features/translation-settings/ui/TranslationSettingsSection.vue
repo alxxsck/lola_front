@@ -292,6 +292,7 @@ watch(
           >
             <InputText
               v-model="entry.source"
+              class="glossary-source"
               maxlength="200"
               placeholder="Исходный термин"
               :disabled="saving || !editable"
@@ -299,6 +300,7 @@ watch(
             />
             <Select
               v-model="entry.behavior"
+              class="glossary-behavior"
               :options="[
                 { label: 'Переводить как', value: 'TRANSLATE_AS' },
                 { label: 'Не переводить', value: 'KEEP' },
@@ -311,6 +313,7 @@ watch(
             <InputText
               v-if="entry.behavior === 'TRANSLATE_AS'"
               v-model="entry.target"
+              class="glossary-target"
               maxlength="200"
               placeholder="Целевой вариант"
               :disabled="saving || !editable"
@@ -318,6 +321,7 @@ watch(
             />
             <span v-else class="glossary-keep">Сохранить без изменений</span>
             <Button
+              class="glossary-remove"
               icon="pi pi-trash"
               severity="danger"
               text
@@ -409,7 +413,11 @@ watch(
 }
 .translation-grid label {
   display: grid;
+  min-width: 0;
   gap: 5px;
+}
+.translation-grid :deep(.p-select) {
+  min-width: 0;
 }
 .translation-grid label > span {
   font-weight: 700;
@@ -436,20 +444,18 @@ watch(
   font-size: 0.78rem;
 }
 .glossary {
+  container-type: inline-size;
   display: grid;
   gap: 10px;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 13px;
 }
-.glossary header,
-.glossary-row {
+.glossary header {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-.glossary header {
   justify-content: space-between;
+  gap: 10px;
 }
 .glossary header > div {
   display: grid;
@@ -461,12 +467,65 @@ watch(
   color: var(--text-secondary);
   font-size: 0.64rem;
 }
-.glossary-row > :first-child,
-.glossary-row > :nth-child(3) {
-  flex: 1;
+.glossary-row {
+  display: grid;
+  grid-template-columns:
+    minmax(12rem, 1fr)
+    minmax(11rem, 0.65fr)
+    minmax(12rem, 1fr)
+    auto;
+  align-items: center;
+  gap: 10px;
+}
+.glossary-source,
+.glossary-behavior,
+.glossary-target {
+  min-width: 0;
 }
 .glossary-keep {
-  flex: 1;
+  min-width: 0;
+}
+@container (max-width: 900px) {
+  .glossary-row {
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 0.65fr) auto;
+  }
+  .glossary-target,
+  .glossary-keep {
+    grid-column: 1 / 3;
+  }
+}
+@container (max-width: 520px) {
+  .glossary header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .glossary header > div {
+    flex: 1 1 15rem;
+  }
+  .glossary header > .p-button {
+    margin-left: auto;
+  }
+  .glossary-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+  .glossary-source {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .glossary-remove {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .glossary-behavior {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .glossary-target,
+  .glossary-keep {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
 }
 .translation-footer {
   padding-top: 12px;
@@ -477,10 +536,6 @@ watch(
     grid-template-columns: 1fr;
   }
   .translation-footer {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .glossary-row {
     align-items: stretch;
     flex-direction: column;
   }
