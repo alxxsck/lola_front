@@ -253,7 +253,7 @@ function expectSafePublicPayload(payload: unknown, deliveredText: string) {
   }
 }
 
-test("real support chat translation fails closed, stays scoped and exposes only delivered text", async ({
+test("real support chat translation fails closed, stays scoped and keeps public payloads minimal", async ({
   page,
   request,
 }, testInfo) => {

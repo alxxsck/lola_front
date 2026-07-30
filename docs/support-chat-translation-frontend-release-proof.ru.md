@@ -27,7 +27,8 @@
 - CMS-only reply recovery хранит в same-tab `sessionStorage` только scoped draft
   id/hash/locales/expiry без operator source plaintext; после reload composer
   восстанавливается исключительно из авторизованного CMS GET после проверки
-  project/end-user/conversation scope, hash, locales и срока, иначе recovery очищается;
+  project/end-user/conversation scope, hash, locales и срока; legacy envelope с
+  plaintext и любое несовпадение очищаются fail-closed до восстановления;
 - `SKIPPED` отображается как безопасное объяснение без утечки raw enum;
 - отдельные model profiles `Основная модель` / `Модель переводов`;
 - `grok-4.3 + reasoning low` как отображаемый translation default;
@@ -45,8 +46,8 @@
 
 ## Evidence
 
-- Vitest: `242/242` test files, `1469/1469` tests.
-- Focused post-merge translation regression: `12/12` files, `132/132` tests.
+- Vitest: `242/242` test files, `1470/1470` tests.
+- Focused post-merge translation regression: `12/12` files, `133/133` tests.
 - Playwright translation flow: `7 passed`, `1` ожидаемо skipped как mobile-only.
 - Playwright production API-mode: `2/2` — отдельные desktop и mobile прогоны с
   двумя реальными CMS identities, двумя End Users/Conversations и real backend.

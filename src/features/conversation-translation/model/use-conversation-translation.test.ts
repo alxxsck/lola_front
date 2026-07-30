@@ -603,6 +603,43 @@ describe("conversation translation controller", () => {
     expect(getReplyDraft).toHaveBeenCalledTimes(1);
   });
 
+  it("немедленно удаляет legacy recovery envelope с source plaintext", async () => {
+    const storageKey =
+      "lola:reply-translation-draft:project-1:user-1:conversation-1";
+    sessionStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        draftId: "draft-1",
+        sourceText: "Секретный исходный текст",
+        sourceTextHash: "hash-1",
+        sourceLocale: "ru",
+        targetLocale: "de",
+        expiresAt: "2099-07-30T10:10:00.000Z",
+      }),
+    );
+    const getReplyDraft = vi.fn();
+    const restoredSourceText = ref("");
+    const controller = createConversationTranslationController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => "user-1",
+        conversationId: () => "conversation-1",
+        selectedCaseId: () => undefined,
+        sourceText: () => restoredSourceText.value,
+        restoreSourceText: (value) => {
+          restoredSourceText.value = value;
+        },
+      },
+      api({ getReplyDraft }),
+    );
+
+    await controller.load();
+
+    expect(sessionStorage.getItem(storageKey)).toBeNull();
+    expect(restoredSourceText.value).toBe("");
+    expect(getReplyDraft).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["отсутствует source", { sourceText: null }],
     ["не совпадает hash", { sourceTextHash: "unexpected-hash" }],

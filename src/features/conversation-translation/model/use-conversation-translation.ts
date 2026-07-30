@@ -207,9 +207,19 @@ export function createConversationTranslationController(
     try {
       const raw = globalThis.sessionStorage?.getItem(storageKey);
       if (!raw) return;
-      const envelope = JSON.parse(raw) as {
+      const parsedEnvelope: unknown = JSON.parse(raw);
+      if (
+        !parsedEnvelope ||
+        typeof parsedEnvelope !== "object" ||
+        Array.isArray(parsedEnvelope)
+      ) {
+        globalThis.sessionStorage?.removeItem(storageKey);
+        return;
+      }
+      const envelope = parsedEnvelope as {
         draftId?: unknown;
         expiresAt?: unknown;
+        sourceText?: unknown;
         sourceTextHash?: unknown;
         sourceLocale?: unknown;
         targetLocale?: unknown;
@@ -219,6 +229,7 @@ export function createConversationTranslationController(
           ? Date.parse(envelope.expiresAt)
           : Number.NaN;
       if (
+        Object.hasOwn(envelope, "sourceText") ||
         typeof envelope.draftId !== "string" ||
         !Number.isFinite(expiresAt) ||
         expiresAt <= Date.now() ||
