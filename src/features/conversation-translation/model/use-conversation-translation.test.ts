@@ -406,7 +406,8 @@ describe("conversation translation controller", () => {
         "lola:reply-translation-draft:project-1:user-1:conversation-1",
         JSON.stringify({
           draftId: "draft-1",
-          sourceText: "Здравствуйте",
+          sourceTextHash: "hash-1",
+          sourceLocale: "ru",
           targetLocale: "de",
           expiresAt: "2099-07-30T10:10:00.000Z",
         }),
@@ -525,7 +526,7 @@ describe("conversation translation controller", () => {
     expect(create.mock.calls[0][7]).toBe(create.mock.calls[1][7]);
   });
 
-  it("сохраняет source в CMS-scoped session recovery envelope", async () => {
+  it("не сохраняет source plaintext в CMS-scoped session recovery envelope", async () => {
     const storageKey =
       "lola:reply-translation-draft:project-1:user-1:conversation-1";
     const controller = createConversationTranslationController(
@@ -546,8 +547,16 @@ describe("conversation translation controller", () => {
     await controller.createReplyPreview();
 
     const stored = sessionStorage.getItem(storageKey);
-    expect(stored).toContain("draft-1");
-    expect(stored).toContain("Секретный исходный текст");
+    expect(stored).not.toBeNull();
+    expect(JSON.parse(stored!)).toEqual({
+      draftId: "draft-1",
+      sourceTextHash: "hash-1",
+      sourceLocale: "ru",
+      targetLocale: "de",
+      expiresAt: "2099-07-30T10:10:00.000Z",
+    });
+    expect(stored).not.toContain("Секретный исходный текст");
+    expect(stored).not.toContain('"sourceText"');
     expect(localStorage.getItem(storageKey)).toBeNull();
   });
 
@@ -593,6 +602,53 @@ describe("conversation translation controller", () => {
     expect(reloaded.readyDraft.value?.id).toBe("draft-1");
     expect(getReplyDraft).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    ["отсутствует source", { sourceText: null }],
+    ["не совпадает hash", { sourceTextHash: "unexpected-hash" }],
+    ["не совпадает conversation scope", { conversationId: "conversation-2" }],
+  ] as const)(
+    "очищает recovery envelope, если в авторизованном GET %s",
+    async (_case, responsePatch) => {
+      const storageKey =
+        "lola:reply-translation-draft:project-1:user-1:conversation-1";
+      sessionStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          draftId: "draft-1",
+          sourceTextHash: "hash-1",
+          sourceLocale: "ru",
+          targetLocale: "de",
+          expiresAt: "2099-07-30T10:10:00.000Z",
+        }),
+      );
+      const restoredSourceText = ref("");
+      const controller = createConversationTranslationController(
+        {
+          projectId: () => "project-1",
+          endUserId: () => "user-1",
+          conversationId: () => "conversation-1",
+          selectedCaseId: () => undefined,
+          sourceText: () => restoredSourceText.value,
+          restoreSourceText: (value) => {
+            restoredSourceText.value = value;
+          },
+        },
+        api({
+          getReplyDraft: vi.fn().mockResolvedValue({
+            ...readyDraft("Секретный исходный текст"),
+            ...responsePatch,
+          }),
+        }),
+      );
+
+      await controller.load();
+
+      expect(restoredSourceText.value).toBe("");
+      expect(controller.draft.value).toBeNull();
+      expect(sessionStorage.getItem(storageKey)).toBeNull();
+    },
+  );
 
   it("очищает recovery envelope при явном discard", async () => {
     const sourceText = ref("Черновик");

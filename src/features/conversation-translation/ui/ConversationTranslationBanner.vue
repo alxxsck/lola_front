@@ -41,25 +41,32 @@ const responseLocaleSource = computed(() =>
       ? languageSourceLabels[props.state.language.source]
       : languageSourceLabels.UNKNOWN,
 );
+const supportedLocaleSet = computed(
+  () => new Set(props.state?.supportedLocales ?? []),
+);
+const selectableResponseLocale = computed(() => {
+  const locale =
+    props.state?.preference.endUserLocaleOverride ??
+    props.state?.language.locale ??
+    null;
+  return locale && supportedLocaleSet.value.has(locale) ? locale : null;
+});
 
 const localeOptions = computed<Array<{ label: string; value: string | null }>>(
   () => [
     { label: "Определять автоматически", value: null },
-    ...[
-      ...new Set([
-        ...(props.state?.supportedLocales ?? []),
-        props.state?.preference.endUserLocaleOverride,
-        props.state?.language.locale,
-        props.state?.language.conflictingLocale,
-      ]),
-    ]
-      .filter((locale): locale is string => Boolean(locale))
-      .map((locale) => ({
-        label: `${localeDisplayName(locale)} · ${locale}`,
-        value: locale,
-      })),
+    ...[...new Set(props.state?.supportedLocales ?? [])].map((locale) => ({
+      label: `${localeDisplayName(locale)} · ${locale}`,
+      value: locale,
+    })),
   ],
 );
+
+function isSupportedLocale(
+  locale: string | null | undefined,
+): locale is string {
+  return Boolean(locale && supportedLocaleSet.value.has(locale));
+}
 </script>
 
 <template>
@@ -120,14 +127,14 @@ const localeOptions = computed<Array<{ label: string; value: string | null }>>(
         "
       >
         <Button
-          v-if="state.language.conflictingLocale"
+          v-if="isSupportedLocale(state.language.conflictingLocale)"
           :label="`Использовать ${localeDisplayName(state.language.conflictingLocale)}`"
           size="small"
           :disabled="saving || !canManage"
           @click="emit('updateTargetLocale', state.language.conflictingLocale!)"
         />
         <Button
-          v-if="state.language.locale"
+          v-if="isSupportedLocale(state.language.locale)"
           :label="`Оставить ${localeDisplayName(state.language.locale)}`"
           size="small"
           severity="secondary"
@@ -150,9 +157,7 @@ const localeOptions = computed<Array<{ label: string; value: string | null }>>(
         @click="emit('translateVisible')"
       />
       <Select
-        :model-value="
-          state.preference.endUserLocaleOverride ?? state.language.locale
-        "
+        :model-value="selectableResponseLocale"
         :options="localeOptions"
         option-label="label"
         option-value="value"

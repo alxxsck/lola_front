@@ -107,6 +107,42 @@ describe("conversation translation banner", () => {
     expect(wrapper.emitted("updateTargetLocale")).toEqual([["de"]]);
   });
 
+  it("показывает unsupported language evidence, но не предлагает его выбрать", () => {
+    const value = state("PROFILE");
+    value.language.locale = "pt-BR";
+    value.language.conflictingLocale = "ja";
+    value.language.needsConfirmation = true;
+    const wrapper = shallowMount(ConversationTranslationBanner, {
+      props: {
+        state: value,
+        loading: false,
+        saving: false,
+        canManage: true,
+        eligibleCount: 0,
+      },
+      global: {
+        stubs: {
+          Select: {
+            props: ["modelValue", "options"],
+            template:
+              '<select :value="modelValue"><option v-for="option in options" :key="String(option.value)" :value="option.value">{{ option.label }}</option></select>',
+          },
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain("португальский");
+    expect(wrapper.text()).toContain("японский");
+    expect(
+      wrapper
+        .get("select")
+        .findAll("option")
+        .map((option) => option.attributes("value")),
+    ).toEqual([undefined, "ru", "de"]);
+    expect(wrapper.text()).not.toContain("Использовать японский");
+    expect(wrapper.text()).not.toContain("Оставить португальский");
+  });
+
   it.each([
     ["PROFILE", "из профиля"],
     ["RECENT_MESSAGES", "по последним сообщениям"],

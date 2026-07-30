@@ -596,8 +596,8 @@ describe("единое рабочее пространство пользова�
       `lola:reply-translation-draft:project-1:user-1:${current.id}`,
       JSON.stringify({
         draftId: "draft-reload",
-        sourceText,
         sourceTextHash: "hash-reload",
+        sourceLocale: "ru",
         targetLocale: "de",
         expiresAt: "2099-07-30T10:10:00.000Z",
       }),

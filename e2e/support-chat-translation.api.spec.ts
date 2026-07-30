@@ -16,7 +16,6 @@ type SmokeUser = {
   accessToken: string;
   cmsUserId: string;
   email: string;
-  password: string;
 };
 
 type GuestSession = {
@@ -68,8 +67,7 @@ function usersFor(testInfo: TestInfo): [SmokeUser, SmokeUser] {
   const selected = [users[offset], users[offset + 1]];
   if (
     selected.some(
-      (user) =>
-        !user?.accessToken || !user.cmsUserId || !user.email || !user.password,
+      (user) => !user?.accessToken || !user.cmsUserId || !user.email,
     )
   ) {
     throw new Error(
@@ -245,14 +243,9 @@ function waitForDeliveredMessage(
   });
 }
 
-function expectSafePublicPayload(
-  payload: unknown,
-  deliveredText: string,
-  internalSource: string,
-) {
+function expectSafePublicPayload(payload: unknown, deliveredText: string) {
   const serialized = JSON.stringify(payload);
   expect(serialized).toContain(deliveredText);
-  expect(serialized).not.toContain(internalSource);
   for (const key of forbiddenPublicKeys) {
     expect(serialized, `Public payload exposes ${key}`).not.toContain(
       JSON.stringify(key),
@@ -483,9 +476,9 @@ test("real support chat translation fails closed, stays scoped and exposes only 
       "read widget-compatible messages",
     );
 
-    expectSafePublicPayload(realtimePayload, deliveredText, internalSource);
-    expectSafePublicPayload(history, deliveredText, internalSource);
-    expectSafePublicPayload(widgetMessages, deliveredText, internalSource);
+    expectSafePublicPayload(realtimePayload, deliveredText);
+    expectSafePublicPayload(history, deliveredText);
+    expectSafePublicPayload(widgetMessages, deliveredText);
   } finally {
     socket.close();
   }

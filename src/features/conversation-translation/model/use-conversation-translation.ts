@@ -190,8 +190,8 @@ export function createConversationTranslationController(
         key,
         JSON.stringify({
           draftId: value.id,
-          sourceText: value.sourceText,
           sourceTextHash: value.sourceTextHash,
+          sourceLocale: value.sourceLocale,
           targetLocale: value.targetLocale,
           expiresAt: value.expiresAt,
         }),
@@ -210,7 +210,8 @@ export function createConversationTranslationController(
       const envelope = JSON.parse(raw) as {
         draftId?: unknown;
         expiresAt?: unknown;
-        sourceText?: unknown;
+        sourceTextHash?: unknown;
+        sourceLocale?: unknown;
         targetLocale?: unknown;
       };
       const expiresAt =
@@ -221,20 +222,14 @@ export function createConversationTranslationController(
         typeof envelope.draftId !== "string" ||
         !Number.isFinite(expiresAt) ||
         expiresAt <= Date.now() ||
-        typeof envelope.sourceText !== "string" ||
-        !envelope.sourceText.trim() ||
-        envelope.sourceText.length > 10_000 ||
+        typeof envelope.sourceTextHash !== "string" ||
+        !envelope.sourceTextHash ||
+        typeof envelope.sourceLocale !== "string" ||
+        !envelope.sourceLocale ||
         typeof envelope.targetLocale !== "string"
       ) {
         globalThis.sessionStorage?.removeItem(storageKey);
         return;
-      }
-      const storedSourceText = envelope.sourceText.trim();
-      const existingSourceText = context.sourceText().trim();
-      if (existingSourceText && existingSourceText !== storedSourceText) return;
-      if (!existingSourceText) {
-        if (!context.restoreSourceText) return;
-        context.restoreSourceText(envelope.sourceText);
       }
       const ids = requiredContext();
       const key = contextKey(context);
@@ -245,16 +240,48 @@ export function createConversationTranslationController(
         ids.conversationId,
         envelope.draftId,
       );
+      if (!isCurrent(key, requestGeneration)) return;
+
+      const responseExpiresAt = Date.parse(response.expiresAt);
+      const responseSourceText: unknown = response.sourceText;
       if (
-        isCurrent(key, requestGeneration) &&
-        response.sourceText === context.sourceText().trim() &&
-        response.targetLocale === envelope.targetLocale
+        response.id !== envelope.draftId ||
+        response.conversationId !== ids.conversationId ||
+        response.sourceTextHash !== envelope.sourceTextHash ||
+        response.sourceLocale !== envelope.sourceLocale ||
+        response.targetLocale !== envelope.targetLocale ||
+        response.expiresAt !== envelope.expiresAt ||
+        !Number.isFinite(responseExpiresAt) ||
+        responseExpiresAt <= Date.now() ||
+        typeof responseSourceText !== "string" ||
+        !responseSourceText.trim() ||
+        responseSourceText.length > 10_000
       ) {
-        draft.value = response;
-        persistDraftEnvelope(response);
-        if (!terminalDraftStatuses.has(response.status)) {
-          void pollDraft(response, key, requestGeneration);
+        globalThis.sessionStorage?.removeItem(storageKey);
+        return;
+      }
+
+      const existingSourceText = context.sourceText().trim();
+      if (existingSourceText && existingSourceText !== responseSourceText) {
+        globalThis.sessionStorage?.removeItem(storageKey);
+        return;
+      }
+      if (!existingSourceText) {
+        if (!context.restoreSourceText) {
+          globalThis.sessionStorage?.removeItem(storageKey);
+          return;
         }
+        context.restoreSourceText(responseSourceText);
+      }
+      if (context.sourceText().trim() !== responseSourceText) {
+        globalThis.sessionStorage?.removeItem(storageKey);
+        return;
+      }
+
+      draft.value = response;
+      persistDraftEnvelope(response);
+      if (!terminalDraftStatuses.has(response.status)) {
+        void pollDraft(response, key, requestGeneration);
       }
     } catch {
       globalThis.sessionStorage?.removeItem(storageKey);
