@@ -24,6 +24,7 @@ import EndUserTelegramPanel from "@/features/telegram-product-installations/EndU
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
 import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
+import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
 import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
 import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
 import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
@@ -282,6 +283,18 @@ watch(conversationError, (message) => {
     life: 6_000,
   });
 });
+watch(
+  () => selectedSuspensionEntry.value?.error?.message,
+  (message) => {
+    if (!message) return;
+    toast.add({
+      severity: "warn",
+      summary: "Не удалось обновить состояние AI",
+      detail: message,
+      life: 7_000,
+    });
+  },
+);
 watch(
   () => translation.error.value,
   (message) => {
@@ -1194,7 +1207,11 @@ function displayField(
             <span class="eyebrow">Выбранный диалог</span>
             <h3>{{ selectedConversation.title }}</h3>
           </div>
-          <div class="chat-header-status">
+          <div
+            class="chat-header-status"
+            role="group"
+            aria-label="Действия и статусы диалога"
+          >
             <Button
               data-action="open-profile"
               icon="pi pi-user"
@@ -1216,6 +1233,24 @@ function displayField(
               "
               :severity="
                 selectedConversation.status === 'ACTIVE' ? 'info' : 'secondary'
+              "
+            />
+            <ConversationAISuspensionHeaderActions
+              v-if="
+                conversationAISuspensionEnabled &&
+                selectedSuspensionEntry
+              "
+              :entry="selectedSuspensionEntry"
+              :can-manage="canManageSuspension"
+              :conversation-open="selectedConversation.status === 'ACTIVE'"
+              @start="openSuspension('START')"
+              @history="suspensionHistoryVisible = true"
+              @retry="
+                props.endUserId &&
+                suspensionStore.loadDetail(
+                  props.endUserId,
+                  selectedConversation.id,
+                )
               "
             />
           </div>
@@ -1247,14 +1282,9 @@ function displayField(
           :entry="selectedSuspensionEntry"
           :can-manage="canManageSuspension"
           :conversation-open="selectedConversation.status === 'ACTIVE'"
-          @start="openSuspension('START')"
           @extend="openSuspension('EXTEND')"
           @resume="openSuspension('RESUME')"
           @history="suspensionHistoryVisible = true"
-          @retry="
-            props.endUserId &&
-            suspensionStore.loadDetail(props.endUserId, selectedConversation.id)
-          "
         />
         <div
           v-if="selectedConversation"
@@ -1878,6 +1908,9 @@ function displayField(
 }
 .chat-header-status {
   gap: 7px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .compact-message {
   margin-bottom: 10px;

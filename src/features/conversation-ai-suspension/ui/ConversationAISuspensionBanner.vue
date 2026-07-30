@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
-import Message from 'primevue/message'
 import type { ConversationAISuspensionEntry } from '../model/conversation-ai-suspension.store'
 import { isConversationAISuspended } from '../model/suspension-state'
 
@@ -12,11 +11,9 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  start: []
   extend: []
   resume: []
   history: []
-  retry: []
 }>()
 
 const clientNow = ref(Date.now())
@@ -64,14 +61,6 @@ const reasonLabel = computed(() => detail.value?.reason ? reasonLabels[detail.va
 </script>
 
 <template>
-  <Message v-if="entry.error" severity="warn" :closable="false" class="suspension-read-error">
-    <div>
-      <strong>Не удалось проверить состояние AI</strong>
-      <span>{{ entry.error.message }}</span>
-    </div>
-    <Button label="Повторить" size="small" text @click="$emit('retry')" />
-  </Message>
-
   <section v-if="active" class="suspension-banner" aria-labelledby="suspension-title">
     <div class="suspension-icon" aria-hidden="true"><i class="pi pi-pause-circle" /></div>
     <div class="suspension-copy">
@@ -96,18 +85,6 @@ const reasonLabel = computed(() => detail.value?.reason ? reasonLabels[detail.va
     </div>
   </section>
 
-  <div v-else-if="!entry.error" class="automatic-actions">
-    <Button
-      v-if="canManage && conversationOpen"
-      label="Приостановить AI"
-      icon="pi pi-pause-circle"
-      severity="danger"
-      outlined
-      size="small"
-      @click="$emit('start')"
-    />
-    <Button v-if="entry.summary.version !== '0'" label="История" icon="pi pi-history" severity="secondary" text size="small" @click="$emit('history')" />
-  </div>
 </template>
 
 <style scoped>
@@ -128,10 +105,7 @@ const reasonLabel = computed(() => detail.value?.reason ? reasonLabels[detail.va
 .deadline { font-weight: 700; }
 .suspension-note { padding: 7px 9px; border-radius: 8px; background: color-mix(in srgb, var(--surface-card) 55%, transparent); color: var(--text-primary); white-space: pre-wrap; }
 .suspension-progress { display: flex; align-items: center; gap: 6px; }
-.suspension-actions, .automatic-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 6px; }
-.suspension-read-error { margin-bottom: 12px; }
-.suspension-read-error :deep(.p-message-content) { justify-content: space-between; }
-.suspension-read-error div { display: grid; gap: 3px; }
+.suspension-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 560px) {
   .suspension-banner { grid-template-columns: auto minmax(0, 1fr); }

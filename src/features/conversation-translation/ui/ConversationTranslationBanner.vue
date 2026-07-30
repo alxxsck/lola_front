@@ -188,7 +188,6 @@ function isSupportedLocale(
               !state.preference.endUserLocaleOverride)
           "
           aria-label="Переводить этот диалог"
-          :aria-pressed="state.preference.enabled"
           @update:model-value="emit('updateEnabled', $event)"
         />
       </label>
@@ -210,9 +209,11 @@ function isSupportedLocale(
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  margin-bottom: 12px;
   padding: 10px 16px;
-  border-block: 1px solid
+  border: 1px solid
     color-mix(in srgb, var(--status-violet-text) 18%, var(--line));
+  border-radius: 12px;
   background: color-mix(
     in srgb,
     var(--status-violet-soft) 70%,

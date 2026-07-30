@@ -78,4 +78,21 @@ describe('панель приостановки AI', () => {
     expect(wrapper.get('[aria-live="polite"]').text()).toBe(initialAnnouncement)
     vi.useRealTimers()
   })
+
+  it('не вставляет ошибку состояния AI в поток сообщений', () => {
+    const wrapper = mount(ConversationAISuspensionBanner, {
+      props: {
+        entry: {
+          ...entry,
+          error: { kind: 'UNKNOWN', message: 'Состояние недоступно' },
+        },
+        canManage: true,
+        conversationOpen: true,
+      },
+      global: { stubs: { Button: true } },
+    })
+
+    expect(wrapper.find('.suspension-banner').exists()).toBe(false)
+    expect(wrapper.text()).toBe('')
+  })
 })

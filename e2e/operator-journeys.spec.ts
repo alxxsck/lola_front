@@ -1216,9 +1216,31 @@ test("приостановка AI остаётся понятной в обеи�
     workspace.getByText("Как лучше пополнить баланс?"),
   ).toBeVisible();
 
-  await page
-    .getByRole("button", { name: "Приостановить AI", exact: true })
-    .click();
+  const suspensionControl = page.getByRole("button", {
+    name: "Приостановить AI",
+    exact: true,
+  });
+  const translationPanel = workspace.getByRole("region", {
+    name: "Перевод диалога",
+  });
+  await expect(suspensionControl).toBeVisible();
+  await expect(
+    workspace
+      .getByRole("group", { name: "Действия и статусы диалога" })
+      .getByRole("button", { name: "Приостановить AI", exact: true }),
+  ).toBeVisible();
+  await expect(translationPanel).toBeVisible();
+  const [suspensionControlBox, translationPanelBox] = await Promise.all([
+    suspensionControl.boundingBox(),
+    translationPanel.boundingBox(),
+  ]);
+  expect(suspensionControlBox).not.toBeNull();
+  expect(translationPanelBox).not.toBeNull();
+  expect(
+    suspensionControlBox!.y + suspensionControlBox!.height,
+  ).toBeLessThanOrEqual(translationPanelBox!.y);
+
+  await suspensionControl.click();
   const startDialog = page.getByRole("dialog", {
     name: "Приостановить AI в этом диалоге",
   });
