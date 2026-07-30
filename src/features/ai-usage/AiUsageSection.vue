@@ -70,6 +70,11 @@ function formatBytes(value: number) {
     ? `${value} Б`
     : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value / 1024)} КБ`;
 }
+function formatLatency(value: number | null) {
+  return value === null
+    ? "—"
+    : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value)} мс`;
+}
 function workloadLabel(value: string) {
   return (
     {
@@ -325,13 +330,7 @@ onBeforeUnmount(() => {
                     </div>
                     <div>
                       <dt>Средняя задержка</dt>
-                      <dd>
-                        {{
-                          item.averageLatencyMs === null
-                            ? "—"
-                            : `${item.averageLatencyMs} мс`
-                        }}
-                      </dd>
+                      <dd>{{ formatLatency(item.averageLatencyMs) }}</dd>
                     </div>
                     <div>
                       <dt>Стоимость</dt>

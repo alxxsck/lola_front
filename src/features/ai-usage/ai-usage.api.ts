@@ -379,6 +379,12 @@ function safeInteger(value: unknown): number | undefined {
     : undefined;
 }
 
+function nonNegativeNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
+
 function decimal(value: unknown): number | undefined {
   if (
     typeof value === "string" &&
@@ -607,7 +613,7 @@ function parseWorkloads(value: unknown): AiUsageWorkload[] | undefined {
     const averageLatencyMs =
       item.averageLatencyMs === null
         ? null
-        : safeInteger(item.averageLatencyMs);
+        : nonNegativeNumber(item.averageLatencyMs);
     const effectiveCostUsd = decimal(item.effectiveCostUsd);
     if (
       typeof item.workload !== "string" ||

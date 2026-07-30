@@ -395,4 +395,31 @@ describe("AiUsageSection", () => {
     expect(wrapper.text()).toContain("Анализ и проверка обращений");
     expect(wrapper.text()).toContain("Маршрутизация");
   });
+
+  it("rounds fractional workload latency to whole milliseconds", async () => {
+    mocks.fetchReport.mockResolvedValue({
+      ...baseReport(),
+      workloads: [
+        {
+          workload: "SCENARIO_AUTHORING",
+          requestedModel: "grok-4.3",
+          appliedModel: null,
+          reasoningEffort: "none",
+          reasoningTokens: 0,
+          requests: 11,
+          averageLatencyMs: 973.4545454545455,
+          effectiveCostUsd: 0.003684,
+          isOther: false,
+        },
+      ],
+    });
+
+    const wrapper = shallowMount(AiUsageSection, {
+      props: { projectId: "project-1" },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("973 мс");
+    expect(wrapper.text()).not.toContain("973.4545454545455 мс");
+  });
 });

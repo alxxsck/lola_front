@@ -164,6 +164,48 @@ describe("AI usage API response validation", () => {
     });
   });
 
+  it("accepts fractional average workload latency from a multi-day aggregate", () => {
+    const sevenDayResponse = {
+      ...response,
+      workloads: {
+        ...response.workloads,
+        items: [
+          {
+            ...response.workloads.items[0],
+            workload: "SCENARIO_AUTHORING",
+            requests: 11,
+            averageLatencyMs: 973.4545454545455,
+          },
+        ],
+      },
+    };
+    const integerLatencyControl = {
+      ...sevenDayResponse,
+      workloads: {
+        ...sevenDayResponse.workloads,
+        items: [
+          {
+            ...sevenDayResponse.workloads.items[0],
+            averageLatencyMs: 973,
+          },
+        ],
+      },
+    };
+
+    expect(
+      parseAiUsageReport(integerLatencyControl, "project-1"),
+    ).toBeDefined();
+    expect(
+      parseAiUsageReport(sevenDayResponse, "project-1")?.workloads,
+    ).toEqual([
+      expect.objectContaining({
+        workload: "SCENARIO_AUTHORING",
+        requests: 11,
+        averageLatencyMs: 973.4545454545455,
+      }),
+    ]);
+  });
+
   it("rejects missing Event Query data or a false totals-inclusion contract", () => {
     expect(
       parseAiUsageReport({ ...response, providers: undefined }, "project-1"),
