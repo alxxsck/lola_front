@@ -4,12 +4,16 @@ import Button from 'primevue/button'
 import type { ConversationAISuspensionEntry } from '../model/conversation-ai-suspension.store'
 import { isConversationAISuspended } from '../model/suspension-state'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   entry: ConversationAISuspensionEntry
   canManage: boolean
   conversationOpen: boolean
   compact?: boolean
-}>()
+  showHistory?: boolean
+}>(), {
+  compact: false,
+  showHistory: true,
+})
 
 defineEmits<{
   extend: []
@@ -82,7 +86,7 @@ const reasonLabel = computed(() => detail.value?.reason ? reasonLabels[detail.va
     <div class="suspension-actions">
       <Button v-if="canManage && conversationOpen" label="Продлить" icon="pi pi-clock" severity="secondary" outlined size="small" @click="$emit('extend')" />
       <Button v-if="canManage" label="Возобновить AI" icon="pi pi-play" severity="danger" size="small" @click="$emit('resume')" />
-      <Button label="История" icon="pi pi-history" severity="secondary" text size="small" @click="$emit('history')" />
+      <Button v-if="showHistory" label="История" icon="pi pi-history" severity="secondary" text size="small" @click="$emit('history')" />
     </div>
   </section>
 

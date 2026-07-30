@@ -34,7 +34,15 @@ watch(
 </script>
 
 <template>
-  <section class="reply-preview" aria-label="Предпросмотр перевода ответа">
+  <section
+    class="reply-preview"
+    :class="{
+      'is-ready': draft?.status === 'READY',
+      'is-processing':
+        draft?.status === 'PENDING' || draft?.status === 'RUNNING',
+    }"
+    aria-label="Предпросмотр перевода ответа"
+  >
     <Message
       v-if="stale"
       severity="info"
@@ -85,16 +93,15 @@ watch(
       class="reply-preview__processing"
       role="status"
     >
-      <i class="pi pi-spin pi-spinner" aria-hidden="true" />
-      <span
-        ><strong
+      <span>
+        <strong
           >Переводим<template v-if="targetLocale">
             на {{ targetLocale.toUpperCase() }}</template
           >…</strong
-        ><small
-          >Ваш текст сохранён. Обычно это занимает несколько секунд.</small
-        ></span
-      >
+        >
+        <i class="translation-skeleton" />
+        <i class="translation-skeleton short" />
+      </span>
       <Button
         type="button"
         label="Проверить статус"
@@ -155,6 +162,17 @@ watch(
         <span>Шаг 2 из 2 · перевод можно исправить перед отправкой.</span>
         <Button
           type="button"
+          label="Перевести заново"
+          icon="pi pi-refresh"
+          size="small"
+          severity="secondary"
+          outlined
+          :loading="busy"
+          :disabled="disabled || !targetLocale"
+          @click="emit('preview')"
+        />
+        <Button
+          type="button"
           label="Отправить перевод"
           icon="pi pi-send"
           size="small"
@@ -169,15 +187,9 @@ watch(
 
 <style scoped>
 .reply-preview {
-  border: 1px solid
-    color-mix(in srgb, var(--status-violet-text) 18%, var(--line));
-  border-radius: 14px;
-  background: color-mix(
-    in srgb,
-    var(--status-violet-soft) 34%,
-    var(--surface-card)
-  );
-  overflow: hidden;
+  min-width: 0;
+  border: 0;
+  background: transparent;
 }
 .reply-preview__start,
 .reply-preview__processing,
@@ -192,7 +204,15 @@ watch(
 .reply-preview__start,
 .reply-preview__processing,
 .reply-preview__ready {
-  padding: 11px 12px;
+  padding: 10px 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--status-violet-text) 18%, var(--line));
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--status-violet-soft) 34%,
+    var(--surface-card)
+  );
 }
 .reply-preview__start > div {
   display: grid;
@@ -210,10 +230,10 @@ watch(
   font-size: 0.76rem;
 }
 .reply-preview__processing {
-  color: var(--text-secondary);
+  min-height: 80px;
+  color: var(--status-violet-text);
   font-size: 0.67rem;
 }
-.reply-preview__processing > i,
 .reply-preview__heading i {
   margin-right: 6px;
   color: var(--status-violet-text);
@@ -223,14 +243,48 @@ watch(
 }
 .reply-preview__processing span {
   display: grid;
-  gap: 2px;
+  flex: 1;
+  gap: 7px;
+}
+.translation-skeleton {
+  display: block;
+  width: 78%;
+  height: 9px;
+  border-radius: 5px;
+  background: linear-gradient(
+    90deg,
+    var(--palette-violet-100) 25%,
+    var(--palette-violet-100) 37%,
+    var(--palette-violet-100) 63%
+  );
+  background-size: 360px 100%;
+  animation: translation-shimmer 1.3s infinite;
+}
+.translation-skeleton.short {
+  width: 46%;
+  animation-delay: 180ms;
+}
+.reply-preview.is-ready .reply-preview__ready {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .reply-preview__ready {
   display: grid;
   gap: 9px;
 }
 .reply-preview__heading span {
-  font-size: 0.69rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--palette-violet-200);
+  border-radius: 5px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
   font-weight: 700;
 }
 .reply-preview__heading small,
@@ -239,12 +293,31 @@ watch(
   font-size: 0.61rem;
 }
 .reply-preview__ready :deep(textarea) {
-  border-color: color-mix(in srgb, var(--status-violet-text) 18%, var(--line));
-  background: var(--surface-card);
+  min-height: 72px;
+  padding: 9px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
   line-height: 1.5;
+  box-shadow: none;
+}
+.reply-preview__footer {
+  justify-content: flex-end;
+  padding-top: 9px;
+  border-top: 1px solid var(--border-subtle);
+}
+.reply-preview__footer span {
+  margin-right: auto;
 }
 .reply-preview__footer :deep(.p-button) {
-  min-width: 150px;
+  min-height: 40px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.reply-preview__footer :deep(.p-button:last-child) {
+  min-width: 170px;
 }
 .reply-preview__warnings {
   color: var(--status-warning-text);
@@ -254,6 +327,14 @@ watch(
   margin: 0;
   border: 0;
   border-radius: 0;
+}
+@keyframes translation-shimmer {
+  from {
+    background-position: -360px 0;
+  }
+  to {
+    background-position: 360px 0;
+  }
 }
 @media (max-width: 620px) {
   .reply-preview__start,
@@ -265,6 +346,14 @@ watch(
   .reply-preview__footer :deep(.p-button) {
     width: 100%;
     min-height: 46px;
+  }
+  .reply-preview__footer span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .translation-skeleton {
+    animation: none;
   }
 }
 </style>

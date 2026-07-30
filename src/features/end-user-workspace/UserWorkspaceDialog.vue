@@ -47,6 +47,7 @@ import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
 import EndUserAiUsageCard from "@/features/ai-usage/EndUserAiUsageCard.vue";
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
+import ConversationTicketDrawer from "./ConversationTicketDrawer.vue";
 
 type WorkspaceMode = "PROFILE" | "CHAT";
 type MobilePane = "LIST" | "CHAT";
@@ -105,6 +106,8 @@ const telegramDraftDirty = ref(false);
 const sendWithoutTranslationVisible = ref(false);
 const sendWithoutTranslationReason = ref("");
 const composerActionsVisible = ref(false);
+const conversationMenuVisible = ref(false);
+const ticketDrawerVisible = ref(false);
 let profileRequest = 0;
 let unsubscribeMessage: (() => void) | undefined;
 let unsubscribeTranslation: (() => void) | undefined;
@@ -236,6 +239,31 @@ const replyTranslationInFlight = computed(
     translation.draft.value?.status === "PENDING" ||
     translation.draft.value?.status === "RUNNING",
 );
+const bulkTranslationIds = computed(() => [
+  ...translation.translatingMessageIds.value,
+]);
+const bulkTranslationActive = computed(
+  () => bulkTranslationIds.value.length > 1,
+);
+const bulkTranslationCompleted = computed(
+  () =>
+    bulkTranslationIds.value.filter((messageId) => {
+      const state =
+        translation.messageTranslations.value.get(messageId)?.state;
+      return state === "COMPLETED" || state === "FAILED" || state === "SKIPPED";
+    }).length,
+);
+const bulkTranslationProgress = computed(() => {
+  if (!bulkTranslationIds.value.length) return 0;
+  return Math.round(
+    (bulkTranslationCompleted.value / bulkTranslationIds.value.length) * 100,
+  );
+});
+const replyTemplates = [
+  "Проверяю информацию. Одну минуту, пожалуйста.",
+  "Спасибо за ожидание. Уточняю детали и скоро вернусь с ответом.",
+  "Проверил информацию. Подскажите, проблема всё ещё актуальна?",
+] as const;
 
 async function setTranslationEnabled(enabled: boolean): Promise<void> {
   await translation.updatePreference({ enabled });
@@ -330,6 +358,8 @@ watch(
   async (conversationId) => {
     messageViewMode.value = "TRANSLATED";
     composerActionsVisible.value = false;
+    conversationMenuVisible.value = false;
+    ticketDrawerVisible.value = false;
     sendWithoutTranslationReason.value = "";
     sendWithoutTranslationVisible.value = false;
     if (!conversationId || !props.endUserId || !visible.value) return;
@@ -498,6 +528,8 @@ function closeWorkspace(): void {
   sendWithoutTranslationReason.value = "";
   sendWithoutTranslationVisible.value = false;
   composerActionsVisible.value = false;
+  conversationMenuVisible.value = false;
+  ticketDrawerVisible.value = false;
 }
 
 async function openChat(): Promise<void> {
@@ -653,9 +685,90 @@ async function selectConversation(
   conversation: (typeof conversations.value)[number],
 ): Promise<void> {
   workspaceMode.value = "CHAT";
+  mobilePane.value = "CHAT";
   await consoleState.loadMessages(conversation);
   await nextTick();
   scrollToLatest(false);
+}
+
+function applyReplyTemplate(template = replyTemplates[0]): void {
+  replyText.value = template;
+  composerActionsVisible.value = false;
+  toast.add({
+    severity: "success",
+    summary: "Шаблон добавлен",
+    detail: "Текст можно отредактировать перед переводом и отправкой.",
+    life: 3_000,
+  });
+}
+
+function openTicketDrawer(): void {
+  composerActionsVisible.value = false;
+  ticketDrawerVisible.value = true;
+}
+
+function showUnavailableAttachment(): void {
+  composerActionsVisible.value = false;
+  toast.add({
+    severity: "info",
+    summary: "Вложения пока недоступны",
+    detail: "Live API принимает только текст. Файл не будет добавлен фиктивно.",
+    life: 5_000,
+  });
+}
+
+async function copyConversationId(): Promise<void> {
+  const id = selectedConversation.value?.id;
+  if (!id) return;
+  try {
+    await navigator.clipboard.writeText(id);
+    toast.add({
+      severity: "success",
+      summary: "ID диалога скопирован",
+      detail: id,
+      life: 3_000,
+    });
+  } catch {
+    toast.add({
+      severity: "warn",
+      summary: "Не удалось скопировать ID",
+      detail: id,
+      life: 5_000,
+    });
+  }
+  conversationMenuVisible.value = false;
+}
+
+function exportConversation(): void {
+  const conversation = selectedConversation.value;
+  if (!conversation) return;
+  const lines = messages.value.flatMap((message) => {
+    const header = `[${formatDate(message.createdAt)}] ${authorLabel(message.author)}`;
+    const original =
+      message.translation?.originalText?.trim() || message.text.trim();
+    const translated = message.translation?.translatedText?.trim();
+    return [
+      header,
+      original,
+      ...(translated && translated !== original
+        ? [`Перевод: ${translated}`]
+        : []),
+      "",
+    ];
+  });
+  const blob = new Blob([lines.join("\n")], {
+    type: "text/plain;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${conversation.title || conversation.id}.txt`.replace(
+    /[/\\?%*:|"<>]/g,
+    "-",
+  );
+  anchor.click();
+  URL.revokeObjectURL(url);
+  conversationMenuVisible.value = false;
 }
 
 async function createConversation(): Promise<void> {
@@ -830,15 +943,10 @@ function authorLabel(author: ConversationMessage["author"]): string {
   return {
     USER: "Пользователь",
     ADMIN: "Оператор",
-    ASSISTANT: "Lola",
-    SCENARIO: "Сценарий Lola",
+    ASSISTANT: "Lola · AI",
+    SCENARIO: "Сценарий · CMS",
     SYSTEM: "Система",
   }[author];
-}
-
-function currentSessionLabel(count: number): string {
-  const suffix = count % 10 === 1 && count % 100 !== 11 ? "сессии" : "сессиях";
-  return `Текущий в ${count} ${suffix}`;
 }
 
 function displayField(
@@ -860,10 +968,14 @@ function displayField(
     :draggable="false"
     :style="{
       width: 'min(1480px, calc(100vw - 32px))',
+      height: 'min(900px, calc(100dvh - 32px))',
       maxHeight: 'calc(100dvh - 32px)',
     }"
     :content-style="{ padding: '0', overflow: 'hidden' }"
-    class="user-workspace-dialog"
+    :class="[
+      'user-workspace-dialog',
+      { 'user-workspace-dialog--chat': workspaceMode === 'CHAT' },
+    ]"
     :aria-label="`Рабочее пространство пользователя ${displayName}`"
   >
     <template #header>
@@ -874,24 +986,23 @@ function displayField(
           icon="pi pi-arrow-left"
           label="К профилю"
           severity="secondary"
-          text
           size="small"
           class="workspace-back"
           @click="openProfile"
         />
+        <span v-if="workspaceMode === 'CHAT'" class="workspace-divider" />
         <span class="avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
         <div class="workspace-identity">
-          <span class="eyebrow">{{
-            workspaceMode === "CHAT" ? "Live-диалоги" : "Профиль пользователя"
-          }}</span>
           <h2>{{ displayName }}</h2>
+          <span>
+            {{
+              workspaceMode === "CHAT"
+                ? `${detail?.externalUserId || endUserId || "—"} · ${onlineSession ? "пользователь онлайн" : "пользователь офлайн"}`
+                : "Профиль пользователя"
+            }}
+          </span>
         </div>
         <div class="workspace-statuses">
-          <Tag
-            :value="onlineSession ? 'Онлайн' : 'Офлайн'"
-            :severity="onlineSession ? 'success' : 'secondary'"
-            rounded
-          />
           <span
             class="connection-status"
             :data-state="realtimeStatus.state"
@@ -906,6 +1017,17 @@ function displayField(
             {{ realtimeStatus.label }}
           </span>
         </div>
+        <Button
+          v-if="workspaceMode === 'CHAT'"
+          label="Диалоги"
+          icon="pi pi-chevron-down"
+          icon-pos="right"
+          severity="secondary"
+          outlined
+          size="small"
+          class="workspace-dialogs"
+          @click="mobilePane = 'LIST'"
+        />
       </div>
     </template>
 
@@ -1091,27 +1213,6 @@ function displayField(
       </div>
     </section>
 
-    <nav
-      v-if="workspaceMode === 'CHAT'"
-      class="mobile-workspace-nav"
-      aria-label="Разделы рабочего пространства"
-    >
-      <button
-        :class="{ active: mobilePane === 'LIST' }"
-        :aria-pressed="mobilePane === 'LIST'"
-        @click="mobilePane = 'LIST'"
-      >
-        <i class="pi pi-comments" /> Диалоги
-      </button>
-      <button
-        :class="{ active: mobilePane === 'CHAT' }"
-        :aria-pressed="mobilePane === 'CHAT'"
-        @click="mobilePane = 'CHAT'"
-      >
-        <i class="pi pi-comment" /> Чат
-      </button>
-    </nav>
-
     <div
       v-if="workspaceMode === 'CHAT'"
       class="workspace-grid"
@@ -1119,11 +1220,26 @@ function displayField(
       data-testid="chat-workspace"
     >
       <aside class="conversation-pane">
-        <div class="pane-header">
+        <div class="mobile-conversation-profile">
+          <span class="avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
           <div>
-            <span class="eyebrow">История</span>
-            <h3>Диалоги</h3>
+            <strong>{{ displayName }}</strong>
+            <small>
+              {{
+                `${(translation.state.value?.language.locale ?? "—").toUpperCase()} · ${onlineSession ? "онлайн" : "офлайн"}`
+              }}
+            </small>
           </div>
+          <span
+            class="connection-status"
+            :data-state="realtimeStatus.state"
+          >
+            <i class="connection-live-dot" />
+            {{ realtimeStatus.label }}
+          </span>
+        </div>
+        <div class="pane-header">
+          <h3>Диалоги · {{ conversations.length }}</h3>
           <Button
             v-if="canReply"
             icon="pi pi-plus"
@@ -1134,15 +1250,6 @@ function displayField(
             @click="newChatOpen = true"
           />
         </div>
-        <Message
-          v-if="!onlineSession"
-          severity="secondary"
-          :closable="false"
-          class="compact-message"
-        >
-          Историю можно читать офлайн. Новое сообщение станет доступно после
-          подключения.
-        </Message>
         <label class="conversation-search">
           <i class="pi pi-search" aria-hidden="true" />
           <input
@@ -1185,33 +1292,33 @@ function displayField(
           >
             <span class="conversation-row-title">
               <strong>{{ conversation.title }}</strong>
-              <i
-                v-if="conversation.isCurrent"
-                class="current-dot"
-                title="Текущий диалог"
-              />
+              <span
+                v-if="
+                  conversationAISuspensionEnabled &&
+                  conversationIsSuspended(conversation)
+                "
+                class="conversation-badge warning"
+              >
+                AI ⏸
+              </span>
+              <span
+                v-else-if="
+                  selectedConversation?.id === conversation.id &&
+                  translation.state.value?.language.locale
+                "
+                class="conversation-badge accent"
+              >
+                {{ translation.state.value.language.locale.toUpperCase() }}
+              </span>
             </span>
             <span
               >{{ relativeTime(conversation.lastMessageAt) }} ·
-              {{ conversation.messageCount }} сообщ.</span
+              {{ conversation.messageCount }} сообщ.<template
+                v-if="conversation.isCurrent"
+              >
+                · текущий</template
+              ></span
             >
-            <Tag
-              v-if="conversation.isCurrent"
-              :value="
-                currentSessionLabel(conversation.currentInteractionSessionCount)
-              "
-              severity="success"
-              rounded
-            />
-            <Tag
-              v-if="
-                conversationAISuspensionEnabled &&
-                conversationIsSuspended(conversation)
-              "
-              value="AI приостановлен"
-              severity="warn"
-              rounded
-            />
           </button>
           <div
             v-if="!filteredConversations.length"
@@ -1232,24 +1339,34 @@ function displayField(
       </aside>
 
       <main class="chat-pane">
-        <div v-if="selectedConversation" class="chat-header">
-          <div class="chat-heading">
-            <span class="eyebrow">Диалог</span>
-            <h3>{{ selectedConversation.title }}</h3>
-          </div>
-        </div>
         <div
           v-if="selectedConversation"
           class="conversation-state-rail"
+          :data-online="Boolean(onlineSession)"
           aria-label="Состояние диалога"
         >
-          <span
-            class="conversation-open-state"
-            :data-open="selectedConversation.status === 'ACTIVE'"
+          <button
+            type="button"
+            class="mobile-chat-back"
+            aria-label="К списку диалогов"
+            @click="mobilePane = 'LIST'"
           >
-            <i aria-hidden="true" />
-            {{ selectedConversation.status === "ACTIVE" ? "Открыт" : "Закрыт" }}
-          </span>
+            <i class="pi pi-arrow-left" aria-hidden="true" />
+          </button>
+          <div class="chat-heading">
+            <h3>{{ selectedConversation.title }}</h3>
+            <span>
+              {{
+                selectedConversation.status === "ACTIVE" ? "Открыт" : "Закрыт"
+              }}
+              · сессия #{{
+                Math.max(
+                  selectedConversation.currentInteractionSessionCount,
+                  1,
+                )
+              }}
+            </span>
+          </div>
           <div
             v-if="canManageTranslation && translation.state.value"
             class="conversation-language-fact"
@@ -1292,52 +1409,107 @@ function displayField(
               }}
             </button>
           </div>
-          <ConversationTranslationBanner
-            v-if="canManageTranslation"
-            :state="translation.state.value"
-            :loading="translation.loading.value"
-            :saving="translation.savingPreference.value"
-            :can-manage="canManageTranslation"
-            :eligible-count="visibleTranslationMessageIds.length"
-            @reload="translation.load"
-            @update-enabled="setTranslationEnabled"
-            @update-target-locale="
-              translation.updatePreference({
-                endUserLocaleOverride: $event,
-              })
-            "
-            @translate-visible="
-              translation.translateMessages(visibleTranslationMessageIds)
-            "
-          />
-          <ConversationAISuspensionHeaderActions
+          <template
             v-if="conversationAISuspensionEnabled && selectedSuspensionEntry"
-            :entry="selectedSuspensionEntry"
-            :can-manage="canManageSuspension"
-            :conversation-open="selectedConversation.status === 'ACTIVE'"
-            hide-active-status
-            @start="openSuspension('START')"
-            @history="suspensionHistoryVisible = true"
-            @retry="
-              props.endUserId &&
-              suspensionStore.loadDetail(
-                props.endUserId,
-                selectedConversation.id,
-              )
-            "
-          />
-          <ConversationAISuspensionBanner
-            v-if="
-              conversationAISuspensionEnabled && selectedSuspensionEntry
-            "
-            :entry="selectedSuspensionEntry"
-            :can-manage="canManageSuspension"
-            :conversation-open="selectedConversation.status === 'ACTIVE'"
-            compact
-            @extend="openSuspension('EXTEND')"
-            @resume="openSuspension('RESUME')"
-            @history="suspensionHistoryVisible = true"
-          />
+          >
+            <ConversationAISuspensionHeaderActions
+              :entry="selectedSuspensionEntry"
+              :can-manage="canManageSuspension"
+              :conversation-open="selectedConversation.status === 'ACTIVE'"
+              hide-active-status
+              :show-history="false"
+              @start="openSuspension('START')"
+              @history="suspensionHistoryVisible = true"
+              @retry="
+                props.endUserId &&
+                suspensionStore.loadDetail(
+                  props.endUserId,
+                  selectedConversation.id,
+                )
+              "
+            />
+            <ConversationAISuspensionBanner
+              :entry="selectedSuspensionEntry"
+              :can-manage="canManageSuspension"
+              :conversation-open="selectedConversation.status === 'ACTIVE'"
+              compact
+              :show-history="false"
+              @extend="openSuspension('EXTEND')"
+              @resume="openSuspension('RESUME')"
+              @history="suspensionHistoryVisible = true"
+            />
+          </template>
+          <div class="conversation-menu-anchor">
+            <button
+              type="button"
+              class="conversation-more"
+              aria-label="Другие действия с диалогом"
+              aria-haspopup="menu"
+              :aria-expanded="conversationMenuVisible"
+              @click="conversationMenuVisible = !conversationMenuVisible"
+            >
+              <i class="pi pi-ellipsis-h" aria-hidden="true" />
+            </button>
+            <div
+              v-if="conversationMenuVisible"
+              class="conversation-settings-menu"
+              role="menu"
+            >
+              <span class="menu-section-label">Язык</span>
+              <ConversationTranslationBanner
+                v-if="canManageTranslation"
+                :state="translation.state.value"
+                :loading="translation.loading.value"
+                :saving="translation.savingPreference.value"
+                :can-manage="canManageTranslation"
+                :eligible-count="visibleTranslationMessageIds.length"
+                @reload="translation.load"
+                @update-enabled="setTranslationEnabled"
+                @update-target-locale="
+                  translation.updatePreference({
+                    endUserLocaleOverride: $event,
+                  })
+                "
+                @translate-visible="
+                  translation.translateMessages(visibleTranslationMessageIds)
+                "
+              />
+              <button
+                type="button"
+                role="menuitem"
+                @click="
+                  messageViewMode =
+                    messageViewMode === 'ORIGINAL'
+                      ? 'TRANSLATED'
+                      : 'ORIGINAL'
+                "
+              >
+                <i class="pi pi-eye" aria-hidden="true" />
+                {{
+                  messageViewMode === "ORIGINAL"
+                    ? "Показывать переводы"
+                    : "Показывать оригиналы"
+                }}
+              </button>
+              <span class="menu-section-label">Диалог</span>
+              <button
+                type="button"
+                role="menuitem"
+                @click="suspensionHistoryVisible = true"
+              >
+                <i class="pi pi-history" aria-hidden="true" />
+                История режима AI и пауз
+              </button>
+              <button type="button" role="menuitem" @click="copyConversationId">
+                <i class="pi pi-copy" aria-hidden="true" />
+                Скопировать ID диалога
+              </button>
+              <button type="button" role="menuitem" @click="exportConversation">
+                <i class="pi pi-download" aria-hidden="true" />
+                Выгрузить переписку
+              </button>
+            </div>
+          </div>
         </div>
         <div
           v-if="selectedConversation"
@@ -1363,8 +1535,38 @@ function displayField(
             class="older-button"
             @click="handleHistoryScroll(true)"
           />
-          <div v-if="messagesLoading" class="pane-loading message-skeletons">
-            <Skeleton v-for="item in 6" :key="item" height="62px" />
+          <section
+            v-if="bulkTranslationActive"
+            class="bulk-translation-progress"
+            role="status"
+            aria-live="polite"
+          >
+            <div>
+              <i class="pi pi-spin pi-spinner" aria-hidden="true" />
+              <span>
+                Переводим {{ bulkTranslationIds.length }} сообщений на
+                {{
+                  (
+                    translation.state.value?.preference.workingLocale ?? "ru"
+                  ).toUpperCase()
+                }}…
+                {{ bulkTranslationCompleted }} из
+                {{ bulkTranslationIds.length }}
+              </span>
+            </div>
+            <span class="bulk-translation-progress__track" aria-hidden="true">
+              <i :style="{ width: `${bulkTranslationProgress}%` }" />
+            </span>
+          </section>
+          <div v-if="messagesLoading" class="message-skeletons">
+            <span v-for="item in 3" :key="item" />
+          </div>
+          <div v-else-if="!messages.length" class="message-empty">
+            <strong>Пока нет сообщений</strong>
+            <span>
+              Напишите первым. Язык пользователя определится по первому
+              сообщению.
+            </span>
           </div>
           <article
             v-for="message in messages"
@@ -1383,28 +1585,40 @@ function displayField(
                 formatDate(message.createdAt)
               }}</time>
             </div>
-            <TranslatedMessageBody
-              :message="message"
-              :requested="translation.messageTranslations.value.get(message.id)"
-              :busy="translation.translatingMessageIds.value.has(message.id)"
-              :can-translate="canManageTranslation"
-              :working-locale="
-                translation.state.value?.preference.workingLocale ?? null
-              "
-              :view-mode="messageViewMode"
-              @translate="translation.translateMessage"
-              @retry="translation.retryMessage"
-              @reconcile="translation.reconcileMessage"
-            />
-            <small v-if="message.status === 'FAILED'"
-              ><i class="pi pi-exclamation-circle" /> Не доставлено</small
-            >
-            <small v-else-if="message.status === 'WRITING' && message.text"
-              ><i class="pi pi-spin pi-spinner" /> Обновляется…</small
-            >
-            <small v-else-if="message.status === 'CANCELLED'"
-              ><i class="pi pi-ban" /> Ответ остановлен оператором</small
-            >
+            <div class="message-bubble__surface">
+              <div
+                v-if="message.status === 'WRITING' && !message.text"
+                class="typing-indicator"
+                aria-label="Пользователь печатает"
+              >
+                <i /><i /><i /><span>пользователь печатает</span>
+              </div>
+              <TranslatedMessageBody
+                v-else
+                :message="message"
+                :requested="
+                  translation.messageTranslations.value.get(message.id)
+                "
+                :busy="translation.translatingMessageIds.value.has(message.id)"
+                :can-translate="canManageTranslation"
+                :working-locale="
+                  translation.state.value?.preference.workingLocale ?? null
+                "
+                :view-mode="messageViewMode"
+                @translate="translation.translateMessage"
+                @retry="translation.retryMessage"
+                @reconcile="translation.reconcileMessage"
+              />
+              <small v-if="message.status === 'FAILED'"
+                ><i class="pi pi-exclamation-circle" /> Не доставлено</small
+              >
+              <small v-else-if="message.status === 'WRITING' && message.text"
+                ><i class="pi pi-spin pi-spinner" /> Обновляется…</small
+              >
+              <small v-else-if="message.status === 'CANCELLED'"
+                ><i class="pi pi-ban" /> Ответ остановлен оператором</small
+              >
+            </div>
           </article>
         </div>
         <div v-else class="empty-state chat-empty">
@@ -1430,39 +1644,46 @@ function displayField(
         <form
           v-if="selectedConversation && canReply"
           class="composer"
+          :class="{
+            'composer--translated': translation.readyDraft.value,
+            'composer--loading': messagesLoading,
+          }"
           @submit.prevent="sendReply"
         >
-          <div class="composer-label">
-            <span>
-              Ваш текст
-              <template
-                v-if="translation.state.value?.preference.workingLocale"
-              >
-                ·
-                {{
-                  translation.state.value.preference.workingLocale.toUpperCase()
-                }}
-              </template>
-            </span>
-            <span v-if="!onlineSession" class="composer-label__offline">
-              <i class="pi pi-wifi" aria-hidden="true" /> Пользователь офлайн
-            </span>
+          <div class="composer-source">
+            <div class="composer-label">
+              <span>
+                Ваш текст
+                <template
+                  v-if="translation.state.value?.preference.workingLocale"
+                >
+                  ·
+                  {{
+                    translation.state.value.preference.workingLocale.toUpperCase()
+                  }}
+                </template>
+              </span>
+              <span v-if="!onlineSession" class="composer-label__offline">
+                <i class="pi pi-wifi" aria-hidden="true" /> Пользователь офлайн
+              </span>
+            </div>
+            <Textarea
+              v-model="replyText"
+              rows="3"
+              maxlength="10000"
+              auto-resize
+              placeholder="Ответить от имени оператора"
+              aria-label="Ответ пользователю"
+              :disabled="
+                messagesLoading ||
+                !onlineSession ||
+                selectedConversation.status !== 'ACTIVE' ||
+                sendingReply ||
+                replyTranslationInFlight
+              "
+              @keydown.enter.exact="handleComposerEnter"
+            />
           </div>
-          <Textarea
-            v-model="replyText"
-            rows="3"
-            maxlength="10000"
-            auto-resize
-            placeholder="Ответить от имени оператора"
-            aria-label="Ответ пользователю"
-            :disabled="
-              !onlineSession ||
-              selectedConversation.status !== 'ACTIVE' ||
-              sendingReply ||
-              replyTranslationInFlight
-            "
-            @keydown.enter.exact="handleComposerEnter"
-          />
           <ReplyTranslationPreview
             v-if="
               canManageTranslation &&
@@ -1480,6 +1701,7 @@ function displayField(
             "
             :stale="translation.previewStale.value"
             :disabled="
+              messagesLoading ||
               !replyText.trim() ||
               !onlineSession ||
               selectedConversation.status !== 'ACTIVE' ||
@@ -1498,18 +1720,22 @@ function displayField(
             <span>
               {{
                 translation.state.value?.preference.enabled
-                  ? `Шаг ${translation.readyDraft.value ? "2 из 2 · проверьте перевод перед отправкой" : "1 из 2 · сначала подготовьте перевод"}`
+                  ? `Шаг ${translation.readyDraft.value ? "2 из 2: перевод готов и проверен. Enter — отправить · Shift+Enter — перенос строки" : "1 из 2: сначала перевод — отправка без перевода доступна в меню «Действие»"}`
                   : "Enter — отправить · Shift+Enter — перенос строки"
               }}
             </span>
             <div>
               <div
-                v-if="
-                  canReplyWithoutTranslation &&
-                  translation.state.value?.preference.enabled
-                "
+                v-if="canReply"
                 class="composer-action-menu"
               >
+                <button
+                  v-if="composerActionsVisible"
+                  type="button"
+                  class="action-menu-backdrop"
+                  aria-label="Закрыть меню действий"
+                  @click="composerActionsVisible = false"
+                />
                 <Button
                   type="button"
                   label="Действие"
@@ -1519,7 +1745,7 @@ function displayField(
                   aria-haspopup="menu"
                   :aria-expanded="composerActionsVisible"
                   :disabled="
-                    !replyText.trim() ||
+                    messagesLoading ||
                     !onlineSession ||
                     sendingReply ||
                     replyTranslationInFlight
@@ -1531,9 +1757,54 @@ function displayField(
                   class="composer-action-menu__panel"
                   role="menu"
                 >
+                  <span class="mobile-sheet-handle" aria-hidden="true" />
+                  <strong class="mobile-sheet-title"
+                    >Действия в диалоге</strong
+                  >
+                  <span class="menu-section-label">Сейчас</span>
                   <button
                     type="button"
                     role="menuitem"
+                    @click="showUnavailableAttachment"
+                  >
+                    <i class="pi pi-file" aria-hidden="true" />
+                    <span>
+                      <strong>Файл или скриншот</strong>
+                      <small>Live API пока принимает только текст</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    @click="applyReplyTemplate()"
+                  >
+                    <i class="pi pi-align-left" aria-hidden="true" />
+                    <span>
+                      <strong>Шаблон ответа</strong>
+                      <small>Добавить текст в черновик</small>
+                    </span>
+                  </button>
+                  <span class="menu-section-label">Интеграции</span>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="highlighted"
+                    @click="openTicketDrawer"
+                  >
+                    <i class="pi pi-plus-square" aria-hidden="true" />
+                    <span>
+                      <strong>Создать тикет</strong>
+                      <small>Форма откроется справа от диалога</small>
+                    </span>
+                  </button>
+                  <button
+                    v-if="
+                      canReplyWithoutTranslation &&
+                      translation.state.value?.preference.enabled
+                    "
+                    type="button"
+                    role="menuitem"
+                    :disabled="!replyText.trim()"
                     @click="setSendWithoutTranslationVisible(true)"
                   >
                     <i class="pi pi-send" aria-hidden="true" />
@@ -1544,6 +1815,19 @@ function displayField(
                   </button>
                 </div>
               </div>
+              <Button
+                type="button"
+                label="Шаблоны"
+                severity="secondary"
+                outlined
+                :disabled="
+                  messagesLoading ||
+                  !onlineSession ||
+                  sendingReply ||
+                  replyTranslationInFlight
+                "
+                @click="applyReplyTemplate()"
+              />
               <Button
                 v-if="
                   canReply &&
@@ -1558,6 +1842,7 @@ function displayField(
                 class="composer-primary-action"
                 :loading="sendingReply"
                 :disabled="
+                  messagesLoading ||
                   !replyText.trim() ||
                   !onlineSession ||
                   selectedConversation.status !== 'ACTIVE'
@@ -1566,6 +1851,14 @@ function displayField(
             </div>
           </div>
         </form>
+        <ConversationTicketDrawer
+          v-if="selectedConversation"
+          :visible="ticketDrawerVisible"
+          :external-user-id="detail?.externalUserId || endUserId || '—'"
+          :conversation-title="selectedConversation.title"
+          :message-count="messages.length"
+          @close="ticketDrawerVisible = false"
+        />
       </main>
     </div>
 
@@ -2579,8 +2872,724 @@ function displayField(
   justify-content: flex-end;
   gap: 8px;
 }
-.mobile-workspace-nav {
+.mobile-conversation-profile,
+.mobile-chat-back {
   display: none;
+}
+:global(.user-workspace-dialog.p-dialog) {
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-dialog);
+}
+:global(.user-workspace-dialog .p-dialog-header) {
+  min-height: 64px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+}
+:global(.user-workspace-dialog .p-dialog-maximize-button),
+:global(.user-workspace-dialog .p-dialog-close-button) {
+  width: 36px;
+  height: 36px;
+  margin-left: 8px;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 9px !important;
+  background: var(--surface-card) !important;
+  color: var(--text-small-muted) !important;
+  box-shadow: none !important;
+}
+:global(.user-workspace-dialog .p-dialog-maximize-button:hover),
+:global(.user-workspace-dialog .p-dialog-close-button:hover) {
+  background: var(--surface-hover) !important;
+  color: var(--text-primary) !important;
+}
+:global(.user-workspace-dialog .p-dialog-content) {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  background: var(--surface-card);
+}
+.workspace-title {
+  gap: 12px;
+}
+.workspace-title h2,
+.workspace-grid h3 {
+  font-family: var(--font-sans);
+}
+.workspace-back {
+  min-height: 40px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.workspace-divider {
+  width: 1px;
+  height: 26px;
+  flex: 0 0 auto;
+  background: var(--border-default);
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  font-size: 14px;
+}
+.workspace-identity h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.workspace-identity > span {
+  display: block;
+  margin-top: 1px;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-statuses {
+  margin-left: auto;
+}
+.connection-status {
+  min-height: 28px;
+  padding: 4px 10px;
+  color: var(--status-success-text);
+  font-size: 12px;
+}
+.workspace-dialogs {
+  min-height: 36px;
+  border-color: var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-small-muted);
+  font-size: 13px;
+}
+.workspace-grid {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: 272px minmax(0, 1fr);
+  height: auto;
+  background: var(--surface-card);
+}
+.conversation-pane {
+  padding: 0;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-subtle);
+}
+.pane-header {
+  min-height: 53px;
+  margin: 0;
+  padding: 10px 14px 8px;
+}
+.pane-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.pane-header :deep(.p-button) {
+  min-height: 30px;
+  padding: 0 10px;
+  border-color: var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--action-primary);
+  font-size: 12px;
+}
+.conversation-search {
+  min-height: 34px;
+  margin: 0 14px 10px;
+  border-color: var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-card);
+}
+.conversation-search input {
+  font-size: 13px;
+  font-weight: 500;
+}
+.conversation-list {
+  gap: 2px;
+  padding: 0 8px 10px;
+}
+.conversation-list button {
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+}
+.conversation-list button:hover {
+  border-color: transparent;
+  background: var(--surface-hover);
+  box-shadow: none;
+  transform: none;
+}
+.conversation-list button.selected {
+  border: 1px solid var(--palette-violet-200);
+  border-left: 3px solid var(--action-primary);
+  background: var(--surface-card);
+}
+.conversation-list strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+.conversation-list button.selected strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.conversation-list button > span:not(.conversation-row-title) {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.conversation-badge {
+  flex: 0 0 auto;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+.conversation-badge.accent {
+  background: var(--status-violet-soft);
+  color: var(--action-primary);
+}
+.conversation-badge.warning {
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.chat-pane {
+  padding: 0;
+  background: var(--surface-card);
+}
+.conversation-state-rail {
+  position: relative;
+  z-index: 5;
+  min-height: 53px;
+  gap: 10px;
+  margin: 0;
+  padding: 9px 20px;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: var(--surface-subtle);
+}
+.conversation-state-rail[data-online="false"] {
+  background: var(--surface-hover);
+}
+.chat-heading {
+  min-width: 120px;
+  flex: 1 1 auto;
+}
+.chat-heading h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.chat-heading span {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.conversation-open-state {
+  display: none;
+}
+.conversation-language-fact {
+  min-height: 32px;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-small-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.conversation-language-fact strong {
+  color: var(--text-primary);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+}
+.message-view-switch {
+  height: 34px;
+  padding: 3px;
+  border-color: var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-hover);
+}
+.message-view-switch button {
+  min-height: 26px;
+  padding: 0 11px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.message-view-switch button.active {
+  background: var(--action-primary);
+  color: var(--on-action-primary);
+  box-shadow: none;
+}
+.conversation-menu-anchor {
+  position: relative;
+  flex: 0 0 auto;
+}
+.conversation-more {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-small-muted);
+  cursor: pointer;
+}
+.conversation-more:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.conversation-settings-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  width: 370px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-menu);
+}
+.conversation-settings-menu > button {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-primary);
+  font: 600 13px inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.conversation-settings-menu > button:hover {
+  background: var(--surface-hover);
+}
+.conversation-settings-menu > button i {
+  width: 18px;
+  color: var(--text-secondary);
+}
+.conversation-settings-menu :deep(.translation-banner) {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 4px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+.conversation-settings-menu
+  :deep(.translation-banner__main > .translation-banner__icon) {
+  display: none;
+}
+.conversation-settings-menu :deep(.translation-banner__main span) {
+  max-width: 300px;
+}
+.conversation-settings-menu :deep(.translation-banner__controls) {
+  justify-content: space-between;
+}
+.menu-section-label {
+  padding: 8px 11px 4px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.message-history {
+  gap: 14px;
+  padding: 16px 24px;
+  border-radius: 0;
+  background: var(--surface-card);
+  scrollbar-gutter: stable;
+}
+.message-bubble {
+  display: flex;
+  max-width: 62%;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.message-bubble:first-of-type {
+  margin-top: auto;
+}
+.message-bubble.admin,
+.message-bubble.assistant,
+.message-bubble.scenario {
+  align-self: flex-end;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.message-bubble.system {
+  max-width: 90%;
+}
+.message-bubble__meta {
+  justify-content: flex-start;
+  gap: 8px;
+  padding-left: 2px;
+}
+.message-bubble.admin .message-bubble__meta,
+.message-bubble.assistant .message-bubble__meta,
+.message-bubble.scenario .message-bubble__meta {
+  flex-direction: row-reverse;
+  padding-right: 2px;
+  padding-left: 0;
+}
+.message-bubble strong {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.message-bubble.assistant strong {
+  color: var(--status-violet-text);
+}
+.message-bubble.admin strong {
+  color: var(--status-success-text);
+}
+.message-bubble.scenario strong {
+  color: var(--status-warning-text);
+}
+.message-bubble time,
+.message-bubble small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+.message-bubble__surface {
+  position: relative;
+  padding: 12px 15px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px 14px 14px;
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+}
+.message-bubble.assistant .message-bubble__surface {
+  border-color: var(--palette-violet-200);
+  border-radius: 14px 4px 14px 14px;
+  background: var(--status-violet-soft);
+}
+.message-bubble.admin .message-bubble__surface {
+  border-color: var(--palette-green-200);
+  border-radius: 14px 4px 14px 14px;
+  background: var(--status-success-soft);
+}
+.message-bubble.scenario .message-bubble__surface {
+  border-color: var(--palette-amber-200);
+  border-radius: 14px 4px 14px 14px;
+  background: var(--status-warning-soft);
+}
+.message-bubble.system .message-bubble__surface {
+  padding: 8px 12px;
+  border-style: dashed;
+  border-radius: 999px;
+  background: var(--surface-card);
+}
+.message-bubble :deep(.translated-message > p) {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.message-bubble__surface > small {
+  display: block;
+  margin-top: 7px;
+}
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.typing-indicator > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  animation: typing-pulse 1.2s infinite;
+}
+.typing-indicator > i:nth-child(2) {
+  animation-delay: 150ms;
+}
+.typing-indicator > i:nth-child(3) {
+  animation-delay: 300ms;
+}
+.bulk-translation-progress {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--palette-violet-200);
+  border-radius: 11px;
+  background: var(--status-violet-soft);
+  color: var(--status-violet-text);
+}
+.bulk-translation-progress > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.bulk-translation-progress__track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--palette-violet-100);
+}
+.bulk-translation-progress__track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--action-primary);
+  transition: width 180ms ease;
+}
+.message-skeletons {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+}
+.message-skeletons > span {
+  width: 58%;
+  height: 52px;
+  border-radius: 4px 14px 14px;
+  background: linear-gradient(90deg, var(--surface-active) 25%, var(--surface-hover) 37%, var(--surface-active) 63%);
+  background-size: 360px 100%;
+  animation: skeleton-shimmer 1.3s infinite;
+}
+.message-skeletons > span:nth-child(2) {
+  width: 66%;
+  height: 74px;
+  align-self: flex-end;
+  border-radius: 14px 4px 14px 14px;
+  animation-delay: 150ms;
+}
+.message-skeletons > span:nth-child(3) {
+  width: 44%;
+  animation-delay: 300ms;
+}
+.message-empty {
+  display: flex;
+  min-height: 180px;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed var(--border-default);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+  text-align: center;
+}
+.message-empty strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+.message-empty span {
+  max-width: 300px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.composer {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+  margin: 0 18px 14px;
+  padding: 12px 14px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+  box-shadow: none;
+}
+.composer--translated {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.composer-source {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+.composer--translated .composer-source {
+  padding-right: 16px;
+  padding-bottom: 58px;
+  border-right: 1px solid var(--border-subtle);
+}
+.composer-label {
+  min-height: 18px;
+}
+.composer-label > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 5px;
+  background: var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.composer :deep(textarea) {
+  min-height: 72px;
+  padding: 9px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: none;
+}
+.composer :deep(textarea:focus) {
+  box-shadow: none;
+}
+.composer-footer {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+.composer-footer > span {
+  max-width: 610px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+.composer-footer > div {
+  gap: 8px;
+}
+.composer--translated .composer-footer {
+  position: absolute;
+  bottom: 10px;
+  left: 14px;
+  width: calc(50% - 21px);
+  min-height: 50px;
+}
+.composer--translated .composer-footer > span {
+  display: none;
+}
+.composer--translated .composer-footer > div {
+  width: 100%;
+  justify-content: flex-start;
+}
+.composer-footer :deep(.p-button) {
+  min-height: 40px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.composer-primary-action {
+  min-width: 160px;
+}
+.composer--loading {
+  position: relative;
+  min-height: 96px;
+}
+.composer--loading > * {
+  visibility: hidden;
+}
+.composer--loading::after {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-tertiary);
+  content: "композер заблокирован до загрузки";
+  font-size: 12px;
+}
+.composer-action-menu__panel {
+  right: 0;
+  bottom: calc(100% + 8px);
+  left: auto;
+  width: 290px;
+  padding: 8px;
+  border-color: var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-card);
+}
+.composer-action-menu__panel button {
+  min-height: 52px;
+  border-radius: 10px;
+}
+.composer-action-menu__panel button.highlighted {
+  border: 1px solid var(--palette-violet-200);
+  background: var(--status-violet-soft);
+}
+.composer-action-menu__panel button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.composer-action-menu__panel strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.composer-action-menu__panel small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.action-menu-backdrop {
+  display: none;
+}
+.mobile-sheet-handle,
+.mobile-sheet-title {
+  display: none;
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: -360px 0;
+  }
+  to {
+    background-position: 360px 0;
+  }
+}
+@keyframes typing-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 @keyframes message-enter {
   from {
@@ -2675,6 +3684,9 @@ function displayField(
     flex: 1;
     min-height: 0;
   }
+  :global(.user-workspace-dialog--chat .p-dialog-header) {
+    display: none;
+  }
   .profile-overview {
     height: calc(100dvh - 82px);
     padding: 18px 14px 28px;
@@ -2696,29 +3708,9 @@ function displayField(
   .profile-loading {
     grid-template-columns: 1fr;
   }
-  .mobile-workspace-nav {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    padding: 0 10px 10px;
-    border-bottom: 1px solid var(--line);
-    background: var(--surface-card);
-  }
-  .mobile-workspace-nav button {
-    min-height: 44px;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 0.69rem;
-  }
-  .mobile-workspace-nav button.active {
-    border-color: var(--accent);
-    color: var(--text-primary);
-    font-weight: 700;
-  }
   .workspace-grid {
     display: block;
-    height: calc(100dvh - 154px);
+    height: 100dvh;
   }
   .conversation-pane,
   .chat-pane {
@@ -2744,10 +3736,127 @@ function displayField(
   .workspace-grid[data-mobile-pane="CHAT"] .chat-pane {
     display: flex;
     flex-direction: column;
-    padding: 13px 12px 10px;
+    padding: 0;
+  }
+  .mobile-conversation-profile {
+    display: flex;
+    min-height: 64px;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface-card);
+  }
+  .mobile-conversation-profile > div {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+    gap: 1px;
+  }
+  .mobile-conversation-profile strong {
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mobile-conversation-profile small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+  }
+  .mobile-chat-back {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    flex: 0 0 auto;
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    background: var(--surface-hover);
+    color: var(--action-primary);
+  }
+  .conversation-state-rail {
+    display: grid;
+    min-height: auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 9px 10px;
+    padding: 11px 14px 10px;
+  }
+  .conversation-state-rail .chat-heading {
+    grid-column: 2;
+  }
+  .conversation-language-fact {
+    display: none;
+  }
+  .conversation-state-rail .message-view-switch {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    justify-self: start;
+    order: initial;
+  }
+  .conversation-state-rail :deep(.ai-suspension-header-actions),
+  .conversation-state-rail :deep(.suspension-banner.compact) {
+    grid-column: 3;
+    grid-row: 2;
+    order: initial;
+  }
+  .conversation-state-rail
+    :deep(.ai-suspension-header-actions .p-button) {
+    min-height: 34px;
+    padding-inline: 10px;
+  }
+  .conversation-state-rail
+    :deep(.ai-suspension-header-actions .p-button-label) {
+    overflow: hidden;
+    max-width: 82px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .conversation-state-rail .conversation-menu-anchor {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .conversation-settings-menu {
+    position: fixed;
+    inset: auto 10px 10px;
+    width: auto;
+    max-height: calc(100dvh - 100px);
+    overflow-y: auto;
+    border-radius: 18px;
   }
   .message-bubble {
-    max-width: 88%;
+    max-width: 86%;
+  }
+  .message-history {
+    padding: 14px;
+  }
+  .message-bubble :deep(.translated-message > p) {
+    font-size: 14px;
+  }
+  .composer {
+    margin: 0;
+    padding: 11px 12px 10px;
+    border: 0;
+    border-top: 1px solid var(--border-subtle);
+    border-radius: 0;
+    background: var(--surface-card);
+  }
+  .composer--translated {
+    grid-template-columns: 1fr;
+  }
+  .composer--translated :deep(.reply-preview) {
+    order: 1;
+  }
+  .composer--translated .composer-source {
+    order: 2;
+    padding: 10px 0 0;
+    border-top: 1px solid var(--border-subtle);
+    border-right: 0;
+  }
+  .composer--translated .composer-footer {
+    position: static;
+    width: auto;
+    order: 3;
   }
   .composer-footer {
     align-items: flex-end;
@@ -2848,13 +3957,38 @@ function displayField(
   }
   .composer-action-menu__panel {
     position: fixed;
-    right: 12px;
-    bottom: 12px;
-    left: 12px;
+    z-index: 32;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
     width: auto;
+    max-height: calc(100dvh - 90px);
+    overflow-y: auto;
     padding: 10px;
-    border-radius: 18px;
+    border-radius: 20px;
     transform-origin: bottom center;
+  }
+  .mobile-sheet-handle {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 1px auto 7px;
+    border-radius: 3px;
+    background: var(--border-default);
+  }
+  .mobile-sheet-title {
+    display: block;
+    padding: 2px 4px 5px;
+    color: var(--text-primary);
+    font-size: 15px;
+  }
+  .action-menu-backdrop {
+    position: fixed;
+    z-index: 30;
+    inset: 0;
+    display: block;
+    border: 0;
+    background: var(--overlay-backdrop);
   }
   .composer-action-menu__panel button {
     min-height: 58px;

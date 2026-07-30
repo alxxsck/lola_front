@@ -40,10 +40,25 @@ describe('действия AI в заголовке диалога', () => {
       global,
     })
 
-    expect(wrapper.text()).toContain('Приостановить AI')
+    expect(wrapper.text()).toContain('AI активен · приостановить')
     expect(wrapper.find('[aria-label="История приостановок AI"]').exists()).toBe(true)
     await wrapper.get('button').trigger('click')
     expect(wrapper.emitted('start')).toHaveLength(1)
+  })
+
+  it('скрывает историю, когда она перенесена в меню диалога', () => {
+    const wrapper = mount(ConversationAISuspensionHeaderActions, {
+      props: {
+        entry,
+        canManage: true,
+        conversationOpen: true,
+        showHistory: false,
+      },
+      global,
+    })
+
+    expect(wrapper.text()).toContain('AI активен · приостановить')
+    expect(wrapper.find('[aria-label="История приостановок AI"]').exists()).toBe(false)
   })
 
   it('заменяет действие статусом, пока AI приостановлен', () => {

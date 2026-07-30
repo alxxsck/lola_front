@@ -374,6 +374,68 @@ describe("единое рабочее пространство пользова�
     expect(mocks.getConversations).toHaveBeenCalledTimes(1);
   });
 
+  it("сохраняет геометрию диалога скелетонами и блокирует composer до загрузки", async () => {
+    let resolveMessages:
+      | ((value: Awaited<ReturnType<typeof mocks.getMessages>>) => void)
+      | undefined;
+    mocks.getMessages.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveMessages = resolve;
+      }),
+    );
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(wrapper.find(".message-skeletons").exists()).toBe(true);
+    expect(wrapper.find(".composer--loading").exists()).toBe(true);
+
+    resolveMessages?.({ items: [], nextCursor: null });
+    await flushPromises();
+    expect(wrapper.find(".message-skeletons").exists()).toBe(false);
+  });
+
+  it("показывает прогресс массового перевода без перестановки сообщений", async () => {
+    mocks.permissions.push("project.translation.create");
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    mocks.getMessages.mockResolvedValueOnce({
+      items: [1, 2, 3].map((index) => ({
+        id: `message-${index}`,
+        conversationId: current.id,
+        author: "USER" as const,
+        status: "COMPLETED" as const,
+        text: `Nachricht ${index}`,
+        createdAt: `2026-07-20T12:5${index}:00.000Z`,
+      })),
+      nextCursor: null,
+    });
+    let resolveTranslation:
+      | ((value: { items: never[]; queued: boolean }) => void)
+      | undefined;
+    vi.spyOn(
+      conversationTranslationApi,
+      "translateMessages",
+    ).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveTranslation = resolve;
+      }),
+    );
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(wrapper.get(".bulk-translation-progress").text()).toContain(
+      "0 из 3",
+    );
+    expect(wrapper.findAll(".message-bubble")).toHaveLength(3);
+
+    resolveTranslation?.({ items: [], queued: false });
+    await flushPromises();
+    expect(wrapper.find(".bulk-translation-progress").exists()).toBe(false);
+  });
+
   it("размещает историю синхронизации в карточке доступного профиля", async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
@@ -706,6 +768,7 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
+    await wrapper.get(".conversation-more").trigger("click");
     wrapper
       .getComponent(ConversationTranslationBanner)
       .vm.$emit("translateVisible");
@@ -857,6 +920,7 @@ describe("единое рабочее пространство пользова�
       .mockResolvedValue({ items: [], queued: false });
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
+    await wrapper.get(".conversation-more").trigger("click");
     wrapper
       .getComponent(ConversationTranslationBanner)
       .vm.$emit("updateEnabled", true);
@@ -895,6 +959,43 @@ describe("единое рабочее пространство пользова�
       ["future-german"],
       ["future-russian"],
     ]);
+  });
+
+  it("возвращает выбранный диалог из мобильного списка при повторном выборе", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    await wrapper.get(".mobile-chat-back").trigger("click");
+    expect(
+      wrapper
+        .get('[data-testid="chat-workspace"]')
+        .attributes("data-mobile-pane"),
+    ).toBe("LIST");
+
+    await wrapper.get(".conversation-list button").trigger("click");
+    await flushPromises();
+
+    expect(
+      wrapper
+        .get('[data-testid="chat-workspace"]')
+        .attributes("data-mobile-pane"),
+    ).toBe("CHAT");
+  });
+
+  it("открывает форму тикета без ложной отправки в неподключённый API", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    await wrapper.get(".composer-action-menu > button").trigger("click");
+    const ticketAction = wrapper
+      .findAll('[role="menuitem"]')
+      .find((item) => item.text().includes("Создать тикет"));
+    expect(ticketAction).toBeTruthy();
+    await ticketAction!.trigger("click");
+
+    const drawer = wrapper.get('[data-testid="ticket-drawer"]');
+    expect(drawer.text()).toContain("Support API");
+    expect(drawer.get("footer .primary").attributes("disabled")).toBeDefined();
   });
 
   it("после reconnect сверяет REST projection выбранного диалога", async () => {

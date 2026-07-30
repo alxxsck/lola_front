@@ -5,12 +5,16 @@ import Tag from 'primevue/tag'
 import type { ConversationAISuspensionEntry } from '../model/conversation-ai-suspension.store'
 import { isConversationAISuspended } from '../model/suspension-state'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   entry: ConversationAISuspensionEntry
   canManage: boolean
   conversationOpen: boolean
   hideActiveStatus?: boolean
-}>()
+  showHistory?: boolean
+}>(), {
+  hideActiveStatus: false,
+  showHistory: true,
+})
 
 defineEmits<{
   start: []
@@ -29,7 +33,7 @@ const active = computed(() =>
 const hasHistory = computed(() => props.entry.summary.version !== '0')
 const hasActions = computed(() =>
   (props.canManage && props.conversationOpen) ||
-  hasHistory.value ||
+  (hasHistory.value && props.showHistory) ||
   Boolean(props.entry.error),
 )
 </script>
@@ -44,8 +48,8 @@ const hasActions = computed(() =>
   <div v-else-if="hasActions" class="ai-suspension-header-actions">
     <Button
       v-if="canManage && conversationOpen"
-      label="Приостановить AI"
-      icon="pi pi-pause-circle"
+      label="AI активен · приостановить"
+      icon="pi pi-circle-fill"
       severity="secondary"
       outlined
       size="small"
@@ -54,7 +58,7 @@ const hasActions = computed(() =>
       @click="$emit('start')"
     />
     <Button
-      v-if="hasHistory"
+      v-if="hasHistory && showHistory"
       icon="pi pi-history"
       aria-label="История приостановок AI"
       title="История приостановок AI"
@@ -88,7 +92,16 @@ const hasActions = computed(() =>
   border-left: 1px solid var(--line);
 }
 .ai-suspension-header-actions :deep(.p-button) {
+  min-height: 32px;
+  border-color: var(--border-default);
+  border-radius: 8px;
+  color: var(--text-small-muted);
+  font-size: 12px;
   white-space: nowrap;
+}
+.ai-suspension-header-actions :deep(.p-button .pi-circle-fill) {
+  color: var(--status-success);
+  font-size: 6px;
 }
 @media (max-width: 560px) {
   .ai-suspension-header-actions {
