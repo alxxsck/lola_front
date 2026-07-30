@@ -94,6 +94,50 @@ const terminalDraftStatuses = new Set([
 ]);
 const terminalMessageStatuses = new Set(["COMPLETED", "FAILED", "SKIPPED"]);
 
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function translationApiErrorCode(cause: unknown): string | null {
+  const root = objectValue(cause);
+  const response = objectValue(root?.response);
+  const data = objectValue(response?.data);
+  const payload = objectValue(data?.error);
+  return typeof payload?.code === "string" ? payload.code : null;
+}
+
+export function translationOperationErrorMessage(
+  cause: unknown,
+  fallback: string,
+): string {
+  const code = translationApiErrorCode(cause);
+  if (code === "TRANSLATION_DISABLED") {
+    return "На сервере выключена обработка переводов. Включите processing workers и повторите попытку.";
+  }
+  if (
+    code === "TRANSLATION_BUDGET_EXCEEDED" ||
+    code === "TRANSLATION_GLOBAL_BUDGET_EXCEEDED"
+  ) {
+    return "Лимит переводов исчерпан. Проверьте бюджет проекта.";
+  }
+  if (
+    code === "TRANSLATION_MODEL_UNAVAILABLE" ||
+    code === "TRANSLATION_MODEL_PRICING_UNAVAILABLE" ||
+    code === "TRANSLATION_PRICING_NOT_CONFIGURED"
+  ) {
+    return "Модель перевода или её тариф временно недоступны. Проверьте настройки модели.";
+  }
+  if (
+    code === "TRANSLATION_PROVIDER_TIMEOUT" ||
+    code === "TRANSLATION_PROVIDER_UNAVAILABLE"
+  ) {
+    return "Провайдер перевода временно недоступен. Повторите попытку позже.";
+  }
+  return fallback;
+}
+
 function contextKey(context: ConversationTranslationContext): string | null {
   const projectId = context.projectId();
   const endUserId = context.endUserId();
@@ -165,6 +209,22 @@ export function createConversationTranslationController(
       return "Лимит переводов исчерпан. Исходный текст не будет отправлен автоматически.";
     }
     return null;
+  }
+
+  function setOperationError(cause: unknown, fallback: string): void {
+    if (
+      translationApiErrorCode(cause) === "TRANSLATION_DISABLED" &&
+      state.value
+    ) {
+      state.value = {
+        ...state.value,
+        availability: {
+          available: false,
+          reason: "DEPLOYMENT_DISABLED",
+        },
+      };
+    }
+    error.value = translationOperationErrorMessage(cause, fallback);
   }
 
   function draftStorageKey(): string | null {
@@ -568,9 +628,9 @@ export function createConversationTranslationController(
           ),
         );
       }
-    } catch {
+    } catch (cause) {
       if (isCurrent(key, requestGeneration)) {
-        error.value = "Не удалось перевести сообщения";
+        setOperationError(cause, "Не удалось перевести сообщения");
         try {
           await context.reconcileMessages?.();
           if (isCurrent(key, requestGeneration)) {
@@ -825,9 +885,9 @@ export function createConversationTranslationController(
           (await pollDraft(response, key, requestGeneration)) ?? response;
       }
       return isCurrent(key, requestGeneration) ? response : null;
-    } catch {
+    } catch (cause) {
       if (isCurrent(key, requestGeneration)) {
-        error.value = "Не удалось подготовить перевод ответа";
+        setOperationError(cause, "Не удалось подготовить перевод ответа");
       }
       return null;
     } finally {

@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   translationHandler: undefined as ((value: unknown) => void) | undefined,
   stateHandler: undefined as ((value: string) => void) | undefined,
   reconcileHandler: undefined as (() => Promise<void>) | undefined,
+  toastAdd: vi.fn(),
   permissions: [
     "project.profiles.read",
     "project.end_users.read",
@@ -76,6 +77,9 @@ vi.mock("@/shared/realtime/cms-realtime-client", () => ({
     onState: mocks.onState,
     reconcile: mocks.reconcile,
   },
+}));
+vi.mock("primevue/usetoast", () => ({
+  useToast: () => ({ add: mocks.toastAdd }),
 }));
 
 const automatic = {
@@ -587,6 +591,38 @@ describe("единое рабочее пространство пользова�
 
     expect(wrapper.text()).toContain("Добрый день");
     expect(translate).not.toHaveBeenCalled();
+  });
+
+  it("показывает ошибку перевода вне chat layout", async () => {
+    mocks.permissions.push("project.translation.create");
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    vi.spyOn(conversationTranslationApi, "translateMessages").mockRejectedValue({
+      response: {
+        data: {
+          error: {
+            code: "TRANSLATION_DISABLED",
+            requestId: "request-translation-disabled",
+          },
+        },
+      },
+    });
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    wrapper
+      .getComponent(ConversationTranslationBanner)
+      .vm.$emit("translateVisible");
+    await flushPromises();
+
+    expect(mocks.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: "warn",
+        summary: "Переводы временно выключены",
+      }),
+    );
+    expect(wrapper.find(".chat-error").exists()).toBe(false);
   });
 
   it("после reload восстанавливает composer из scoped translation draft", async () => {

@@ -13,6 +13,7 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
+import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { useAdminConversationConsole } from "@/features/admin-conversations/model/use-admin-conversation-console";
@@ -80,6 +81,7 @@ const emit = defineEmits<{
 }>();
 const visible = defineModel<boolean>("visible", { required: true });
 const auth = useAuthStore();
+const toast = useToast();
 const suspensionStore = useConversationAISuspensionStore();
 const detail = ref<ProfileProjectionResponseDto | null>(null);
 const detailLoading = ref(false);
@@ -271,6 +273,29 @@ const hasUnsavedDraft = computed(
 watch(conversations, (value) => suspensionStore.ingestConversations(value), {
   flush: "sync",
 });
+watch(conversationError, (message) => {
+  if (!message) return;
+  toast.add({
+    severity: "warn",
+    summary: "Не удалось обновить диалог",
+    detail: message,
+    life: 6_000,
+  });
+});
+watch(
+  () => translation.error.value,
+  (message) => {
+    if (!message) return;
+    toast.add({
+      severity: "warn",
+      summary: message.startsWith("На сервере выключена обработка переводов")
+        ? "Переводы временно выключены"
+        : "Ошибка перевода",
+      detail: message,
+      life: 7_000,
+    });
+  },
+);
 watch(
   () => selectedConversation.value?.id,
   async (conversationId) => {
@@ -1213,22 +1238,6 @@ function displayField(
             translation.translateMessages(visibleTranslationMessageIds)
           "
         />
-        <Message
-          v-if="conversationError"
-          severity="warn"
-          :closable="false"
-          class="chat-error"
-        >
-          {{ conversationError }}
-        </Message>
-        <Message
-          v-if="translation.error.value"
-          severity="warn"
-          :closable="false"
-          class="chat-error"
-        >
-          {{ translation.error.value }}
-        </Message>
         <ConversationAISuspensionBanner
           v-if="
             conversationAISuspensionEnabled &&
@@ -1285,7 +1294,7 @@ function displayField(
               { 'live-enter': liveMessageIds.includes(message.id) },
             ]"
           >
-            <div>
+            <div class="message-bubble__meta">
               <strong>{{ authorLabel(message.author) }}</strong
               ><time :datetime="message.createdAt">{{
                 formatDate(message.createdAt)
@@ -1826,6 +1835,15 @@ function displayField(
   background: var(--surface-ground);
   animation: chat-enter 0.22s ease-out;
 }
+:global(.user-workspace-dialog.p-dialog-maximized .p-dialog-content) {
+  flex: 1;
+  min-height: 0;
+}
+:global(.user-workspace-dialog.p-dialog-maximized .workspace-grid),
+:global(.user-workspace-dialog.p-dialog-maximized .profile-overview) {
+  height: 100%;
+  min-height: 0;
+}
 .conversation-pane,
 .chat-pane {
   min-width: 0;
@@ -1976,7 +1994,7 @@ function displayField(
   background: transparent;
   text-align: center;
 }
-.message-bubble > div {
+.message-bubble__meta {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -2039,9 +2057,6 @@ function displayField(
 .composer-footer > div {
   justify-content: flex-end;
   gap: 6px;
-}
-.chat-error {
-  margin-bottom: 8px;
 }
 .send-without-translation {
   display: grid;

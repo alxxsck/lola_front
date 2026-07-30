@@ -182,6 +182,8 @@ const canRequest = computed(
 .translated-message__actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 7px;
   margin-top: 7px;
   min-height: 24px;

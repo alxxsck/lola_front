@@ -44,6 +44,64 @@ test("operator previews a translated reply and can inspect its Russian source", 
   ).toBeVisible();
 });
 
+test("message translation action does not reserve a side column in the bubble", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Продолжить" }).click();
+  await page.goto("/users");
+  await page
+    .getByRole("button", { name: "Открыть профиль user_89421" })
+    .click();
+  await page.getByRole("button", { name: "Открыть чат" }).click();
+
+  const action = page.getByRole("button", { name: "Перевести" }).first();
+  const bubble = action.locator("xpath=ancestor::article");
+  const body = bubble.locator(".translated-message > p");
+  const [actionBox, bubbleBox, bodyBox] = await Promise.all([
+    action.boundingBox(),
+    bubble.boundingBox(),
+    body.boundingBox(),
+  ]);
+  if (!actionBox || !bubbleBox || !bodyBox) {
+    throw new Error("Translation action and message bubble must be visible");
+  }
+
+  expect(bodyBox.width / bubbleBox.width).toBeGreaterThan(0.9);
+  expect(actionBox.y).toBeGreaterThanOrEqual(bodyBox.y + bodyBox.height);
+});
+
+test("maximized user workspace fills the viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Продолжить" }).click();
+  await page.goto("/users");
+  await page
+    .getByRole("button", { name: "Открыть профиль user_89421" })
+    .click();
+  await page.getByRole("button", { name: "Открыть чат" }).click();
+  await page
+    .getByRole("button", { name: "Развернуть рабочее пространство" })
+    .click();
+
+  const dialog = page.getByRole("dialog", {
+    name: /Рабочее пространство пользователя/,
+  });
+  const workspace = page.getByTestId("chat-workspace");
+  const [dialogBox, workspaceBox] = await Promise.all([
+    dialog.boundingBox(),
+    workspace.boundingBox(),
+  ]);
+  if (!dialogBox || !workspaceBox) {
+    throw new Error("Maximized dialog and chat workspace must be visible");
+  }
+
+  expect(dialogBox.width).toBeGreaterThanOrEqual(1590);
+  expect(dialogBox.height).toBeGreaterThanOrEqual(990);
+  expect(workspaceBox.height).toBeGreaterThan(880);
+});
+
 test("translation settings stay usable across responsive layouts", async ({
   page,
 }, testInfo) => {

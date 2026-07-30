@@ -120,6 +120,15 @@ function isSupportedLocale(
       </div>
     </div>
     <div v-if="state" class="translation-banner__controls">
+      <Button
+        v-if="!state.availability.available"
+        label="Проверить снова"
+        icon="pi pi-refresh"
+        size="small"
+        text
+        :disabled="loading || saving"
+        @click="emit('reload')"
+      />
       <template
         v-if="
           state.language.needsConfirmation &&
