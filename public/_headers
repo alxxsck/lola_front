@@ -1,0 +1,24 @@
+/auth/initial-access
+  Cache-Control: no-store, no-cache, must-revalidate
+  Pragma: no-cache
+  Referrer-Policy: no-referrer
+
+/auth/email-verification
+  Cache-Control: no-store, no-cache, must-revalidate
+  Pragma: no-cache
+  Referrer-Policy: no-referrer
+
+/auth/email-change
+  Cache-Control: no-store, no-cache, must-revalidate
+  Pragma: no-cache
+  Referrer-Policy: no-referrer
+
+/auth/password-reset
+  Cache-Control: no-store, no-cache, must-revalidate
+  Pragma: no-cache
+  Referrer-Policy: no-referrer
+
+/forgot-password
+  Cache-Control: no-store, no-cache, must-revalidate
+  Pragma: no-cache
+  Referrer-Policy: no-referrer

@@ -39,9 +39,14 @@ capability — только в `HttpOnly; Secure; SameSite=Strict` cookie и н�
 - `npm run api:check` — standalone-проверка committed OpenAPI artifact, его SHA-256 metadata и generated client;
 - `npm run api:sync:local` — явно экспортировать контракт из соседнего `../Lola_backend`, одновременно обновить artifact, digest metadata и generated client.
 
+## Деплой
+
+GitLab CI и перенос production с Vercel на Cloudflare Pages описаны в
+[docs/deployment-cloudflare-pages.ru.md](docs/deployment-cloudflare-pages.ru.md).
+
 ## OpenAPI contract gate
 
-Production/Vercel build не обращается к сети и не ищет backend в соседней директории. Его обязательный
+Production build не обращается к сети и не ищет backend в соседней директории. Его обязательный
 источник — committed `openapi/lola-backend.json`; файл
 `openapi/lola-backend.contract.json` фиксирует immutable content address
 `contractRevision=sha256:<canonical OpenAPI digest>`. Удаление metadata, ручное изменение artifact

@@ -1,0 +1,96 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
+stages:
+  - verify
+  - build
+  - deploy
+
+variables:
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+  VITE_DATA_MODE: "api"
+  WRANGLER_VERSION: "4.115.0"
+
+.node_job:
+  image: node:22-alpine
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+  before_script:
+    - npm ci --prefer-offline --no-audit
+
+quality:
+  extends: .node_job
+  stage: verify
+  interruptible: true
+  script:
+    - npm run lint
+    - npm run typecheck
+    - npm test
+    - npm run test:scripts
+
+build:
+  extends: .node_job
+  stage: build
+  interruptible: true
+  script:
+    - |
+      if [ -z "${VITE_API_BASE_URL:-}" ]; then
+        echo "VITE_API_BASE_URL must be configured in GitLab CI/CD variables."
+        exit 1
+      fi
+    - npm run build
+  artifacts:
+    name: "lola-cms-${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - dist/
+    expire_in: 7 days
+
+.cloudflare_pages_deploy:
+  image: node:22-alpine
+  stage: deploy
+  needs:
+    - job: build
+      artifacts: true
+  cache:
+    key: "wrangler-$WRANGLER_VERSION"
+    paths:
+      - .npm/
+  before_script:
+    - test -n "$CLOUDFLARE_ACCOUNT_ID"
+    - test -n "$CLOUDFLARE_PAGES_PROJECT_NAME"
+    - test -n "$CLOUDFLARE_API_TOKEN"
+  script:
+    - >
+      npx --yes "wrangler@$WRANGLER_VERSION" pages deploy dist
+      --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME"
+      --branch "$CLOUDFLARE_PAGES_BRANCH"
+      --commit-hash "$CI_COMMIT_SHA"
+      --commit-message "$CI_COMMIT_TITLE"
+
+deploy_preview:
+  extends: .cloudflare_pages_deploy
+  variables:
+    CLOUDFLARE_API_TOKEN: "$CLOUDFLARE_PREVIEW_API_TOKEN"
+    CLOUDFLARE_PAGES_BRANCH: "$CI_COMMIT_REF_SLUG"
+  environment:
+    name: "cloudflare/preview/$CI_COMMIT_REF_SLUG"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == $CI_PROJECT_PATH'
+
+deploy_production:
+  extends: .cloudflare_pages_deploy
+  resource_group: cloudflare-pages-production
+  variables:
+    CLOUDFLARE_PAGES_BRANCH: "$CI_DEFAULT_BRANCH"
+  environment:
+    name: production
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
