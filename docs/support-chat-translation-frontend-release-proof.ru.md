@@ -39,9 +39,13 @@
 ## Contract
 
 - Backend revision:
-  `c9d3e975b7da2ce3b85bb7a8852b751f1a97180f`.
+  `982d03befed19dd1c91b44c83d1c3af26949047b`.
 - OpenAPI SHA-256:
   `2dcf8a52f1c31f4b6069a30d8cb9cb35b4e4535c4194d06ee81a2ee8f479a0aa`.
+- Backend raw export SHA-256:
+  `68ead3aeced931ffc0dd1b8d8df010c60ecaddf92ea28ceb3ba1b11f5b7911b0`;
+  отличие от frontend SHA связано только с canonical JSON serialization, semantic
+  OpenAPI тот же (`334` operations).
 - Required operations: `112`.
 
 ## Evidence
