@@ -41,12 +41,19 @@ const projectMenuStub = {
   template: `
     <div>
       <template v-for="group in model" :key="group.label">
-        <button
-          v-for="item in group.items ?? []"
-          :key="item.label"
-          type="button"
-          @click="item.command?.()"
-        >{{ group.label }}: {{ item.label }}</button>
+        <div v-for="item in group.items ?? []" :key="item.label">
+          <button
+            type="button"
+            :aria-label="'Переключить на проект ' + item.label"
+            @click="item.command?.()"
+          >{{ group.label }}: {{ item.label }}</button>
+          <button
+            v-if="item.openInNewTab"
+            type="button"
+            :aria-label="'Открыть проект ' + item.label + ' в новой вкладке'"
+            @click.stop="item.openInNewTab()"
+          >Открыть в новой вкладке</button>
+        </div>
       </template>
     </div>
   `,
@@ -152,11 +159,14 @@ describe("AppShell", () => {
     expect(router.currentRoute.value.path).toBe("/overview");
   });
 
-  it("opens another Project in a new tab without putting it in the URL", async () => {
+  it("opens a Project from its row action without switching the current tab", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
-    authenticateWithProjects(auth, [project("project-1", "Project One")]);
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One"),
+      project("project-2", "Project Two"),
+    ]);
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [{ path: "/overview", component: { template: "<div />" } }],
@@ -179,8 +189,8 @@ describe("AppShell", () => {
       .findAll("button")
       .find(
         (button) =>
-          button.text() ===
-          "Открыть проект в новой вкладке: Project One",
+          button.attributes("aria-label") ===
+          "Открыть проект Project Two в новой вкладке",
       );
     expect(openButton).toBeDefined();
     await openButton!.trigger("click");
@@ -188,13 +198,13 @@ describe("AppShell", () => {
     expect(open).toHaveBeenCalledWith("", "_blank");
     expect(setItem).toHaveBeenCalledWith(
       "lola-cms-selected-project-v1",
-      "project-1",
+      "project-2",
     );
     expect(openedTab.opener).toBeNull();
     expect(replace).toHaveBeenCalledWith(
       expect.stringMatching(/\/overview$/),
     );
-    expect(replace.mock.calls[0]?.[0]).not.toContain("project-1");
+    expect(replace.mock.calls[0]?.[0]).not.toContain("project-2");
     expect(auth.project?.id).toBe("project-1");
   });
 

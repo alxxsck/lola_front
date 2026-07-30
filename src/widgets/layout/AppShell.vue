@@ -282,15 +282,7 @@ const profileItems = computed(() => [
                 ? "pi pi-check"
                 : "pi pi-briefcase",
             command: () => switchProject(project.id),
-          })),
-        },
-        {
-          label: "Открыть проект в новой вкладке",
-          icon: "pi pi-external-link",
-          items: auth.projects.map((project) => ({
-            label: project.name,
-            icon: "pi pi-external-link",
-            command: () => openProjectInNewTab(project.id),
+            openInNewTab: () => openProjectTab(project.id),
           })),
         },
         { separator: true },
@@ -310,6 +302,11 @@ async function switchProject(projectId: string) {
   projectActions.clear();
   auth.selectProject(projectId);
   await router.push("/overview");
+}
+
+function openProjectTab(projectId: string) {
+  profileMenu.value?.hide?.();
+  openProjectInNewTab(projectId);
 }
 
 async function logout(allDevices: boolean) {
@@ -487,7 +484,34 @@ onBeforeUnmount(() => {
           <i class="pi pi-ellipsis-h" />
         </button>
       </div>
-      <Menu ref="profileMenu" :model="profileItems" popup />
+      <Menu ref="profileMenu" :model="profileItems" popup>
+        <template #item="{ item, label, props }">
+          <div v-if="item.openInNewTab" class="project-menu-item">
+            <a v-bind="props.action" class="project-menu-item__switch">
+              <span v-if="item.icon" v-bind="props.icon" />
+              <span v-bind="props.label">{{ label }}</span>
+            </a>
+            <button
+              type="button"
+              class="project-menu-item__open"
+              :aria-label="`Открыть проект ${label} в новой вкладке`"
+              title="Открыть в новой вкладке"
+              @click.stop="item.openInNewTab()"
+            >
+              <i class="pi pi-external-link" aria-hidden="true" />
+            </button>
+          </div>
+          <a
+            v-else
+            v-bind="props.action"
+            :href="item.url"
+            :target="item.target"
+          >
+            <span v-if="item.icon" v-bind="props.icon" />
+            <span v-bind="props.label">{{ label }}</span>
+          </a>
+        </template>
+      </Menu>
     </aside>
 
     <main class="content">
@@ -757,6 +781,34 @@ nav {
 .sidebar-profile > i {
   font-size: 0.8rem;
   color: var(--sidebar-text-subtle);
+}
+.project-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.project-menu-item__switch {
+  flex: 1;
+  min-width: 0;
+}
+.project-menu-item__open {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: 0.35rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.project-menu-item__open:hover,
+.project-menu-item__open:focus-visible {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  outline: none;
 }
 .content {
   min-width: 0;
