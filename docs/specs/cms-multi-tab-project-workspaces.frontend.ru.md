@@ -52,8 +52,8 @@ reuse detection отзывает всю session family.
 - Если браузер блокирует создание вкладки, текущая вкладка и её Project не
   изменяются.
 - Favicon повторяет лаймовый знак Lola из sidebar. Заголовок вкладки имеет
-  формат `L | <Project name>` и реактивно обновляется при смене Project; без
-  выбранного Project используется `L | CMS`.
+  формат `Lo | <Project name>` и реактивно обновляется при смене Project; без
+  выбранного Project используется `Lo | CMS`.
 
 ### Shared browser authentication
 

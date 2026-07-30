@@ -43,11 +43,11 @@ describe("App", () => {
       },
     });
 
-    expect(document.title).toBe("L | Project One");
+    expect(document.title).toBe("Lo | Project One");
 
     auth.selectProject("project-2");
     await nextTick();
 
-    expect(document.title).toBe("L | Project Two");
+    expect(document.title).toBe("Lo | Project Two");
   });
 });

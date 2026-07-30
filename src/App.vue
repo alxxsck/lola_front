@@ -9,7 +9,7 @@ const auth = useAuthStore()
 watch(
   () => auth.project?.name,
   (projectName) => {
-    document.title = projectName ? `L | ${projectName}` : 'L | CMS'
+    document.title = projectName ? `Lo | ${projectName}` : 'Lo | CMS'
   },
   { immediate: true },
 )
