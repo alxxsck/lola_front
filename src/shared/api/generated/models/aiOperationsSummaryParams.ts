@@ -5,11 +5,15 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiOperationsSummaryInitiatorType } from "./aiOperationsSummaryInitiatorType";
 import type { AiOperationsSummaryStatus } from "./aiOperationsSummaryStatus";
 import type { AiOperationsSummaryCategory } from "./aiOperationsSummaryCategory";
 import type { AiOperationsSummaryChargedAccount } from "./aiOperationsSummaryChargedAccount";
 
 export type AiOperationsSummaryParams = {
+  initiatorType?: AiOperationsSummaryInitiatorType;
+  initiatorCmsUserId?: string;
+  initiatorEndUserId?: string;
   status?: AiOperationsSummaryStatus;
   category?: AiOperationsSummaryCategory;
   authorizedByCmsUserId?: string;

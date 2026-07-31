@@ -11,6 +11,9 @@ export type AiOperationProtectedAccessItemDtoAccessKind =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AiOperationProtectedAccessItemDtoAccessKind = {
+  METADATA: "METADATA",
+  RESULT: "RESULT",
+  COST: "COST",
   SENSITIVE_DETAIL: "SENSITIVE_DETAIL",
   SUBJECT_MANIFEST: "SUBJECT_MANIFEST",
   ACCESS_HISTORY: "ACCESS_HISTORY",

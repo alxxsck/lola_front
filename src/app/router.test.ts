@@ -311,6 +311,21 @@ describe("authentication routes", () => {
     ).toBe("project.ai_analyses.read");
   });
 
+  it("protects AI Operations list and safe detail with the exact read Permission", () => {
+    expect(router.resolve("/ai-operations").meta.projectPermission).toBe(
+      "project.ai_operations.read",
+    );
+    expect(router.resolve("/ai-operations/operation-1").name).toBe(
+      "ai-operation-detail",
+    );
+    expect(
+      router.resolve("/ai-operations/operation-1").meta.projectPermission,
+    ).toBe("project.ai_operations.read");
+    expect(
+      router.resolve("/ai-operations/operation-1").meta.projectPermissionsAny,
+    ).toBeUndefined();
+  });
+
   it("selects the Project encoded by an AI Analysis deep link before checking access", async () => {
     const auth = useAuthStore();
     const makeProject = (id: string, permissions: string[]) => ({
@@ -344,6 +359,42 @@ describe("authentication routes", () => {
     await router.push("/ai-analyses/analysis-1?projectId=project-2");
 
     expect(router.currentRoute.value.name).toBe("ai-analysis-detail");
+    expect(auth.project?.id).toBe("project-2");
+  });
+
+  it("selects the Project encoded by an AI Operation safe-detail link", async () => {
+    const auth = useAuthStore();
+    const makeProject = (id: string, permissions: string[]) => ({
+      id,
+      name: id,
+      slug: id,
+      status: "ACTIVE" as const,
+      publicKey: `public-${id}`,
+      defaultLocale: "ru",
+      supportedLocales: ["ru"],
+      assistantName: "Lola",
+      systemPrompt: "",
+      voiceInstructions: "",
+      settings: {},
+      effectivePermissionCodes: permissions,
+    });
+    const current = makeProject("project-1", []);
+    const target = makeProject("project-2", ["project.ai_operations.read"]);
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
+      project: current,
+      projects: [current, target],
+    });
+
+    await router.push("/ai-operations/operation-1?projectId=project-2");
+
+    expect(router.currentRoute.value.name).toBe("ai-operation-detail");
     expect(auth.project?.id).toBe("project-2");
   });
 

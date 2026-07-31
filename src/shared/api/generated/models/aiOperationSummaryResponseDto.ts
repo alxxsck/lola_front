@@ -13,7 +13,7 @@ import type { AiOperationPeriodBreakdownDto } from "./aiOperationPeriodBreakdown
 import type { AiOperationProviderCostDto } from "./aiOperationProviderCostDto";
 import type { AiOperationResponsibleCmsUserBreakdownDto } from "./aiOperationResponsibleCmsUserBreakdownDto";
 import type { AiOperationSummaryBreakdownDto } from "./aiOperationSummaryBreakdownDto";
-import type { AiOperationCostDto } from "./aiOperationCostDto";
+import type { AiOperationSummaryResponseDtoCost } from "./aiOperationSummaryResponseDtoCost";
 
 export interface AiOperationSummaryResponseDto {
   breakdownLimits: AiOperationSummaryBreakdownLimitsDto;
@@ -25,9 +25,17 @@ export interface AiOperationSummaryResponseDto {
   byProvider: AiOperationProviderCostDto[];
   byResponsibleCmsUser: AiOperationResponsibleCmsUserBreakdownDto[];
   byStatus: AiOperationSummaryBreakdownDto[];
-  cost: AiOperationCostDto;
-  /** @pattern ^\d+$ */
-  dbWorkUnits: string;
+  /**
+   * Monetary cost projection. Null without project.ai_analysis_cost.read.
+   * @nullable
+   */
+  cost?: AiOperationSummaryResponseDtoCost;
+  /**
+   * Cost-accounting work units. Null without project.ai_analysis_cost.read.
+   * @nullable
+   * @pattern ^\d+$
+   */
+  dbWorkUnits?: string | null;
   operations: number;
   rootOperations: number;
   usageRecords: number;

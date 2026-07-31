@@ -265,6 +265,7 @@ describe("AppShell", () => {
           "project.event_logs.read",
           "project.actions.read",
           "project.ai_analyses.read",
+          "project.ai_operations.read",
           "project.scenarios.read",
           "project.segments.read",
           "project.scenario_runs.read",
@@ -304,13 +305,15 @@ describe("AppShell", () => {
         .exists(),
       modeInFooter: wrapper.find(".sidebar-footer .sidebar-note").exists(),
       analysesVisible: wrapper.text().includes("AI-анализы"),
+      operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 17,
+      navigationLinks: 18,
       profileFieldsLink: "/profile-fields",
       themeSwitchVisible: true,
       profileInFooter: true,
       modeInFooter: true,
       analysesVisible: true,
+      operationsVisible: true,
     });
   });
 
@@ -684,6 +687,7 @@ describe("AppShell", () => {
     expect(wrapper.text()).not.toContain("База знаний");
     expect(wrapper.text()).not.toContain("Предложения Lola");
     expect(wrapper.text()).not.toContain("AI-анализы");
+    expect(wrapper.text()).not.toContain("Журнал AI");
     expect(wrapper.text()).not.toContain("Журнал событий");
     expect(wrapper.text()).not.toContain("Интеграции");
   });

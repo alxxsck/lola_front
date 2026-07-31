@@ -176,6 +176,13 @@ const navigation = computed(() =>
       projectPermission: "project.ai_analyses.read",
     },
     {
+      label: "Журнал AI",
+      icon: "pi pi-history",
+      to: "/ai-operations",
+      project: true,
+      projectPermission: "project.ai_operations.read",
+    },
+    {
       label: "Telegram-рассылки",
       icon: "pi pi-send",
       to: "/telegram/broadcasts",

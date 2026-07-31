@@ -8,6 +8,7 @@
 import type { AiOperationsListStatus } from "./aiOperationsListStatus";
 import type { AiOperationsListCategory } from "./aiOperationsListCategory";
 import type { AiOperationsListInitiatorType } from "./aiOperationsListInitiatorType";
+import type { AiOperationsListSubjectRole } from "./aiOperationsListSubjectRole";
 import type { AiOperationsListChargedAccount } from "./aiOperationsListChargedAccount";
 
 export type AiOperationsListParams = {
@@ -32,6 +33,10 @@ export type AiOperationsListParams = {
    * End User whose data contributed to the exact analysis subject manifest
    */
   subjectEndUserId?: string;
+  /**
+   * Role in the exact analysis subject manifest
+   */
+  subjectRole?: AiOperationsListSubjectRole;
   chargedAccount?: AiOperationsListChargedAccount;
   /**
    * @maxLength 80

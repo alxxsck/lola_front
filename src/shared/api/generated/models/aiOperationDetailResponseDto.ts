@@ -7,9 +7,11 @@
  */
 import type { AiOperationDetailResponseDtoCategory } from "./aiOperationDetailResponseDtoCategory";
 import type { AiOperationDetailResponseDtoChargedAccount } from "./aiOperationDetailResponseDtoChargedAccount";
-import type { AiOperationCostDto } from "./aiOperationCostDto";
+import type { AiOperationDetailResponseDtoCost } from "./aiOperationDetailResponseDtoCost";
 import type { AiOperationActorDto } from "./aiOperationActorDto";
+import type { AiOperationDetailResponseDtoResultReference } from "./aiOperationDetailResponseDtoResultReference";
 import type { AiOperationDetailResponseDtoStatus } from "./aiOperationDetailResponseDtoStatus";
+import type { AiOperationSubjectSummaryDto } from "./aiOperationSubjectSummaryDto";
 import type { AiOperationTimelineItemDto } from "./aiOperationTimelineItemDto";
 import type { AiOperationPageInfoDto } from "./aiOperationPageInfoDto";
 import type { AiOperationUsageDto } from "./aiOperationUsageDto";
@@ -25,7 +27,17 @@ export interface AiOperationDetailResponseDto {
   chargedEndUserId?: string | null;
   /** @nullable */
   completedAt?: string | null;
-  cost: AiOperationCostDto;
+  /**
+   * Monetary cost projection. Null without project.ai_analysis_cost.read.
+   * @nullable
+   */
+  cost?: AiOperationDetailResponseDtoCost;
+  /**
+   * Actual analysis DB work. Null without project.ai_analysis_cost.read.
+   * @nullable
+   * @pattern ^\d+$
+   */
+  dbWorkUnits?: string | null;
   initiator: AiOperationActorDto;
   limitationCodes: string[];
   operationId: string;
@@ -40,11 +52,17 @@ export interface AiOperationDetailResponseDto {
   /** @nullable */
   responsibleCmsUserId?: string | null;
   restrictedSections: string[];
+  /**
+   * Canonical domain result resolved by the server.
+   * @nullable
+   */
+  resultReference?: AiOperationDetailResponseDtoResultReference;
   rootCorrelationId: string;
   sourceId: string;
   sourceKind: string;
   startedAt: string;
   status: AiOperationDetailResponseDtoStatus;
+  subjectSummary: AiOperationSubjectSummaryDto;
   timeline: AiOperationTimelineItemDto[];
   timelinePageInfo: AiOperationPageInfoDto;
   title: string;

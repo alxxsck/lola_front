@@ -7,9 +7,11 @@
  */
 import type { AiOperationListItemDtoCategory } from "./aiOperationListItemDtoCategory";
 import type { AiOperationListItemDtoChargedAccount } from "./aiOperationListItemDtoChargedAccount";
-import type { AiOperationCostDto } from "./aiOperationCostDto";
+import type { AiOperationListItemDtoCost } from "./aiOperationListItemDtoCost";
 import type { AiOperationActorDto } from "./aiOperationActorDto";
+import type { AiOperationListItemDtoResultReference } from "./aiOperationListItemDtoResultReference";
 import type { AiOperationListItemDtoStatus } from "./aiOperationListItemDtoStatus";
+import type { AiOperationSubjectSummaryDto } from "./aiOperationSubjectSummaryDto";
 
 export interface AiOperationListItemDto {
   /** @nullable */
@@ -22,7 +24,17 @@ export interface AiOperationListItemDto {
   chargedEndUserId?: string | null;
   /** @nullable */
   completedAt?: string | null;
-  cost: AiOperationCostDto;
+  /**
+   * Monetary cost projection. Null without project.ai_analysis_cost.read.
+   * @nullable
+   */
+  cost?: AiOperationListItemDtoCost;
+  /**
+   * Actual analysis DB work. Null without project.ai_analysis_cost.read.
+   * @nullable
+   * @pattern ^\d+$
+   */
+  dbWorkUnits?: string | null;
   initiator: AiOperationActorDto;
   limitationCodes: string[];
   operationId: string;
@@ -33,11 +45,17 @@ export interface AiOperationListItemDto {
   responsibleCmsUserDisplayName?: string | null;
   /** @nullable */
   responsibleCmsUserId?: string | null;
+  /**
+   * Canonical domain result resolved by the server.
+   * @nullable
+   */
+  resultReference?: AiOperationListItemDtoResultReference;
   rootCorrelationId: string;
   sourceId: string;
   sourceKind: string;
   startedAt: string;
   status: AiOperationListItemDtoStatus;
+  subjectSummary: AiOperationSubjectSummaryDto;
   title: string;
   usageRecords: number;
 }

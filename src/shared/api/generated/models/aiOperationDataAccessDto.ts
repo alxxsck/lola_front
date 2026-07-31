@@ -20,5 +20,9 @@ export interface AiOperationDataAccessDto {
   sourceType: string;
   toolCallStepId: string;
   truncated: boolean;
-  workUnits: string;
+  /**
+   * Cost-accounting work units. Null without project.ai_analysis_cost.read.
+   * @nullable
+   */
+  workUnits?: string | null;
 }

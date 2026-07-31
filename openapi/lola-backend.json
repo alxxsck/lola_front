@@ -1352,19 +1352,42 @@
       "AiOperationCostDto": {
         "properties": {
           "effectiveCost": {
+            "description": "Known cost only. Null when every linked usage record is unpriced.",
+            "nullable": true,
             "type": "string"
           },
           "estimatedFallbackCost": {
+            "nullable": true,
             "type": "string"
           },
           "providerReportedCost": {
+            "nullable": true,
             "type": "string"
+          },
+          "reservedCostUsdTicks": {
+            "description": "Maximum reserved AI cost in canonical USD ticks.",
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "KNOWN",
+              "PARTIAL",
+              "UNKNOWN",
+              "RESERVED",
+              "NO_USAGE"
+            ],
+            "type": "string"
+          },
+          "unknownUsageRecords": {
+            "minimum": 0,
+            "type": "number"
           }
         },
         "required": [
-          "providerReportedCost",
-          "estimatedFallbackCost",
-          "effectiveCost"
+          "state",
+          "unknownUsageRecords",
+          "reservedCostUsdTicks"
         ],
         "type": "object"
       },
@@ -1440,6 +1463,8 @@
             "type": "boolean"
           },
           "workUnits": {
+            "description": "Cost-accounting work units. Null without project.ai_analysis_cost.read.",
+            "nullable": true,
             "type": "string"
           }
         },
@@ -1452,7 +1477,6 @@
           "rowsRead",
           "groupsReturned",
           "bytesRead",
-          "workUnits",
           "complete",
           "truncated",
           "limitationCodes"
@@ -1502,7 +1526,20 @@
             "type": "string"
           },
           "cost": {
-            "$ref": "#/components/schemas/AiOperationCostDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationCostDto"
+              }
+            ],
+            "description": "Monetary cost projection. Null without project.ai_analysis_cost.read.",
+            "nullable": true,
+            "type": "object"
+          },
+          "dbWorkUnits": {
+            "description": "Actual analysis DB work. Null without project.ai_analysis_cost.read.",
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
           },
           "initiator": {
             "$ref": "#/components/schemas/AiOperationActorDto"
@@ -1547,6 +1584,16 @@
             },
             "type": "array"
           },
+          "resultReference": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationResultReferenceDto"
+              }
+            ],
+            "description": "Canonical domain result resolved by the server.",
+            "nullable": true,
+            "type": "object"
+          },
           "rootCorrelationId": {
             "format": "uuid",
             "type": "string"
@@ -1570,6 +1617,9 @@
               "CANCELLED"
             ],
             "type": "string"
+          },
+          "subjectSummary": {
+            "$ref": "#/components/schemas/AiOperationSubjectSummaryDto"
           },
           "timeline": {
             "items": {
@@ -1601,8 +1651,8 @@
           "sourceId",
           "initiator",
           "chargedAccount",
+          "subjectSummary",
           "usageRecords",
-          "cost",
           "limitationCodes",
           "startedAt",
           "purpose",
@@ -1656,7 +1706,20 @@
             "type": "string"
           },
           "cost": {
-            "$ref": "#/components/schemas/AiOperationCostDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationCostDto"
+              }
+            ],
+            "description": "Monetary cost projection. Null without project.ai_analysis_cost.read.",
+            "nullable": true,
+            "type": "object"
+          },
+          "dbWorkUnits": {
+            "description": "Actual analysis DB work. Null without project.ai_analysis_cost.read.",
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
           },
           "initiator": {
             "$ref": "#/components/schemas/AiOperationActorDto"
@@ -1688,6 +1751,16 @@
             "nullable": true,
             "type": "string"
           },
+          "resultReference": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationResultReferenceDto"
+              }
+            ],
+            "description": "Canonical domain result resolved by the server.",
+            "nullable": true,
+            "type": "object"
+          },
           "rootCorrelationId": {
             "format": "uuid",
             "type": "string"
@@ -1712,6 +1785,9 @@
             ],
             "type": "string"
           },
+          "subjectSummary": {
+            "$ref": "#/components/schemas/AiOperationSubjectSummaryDto"
+          },
           "title": {
             "type": "string"
           },
@@ -1730,8 +1806,8 @@
           "sourceId",
           "initiator",
           "chargedAccount",
+          "subjectSummary",
           "usageRecords",
-          "cost",
           "limitationCodes",
           "startedAt"
         ],
@@ -1928,6 +2004,9 @@
           },
           "accessKind": {
             "enum": [
+              "METADATA",
+              "RESULT",
+              "COST",
               "SENSITIVE_DETAIL",
               "SUBJECT_MANIFEST",
               "ACCESS_HISTORY"
@@ -1993,25 +2072,48 @@
       "AiOperationProviderCostDto": {
         "properties": {
           "effectiveCost": {
+            "description": "Known cost only. Null when every linked usage record is unpriced.",
+            "nullable": true,
             "type": "string"
           },
           "estimatedFallbackCost": {
+            "nullable": true,
             "type": "string"
           },
           "provider": {
             "type": "string"
           },
           "providerReportedCost": {
+            "nullable": true,
             "type": "string"
+          },
+          "reservedCostUsdTicks": {
+            "description": "Maximum reserved AI cost in canonical USD ticks.",
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "KNOWN",
+              "PARTIAL",
+              "UNKNOWN",
+              "RESERVED",
+              "NO_USAGE"
+            ],
+            "type": "string"
+          },
+          "unknownUsageRecords": {
+            "minimum": 0,
+            "type": "number"
           },
           "usageRecords": {
             "type": "number"
           }
         },
         "required": [
-          "providerReportedCost",
-          "estimatedFallbackCost",
-          "effectiveCost",
+          "state",
+          "unknownUsageRecords",
+          "reservedCostUsdTicks",
           "provider",
           "usageRecords"
         ],
@@ -2275,9 +2377,18 @@
             "type": "array"
           },
           "cost": {
-            "$ref": "#/components/schemas/AiOperationCostDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationCostDto"
+              }
+            ],
+            "description": "Monetary cost projection. Null without project.ai_analysis_cost.read.",
+            "nullable": true,
+            "type": "object"
           },
           "dbWorkUnits": {
+            "description": "Cost-accounting work units. Null without project.ai_analysis_cost.read.",
+            "nullable": true,
             "pattern": "^\\d+$",
             "type": "string"
           },
@@ -2295,8 +2406,6 @@
           "operations",
           "rootOperations",
           "usageRecords",
-          "cost",
-          "dbWorkUnits",
           "byStatus",
           "byChargedAccount",
           "byProvider",
@@ -2543,11 +2652,17 @@
             "$ref": "#/components/schemas/AiOperationPageInfoDto"
           },
           "totals": {
-            "$ref": "#/components/schemas/AiOperationCostDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationCostDto"
+              }
+            ],
+            "description": "Monetary cost projection. Null without project.ai_analysis_cost.read.",
+            "nullable": true,
+            "type": "object"
           }
         },
         "required": [
-          "totals",
           "attempts",
           "pageInfo"
         ],
@@ -32457,6 +32572,52 @@
           "stale"
         ],
         "type": "object"
+      },
+      "AiOperationSubjectSummaryDto": {
+        "properties": {
+          "availability": {
+            "enum": [
+              "EXACT",
+              "NOT_MATERIALIZED"
+            ],
+            "type": "string"
+          },
+          "count": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "availability"
+        ],
+        "type": "object"
+      },
+      "AiOperationResultReferenceDto": {
+        "properties": {
+          "endUserId": {
+            "description": "Canonical End User route context for Conversation results.",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "AI_ANALYSIS",
+              "END_USER_CASE",
+              "CONVERSATION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -36219,6 +36380,20 @@
             }
           },
           {
+            "description": "Role in the exact analysis subject manifest",
+            "in": "query",
+            "name": "subjectRole",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SCOPE_MEMBER",
+                "DATA_CONTRIBUTOR",
+                "DIRECT_SUBJECT"
+              ],
+              "type": "string"
+            }
+          },
+          {
             "in": "query",
             "name": "chargedAccount",
             "required": false,
@@ -36403,7 +36578,7 @@
           "AI operations"
         ],
         "x-iam-permission": {
-          "code": "project.ai_operations.sensitive.read",
+          "code": "project.ai_operations.read",
           "scope": "PROJECT"
         }
       }
@@ -36564,6 +36739,37 @@
             "name": "projectId",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "initiatorType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "END_USER",
+                "CMS_USER",
+                "SYSTEM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "initiatorCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "initiatorEndUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           },

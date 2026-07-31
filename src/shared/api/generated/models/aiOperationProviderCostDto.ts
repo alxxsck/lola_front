@@ -5,11 +5,26 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiOperationProviderCostDtoState } from "./aiOperationProviderCostDtoState";
 
 export interface AiOperationProviderCostDto {
-  effectiveCost: string;
-  estimatedFallbackCost: string;
+  /**
+   * Known cost only. Null when every linked usage record is unpriced.
+   * @nullable
+   */
+  effectiveCost?: string | null;
+  /** @nullable */
+  estimatedFallbackCost?: string | null;
   provider: string;
-  providerReportedCost: string;
+  /** @nullable */
+  providerReportedCost?: string | null;
+  /**
+   * Maximum reserved AI cost in canonical USD ticks.
+   * @pattern ^\d+$
+   */
+  reservedCostUsdTicks: string;
+  state: AiOperationProviderCostDtoState;
+  /** @minimum 0 */
+  unknownUsageRecords: number;
   usageRecords: number;
 }

@@ -7,10 +7,14 @@
  */
 import type { AiOperationUsageAttemptDto } from "./aiOperationUsageAttemptDto";
 import type { AiOperationPageInfoDto } from "./aiOperationPageInfoDto";
-import type { AiOperationCostDto } from "./aiOperationCostDto";
+import type { AiOperationUsageDtoTotals } from "./aiOperationUsageDtoTotals";
 
 export interface AiOperationUsageDto {
   attempts: AiOperationUsageAttemptDto[];
   pageInfo: AiOperationPageInfoDto;
-  totals: AiOperationCostDto;
+  /**
+   * Monetary cost projection. Null without project.ai_analysis_cost.read.
+   * @nullable
+   */
+  totals?: AiOperationUsageDtoTotals;
 }
