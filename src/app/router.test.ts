@@ -398,6 +398,48 @@ describe("authentication routes", () => {
     expect(auth.project?.id).toBe("project-2");
   });
 
+  it.each([
+    ["/cases/case-1?projectId=project-2", "end-user-case-detail", "project.cases.read"],
+    ["/users/end-user-1?conversationId=conversation-1&projectId=project-2", "users", "project.profiles.read"],
+  ])(
+    "selects the Project encoded by a related AI result link %s",
+    async (path, routeName, permission) => {
+      const auth = useAuthStore();
+      const makeProject = (id: string, permissions: string[]) => ({
+        id,
+        name: id,
+        slug: id,
+        status: "ACTIVE" as const,
+        publicKey: `public-${id}`,
+        defaultLocale: "ru",
+        supportedLocales: ["ru"],
+        assistantName: "Lola",
+        systemPrompt: "",
+        voiceInstructions: "",
+        settings: {},
+        effectivePermissionCodes: permissions,
+      });
+      const current = makeProject("project-1", []);
+      const target = makeProject("project-2", [permission]);
+      auth.$patch({
+        restored: true,
+        phase: "AUTHENTICATED",
+        user: {
+          id: "operator-1",
+          email: "operator@example.com",
+          name: "Operator",
+        },
+        project: current,
+        projects: [current, target],
+      });
+
+      await router.push(path);
+
+      expect(router.currentRoute.value.name).toBe(routeName);
+      expect(auth.project?.id).toBe("project-2");
+    },
+  );
+
   it("protects Case list, detail, and policy routes with their exact permissions", () => {
     expect(router.resolve("/cases").meta.projectPermission).toBe(
       "project.cases.read",

@@ -19,6 +19,7 @@ import {
 } from "../model/project-ai-operation-presentation";
 
 defineProps<{
+  projectId: string;
   detail: AiOperationDetailResponseDto | null;
   subjects: AiOperationSubjectPageResponseDto | null;
   accessHistory: AiOperationProtectedAccessPageResponseDto | null;
@@ -85,6 +86,7 @@ function attemptCostLabel(
 }
 
 function resultRoute(
+  projectId: string,
   detail: AiOperationDetailResponseDto,
   canReadAnalysisResult: boolean,
   canReadCaseResult: boolean,
@@ -94,12 +96,14 @@ function resultRoute(
     return {
       name: "ai-analysis-detail",
       params: { analysisId: detail.resultReference.id },
+      query: { projectId },
     };
   }
   if (canReadCaseResult && detail.resultReference?.kind === "END_USER_CASE") {
     return {
       name: "end-user-case-detail",
       params: { caseId: detail.resultReference.id },
+      query: { projectId },
     };
   }
   if (
@@ -110,7 +114,7 @@ function resultRoute(
     return {
       name: "users",
       params: { endUserId: detail.resultReference.endUserId },
-      query: { conversationId: detail.resultReference.id },
+      query: { conversationId: detail.resultReference.id, projectId },
     };
   }
   return null;
@@ -265,6 +269,7 @@ function resultRoute(
               <RouterLink
                 v-if="
                   resultRoute(
+                    projectId,
                     detail,
                     canReadAnalysisResult,
                     canReadCaseResult,
@@ -273,6 +278,7 @@ function resultRoute(
                 "
                 :to="
                   resultRoute(
+                    projectId,
                     detail,
                     canReadAnalysisResult,
                     canReadCaseResult,

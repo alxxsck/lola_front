@@ -85,6 +85,7 @@ describe("AIOperationDetailPanel", () => {
   it("labels analysis participation independently from user charges", () => {
     const wrapper = shallowMount(AIOperationDetailPanel, {
       props: {
+        projectId: "project-1",
         detail,
         subjects: {
           availability: "EXACT",
@@ -153,11 +154,17 @@ describe("AIOperationDetailPanel", () => {
     expect(wrapper.text()).toContain("project.ai_operations.subjects.read");
     expect(wrapper.text()).toContain("request-audit-1");
     expect(wrapper.text()).toContain("correlation-audit-1");
+    expect(wrapper.findComponent({ name: "RouterLink" }).props("to")).toEqual({
+      name: "ai-analysis-detail",
+      params: { analysisId: "analysis-1" },
+      query: { projectId: "project-1" },
+    });
   });
 
   it("requires explicit protected reads and hides monetary values without permission", () => {
     const wrapper = shallowMount(AIOperationDetailPanel, {
       props: {
+        projectId: "project-1",
         detail,
         subjects: null,
         accessHistory: null,
@@ -185,6 +192,7 @@ describe("AIOperationDetailPanel", () => {
   it("renders missing provider cost as unknown instead of zero", () => {
     const wrapper = shallowMount(AIOperationDetailPanel, {
       props: {
+        projectId: "project-1",
         detail: {
           ...detail,
           usage: {
@@ -235,6 +243,7 @@ describe("AIOperationDetailPanel", () => {
   it("uses canonical End User context for a Conversation result link", () => {
     const wrapper = shallowMount(AIOperationDetailPanel, {
       props: {
+        projectId: "project-1",
         detail: {
           ...detail,
           resultReference: {
@@ -273,7 +282,53 @@ describe("AIOperationDetailPanel", () => {
     expect(wrapper.findComponent({ name: "RouterLink" }).props("to")).toEqual({
       name: "users",
       params: { endUserId: "end-user-1" },
-      query: { conversationId: "conversation-1" },
+      query: { conversationId: "conversation-1", projectId: "project-1" },
+    });
+  });
+
+  it("preserves Project context for Case result links", () => {
+    const wrapper = shallowMount(AIOperationDetailPanel, {
+      props: {
+        projectId: "project-2",
+        detail: {
+          ...detail,
+          resultReference: {
+            kind: "END_USER_CASE",
+            id: "case-1",
+            endUserId: "end-user-1",
+          },
+        },
+        subjects: null,
+        accessHistory: null,
+        loading: false,
+        timelineLoading: false,
+        usageLoading: false,
+        subjectsLoading: false,
+        accessLoading: false,
+        error: "",
+        canReadCost: false,
+        canReadSubjects: false,
+        canReadAudit: false,
+        canReadAnalysisResult: false,
+        canReadCaseResult: true,
+        canReadConversationResult: false,
+      },
+      global: {
+        stubs: {
+          ...renderedPrimeStubs,
+          RouterLink: {
+            name: "RouterLink",
+            props: ["to"],
+            template: "<a><slot /></a>",
+          },
+        },
+      },
+    });
+
+    expect(wrapper.findComponent({ name: "RouterLink" }).props("to")).toEqual({
+      name: "end-user-case-detail",
+      params: { caseId: "case-1" },
+      query: { projectId: "project-2" },
     });
   });
 });

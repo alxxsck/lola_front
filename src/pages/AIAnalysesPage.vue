@@ -66,15 +66,21 @@ const projectId = computed(() => auth.project?.id ?? null);
 const analysisId = computed(() =>
   typeof route.params.analysisId === "string" ? route.params.analysisId : null,
 );
+const permissionCodes = computed(
+  () => auth.project?.effectivePermissionCodes ?? [],
+);
+const canReadAnalyses = computed(() =>
+  hasProjectPermission(permissionCodes.value, "project.ai_analyses.read"),
+);
 const canReadCost = computed(() =>
   hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
+    permissionCodes.value,
     "project.ai_analysis_cost.read",
   ),
 );
 const canManage = computed(() =>
   hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
+    permissionCodes.value,
     "project.ai_analyses.manage",
   ),
 );
@@ -131,7 +137,7 @@ async function loadList(
   silent = false,
 ): Promise<void> {
   const currentProjectId = projectId.value;
-  if (!currentProjectId) return;
+  if (!currentProjectId || !canReadAnalyses.value) return;
   if (append && (loading.value || loadingMore.value)) return;
   if (append && !nextCursor.value) return;
   const requestGeneration = generation;
@@ -212,7 +218,7 @@ async function loadDetail(silent = false): Promise<void> {
   const requestDetailGeneration = ++detailGeneration;
   const currentProjectId = projectId.value;
   const currentAnalysisId = analysisId.value;
-  if (!currentProjectId || !currentAnalysisId) {
+  if (!currentProjectId || !currentAnalysisId || !canReadAnalyses.value) {
     detail.value = null;
     detailError.value = "";
     return;
@@ -442,19 +448,53 @@ watch(analysisId, async (current, previous) => {
   scheduleRefresh();
 });
 watch(canReadCost, async (allowed) => {
-  if (allowed || !filters.value.costAttributedToCmsUserId) return;
-  const safeFilters = { ...filters.value };
-  delete safeFilters.costAttributedToCmsUserId;
-  filters.value = safeFilters;
-  loadedPageCount = 1;
+  listGeneration += 1;
+  detailGeneration += 1;
+  clearRefreshTimers();
+  items.value = [];
+  detail.value = null;
   nextCursor.value = null;
-  await loadList();
+  loadedPageCount = 1;
+  loading.value = false;
+  loadingMore.value = false;
+  detailLoading.value = false;
+  if (!allowed) {
+    const safeFilters = { ...filters.value };
+    delete safeFilters.costAttributedToCmsUserId;
+    filters.value = safeFilters;
+  }
+  if (!canReadAnalyses.value) return;
+  await Promise.all([loadList(), loadDetail()]);
   scheduleRefresh();
+});
+watch(canReadAnalyses, async (allowed) => {
+  if (allowed) return;
+  generation += 1;
+  listGeneration += 1;
+  detailGeneration += 1;
+  clearRefreshTimers();
+  items.value = [];
+  detail.value = null;
+  nextCursor.value = null;
+  filters.value = {};
+  loadedPageCount = 1;
+  loading.value = false;
+  loadingMore.value = false;
+  detailLoading.value = false;
+  cancelling.value = false;
+  cancellationAttempt = null;
+  error.value = "";
+  detailError.value = "";
+  await router.push({ name: "overview" });
 });
 
 onMounted(async () => {
   mounted = true;
   document.addEventListener("visibilitychange", handleVisibilityChange);
+  if (!canReadAnalyses.value) {
+    await router.push({ name: "overview" });
+    return;
+  }
   await refreshAnalyses();
   if (analysisId.value) await focusDetail();
 });

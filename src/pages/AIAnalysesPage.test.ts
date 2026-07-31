@@ -22,11 +22,31 @@ const mocks = vi.hoisted(() => ({
       ],
     },
   },
+  activeAuth: null as null | {
+    project: {
+      id: string;
+      effectivePermissionCodes: string[];
+    };
+  },
 }));
 
-vi.mock("@/features/auth/auth.store", () => ({
-  useAuthStore: () => mocks.auth,
-}));
+vi.mock("@/features/auth/auth.store", async () => {
+  const { reactive } = await import("vue");
+  return {
+    useAuthStore: () => {
+      const store = reactive({
+        project: {
+          ...mocks.auth.project,
+          effectivePermissionCodes: [
+            ...mocks.auth.project.effectivePermissionCodes,
+          ],
+        },
+      });
+      mocks.activeAuth = store;
+      return store;
+    },
+  };
+});
 vi.mock("vue-router", () => ({
   useRoute: () => mocks.route,
   useRouter: () => ({ push: mocks.push }),
@@ -45,7 +65,13 @@ vi.mock(
 describe("AIAnalysesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.activeAuth = null;
     mocks.route.params = {};
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_analyses.read",
+      "project.ai_analysis_cost.read",
+      "project.ai_analyses.manage",
+    ];
     mocks.list.mockResolvedValue({ items: [], nextCursor: null });
   });
   afterEach(() => {
@@ -60,6 +86,169 @@ describe("AIAnalysesPage", () => {
     expect(mocks.list).toHaveBeenCalledWith("project-1", { limit: 30 });
     expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(0);
     expect(wrapper.text()).toContain("Анализов пока нет");
+  });
+
+  it("does not load analyses without the exact base permission", async () => {
+    mocks.auth.project.effectivePermissionCodes = [];
+
+    const wrapper = shallowMount(AIAnalysesPage);
+    await flushPromises();
+
+    expect(mocks.list).not.toHaveBeenCalled();
+    expect(mocks.detail).not.toHaveBeenCalled();
+    expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(0);
+    expect(mocks.push).toHaveBeenCalledWith({ name: "overview" });
+  });
+
+  it("clears rendered analysis data when base permission is revoked", async () => {
+    mocks.list.mockResolvedValue({
+      items: [{ analysisId: "analysis-visible-before-revoke" }],
+      nextCursor: null,
+    });
+    mocks.route.params = { analysisId: "analysis-visible-before-revoke" };
+    mocks.detail.mockResolvedValue({
+      analysis: {
+        analysisId: "analysis-visible-before-revoke",
+        title: "Sensitive result",
+      },
+      runs: [],
+      subjectEvidence: { total: 0 },
+    });
+    const wrapper = shallowMount(AIAnalysesPage);
+    await flushPromises();
+    expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(1);
+    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("detail")).not.toBeNull();
+
+    mocks.activeAuth!.project.effectivePermissionCodes = [];
+    await flushPromises();
+
+    expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(0);
+    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("detail")).toBeNull();
+    expect(mocks.push).toHaveBeenCalledWith({ name: "overview" });
+  });
+
+  it("scrubs and reloads monetary projections when cost permission is revoked", async () => {
+    mocks.route.params = { analysisId: "analysis-cost" };
+    mocks.list.mockResolvedValueOnce({
+      items: [{ analysisId: "analysis-cost", actualAiCostUsdTicks: "250000" }],
+      nextCursor: null,
+    });
+    mocks.detail.mockResolvedValueOnce({
+      analysis: {
+        analysisId: "analysis-cost",
+        title: "Cost result",
+        actualAiCostUsdTicks: "250000",
+      },
+      runs: [],
+      subjectEvidence: { total: 0 },
+    });
+    const wrapper = shallowMount(AIAnalysesPage);
+    await flushPromises();
+    expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(1);
+
+    let resolveSafeList!: (value: { items: []; nextCursor: null }) => void;
+    let resolveSafeDetail!: (value: Record<string, unknown>) => void;
+    mocks.list.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSafeList = resolve;
+      }),
+    );
+    mocks.detail.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSafeDetail = resolve;
+      }),
+    );
+    mocks.activeAuth!.project.effectivePermissionCodes = [
+      "project.ai_analyses.read",
+      "project.ai_analyses.manage",
+    ];
+    await nextTick();
+
+    expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(0);
+    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("detail")).toBeNull();
+    resolveSafeList({ items: [], nextCursor: null });
+    resolveSafeDetail({
+      analysis: { analysisId: "analysis-cost", title: "Safe result" },
+      runs: [],
+      subjectEvidence: { total: 0 },
+    });
+    await flushPromises();
+  });
+
+  it("fences in-flight reads but preserves cancellation when cost permission changes", async () => {
+    mocks.route.params = { analysisId: "analysis-cost-in-flight" };
+    mocks.list.mockResolvedValueOnce({
+      items: [{ analysisId: "analysis-cost-in-flight" }],
+      nextCursor: "next-page",
+    });
+    mocks.detail.mockResolvedValueOnce({
+      analysis: {
+        analysisId: "analysis-cost-in-flight",
+        title: "Cost result",
+        version: 3,
+      },
+      runs: [],
+      subjectEvidence: { total: 0 },
+    });
+    const wrapper = shallowMount(AIAnalysesPage);
+    await flushPromises();
+
+    mocks.list.mockReturnValueOnce(new Promise(() => undefined));
+    let resolveCancellation!: () => void;
+    mocks.cancel.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveCancellation = resolve;
+      }),
+    );
+    void wrapper.find('button-stub[label="Показать ещё"]').trigger("click");
+    wrapper.findComponent(AIAnalysisDetailPanel).vm.$emit("cancel", {
+      projectId: "project-1",
+      analysisId: "analysis-cost-in-flight",
+      version: 3,
+    });
+    await nextTick();
+    expect(
+      wrapper.find('button-stub[label="Показать ещё"]').attributes("loading"),
+    ).toBe("true");
+    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling")).toBe(
+      true,
+    );
+
+    mocks.list.mockResolvedValueOnce({ items: [], nextCursor: null });
+    mocks.detail.mockResolvedValueOnce({
+      analysis: {
+        analysisId: "analysis-cost-in-flight",
+        title: "Safe result",
+        version: 3,
+      },
+      runs: [],
+      subjectEvidence: { total: 0 },
+    });
+    mocks.activeAuth!.project.effectivePermissionCodes = [
+      "project.ai_analyses.read",
+      "project.ai_analyses.manage",
+    ];
+    await flushPromises();
+
+    expect(wrapper.find('button-stub[label="Показать ещё"]').exists()).toBe(false);
+    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling")).toBe(true);
+
+    mocks.list.mockResolvedValueOnce({ items: [], nextCursor: null });
+    mocks.detail.mockResolvedValueOnce({
+      analysis: {
+        analysisId: "analysis-cost-in-flight",
+        title: "Cancelled result",
+        version: 4,
+      },
+      runs: [],
+      subjectEvidence: { total: 0 },
+    });
+    resolveCancellation();
+    await flushPromises();
+
+    expect(mocks.list).toHaveBeenCalledTimes(4);
+    expect(mocks.detail).toHaveBeenCalledTimes(3);
+    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling")).toBe(false);
   });
 
   it("loads a protected detail for a deep link", async () => {

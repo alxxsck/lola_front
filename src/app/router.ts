@@ -415,7 +415,9 @@ router.beforeEach(async (to) => {
   if (
     (to.name === "ai-proposal-detail" ||
       to.name === "ai-analysis-detail" ||
-      to.name === "ai-operation-detail") &&
+      to.name === "ai-operation-detail" ||
+      to.name === "end-user-case-detail" ||
+      to.name === "users") &&
     typeof to.query.projectId === "string"
   ) {
     const target = auth.projects.find(

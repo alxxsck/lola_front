@@ -687,6 +687,7 @@ function withBoundedDefaultPeriod(
 
       <AIOperationDetailPanel
         v-if="operationId"
+        :project-id="projectId ?? ''"
         :detail="detail"
         :subjects="subjects"
         :access-history="accessHistory"
