@@ -392,6 +392,7 @@ describe("единое рабочее пространство пользова�
     const skeletons = wrapper.get(".message-skeletons");
     expect(skeletons.classes()).toContain("message-skeletons--bottom");
     expect(skeletons.classes()).toContain("message-skeletons--message-sized");
+    expect(skeletons.classes()).toContain("message-skeletons--full-width");
     expect(skeletons.findAll(":scope > span")).toHaveLength(20);
     expect(wrapper.find(".composer--loading").exists()).toBe(true);
 

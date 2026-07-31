@@ -1662,7 +1662,7 @@ function displayField(
           </section>
           <div
             v-if="messagesLoading"
-            class="message-skeletons message-skeletons--bottom message-skeletons--message-sized"
+            class="message-skeletons message-skeletons--bottom message-skeletons--message-sized message-skeletons--full-width"
           >
             <span v-for="item in 20" :key="item" />
           </div>
@@ -2696,7 +2696,7 @@ function displayField(
   font-size: 0.68rem;
 }
 .message-skeletons {
-  width: 75%;
+  width: 100%;
 }
 .message-bubble {
   align-self: flex-start;
