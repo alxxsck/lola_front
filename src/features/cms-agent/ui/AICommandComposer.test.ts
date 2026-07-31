@@ -30,6 +30,10 @@ function mountComposer() {
             '<button :type="type || \'button\'" :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
         },
         Message: { template: "<div><slot /></div>" },
+        RouterLink: {
+          props: ["to"],
+          template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
+        },
       },
     },
   });
@@ -85,6 +89,9 @@ describe("AICommandComposer", () => {
       "polite",
     );
     expect(wrapper.emitted("analysis-created")).toEqual([["analysis-1"]]);
+    expect(
+      wrapper.get(".analysis-result-link").attributes("data-to"),
+    ).toContain("analysis-1");
   });
 
   it("presents a clarification without inventing an analysis result", async () => {

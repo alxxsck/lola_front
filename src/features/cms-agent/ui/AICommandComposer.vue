@@ -46,6 +46,7 @@ const pendingProjectId = ref<string | null>(null);
 const idempotencyKey = ref<string | null>(null);
 const submittedText = ref<string | null>(null);
 const estimate = ref<ProjectAIAnalysisEstimateResponseDto | null>(null);
+const createdAnalysisId = ref<string | null>(null);
 const requestGeneration = ref(0);
 
 const trimmedText = computed(() => text.value.trim());
@@ -111,6 +112,7 @@ function applyExecution(result: CmsAgentImmediateExecutionResponseDto): void {
   outcomeCode.value = result.interpretation.code ?? "";
   if (result.analysis) {
     phase.value = "SUCCEEDED";
+    createdAnalysisId.value = result.analysis.analysisId;
     emit("analysis-created", result.analysis.analysisId);
     return;
   }
@@ -242,6 +244,7 @@ function resetRequest(): void {
   idempotencyKey.value = null;
   submittedText.value = null;
   estimate.value = null;
+  createdAnalysisId.value = null;
 }
 
 watch(
@@ -366,13 +369,26 @@ function handleShortcut(event: KeyboardEvent): void {
             <strong>Анализ поставлен в очередь.</strong>
             Ход выполнения, использованные данные и стоимость будут сохранены.
           </span>
-          <Button
-            label="Новый запрос"
-            size="small"
-            severity="secondary"
-            text
-            @click="startAnother"
-          />
+          <span class="message-buttons">
+            <RouterLink
+              v-if="createdAnalysisId"
+              :to="{
+                name: 'ai-analysis-detail',
+                params: { analysisId: createdAnalysisId },
+                query: { projectId },
+              }"
+              class="analysis-result-link"
+            >
+              Открыть анализ <i class="pi pi-arrow-up-right" />
+            </RouterLink>
+            <Button
+              label="Новый запрос"
+              size="small"
+              severity="secondary"
+              text
+              @click="startAnother"
+            />
+          </span>
         </div>
       </Message>
       <Message
@@ -607,6 +623,13 @@ function handleShortcut(event: KeyboardEvent): void {
   align-items: center;
   flex: 0 0 auto;
   gap: 8px;
+}
+.analysis-result-link {
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
 }
 @media (max-width: 920px) {
   .ai-command-composer {

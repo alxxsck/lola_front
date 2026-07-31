@@ -226,6 +226,18 @@ export const router = createRouter({
           meta: { projectPermission: "project.cases.read" },
         },
         {
+          path: "ai-analyses",
+          name: "ai-analyses",
+          component: () => import("@/pages/AIAnalysesPage.vue"),
+          meta: { projectPermission: "project.ai_analyses.read" },
+        },
+        {
+          path: "ai-analyses/:analysisId",
+          name: "ai-analysis-detail",
+          component: () => import("@/pages/AIAnalysesPage.vue"),
+          meta: { projectPermission: "project.ai_analyses.read" },
+        },
+        {
           path: "ai-proposals",
           name: "ai-proposals",
           component: () => import("@/pages/AIProposalsPage.vue"),
@@ -389,7 +401,7 @@ router.beforeEach(async (to) => {
   if (!to.meta.public && !auth.isAuthenticated)
     return { name: "login", query: { redirect: to.fullPath } };
   if (
-    to.name === "ai-proposal-detail" &&
+    (to.name === "ai-proposal-detail" || to.name === "ai-analysis-detail") &&
     typeof to.query.projectId === "string"
   ) {
     const target = auth.projects.find(

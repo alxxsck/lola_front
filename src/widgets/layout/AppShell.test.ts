@@ -1,22 +1,23 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
-import {
-  createMemoryHistory,
-  createRouter,
-  type Router,
-} from "vue-router";
+import { createMemoryHistory, createRouter, type Router } from "vue-router";
 import { describe, expect, it, vi } from "vitest";
 import AppShell from "./AppShell.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
 
-function project(id: string, name: string) {
+function project(
+  id: string,
+  name: string,
+  effectivePermissionCodes: string[] = [],
+) {
   return {
     id,
     name,
     slug: name.toLowerCase().replaceAll(" ", "-"),
     status: "ACTIVE" as const,
     supportedLocales: ["ru"],
-    effectivePermissionCodes: [],
+    effectivePermissionCodes,
   };
 }
 
@@ -74,6 +75,32 @@ function mountProjectMenu(pinia: Pinia, router: Router) {
 }
 
 describe("AppShell", () => {
+  it("does not activate the legacy proposal workspace from the global shell", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    const proposals = useAIProposalsStore();
+    const activateProject = vi
+      .spyOn(proposals, "activateProject")
+      .mockResolvedValue();
+    const selected = project("project-1", "Project One", [
+      "project.ai_proposals.read",
+    ]);
+    authenticateWithProjects(auth, [selected]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    const wrapper = mountProjectMenu(pinia, router);
+    await flushPromises();
+
+    expect(activateProject).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it("opens personal security settings from the profile menu", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -144,10 +171,7 @@ describe("AppShell", () => {
 
     const switchButton = wrapper
       .findAll("button")
-      .find(
-        (button) =>
-          button.text() === "Переключить проект: Project Two",
-      );
+      .find((button) => button.text() === "Переключить проект: Project Two");
     expect(switchButton).toBeDefined();
     await switchButton!.trigger("click");
     await flushPromises();
@@ -201,9 +225,7 @@ describe("AppShell", () => {
       "project-2",
     );
     expect(openedTab.opener).toBeNull();
-    expect(replace).toHaveBeenCalledWith(
-      expect.stringMatching(/\/overview$/),
-    );
+    expect(replace).toHaveBeenCalledWith(expect.stringMatching(/\/overview$/));
     expect(replace.mock.calls[0]?.[0]).not.toContain("project-2");
     expect(auth.project?.id).toBe("project-1");
   });
@@ -242,7 +264,7 @@ describe("AppShell", () => {
           "project.event_catalog.read",
           "project.event_logs.read",
           "project.actions.read",
-          "project.ai_proposals.read",
+          "project.ai_analyses.read",
           "project.scenarios.read",
           "project.segments.read",
           "project.scenario_runs.read",
@@ -281,12 +303,14 @@ describe("AppShell", () => {
         .find(".sidebar-footer .sidebar-profile")
         .exists(),
       modeInFooter: wrapper.find(".sidebar-footer .sidebar-note").exists(),
+      analysesVisible: wrapper.text().includes("AI-анализы"),
     }).toEqual({
       navigationLinks: 17,
       profileFieldsLink: "/profile-fields",
       themeSwitchVisible: true,
       profileInFooter: true,
       modeInFooter: true,
+      analysesVisible: true,
     });
   });
 
@@ -659,6 +683,7 @@ describe("AppShell", () => {
 
     expect(wrapper.text()).not.toContain("База знаний");
     expect(wrapper.text()).not.toContain("Предложения Lola");
+    expect(wrapper.text()).not.toContain("AI-анализы");
     expect(wrapper.text()).not.toContain("Журнал событий");
     expect(wrapper.text()).not.toContain("Интеграции");
   });
