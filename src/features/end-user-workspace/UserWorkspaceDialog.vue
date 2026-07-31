@@ -39,7 +39,10 @@ import type {
 } from "@/shared/api/generated/models";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import { formatDate, relativeTime } from "@/shared/lib/format";
-import { localeDisplayName } from "@/shared/lib/locale";
+import {
+  inferLocaleFromText,
+  localeDisplayName,
+} from "@/shared/lib/locale";
 import type { ConversationMessage } from "@/shared/types/domain";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
@@ -231,28 +234,29 @@ const visibleTranslationMessageIds = computed(() =>
 const conversationLocale = computed(() => {
   const translationLocale = translation.state.value?.language.locale;
   if (translationLocale) return translationLocale;
-  let hasUserLanguageEvidence = false;
-  for (let index = messages.value.length - 1; index >= 0; index -= 1) {
-    const message = messages.value[index];
-    if (message?.author !== "USER") continue;
-    hasUserLanguageEvidence ||= Boolean(message.text.trim());
+
+  const userMessages = messages.value.filter(
+    (message) => message.author === "USER" && message.text.trim(),
+  );
+  for (let index = userMessages.length - 1; index >= 0; index -= 1) {
+    const message = userMessages[index];
     if (message.translation?.sourceLocale) {
       return message.translation.sourceLocale;
     }
-    if (/\p{Script=Cyrillic}/u.test(message.text)) {
-      return "ru";
-    }
   }
-  if (
-    !hasUserLanguageEvidence &&
-    messages.value.some(
-      (message) =>
-        message.status === "COMPLETED" &&
-        /\p{Script=Cyrillic}/u.test(message.text),
-    )
-  ) {
-    return "ru";
+
+  if (userMessages.length) {
+    return inferLocaleFromText(
+      userMessages.map((message) => message.text).join("\n"),
+    );
   }
+
+  const completedText = messages.value
+    .filter((message) => message.status === "COMPLETED" && message.text.trim())
+    .map((message) => message.text)
+    .join("\n");
+  if (completedText) return inferLocaleFromText(completedText);
+
   const localeField = detail.value?.fields.find(
     (field) => field.key.toLocaleLowerCase() === "locale",
   );

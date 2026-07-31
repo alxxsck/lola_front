@@ -816,6 +816,72 @@ describe("единое рабочее пространство пользова�
     expect(mocks.toastAdd).toHaveBeenCalledTimes(1);
   });
 
+  it("определяет английский язык по сообщениям, а не по locale профиля", async () => {
+    mocks.permissions.push("project.translation.create");
+    mocks.profile.mockResolvedValue({
+      endUserId: "user-1",
+      externalUserId: "customer-1",
+      profileVersion: "8",
+      syncStatus: "VALID",
+      fields: [
+        {
+          definitionId: "locale",
+          definitionRevisionId: "locale-r1",
+          key: "locale",
+          label: "Язык контента",
+          valueType: "STRING",
+          lifecycle: "ACTIVE",
+          classification: "INTERNAL",
+          access: "ALLOWED",
+          availability: "AVAILABLE",
+          semanticRole: "LOCALE",
+          value: { type: "STRING", value: "ru" },
+        },
+      ],
+      observedAt: "2026-07-20T12:00:00.000Z",
+      receivedAt: "2026-07-20T12:00:00.000Z",
+      ageSeconds: 60,
+      contractRevision: 1,
+      publicationId: "publication-12",
+      publicationSequence: 12,
+      provenance: "PRODUCT_PROFILE",
+    });
+    mocks.getMessages.mockResolvedValue({
+      items: [
+        {
+          id: "english-message-1",
+          conversationId: current.id,
+          author: "USER",
+          status: "COMPLETED",
+          text: "hello i need help",
+          createdAt: "2026-07-20T12:58:00.000Z",
+        },
+        {
+          id: "english-message-2",
+          conversationId: current.id,
+          author: "USER",
+          status: "COMPLETED",
+          text: "i have a problem with my deposit, i cant see it",
+          createdAt: "2026-07-20T12:59:00.000Z",
+        },
+      ],
+      nextCursor: null,
+    });
+    const getTranslation = vi.spyOn(
+      conversationTranslationApi,
+      "getConversation",
+    );
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(wrapper.get(".conversation-language-fact strong").text()).toBe(
+      "EN",
+    );
+    expect(wrapper.get(".conversation-badge.accent").text()).toBe("EN");
+    expect(getTranslation).not.toHaveBeenCalled();
+  });
+
   it("для русского диалога включает режим перевода без API и ошибок", async () => {
     mocks.permissions.push("project.translation.create");
     const getTranslation = vi
