@@ -191,6 +191,15 @@
   --project-tone-blue-foreground: #397dad;
   --project-tone-blue-soft: #e8f2fb;
   --project-assistant-on-orbit: var(--on-action-primary);
+
+  --ai-surface: #24271f;
+  --ai-surface-raised: #2d3129;
+  --ai-border-start: #8e77f5;
+  --ai-border-end: #d7ff64;
+  --ai-aura-lime: #d7ff64;
+  --ai-aura-violet: #a994ff;
+  --ai-label: #d7ff64;
+  --ai-focus: #a994ff;
 }
 
 :root.lola-dark {
@@ -337,6 +346,15 @@
   --project-tone-blue-foreground: var(--status-info);
   --project-tone-blue-soft: var(--status-info-soft);
   --project-assistant-on-orbit: var(--on-brand);
+
+  --ai-surface: #20241d;
+  --ai-surface-raised: #292e27;
+  --ai-border-start: #a994ff;
+  --ai-border-end: #c7f05a;
+  --ai-aura-lime: #c7f05a;
+  --ai-aura-violet: #8e77f5;
+  --ai-label: #d7ff64;
+  --ai-focus: #c6bbff;
 
   --accent-strong: var(--brand-hover);
   --violet: var(--status-violet);

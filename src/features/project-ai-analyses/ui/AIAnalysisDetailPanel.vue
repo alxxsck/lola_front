@@ -99,11 +99,11 @@ watch(
   >
     <div class="detail-toolbar">
       <Button
-        icon="pi pi-times"
+        class="detail-close"
+        label="Назад"
+        icon="pi pi-arrow-left"
         severity="secondary"
         text
-        rounded
-        aria-label="Закрыть детали"
         @click="emit('close')"
       />
       <Button
@@ -382,6 +382,10 @@ watch(
 .detail-toolbar {
   justify-content: space-between;
 }
+.detail-close {
+  min-height: 44px;
+  min-width: 44px;
+}
 .cancel-confirmation > div,
 .cancel-actions {
   display: flex;
@@ -396,8 +400,8 @@ watch(
   flex: 0 0 auto;
 }
 .detail-eyebrow {
-  color: var(--brand);
-  font-size: 0.67rem;
+  color: var(--text-brand);
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -410,12 +414,12 @@ watch(
 }
 h2 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.45rem;
 }
 .question {
   margin: 10px 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   line-height: 1.55;
 }
 .identity-grid,
@@ -430,15 +434,15 @@ h2 {
 .run-facts span {
   min-width: 0;
   padding: 11px;
-  background: var(--surface-soft);
+  background: var(--surface-subtle);
   border-radius: 10px;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
 }
 small {
   display: block;
   margin-bottom: 3px;
   color: var(--muted);
-  font-size: 0.59rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -463,7 +467,7 @@ em {
 }
 .section-title {
   gap: 8px;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 800;
 }
 .run-title {
@@ -489,16 +493,16 @@ em {
   padding: 11px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  font-size: 0.7rem;
+  font-size: 0.77rem;
 }
 .legacy-block {
   display: flex;
   gap: 9px;
   padding: 12px;
   color: var(--muted);
-  background: var(--surface-soft);
+  background: var(--surface-subtle);
   border-radius: 10px;
-  font-size: 0.72rem;
+  font-size: 0.79rem;
   line-height: 1.5;
 }
 @media (max-width: 560px) {

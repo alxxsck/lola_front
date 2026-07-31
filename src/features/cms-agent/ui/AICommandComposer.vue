@@ -269,6 +269,7 @@ function handleShortcut(event: KeyboardEvent): void {
 <template>
   <section
     class="ai-command-composer"
+    :class="{ 'is-busy': busy }"
     data-testid="ai-command-composer"
     aria-labelledby="ai-command-title"
   >
@@ -486,36 +487,64 @@ function handleShortcut(event: KeyboardEvent): void {
 .ai-command-composer {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(260px, 0.72fr) minmax(340px, 1.28fr);
-  gap: 28px;
-  margin-bottom: 18px;
-  padding: 28px;
+  isolation: isolate;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(380px, 1.28fr);
+  gap: clamp(24px, 3vw, 44px);
+  margin-bottom: 24px;
+  padding: clamp(24px, 3vw, 38px);
   overflow: hidden;
   color: var(--text-on-emphasis);
   background:
     radial-gradient(
-      circle at 8% 20%,
-      color-mix(in srgb, var(--status-violet) 26%, transparent),
-      transparent 34%
+      circle at 5% 15%,
+      color-mix(in srgb, var(--ai-aura-violet) 32%, transparent),
+      transparent 36%
     ),
     linear-gradient(
-      125deg,
-      var(--surface-emphasis),
-      color-mix(in srgb, var(--surface-emphasis) 84%, var(--status-violet))
+      128deg,
+      var(--ai-surface),
+      color-mix(in srgb, var(--ai-surface) 86%, var(--ai-aura-violet))
     );
-  border: 1px solid var(--border-on-emphasis);
-  border-radius: 22px;
-  box-shadow: var(--shadow);
+  border: 1px solid
+    color-mix(in srgb, var(--ai-border-start) 48%, var(--ai-border-end));
+  border-radius: 26px;
+  box-shadow:
+    0 24px 70px color-mix(in srgb, var(--ai-surface) 22%, transparent),
+    inset 0 1px color-mix(in srgb, var(--text-on-emphasis) 9%, transparent);
 }
-.ai-command-composer:after {
+.ai-command-composer::before {
   content: "";
   position: absolute;
-  width: 220px;
-  height: 220px;
+  z-index: -1;
+  inset: -45%;
+  background:
+    radial-gradient(
+      circle at 70% 42%,
+      color-mix(in srgb, var(--ai-aura-violet) 24%, transparent),
+      transparent 21%
+    ),
+    radial-gradient(
+      circle at 48% 70%,
+      color-mix(in srgb, var(--ai-aura-lime) 17%, transparent),
+      transparent 18%
+    );
+  opacity: 0.3;
+  animation: ai-aurora-drift 2.2s ease-out both;
+  pointer-events: none;
+}
+.ai-command-composer::after {
+  position: absolute;
   right: -90px;
-  bottom: -140px;
-  border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+  bottom: -150px;
+  width: 250px;
+  height: 250px;
+  border: 1px solid color-mix(in srgb, var(--ai-border-end) 34%, transparent);
   border-radius: 50%;
+  content: "";
+  box-shadow:
+    0 0 0 38px color-mix(in srgb, var(--ai-aura-lime) 3%, transparent),
+    0 0 0 76px color-mix(in srgb, var(--ai-aura-violet) 3%, transparent);
+  pointer-events: none;
 }
 .ai-command-heading {
   position: relative;
@@ -525,23 +554,40 @@ function handleShortcut(event: KeyboardEvent): void {
   gap: 15px;
 }
 .ai-orb {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 54px;
+  height: 54px;
   flex: 0 0 auto;
-  color: var(--surface-emphasis);
-  background: var(--brand);
-  border-radius: 15px;
-  box-shadow: 0 0 0 7px color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--on-brand);
+  background: var(--ai-label);
+  border-radius: 17px;
+  box-shadow:
+    0 0 0 7px color-mix(in srgb, var(--ai-aura-lime) 13%, transparent),
+    0 0 34px color-mix(in srgb, var(--ai-aura-lime) 24%, transparent);
+}
+.ai-orb::before {
+  position: absolute;
+  inset: -7px;
+  border: 1px solid transparent;
+  border-top-color: color-mix(in srgb, var(--ai-border-start) 88%, transparent);
+  border-right-color: color-mix(in srgb, var(--ai-border-end) 72%, transparent);
+  border-radius: 21px;
+  content: "";
+  animation: ai-orb-orbit 4s ease-out both;
+}
+.ai-orb i {
+  font-size: 1.05rem;
+  animation: ai-spark-breathe 3.2s ease-out both;
 }
 .ai-label {
   display: flex;
   align-items: center;
   gap: 7px;
   margin-bottom: 7px;
-  color: var(--brand);
-  font-size: 0.64rem;
+  color: var(--ai-label);
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -551,36 +597,60 @@ function handleShortcut(event: KeyboardEvent): void {
 }
 .ai-command-heading h2 {
   margin: 0;
-  font: 700 1.35rem/1.15 var(--font-display);
+  font: 750 clamp(1.45rem, 2vw, 1.85rem) / 1.12 var(--font-display);
   letter-spacing: -0.03em;
 }
 .ai-command-heading p {
   max-width: 440px;
   margin: 9px 0 0;
   color: var(--text-on-emphasis-muted);
-  font-size: 0.76rem;
-  line-height: 1.55;
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 .ai-command-form {
   position: relative;
   z-index: 1;
   align-self: center;
-  padding: 8px;
-  background: var(--surface-card);
-  border: 1px solid var(--line);
-  border-radius: 17px;
+  padding: 10px;
+  overflow: hidden;
+  color: var(--text-on-emphasis);
+  background: color-mix(
+    in srgb,
+    var(--ai-surface-raised) 88%,
+    transparent
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--text-on-emphasis) 15%, var(--border-on-emphasis));
+  border-radius: 20px;
+  box-shadow:
+    0 16px 45px color-mix(in srgb, var(--surface-emphasis) 28%, transparent),
+    inset 0 1px color-mix(in srgb, var(--text-on-emphasis) 7%, transparent);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.ai-command-form:focus-within {
+  border-color: color-mix(in srgb, var(--ai-focus) 78%, var(--ai-border-end));
+  box-shadow:
+    0 18px 52px color-mix(in srgb, var(--ai-focus) 18%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--ai-focus) 15%, transparent),
+    inset 0 1px color-mix(in srgb, var(--text-on-emphasis) 8%, transparent);
 }
 .ai-command-form :deep(textarea) {
   width: 100%;
-  min-height: 76px;
-  padding: 11px 12px 5px;
-  color: var(--text);
+  min-height: 92px;
+  padding: 13px 14px 8px;
+  color: var(--text-on-emphasis);
   background: transparent;
   border: 0;
   box-shadow: none;
   resize: none;
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.ai-command-form :deep(textarea::placeholder) {
+  color: var(--text-on-emphasis-subtle);
+  opacity: 1;
 }
 .ai-command-actions,
 .message-content {
@@ -589,16 +659,28 @@ function handleShortcut(event: KeyboardEvent): void {
   gap: 12px;
 }
 .ai-command-actions {
-  padding: 2px 4px 2px 12px;
-  color: var(--muted);
-  font-size: 0.63rem;
+  padding: 4px 4px 4px 14px;
+  color: var(--text-on-emphasis-muted);
+  font-size: 0.75rem;
 }
 .ai-command-actions .shortcut {
   flex: 1;
 }
 .ai-command-actions :deep(.p-button) {
   width: auto;
-  min-width: 152px;
+  min-width: 166px;
+  min-height: 46px;
+  box-shadow: 0 10px 26px
+    color-mix(in srgb, var(--ai-focus) 28%, transparent);
+}
+.ai-command-composer.is-busy .ai-orb::before {
+  animation: ai-orb-orbit 1.2s linear 3;
+}
+.ai-command-composer.is-busy .ai-orb i {
+  animation: ai-spark-breathe 0.9s ease-in-out 3;
+}
+.ai-command-composer.is-busy::before {
+  animation: ai-aurora-drift 1.4s ease-in-out 3 alternate;
 }
 .ai-command-status {
   position: relative;
@@ -626,10 +708,40 @@ function handleShortcut(event: KeyboardEvent): void {
 }
 .analysis-result-link {
   color: var(--brand);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
+}
+@keyframes ai-aurora-drift {
+  0% {
+    opacity: 0;
+    transform: translate3d(-2%, -1%, 0) rotate(-2deg);
+  }
+  55% {
+    opacity: 0.55;
+    transform: translate3d(2%, 1%, 0) rotate(1deg);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translate3d(4%, 3%, 0) rotate(3deg);
+  }
+}
+@keyframes ai-orb-orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes ai-spark-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(0.92) rotate(-4deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08) rotate(4deg);
+  }
 }
 @media (max-width: 920px) {
   .ai-command-composer {
@@ -639,18 +751,23 @@ function handleShortcut(event: KeyboardEvent): void {
 }
 @media (max-width: 600px) {
   .ai-command-composer {
-    padding: 20px;
-  }
-  .ai-command-heading {
-    display: block;
+    gap: 22px;
+    padding: 22px 18px;
+    border-radius: 22px;
   }
   .ai-orb {
-    margin-bottom: 15px;
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
   }
   .shortcut {
     display: none;
   }
+  .ai-command-form :deep(textarea) {
+    font-size: 1rem;
+  }
   .ai-command-actions :deep(.p-button) {
+    flex: 1;
     min-width: 0;
   }
   .message-content {
@@ -661,6 +778,25 @@ function handleShortcut(event: KeyboardEvent): void {
     align-items: stretch;
     flex-direction: column;
     width: 100%;
+  }
+  .message-buttons :deep(.p-button),
+  .analysis-result-link {
+    min-height: 44px;
+  }
+  .analysis-result-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-command-composer::before,
+  .ai-orb::before,
+  .ai-orb i {
+    animation: none !important;
+    transform: none;
   }
 }
 </style>

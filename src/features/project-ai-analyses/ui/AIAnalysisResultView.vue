@@ -166,13 +166,13 @@ function formatDate(value: string): string {
 }
 .answer {
   padding: 18px;
-  background: color-mix(in srgb, var(--brand) 7%, var(--surface-soft));
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface-subtle));
   border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
   border-radius: 14px;
 }
 .result-label {
-  color: var(--brand);
-  font-size: 0.68rem;
+  color: var(--text-brand);
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -199,9 +199,9 @@ function formatDate(value: string): string {
 .provenance-grid span {
   min-width: 0;
   padding: 11px 12px;
-  background: var(--surface-soft);
+  background: var(--surface-subtle);
   border-radius: 10px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
 }
 .evidence-summary small,
 .actors small,
@@ -209,7 +209,7 @@ function formatDate(value: string): string {
   display: block;
   margin-bottom: 4px;
   color: var(--muted);
-  font-size: 0.59rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -219,7 +219,7 @@ function formatDate(value: string): string {
   align-items: center;
   gap: 7px;
   margin-bottom: 9px;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 800;
 }
 .definitions article {
@@ -227,9 +227,9 @@ function formatDate(value: string): string {
   grid-template-columns: minmax(140px, 0.45fr) minmax(0, 1fr);
   gap: 12px;
   padding: 10px 12px;
-  background: var(--surface-soft);
+  background: var(--surface-subtle);
   border-radius: 10px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
 }
 .definitions article + article,
 .provenance-receipt + .provenance-receipt {
@@ -260,9 +260,9 @@ function formatDate(value: string): string {
   gap: 4px;
   margin-top: 8px;
   padding: 10px 12px;
-  background: var(--surface-soft);
+  background: var(--surface-subtle);
   border-radius: 10px;
-  font-size: 0.69rem;
+  font-size: 0.76rem;
 }
 code {
   overflow-wrap: anywhere;
@@ -271,7 +271,7 @@ code {
 }
 .interpretation span {
   padding: 12px;
-  background: var(--surface-soft);
+  background: var(--surface-subtle);
   border-radius: 11px;
   font-size: 0.76rem;
 }
@@ -279,7 +279,7 @@ code {
   display: block;
   margin-bottom: 4px;
   color: var(--muted);
-  font-size: 0.61rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -307,8 +307,8 @@ td {
 }
 th {
   color: var(--muted);
-  background: var(--surface-soft);
-  font-size: 0.64rem;
+  background: var(--surface-subtle);
+  font-size: 0.75rem;
   text-transform: uppercase;
 }
 tbody tr:last-child td {
@@ -324,9 +324,9 @@ tbody tr:last-child td {
   gap: 9px;
   padding: 11px 13px;
   color: var(--status-warning-text);
-  background: var(--status-warning-bg);
+  background: var(--status-warning-soft);
   border-radius: 10px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
 }
 .limitation strong {
   display: block;

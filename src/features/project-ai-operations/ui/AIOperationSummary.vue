@@ -101,18 +101,22 @@ function statusLabel(key: string): string {
 .summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 .metric,
 .breakdown {
-  padding: 16px;
+  padding: 19px;
   background: var(--surface-card);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px
+    color-mix(in srgb, var(--surface-emphasis) 4%, transparent);
 }
 .metric {
   display: grid;
-  gap: 5px;
+  align-content: start;
+  min-height: 126px;
+  gap: 7px;
 }
 .metric.primary {
   background:
@@ -126,18 +130,18 @@ function statusLabel(key: string): string {
 .metric > span,
 .breakdown-title {
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 750;
 }
 .metric > strong {
-  font-size: 1.32rem;
+  font-size: clamp(1.35rem, 2vw, 1.65rem);
   letter-spacing: -0.03em;
 }
 .metric small,
 .breakdown small {
   color: var(--muted);
-  font-size: 0.63rem;
-  line-height: 1.45;
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 .restricted {
   font-size: 0.88rem !important;
@@ -154,10 +158,10 @@ function statusLabel(key: string): string {
 .breakdown-items span {
   display: inline-flex;
   gap: 8px;
-  padding: 6px 9px;
+  padding: 7px 10px;
   background: var(--surface-subtle);
   border-radius: 9px;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
 }
 @media (max-width: 980px) {
   .summary {
@@ -166,7 +170,7 @@ function statusLabel(key: string): string {
 }
 @media (max-width: 560px) {
   .summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .breakdown {
     grid-column: auto;

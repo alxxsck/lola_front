@@ -298,7 +298,7 @@ onMounted(loadDashboard);
             <Skeleton shape="circle" size="2.5rem" />
             <div>
               <Skeleton width="11rem" /><Skeleton
-                width="16rem"
+                width="100%"
                 height="0.7rem"
               />
             </div>

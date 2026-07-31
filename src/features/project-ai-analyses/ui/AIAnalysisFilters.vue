@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { reactive, watch } from "vue";
+import { reactive, ref, watch } from "vue";
 import Button from "primevue/button";
 import DatePicker from "primevue/datepicker";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import type { ProjectAIAnalysisListParams } from "@/shared/api/generated/models";
+import AIFilterToggle from "@/shared/ui/AIFilterToggle.vue";
 
 export type AIAnalysisFiltersModel = Omit<
   ProjectAIAnalysisListParams,
@@ -20,6 +21,7 @@ const emit = defineEmits<{
   "update:modelValue": [value: AIAnalysisFiltersModel];
   apply: [];
 }>();
+const mobileExpanded = ref(false);
 
 const draft = reactive<{
   status: ProjectAIAnalysisListParams["status"] | null;
@@ -157,7 +159,12 @@ function nextDay(value: Date): Date {
 </script>
 
 <template>
-  <form class="analysis-filters" @submit.prevent="apply">
+  <form
+    class="analysis-filters ai-ledger-filters"
+    :class="{ collapsed: !mobileExpanded }"
+    @submit.prevent="apply"
+  >
+    <AIFilterToggle v-model:expanded="mobileExpanded" :filters="modelValue" />
     <Select
       v-model="draft.status"
       :options="statusOptions"
@@ -262,34 +269,19 @@ function nextDay(value: Date): Date {
 
 <style scoped>
 .analysis-filters {
-  display: grid;
   grid-template-columns: repeat(3, minmax(150px, 1fr));
-  gap: 10px;
-  padding: 14px;
-  background: var(--surface-card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-}
-.analysis-filters :deep(.p-select),
-.analysis-filters :deep(.p-inputtext),
-.analysis-filters :deep(.p-datepicker) {
-  width: 100%;
-  font-size: 0.76rem;
-}
-.filter-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  grid-column: 1 / -1;
 }
 @media (max-width: 860px) {
   .analysis-filters {
     grid-template-columns: repeat(2, minmax(130px, 1fr));
   }
 }
-@media (max-width: 520px) {
+@media (max-width: 560px) {
   .analysis-filters {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .analysis-filters.collapsed > :not(.ai-filter-toggle) {
+    display: none;
   }
 }
 </style>

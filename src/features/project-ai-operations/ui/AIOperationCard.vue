@@ -85,10 +85,21 @@ function responsibleLabel(): string {
         <dd>{{ aiOperationDateLabel(item.startedAt) }}</dd>
       </div>
       <div>
-        <dt>Владелец расхода</dt>
+        <dt>Участники данных</dt>
         <dd>
-          {{ item.chargedEndUserId || "бюджет проекта" }}
+          {{
+            item.subjectSummary.availability === "EXACT"
+              ? `${item.subjectSummary.count ?? 0} чел.`
+              : "не материализованы"
+          }}
         </dd>
+      </div>
+    </dl>
+
+    <dl class="technical-facts" aria-label="Техническая атрибуция">
+      <div>
+        <dt>Владелец расхода</dt>
+        <dd>{{ item.chargedEndUserId || "бюджет проекта" }}</dd>
       </div>
       <div>
         <dt>Авторизовал</dt>
@@ -101,16 +112,6 @@ function responsibleLabel(): string {
           <code v-if="item.authorizedByCmsUserId">{{
             item.authorizedByCmsUserId
           }}</code>
-        </dd>
-      </div>
-      <div>
-        <dt>Участники данных</dt>
-        <dd>
-          {{
-            item.subjectSummary.availability === "EXACT"
-              ? `${item.subjectSummary.count ?? 0} чел.`
-              : "не материализованы"
-          }}
         </dd>
       </div>
     </dl>
@@ -140,13 +141,21 @@ function responsibleLabel(): string {
 <style scoped>
 .operation-card {
   display: grid;
-  gap: 14px;
-  padding: 18px;
+  min-width: 0;
+  gap: 16px;
+  padding: 21px;
   background: var(--surface-card);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 7px 24px
-    color-mix(in srgb, var(--surface-emphasis) 4%, transparent);
+  border-radius: 20px;
+  box-shadow: 0 12px 34px
+    color-mix(in srgb, var(--surface-emphasis) 5%, transparent);
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+.operation-card:hover {
+  border-color: color-mix(in srgb, var(--action-primary) 36%, var(--line));
+  transform: translateY(-2px);
 }
 .operation-card.failed {
   border-color: color-mix(in srgb, var(--status-danger) 28%, var(--line));
@@ -162,29 +171,33 @@ function responsibleLabel(): string {
 .sequence,
 .category {
   color: var(--muted);
-  font-size: 0.67rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
 .category {
-  color: var(--brand);
+  color: var(--text-brand);
 }
 h2 {
   margin: 3px 0 0;
-  font-size: 0.98rem;
+  font-size: 1.08rem;
   line-height: 1.35;
 }
 .operation-link {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
-  color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  color: var(--text-link);
+  background: color-mix(in srgb, var(--action-primary) 10%, transparent);
   border-radius: 11px;
   text-decoration: none;
+}
+.operation-link:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .facts {
   display: grid;
@@ -194,19 +207,35 @@ h2 {
 }
 .facts div {
   min-width: 0;
-  padding: 10px;
+  padding: 12px;
   background: var(--surface-subtle);
   border-radius: 11px;
 }
+.technical-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--surface-subtle);
+  border-radius: 11px;
+}
+.technical-facts div {
+  min-width: 0;
+}
+.technical-facts dd {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
 dt {
   color: var(--muted);
-  font-size: 0.63rem;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 dd {
   overflow: hidden;
   margin: 4px 0 0;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -216,7 +245,7 @@ dd code {
   overflow: hidden;
   margin-top: 3px;
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 500;
   text-overflow: ellipsis;
 }
@@ -224,12 +253,18 @@ dd code {
   justify-content: flex-start;
   flex-wrap: wrap;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
+}
+.card-footer > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .card-footer strong {
   margin-left: auto;
-  color: var(--surface-emphasis);
-  font-size: 0.76rem;
+  color: var(--text-primary);
+  font-size: 0.84rem;
 }
 .cost-hidden {
   margin-left: auto;
@@ -239,11 +274,27 @@ dd code {
   color: var(--status-warning);
   background: color-mix(in srgb, var(--status-warning) 8%, transparent);
   border-radius: 10px;
-  font-size: 0.69rem;
+  font-size: 0.76rem;
 }
 @media (max-width: 760px) {
   .facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .operation-card {
+    padding: 18px;
+  }
+  .facts {
+    grid-template-columns: 1fr;
+  }
+  .technical-facts {
+    grid-template-columns: 1fr;
+  }
+  .card-footer strong,
+  .cost-hidden {
+    width: 100%;
+    margin-left: 0;
   }
 }
 </style>

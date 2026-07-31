@@ -718,7 +718,8 @@ function withBoundedDefaultPeriod(
 <style scoped>
 .operations-page {
   display: grid;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
 }
 .page-header {
   display: flex;
@@ -727,8 +728,8 @@ function withBoundedDefaultPeriod(
   gap: 20px;
 }
 .eyebrow {
-  color: var(--brand);
-  font-size: 0.68rem;
+  color: var(--text-brand);
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -740,8 +741,8 @@ h1 {
   max-width: 760px;
   margin: 0;
   color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.92rem;
+  line-height: 1.6;
 }
 .error-row {
   display: flex;
@@ -757,10 +758,13 @@ h1 {
 .operations-layout.selected {
   grid-template-columns: minmax(360px, 0.88fr) minmax(460px, 1.12fr);
 }
+.operations-layout.selected :deep(.operation-card .facts) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .operation-list {
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
 }
 .empty-state {
@@ -792,7 +796,7 @@ h1 {
   font-size: 0.76rem;
   line-height: 1.55;
 }
-@media (max-width: 1120px) {
+@media (max-width: 1450px) {
   .operations-layout.selected {
     grid-template-columns: 1fr;
   }
@@ -802,8 +806,12 @@ h1 {
 }
 @media (max-width: 620px) {
   .page-header {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
+  }
+  .page-header :deep(.p-button) {
+    width: 100%;
+    min-height: 44px;
   }
   .operations-page.has-detail :deep(.summary),
   .operations-page.has-detail :deep(.operation-filters),

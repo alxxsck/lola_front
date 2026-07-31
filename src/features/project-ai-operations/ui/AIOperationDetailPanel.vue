@@ -131,10 +131,10 @@ function resultRoute(
     <div class="detail-toolbar">
       <span>Прозрачная история выполнения</span>
       <Button
-        icon="pi pi-times"
+        class="detail-close"
+        label="Назад"
+        icon="pi pi-arrow-left"
         text
-        rounded
-        aria-label="Закрыть детали"
         @click="$emit('close')"
       />
     </div>
@@ -550,9 +550,9 @@ function resultRoute(
 .detail-panel {
   display: grid;
   align-content: start;
-  gap: 14px;
+  gap: 18px;
   min-width: 0;
-  padding: 18px;
+  padding: 22px;
   background: var(--surface-card);
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -572,10 +572,14 @@ function resultRoute(
 }
 .detail-toolbar {
   color: var(--muted);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+.detail-close {
+  min-height: 44px;
+  min-width: 44px;
 }
 .detail-header {
   padding: 16px;
@@ -591,23 +595,23 @@ function resultRoute(
 .header-meta {
   margin-bottom: 12px;
   color: var(--muted);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
 }
 .category {
-  color: var(--brand);
-  font-size: 0.65rem;
+  color: var(--text-brand);
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 h2 {
   margin: 4px 0;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
 }
 .detail-header p,
 .section-heading p {
   margin: 0;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   line-height: 1.5;
 }
 .section {
@@ -618,11 +622,11 @@ h2 {
 }
 h3 {
   margin: 0;
-  font-size: 0.81rem;
+  font-size: 0.9rem;
 }
 .section-heading > span {
   color: var(--muted);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
 }
 .attribution-grid,
 .data-access {
@@ -640,16 +644,16 @@ h3 {
 }
 dt {
   color: var(--muted);
-  font-size: 0.61rem;
+  font-size: 0.75rem;
 }
 dd {
   margin: 4px 0 0;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 code {
   overflow-wrap: anywhere;
-  font-size: 0.61rem;
+  font-size: 0.75rem;
 }
 .cost-line {
   display: grid;
@@ -658,12 +662,12 @@ code {
   padding: 12px;
   background: color-mix(in srgb, var(--brand) 7%, var(--surface-subtle));
   border-radius: 11px;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
 }
 .cost-line small {
   grid-column: 1 / -1;
   color: var(--muted);
-  font-size: 0.61rem;
+  font-size: 0.75rem;
 }
 .source-section dl {
   display: grid;
@@ -671,7 +675,7 @@ code {
   margin: 0;
 }
 .result-link {
-  color: var(--brand);
+  color: var(--text-link);
   font-weight: 750;
   text-decoration: none;
 }
@@ -717,17 +721,17 @@ code {
   padding: 3px 0 16px;
 }
 .timeline-title strong {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
 }
 .timeline-title time,
 .access-list time {
   color: var(--muted);
-  font-size: 0.6rem;
+  font-size: 0.75rem;
 }
 .timeline-body p {
   margin: 5px 0;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   line-height: 1.5;
 }
 .timeline-meta {
@@ -735,7 +739,7 @@ code {
   flex-wrap: wrap;
   gap: 6px;
   color: var(--muted);
-  font-size: 0.61rem;
+  font-size: 0.75rem;
 }
 .data-access {
   margin-top: 8px;
@@ -747,7 +751,7 @@ code {
   color: var(--muted);
   background: var(--surface-subtle);
   border-radius: 9px;
-  font-size: 0.64rem;
+  font-size: 0.75rem;
 }
 .usage-list,
 .subject-list,
@@ -775,7 +779,7 @@ code {
 .access-list span,
 .usage-list small {
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
 }
 .subject-list article > div,
 .access-list article > div {
@@ -785,7 +789,7 @@ code {
 }
 .subject-list strong,
 .access-list strong {
-  font-size: 0.68rem;
+  font-size: 0.78rem;
 }
 .access-outcome {
   width: 7px;
@@ -803,7 +807,7 @@ code {
 .empty-inline,
 .technical-footer {
   color: var(--muted);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
 }
 .technical-footer {
   flex-wrap: wrap;

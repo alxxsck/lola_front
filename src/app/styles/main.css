@@ -72,6 +72,36 @@ label:has(> .p-toggleswitch) > :not(.p-toggleswitch) { min-width: 0; }
 .p-datatable { font-size: .92rem; }
 .p-datatable-header-cell { background: var(--surface-subtle) !important; color: var(--text-secondary) !important; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
 
+.ai-ledger-filters {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  background: var(--surface-card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--surface-emphasis) 4%, transparent);
+}
+.ai-ledger-filters .p-select,
+.ai-ledger-filters .p-inputtext,
+.ai-ledger-filters .p-datepicker {
+  width: 100%;
+  min-height: 44px;
+  font-size: .84rem;
+}
+.ai-ledger-filters .filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+.ai-filter-toggle {
+  display: none;
+}
+.ai-filter-toggle:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 @media (max-width: 900px) {
   .page { padding: 24px 18px 40px; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
@@ -97,6 +127,46 @@ label:has(> .p-toggleswitch) > :not(.p-toggleswitch) { min-width: 0; }
     padding: 10px 14px;
     border-top: 1px solid var(--line);
     background: var(--surface-card);
+  }
+}
+
+@media (max-width: 560px) {
+  .ai-ledger-filters {
+    padding: 14px;
+  }
+.ai-ledger-filters .filter-actions .p-button {
+    flex: 1;
+    min-height: 44px;
+  }
+  .ai-filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    padding: 0 12px;
+    color: var(--text-primary);
+    background: var(--surface-subtle);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-weight: 750;
+    cursor: pointer;
+  }
+  .ai-filter-toggle span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ai-filter-toggle strong {
+    display: grid;
+    place-items: center;
+    min-width: 24px;
+    height: 24px;
+    margin-left: auto;
+    margin-right: 10px;
+    color: var(--on-brand);
+    background: var(--brand);
+    border-radius: 999px;
+    font-size: .75rem;
   }
 }
 
