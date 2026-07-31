@@ -2152,6 +2152,33 @@
         ],
         "type": "object"
       },
+      "AiOperationResultReferenceDto": {
+        "properties": {
+          "endUserId": {
+            "description": "Canonical End User route context for Conversation results.",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "AI_ANALYSIS",
+              "END_USER_CASE",
+              "CONVERSATION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ],
+        "type": "object"
+      },
       "AiOperationSubjectDto": {
         "properties": {
           "charged": {
@@ -2281,6 +2308,25 @@
           "availability",
           "items",
           "pageInfo"
+        ],
+        "type": "object"
+      },
+      "AiOperationSubjectSummaryDto": {
+        "properties": {
+          "availability": {
+            "enum": [
+              "EXACT",
+              "NOT_MATERIALIZED"
+            ],
+            "type": "string"
+          },
+          "count": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "availability"
         ],
         "type": "object"
       },
@@ -12773,7 +12819,12 @@
               "CORRECTED",
               "MERGED",
               "SPLIT",
-              "ADMIN_ATTENTION_REQUESTED"
+              "ADMIN_ATTENTION_REQUESTED",
+              "ADMIN_ATTENTION_CLAIMED",
+              "ADMIN_ATTENTION_RELEASED",
+              "ADMIN_ATTENTION_TRANSFERRED",
+              "ADMIN_ATTENTION_CLOSED",
+              "ADMIN_ATTENTION_CANCELLED"
             ],
             "type": "string"
           }
@@ -32572,52 +32623,6 @@
           "stale"
         ],
         "type": "object"
-      },
-      "AiOperationSubjectSummaryDto": {
-        "properties": {
-          "availability": {
-            "enum": [
-              "EXACT",
-              "NOT_MATERIALIZED"
-            ],
-            "type": "string"
-          },
-          "count": {
-            "nullable": true,
-            "type": "number"
-          }
-        },
-        "required": [
-          "availability"
-        ],
-        "type": "object"
-      },
-      "AiOperationResultReferenceDto": {
-        "properties": {
-          "endUserId": {
-            "description": "Canonical End User route context for Conversation results.",
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "kind": {
-            "enum": [
-              "AI_ANALYSIS",
-              "END_USER_CASE",
-              "CONVERSATION"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "id"
-        ],
-        "type": "object"
       }
     },
     "securitySchemes": {
@@ -39825,16 +39830,10 @@
         "tags": [
           "End User Cases"
         ],
-        "x-iam-any-permission": [
-          {
-            "code": "project.cases.assign",
-            "scope": "PROJECT"
-          },
-          {
-            "code": "project.cases.manage",
-            "scope": "PROJECT"
-          }
-        ]
+        "x-iam-permission": {
+          "code": "project.cases.read",
+          "scope": "PROJECT"
+        }
       }
     },
     "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/escalations/{escalationId}/release": {
@@ -39913,7 +39912,7 @@
           "End User Cases"
         ],
         "x-iam-permission": {
-          "code": "project.cases.assign",
+          "code": "project.cases.read",
           "scope": "PROJECT"
         }
       }

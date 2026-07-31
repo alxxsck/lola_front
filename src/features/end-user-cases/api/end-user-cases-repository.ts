@@ -5,26 +5,37 @@ import {
   endUserCasePolicySaveDraft,
   endUserCasesAssignment,
   endUserCasesAssignees,
+  endUserCasesCancelEscalation,
+  endUserCasesClaimEscalation,
   endUserCasesClassification,
+  endUserCasesCloseEscalation,
   endUserCasesCostSummary,
   endUserCasesDetail,
   endUserCasesLinkMessage,
   endUserCasesList,
+  endUserCasesListEscalations,
   endUserCasesMessages,
   endUserCasesMerge,
   endUserCasesProposals,
+  endUserCasesReleaseEscalation,
+  endUserCasesRequestEscalation,
   endUserCasesSummary,
   endUserCasesSplit,
   endUserCasesTimeline,
+  endUserCasesTransferEscalation,
   endUserCasesUnlinkMessage,
   endUserCasesWorkflow,
 } from "@/shared/api/generated/lola-backend";
 import type {
   AssignEndUserCaseDto,
+  CancelEndUserCaseEscalationDto,
   ClassifyEndUserCaseDto,
+  CloseEndUserCaseEscalationDto,
   EndUserCaseCommandResponseDto,
   EndUserCaseAssigneesResponseDto,
   EndUserCaseCostSummaryResponseDto,
+  EndUserCaseEscalationCommandResponseDto,
+  EndUserCaseEscalationsResponseDto,
   EndUserCasePolicyPreviewResponseDto,
   EndUserCasePolicyResponseDto,
   EndUserCasePolicyRevisionResponseDto,
@@ -34,11 +45,14 @@ import type {
   MergeEndUserCasesResponseDto,
   PreviewEndUserCasePolicyDto,
   PublishEndUserCasePolicyDto,
+  RequestEndUserCaseEscalationDto,
   SaveEndUserCasePolicyDraftDto,
   SplitEndUserCaseDto,
   SplitEndUserCaseResponseDto,
+  TransferEndUserCaseEscalationDto,
   UnlinkEndUserCaseMessageDto,
   UpdateEndUserCaseWorkflowDto,
+  VersionedEndUserCaseEscalationDto,
 } from "@/shared/api/generated/models";
 import {
   endUserCaseListParams,
@@ -57,6 +71,7 @@ export interface EndUserCaseDetailBundle {
   messages: EndUserCaseMessages;
   timeline: EndUserCaseTimeline;
   proposals: EndUserCaseProposals;
+  escalations: EndUserCaseEscalationsResponseDto;
 }
 
 export interface EndUserCasesRepository {
@@ -113,6 +128,47 @@ export interface EndUserCasesRepository {
     caseId: string,
     command: SplitEndUserCaseDto,
   ): Promise<SplitEndUserCaseResponseDto>;
+  requestEscalation(
+    projectId: string,
+    caseId: string,
+    command: RequestEndUserCaseEscalationDto,
+    idempotencyKey: string,
+  ): Promise<EndUserCaseEscalationCommandResponseDto>;
+  claimEscalation(
+    projectId: string,
+    caseId: string,
+    escalationId: string,
+    command: VersionedEndUserCaseEscalationDto,
+    idempotencyKey: string,
+  ): Promise<EndUserCaseEscalationCommandResponseDto>;
+  releaseEscalation(
+    projectId: string,
+    caseId: string,
+    escalationId: string,
+    command: VersionedEndUserCaseEscalationDto,
+    idempotencyKey: string,
+  ): Promise<EndUserCaseEscalationCommandResponseDto>;
+  transferEscalation(
+    projectId: string,
+    caseId: string,
+    escalationId: string,
+    command: TransferEndUserCaseEscalationDto,
+    idempotencyKey: string,
+  ): Promise<EndUserCaseEscalationCommandResponseDto>;
+  closeEscalation(
+    projectId: string,
+    caseId: string,
+    escalationId: string,
+    command: CloseEndUserCaseEscalationDto,
+    idempotencyKey: string,
+  ): Promise<EndUserCaseEscalationCommandResponseDto>;
+  cancelEscalation(
+    projectId: string,
+    caseId: string,
+    escalationId: string,
+    command: CancelEndUserCaseEscalationDto,
+    idempotencyKey: string,
+  ): Promise<EndUserCaseEscalationCommandResponseDto>;
   cost(projectId: string): Promise<EndUserCaseCostSummaryResponseDto>;
   policy(projectId: string): Promise<EndUserCasePolicyResponseDto>;
   previewPolicy(
@@ -138,15 +194,17 @@ const apiEndUserCasesRepository: EndUserCasesRepository = {
   summary: endUserCasesSummary,
   assignees: endUserCasesAssignees,
   async detail(projectId, caseId, options) {
-    const [item, messages, timeline, proposals] = await Promise.all([
-      endUserCasesDetail(projectId, caseId),
-      endUserCasesMessages(projectId, caseId, { limit: 100 }),
-      endUserCasesTimeline(projectId, caseId),
-      options?.includeProposals === false
-        ? Promise.resolve({ items: [] })
-        : endUserCasesProposals(projectId, caseId),
-    ]);
-    return { case: item, messages, timeline, proposals };
+    const [item, messages, timeline, proposals, escalations] =
+      await Promise.all([
+        endUserCasesDetail(projectId, caseId),
+        endUserCasesMessages(projectId, caseId, { limit: 100 }),
+        endUserCasesTimeline(projectId, caseId),
+        options?.includeProposals === false
+          ? Promise.resolve({ items: [] })
+          : endUserCasesProposals(projectId, caseId),
+        endUserCasesListEscalations(projectId, caseId),
+      ]);
+    return { case: item, messages, timeline, proposals, escalations };
   },
   messages(projectId, caseId, cursor) {
     return endUserCasesMessages(projectId, caseId, {
@@ -161,6 +219,56 @@ const apiEndUserCasesRepository: EndUserCasesRepository = {
   unlinkMessage: endUserCasesUnlinkMessage,
   merge: endUserCasesMerge,
   split: endUserCasesSplit,
+  requestEscalation(projectId, caseId, command, idempotencyKey) {
+    return endUserCasesRequestEscalation(projectId, caseId, command, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
+  },
+  claimEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
+    return endUserCasesClaimEscalation(
+      projectId,
+      caseId,
+      escalationId,
+      command,
+      { headers: { "Idempotency-Key": idempotencyKey } },
+    );
+  },
+  releaseEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
+    return endUserCasesReleaseEscalation(
+      projectId,
+      caseId,
+      escalationId,
+      command,
+      { headers: { "Idempotency-Key": idempotencyKey } },
+    );
+  },
+  transferEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
+    return endUserCasesTransferEscalation(
+      projectId,
+      caseId,
+      escalationId,
+      command,
+      { headers: { "Idempotency-Key": idempotencyKey } },
+    );
+  },
+  closeEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
+    return endUserCasesCloseEscalation(
+      projectId,
+      caseId,
+      escalationId,
+      command,
+      { headers: { "Idempotency-Key": idempotencyKey } },
+    );
+  },
+  cancelEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
+    return endUserCasesCancelEscalation(
+      projectId,
+      caseId,
+      escalationId,
+      command,
+      { headers: { "Idempotency-Key": idempotencyKey } },
+    );
+  },
   cost: endUserCasesCostSummary,
   policy: endUserCasePolicyGet,
   previewPolicy: endUserCasePolicyPreview,

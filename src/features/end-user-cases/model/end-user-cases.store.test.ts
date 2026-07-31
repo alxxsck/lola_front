@@ -13,6 +13,12 @@ const repository = vi.hoisted(() => ({
   unlinkMessage: vi.fn(),
   merge: vi.fn(),
   split: vi.fn(),
+  requestEscalation: vi.fn(),
+  claimEscalation: vi.fn(),
+  releaseEscalation: vi.fn(),
+  transferEscalation: vi.fn(),
+  closeEscalation: vi.fn(),
+  cancelEscalation: vi.fn(),
 }));
 const realtime = vi.hoisted(() => ({
   subscribe: vi.fn(() => vi.fn()),
@@ -54,6 +60,7 @@ describe("End User Cases store", () => {
       messages: { items: [], nextCursor: null },
       timeline: { events: [], revisions: [] },
       proposals: { items: [] },
+      escalations: { items: [] },
     });
     realtime.activateProject.mockResolvedValue(undefined);
   });
@@ -120,6 +127,7 @@ describe("End User Cases store", () => {
       messages: { items: [], nextCursor: null },
       timeline: { events: [], revisions: [] },
       proposals: { items: [] },
+      escalations: { items: [] },
     });
     expect(await store.transition("IN_PROGRESS", "Взяли в работу")).toBe(true);
     expect(repository.workflow).toHaveBeenCalledWith(
@@ -132,6 +140,178 @@ describe("End User Cases store", () => {
       }),
     );
     expect(store.selected?.case.version).toBe(2);
+  });
+
+  it("requests specialist help with the selected Case version and an idempotency key", async () => {
+    repository.requestEscalation.mockResolvedValue({
+      escalation: { id: "escalation-1" },
+      caseVersion: 2,
+      replayed: false,
+    });
+    const store = useEndUserCasesStore();
+    await store.activateProject("project-1");
+    await store.open("case-1");
+
+    expect(
+      await store.requestEscalation(
+        " DEPOSIT_HELP ",
+        " Нужна ручная проверка депозита ",
+      ),
+    ).toBe(true);
+    expect(repository.requestEscalation).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      {
+        expectedCaseVersion: 1,
+        reasonCode: "DEPOSIT_HELP",
+        summary: "Нужна ручная проверка депозита",
+      },
+      expect.any(String),
+    );
+    expect(repository.detail).toHaveBeenCalledTimes(2);
+  });
+
+  it("claims the exact active occurrence and blocks a duplicate in-flight command", async () => {
+    const escalation = {
+      id: "escalation-1",
+      caseId: "case-1",
+      occurrenceNumber: 1,
+      version: 7,
+      status: "REQUESTED",
+      source: "END_USER_REQUEST",
+      reasonCode: "SUPPORT_REQUEST",
+      summary: "Пользователь попросил специалиста",
+      requester: { type: "END_USER", id: "user-1" },
+      requestedAt: "2026-07-26T10:00:00.000Z",
+      claimant: null,
+      claimedAt: null,
+    };
+    repository.detail.mockResolvedValue({
+      case: { ...item, version: 4, status: "WAITING_ADMIN" },
+      messages: { items: [], nextCursor: null },
+      timeline: { events: [], revisions: [] },
+      proposals: { items: [] },
+      escalations: { items: [escalation] },
+    });
+    let releaseClaim!: () => void;
+    repository.claimEscalation.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseClaim = () => resolve({});
+        }),
+    );
+    const store = useEndUserCasesStore();
+    await store.activateProject("project-1");
+    await store.open("case-1");
+
+    const first = store.claimEscalation(" Беру в работу ");
+    await Promise.resolve();
+    expect(await store.claimEscalation("Повторный клик")).toBe(false);
+    expect(repository.claimEscalation).toHaveBeenCalledTimes(1);
+    expect(repository.claimEscalation).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      "escalation-1",
+      {
+        expectedCaseVersion: 4,
+        expectedEscalationVersion: 7,
+        reason: "Беру в работу",
+      },
+      expect.any(String),
+    );
+
+    releaseClaim();
+    await expect(first).resolves.toBe(true);
+  });
+
+  it("sends exact OCC payloads for release, transfer, close and cancel", async () => {
+    const escalation = {
+      id: "escalation-1",
+      caseId: "case-1",
+      occurrenceNumber: 1,
+      version: 7,
+      status: "CLAIMED",
+      source: "END_USER_REQUEST",
+      reasonCode: "SUPPORT_REQUEST",
+      summary: "Пользователь попросил специалиста",
+      requester: { type: "END_USER", id: "user-1" },
+      requestedAt: "2026-07-26T10:00:00.000Z",
+      claimant: { id: "cms-1", displayName: "Анна" },
+      claimedAt: "2026-07-26T10:05:00.000Z",
+    };
+    repository.detail.mockResolvedValue({
+      case: { ...item, version: 4, status: "IN_PROGRESS" },
+      messages: { items: [], nextCursor: null },
+      timeline: { events: [], revisions: [] },
+      proposals: { items: [] },
+      escalations: { items: [escalation] },
+    });
+    repository.releaseEscalation.mockResolvedValue({});
+    repository.transferEscalation.mockResolvedValue({});
+    repository.closeEscalation.mockResolvedValue({});
+    repository.cancelEscalation.mockResolvedValue({});
+    const store = useEndUserCasesStore();
+    await store.activateProject("project-1");
+    await store.open("case-1");
+
+    expect(await store.releaseEscalation(" Вернуть в очередь ")).toBe(true);
+    expect(repository.releaseEscalation).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      "escalation-1",
+      {
+        expectedCaseVersion: 4,
+        expectedEscalationVersion: 7,
+        reason: "Вернуть в очередь",
+      },
+      expect.any(String),
+    );
+
+    expect(
+      await store.transferEscalation(" cms-2 ", " Передать эксперту "),
+    ).toBe(true);
+    expect(repository.transferEscalation).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      "escalation-1",
+      {
+        expectedCaseVersion: 4,
+        expectedEscalationVersion: 7,
+        cmsUserId: "cms-2",
+        reason: "Передать эксперту",
+      },
+      expect.any(String),
+    );
+
+    expect(await store.closeEscalation("RESOLVED", " Проверено ")).toBe(true);
+    expect(repository.closeEscalation).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      "escalation-1",
+      {
+        expectedCaseVersion: 4,
+        expectedEscalationVersion: 7,
+        nextCaseStatus: "RESOLVED",
+        reason: "Проверено",
+      },
+      expect.any(String),
+    );
+
+    expect(
+      await store.cancelEscalation("WAITING_END_USER", " Ошибочный запрос "),
+    ).toBe(true);
+    expect(repository.cancelEscalation).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      "escalation-1",
+      {
+        expectedCaseVersion: 4,
+        expectedEscalationVersion: 7,
+        nextCaseStatus: "WAITING_END_USER",
+        reason: "Ошибочный запрос",
+      },
+      expect.any(String),
+    );
   });
 
   it("keeps Proposal reads disabled across mutation, realtime, and reconciliation", async () => {
@@ -189,6 +369,7 @@ describe("End User Cases store", () => {
       },
       timeline: { events: [], revisions: [] },
       proposals: { items: [] },
+      escalations: { items: [] },
     });
     repository.messages.mockResolvedValue({
       items: [
@@ -314,6 +495,7 @@ describe("End User Cases store", () => {
         messages: { items: [], nextCursor: null },
         timeline: { events: [], revisions: [] },
         proposals: { items: [] },
+        escalations: { items: [] },
       }),
     );
     const store = useEndUserCasesStore();
@@ -360,6 +542,46 @@ describe("End User Cases store", () => {
     expect(store.projectId).toBeNull();
     expect(store.items).toEqual([]);
     expect(unsubscribe).toHaveBeenCalledTimes(3);
+  });
+
+  it("scrubs proposal cache, fences stale detail and refetches on access restore", async () => {
+    const proposalDetail = {
+      case: item,
+      messages: { items: [], nextCursor: null },
+      timeline: { events: [], revisions: [] },
+      proposals: { items: [{ id: "proposal-stale", title: "Stale" }] },
+      escalations: { items: [] },
+    };
+    const store = useEndUserCasesStore();
+    await store.activateProject("project-1");
+    repository.detail.mockResolvedValueOnce(proposalDetail);
+    await store.open("case-1", true);
+    expect(store.selected?.proposals.items).toHaveLength(1);
+
+    let resolveStale!: (value: typeof proposalDetail) => void;
+    repository.detail.mockImplementationOnce(
+      () =>
+        new Promise<typeof proposalDetail>((resolve) => {
+          resolveStale = resolve;
+        }),
+    );
+    const staleRequest = store.open("case-1", true);
+    await store.setProposalAccess(false);
+    expect(store.selected?.proposals.items).toEqual([]);
+    resolveStale(proposalDetail);
+    await staleRequest;
+    expect(store.selected?.proposals.items).toEqual([]);
+
+    repository.detail.mockResolvedValueOnce({
+      ...proposalDetail,
+      proposals: { items: [{ id: "proposal-fresh", title: "Fresh" }] },
+    });
+    await store.setProposalAccess(true);
+
+    expect(repository.detail).toHaveBeenLastCalledWith("project-1", "case-1", {
+      includeProposals: true,
+    });
+    expect(store.selected?.proposals.items[0]?.id).toBe("proposal-fresh");
   });
 
   it("reconciles realtime gaps and ignores stale summary regressions", async () => {

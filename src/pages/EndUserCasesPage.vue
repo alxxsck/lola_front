@@ -23,6 +23,7 @@ import { useEndUserCasesStore } from "@/features/end-user-cases/model/end-user-c
 import EndUserCaseCard from "@/features/end-user-cases/ui/EndUserCaseCard.vue";
 import EndUserCaseDetail from "@/features/end-user-cases/ui/EndUserCaseDetail.vue";
 import EndUserCaseDialogs from "@/features/end-user-cases/ui/EndUserCaseDialogs.vue";
+import EndUserCaseEscalationDialogs from "@/features/end-user-cases/ui/EndUserCaseEscalationDialogs.vue";
 import EndUserCaseFilters from "@/features/end-user-cases/ui/EndUserCaseFilters.vue";
 import type { CaseVerificationRunResponseDto } from "@/shared/api/generated/models";
 
@@ -32,6 +33,9 @@ const auth = useAuthStore();
 const store = useEndUserCasesStore();
 const isMobile = ref(false);
 const dialogs = ref<InstanceType<typeof EndUserCaseDialogs> | null>(null);
+const escalationDialogs = ref<InstanceType<
+  typeof EndUserCaseEscalationDialogs
+> | null>(null);
 const latestVerification = ref<{
   caseId: string;
   run: CaseVerificationRunResponseDto;
@@ -48,6 +52,9 @@ const canManage = computed(() =>
 );
 const canAssign = computed(() =>
   hasProjectPermission(permissions.value, "project.cases.assign"),
+);
+const canEscalate = computed(() =>
+  hasProjectPermission(permissions.value, "project.cases.escalate"),
 );
 const canConfigure = computed(() =>
   hasProjectPermission(permissions.value, "project.cases.settings.manage"),
@@ -145,6 +152,23 @@ watch(
     else if (!caseId && store.selectedId) store.close();
   },
 );
+
+watch(canRead, async (allowed) => {
+  if (!allowed) {
+    store.deactivate();
+    return;
+  }
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  await store.activateProject(projectId);
+  const caseId = route.params.caseId;
+  if (typeof caseId === "string")
+    await store.open(caseId, canReadProposals.value);
+});
+
+watch(canReadProposals, (allowed) => {
+  void store.setProposalAccess(allowed);
+});
 </script>
 
 <template>
@@ -281,6 +305,8 @@ watch(
             :mutating="store.mutating"
             :can-manage="canManage"
             :can-assign="canAssign"
+            :can-escalate="canEscalate"
+            :current-cms-user-id="auth.user?.id"
             :can-read-end-user="canReadEndUser"
             :can-read-conversation="canReadConversations"
             :can-read-proposals="canReadProposals"
@@ -294,6 +320,9 @@ watch(
             "
             @request-transition="dialogs?.requestTransition($event)"
             @request-assignment="dialogs?.requestAssignment()"
+            @request-escalation-action="
+              escalationDialogs?.requestEscalationAction($event)
+            "
             @request-classification="dialogs?.requestClassification()"
             @request-unlink="dialogs?.requestUnlink($event)"
             @request-merge="dialogs?.requestMerge()"
@@ -307,7 +336,7 @@ watch(
   </section>
 
   <Drawer
-    v-if="isMobile"
+    v-if="isMobile && canRead"
     :visible="selectedVisible"
     position="right"
     :style="{ width: '100vw' }"
@@ -320,6 +349,8 @@ watch(
       :mutating="store.mutating"
       :can-manage="canManage"
       :can-assign="canAssign"
+      :can-escalate="canEscalate"
+      :current-cms-user-id="auth.user?.id"
       :can-read-end-user="canReadEndUser"
       :can-read-conversation="canReadConversations"
       :can-read-proposals="canReadProposals"
@@ -330,6 +361,9 @@ watch(
       :error="store.detailError"
       @request-transition="dialogs?.requestTransition($event)"
       @request-assignment="dialogs?.requestAssignment()"
+      @request-escalation-action="
+        escalationDialogs?.requestEscalationAction($event)
+      "
       @request-classification="dialogs?.requestClassification()"
       @request-unlink="dialogs?.requestUnlink($event)"
       @request-merge="dialogs?.requestMerge()"
@@ -339,7 +373,15 @@ watch(
     />
   </Drawer>
 
-  <EndUserCaseDialogs ref="dialogs" />
+  <EndUserCaseDialogs v-if="canRead" ref="dialogs" />
+  <EndUserCaseEscalationDialogs
+    v-if="canRead"
+    ref="escalationDialogs"
+    :can-escalate="canEscalate"
+    :can-assign="canAssign"
+    :can-manage="canManage"
+    :current-cms-user-id="auth.user?.id"
+  />
 </template>
 
 <style scoped>
