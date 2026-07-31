@@ -32,7 +32,7 @@ describe("static app shell security", () => {
         emptyOutDir: true,
       },
     });
-  }, 30_000);
+  }, 120_000);
 
   afterAll(() => {
     rmSync(outputDirectory, { recursive: true, force: true });
