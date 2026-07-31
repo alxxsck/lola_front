@@ -231,15 +231,27 @@ const visibleTranslationMessageIds = computed(() =>
 const conversationLocale = computed(() => {
   const translationLocale = translation.state.value?.language.locale;
   if (translationLocale) return translationLocale;
+  let hasUserLanguageEvidence = false;
   for (let index = messages.value.length - 1; index >= 0; index -= 1) {
     const message = messages.value[index];
     if (message?.author !== "USER") continue;
+    hasUserLanguageEvidence ||= Boolean(message.text.trim());
     if (message.translation?.sourceLocale) {
       return message.translation.sourceLocale;
     }
     if (/\p{Script=Cyrillic}/u.test(message.text)) {
       return "ru";
     }
+  }
+  if (
+    !hasUserLanguageEvidence &&
+    messages.value.some(
+      (message) =>
+        message.status === "COMPLETED" &&
+        /\p{Script=Cyrillic}/u.test(message.text),
+    )
+  ) {
+    return "ru";
   }
   const localeField = detail.value?.fields.find(
     (field) => field.key.toLocaleLowerCase() === "locale",
@@ -316,6 +328,17 @@ async function ensureTranslationLoaded(): Promise<boolean> {
 }
 
 async function showTranslatedMessages(): Promise<void> {
+  const sourceLocale = conversationLocale.value?.toLocaleLowerCase();
+  const workingLocale =
+    translation.state.value?.preference.workingLocale.toLocaleLowerCase() ??
+    "ru";
+  if (
+    sourceLocale &&
+    sourceLocale.split(/[-_]/)[0] === workingLocale.split(/[-_]/)[0]
+  ) {
+    messageViewMode.value = "TRANSLATED";
+    return;
+  }
   if (!(await ensureTranslationLoaded())) return;
   if (!translation.state.value?.preference.enabled) {
     await translation.updatePreference({ enabled: true });
@@ -1637,8 +1660,11 @@ function displayField(
               <i :style="{ width: `${bulkTranslationProgress}%` }" />
             </span>
           </section>
-          <div v-if="messagesLoading" class="message-skeletons">
-            <span v-for="item in 3" :key="item" />
+          <div
+            v-if="messagesLoading"
+            class="message-skeletons message-skeletons--bottom"
+          >
+            <span v-for="item in 20" :key="item" />
           </div>
           <div v-else-if="!messages.length" class="message-empty">
             <strong>Пока нет сообщений</strong>
@@ -3547,24 +3573,29 @@ function displayField(
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 14px;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
 }
 .message-skeletons > span {
+  flex: 0 1 36px;
   width: 58%;
-  height: 52px;
+  min-height: 18px;
   border-radius: 4px 14px 14px;
   background: linear-gradient(90deg, var(--surface-active) 25%, var(--surface-hover) 37%, var(--surface-active) 63%);
   background-size: 360px 100%;
   animation: skeleton-shimmer 1.3s infinite;
 }
-.message-skeletons > span:nth-child(2) {
+.message-skeletons > span:nth-child(3n + 2) {
+  flex-basis: 44px;
   width: 66%;
-  height: 74px;
   align-self: flex-end;
   border-radius: 14px 4px 14px 14px;
   animation-delay: 150ms;
 }
-.message-skeletons > span:nth-child(3) {
+.message-skeletons > span:nth-child(3n + 3) {
+  flex-basis: 30px;
   width: 44%;
   animation-delay: 300ms;
 }

@@ -389,7 +389,9 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
-    expect(wrapper.find(".message-skeletons").exists()).toBe(true);
+    const skeletons = wrapper.get(".message-skeletons");
+    expect(skeletons.classes()).toContain("message-skeletons--bottom");
+    expect(skeletons.findAll(":scope > span")).toHaveLength(20);
     expect(wrapper.find(".composer--loading").exists()).toBe(true);
 
     resolveMessages?.({ items: [], nextCursor: null });
@@ -772,6 +774,19 @@ describe("единое рабочее пространство пользова�
 
   it("не загружает настройки перевода до явного действия оператора", async () => {
     mocks.permissions.push("project.translation.create");
+    mocks.getMessages.mockResolvedValue({
+      items: [
+        {
+          id: "german-message",
+          conversationId: current.id,
+          author: "USER",
+          status: "COMPLETED",
+          text: "Meine Einzahlung ist nicht angekommen",
+          createdAt: "2026-07-20T12:59:00.000Z",
+        },
+      ],
+      nextCursor: null,
+    });
     const getTranslation = vi
       .spyOn(conversationTranslationApi, "getConversation")
       .mockRejectedValue(new Error("translation unavailable"));
@@ -797,6 +812,47 @@ describe("единое рабочее пространство пользова�
 
     expect(getTranslation).toHaveBeenCalledTimes(1);
     expect(mocks.toastAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it("для русского диалога включает режим перевода без API и ошибок", async () => {
+    mocks.permissions.push("project.translation.create");
+    const getTranslation = vi
+      .spyOn(conversationTranslationApi, "getConversation")
+      .mockRejectedValue(new Error("translation unavailable"));
+    const translate = vi.spyOn(
+      conversationTranslationApi,
+      "translateMessages",
+    );
+    mocks.getMessages.mockResolvedValue({
+      items: [
+        {
+          id: "russian-message",
+          conversationId: current.id,
+          author: "SCENARIO",
+          status: "COMPLETED",
+          text: "Почему не пришёл депозит?",
+          createdAt: "2026-07-20T12:59:00.000Z",
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(getTranslation).not.toHaveBeenCalled();
+    expect(translate).not.toHaveBeenCalled();
+    expect(
+      wrapper
+        .get('[data-action="show-translated-messages"]')
+        .attributes("aria-pressed"),
+    ).toBe("true");
+    expect(wrapper.text()).toContain("Почему не пришёл депозит?");
+    expect(mocks.toastAdd).not.toHaveBeenCalled();
   });
 
   it("оставляет перевод ответа доступным даже в русскоязычном диалоге", async () => {
@@ -966,11 +1022,11 @@ describe("единое рабочее пространство пользова�
       .mockResolvedValueOnce({
         items: [
           {
-            id: "current-russian",
+            id: "current-german",
             conversationId: current.id,
             author: "USER",
             status: "COMPLETED",
-            text: "Спасибо, всё получилось",
+            text: "Danke, es hat funktioniert",
             createdAt: "2026-07-20T12:59:00.000Z",
           },
         ],
