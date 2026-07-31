@@ -1320,6 +1320,35 @@
         ],
         "type": "object"
       },
+      "AiOperationChargedEndUserBreakdownDto": {
+        "properties": {
+          "cost": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "dbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "operations": {
+            "type": "number"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "endUserId",
+          "operations",
+          "usageRecords",
+          "cost",
+          "dbWorkUnits"
+        ],
+        "type": "object"
+      },
       "AiOperationCostDto": {
         "properties": {
           "effectiveCost": {
@@ -1336,6 +1365,34 @@
           "providerReportedCost",
           "estimatedFallbackCost",
           "effectiveCost"
+        ],
+        "type": "object"
+      },
+      "AiOperationCostedBreakdownDto": {
+        "properties": {
+          "cost": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "dbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "number"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "operations",
+          "usageRecords",
+          "cost",
+          "dbWorkUnits"
         ],
         "type": "object"
       },
@@ -1762,6 +1819,34 @@
         ],
         "type": "object"
       },
+      "AiOperationModelBreakdownDto": {
+        "properties": {
+          "cost": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "dbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "model": {
+            "nullable": true,
+            "type": "string"
+          },
+          "operations": {
+            "type": "number"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "operations",
+          "usageRecords",
+          "cost",
+          "dbWorkUnits"
+        ],
+        "type": "object"
+      },
       "AiOperationPageInfoDto": {
         "properties": {
           "hasMore": {
@@ -1774,6 +1859,35 @@
         },
         "required": [
           "hasMore"
+        ],
+        "type": "object"
+      },
+      "AiOperationPeriodBreakdownDto": {
+        "properties": {
+          "cost": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "dbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "operations": {
+            "type": "number"
+          },
+          "periodStartedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "periodStartedAt",
+          "operations",
+          "usageRecords",
+          "cost",
+          "dbWorkUnits"
         ],
         "type": "object"
       },
@@ -1900,6 +2014,39 @@
           "effectiveCost",
           "provider",
           "usageRecords"
+        ],
+        "type": "object"
+      },
+      "AiOperationResponsibleCmsUserBreakdownDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "dbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "operations": {
+            "type": "number"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "cmsUserId",
+          "operations",
+          "usageRecords",
+          "cost",
+          "dbWorkUnits"
         ],
         "type": "object"
       },
@@ -2050,17 +2197,74 @@
         ],
         "type": "object"
       },
+      "AiOperationSummaryBreakdownLimitsDto": {
+        "properties": {
+          "chargedEndUsersTruncated": {
+            "type": "boolean"
+          },
+          "maxHighCardinalityItems": {
+            "example": 100,
+            "type": "number"
+          },
+          "modelsTruncated": {
+            "type": "boolean"
+          },
+          "responsibleCmsUsersTruncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "maxHighCardinalityItems",
+          "responsibleCmsUsersTruncated",
+          "chargedEndUsersTruncated",
+          "modelsTruncated"
+        ],
+        "type": "object"
+      },
       "AiOperationSummaryResponseDto": {
         "properties": {
+          "breakdownLimits": {
+            "$ref": "#/components/schemas/AiOperationSummaryBreakdownLimitsDto"
+          },
+          "byCategory": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationCostedBreakdownDto"
+            },
+            "type": "array"
+          },
           "byChargedAccount": {
             "items": {
-              "$ref": "#/components/schemas/AiOperationSummaryBreakdownDto"
+              "$ref": "#/components/schemas/AiOperationCostedBreakdownDto"
+            },
+            "type": "array"
+          },
+          "byChargedEndUser": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationChargedEndUserBreakdownDto"
+            },
+            "type": "array"
+          },
+          "byModel": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationModelBreakdownDto"
+            },
+            "type": "array"
+          },
+          "byPeriod": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationPeriodBreakdownDto"
             },
             "type": "array"
           },
           "byProvider": {
             "items": {
               "$ref": "#/components/schemas/AiOperationProviderCostDto"
+            },
+            "type": "array"
+          },
+          "byResponsibleCmsUser": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationResponsibleCmsUserBreakdownDto"
             },
             "type": "array"
           },
@@ -2072,6 +2276,10 @@
           },
           "cost": {
             "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "dbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
           },
           "operations": {
             "type": "number"
@@ -2088,9 +2296,16 @@
           "rootOperations",
           "usageRecords",
           "cost",
+          "dbWorkUnits",
           "byStatus",
           "byChargedAccount",
-          "byProvider"
+          "byProvider",
+          "byCategory",
+          "byResponsibleCmsUser",
+          "byChargedEndUser",
+          "byModel",
+          "byPeriod",
+          "breakdownLimits"
         ],
         "type": "object"
       },
@@ -20919,7 +21134,7 @@
             "type": "object"
           },
           "subjectEvidence": {
-            "type": "object"
+            "$ref": "#/components/schemas/ProjectAIAnalysisSubjectEvidenceDto"
           }
         },
         "required": [
@@ -21794,6 +22009,23 @@
           "timezone",
           "dstDisambiguation",
           "runAt"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisSubjectEvidenceDto": {
+        "properties": {
+          "runId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "total"
         ],
         "type": "object"
       },

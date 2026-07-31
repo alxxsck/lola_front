@@ -8,12 +8,12 @@
 import type { ProjectAIAnalysisDetailDto } from "./projectAIAnalysisDetailDto";
 import type { ProjectAIAnalysisDetailRunDto } from "./projectAIAnalysisDetailRunDto";
 import type { ProjectAIAnalysisDetailResponseDtoSchedule } from "./projectAIAnalysisDetailResponseDtoSchedule";
-import type { ProjectAIAnalysisDetailResponseDtoSubjectEvidence } from "./projectAIAnalysisDetailResponseDtoSubjectEvidence";
+import type { ProjectAIAnalysisSubjectEvidenceDto } from "./projectAIAnalysisSubjectEvidenceDto";
 
 export interface ProjectAIAnalysisDetailResponseDto {
   analysis: ProjectAIAnalysisDetailDto;
   runs: ProjectAIAnalysisDetailRunDto[];
   /** @nullable */
   schedule?: ProjectAIAnalysisDetailResponseDtoSchedule;
-  subjectEvidence: ProjectAIAnalysisDetailResponseDtoSubjectEvidence;
+  subjectEvidence: ProjectAIAnalysisSubjectEvidenceDto;
 }

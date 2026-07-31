@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ProjectAIAnalysisDetailResponseDtoSubjectEvidence = {
-  [key: string]: unknown;
-};
+export interface ProjectAIAnalysisSubjectEvidenceDto {
+  /** @nullable */
+  runId?: string | null;
+  /** @minimum 0 */
+  total: number;
+}

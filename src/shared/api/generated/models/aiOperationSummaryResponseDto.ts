@@ -5,15 +5,29 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiOperationSummaryBreakdownDto } from "./aiOperationSummaryBreakdownDto";
+import type { AiOperationSummaryBreakdownLimitsDto } from "./aiOperationSummaryBreakdownLimitsDto";
+import type { AiOperationCostedBreakdownDto } from "./aiOperationCostedBreakdownDto";
+import type { AiOperationChargedEndUserBreakdownDto } from "./aiOperationChargedEndUserBreakdownDto";
+import type { AiOperationModelBreakdownDto } from "./aiOperationModelBreakdownDto";
+import type { AiOperationPeriodBreakdownDto } from "./aiOperationPeriodBreakdownDto";
 import type { AiOperationProviderCostDto } from "./aiOperationProviderCostDto";
+import type { AiOperationResponsibleCmsUserBreakdownDto } from "./aiOperationResponsibleCmsUserBreakdownDto";
+import type { AiOperationSummaryBreakdownDto } from "./aiOperationSummaryBreakdownDto";
 import type { AiOperationCostDto } from "./aiOperationCostDto";
 
 export interface AiOperationSummaryResponseDto {
-  byChargedAccount: AiOperationSummaryBreakdownDto[];
+  breakdownLimits: AiOperationSummaryBreakdownLimitsDto;
+  byCategory: AiOperationCostedBreakdownDto[];
+  byChargedAccount: AiOperationCostedBreakdownDto[];
+  byChargedEndUser: AiOperationChargedEndUserBreakdownDto[];
+  byModel: AiOperationModelBreakdownDto[];
+  byPeriod: AiOperationPeriodBreakdownDto[];
   byProvider: AiOperationProviderCostDto[];
+  byResponsibleCmsUser: AiOperationResponsibleCmsUserBreakdownDto[];
   byStatus: AiOperationSummaryBreakdownDto[];
   cost: AiOperationCostDto;
+  /** @pattern ^\d+$ */
+  dbWorkUnits: string;
   operations: number;
   rootOperations: number;
   usageRecords: number;
