@@ -1662,7 +1662,7 @@ function displayField(
           </section>
           <div
             v-if="messagesLoading"
-            class="message-skeletons message-skeletons--bottom"
+            class="message-skeletons message-skeletons--bottom message-skeletons--message-sized"
           >
             <span v-for="item in 20" :key="item" />
           </div>
@@ -3572,30 +3572,32 @@ function displayField(
 .message-skeletons {
   display: flex;
   flex: 1;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 6px;
+  flex-direction: column-reverse;
+  gap: 14px;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+.message-skeletons::-webkit-scrollbar {
+  display: none;
 }
 .message-skeletons > span {
-  flex: 0 1 36px;
+  flex: 0 0 52px;
   width: 58%;
-  min-height: 18px;
   border-radius: 4px 14px 14px;
   background: linear-gradient(90deg, var(--surface-active) 25%, var(--surface-hover) 37%, var(--surface-active) 63%);
   background-size: 360px 100%;
   animation: skeleton-shimmer 1.3s infinite;
 }
 .message-skeletons > span:nth-child(3n + 2) {
-  flex-basis: 44px;
+  flex-basis: 74px;
   width: 66%;
   align-self: flex-end;
   border-radius: 14px 4px 14px 14px;
   animation-delay: 150ms;
 }
 .message-skeletons > span:nth-child(3n + 3) {
-  flex-basis: 30px;
   width: 44%;
   animation-delay: 300ms;
 }
