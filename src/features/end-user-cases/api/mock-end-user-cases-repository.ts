@@ -1,12 +1,10 @@
 import type {
+  EndUserCaseEscalationResponseDto,
   EndUserCasePolicyPreviewResponseDto,
   EndUserCasePolicyRevisionResponseDto,
   EndUserCasePolicyResponseDto,
 } from "@/shared/api/generated/models";
-import type {
-  EndUserCase,
-  EndUserCaseFilters,
-} from "../model/end-user-case";
+import type { EndUserCase, EndUserCaseFilters } from "../model/end-user-case";
 import {
   endUserCaseStatusesForPreset,
   isTerminalEndUserCase,
@@ -14,6 +12,29 @@ import {
 import type { EndUserCasesRepository } from "./end-user-cases-repository";
 
 const now = "2026-07-26T10:00:00.000Z";
+const requestedEscalation: EndUserCaseEscalationResponseDto = {
+  id: "escalation-demo-game",
+  caseId: "case-demo-game",
+  occurrenceNumber: 1,
+  version: 1,
+  status: "REQUESTED",
+  source: "END_USER_REQUEST",
+  reasonCode: "SUPPORT_REQUEST",
+  summary: "Пользователь явно попросил подключить специалиста.",
+  requester: { type: "END_USER", id: "usr_2" },
+  requestedAt: "2026-07-26T09:05:00.000Z",
+  claimant: null,
+  claimedAt: null,
+  closedBy: null,
+  closeReason: null,
+  closedAt: null,
+  cancelledBy: null,
+  cancellationReason: null,
+  cancelledAt: null,
+  notificationEventId: "notification-demo-game",
+  createdAt: "2026-07-26T09:05:00.000Z",
+  updatedAt: "2026-07-26T09:05:00.000Z",
+};
 
 const primaryCase: EndUserCase = {
   id: "case-demo-deposit",
@@ -38,6 +59,7 @@ const primaryCase: EndUserCase = {
   priority: "URGENT",
   prioritySource: "PLATFORM_RULE",
   priorityReasons: ["Пользователь не получил деньги"],
+  requiresSpecialist: false,
   initialTone: "CONCERNED",
   currentTone: "CALM",
   toneTrend: "IMPROVING",
@@ -97,6 +119,16 @@ const mockSeed: EndUserCase[] = [
     summary:
       "Lola собрала данные об устройстве и предложила безопасные шаги. Пользователь ждёт администратора.",
     status: "WAITING_ADMIN",
+    requiresSpecialist: true,
+    activeEscalation: {
+      id: requestedEscalation.id,
+      status: "REQUESTED",
+      source: "END_USER_REQUEST",
+      reasonCode: "SUPPORT_REQUEST",
+      requestedAt: requestedEscalation.requestedAt,
+      claimant: null,
+      claimedAt: null,
+    },
     availableStatuses: ["IN_PROGRESS", "WAITING_END_USER", "RESOLVED"],
     priority: "HIGH",
     urgency: "MEDIUM",
@@ -104,7 +136,7 @@ const mockSeed: EndUserCase[] = [
     toneTrend: "WORSENING",
     channels: ["TEXT"],
     endUser: { id: "usr_2", externalId: "player-0198" },
-    proposalCount: 1,
+    proposalCount: 0,
     messageCount: 6,
     endUserRecontactCount: 0,
     lastActivityAt: "2026-07-26T09:20:00.000Z",
@@ -142,6 +174,7 @@ const mockSeed: EndUserCase[] = [
 ];
 
 let mockCases = structuredClone(mockSeed);
+const mockEscalations = [structuredClone(requestedEscalation)];
 
 const messages = {
   items: [
@@ -245,11 +278,31 @@ function updateCase(
   return structuredClone(current);
 }
 
+function escalationById(id: string): EndUserCaseEscalationResponseDto {
+  const value = mockEscalations.find((item) => item.id === id);
+  if (!value) throw new Error("Эскалация не найдена");
+  return value;
+}
+
+function updateEscalation(
+  id: string,
+  expectedVersion: number,
+  patch: Partial<EndUserCaseEscalationResponseDto>,
+): EndUserCaseEscalationResponseDto {
+  const current = escalationById(id);
+  if (current.version !== expectedVersion)
+    throw new Error("Эскалация уже изменена");
+  Object.assign(current, patch, {
+    version: current.version + 1,
+    updatedAt: new Date().toISOString(),
+  });
+  return structuredClone(current);
+}
+
 function filteredCases(filters: EndUserCaseFilters): EndUserCase[] {
-  const statuses =
-    filters.status?.length
-      ? filters.status
-      : endUserCaseStatusesForPreset(filters.preset);
+  const statuses = filters.status?.length
+    ? filters.status
+    : endUserCaseStatusesForPreset(filters.preset);
   return mockCases.filter(
     (item) =>
       (!statuses || statuses.includes(item.status)) &&
@@ -325,23 +378,29 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
         revisions: [],
       },
       proposals:
-        options?.includeProposals === false
+        options?.includeProposals === false || caseId !== primaryCase.id
           ? { items: [] }
           : {
               items: [
                 {
                   id: "proposal-demo-1",
-                  kind: "ADMIN_ATTENTION",
+                  kind: "INSIGHT",
                   workflowStatus: "OPEN",
                   priority: "HIGH",
-                  title: "Подключиться к обращению",
-                  summary: "Пользователь явно попросил помощи администратора.",
+                  title: "Проверить задержки провайдера",
+                  summary:
+                    "Lola заметила повторяющиеся задержки обработки депозитов.",
                   version: 1,
                   createdAt: "2026-07-26T09:05:00.000Z",
                   updatedAt: "2026-07-26T09:05:00.000Z",
                 },
               ],
             },
+      escalations: {
+        items: structuredClone(
+          mockEscalations.filter((item) => item.caseId === caseId),
+        ),
+      },
     };
   },
   async workflow(_projectId, caseId, command) {
@@ -428,6 +487,189 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
       newCaseVersion: 1,
     };
   },
+  async requestEscalation(_projectId, caseId, command) {
+    const existing = mockEscalations.find(
+      (item) =>
+        item.caseId === caseId &&
+        (item.status === "REQUESTED" || item.status === "CLAIMED"),
+    );
+    if (existing)
+      return {
+        escalation: structuredClone(existing),
+        caseVersion: caseById(caseId).version,
+        replayed: true,
+      };
+    const requestedAt = new Date().toISOString();
+    const escalation: EndUserCaseEscalationResponseDto = {
+      ...structuredClone(requestedEscalation),
+      id: `escalation-demo-${caseId}-${mockEscalations.length + 1}`,
+      caseId,
+      occurrenceNumber:
+        mockEscalations.filter((item) => item.caseId === caseId).length + 1,
+      source: "CMS_USER",
+      reasonCode: command.reasonCode,
+      summary: command.summary,
+      requester: { type: "CMS_USER", id: "cms-1" },
+      requestedAt,
+      createdAt: requestedAt,
+      updatedAt: requestedAt,
+      notificationEventId: `notification-${caseId}-${mockEscalations.length + 1}`,
+    };
+    mockEscalations.push(escalation);
+    const value = updateCase(
+      caseId,
+      {
+        status: "WAITING_ADMIN",
+        requiresSpecialist: true,
+        assignee: undefined,
+        activeEscalation: {
+          id: escalation.id,
+          status: "REQUESTED",
+          source: escalation.source,
+          reasonCode: escalation.reasonCode,
+          requestedAt,
+          claimant: null,
+          claimedAt: null,
+        },
+      },
+      command.expectedCaseVersion,
+    );
+    return {
+      escalation: structuredClone(escalation),
+      caseVersion: value.version,
+      replayed: false,
+    };
+  },
+  async claimEscalation(_projectId, caseId, escalationId, command) {
+    const claimedAt = new Date().toISOString();
+    const escalation = updateEscalation(
+      escalationId,
+      command.expectedEscalationVersion,
+      {
+        status: "CLAIMED",
+        claimant: { id: "cms-1", displayName: "Алексей Владелец" },
+        claimedAt,
+      },
+    );
+    const value = updateCase(
+      caseId,
+      {
+        status: "IN_PROGRESS",
+        requiresSpecialist: true,
+        assignee: escalation.claimant ?? undefined,
+        activeEscalation: {
+          id: escalation.id,
+          status: "CLAIMED",
+          source: escalation.source,
+          reasonCode: escalation.reasonCode,
+          requestedAt: escalation.requestedAt,
+          claimant: escalation.claimant,
+          claimedAt,
+        },
+      },
+      command.expectedCaseVersion,
+    );
+    return { escalation, caseVersion: value.version, replayed: false };
+  },
+  async releaseEscalation(_projectId, caseId, escalationId, command) {
+    const escalation = updateEscalation(
+      escalationId,
+      command.expectedEscalationVersion,
+      { status: "REQUESTED", claimant: null, claimedAt: null },
+    );
+    const value = updateCase(
+      caseId,
+      {
+        status: "WAITING_ADMIN",
+        assignee: undefined,
+        activeEscalation: {
+          id: escalation.id,
+          status: "REQUESTED",
+          source: escalation.source,
+          reasonCode: escalation.reasonCode,
+          requestedAt: escalation.requestedAt,
+          claimant: null,
+          claimedAt: null,
+        },
+      },
+      command.expectedCaseVersion,
+    );
+    return { escalation, caseVersion: value.version, replayed: false };
+  },
+  async transferEscalation(_projectId, caseId, escalationId, command) {
+    const claimant = {
+      id: command.cmsUserId,
+      displayName:
+        command.cmsUserId === "cms-2" ? "Анна Специалист" : "Алексей Владелец",
+    };
+    const escalation = updateEscalation(
+      escalationId,
+      command.expectedEscalationVersion,
+      { claimant },
+    );
+    const value = updateCase(
+      caseId,
+      {
+        assignee: claimant,
+        activeEscalation: {
+          ...caseById(caseId).activeEscalation!,
+          claimant,
+        },
+      },
+      command.expectedCaseVersion,
+    );
+    return { escalation, caseVersion: value.version, replayed: false };
+  },
+  async closeEscalation(_projectId, caseId, escalationId, command) {
+    const closedAt = new Date().toISOString();
+    const escalation = updateEscalation(
+      escalationId,
+      command.expectedEscalationVersion,
+      {
+        status: "CLOSED",
+        claimant: null,
+        claimedAt: null,
+        closeReason: command.reason,
+        closedAt,
+        closedBy: { type: "CMS_USER", id: "cms-1" },
+      },
+    );
+    const value = updateCase(
+      caseId,
+      {
+        status: command.nextCaseStatus,
+        requiresSpecialist: false,
+        activeEscalation: undefined,
+      },
+      command.expectedCaseVersion,
+    );
+    return { escalation, caseVersion: value.version, replayed: false };
+  },
+  async cancelEscalation(_projectId, caseId, escalationId, command) {
+    const cancelledAt = new Date().toISOString();
+    const escalation = updateEscalation(
+      escalationId,
+      command.expectedEscalationVersion,
+      {
+        status: "CANCELLED",
+        claimant: null,
+        claimedAt: null,
+        cancellationReason: command.reason,
+        cancelledAt,
+        cancelledBy: { type: "CMS_USER", id: "cms-1" },
+      },
+    );
+    const value = updateCase(
+      caseId,
+      {
+        status: command.nextCaseStatus,
+        requiresSpecialist: false,
+        activeEscalation: undefined,
+      },
+      command.expectedCaseVersion,
+    );
+    return { escalation, caseVersion: value.version, replayed: false };
+  },
   async cost() {
     return {
       requestCount: 84,
@@ -491,5 +733,10 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
 
 export function resetMockEndUserCases(): void {
   mockCases = structuredClone(mockSeed);
+  mockEscalations.splice(
+    0,
+    mockEscalations.length,
+    structuredClone(requestedEscalation),
+  );
   policy = { published: publishedPolicy, draft: undefined };
 }

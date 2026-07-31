@@ -9,6 +9,9 @@ import CaseEventVerification from "@/features/event-query/ui/CaseEventVerificati
 import type { CaseVerificationRunResponseDto } from "@/shared/api/generated/models";
 import type { EndUserCaseDetailBundle } from "../api/end-user-cases-repository";
 import type { EndUserCaseStatus } from "../model/end-user-case";
+import { isTerminalEndUserCase } from "../model/end-user-case";
+import type { EndUserCaseEscalationAction } from "../model/end-user-case-escalation";
+import EndUserCaseEscalationPanel from "./EndUserCaseEscalationPanel.vue";
 import {
   endUserCaseActionLabel,
   endUserCaseCapabilityLabel,
@@ -28,6 +31,8 @@ const props = defineProps<{
   mutating?: boolean;
   canManage?: boolean;
   canAssign?: boolean;
+  canEscalate?: boolean;
+  currentCmsUserId?: string;
   canReadEndUser?: boolean;
   canReadConversation?: boolean;
   canReadProposals?: boolean;
@@ -45,6 +50,7 @@ defineEmits<{
   requestUnlink: [messageId: string];
   requestMerge: [];
   requestSplit: [];
+  requestEscalationAction: [action: EndUserCaseEscalationAction];
   loadMoreMessages: [];
   verificationCompleted: [run: CaseVerificationRunResponseDto];
 }>();
@@ -60,7 +66,10 @@ const resolutionActions: readonly EndUserCaseStatus[] = [
 
 const workflowStatusOptions = (statuses: EndUserCaseStatus[]) =>
   statuses
-    .filter((status) => !resolutionActions.includes(status))
+    .filter(
+      (status) =>
+        status !== "WAITING_ADMIN" && !resolutionActions.includes(status),
+    )
     .map((status) => ({
       label: endUserCaseActionLabel(status),
       value: status,
@@ -244,6 +253,17 @@ const hasMessageGap = (
         доступны, но сводка может обновиться позже.
       </Message>
 
+      <EndUserCaseEscalationPanel
+        :items="value.escalations.items"
+        :terminal="isTerminalEndUserCase(value.case.status)"
+        :current-cms-user-id="currentCmsUserId"
+        :can-escalate="canEscalate"
+        :can-assign="canAssign"
+        :can-manage="canManage"
+        :mutating="mutating"
+        @action="$emit('requestEscalationAction', $event)"
+      />
+
       <section
         class="detail-card overview-card"
         aria-labelledby="case-overview-title"
@@ -349,7 +369,7 @@ const hasMessageGap = (
         <p class="section-description">
           Решение подтверждается только явным действием или проверенным фактом.
         </p>
-        <div class="status-actions">
+        <div v-if="!value.case.activeEscalation" class="status-actions">
           <Select
             v-if="workflowStatusOptions(value.case.availableStatuses).length"
             class="status-select"
@@ -376,7 +396,7 @@ const hasMessageGap = (
         </div>
         <div class="workflow-tools">
           <Button
-            v-if="canAssign"
+            v-if="canAssign && !value.case.activeEscalation"
             label="Назначение"
             icon="pi pi-user-edit"
             severity="secondary"
@@ -434,7 +454,9 @@ const hasMessageGap = (
             @keydown="handleRelatedTabKeydown($event, 'proposals')"
           >
             Предложения Lola
-            <strong>{{ value.proposals.items.length }}</strong>
+            <strong>{{
+              canReadProposals ? value.proposals.items.length : "—"
+            }}</strong>
           </button>
           <button
             id="case-history-tab"
@@ -561,7 +583,10 @@ const hasMessageGap = (
           role="tabpanel"
           aria-labelledby="case-proposals-tab"
         >
-          <div v-if="!value.proposals.items.length" class="empty-copy">
+          <div
+            v-if="canReadProposals && !value.proposals.items.length"
+            class="empty-copy"
+          >
             Связанных предложений нет.
           </div>
           <template v-if="canReadProposals">
@@ -584,21 +609,9 @@ const hasMessageGap = (
               </span>
             </RouterLink>
           </template>
-          <template v-else>
-            <div
-              v-for="proposal in value.proposals.items"
-              :key="proposal.id"
-              class="proposal-row"
-            >
-              <div>
-                <strong>{{ proposal.title }}</strong>
-                <span>{{ proposal.summary }}</span>
-              </div>
-              <span>{{
-                endUserCaseProposalStatusLabel(proposal.workflowStatus)
-              }}</span>
-            </div>
-          </template>
+          <div v-else class="empty-copy">
+            Для просмотра AI-предложений требуется отдельное разрешение проекта.
+          </div>
         </div>
 
         <div

@@ -31,6 +31,16 @@ import type {
   AiModelCatalogResponseDto,
   AiModelSettingsCatalogParams,
   AiModelSettingsResponseDto,
+  AiOperationDetailResponseDto,
+  AiOperationListResponseDto,
+  AiOperationProtectedAccessPageResponseDto,
+  AiOperationSubjectPageResponseDto,
+  AiOperationSummaryResponseDto,
+  AiOperationsAccessHistoryParams,
+  AiOperationsDetailParams,
+  AiOperationsListParams,
+  AiOperationsSubjectsParams,
+  AiOperationsSummaryParams,
   AiPricingRevisionGetParams,
   AiPricingRevisionStateResponseDto,
   AiUsageReportParams,
@@ -60,12 +70,20 @@ import type {
   AudienceEvaluationResponseDto,
   BreakGlassLoginDto,
   BreakGlassLoginResponseDto,
+  CancelEndUserCaseEscalationDto,
   CaseVerificationEstimateResponseDto,
   CaseVerificationRunResponseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   ChatSend200,
   ClassifyEndUserCaseDto,
+  CloseEndUserCaseEscalationDto,
+  CmsAgentImmediateExecutionResponseDto,
+  CmsAgentRequestDetailParams,
+  CmsAgentRequestDetailResponseDto,
+  CmsAgentRequestListParams,
+  CmsAgentRequestPageResponseDto,
+  CmsAgentRequestResponseDto,
   CmsAuthenticatedResponseDto,
   CmsEmailChangeCancelledResponseDto,
   CmsEmailChangeRequestDto,
@@ -118,6 +136,7 @@ import type {
   CreateKnowledgeTextDto,
   CreateOperationalTelegramDestinationDto,
   CreatePlatformRoleDto,
+  CreateProjectAIAnalysisDto,
   CreateProjectDto,
   CreateProjectMembershipDto,
   CreateProjectRoleDto,
@@ -134,12 +153,15 @@ import type {
   DisableTelegramChannelDto,
   EditReplyTranslationDraftDto,
   EmailAIProposalPreferenceResponseDto,
+  EmailCaseEscalationPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
   EndUserAiUsageReportParams,
   EndUserAiUsageReportResponseDto,
   EndUserCaseAssigneesResponseDto,
   EndUserCaseCommandResponseDto,
   EndUserCaseCostSummaryResponseDto,
+  EndUserCaseEscalationCommandResponseDto,
+  EndUserCaseEscalationsResponseDto,
   EndUserCaseMessagesResponseDto,
   EndUserCasePolicyPreviewResponseDto,
   EndUserCasePolicyResponseDto,
@@ -155,6 +177,7 @@ import type {
   EndUserResponseDto,
   EndVoiceSessionDto,
   EstimateCaseVerificationDto,
+  EstimateProjectAIAnalysisDto,
   EvaluateAudienceUserDto,
   EventCatalogDefinitionResponseDto,
   EventCatalogDiscardSchemaDraftParams,
@@ -230,6 +253,7 @@ import type {
   ListThreadMessagesDto,
   MergeEndUserCasesDto,
   MergeEndUserCasesResponseDto,
+  MutateEndUserAttributesDto,
   NotificationDestinationListResponseDto,
   NotificationDestinationResponseDto,
   NotificationDestinationTestResponseDto,
@@ -268,6 +292,13 @@ import type {
   ProfileHealthResponseDto,
   ProfileProjectionResponseDto,
   ProfileSyncResponseDto,
+  ProjectAIAnalysisDetailResponseDto,
+  ProjectAIAnalysisEstimateResponseDto,
+  ProjectAIAnalysisListParams,
+  ProjectAIAnalysisListResponseDto,
+  ProjectAIAnalysisReceiptDto,
+  ProjectAIAnalysisUsageReadParams,
+  ProjectAIAnalysisUsageResponseDto,
   ProjectActionResponseDto,
   ProjectAuditEventPageResponseDto,
   ProjectAuditEventsListParams,
@@ -295,6 +326,7 @@ import type {
   RenameConversationDto,
   ReplaceCmsUserPlatformRolesDto,
   ReplyTranslationDraftResponseDto,
+  RequestEndUserCaseEscalationDto,
   RestoreEventDefinitionDto,
   ResumeConversationAIDto,
   RevokeCmsUserSessionDto,
@@ -336,6 +368,7 @@ import type {
   StartCaseVerificationDto,
   StartConversationAISuspensionDto,
   StartVoiceSessionDto,
+  SubmitCmsAgentRequestDto,
   SyncAttributeSnapshotDto,
   TelegramAdminLinkSummaryResponseDto,
   TelegramBindingChallengeResponseDto,
@@ -362,6 +395,7 @@ import type {
   TestNotificationDestinationDto,
   TestTelegramBroadcastDto,
   TestTelegramChannelDto,
+  TransferEndUserCaseEscalationDto,
   TranslationJobAcceptedResponseDto,
   TranslationJobResponseDto,
   TranslationUsageReportParams,
@@ -374,6 +408,7 @@ import type {
   UpdateCmsUserProfileDto,
   UpdateConversationTranslationPreferenceDto,
   UpdateEmailAIProposalPreferenceDto,
+  UpdateEmailCaseEscalationPreferenceDto,
   UpdateEndUserCaseWorkflowDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
@@ -403,6 +438,7 @@ import type {
   ValidateScenarioDraftResponseDto,
   ValidateScenarioRuleDto,
   ValidateScenarioRuleResponseDto,
+  VersionedEndUserCaseEscalationDto,
   XaiVoiceCatalogResponseDto,
 } from "./models";
 
@@ -895,6 +931,161 @@ export const productActionsActionTypes = (
   );
 };
 
+export const cmsAgentRequestList = (
+  projectId: string,
+  params?: CmsAgentRequestListParams,
+  options?: SecondParameter<typeof request<CmsAgentRequestPageResponseDto>>,
+) => {
+  return request<CmsAgentRequestPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/agent-requests`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const cmsAgentRequestSubmit = (
+  projectId: string,
+  submitCmsAgentRequestDto: BodyType<SubmitCmsAgentRequestDto>,
+  options?: SecondParameter<typeof request<CmsAgentRequestResponseDto>>,
+) => {
+  return request<CmsAgentRequestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/agent-requests`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: submitCmsAgentRequestDto,
+    },
+    options,
+  );
+};
+
+export const cmsAgentRequestDetail = (
+  projectId: string,
+  requestId: string,
+  params?: CmsAgentRequestDetailParams,
+  options?: SecondParameter<typeof request<CmsAgentRequestDetailResponseDto>>,
+) => {
+  return request<CmsAgentRequestDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/agent-requests/${requestId}`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const cmsAgentRequestExecute = (
+  projectId: string,
+  requestId: string,
+  options?: SecondParameter<
+    typeof request<CmsAgentImmediateExecutionResponseDto>
+  >,
+) => {
+  return request<CmsAgentImmediateExecutionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/agent-requests/${requestId}/execute`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const projectAIAnalysisList = (
+  projectId: string,
+  params?: ProjectAIAnalysisListParams,
+  options?: SecondParameter<typeof request<ProjectAIAnalysisListResponseDto>>,
+) => {
+  return request<ProjectAIAnalysisListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-analyses`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const projectAIAnalysisCreate = (
+  projectId: string,
+  createProjectAIAnalysisDto: BodyType<CreateProjectAIAnalysisDto>,
+  options?: SecondParameter<typeof request<ProjectAIAnalysisReceiptDto>>,
+) => {
+  return request<ProjectAIAnalysisReceiptDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-analyses`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createProjectAIAnalysisDto,
+    },
+    options,
+  );
+};
+
+export const projectAIAnalysisDetail = (
+  projectId: string,
+  analysisId: string,
+  options?: SecondParameter<typeof request<ProjectAIAnalysisDetailResponseDto>>,
+) => {
+  return request<ProjectAIAnalysisDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-analyses/${analysisId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const projectAIAnalysisCancel = (
+  projectId: string,
+  analysisId: string,
+  options?: SecondParameter<typeof request<ProjectAIAnalysisReceiptDto>>,
+) => {
+  return request<ProjectAIAnalysisReceiptDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-analyses/${analysisId}/cancel`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const projectAIAnalysisEstimate = (
+  projectId: string,
+  estimateProjectAIAnalysisDto: BodyType<EstimateProjectAIAnalysisDto>,
+  options?: SecondParameter<
+    typeof request<ProjectAIAnalysisEstimateResponseDto>
+  >,
+) => {
+  return request<ProjectAIAnalysisEstimateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-analyses/estimate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: estimateProjectAIAnalysisDto,
+    },
+    options,
+  );
+};
+
+export const projectAIAnalysisUsageRead = (
+  projectId: string,
+  params?: ProjectAIAnalysisUsageReadParams,
+  options?: SecondParameter<typeof request<ProjectAIAnalysisUsageResponseDto>>,
+) => {
+  return request<ProjectAIAnalysisUsageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-analysis-usage`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const userMemorySettings = (
   projectId: string,
   options?: SecondParameter<typeof request<UserMemorySettingsResponseDto>>,
@@ -961,6 +1152,86 @@ export const aiModelSettingsCatalog = (
   return request<AiModelCatalogResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/ai-models`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiOperationsList = (
+  projectId: string,
+  params?: AiOperationsListParams,
+  options?: SecondParameter<typeof request<AiOperationListResponseDto>>,
+) => {
+  return request<AiOperationListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-operations`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiOperationsDetail = (
+  projectId: string,
+  operationId: string,
+  params?: AiOperationsDetailParams,
+  options?: SecondParameter<typeof request<AiOperationDetailResponseDto>>,
+) => {
+  return request<AiOperationDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-operations/${operationId}`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiOperationsAccessHistory = (
+  projectId: string,
+  operationId: string,
+  params?: AiOperationsAccessHistoryParams,
+  options?: SecondParameter<
+    typeof request<AiOperationProtectedAccessPageResponseDto>
+  >,
+) => {
+  return request<AiOperationProtectedAccessPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-operations/${operationId}/access-history`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiOperationsSubjects = (
+  projectId: string,
+  operationId: string,
+  params?: AiOperationsSubjectsParams,
+  options?: SecondParameter<typeof request<AiOperationSubjectPageResponseDto>>,
+) => {
+  return request<AiOperationSubjectPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-operations/${operationId}/subjects`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiOperationsSummary = (
+  projectId: string,
+  params: AiOperationsSummaryParams,
+  options?: SecondParameter<typeof request<AiOperationSummaryResponseDto>>,
+) => {
+  return request<AiOperationSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-operations/summary`,
       method: "GET",
       params,
     },
@@ -1447,6 +1718,139 @@ export const endUserCasesClassification = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: classifyEndUserCaseDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesListEscalations = (
+  projectId: string,
+  caseId: string,
+  options?: SecondParameter<typeof request<EndUserCaseEscalationsResponseDto>>,
+) => {
+  return request<EndUserCaseEscalationsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/escalations`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasesRequestEscalation = (
+  projectId: string,
+  caseId: string,
+  requestEndUserCaseEscalationDto: BodyType<RequestEndUserCaseEscalationDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCaseEscalationCommandResponseDto>
+  >,
+) => {
+  return request<EndUserCaseEscalationCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/escalations`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: requestEndUserCaseEscalationDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesCancelEscalation = (
+  projectId: string,
+  caseId: string,
+  escalationId: string,
+  cancelEndUserCaseEscalationDto: BodyType<CancelEndUserCaseEscalationDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCaseEscalationCommandResponseDto>
+  >,
+) => {
+  return request<EndUserCaseEscalationCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/escalations/${escalationId}/cancel`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cancelEndUserCaseEscalationDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesClaimEscalation = (
+  projectId: string,
+  caseId: string,
+  escalationId: string,
+  versionedEndUserCaseEscalationDto: BodyType<VersionedEndUserCaseEscalationDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCaseEscalationCommandResponseDto>
+  >,
+) => {
+  return request<EndUserCaseEscalationCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/escalations/${escalationId}/claim`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: versionedEndUserCaseEscalationDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesCloseEscalation = (
+  projectId: string,
+  caseId: string,
+  escalationId: string,
+  closeEndUserCaseEscalationDto: BodyType<CloseEndUserCaseEscalationDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCaseEscalationCommandResponseDto>
+  >,
+) => {
+  return request<EndUserCaseEscalationCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/escalations/${escalationId}/close`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: closeEndUserCaseEscalationDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesReleaseEscalation = (
+  projectId: string,
+  caseId: string,
+  escalationId: string,
+  versionedEndUserCaseEscalationDto: BodyType<VersionedEndUserCaseEscalationDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCaseEscalationCommandResponseDto>
+  >,
+) => {
+  return request<EndUserCaseEscalationCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/escalations/${escalationId}/release`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: versionedEndUserCaseEscalationDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesTransferEscalation = (
+  projectId: string,
+  caseId: string,
+  escalationId: string,
+  transferEndUserCaseEscalationDto: BodyType<TransferEndUserCaseEscalationDto>,
+  options?: SecondParameter<
+    typeof request<EndUserCaseEscalationCommandResponseDto>
+  >,
+) => {
+  return request<EndUserCaseEscalationCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/escalations/${escalationId}/transfer`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: transferEndUserCaseEscalationDto,
     },
     options,
   );
@@ -4842,6 +5246,43 @@ export const notificationPreferencesSetEmailAIProposals = (
 };
 
 /**
+ * @summary Read effective Case escalation email subscription
+ */
+export const notificationPreferencesGetEmailCaseEscalations = (
+  options?: SecondParameter<
+    typeof request<EmailCaseEscalationPreferenceResponseDto>
+  >,
+) => {
+  return request<EmailCaseEscalationPreferenceResponseDto>(
+    {
+      url: `/api/v1/auth/me/notification-preferences/case-escalations/email`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Explicitly subscribe or unsubscribe from Case escalation email
+ */
+export const notificationPreferencesSetEmailCaseEscalations = (
+  updateEmailCaseEscalationPreferenceDto: BodyType<UpdateEmailCaseEscalationPreferenceDto>,
+  options?: SecondParameter<
+    typeof request<EmailCaseEscalationPreferenceResponseDto>
+  >,
+) => {
+  return request<EmailCaseEscalationPreferenceResponseDto>(
+    {
+      url: `/api/v1/auth/me/notification-preferences/case-escalations/email`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateEmailCaseEscalationPreferenceDto,
+    },
+    options,
+  );
+};
+
+/**
  * @summary List active browser sessions owned by the current CMS User
  */
 export const cmsSecuritySettingsList = (
@@ -5307,6 +5748,21 @@ export const compatibilityCrmCreateSession = (
   );
 };
 
+export const profileAttributeMutationMutate = (
+  mutateEndUserAttributesDto: BodyType<MutateEndUserAttributesDto>,
+  options?: SecondParameter<typeof request<ProfileSyncResponseDto>>,
+) => {
+  return request<ProfileSyncResponseDto>(
+    {
+      url: `/api/v1/end-user-profile-attributes`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: mutateEndUserAttributesDto,
+    },
+    options,
+  );
+};
+
 export const profileSnapshotSync = (
   syncAttributeSnapshotDto: BodyType<SyncAttributeSnapshotDto>,
   options?: SecondParameter<typeof request<ProfileSyncResponseDto>>,
@@ -5350,6 +5806,18 @@ export const eventsIngestClient = (
     },
     options,
   );
+};
+
+export const appLiveness = (
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>({ url: `/api/v1/health/live`, method: "GET" }, options);
+};
+
+export const appReadiness = (
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>({ url: `/api/v1/health/ready`, method: "GET" }, options);
 };
 
 export const interactionSessionsCreate = (
@@ -5723,6 +6191,36 @@ export type PlatformUpdateProjectResult = NonNullable<
 export type ProductActionsActionTypesResult = NonNullable<
   Awaited<ReturnType<typeof productActionsActionTypes>>
 >;
+export type CmsAgentRequestListResult = NonNullable<
+  Awaited<ReturnType<typeof cmsAgentRequestList>>
+>;
+export type CmsAgentRequestSubmitResult = NonNullable<
+  Awaited<ReturnType<typeof cmsAgentRequestSubmit>>
+>;
+export type CmsAgentRequestDetailResult = NonNullable<
+  Awaited<ReturnType<typeof cmsAgentRequestDetail>>
+>;
+export type CmsAgentRequestExecuteResult = NonNullable<
+  Awaited<ReturnType<typeof cmsAgentRequestExecute>>
+>;
+export type ProjectAIAnalysisListResult = NonNullable<
+  Awaited<ReturnType<typeof projectAIAnalysisList>>
+>;
+export type ProjectAIAnalysisCreateResult = NonNullable<
+  Awaited<ReturnType<typeof projectAIAnalysisCreate>>
+>;
+export type ProjectAIAnalysisDetailResult = NonNullable<
+  Awaited<ReturnType<typeof projectAIAnalysisDetail>>
+>;
+export type ProjectAIAnalysisCancelResult = NonNullable<
+  Awaited<ReturnType<typeof projectAIAnalysisCancel>>
+>;
+export type ProjectAIAnalysisEstimateResult = NonNullable<
+  Awaited<ReturnType<typeof projectAIAnalysisEstimate>>
+>;
+export type ProjectAIAnalysisUsageReadResult = NonNullable<
+  Awaited<ReturnType<typeof projectAIAnalysisUsageRead>>
+>;
 export type UserMemorySettingsResult = NonNullable<
   Awaited<ReturnType<typeof userMemorySettings>>
 >;
@@ -5737,6 +6235,21 @@ export type AiModelSettingsUpdateSettingsResult = NonNullable<
 >;
 export type AiModelSettingsCatalogResult = NonNullable<
   Awaited<ReturnType<typeof aiModelSettingsCatalog>>
+>;
+export type AiOperationsListResult = NonNullable<
+  Awaited<ReturnType<typeof aiOperationsList>>
+>;
+export type AiOperationsDetailResult = NonNullable<
+  Awaited<ReturnType<typeof aiOperationsDetail>>
+>;
+export type AiOperationsAccessHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof aiOperationsAccessHistory>>
+>;
+export type AiOperationsSubjectsResult = NonNullable<
+  Awaited<ReturnType<typeof aiOperationsSubjects>>
+>;
+export type AiOperationsSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof aiOperationsSummary>>
 >;
 export type AIProposalEventsReceivedResult = NonNullable<
   Awaited<ReturnType<typeof aIProposalEventsReceived>>
@@ -5830,6 +6343,27 @@ export type EndUserCasesAssignmentResult = NonNullable<
 >;
 export type EndUserCasesClassificationResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesClassification>>
+>;
+export type EndUserCasesListEscalationsResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesListEscalations>>
+>;
+export type EndUserCasesRequestEscalationResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesRequestEscalation>>
+>;
+export type EndUserCasesCancelEscalationResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesCancelEscalation>>
+>;
+export type EndUserCasesClaimEscalationResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesClaimEscalation>>
+>;
+export type EndUserCasesCloseEscalationResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesCloseEscalation>>
+>;
+export type EndUserCasesReleaseEscalationResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesReleaseEscalation>>
+>;
+export type EndUserCasesTransferEscalationResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesTransferEscalation>>
 >;
 export type EndUserCasesMergeResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesMerge>>
@@ -6461,6 +6995,12 @@ export type NotificationPreferencesGetEmailAIProposalsResult = NonNullable<
 export type NotificationPreferencesSetEmailAIProposalsResult = NonNullable<
   Awaited<ReturnType<typeof notificationPreferencesSetEmailAIProposals>>
 >;
+export type NotificationPreferencesGetEmailCaseEscalationsResult = NonNullable<
+  Awaited<ReturnType<typeof notificationPreferencesGetEmailCaseEscalations>>
+>;
+export type NotificationPreferencesSetEmailCaseEscalationsResult = NonNullable<
+  Awaited<ReturnType<typeof notificationPreferencesSetEmailCaseEscalations>>
+>;
 export type CmsSecuritySettingsListResult = NonNullable<
   Awaited<ReturnType<typeof cmsSecuritySettingsList>>
 >;
@@ -6559,6 +7099,9 @@ export type CompatibilityCrmCreateCustomerResult = NonNullable<
 export type CompatibilityCrmCreateSessionResult = NonNullable<
   Awaited<ReturnType<typeof compatibilityCrmCreateSession>>
 >;
+export type ProfileAttributeMutationMutateResult = NonNullable<
+  Awaited<ReturnType<typeof profileAttributeMutationMutate>>
+>;
 export type ProfileSnapshotSyncResult = NonNullable<
   Awaited<ReturnType<typeof profileSnapshotSync>>
 >;
@@ -6567,6 +7110,12 @@ export type EventsIngestResult = NonNullable<
 >;
 export type EventsIngestClientResult = NonNullable<
   Awaited<ReturnType<typeof eventsIngestClient>>
+>;
+export type AppLivenessResult = NonNullable<
+  Awaited<ReturnType<typeof appLiveness>>
+>;
+export type AppReadinessResult = NonNullable<
+  Awaited<ReturnType<typeof appReadiness>>
 >;
 export type InteractionSessionsCreateResult = NonNullable<
   Awaited<ReturnType<typeof interactionSessionsCreate>>

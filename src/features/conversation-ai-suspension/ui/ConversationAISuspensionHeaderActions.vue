@@ -47,8 +47,9 @@ const hasActions = computed(() =>
   />
   <div v-else-if="hasActions" class="ai-suspension-header-actions">
     <Button
-      v-if="canManage && conversationOpen"
+      v-if="!active && canManage && conversationOpen"
       label="AI активен · приостановить"
+      aria-label="Приостановить AI"
       icon="pi pi-circle-fill"
       severity="secondary"
       outlined

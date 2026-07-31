@@ -89,7 +89,7 @@ test("operator inbox stays clear and contained on desktop, tablet and mobile", a
   ).toEqual([]);
 });
 
-test("case detail explains evidence and exposes the linked Lola proposal", async ({
+test("case detail keeps specialist escalation inside the case", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -106,10 +106,16 @@ test("case detail explains evidence and exposes the linked Lola proposal", async
   await expect(page.getByText("Обеспокоен → Спокоен")).toBeVisible();
   await expect(page.getByText("Текст, Голос")).toBeVisible();
   await expect(page.getByText("Проверка депозита")).toBeVisible();
+  await expect(page.getByText("Помощь специалиста")).toBeVisible();
+  await expect(page.getByText("Эскалация не требуется")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Позвать специалиста" }),
+  ).toBeVisible();
   await page.getByRole("tab", { name: /Предложения Lola/ }).click();
+  await expect(page.getByText("Проверка депозита")).toBeVisible();
   await expect(
     page.getByRole("link", { name: /Подключиться к обращению/ }),
-  ).toHaveAttribute("href", "/ai-proposals/proposal-demo-1");
+  ).toHaveCount(0);
   await page.getByRole("tab", { name: /История/ }).click();
   await expect(page.getByText("Запрошена помощь администратора")).toBeVisible();
 });

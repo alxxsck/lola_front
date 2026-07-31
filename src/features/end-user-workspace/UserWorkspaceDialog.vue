@@ -322,6 +322,22 @@ async function setTranslationEnabled(enabled: boolean): Promise<void> {
   }
 }
 
+async function setTranslationTargetLocale(locale: string | null): Promise<void> {
+  if (!(await ensureTranslationLoaded())) return;
+  await translation.updatePreference({ endUserLocaleOverride: locale });
+  const preference = translation.state.value?.preference;
+  const targetLocale = translation.targetLocale.value;
+  if (
+    preference &&
+    targetLocale &&
+    targetLocale.localeCompare(preference.workingLocale, undefined, {
+      sensitivity: "accent",
+    }) === 0
+  ) {
+    replyTranslationRequested.value = false;
+  }
+}
+
 async function ensureTranslationLoaded(): Promise<boolean> {
   if (!canManageTranslation.value) return false;
   translationFeedbackEnabled.value = true;
@@ -353,7 +369,11 @@ async function showTranslatedMessages(): Promise<void> {
 }
 
 function toggleConversationMenu(): void {
-  conversationMenuVisible.value = !conversationMenuVisible.value;
+  const opening = !conversationMenuVisible.value;
+  conversationMenuVisible.value = opening;
+  if (opening && canManageTranslation.value) {
+    void ensureTranslationLoaded();
+  }
 }
 
 async function prepareReplyTranslation(): Promise<void> {
@@ -1094,6 +1114,7 @@ function displayField(
           data-action="open-profile"
           icon="pi pi-arrow-left"
           label="К профилю"
+          aria-label="К профилю"
           severity="secondary"
           size="small"
           class="workspace-back"
@@ -1327,7 +1348,12 @@ function displayField(
       data-testid="chat-workspace"
     >
       <aside class="conversation-pane">
-        <div class="mobile-conversation-profile">
+        <button
+          type="button"
+          class="mobile-conversation-profile"
+          aria-label="К профилю"
+          @click="openProfile"
+        >
           <span class="avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
           <div>
             <strong>{{ displayName }}</strong>
@@ -1342,7 +1368,8 @@ function displayField(
             <i class="connection-live-dot" />
             {{ realtimeStatus.label }}
           </span>
-        </div>
+          <i class="pi pi-chevron-right" aria-hidden="true" />
+        </button>
         <div class="pane-header">
           <h3>Диалоги · {{ conversations.length }}</h3>
           <Button
@@ -1565,9 +1592,7 @@ function displayField(
                 @reload="ensureTranslationLoaded"
                 @update-enabled="setTranslationEnabled"
                 @update-target-locale="
-                  translation.updatePreference({
-                    endUserLocaleOverride: $event,
-                  })
+                  setTranslationTargetLocale($event)
                 "
                 @translate-visible="
                   translation.translateMessages(visibleTranslationMessageIds)
@@ -4066,12 +4091,18 @@ function displayField(
   }
   .mobile-conversation-profile {
     display: flex;
+    width: 100%;
     min-height: 64px;
     align-items: center;
     gap: 10px;
     padding: 12px 14px 8px;
+    border: 0;
     border-bottom: 1px solid var(--border-subtle);
     background: var(--surface-card);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
   }
   .mobile-conversation-profile > div {
     display: grid;

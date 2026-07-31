@@ -101,6 +101,7 @@ const detail = {
       },
     ],
   },
+  escalations: { items: [] },
 };
 
 const selectStub = {
@@ -140,7 +141,10 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.get("#case-overview-title").text()).toBe("Обзор");
     expect(wrapper.get("#case-actions-title").text()).toBe("Действия");
     expect(wrapper.get('[data-test="status-select"]').text()).toContain(
-      "Изменить статус: Взять в работу, Нужен администратор",
+      "Изменить статус: Взять в работу",
+    );
+    expect(wrapper.get('[data-test="status-select"]').text()).not.toContain(
+      "Нужен администратор",
     );
     await wrapper.get('[data-test="status-select"]').trigger("click");
     expect(wrapper.emitted("requestTransition")?.[0]).toEqual(["IN_PROGRESS"]);
@@ -227,6 +231,75 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Открыто");
     await wrapper.get('[data-status="RESOLVED"]').trigger("click");
     expect(wrapper.emitted("requestTransition")?.[0]).toEqual(["RESOLVED"]);
+  });
+
+  it("keeps active specialist work out of generic status and assignment controls", async () => {
+    const value = structuredClone(detail) as unknown as EndUserCaseDetailBundle;
+    value.case.status = "WAITING_ADMIN";
+    value.case.activeEscalation = {
+      id: "escalation-1",
+      status: "REQUESTED",
+      source: "END_USER_REQUEST",
+      reasonCode: "SUPPORT_REQUEST",
+      requestedAt: "2026-07-26T10:00:00.000Z",
+      claimant: null,
+      claimedAt: null,
+    };
+    value.escalations.items = [
+      {
+        id: "escalation-1",
+        caseId: "case-1",
+        occurrenceNumber: 1,
+        version: 1,
+        status: "REQUESTED",
+        source: "END_USER_REQUEST",
+        reasonCode: "SUPPORT_REQUEST",
+        summary: "Пользователь явно попросил специалиста.",
+        requester: { type: "END_USER", id: "user-1" },
+        requestedAt: "2026-07-26T10:00:00.000Z",
+        claimant: null,
+        claimedAt: null,
+        closedBy: null,
+        closeReason: null,
+        closedAt: null,
+        cancelledBy: null,
+        cancellationReason: null,
+        cancelledAt: null,
+        notificationEventId: "notification-1",
+        createdAt: "2026-07-26T10:00:00.000Z",
+        updatedAt: "2026-07-26T10:00:00.000Z",
+      },
+    ];
+    const wrapper = mount(EndUserCaseDetail, {
+      props: {
+        value,
+        loading: false,
+        canManage: true,
+        canAssign: true,
+      },
+      global: {
+        stubs: {
+          Button: {
+            props: ["label"],
+            emits: ["click"],
+            template: "<button @click=\"$emit('click')\">{{ label }}</button>",
+          },
+          Message: { template: "<div><slot /></div>" },
+          Select: selectStub,
+          Skeleton: true,
+          RouterLink: true,
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain("Ожидает специалиста");
+    expect(wrapper.text()).not.toContain("Назначение");
+    expect(wrapper.find('[data-test="status-select"]').exists()).toBe(false);
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Взять в работу")!
+      .trigger("click");
+    expect(wrapper.emitted("requestEscalationAction")?.[0]).toEqual(["CLAIM"]);
   });
 
   it("offers bounded continuation instead of loading the entire chat", async () => {
@@ -374,6 +447,7 @@ describe("EndUserCaseDetail", () => {
         loading: false,
         canManage: true,
         canAssign: true,
+        canReadProposals: true,
         error: "Последнее действие не выполнено",
       },
       global: {
@@ -452,7 +526,44 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.html()).not.toContain('"users"');
     expect(wrapper.text()).not.toContain("Открыть диалог");
     await wrapper.get("#case-proposals-tab").trigger("click");
-    expect(wrapper.text()).toContain("Подключиться к диалогу");
+    expect(wrapper.text()).toContain(
+      "Для просмотра AI-предложений требуется отдельное разрешение проекта",
+    );
+    expect(wrapper.text()).not.toContain("Подключиться к диалогу");
+    expect(wrapper.text()).not.toContain("Пользователь просит администратора");
     expect(wrapper.html()).not.toContain("ai-proposal-detail");
+  });
+
+  it("removes proposal content immediately when its read permission is revoked", async () => {
+    const wrapper = mount(EndUserCaseDetail, {
+      props: {
+        value: detail as never,
+        loading: false,
+        canReadProposals: true,
+      },
+      global: {
+        stubs: {
+          Button: true,
+          Message: { template: "<div><slot /></div>" },
+          Skeleton: true,
+          RouterLink: {
+            props: ["to"],
+            template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
+          },
+        },
+      },
+    });
+    await wrapper.get("#case-proposals-tab").trigger("click");
+    expect(wrapper.text()).toContain("Подключиться к диалогу");
+
+    await wrapper.setProps({ canReadProposals: false });
+
+    expect(wrapper.get("#case-proposals-tab").text()).toContain("—");
+    expect(wrapper.get("#case-proposals-tab").text()).not.toContain("1");
+    expect(wrapper.text()).not.toContain("Подключиться к диалогу");
+    expect(wrapper.text()).not.toContain("Пользователь просит администратора");
+    expect(wrapper.text()).toContain(
+      "Для просмотра AI-предложений требуется отдельное разрешение проекта",
+    );
   });
 });

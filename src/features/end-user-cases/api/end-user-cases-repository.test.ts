@@ -6,6 +6,13 @@ const api = vi.hoisted(() => ({
   messages: vi.fn(),
   timeline: vi.fn(),
   proposals: vi.fn(),
+  escalations: vi.fn(),
+  requestEscalation: vi.fn(),
+  claimEscalation: vi.fn(),
+  releaseEscalation: vi.fn(),
+  transferEscalation: vi.fn(),
+  closeEscalation: vi.fn(),
+  cancelEscalation: vi.fn(),
   summary: vi.fn(),
   assignees: vi.fn(),
   workflow: vi.fn(),
@@ -17,6 +24,13 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   endUserCasesMessages: api.messages,
   endUserCasesTimeline: api.timeline,
   endUserCasesProposals: api.proposals,
+  endUserCasesListEscalations: api.escalations,
+  endUserCasesRequestEscalation: api.requestEscalation,
+  endUserCasesClaimEscalation: api.claimEscalation,
+  endUserCasesReleaseEscalation: api.releaseEscalation,
+  endUserCasesTransferEscalation: api.transferEscalation,
+  endUserCasesCloseEscalation: api.closeEscalation,
+  endUserCasesCancelEscalation: api.cancelEscalation,
   endUserCasesSummary: api.summary,
   endUserCasesAssignees: api.assignees,
   endUserCasesWorkflow: api.workflow,
@@ -65,12 +79,14 @@ describe("End User Cases repository", () => {
     api.messages.mockResolvedValue({ items: [], nextCursor: "message-cursor" });
     api.timeline.mockResolvedValue({ events: [], revisions: [] });
     api.proposals.mockResolvedValue({ items: [] });
+    api.escalations.mockResolvedValue({ items: [] });
     const value = await endUserCasesRepository.detail("project-1", "case-1");
     expect(value).toEqual({
       case: { id: "case-1" },
       messages: { items: [], nextCursor: "message-cursor" },
       timeline: { events: [], revisions: [] },
       proposals: { items: [] },
+      escalations: { items: [] },
     });
     expect(api.messages).toHaveBeenCalledWith("project-1", "case-1", {
       limit: 100,
@@ -94,15 +110,15 @@ describe("End User Cases repository", () => {
     api.detail.mockResolvedValue({ id: "case-1" });
     api.messages.mockResolvedValue({ items: [], nextCursor: null });
     api.timeline.mockResolvedValue({ events: [], revisions: [] });
+    api.escalations.mockResolvedValue({ items: [] });
 
-    const value = await endUserCasesRepository.detail(
-      "project-1",
-      "case-1",
-      { includeProposals: false },
-    );
+    const value = await endUserCasesRepository.detail("project-1", "case-1", {
+      includeProposals: false,
+    });
 
     expect(value.proposals).toEqual({ items: [] });
     expect(api.proposals).not.toHaveBeenCalled();
+    expect(api.escalations).toHaveBeenCalledWith("project-1", "case-1");
   });
 
   it("loads only assignable active project members from the Case contract", async () => {
@@ -116,5 +132,34 @@ describe("End User Cases repository", () => {
       items: [{ id: "cms-2", displayName: "Анна" }],
     });
     expect(api.assignees).toHaveBeenCalledWith("project-1");
+  });
+
+  it("forwards the opaque idempotency header for escalation commands", async () => {
+    api.claimEscalation.mockResolvedValue({
+      escalation: { id: "escalation-1" },
+      caseVersion: 4,
+      replayed: false,
+    });
+    const command = {
+      expectedCaseVersion: 3,
+      expectedEscalationVersion: 2,
+      reason: "Беру в работу",
+    };
+
+    await endUserCasesRepository.claimEscalation(
+      "project-1",
+      "case-1",
+      "escalation-1",
+      command,
+      "idempotency-1",
+    );
+
+    expect(api.claimEscalation).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      "escalation-1",
+      command,
+      { headers: { "Idempotency-Key": "idempotency-1" } },
+    );
   });
 });

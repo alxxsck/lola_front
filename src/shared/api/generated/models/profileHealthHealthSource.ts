@@ -13,4 +13,5 @@ export type ProfileHealthHealthSource =
 export const ProfileHealthHealthSource = {
   SESSION: "SESSION",
   PROFILE_SYNC: "PROFILE_SYNC",
+  PROFILE_MUTATION: "PROFILE_MUTATION",
 } as const;

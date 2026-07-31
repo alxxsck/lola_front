@@ -22,6 +22,7 @@ import {
   type EndUserCaseStatus,
   type EndUserCaseSummary,
 } from "./end-user-case";
+import { activeEndUserCaseEscalation } from "./end-user-case-escalation";
 
 type Unsubscribe = () => void;
 
@@ -177,6 +178,23 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     }
   }
 
+  async function setProposalAccess(allowed: boolean): Promise<void> {
+    detailIncludesProposals = allowed;
+    detailRequest += 1;
+    detailLoading.value = false;
+    if (!allowed) {
+      if (selected.value) {
+        selected.value = {
+          ...selected.value,
+          proposals: { items: [] },
+        };
+      }
+      return;
+    }
+    const id = selectedId.value;
+    if (id) await open(id, true);
+  }
+
   function close(): void {
     selectedId.value = null;
     selected.value = null;
@@ -257,6 +275,154 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
         assignedCmsUserId,
         reason: reason.trim(),
       } satisfies AssignEndUserCaseDto),
+    );
+  }
+
+  async function requestEscalation(
+    reasonCode: string,
+    summary: string,
+  ): Promise<boolean> {
+    const value = selected.value?.case;
+    if (!value || !reasonCode.trim() || !summary.trim()) return false;
+    return versionedMutation((project, caseId) =>
+      endUserCasesRepository.requestEscalation(
+        project,
+        caseId,
+        {
+          expectedCaseVersion: value.version,
+          reasonCode: reasonCode.trim(),
+          summary: summary.trim(),
+        },
+        crypto.randomUUID(),
+      ),
+    );
+  }
+
+  async function claimEscalation(reason: string): Promise<boolean> {
+    return mutateActiveEscalation(
+      reason,
+      (project, caseId, caseVersion, escalation, key) =>
+        endUserCasesRepository.claimEscalation(
+          project,
+          caseId,
+          escalation.id,
+          {
+            expectedCaseVersion: caseVersion,
+            expectedEscalationVersion: escalation.version,
+            reason: reason.trim(),
+          },
+          key,
+        ),
+    );
+  }
+
+  async function releaseEscalation(reason: string): Promise<boolean> {
+    return mutateActiveEscalation(
+      reason,
+      (project, caseId, caseVersion, escalation, key) =>
+        endUserCasesRepository.releaseEscalation(
+          project,
+          caseId,
+          escalation.id,
+          {
+            expectedCaseVersion: caseVersion,
+            expectedEscalationVersion: escalation.version,
+            reason: reason.trim(),
+          },
+          key,
+        ),
+    );
+  }
+
+  async function transferEscalation(
+    cmsUserId: string,
+    reason: string,
+  ): Promise<boolean> {
+    if (!cmsUserId.trim()) return false;
+    return mutateActiveEscalation(
+      reason,
+      (project, caseId, caseVersion, escalation, key) =>
+        endUserCasesRepository.transferEscalation(
+          project,
+          caseId,
+          escalation.id,
+          {
+            expectedCaseVersion: caseVersion,
+            expectedEscalationVersion: escalation.version,
+            cmsUserId: cmsUserId.trim(),
+            reason: reason.trim(),
+          },
+          key,
+        ),
+    );
+  }
+
+  async function closeEscalation(
+    nextCaseStatus:
+      | "OPEN"
+      | "WAITING_END_USER"
+      | "WAITING_SYSTEM"
+      | "RESOLVED"
+      | "UNRESOLVED",
+    reason: string,
+  ): Promise<boolean> {
+    return mutateActiveEscalation(
+      reason,
+      (project, caseId, caseVersion, escalation, key) =>
+        endUserCasesRepository.closeEscalation(
+          project,
+          caseId,
+          escalation.id,
+          {
+            expectedCaseVersion: caseVersion,
+            expectedEscalationVersion: escalation.version,
+            nextCaseStatus,
+            reason: reason.trim(),
+          },
+          key,
+        ),
+    );
+  }
+
+  async function cancelEscalation(
+    nextCaseStatus: "OPEN" | "WAITING_END_USER" | "WAITING_SYSTEM",
+    reason: string,
+  ): Promise<boolean> {
+    return mutateActiveEscalation(
+      reason,
+      (project, caseId, caseVersion, escalation, key) =>
+        endUserCasesRepository.cancelEscalation(
+          project,
+          caseId,
+          escalation.id,
+          {
+            expectedCaseVersion: caseVersion,
+            expectedEscalationVersion: escalation.version,
+            nextCaseStatus,
+            reason: reason.trim(),
+          },
+          key,
+        ),
+    );
+  }
+
+  async function mutateActiveEscalation(
+    reason: string,
+    execute: (
+      projectId: string,
+      caseId: string,
+      caseVersion: number,
+      escalation: NonNullable<ReturnType<typeof activeEndUserCaseEscalation>>,
+      idempotencyKey: string,
+    ) => Promise<unknown>,
+  ): Promise<boolean> {
+    const caseVersion = selected.value?.case.version;
+    const active = activeEndUserCaseEscalation(
+      selected.value?.escalations.items ?? [],
+    );
+    if (!active || caseVersion === undefined || !reason.trim()) return false;
+    return versionedMutation((project, caseId) =>
+      execute(project, caseId, caseVersion, active, crypto.randomUUID()),
     );
   }
 
@@ -385,7 +551,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
 
   async function mutate(execute: () => Promise<unknown>): Promise<boolean> {
     const id = selectedId.value;
-    if (!id) return false;
+    if (!id || mutating.value) return false;
     mutating.value = true;
     detailError.value = null;
     try {
@@ -565,10 +731,17 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     loadPage,
     refreshSummary,
     open,
+    setProposalAccess,
     loadMoreMessages,
     close,
     transition,
     assign,
+    requestEscalation,
+    claimEscalation,
+    releaseEscalation,
+    transferEscalation,
+    closeEscalation,
+    cancelEscalation,
     classify,
     linkMessage,
     unlinkMessage,

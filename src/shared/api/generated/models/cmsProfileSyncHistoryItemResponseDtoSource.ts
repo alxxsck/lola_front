@@ -13,4 +13,5 @@ export type CmsProfileSyncHistoryItemResponseDtoSource =
 export const CmsProfileSyncHistoryItemResponseDtoSource = {
   SESSION: "SESSION",
   PROFILE_SYNC: "PROFILE_SYNC",
+  PROFILE_MUTATION: "PROFILE_MUTATION",
 } as const;

@@ -12,6 +12,7 @@ export type EventQueryPolicyFieldDtoOperationsItem =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EventQueryPolicyFieldDtoOperationsItem = {
   PROJECT: "PROJECT",
+  FILTER: "FILTER",
   GROUP_BY: "GROUP_BY",
   SUM: "SUM",
   MIN: "MIN",

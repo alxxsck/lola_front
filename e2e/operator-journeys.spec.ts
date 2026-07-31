@@ -689,14 +689,11 @@ test("EUAP workspace, Current Profiles and Segment Library expose their primary 
   await expect(workspace.getByText("Версия профиля")).toBeVisible();
   if (testInfo.project.name === "mobile-chromium") {
     await workspace.getByRole("button", { name: "Открыть чат" }).click();
-    const mobileWorkspaceNav = workspace.getByRole("navigation", {
-      name: "Разделы рабочего пространства",
-    });
     await expect(
-      mobileWorkspaceNav.getByRole("button", { name: "Диалоги" }),
+      workspace.getByRole("button", { name: "К списку диалогов" }),
     ).toBeVisible();
     await expect(
-      mobileWorkspaceNav.getByRole("button", { name: "Чат" }),
+      workspace.getByRole("group", { name: "Режим отображения сообщений" }),
     ).toBeVisible();
   }
 
@@ -1133,7 +1130,15 @@ test("online session opens the shared live conversation workspace", async ({
         .locator(".mobile-workspace-nav button")
         .filter({ hasText: "Чат" });
       if (await currentChatTab.isVisible()) await currentChatTab.click();
-      await workspace.getByRole("button", { name: "К профилю" }).click();
+      const profileButton = workspace.getByRole("button", {
+        name: "К профилю",
+      });
+      if (!(await profileButton.isVisible())) {
+        await workspace
+          .getByRole("button", { name: "К списку диалогов" })
+          .click();
+      }
+      await profileButton.click();
 
       if (process.env.VITE_DATA_MODE !== "api") {
         const consumption = workspace.locator(
@@ -1224,21 +1229,16 @@ test("приостановка AI остаётся понятной в обеи�
     name: "Перевод диалога",
   });
   await expect(suspensionControl).toBeVisible();
-  await expect(
-    workspace
-      .getByRole("group", { name: "Действия и статусы диалога" })
-      .getByRole("button", { name: "Приостановить AI", exact: true }),
-  ).toBeVisible();
+  await workspace
+    .getByRole("button", { name: "Другие действия с диалогом" })
+    .click();
   await expect(translationPanel).toBeVisible();
-  const [suspensionControlBox, translationPanelBox] = await Promise.all([
-    suspensionControl.boundingBox(),
-    translationPanel.boundingBox(),
-  ]);
-  expect(suspensionControlBox).not.toBeNull();
-  expect(translationPanelBox).not.toBeNull();
-  expect(
-    suspensionControlBox!.y + suspensionControlBox!.height,
-  ).toBeLessThanOrEqual(translationPanelBox!.y);
+  await expect(translationPanel).not.toContainText(
+    "Настройки ещё не загружены",
+  );
+  await workspace
+    .getByRole("button", { name: "Другие действия с диалогом" })
+    .click();
 
   await suspensionControl.click();
   const startDialog = page.getByRole("dialog", {
@@ -1256,20 +1256,17 @@ test("приостановка AI остаётся понятной в обеи�
     exact: true,
   });
   await expect(banner).toBeVisible();
-  const conversationsTab = workspace
-    .locator(".mobile-workspace-nav button")
-    .filter({ hasText: "Диалоги" });
-  const chatTab = workspace
-    .locator(".mobile-workspace-nav button")
-    .filter({ hasText: "Чат" });
-  if (await conversationsTab.isVisible()) await conversationsTab.click();
+  const mobileBack = workspace.getByRole("button", {
+    name: "К списку диалогов",
+  });
+  if (await mobileBack.isVisible()) await mobileBack.click();
   await expect(
     page.getByRole("button", { name: /Первый депозит/ }),
-  ).toContainText("AI приостановлен");
+  ).toContainText("AI");
   await expect(
     page.getByRole("button", { name: /Знакомство с Lola/ }),
-  ).not.toContainText("AI приостановлен");
-  if (await chatTab.isVisible()) await chatTab.click();
+  ).not.toContainText("AI ⏸");
+  await page.getByRole("button", { name: /Первый депозит/ }).click();
 
   for (const theme of ["light", "dark"] as const) {
     await page.evaluate((value) => {

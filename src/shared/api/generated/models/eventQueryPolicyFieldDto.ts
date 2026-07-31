@@ -10,6 +10,7 @@ import type { EventQueryPolicyFieldDtoSemanticType } from "./eventQueryPolicyFie
 import type { EventQueryPolicyFieldDtoSensitivity } from "./eventQueryPolicyFieldDtoSensitivity";
 
 export interface EventQueryPolicyFieldDto {
+  currencyConstant?: string;
   currencyPath?: string;
   operations: EventQueryPolicyFieldDtoOperationsItem[];
   path: string;

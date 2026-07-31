@@ -5,6 +5,7 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
+import AICommandComposer from "@/features/cms-agent/ui/AICommandComposer.vue";
 import { repository } from "@/shared/api/repository";
 import { relativeTime } from "@/shared/lib/format";
 import type { DashboardStats, EventLog } from "@/shared/types/domain";
@@ -235,6 +236,16 @@ onMounted(loadDashboard);
         />
       </div>
     </Message>
+
+    <AICommandComposer
+      v-if="
+        auth.project?.id &&
+        can('project.cms_agent.use') &&
+        can('project.ai_analyses.run')
+      "
+      :key="auth.project.id"
+      :project-id="auth.project.id"
+    />
 
     <section class="stats-grid" aria-label="Статистика проекта">
       <article

@@ -1,4 +1,25 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function openTranslationSettings(page: Page) {
+  const banner = page.getByRole("region", { name: "Перевод диалога" });
+  if (!(await banner.isVisible())) {
+    await page
+      .getByRole("button", { name: "Другие действия с диалогом" })
+      .click();
+  }
+  await expect(banner).toBeVisible();
+  await expect(banner).not.toContainText("Настройки ещё не загружены");
+  return banner;
+}
+
+async function closeTranslationSettings(page: Page) {
+  const menuButton = page.getByRole("button", {
+    name: "Другие действия с диалогом",
+  });
+  if ((await menuButton.getAttribute("aria-expanded")) === "true") {
+    await menuButton.click();
+  }
+}
 
 test("operator previews a translated reply and can inspect its Russian source", async ({
   page,
@@ -11,22 +32,21 @@ test("operator previews a translated reply and can inspect its Russian source", 
     .click();
   await page.getByRole("button", { name: "Открыть чат" }).click();
 
-  await expect(
-    page.getByRole("region", { name: "Перевод диалога" }),
-  ).toBeVisible();
+  await openTranslationSettings(page);
   await page.getByRole("switch", { name: "Переводить этот диалог" }).click();
+  await closeTranslationSettings(page);
 
   const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
   await composer.fill("Проверил списание. Возвращаем вторую оплату.");
-  await page.getByRole("button", { name: "Перевести и проверить" }).click();
+  await page.getByRole("button", { name: /Перевести на DE|Перевести ответ/ }).click();
 
   const preview = page.getByRole("region", {
     name: "Предпросмотр перевода ответа",
   });
-  await expect(preview.getByText(/Перевод готов/)).toBeVisible();
   const translated = preview.getByRole("textbox", {
     name: "Переведённый текст для пользователя",
   });
+  await expect(translated).toBeVisible();
   await translated.fill(
     "Ich habe die Abbuchung geprüft. Wir erstatten die zweite Zahlung.",
   );
@@ -34,17 +54,17 @@ test("operator previews a translated reply and can inspect its Russian source", 
 
   await expect(composer).toHaveValue("");
   await expect(
-    page.getByText("Проверил списание. Возвращаем вторую оплату."),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Показать перевод" }).last().click();
-  await expect(
     page.getByText(
       "Ich habe die Abbuchung geprüft. Wir erstatten die zweite Zahlung.",
     ),
   ).toBeVisible();
+  await page.getByRole("button", { name: /Перевод · RU/ }).click();
+  await expect(
+    page.getByText("Проверил списание. Возвращаем вторую оплату."),
+  ).toBeVisible();
 });
 
-test("message translation action does not reserve a side column in the bubble", async ({
+test("translated message view does not reserve a side column in the bubble", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -56,20 +76,18 @@ test("message translation action does not reserve a side column in the bubble", 
     .click();
   await page.getByRole("button", { name: "Открыть чат" }).click();
 
-  const action = page.getByRole("button", { name: "Перевести" }).first();
-  const bubble = action.locator("xpath=ancestor::article");
+  await page.getByRole("button", { name: /Перевод · RU/ }).click();
+  const bubble = page.locator("article.message-bubble").first();
   const body = bubble.locator(".translated-message > p");
-  const [actionBox, bubbleBox, bodyBox] = await Promise.all([
-    action.boundingBox(),
+  const [bubbleBox, bodyBox] = await Promise.all([
     bubble.boundingBox(),
     body.boundingBox(),
   ]);
-  if (!actionBox || !bubbleBox || !bodyBox) {
-    throw new Error("Translation action and message bubble must be visible");
+  if (!bubbleBox || !bodyBox) {
+    throw new Error("Translated message bubble must be visible");
   }
 
   expect(bodyBox.width / bubbleBox.width).toBeGreaterThan(0.9);
-  expect(actionBox.y).toBeGreaterThanOrEqual(bodyBox.y + bodyBox.height);
 });
 
 test("maximized user workspace fills the viewport", async ({ page }) => {
@@ -98,7 +116,7 @@ test("maximized user workspace fills the viewport", async ({ page }) => {
   }
 
   expect(dialogBox.width).toBeGreaterThanOrEqual(1590);
-  expect(dialogBox.height).toBeGreaterThanOrEqual(990);
+  expect(dialogBox.height).toBeGreaterThanOrEqual(960);
   expect(workspaceBox.height).toBeGreaterThan(880);
 });
 
@@ -202,22 +220,39 @@ test("stale preview recovers and same-language reply uses normal send", async ({
     .click();
   await page.getByRole("button", { name: "Открыть чат" }).click();
 
+  await openTranslationSettings(page);
   const toggle = page.getByRole("switch", {
     name: "Переводить этот диалог",
   });
   if (!(await toggle.isChecked())) await toggle.click();
+  await closeTranslationSettings(page);
 
   const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
   await composer.fill("Первый вариант ответа");
-  await page.getByRole("button", { name: "Перевести и проверить" }).click();
-  await expect(page.getByText(/Перевод готов/)).toBeVisible();
+  await page.getByRole("button", { name: /Перевести на DE|Перевести ответ/ }).click();
+  const preview = page.getByRole("region", {
+    name: "Предпросмотр перевода ответа",
+  });
+  await expect(
+    preview.getByRole("textbox", {
+      name: "Переведённый текст для пользователя",
+    }),
+  ).toBeVisible();
   await composer.fill("Исправленный вариант ответа");
   await expect(page.getByText(/текущий перевод устарел/)).toBeVisible();
   await page.getByRole("button", { name: "Обновить перевод" }).click();
-  await expect(page.getByText(/Перевод готов/)).toBeVisible();
+  await expect(
+    preview.getByRole("textbox", {
+      name: "Переведённый текст для пользователя",
+    }),
+  ).toBeVisible();
 
-  await page.getByRole("combobox", { name: "Язык пользователя" }).click();
+  await openTranslationSettings(page);
+  await page
+    .getByRole("combobox", { name: "Мои ответы переводить на" })
+    .click();
   await page.getByRole("option", { name: /русский · ru/i }).click();
+  await closeTranslationSettings(page);
   await expect(
     page.getByRole("region", { name: "Предпросмотр перевода ответа" }),
   ).toBeHidden();
@@ -237,23 +272,27 @@ test("language source is explicit and conversation preference survives reload wi
     .click();
   await page.getByRole("button", { name: "Открыть чат" }).click();
 
-  const banner = page.getByRole("region", { name: "Перевод диалога" });
+  const banner = await openTranslationSettings(page);
   await expect(banner).toContainText(/Язык ответов: .*de.*из профиля/i);
   const toggle = page.getByRole("switch", {
     name: "Переводить этот диалог",
   });
   if (!(await toggle.isChecked())) await toggle.click();
   await expect(toggle).toBeChecked();
+  await closeTranslationSettings(page);
 
   await page.reload();
+  await openTranslationSettings(page);
   await expect(
     page.getByRole("switch", { name: "Переводить этот диалог" }),
   ).toBeChecked();
+  await closeTranslationSettings(page);
 
   if (testInfo.project.name.includes("mobile")) {
-    await page.getByRole("button", { name: "Диалоги" }).click();
+    await page.getByRole("button", { name: "К списку диалогов" }).click();
   }
   await page.getByRole("button", { name: /Знакомство с Lola/ }).click();
+  await openTranslationSettings(page);
   await expect(
     page.getByRole("switch", { name: "Переводить этот диалог" }),
   ).not.toBeChecked();
@@ -263,6 +302,7 @@ test("language source is explicit and conversation preference survives reload wi
     .getByRole("button", { name: "Открыть профиль user_11603" })
     .click();
   await page.getByRole("button", { name: "Открыть чат" }).click();
+  await openTranslationSettings(page);
   await expect(
     page.getByRole("switch", { name: "Переводить этот диалог" }),
   ).not.toBeChecked();

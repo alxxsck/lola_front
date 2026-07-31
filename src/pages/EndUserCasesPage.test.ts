@@ -33,27 +33,24 @@ const state = vi.hoisted(() => ({
     reconcile: vi.fn(),
     loadPage: vi.fn(),
     open: vi.fn(),
+    setProposalAccess: vi.fn(),
     close: vi.fn(),
+    deactivate: vi.fn(),
     transition: vi.fn(),
     assign: vi.fn(),
     classify: vi.fn(),
     unlinkMessage: vi.fn(),
   },
 }));
-const authState = vi.hoisted(() => ({
-  user: { id: "cms-1" },
+type AuthRuntime = {
+  user: { id: string };
   project: {
-    id: "project-1",
-    effectivePermissionCodes: [
-      "project.cases.read",
-      "project.cases.manage",
-      "project.cases.assign",
-      "project.cases.settings.manage",
-    ],
-  } as {
     id: string;
     effectivePermissionCodes: string[];
-  } | null,
+  } | null;
+};
+const authState = vi.hoisted(() => ({
+  runtime: null as AuthRuntime | null,
 }));
 const repository = vi.hoisted(() => ({
   assignees: vi.fn(),
@@ -64,9 +61,22 @@ vi.mock("vue-router", () => ({
   useRoute: () => state.route,
   useRouter: () => state.router,
 }));
-vi.mock("@/features/auth/auth.store", () => ({
-  useAuthStore: () => authState,
-}));
+vi.mock("@/features/auth/auth.store", async () => {
+  const { reactive } = await import("vue");
+  authState.runtime = reactive<AuthRuntime>({
+    user: { id: "cms-1" },
+    project: {
+      id: "project-1",
+      effectivePermissionCodes: [
+        "project.cases.read",
+        "project.cases.manage",
+        "project.cases.assign",
+        "project.cases.settings.manage",
+      ],
+    },
+  });
+  return { useAuthStore: () => authState.runtime };
+});
 vi.mock("@/features/end-user-cases/model/end-user-cases.store", () => ({
   useEndUserCasesStore: () => state.store,
 }));
@@ -81,7 +91,7 @@ describe("EndUserCasesPage", () => {
     vi.clearAllMocks();
     state.route.params = {};
     state.route.query = {};
-    authState.project = {
+    authState.runtime!.project = {
       id: "project-1",
       effectivePermissionCodes: [
         "project.cases.read",
@@ -120,6 +130,7 @@ describe("EndUserCasesPage", () => {
           EndUserCaseCard: true,
           EndUserCaseDetail: true,
           EndUserCaseDialogs: true,
+          EndUserCaseEscalationDialogs: true,
         },
       },
     });
@@ -149,6 +160,7 @@ describe("EndUserCasesPage", () => {
           EndUserCaseCard: true,
           EndUserCaseDetail: true,
           EndUserCaseDialogs: true,
+          EndUserCaseEscalationDialogs: true,
         },
       },
     });
@@ -159,6 +171,48 @@ describe("EndUserCasesPage", () => {
       expect(action.attributes("data-outlined")).not.toBe("true");
       expect(action.attributes("disabled")).toBeUndefined();
     }
+  });
+
+  it("passes the dedicated escalation permission and opens its isolated workflow", async () => {
+    authState.runtime!.project!.effectivePermissionCodes.push(
+      "project.cases.escalate",
+    );
+    (state.store as { selected: unknown }).selected = {
+      case: { id: "case-1", version: 1, summary: "Нужна помощь" },
+      escalations: { items: [] },
+    };
+    const wrapper = mount(EndUserCasesPage, {
+      global: {
+        stubs: {
+          Button: true,
+          Drawer: true,
+          Dialog: {
+            props: ["visible", "header"],
+            template:
+              '<section v-if="visible"><strong>{{ header }}</strong><slot /><slot name="footer" /></section>',
+          },
+          Message: { template: "<div><slot /></div>" },
+          Select: true,
+          Skeleton: true,
+          Textarea: true,
+          EndUserCaseFilters: true,
+          EndUserCaseCard: true,
+          EndUserCaseDetail: {
+            props: ["canEscalate", "currentCmsUserId"],
+            emits: ["request-escalation-action"],
+            template:
+              '<button data-test="escalate" :data-allowed="canEscalate" :data-user="currentCmsUserId" @click="$emit(\'request-escalation-action\', \'REQUEST\')">escalate</button>',
+          },
+          EndUserCaseDialogs: true,
+        },
+      },
+    });
+
+    const action = wrapper.get('[data-test="escalate"]');
+    expect(action.attributes("data-allowed")).toBe("true");
+    expect(action.attributes("data-user")).toBe("cms-1");
+    await action.trigger("click");
+    expect(wrapper.text()).toContain("Позвать специалиста");
   });
 
   it("forwards detail assignment actions to the isolated dialogs workflow", async () => {
@@ -209,6 +263,7 @@ describe("EndUserCasesPage", () => {
             template:
               '<button data-test="request-assignment" @click="$emit(\'request-assignment\')">Назначить</button>',
           },
+          EndUserCaseEscalationDialogs: true,
         },
       },
     });
@@ -248,6 +303,7 @@ describe("EndUserCasesPage", () => {
           EndUserCaseCard: true,
           EndUserCaseDetail: true,
           EndUserCaseDialogs: true,
+          EndUserCaseEscalationDialogs: true,
         },
       },
     });
@@ -289,6 +345,7 @@ describe("EndUserCasesPage", () => {
           },
           EndUserCaseDetail: true,
           EndUserCaseDialogs: true,
+          EndUserCaseEscalationDialogs: true,
         },
       },
     });
@@ -313,6 +370,9 @@ describe("EndUserCasesPage", () => {
   });
 
   it("uses the full-screen detail on tablet and mobile widths", async () => {
+    authState.runtime!.project!.effectivePermissionCodes.push(
+      "project.cases.escalate",
+    );
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
       value: 1024,
@@ -326,19 +386,28 @@ describe("EndUserCasesPage", () => {
             props: ["visible"],
             emits: ["update:visible"],
             template:
-              '<button v-if="visible" data-test="close-drawer" @click="$emit(\'update:visible\', false)">close</button>',
+              '<div v-if="visible"><button data-test="close-drawer" @click="$emit(\'update:visible\', false)">close</button><slot /></div>',
           },
           Message: true,
           Skeleton: true,
           EndUserCaseFilters: true,
           EndUserCaseCard: true,
-          EndUserCaseDetail: true,
+          EndUserCaseDetail: {
+            props: ["canEscalate", "currentCmsUserId"],
+            emits: ["request-escalation-action"],
+            template:
+              '<button data-test="mobile-escalation" :data-allowed="canEscalate" :data-user="currentCmsUserId" @click="$emit(\'request-escalation-action\', \'REQUEST\')">escalate</button>',
+          },
           EndUserCaseDialogs: true,
+          EndUserCaseEscalationDialogs: true,
         },
       },
     });
     window.dispatchEvent(new Event("resize"));
     await wrapper.vm.$nextTick();
+    const escalationAction = wrapper.get('[data-test="mobile-escalation"]');
+    expect(escalationAction.attributes("data-allowed")).toBe("true");
+    expect(escalationAction.attributes("data-user")).toBe("cms-1");
     await wrapper.get('[data-test="close-drawer"]').trigger("click");
     expect(state.store.close).toHaveBeenCalled();
     expect(state.router.push).toHaveBeenCalledWith({
@@ -347,8 +416,95 @@ describe("EndUserCasesPage", () => {
     });
   });
 
+  it("deactivates cached data on read revoke and refetches after permission returns", async () => {
+    state.route.params = { caseId: "case-1" };
+    const wrapper = mount(EndUserCasesPage, {
+      global: {
+        stubs: {
+          Button: true,
+          Drawer: true,
+          Message: { template: "<div><slot /></div>" },
+          Skeleton: true,
+          EndUserCaseFilters: true,
+          EndUserCaseCard: true,
+          EndUserCaseDetail: {
+            template: '<div data-test="case-detail">detail</div>',
+          },
+          EndUserCaseDialogs: {
+            template: '<div data-test="case-dialogs" />',
+          },
+          EndUserCaseEscalationDialogs: {
+            template: '<div data-test="escalation-dialogs" />',
+          },
+        },
+      },
+    });
+    await vi.waitFor(() =>
+      expect(state.store.activateProject).toHaveBeenCalledWith("project-1"),
+    );
+    expect(wrapper.find('[data-test="case-detail"]').exists()).toBe(true);
+    state.store.activateProject.mockClear();
+    state.store.open.mockClear();
+
+    const permissions = authState.runtime!.project!.effectivePermissionCodes;
+    permissions.splice(permissions.indexOf("project.cases.read"), 1);
+    await vi.waitFor(() => expect(state.store.deactivate).toHaveBeenCalled());
+
+    expect(wrapper.find('[data-test="case-detail"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="case-dialogs"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="escalation-dialogs"]').exists()).toBe(
+      false,
+    );
+
+    permissions.push("project.cases.read");
+    await vi.waitFor(() =>
+      expect(state.store.activateProject).toHaveBeenCalledWith("project-1"),
+    );
+    expect(state.store.open).toHaveBeenCalledWith("case-1", false);
+    expect(wrapper.find('[data-test="case-detail"]').exists()).toBe(true);
+  });
+
+  it("scrubs and authoritatively reloads proposal data when its permission changes", async () => {
+    const wrapper = mount(EndUserCasesPage, {
+      global: {
+        stubs: {
+          Button: true,
+          Drawer: true,
+          Message: true,
+          Skeleton: true,
+          EndUserCaseFilters: true,
+          EndUserCaseCard: true,
+          EndUserCaseDetail: true,
+          EndUserCaseDialogs: true,
+          EndUserCaseEscalationDialogs: true,
+        },
+      },
+    });
+    await vi.waitFor(() =>
+      expect(state.store.activateProject).toHaveBeenCalledWith("project-1"),
+    );
+
+    authState.runtime!.project!.effectivePermissionCodes.push(
+      "project.ai_proposals.read",
+    );
+    await vi.waitFor(() =>
+      expect(state.store.setProposalAccess).toHaveBeenCalledWith(true),
+    );
+
+    authState.runtime!.project!.effectivePermissionCodes.splice(
+      authState.runtime!.project!.effectivePermissionCodes.indexOf(
+        "project.ai_proposals.read",
+      ),
+      1,
+    );
+    await vi.waitFor(() =>
+      expect(state.store.setProposalAccess).toHaveBeenCalledWith(false),
+    );
+    wrapper.unmount();
+  });
+
   it("renders the standard forbidden state without loading project data", async () => {
-    authState.project = {
+    authState.runtime!.project = {
       id: "project-1",
       effectivePermissionCodes: [],
     };
@@ -363,6 +519,7 @@ describe("EndUserCasesPage", () => {
           EndUserCaseCard: true,
           EndUserCaseDetail: true,
           EndUserCaseDialogs: true,
+          EndUserCaseEscalationDialogs: true,
         },
       },
     });

@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateSlackNotificationDestinationDtoTopic } from "./createSlackNotificationDestinationDtoTopic";
 
 export interface CreateSlackNotificationDestinationDto {
   /**
@@ -12,6 +13,7 @@ export interface CreateSlackNotificationDestinationDto {
    * @maxLength 120
    */
   displayName: string;
+  topic?: CreateSlackNotificationDestinationDtoTopic;
   /**
    * Write-only Slack Incoming Webhook URL. It is never returned.
    * @minLength 20

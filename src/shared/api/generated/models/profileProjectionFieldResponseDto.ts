@@ -13,6 +13,11 @@ import type { ProfileFieldValueResponseDto } from "./profileFieldValueResponseDt
 
 export interface ProfileProjectionFieldResponseDto {
   access: ProfileProjectionFieldResponseDtoAccess;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  ageSeconds?: number | null;
   availability: ProfileProjectionFieldResponseDtoAvailability;
   classification: ProfileProjectionFieldResponseDtoClassification;
   definitionId: string;
@@ -22,6 +27,8 @@ export interface ProfileProjectionFieldResponseDto {
   key: string;
   label: string;
   lifecycle: ProfileProjectionFieldResponseDtoLifecycle;
+  /** @nullable */
+  observedAt?: string | null;
   /** @nullable */
   purpose?: string | null;
   /** @nullable */

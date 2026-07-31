@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EndUserCaseResponseDtoActiveEscalation } from "./endUserCaseResponseDtoActiveEscalation";
 import type { EndUserCaseResponseDtoAssignee } from "./endUserCaseResponseDtoAssignee";
 import type { EndUserCaseResponseDtoAvailableStatusesItem } from "./endUserCaseResponseDtoAvailableStatusesItem";
 import type { EndUserCaseResponseDtoChannelsItem } from "./endUserCaseResponseDtoChannelsItem";
@@ -24,6 +25,8 @@ import type { EndUserCaseResponseDtoUrgency } from "./endUserCaseResponseDtoUrge
 import type { EndUserCaseWorkSummaryResponseDto } from "./endUserCaseWorkSummaryResponseDto";
 
 export interface EndUserCaseResponseDto {
+  /** @nullable */
+  activeEscalation?: EndUserCaseResponseDtoActiveEscalation;
   /** @nullable */
   aggregationDirtyAt?: string | null;
   /** @nullable */
@@ -68,6 +71,7 @@ export interface EndUserCaseResponseDto {
   proposalCount: number;
   /** @nullable */
   reopenedAt?: string | null;
+  requiresSpecialist: boolean;
   resolution: EndUserCaseResolutionResponseDto;
   /** @nullable */
   resolvedAt?: string | null;

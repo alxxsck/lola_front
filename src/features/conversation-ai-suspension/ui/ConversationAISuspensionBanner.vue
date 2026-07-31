@@ -115,7 +115,6 @@ const reasonLabel = computed(() => detail.value?.reason ? reasonLabels[detail.va
 .suspension-actions :deep(.p-button) { min-height: 32px; padding-block: .35rem; font-size: .65rem; }
 .suspension-banner.compact { flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; }
 .suspension-banner.compact .suspension-copy { flex: 0 1 auto; }
-.suspension-banner.compact .suspension-copy h4,
 .suspension-banner.compact .suspension-meta,
 .suspension-banner.compact .suspension-note,
 .suspension-banner.compact .suspension-progress,

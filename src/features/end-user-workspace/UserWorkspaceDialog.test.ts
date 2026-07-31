@@ -774,7 +774,7 @@ describe("единое рабочее пространство пользова�
     expect(wrapper.text()).not.toContain("Добрый день");
   });
 
-  it("не загружает настройки перевода до явного действия оператора", async () => {
+  it("загружает настройки перевода только после явного действия оператора", async () => {
     mocks.permissions.push("project.translation.create");
     mocks.getMessages.mockResolvedValue({
       items: [
@@ -803,12 +803,6 @@ describe("единое рабочее пространство пользова�
 
     await wrapper
       .get('button[aria-label="Другие действия с диалогом"]')
-      .trigger("click");
-    await flushPromises();
-    expect(getTranslation).not.toHaveBeenCalled();
-
-    await wrapper
-      .get('[data-action="show-translated-messages"]')
       .trigger("click");
     await flushPromises();
 

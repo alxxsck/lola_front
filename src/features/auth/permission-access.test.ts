@@ -6,6 +6,40 @@ import {
 } from "./permission-access";
 
 describe("permission access", () => {
+  it("keeps CMS Agent, Analysis and Operations authority independent", () => {
+    const permissions = [
+      "project.cms_agent.use",
+      "project.ai_analyses.read",
+      "project.ai_analyses.run",
+      "project.ai_analyses.schedule",
+      "project.ai_analyses.manage",
+      "project.ai_analysis_cost.read",
+      "project.ai_operations.read",
+      "project.ai_operations.sensitive.read",
+      "project.ai_operations.subjects.read",
+      "project.ai_operations.audit.read",
+    ];
+
+    expect(hasProjectPermission(permissions, "project.cms_agent.use")).toBe(
+      true,
+    );
+    expect(hasProjectPermission(permissions, "project.ai_analyses.run")).toBe(
+      true,
+    );
+    expect(
+      hasProjectPermission(
+        ["project.ai_analyses.read"],
+        "project.ai_operations.read",
+      ),
+    ).toBe(false);
+    expect(
+      hasProjectPermission(
+        ["project.ai_operations.read"],
+        "project.ai_operations.subjects.read",
+      ),
+    ).toBe(false);
+  });
+
   it("recognizes the four independent Telegram broadcast capabilities", () => {
     const permissions = [
       "project.telegram.broadcasts.read",

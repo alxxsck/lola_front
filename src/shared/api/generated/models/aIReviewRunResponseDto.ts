@@ -9,6 +9,7 @@ import type { AIReviewRunResponseDtoCostLevel } from "./aIReviewRunResponseDtoCo
 import type { AIReviewRunResponseDtoStatus } from "./aIReviewRunResponseDtoStatus";
 
 export interface AIReviewRunResponseDto {
+  analysisId?: string;
   completedAt?: string;
   costLevel: AIReviewRunResponseDtoCostLevel;
   createdAt: string;
@@ -20,5 +21,7 @@ export interface AIReviewRunResponseDto {
   policyRevisionId?: string;
   proposalId?: string;
   redactedBytes: number;
+  /** @nullable */
+  runId?: string | null;
   status: AIReviewRunResponseDtoStatus;
 }

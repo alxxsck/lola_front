@@ -88,4 +88,9 @@ export const endUserCaseEventLabel = (type: string): string =>
     MERGED: "Обращения объединены",
     SPLIT: "Обращение разделено",
     ADMIN_ATTENTION_REQUESTED: "Запрошена помощь администратора",
+    ADMIN_ATTENTION_CLAIMED: "Специалист взял обращение в работу",
+    ADMIN_ATTENTION_RELEASED: "Обращение возвращено в очередь специалистов",
+    ADMIN_ATTENTION_TRANSFERRED: "Обращение передано другому специалисту",
+    ADMIN_ATTENTION_CLOSED: "Помощь специалиста завершена",
+    ADMIN_ATTENTION_CANCELLED: "Запрос специалиста отменён",
   })[type] ?? "Обращение обновлено";
