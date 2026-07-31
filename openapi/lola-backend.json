@@ -5,7 +5,8 @@
         "enum": [
           "SERVER_HANDLER",
           "FRONTEND_COMMAND",
-          "PROPOSAL"
+          "PROPOSAL",
+          "CASE_ESCALATION"
         ],
         "type": "string"
       },
@@ -179,6 +180,59 @@
           "transport",
           "connectedAt",
           "lastHeartbeatAt"
+        ],
+        "type": "object"
+      },
+      "ActiveEndUserCaseEscalationResponseDto": {
+        "properties": {
+          "claimant": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCaseAssigneeResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "claimedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasonCode": {
+            "type": "string"
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "END_USER_REQUEST",
+              "LOLA_DECISION",
+              "CMS_USER",
+              "SYSTEM_POLICY"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "REQUESTED",
+              "CLAIMED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "source",
+          "reasonCode",
+          "requestedAt"
         ],
         "type": "object"
       },
@@ -1241,6 +1295,1049 @@
         ],
         "type": "object"
       },
+      "AiOperationActorDto": {
+        "properties": {
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "END_USER",
+              "CMS_USER",
+              "SYSTEM"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "AiOperationCostDto": {
+        "properties": {
+          "effectiveCost": {
+            "type": "string"
+          },
+          "estimatedFallbackCost": {
+            "type": "string"
+          },
+          "providerReportedCost": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "providerReportedCost",
+          "estimatedFallbackCost",
+          "effectiveCost"
+        ],
+        "type": "object"
+      },
+      "AiOperationDataAccessDto": {
+        "properties": {
+          "bytesRead": {
+            "type": "string"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "groupsReturned": {
+            "type": "number"
+          },
+          "limitationCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "rangeEndedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "rangeStartedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "rowsRead": {
+            "type": "number"
+          },
+          "sourceReceiptId": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "toolCallStepId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "workUnits": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "toolCallStepId",
+          "sourceType",
+          "sourceReceiptId",
+          "rangeStartedAt",
+          "rangeEndedAt",
+          "rowsRead",
+          "groupsReturned",
+          "bytesRead",
+          "workUnits",
+          "complete",
+          "truncated",
+          "limitationCodes"
+        ],
+        "type": "object"
+      },
+      "AiOperationDetailResponseDto": {
+        "properties": {
+          "authorizedByCmsUserDisplayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "authorizedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "CHAT",
+              "VOICE",
+              "SPEECH",
+              "MEMORY",
+              "AI_REVIEW",
+              "AI_ANALYSIS",
+              "CASE_INTELLIGENCE",
+              "PROJECT_OVERHEAD"
+            ],
+            "type": "string"
+          },
+          "chargedAccount": {
+            "enum": [
+              "END_USER_ALLOWANCE",
+              "PROJECT_BUDGET",
+              "PROJECT_OVERHEAD"
+            ],
+            "type": "string"
+          },
+          "chargedEndUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "initiator": {
+            "$ref": "#/components/schemas/AiOperationActorDto"
+          },
+          "limitationCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "operationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "outcomeCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "parentOperationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectSequence": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "responsibleCmsUserDisplayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "responsibleCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "restrictedSections": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "rootCorrelationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "STARTED",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationTimelineItemDto"
+            },
+            "type": "array"
+          },
+          "timelinePageInfo": {
+            "$ref": "#/components/schemas/AiOperationPageInfoDto"
+          },
+          "title": {
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AiOperationUsageDto"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "operationId",
+          "projectSequence",
+          "rootCorrelationId",
+          "category",
+          "status",
+          "title",
+          "sourceKind",
+          "sourceId",
+          "initiator",
+          "chargedAccount",
+          "usageRecords",
+          "cost",
+          "limitationCodes",
+          "startedAt",
+          "purpose",
+          "timeline",
+          "timelinePageInfo",
+          "usage",
+          "restrictedSections"
+        ],
+        "type": "object"
+      },
+      "AiOperationListItemDto": {
+        "properties": {
+          "authorizedByCmsUserDisplayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "authorizedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "CHAT",
+              "VOICE",
+              "SPEECH",
+              "MEMORY",
+              "AI_REVIEW",
+              "AI_ANALYSIS",
+              "CASE_INTELLIGENCE",
+              "PROJECT_OVERHEAD"
+            ],
+            "type": "string"
+          },
+          "chargedAccount": {
+            "enum": [
+              "END_USER_ALLOWANCE",
+              "PROJECT_BUDGET",
+              "PROJECT_OVERHEAD"
+            ],
+            "type": "string"
+          },
+          "chargedEndUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "initiator": {
+            "$ref": "#/components/schemas/AiOperationActorDto"
+          },
+          "limitationCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "operationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "parentOperationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectSequence": {
+            "type": "string"
+          },
+          "responsibleCmsUserDisplayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "responsibleCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "rootCorrelationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "STARTED",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "operationId",
+          "projectSequence",
+          "rootCorrelationId",
+          "category",
+          "status",
+          "title",
+          "sourceKind",
+          "sourceId",
+          "initiator",
+          "chargedAccount",
+          "usageRecords",
+          "cost",
+          "limitationCodes",
+          "startedAt"
+        ],
+        "type": "object"
+      },
+      "AiOperationListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationListItemDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/AiOperationPageInfoDto"
+          }
+        },
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "type": "object"
+      },
+      "AiOperationModelAttemptDto": {
+        "properties": {
+          "capabilityRevision": {
+            "type": "string"
+          },
+          "localDispatchId": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "previousResponseId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "promptCompilerRevision": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerRequestId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "providerResponseId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "responseStorageMode": {
+            "type": "string"
+          },
+          "usageRecord": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationUsageAttemptDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "zeroDataRetentionObserved": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "operation",
+          "localDispatchId",
+          "providerRequestId",
+          "providerResponseId",
+          "previousResponseId",
+          "promptCompilerRevision",
+          "capabilityRevision",
+          "zeroDataRetentionObserved",
+          "responseStorageMode",
+          "usageRecord"
+        ],
+        "type": "object"
+      },
+      "AiOperationPageInfoDto": {
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "hasMore"
+        ],
+        "type": "object"
+      },
+      "AiOperationProtectedAccessActorDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "externalId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CMS_USER",
+              "SYSTEM",
+              "BREAK_GLASS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "AiOperationProtectedAccessItemDto": {
+        "properties": {
+          "accessEventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "accessKind": {
+            "enum": [
+              "SENSITIVE_DETAIL",
+              "SUBJECT_MANIFEST",
+              "ACCESS_HISTORY"
+            ],
+            "type": "string"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/AiOperationProtectedAccessActorDto"
+          },
+          "correlationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "SUCCESS",
+              "DENIED"
+            ],
+            "type": "string"
+          },
+          "requestId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "requiredPermissionCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessEventId",
+          "accessKind",
+          "outcome",
+          "actor",
+          "requiredPermissionCode",
+          "requestId",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "AiOperationProtectedAccessPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationProtectedAccessItemDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/AiOperationPageInfoDto"
+          }
+        },
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "type": "object"
+      },
+      "AiOperationProviderCostDto": {
+        "properties": {
+          "effectiveCost": {
+            "type": "string"
+          },
+          "estimatedFallbackCost": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerReportedCost": {
+            "type": "string"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "providerReportedCost",
+          "estimatedFallbackCost",
+          "effectiveCost",
+          "provider",
+          "usageRecords"
+        ],
+        "type": "object"
+      },
+      "AiOperationSubjectDto": {
+        "properties": {
+          "charged": {
+            "description": "Whether this End User was the charged allowance subject. Project-budget admin analyses are false.",
+            "type": "boolean"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "enum": [
+                "SCOPE_MEMBER",
+                "DATA_CONTRIBUTOR",
+                "DIRECT_SUBJECT"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "subjectReference": {
+            "type": "string"
+          },
+          "subjectRowId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subjectRowId",
+          "subjectReference",
+          "charged",
+          "roles"
+        ],
+        "type": "object"
+      },
+      "AiOperationSubjectManifestDto": {
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "manifestId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "sealedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "snapshotKind": {
+            "type": "string"
+          },
+          "snapshotReference": {
+            "type": "string"
+          },
+          "sourceDataAccessReceiptStepIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "state": {
+            "enum": [
+              "SEALED",
+              "REDACTED"
+            ],
+            "type": "string"
+          },
+          "subjectCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "manifestId",
+          "sourceDataAccessReceiptStepIds",
+          "state",
+          "snapshotKind",
+          "snapshotReference",
+          "subjectCount",
+          "complete",
+          "sealedAt"
+        ],
+        "type": "object"
+      },
+      "AiOperationSubjectPageResponseDto": {
+        "properties": {
+          "availability": {
+            "enum": [
+              "EXACT",
+              "NOT_MATERIALIZED"
+            ],
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationSubjectDto"
+            },
+            "type": "array"
+          },
+          "manifest": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationSubjectManifestDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/AiOperationPageInfoDto"
+          }
+        },
+        "required": [
+          "availability",
+          "items",
+          "pageInfo"
+        ],
+        "type": "object"
+      },
+      "AiOperationSummaryBreakdownDto": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "operations"
+        ],
+        "type": "object"
+      },
+      "AiOperationSummaryResponseDto": {
+        "properties": {
+          "byChargedAccount": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationSummaryBreakdownDto"
+            },
+            "type": "array"
+          },
+          "byProvider": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationProviderCostDto"
+            },
+            "type": "array"
+          },
+          "byStatus": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationSummaryBreakdownDto"
+            },
+            "type": "array"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          },
+          "operations": {
+            "type": "number"
+          },
+          "rootOperations": {
+            "type": "number"
+          },
+          "usageRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "operations",
+          "rootOperations",
+          "usageRecords",
+          "cost",
+          "byStatus",
+          "byChargedAccount",
+          "byProvider"
+        ],
+        "type": "object"
+      },
+      "AiOperationTimelineItemDto": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/AiOperationActorDto"
+          },
+          "dataAccess": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationDataAccessDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "inputHash": {
+            "nullable": true,
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "modelAttempt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationModelAttemptDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "name": {
+            "nullable": true,
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "ordinal": {
+            "nullable": true,
+            "type": "number"
+          },
+          "outcomeCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "outputHash": {
+            "nullable": true,
+            "type": "string"
+          },
+          "parentStepId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "sequence": {
+            "type": "string"
+          },
+          "status": {
+            "nullable": true,
+            "type": "string"
+          },
+          "stepId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "summary": {
+            "nullable": true,
+            "type": "string"
+          },
+          "toolCall": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiOperationToolCallDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "sequence",
+          "kind",
+          "occurredAt",
+          "eventType",
+          "actor",
+          "modelAttempt",
+          "toolCall",
+          "dataAccess"
+        ],
+        "type": "object"
+      },
+      "AiOperationToolCallDto": {
+        "properties": {
+          "argumentsHash": {
+            "type": "string"
+          },
+          "capabilityName": {
+            "type": "string"
+          },
+          "capabilityVersion": {
+            "type": "string"
+          },
+          "normalizedSummary": {
+            "type": "string"
+          },
+          "parentModelAttemptStepId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "providerCallId": {
+            "type": "string"
+          },
+          "providerItemIndex": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "resultBytes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "resultHash": {
+            "nullable": true,
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "parentModelAttemptStepId",
+          "providerCallId",
+          "capabilityName",
+          "capabilityVersion",
+          "schemaVersion",
+          "providerItemIndex",
+          "argumentsHash",
+          "normalizedSummary",
+          "resultHash",
+          "resultBytes"
+        ],
+        "type": "object"
+      },
+      "AiOperationUsageAttemptDto": {
+        "properties": {
+          "billedCost": {
+            "nullable": true,
+            "type": "string"
+          },
+          "costStatus": {
+            "type": "string"
+          },
+          "estimatedCost": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "model": {
+            "nullable": true,
+            "type": "string"
+          },
+          "modelAttemptStepId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerRequestId": {
+            "type": "string"
+          },
+          "status": {
+            "nullable": true,
+            "type": "string"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "model",
+          "operation",
+          "providerRequestId",
+          "status",
+          "costStatus",
+          "billedCost",
+          "estimatedCost",
+          "totalTokens",
+          "inputTokens",
+          "outputTokens",
+          "occurredAt",
+          "modelAttemptStepId"
+        ],
+        "type": "object"
+      },
+      "AiOperationUsageDto": {
+        "properties": {
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/AiOperationUsageAttemptDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/AiOperationPageInfoDto"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/AiOperationCostDto"
+          }
+        },
+        "required": [
+          "totals",
+          "attempts",
+          "pageInfo"
+        ],
+        "type": "object"
+      },
       "AiPricingRevisionActorDto": {
         "properties": {
           "id": {
@@ -1365,9 +2462,22 @@
           "caseLinkState": {
             "enum": [
               "LINKED",
+              "MIGRATED",
+              "REPAIR_REQUIRED",
               "NOT_APPLICABLE",
               "LEGACY_MISSING"
             ],
+            "type": "string"
+          },
+          "caseMigrationDisposition": {
+            "enum": [
+              "ACTIVE_IMPORTED",
+              "ACTIVE_COLLAPSED",
+              "TERMINAL_IMPORTED",
+              "CASE_REPAIR_REQUIRED",
+              "ORPHAN_REPAIR_REQUIRED"
+            ],
+            "nullable": true,
             "type": "string"
           },
           "content": {
@@ -1442,6 +2552,15 @@
               "ACTION_RECOMMENDATION"
             ],
             "type": "string"
+          },
+          "migratedCaseEscalation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AIProposalMigratedCaseEscalationResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "priority": {
             "enum": [
@@ -1604,9 +2723,22 @@
           "caseLinkState": {
             "enum": [
               "LINKED",
+              "MIGRATED",
+              "REPAIR_REQUIRED",
               "NOT_APPLICABLE",
               "LEGACY_MISSING"
             ],
+            "type": "string"
+          },
+          "caseMigrationDisposition": {
+            "enum": [
+              "ACTIVE_IMPORTED",
+              "ACTIVE_COLLAPSED",
+              "TERMINAL_IMPORTED",
+              "CASE_REPAIR_REQUIRED",
+              "ORPHAN_REPAIR_REQUIRED"
+            ],
+            "nullable": true,
             "type": "string"
           },
           "conversationId": {
@@ -1657,6 +2789,15 @@
               "ACTION_RECOMMENDATION"
             ],
             "type": "string"
+          },
+          "migratedCaseEscalation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AIProposalMigratedCaseEscalationResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "priority": {
             "enum": [
@@ -1724,6 +2865,42 @@
           "isRead",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AIProposalMigratedCaseEscalationResponseDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "ACTIVE_IMPORTED",
+              "ACTIVE_COLLAPSED",
+              "TERMINAL_IMPORTED"
+            ],
+            "type": "string"
+          },
+          "escalationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "REQUESTED",
+              "CLAIMED",
+              "CLOSED",
+              "CANCELLED"
+            ],
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseId",
+          "escalationId",
+          "disposition"
         ],
         "type": "object"
       },
@@ -1874,6 +3051,10 @@
       },
       "AIReviewRunResponseDto": {
         "properties": {
+          "analysisId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "completedAt": {
             "format": "date-time",
             "type": "string"
@@ -1919,6 +3100,11 @@
           },
           "redactedBytes": {
             "type": "number"
+          },
+          "runId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
           },
           "status": {
             "enum": [
@@ -6295,6 +7481,38 @@
         ],
         "type": "object"
       },
+      "CancelEndUserCaseEscalationDto": {
+        "properties": {
+          "expectedCaseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedEscalationVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "nextCaseStatus": {
+            "enum": [
+              "OPEN",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedCaseVersion",
+          "expectedEscalationVersion",
+          "reason",
+          "nextCaseStatus"
+        ],
+        "type": "object"
+      },
       "CaseVerificationEstimateResponseDto": {
         "properties": {
           "complete": {
@@ -6557,6 +7775,393 @@
           "expectedVersion",
           "idempotencyKey",
           "reason"
+        ],
+        "type": "object"
+      },
+      "CloseEndUserCaseEscalationDto": {
+        "properties": {
+          "expectedCaseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedEscalationVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "nextCaseStatus": {
+            "enum": [
+              "OPEN",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "RESOLVED",
+              "UNRESOLVED"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedCaseVersion",
+          "expectedEscalationVersion",
+          "reason",
+          "nextCaseStatus"
+        ],
+        "type": "object"
+      },
+      "CmsAgentImmediateAnalysisResponseDto": {
+        "properties": {
+          "analysisId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "runId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "NEEDS_CLARIFICATION",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "EXPIRED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "analysisId",
+          "runId",
+          "status"
+        ],
+        "type": "object"
+      },
+      "CmsAgentImmediateExecutionResponseDto": {
+        "properties": {
+          "analysis": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CmsAgentImmediateAnalysisResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "interpretation": {
+            "$ref": "#/components/schemas/CmsAgentImmediateInterpretationResponseDto"
+          }
+        },
+        "required": [
+          "interpretation"
+        ],
+        "type": "object"
+      },
+      "CmsAgentImmediateInterpretationResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "PLANNED",
+              "CLARIFICATION_REQUIRED",
+              "UNSUPPORTED",
+              "FAILED",
+              "PENDING",
+              "OUTCOME_UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "providerRequestId": {
+            "type": "string"
+          },
+          "replayed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "CmsAgentInterpretationRunResponseDto": {
+        "properties": {
+          "attemptNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "authorization": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "capability": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "capabilitySetRevision": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "capabilitySetSnapshot": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "clarification": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "contentAvailable": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "effectClass": {
+            "nullable": true,
+            "type": "string"
+          },
+          "executionMode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "PLANNED",
+              "CLARIFICATION_REQUIRED",
+              "UNSUPPORTED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "outcomeCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "plan": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "runId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "runId",
+          "attemptNumber",
+          "outcome",
+          "capabilitySetRevision",
+          "capabilitySetSnapshot",
+          "authorization",
+          "contentAvailable",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CmsAgentRequestDetailResponseDto": {
+        "properties": {
+          "contentAvailable": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "interpretationPageInfo": {
+            "$ref": "#/components/schemas/CmsAgentRequestPageInfoDto"
+          },
+          "interpretationRuns": {
+            "items": {
+              "$ref": "#/components/schemas/CmsAgentInterpretationRunResponseDto"
+            },
+            "type": "array"
+          },
+          "pinnedEndUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "requestId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "requestingCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "retentionUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rootOperationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PLANNED",
+              "NEEDS_CLARIFICATION",
+              "UNSUPPORTED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "projectId",
+          "rootOperationId",
+          "requestingCmsUserId",
+          "contentAvailable",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "retentionUntil",
+          "interpretationRuns",
+          "interpretationPageInfo"
+        ],
+        "type": "object"
+      },
+      "CmsAgentRequestPageInfoDto": {
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "hasMore"
+        ],
+        "type": "object"
+      },
+      "CmsAgentRequestPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CmsAgentRequestResponseDto"
+            },
+            "type": "array"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/CmsAgentRequestPageInfoDto"
+          }
+        },
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "type": "object"
+      },
+      "CmsAgentRequestResponseDto": {
+        "properties": {
+          "contentAvailable": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "pinnedEndUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "requestId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "requestingCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "retentionUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rootOperationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PLANNED",
+              "NEEDS_CLARIFICATION",
+              "UNSUPPORTED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "projectId",
+          "rootOperationId",
+          "requestingCmsUserId",
+          "contentAvailable",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "retentionUntil"
         ],
         "type": "object"
       },
@@ -9306,6 +10911,14 @@
             "maxLength": 120,
             "minLength": 1,
             "type": "string"
+          },
+          "topic": {
+            "default": "AI_PROPOSALS",
+            "enum": [
+              "AI_PROPOSALS",
+              "CASE_ESCALATION"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -9350,6 +10963,48 @@
           "description",
           "permissionCodes",
           "reason"
+        ],
+        "type": "object"
+      },
+      "CreateProjectAIAnalysisDto": {
+        "properties": {
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "executionMode": {
+            "default": "IMMEDIATE",
+            "enum": [
+              "IMMEDIATE",
+              "SCHEDULED_ONCE"
+            ],
+            "type": "string"
+          },
+          "highCostConfirmationToken": {
+            "maxLength": 4096,
+            "minLength": 40,
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/ProjectAIAnalysisScheduleDto"
+          },
+          "scopeKind": {
+            "enum": [
+              "PROJECT",
+              "END_USER",
+              "COHORT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "scopeKind"
         ],
         "type": "object"
       },
@@ -9733,6 +11388,14 @@
             "minLength": 1,
             "type": "string"
           },
+          "topic": {
+            "default": "AI_PROPOSALS",
+            "enum": [
+              "AI_PROPOSALS",
+              "CASE_ESCALATION"
+            ],
+            "type": "string"
+          },
           "webhookUrl": {
             "description": "Write-only Slack Incoming Webhook URL. It is never returned.",
             "example": "https://hooks.slack.com/services/T00000000/B00000000/secret",
@@ -10028,12 +11691,62 @@
           }
         },
         "required": [
-          "topic",
           "channel",
           "subscribed",
           "effectiveStatus",
           "ineligibilityReason",
-          "emailVersion"
+          "emailVersion",
+          "topic"
+        ],
+        "type": "object"
+      },
+      "EmailCaseEscalationPreferenceResponseDto": {
+        "properties": {
+          "channel": {
+            "enum": [
+              "EMAIL"
+            ],
+            "type": "string"
+          },
+          "effectiveStatus": {
+            "enum": [
+              "SUBSCRIBED",
+              "UNSUBSCRIBED",
+              "SUSPENDED",
+              "INELIGIBLE"
+            ],
+            "type": "string"
+          },
+          "emailVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "ineligibilityReason": {
+            "enum": [
+              "EMAIL_UNVERIFIED",
+              "EMAIL_CHANGED",
+              "USER_INACTIVE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "subscribed": {
+            "type": "boolean"
+          },
+          "topic": {
+            "enum": [
+              "CASE_ESCALATION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel",
+          "subscribed",
+          "effectiveStatus",
+          "ineligibilityReason",
+          "emailVersion",
+          "topic"
         ],
         "type": "object"
       },
@@ -10481,6 +12194,223 @@
         ],
         "type": "object"
       },
+      "EndUserCaseEscalationActorResponseDto": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CMS_USER",
+              "END_USER",
+              "LOLA",
+              "SYSTEM",
+              "BREAK_GLASS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseEscalationClaimantResponseDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseEscalationCommandResponseDto": {
+        "properties": {
+          "caseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "escalation": {
+            "$ref": "#/components/schemas/EndUserCaseEscalationResponseDto"
+          },
+          "replayed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "escalation",
+          "caseVersion",
+          "replayed"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseEscalationResponseDto": {
+        "properties": {
+          "cancellationReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "cancelledBy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCaseEscalationActorResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "claimant": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCaseEscalationClaimantResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "claimedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "closedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "closedBy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCaseEscalationActorResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "closeReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "notificationEventId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "occurrenceNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reasonCode": {
+            "type": "string"
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "requester": {
+            "$ref": "#/components/schemas/EndUserCaseEscalationActorResponseDto"
+          },
+          "source": {
+            "enum": [
+              "END_USER_REQUEST",
+              "LOLA_DECISION",
+              "CMS_USER",
+              "SYSTEM_POLICY"
+            ],
+            "type": "string"
+          },
+          "sourceInvocationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceMessageId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "REQUESTED",
+              "CLAIMED",
+              "CLOSED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "caseId",
+          "occurrenceNumber",
+          "version",
+          "status",
+          "source",
+          "reasonCode",
+          "summary",
+          "requester",
+          "requestedAt",
+          "notificationEventId",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseEscalationsResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseEscalationResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "EndUserCaseEventResponseDto": {
         "properties": {
           "caseVersion": {
@@ -10865,6 +12795,15 @@
       },
       "EndUserCaseResponseDto": {
         "properties": {
+          "activeEscalation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActiveEndUserCaseEscalationResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "aggregationDirtyAt": {
             "format": "date-time",
             "nullable": true,
@@ -11055,6 +12994,9 @@
             "nullable": true,
             "type": "string"
           },
+          "requiresSpecialist": {
+            "type": "boolean"
+          },
           "resolution": {
             "$ref": "#/components/schemas/EndUserCaseResolutionResponseDto"
           },
@@ -11171,6 +13113,7 @@
           "languages",
           "channels",
           "endUser",
+          "requiresSpecialist",
           "messageCount",
           "proposalCount",
           "firstObservedAt",
@@ -11523,6 +13466,39 @@
         "required": [
           "queries",
           "predicate"
+        ],
+        "type": "object"
+      },
+      "EstimateProjectAIAnalysisDto": {
+        "properties": {
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "executionPath": {
+            "enum": [
+              "DIRECT_ANALYSIS",
+              "CMS_AGENT"
+            ],
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "scopeKind": {
+            "enum": [
+              "PROJECT",
+              "END_USER",
+              "COHORT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "executionPath",
+          "question"
         ],
         "type": "object"
       },
@@ -12915,6 +14891,10 @@
       },
       "EventQueryPolicyFieldDto": {
         "properties": {
+          "currencyConstant": {
+            "example": "EUR",
+            "type": "string"
+          },
           "currencyPath": {
             "example": "currency",
             "type": "string"
@@ -12923,6 +14903,7 @@
             "items": {
               "enum": [
                 "PROJECT",
+                "FILTER",
                 "GROUP_BY",
                 "SUM",
                 "MIN",
@@ -12944,7 +14925,9 @@
               "INTEGER",
               "DECIMAL",
               "MONEY",
-              "CURRENCY"
+              "CURRENCY",
+              "DATETIME",
+              "BUSINESS_TIME"
             ],
             "type": "string"
           },
@@ -16622,7 +18605,8 @@
           },
           "topic": {
             "enum": [
-              "AI_PROPOSALS"
+              "AI_PROPOSALS",
+              "CASE_ESCALATION"
             ],
             "type": "string"
           },
@@ -18640,6 +20624,1576 @@
         ],
         "type": "object"
       },
+      "ProjectAIAnalysisBudgetPositionDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "effectiveUsedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "AI_COST_USD_TICKS",
+              "DB_WORK_UNITS"
+            ],
+            "type": "string"
+          },
+          "limitAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "periodEndedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "periodStartedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "remainingAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "PROJECT_DAY",
+              "PROJECT_MONTH",
+              "CMS_USER_DAY",
+              "CMS_USER_MONTH"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "kind",
+          "periodStartedAt",
+          "periodEndedAt",
+          "limitAmount",
+          "effectiveUsedAmount",
+          "remainingAmount"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisBudgetReservationDto": {
+        "properties": {
+          "consumedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "AI_COST_USD_TICKS",
+              "DB_WORK_UNITS"
+            ],
+            "type": "string"
+          },
+          "releasedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "reservedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "runId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "PROJECT_DAY",
+              "PROJECT_MONTH",
+              "CMS_USER_DAY",
+              "CMS_USER_MONTH"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "RESERVED",
+              "CONSUMED",
+              "RELEASED",
+              "EXPIRED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "scope",
+          "reservedAmount",
+          "consumedAmount",
+          "releasedAmount",
+          "state"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisCompatibilityDto": {
+        "properties": {
+          "attributionStatus": {
+            "enum": [
+              "COMPLETE",
+              "REQUESTER_UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "linkedProposalId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "provenanceStatus": {
+            "enum": [
+              "PARTIAL",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "readOnly": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "sourceId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceKind": {
+            "enum": [
+              "AI_REVIEW",
+              "INSIGHT_PROPOSAL"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "readOnly",
+          "sourceKind",
+          "sourceId",
+          "attributionStatus",
+          "provenanceStatus"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisDetailDto": {
+        "properties": {
+          "agentRequestId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "analysisId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "compatibility": {
+            "$ref": "#/components/schemas/ProjectAIAnalysisCompatibilityDto"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "ONE_OFF",
+              "SCHEDULED_ONCE",
+              "RECURRING"
+            ],
+            "type": "string"
+          },
+          "latestRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectSequence": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "question": {
+            "nullable": true,
+            "type": "string"
+          },
+          "questionHash": {
+            "nullable": true,
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "retentionUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "rootAiOperationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "scopeKind": {
+            "enum": [
+              "PROJECT",
+              "END_USER",
+              "COHORT"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "analysisId",
+          "version",
+          "kind",
+          "scopeKind",
+          "title",
+          "state",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisDetailResponseDto": {
+        "properties": {
+          "analysis": {
+            "$ref": "#/components/schemas/ProjectAIAnalysisDetailDto"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisDetailRunDto"
+            },
+            "type": "array"
+          },
+          "schedule": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectAIAnalysisScheduleSummaryDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "subjectEvidence": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "analysis",
+          "runs",
+          "subjectEvidence"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisDetailRunDto": {
+        "properties": {
+          "actualAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "actualDbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "agentRequestId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "attemptNumber": {
+            "type": "number"
+          },
+          "budgetPolicyRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "budgetPolicySnapshot": {
+            "type": "object"
+          },
+          "budgetReconciliationPending": {
+            "type": "boolean"
+          },
+          "budgetReservations": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisBudgetReservationDto"
+            },
+            "type": "array"
+          },
+          "budgetSettledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "capabilitySetRevision": {
+            "nullable": true,
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "catalogRevisionDigest": {
+            "nullable": true,
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "catalogRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "costAttributedToCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "costStatus": {
+            "enum": [
+              "UNKNOWN",
+              "ESTIMATED",
+              "PROVIDER_REPORTED_USAGE",
+              "INCOMPLETE_USAGE",
+              "UNPRICED_MODEL",
+              "UNPRICED_SERVICE_TIER"
+            ],
+            "type": "string"
+          },
+          "costStatuses": {
+            "items": {
+              "enum": [
+                "UNKNOWN",
+                "ESTIMATED",
+                "PROVIDER_REPORTED_USAGE",
+                "INCOMPLETE_USAGE",
+                "UNPRICED_MODEL",
+                "UNPRICED_SERVICE_TIER"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "initiatedBy": {
+            "enum": [
+              "CMS_USER",
+              "SCHEDULE",
+              "LEGACY"
+            ],
+            "type": "string"
+          },
+          "initiatedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "limitationCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "maxAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "maxDbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "maxSubjectCount": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "model": {
+            "nullable": true,
+            "type": "string"
+          },
+          "modelAttempts": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisModelAttemptDto"
+            },
+            "type": "array"
+          },
+          "pricingSnapshot": {
+            "type": "object"
+          },
+          "provider": {
+            "nullable": true,
+            "type": "string"
+          },
+          "providerResponseIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "queryPolicyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "receipts": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisQueryReceiptDto"
+            },
+            "type": "array"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reservedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "reservedDbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "result": {
+            "nullable": true,
+            "type": "object"
+          },
+          "resultHash": {
+            "nullable": true,
+            "type": "string"
+          },
+          "rootAiOperationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "runId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "NEEDS_CLARIFICATION",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "EXPIRED"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "runId",
+          "attemptNumber",
+          "status",
+          "initiatedBy",
+          "costStatus",
+          "costStatuses",
+          "providerResponseIds",
+          "limitationCodes",
+          "createdAt",
+          "updatedAt",
+          "receipts"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisEstimateResponseDto": {
+        "properties": {
+          "cmsUserOverrideRevision": {
+            "nullable": true,
+            "type": "number"
+          },
+          "confirmationExpiresAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "confirmationRequired": {
+            "type": "boolean"
+          },
+          "confirmationToken": {
+            "nullable": true,
+            "type": "string"
+          },
+          "executionPath": {
+            "enum": [
+              "DIRECT_ANALYSIS",
+              "CMS_AGENT"
+            ],
+            "type": "string"
+          },
+          "maxInputTokens": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "maxOutputTokens": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "maxProviderCalls": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "model": {
+            "type": "string"
+          },
+          "pricingVersion": {
+            "type": "string"
+          },
+          "projectPolicyRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "reservedCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "executionPath",
+          "provider",
+          "model",
+          "pricingVersion",
+          "reservedCostUsdTicks",
+          "maxInputTokens",
+          "maxOutputTokens",
+          "maxProviderCalls",
+          "projectPolicyRevision",
+          "confirmationRequired"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisListItemDto": {
+        "properties": {
+          "analysisId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "compatibility": {
+            "$ref": "#/components/schemas/ProjectAIAnalysisCompatibilityDto"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "eventCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "hasLimitations": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "ONE_OFF",
+              "SCHEDULED_ONCE",
+              "RECURRING"
+            ],
+            "type": "string"
+          },
+          "latestRun": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectAIAnalysisRunSummaryDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "projectSequence": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "questionPreview": {
+            "maxLength": 240,
+            "nullable": true,
+            "type": "string"
+          },
+          "retentionUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "schedule": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectAIAnalysisScheduleSummaryDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "scopeKind": {
+            "enum": [
+              "PROJECT",
+              "END_USER",
+              "COHORT"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "analysisId",
+          "version",
+          "kind",
+          "scopeKind",
+          "title",
+          "state",
+          "createdAt",
+          "hasLimitations",
+          "complete",
+          "eventCodes"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisListItemDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisModelAttemptDto": {
+        "properties": {
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "number"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerResponseId": {
+            "nullable": true,
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "stepId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "usage": {
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "stepId",
+          "ordinal",
+          "status",
+          "provider",
+          "model",
+          "operation",
+          "startedAt"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisQueryReceiptDto": {
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "number"
+          },
+          "examinedRows": {
+            "type": "number"
+          },
+          "groups": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "limitationCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "matchedEndUserCount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "matchedEndUserCountExact": {
+            "type": "boolean"
+          },
+          "ordinal": {
+            "type": "number"
+          },
+          "queryHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "rangeEndedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "rangeStartedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "redactedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "rejectionCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "resultRows": {
+            "type": "number"
+          },
+          "runId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "serializedBytes": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "ACCEPTED",
+              "REJECTED",
+              "OUTCOME_UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "workUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "runId",
+          "ordinal",
+          "status",
+          "queryHash",
+          "matchedEndUserCount",
+          "matchedEndUserCountExact",
+          "examinedRows",
+          "resultRows",
+          "groups",
+          "serializedBytes",
+          "durationMs",
+          "workUnits",
+          "complete",
+          "truncated",
+          "limitationCodes",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisReceiptDto": {
+        "properties": {
+          "analysisId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "runId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "scheduledAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "SCHEDULED",
+              "PAUSED",
+              "QUEUED",
+              "RUNNING",
+              "NEEDS_CLARIFICATION",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "EXPIRED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "analysisId",
+          "status",
+          "version"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisRunSummaryDto": {
+        "properties": {
+          "actualAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "actualDbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "analysisId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "budgetReconciliationPending": {
+            "type": "boolean"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "costAttributedToCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "costStatus": {
+            "enum": [
+              "UNKNOWN",
+              "ESTIMATED",
+              "PROVIDER_REPORTED_USAGE",
+              "INCOMPLETE_USAGE",
+              "UNPRICED_MODEL",
+              "UNPRICED_SERVICE_TIER"
+            ],
+            "type": "string"
+          },
+          "costStatuses": {
+            "items": {
+              "enum": [
+                "UNKNOWN",
+                "ESTIMATED",
+                "PROVIDER_REPORTED_USAGE",
+                "INCOMPLETE_USAGE",
+                "UNPRICED_MODEL",
+                "UNPRICED_SERVICE_TIER"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "eventCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "hasLimitations": {
+            "type": "boolean"
+          },
+          "limitationCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "modelAttempts": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "reservedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "rootAiOperationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "runId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "scheduledAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "SCHEDULED",
+              "PAUSED",
+              "QUEUED",
+              "RUNNING",
+              "NEEDS_CLARIFICATION",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "EXPIRED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "analysisId",
+          "status",
+          "version",
+          "limitationCodes",
+          "hasLimitations",
+          "complete",
+          "eventCodes"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisScheduleDto": {
+        "properties": {
+          "dstDisambiguation": {
+            "enum": [
+              "EARLIER",
+              "LATER"
+            ],
+            "type": "string"
+          },
+          "localDateTime": {
+            "example": "2026-07-31T09:15:00",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$",
+            "type": "string"
+          },
+          "timezone": {
+            "example": "Europe/Madrid",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "localDateTime",
+          "timezone"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisScheduleSummaryDto": {
+        "properties": {
+          "cancelledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "dstDisambiguation": {
+            "enum": [
+              "EXACT",
+              "EARLIER",
+              "LATER"
+            ],
+            "type": "string"
+          },
+          "failureCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "firedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "firedRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "localDateTime": {
+            "type": "string"
+          },
+          "nextRunAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "runAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "scheduleId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "scheduleSpecVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "scheduleType": {
+            "enum": [
+              "ONCE"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "ACTIVE",
+              "CLAIMED",
+              "FIRED",
+              "CANCELLED",
+              "PAUSED"
+            ],
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scheduleId",
+          "state",
+          "scheduleType",
+          "scheduleSpecVersion",
+          "localDateTime",
+          "timezone",
+          "dstDisambiguation",
+          "runAt"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisUsageByAnalysisDto": {
+        "properties": {
+          "actualAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "actualDbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "analysisId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "billedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "estimatedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "reservedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "resultPath": {
+            "type": "string"
+          },
+          "rootAiOperationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "runId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "analysisId",
+          "runId",
+          "rootAiOperationId",
+          "cmsUserId",
+          "title",
+          "status",
+          "reservedAiCostUsdTicks",
+          "estimatedAiCostUsdTicks",
+          "billedAiCostUsdTicks",
+          "actualAiCostUsdTicks",
+          "actualDbWorkUnits",
+          "resultPath",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisUsageByCmsUserDto": {
+        "properties": {
+          "actualAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "actualDbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "billedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "costStatuses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "estimatedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "modelAttempts": {
+            "type": "number"
+          },
+          "reconciliationPendingRuns": {
+            "type": "number"
+          },
+          "reservedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "runs": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "runs",
+          "modelAttempts",
+          "reservedAiCostUsdTicks",
+          "estimatedAiCostUsdTicks",
+          "billedAiCostUsdTicks",
+          "actualAiCostUsdTicks",
+          "actualDbWorkUnits",
+          "reconciliationPendingRuns",
+          "costStatuses",
+          "cmsUserId"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisUsageByModelDto": {
+        "properties": {
+          "billedCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "calls": {
+            "type": "number"
+          },
+          "costStatuses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "costUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "estimatedCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "inputTokens": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "outputTokens": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "calls",
+          "inputTokens",
+          "outputTokens",
+          "estimatedCostUsdTicks",
+          "billedCostUsdTicks",
+          "costUsdTicks",
+          "costStatuses"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisUsageByOperationDto": {
+        "properties": {
+          "aiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "aiOperationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "analysisId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "billedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "dbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "estimatedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "resultPath": {
+            "nullable": true,
+            "type": "string"
+          },
+          "runId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "aiOperationId",
+          "cmsUserId",
+          "purpose",
+          "status",
+          "estimatedAiCostUsdTicks",
+          "billedAiCostUsdTicks",
+          "aiCostUsdTicks",
+          "dbWorkUnits",
+          "startedAt"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisUsageResponseDto": {
+        "properties": {
+          "budget": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisBudgetPositionDto"
+            },
+            "type": "array"
+          },
+          "byAnalysis": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisUsageByAnalysisDto"
+            },
+            "type": "array"
+          },
+          "byCmsUser": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisUsageByCmsUserDto"
+            },
+            "type": "array"
+          },
+          "byDay": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisUsageTimeBucketDto"
+            },
+            "type": "array"
+          },
+          "byModel": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisUsageByModelDto"
+            },
+            "type": "array"
+          },
+          "byMonth": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisUsageTimeBucketDto"
+            },
+            "type": "array"
+          },
+          "byOperation": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisUsageByOperationDto"
+            },
+            "type": "array"
+          },
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "linksTruncated": {
+            "type": "boolean"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectAIAnalysisUsageTotalsDto"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "project",
+          "byCmsUser",
+          "byModel",
+          "byAnalysis",
+          "byOperation",
+          "byDay",
+          "byMonth",
+          "linksTruncated",
+          "budget"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisUsageTimeBucketDto": {
+        "properties": {
+          "aiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "billedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "dbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "estimatedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "operations": {
+            "type": "number"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "startedAt",
+          "operations",
+          "estimatedAiCostUsdTicks",
+          "billedAiCostUsdTicks",
+          "aiCostUsdTicks",
+          "dbWorkUnits"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisUsageTotalsDto": {
+        "properties": {
+          "actualAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "actualDbWorkUnits": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "billedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "costStatuses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "estimatedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "modelAttempts": {
+            "type": "number"
+          },
+          "reconciliationPendingRuns": {
+            "type": "number"
+          },
+          "reservedAiCostUsdTicks": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "runs": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "runs",
+          "modelAttempts",
+          "reservedAiCostUsdTicks",
+          "estimatedAiCostUsdTicks",
+          "billedAiCostUsdTicks",
+          "actualAiCostUsdTicks",
+          "actualDbWorkUnits",
+          "reconciliationPendingRuns",
+          "costStatuses"
+        ],
+        "type": "object"
+      },
       "ProjectAiUsageWorkloadBreakdownResponseDto": {
         "properties": {
           "appliedModel": {
@@ -18907,7 +22461,9 @@
               "AUTHENTICATION_ATTEMPT",
               "EMAIL_MESSAGE",
               "EMAIL_ADDRESS",
-              "INTEGRATION_ACTIVITY"
+              "INTEGRATION_ACTIVITY",
+              "AI_ANALYSIS",
+              "END_USER_CASE_ESCALATION"
             ],
             "type": "string"
           }
@@ -20335,6 +23891,29 @@
           "expiresAt",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "RequestEndUserCaseEscalationDto": {
+        "properties": {
+          "expectedCaseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reasonCode": {
+            "pattern": "^[A-Z][A-Z0-9_]{0,99}$",
+            "type": "string"
+          },
+          "summary": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedCaseVersion",
+          "reasonCode",
+          "summary"
         ],
         "type": "object"
       },
@@ -23986,6 +27565,35 @@
         ],
         "type": "object"
       },
+      "SubmitCmsAgentRequestDto": {
+        "properties": {
+          "endUserId": {
+            "description": "Trusted End User context selected by the CMS route, never inferred by the model.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "highCostConfirmationToken": {
+            "maxLength": 4096,
+            "minLength": 40,
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "text"
+        ],
+        "type": "object"
+      },
       "SumGtePredicateDto": {
         "properties": {
           "currency": {
@@ -25481,6 +29089,34 @@
           "CLOSED"
         ],
         "type": "string"
+      },
+      "TransferEndUserCaseEscalationDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expectedCaseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedEscalationVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedCaseVersion",
+          "expectedEscalationVersion",
+          "reason",
+          "cmsUserId"
+        ],
+        "type": "object"
       },
       "TranslationAvailabilityResponseDto": {
         "properties": {
@@ -27222,6 +30858,17 @@
         ],
         "type": "object"
       },
+      "UpdateEmailCaseEscalationPreferenceDto": {
+        "properties": {
+          "subscribed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "subscribed"
+        ],
+        "type": "object"
+      },
       "UpdateEndUserCaseWorkflowDto": {
         "properties": {
           "expectedVersion": {
@@ -28479,6 +32126,29 @@
           "dependencies",
           "cost",
           "warnings"
+        ],
+        "type": "object"
+      },
+      "VersionedEndUserCaseEscalationDto": {
+        "properties": {
+          "expectedCaseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedEscalationVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedCaseVersion",
+          "expectedEscalationVersion",
+          "reason"
         ],
         "type": "object"
       },
@@ -31275,6 +34945,691 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/agent-requests": {
+      "get": {
+        "operationId": "CmsAgentRequest_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsAgentRequestPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "CMS AI agent"
+        ],
+        "x-iam-permission": {
+          "code": "project.cms_agent.use",
+          "scope": "PROJECT"
+        }
+      },
+      "post": {
+        "operationId": "CmsAgentRequest_submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitCmsAgentRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsAgentRequestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "CMS AI agent"
+        ],
+        "x-iam-permission": {
+          "code": "project.cms_agent.use",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/agent-requests/{requestId}": {
+      "get": {
+        "operationId": "CmsAgentRequest_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsAgentRequestDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "CMS AI agent"
+        ],
+        "x-iam-permission": {
+          "code": "project.cms_agent.use",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/agent-requests/{requestId}/execute": {
+      "post": {
+        "operationId": "CmsAgentRequest_execute",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsAgentImmediateExecutionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "CMS AI agent"
+        ],
+        "x-iam-permission": {
+          "code": "project.cms_agent.use",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-analyses": {
+      "get": {
+        "operationId": "ProjectAIAnalysis_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SCHEDULED",
+                "PAUSED",
+                "QUEUED",
+                "RUNNING",
+                "NEEDS_CLARIFICATION",
+                "SUCCEEDED",
+                "FAILED",
+                "CANCELLED",
+                "EXPIRED",
+                "OUTCOME_UNKNOWN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ONE_OFF",
+                "SCHEDULED_ONCE",
+                "RECURRING"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scopeKind",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PROJECT",
+                "END_USER",
+                "COHORT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdByCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "costAttributedToCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "runFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "runTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventCode",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAIAnalysisListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Project AI Analyses"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_analyses.read",
+          "scope": "PROJECT"
+        }
+      },
+      "post": {
+        "operationId": "ProjectAIAnalysis_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectAIAnalysisDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAIAnalysisReceiptDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Project AI Analyses"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.ai_analyses.run",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.ai_analyses.schedule",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-analyses/{analysisId}": {
+      "get": {
+        "operationId": "ProjectAIAnalysis_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "analysisId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAIAnalysisDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Project AI Analyses"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_analyses.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-analyses/{analysisId}/cancel": {
+      "post": {
+        "operationId": "ProjectAIAnalysis_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "analysisId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "example": "\"1\"",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAIAnalysisReceiptDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Project AI Analyses"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_analyses.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-analyses/estimate": {
+      "post": {
+        "operationId": "ProjectAIAnalysis_estimate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateProjectAIAnalysisDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAIAnalysisEstimateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Project AI Analyses"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_analyses.run",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-analysis-usage": {
+      "get": {
+        "operationId": "ProjectAIAnalysisUsage_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAIAnalysisUsageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Project AI Analysis Usage"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_analysis_cost.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/ai-memory/settings": {
       "get": {
         "operationId": "UserMemory_settings",
@@ -31494,6 +35849,651 @@
         ],
         "x-iam-permission": {
           "code": "project.settings.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-operations": {
+      "get": {
+        "operationId": "AiOperations_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "STARTED",
+                "RUNNING",
+                "SUCCEEDED",
+                "FAILED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "enum": [
+                "CHAT",
+                "VOICE",
+                "SPEECH",
+                "MEMORY",
+                "AI_REVIEW",
+                "AI_ANALYSIS",
+                "CASE_INTELLIGENCE",
+                "PROJECT_OVERHEAD"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "initiatorType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "END_USER",
+                "CMS_USER",
+                "SYSTEM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "initiatorCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "initiatorEndUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "authorizedByCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "responsibleCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chargedEndUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End User whose data contributed to the exact analysis subject manifest",
+            "in": "query",
+            "name": "subjectEndUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chargedAccount",
+            "required": false,
+            "schema": {
+              "enum": [
+                "END_USER_ALLOWANCE",
+                "PROJECT_BUDGET",
+                "PROJECT_OVERHEAD"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sourceKind",
+            "required": false,
+            "schema": {
+              "maxLength": 80,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sourceId",
+            "required": false,
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "providerResponseId",
+            "required": false,
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventCode",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "occurredFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "occurredTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiOperationListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_operations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-operations/{operationId}": {
+      "get": {
+        "operationId": "AiOperations_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "usageCursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "usageLimit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiOperationDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_operations.sensitive.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-operations/{operationId}/access-history": {
+      "get": {
+        "operationId": "AiOperations_accessHistory",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiOperationProtectedAccessPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_operations.audit.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-operations/{operationId}/subjects": {
+      "get": {
+        "operationId": "AiOperations_subjects",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SCOPE_MEMBER",
+                "DATA_CONTRIBUTOR",
+                "DIRECT_SUBJECT"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiOperationSubjectPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_operations.subjects.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-operations/summary": {
+      "get": {
+        "operationId": "AiOperations_summary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "STARTED",
+                "RUNNING",
+                "SUCCEEDED",
+                "FAILED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "enum": [
+                "CHAT",
+                "VOICE",
+                "SPEECH",
+                "MEMORY",
+                "AI_REVIEW",
+                "AI_ANALYSIS",
+                "CASE_INTELLIGENCE",
+                "PROJECT_OVERHEAD"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "authorizedByCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "responsibleCmsUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chargedEndUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chargedAccount",
+            "required": false,
+            "schema": {
+              "enum": [
+                "END_USER_ALLOWANCE",
+                "PROJECT_BUDGET",
+                "PROJECT_OVERHEAD"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sourceKind",
+            "required": false,
+            "schema": {
+              "maxLength": 80,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sourceId",
+            "required": false,
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "providerResponseId",
+            "required": false,
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventCode",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "occurredFrom",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "occurredTo",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiOperationSummaryResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_operations.read",
           "scope": "PROJECT"
         }
       }
@@ -34028,6 +39028,535 @@
         ],
         "x-iam-permission": {
           "code": "project.cases.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/escalations": {
+      "get": {
+        "operationId": "EndUserCases_listEscalations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseEscalationsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.read",
+          "scope": "PROJECT"
+        }
+      },
+      "post": {
+        "operationId": "EndUserCases_requestEscalation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestEndUserCaseEscalationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseEscalationCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.escalate",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/escalations/{escalationId}/cancel": {
+      "post": {
+        "operationId": "EndUserCases_cancelEscalation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "escalationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelEndUserCaseEscalationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseEscalationCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/escalations/{escalationId}/claim": {
+      "post": {
+        "operationId": "EndUserCases_claimEscalation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "escalationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedEndUserCaseEscalationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseEscalationCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.assign",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/escalations/{escalationId}/close": {
+      "post": {
+        "operationId": "EndUserCases_closeEscalation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "escalationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseEndUserCaseEscalationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseEscalationCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.cases.assign",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.manage",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/escalations/{escalationId}/release": {
+      "post": {
+        "operationId": "EndUserCases_releaseEscalation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "escalationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedEndUserCaseEscalationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseEscalationCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.assign",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/escalations/{escalationId}/transfer": {
+      "post": {
+        "operationId": "EndUserCases_transferEscalation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "escalationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferEndUserCaseEscalationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseEscalationCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User Cases"
+        ],
+        "x-iam-permission": {
+          "code": "project.cases.assign",
           "scope": "PROJECT"
         }
       }
@@ -48307,6 +53836,88 @@
           }
         ],
         "summary": "Explicitly subscribe or unsubscribe current verified email",
+        "tags": [
+          "CMS notification preferences"
+        ],
+        "x-iam-authenticated": true
+      }
+    },
+    "/api/v1/auth/me/notification-preferences/case-escalations/email": {
+      "get": {
+        "operationId": "NotificationPreferences_getEmailCaseEscalations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailCaseEscalationPreferenceResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read effective Case escalation email subscription",
+        "tags": [
+          "CMS notification preferences"
+        ],
+        "x-iam-authenticated": true
+      },
+      "patch": {
+        "operationId": "NotificationPreferences_setEmailCaseEscalations",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmailCaseEscalationPreferenceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailCaseEscalationPreferenceResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request identifier returned on every response",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Explicitly subscribe or unsubscribe from Case escalation email",
         "tags": [
           "CMS notification preferences"
         ],

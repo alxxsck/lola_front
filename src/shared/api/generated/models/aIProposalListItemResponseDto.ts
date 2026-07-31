@@ -6,16 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AIProposalListItemResponseDtoCaseLinkState } from "./aIProposalListItemResponseDtoCaseLinkState";
+import type { AIProposalListItemResponseDtoCaseMigrationDisposition } from "./aIProposalListItemResponseDtoCaseMigrationDisposition";
 import type { AIProposalListItemResponseDtoDecisionMode } from "./aIProposalListItemResponseDtoDecisionMode";
 import type { AIProposalListItemResponseDtoEndUser } from "./aIProposalListItemResponseDtoEndUser";
 import type { AIProposalListItemResponseDtoEndUserCase } from "./aIProposalListItemResponseDtoEndUserCase";
 import type { AIProposalListItemResponseDtoKind } from "./aIProposalListItemResponseDtoKind";
+import type { AIProposalListItemResponseDtoMigratedCaseEscalation } from "./aIProposalListItemResponseDtoMigratedCaseEscalation";
 import type { AIProposalListItemResponseDtoPriority } from "./aIProposalListItemResponseDtoPriority";
 import type { AIProposalListItemResponseDtoSourceType } from "./aIProposalListItemResponseDtoSourceType";
 import type { AIProposalListItemResponseDtoWorkflowStatus } from "./aIProposalListItemResponseDtoWorkflowStatus";
 
 export interface AIProposalListItemResponseDto {
   caseLinkState: AIProposalListItemResponseDtoCaseLinkState;
+  /** @nullable */
+  caseMigrationDisposition?: AIProposalListItemResponseDtoCaseMigrationDisposition;
   /** @nullable */
   conversationId?: string | null;
   createdAt: string;
@@ -27,6 +31,8 @@ export interface AIProposalListItemResponseDto {
   id: string;
   isRead: boolean;
   kind: AIProposalListItemResponseDtoKind;
+  /** @nullable */
+  migratedCaseEscalation?: AIProposalListItemResponseDtoMigratedCaseEscalation;
   priority: AIProposalListItemResponseDtoPriority;
   projectSequence: string;
   /** @nullable */

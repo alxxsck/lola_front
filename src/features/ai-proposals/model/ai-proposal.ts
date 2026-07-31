@@ -42,7 +42,12 @@ export interface AIProposalListItem {
     priority: string;
     version: number;
   };
-  caseLinkState: "LINKED" | "NOT_APPLICABLE" | "LEGACY_MISSING";
+  caseLinkState:
+    | "LINKED"
+    | "MIGRATED"
+    | "REPAIR_REQUIRED"
+    | "NOT_APPLICABLE"
+    | "LEGACY_MISSING";
   conversationId?: string;
   sourceMessageId?: string;
   createdAt: string;

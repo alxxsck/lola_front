@@ -17,4 +17,6 @@ export const EventQueryPolicyFieldDtoSemanticType = {
   DECIMAL: "DECIMAL",
   MONEY: "MONEY",
   CURRENCY: "CURRENCY",
+  DATETIME: "DATETIME",
+  BUSINESS_TIME: "BUSINESS_TIME",
 } as const;

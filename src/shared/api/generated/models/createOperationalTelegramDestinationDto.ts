@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateOperationalTelegramDestinationDtoTopic } from "./createOperationalTelegramDestinationDtoTopic";
 
 export interface CreateOperationalTelegramDestinationDto {
   /**
@@ -18,4 +19,5 @@ export interface CreateOperationalTelegramDestinationDto {
    * @maxLength 120
    */
   displayName: string;
+  topic?: CreateOperationalTelegramDestinationDtoTopic;
 }

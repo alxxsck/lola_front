@@ -38,6 +38,7 @@ const primaryCase: EndUserCase = {
   priority: "URGENT",
   prioritySource: "PLATFORM_RULE",
   priorityReasons: ["Пользователь не получил деньги"],
+  requiresSpecialist: false,
   initialTone: "CONCERNED",
   currentTone: "CALM",
   toneTrend: "IMPROVING",
@@ -97,6 +98,7 @@ const mockSeed: EndUserCase[] = [
     summary:
       "Lola собрала данные об устройстве и предложила безопасные шаги. Пользователь ждёт администратора.",
     status: "WAITING_ADMIN",
+    requiresSpecialist: true,
     availableStatuses: ["IN_PROGRESS", "WAITING_END_USER", "RESOLVED"],
     priority: "HIGH",
     urgency: "MEDIUM",

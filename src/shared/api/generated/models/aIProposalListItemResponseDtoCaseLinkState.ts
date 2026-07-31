@@ -12,6 +12,8 @@ export type AIProposalListItemResponseDtoCaseLinkState =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AIProposalListItemResponseDtoCaseLinkState = {
   LINKED: "LINKED",
+  MIGRATED: "MIGRATED",
+  REPAIR_REQUIRED: "REPAIR_REQUIRED",
   NOT_APPLICABLE: "NOT_APPLICABLE",
   LEGACY_MISSING: "LEGACY_MISSING",
 } as const;
