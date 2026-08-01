@@ -1,4 +1,8 @@
-import { createRouter, createWebHistory } from "vue-router";
+import {
+  createRouter,
+  createWebHistory,
+  type RouterScrollBehavior,
+} from "vue-router";
 import { useAuthStore } from "@/features/auth/auth.store";
 import {
   hasProjectPermission,
@@ -14,9 +18,34 @@ import {
 import AppShell from "@/widgets/layout/AppShell.vue";
 import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance";
 
+const AI_LEDGER_ROUTE_GROUPS = new Map([
+  ["ai-analyses", "analyses"],
+  ["ai-analysis-detail", "analyses"],
+  ["ai-operations", "operations"],
+  ["ai-operation-detail", "operations"],
+]);
+
+export const appScrollBehavior: RouterScrollBehavior = (
+  to,
+  from,
+  savedPosition,
+) => {
+  if (savedPosition) return savedPosition;
+
+  const targetGroup = AI_LEDGER_ROUTE_GROUPS.get(String(to.name ?? ""));
+  if (
+    targetGroup &&
+    targetGroup === AI_LEDGER_ROUTE_GROUPS.get(String(from.name ?? ""))
+  ) {
+    return false;
+  }
+
+  return { top: 0 };
+};
+
 export const router = createRouter({
   history: createWebHistory(),
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: appScrollBehavior,
   routes: [
     {
       path: "/login",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import Button from "primevue/button";
 import DatePicker from "primevue/datepicker";
 import InputText from "primevue/inputtext";
@@ -74,6 +74,18 @@ const kindOptions = [
   { label: "Отложенный", value: "SCHEDULED_ONCE" },
   { label: "Регулярный", value: "RECURRING" },
 ];
+const advancedFilterCount = computed(
+  () =>
+    [
+      draft.endUserId,
+      draft.createdByCmsUserId,
+      props.canReadCost ? draft.costAttributedToCmsUserId : "",
+      draft.createdFrom,
+      draft.createdTo,
+      draft.runFrom,
+      draft.runTo,
+    ].filter(Boolean).length,
+);
 
 watch(
   () => props.modelValue,
@@ -165,90 +177,102 @@ function nextDay(value: Date): Date {
     @submit.prevent="apply"
   >
     <AIFilterToggle v-model:expanded="mobileExpanded" :filters="modelValue" />
-    <Select
-      v-model="draft.status"
-      :options="statusOptions"
-      option-label="label"
-      option-value="value"
-      placeholder="Все статусы"
-      aria-label="Статус анализа"
-      :disabled="loading"
-    />
-    <Select
-      v-model="draft.scopeKind"
-      :options="scopeOptions"
-      option-label="label"
-      option-value="value"
-      placeholder="Любая область"
-      aria-label="Область анализа"
-      :disabled="loading"
-    />
-    <Select
-      v-model="draft.kind"
-      :options="kindOptions"
-      option-label="label"
-      option-value="value"
-      placeholder="Все типы"
-      aria-label="Тип запуска"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.eventCode"
-      placeholder="Event code"
-      aria-label="Код события"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.endUserId"
-      placeholder="ID пользователя"
-      aria-label="ID пользователя данных"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.createdByCmsUserId"
-      placeholder="ID администратора"
-      aria-label="ID администратора-создателя"
-      :disabled="loading"
-    />
-    <InputText
-      v-if="canReadCost"
-      v-model="draft.costAttributedToCmsUserId"
-      placeholder="ID расхода администратора"
-      aria-label="ID администратора для атрибуции расходов"
-      :disabled="loading"
-    />
-    <DatePicker
-      v-model="draft.createdFrom"
-      date-format="dd.mm.yy"
-      show-icon
-      placeholder="Создан с"
-      aria-label="Дата создания с"
-      :disabled="loading"
-    />
-    <DatePicker
-      v-model="draft.createdTo"
-      date-format="dd.mm.yy"
-      show-icon
-      placeholder="Создан по"
-      aria-label="Дата создания по"
-      :disabled="loading"
-    />
-    <DatePicker
-      v-model="draft.runFrom"
-      date-format="dd.mm.yy"
-      show-icon
-      placeholder="Запуск с"
-      aria-label="Дата запуска с"
-      :disabled="loading"
-    />
-    <DatePicker
-      v-model="draft.runTo"
-      date-format="dd.mm.yy"
-      show-icon
-      placeholder="Запуск по"
-      aria-label="Дата запуска по"
-      :disabled="loading"
-    />
+    <div class="filter-primary">
+      <Select
+        v-model="draft.status"
+        :options="statusOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Все статусы"
+        aria-label="Статус анализа"
+        :disabled="loading"
+      />
+      <Select
+        v-model="draft.scopeKind"
+        :options="scopeOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Любая область"
+        aria-label="Область анализа"
+        :disabled="loading"
+      />
+      <Select
+        v-model="draft.kind"
+        :options="kindOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Все типы"
+        aria-label="Тип запуска"
+        :disabled="loading"
+      />
+      <InputText
+        v-model="draft.eventCode"
+        placeholder="Код события"
+        aria-label="Код события"
+        :disabled="loading"
+      />
+    </div>
+
+    <details class="advanced-filters">
+      <summary>
+        <span><i class="pi pi-sliders-h" /> Дополнительные фильтры</span>
+        <strong v-if="advancedFilterCount">{{ advancedFilterCount }}</strong>
+        <i class="pi pi-chevron-down" />
+      </summary>
+      <div class="filter-advanced-grid">
+        <InputText
+          v-model="draft.endUserId"
+          placeholder="ID пользователя"
+          aria-label="ID пользователя данных"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.createdByCmsUserId"
+          placeholder="ID администратора"
+          aria-label="ID администратора-создателя"
+          :disabled="loading"
+        />
+        <InputText
+          v-if="canReadCost"
+          v-model="draft.costAttributedToCmsUserId"
+          placeholder="ID расхода администратора"
+          aria-label="ID администратора для атрибуции расходов"
+          :disabled="loading"
+        />
+        <DatePicker
+          v-model="draft.createdFrom"
+          date-format="dd.mm.yy"
+          show-icon
+          placeholder="Создан с"
+          aria-label="Дата создания с"
+          :disabled="loading"
+        />
+        <DatePicker
+          v-model="draft.createdTo"
+          date-format="dd.mm.yy"
+          show-icon
+          placeholder="Создан по"
+          aria-label="Дата создания по"
+          :disabled="loading"
+        />
+        <DatePicker
+          v-model="draft.runFrom"
+          date-format="dd.mm.yy"
+          show-icon
+          placeholder="Запуск с"
+          aria-label="Дата запуска с"
+          :disabled="loading"
+        />
+        <DatePicker
+          v-model="draft.runTo"
+          date-format="dd.mm.yy"
+          show-icon
+          placeholder="Запуск по"
+          aria-label="Дата запуска по"
+          :disabled="loading"
+        />
+      </div>
+    </details>
     <div class="filter-actions">
       <Button
         type="button"
@@ -269,15 +293,23 @@ function nextDay(value: Date): Date {
 
 <style scoped>
 .analysis-filters {
-  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+}
+.filter-primary,
+.filter-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
 }
 @media (max-width: 860px) {
-  .analysis-filters {
+  .filter-primary,
+  .filter-advanced-grid {
     grid-template-columns: repeat(2, minmax(130px, 1fr));
   }
 }
 @media (max-width: 560px) {
-  .analysis-filters {
+  .filter-primary,
+  .filter-advanced-grid {
     grid-template-columns: minmax(0, 1fr);
   }
   .analysis-filters.collapsed > :not(.ai-filter-toggle) {

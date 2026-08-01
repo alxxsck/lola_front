@@ -1,4 +1,4 @@
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import AIOperationCard from "./AIOperationCard.vue";
 
@@ -37,16 +37,18 @@ const item = {
 
 describe("AIOperationCard", () => {
   it("shows initiator, responsible admin and charged account as separate facts", () => {
-    const wrapper = shallowMount(AIOperationCard, {
+    const wrapper = mount(AIOperationCard, {
       props: {
         item,
         projectId: "project-1",
         canReadCost: true,
+        canReadCmsUsers: true,
       },
       global: {
         stubs: {
           RouterLink: {
             name: "RouterLink",
+            props: ["to"],
             template: "<a><slot /></a>",
           },
         },
@@ -60,10 +62,15 @@ describe("AIOperationCard", () => {
     expect(wrapper.text()).toContain("3 чел.");
     expect(wrapper.text()).toContain("$0.25");
     expect(wrapper.findComponent({ name: "RouterLink" }).exists()).toBe(true);
+    expect(
+      wrapper
+        .findAllComponents({ name: "RouterLink" })
+        .some((link) => link.props("to")?.name === "platform-cms-users"),
+    ).toBe(true);
   });
 
   it("does not render monetary cost without permission and keeps safe detail available", () => {
-    const wrapper = shallowMount(AIOperationCard, {
+    const wrapper = mount(AIOperationCard, {
       props: {
         item,
         projectId: "project-1",

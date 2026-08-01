@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import type { RouteLocationRaw } from "vue-router";
 import Tag from "primevue/tag";
+import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
 import type { AiOperationListItemDto } from "@/shared/api/generated/models";
+import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
 import {
   aiOperationActorLabel,
   aiOperationCategoryLabel,
@@ -8,14 +12,20 @@ import {
   aiOperationCostLabel,
   aiOperationDateLabel,
   aiOperationStatusPresentation,
-  compactIdentifier,
 } from "../model/project-ai-operation-presentation";
 
 const props = defineProps<{
   item: AiOperationListItemDto;
   projectId: string;
   canReadCost: boolean;
+  canReadCmsUsers?: boolean;
 }>();
+
+interface TechnicalFact {
+  label: string;
+  value: string;
+  to?: RouteLocationRaw;
+}
 
 function responsibleLabel(): string {
   return (
@@ -24,6 +34,74 @@ function responsibleLabel(): string {
     "не применяется"
   );
 }
+
+const technicalFacts = computed<TechnicalFact[]>(() => [
+  { label: "Operation ID", value: props.item.operationId },
+  ...(props.item.initiator.id
+    ? [
+        {
+          label: "Инициатор",
+          value: props.item.initiator.id,
+          ...(props.item.initiator.type === "END_USER"
+            ? {
+                to: {
+                  name: "users",
+                  params: { endUserId: props.item.initiator.id },
+                  query: { projectId: props.projectId },
+                },
+              }
+            : props.item.initiator.type === "CMS_USER"
+              ? {
+                  to: cmsUserDetailRoute(
+                    props.item.initiator.id,
+                    Boolean(props.canReadCmsUsers),
+                  ),
+                }
+              : {}),
+        },
+      ]
+    : []),
+  ...(props.item.responsibleCmsUserId
+    ? [
+        {
+          label: "Ответственный",
+          value: props.item.responsibleCmsUserId,
+          to: cmsUserDetailRoute(
+            props.item.responsibleCmsUserId,
+            Boolean(props.canReadCmsUsers),
+          ),
+        },
+      ]
+    : []),
+  ...(props.item.chargedEndUserId
+    ? [
+        {
+          label: "Владелец AI-лимита",
+          value: props.item.chargedEndUserId,
+          to: {
+            name: "users",
+            params: { endUserId: props.item.chargedEndUserId },
+            query: { projectId: props.projectId },
+          },
+        },
+      ]
+    : []),
+  ...(props.item.authorizedByCmsUserId
+    ? [
+        {
+          label: "Авторизовал",
+          value: props.item.authorizedByCmsUserId,
+          to: cmsUserDetailRoute(
+            props.item.authorizedByCmsUserId,
+            Boolean(props.canReadCmsUsers),
+          ),
+        },
+      ]
+    : []),
+  ...(props.item.sourceId
+    ? [{ label: "Источник", value: props.item.sourceId }]
+    : []),
+]);
 </script>
 
 <template>
@@ -62,10 +140,7 @@ function responsibleLabel(): string {
     <dl class="facts">
       <div>
         <dt>Инициатор</dt>
-        <dd>
-          {{ aiOperationActorLabel(item.initiator) }}
-          <code v-if="item.initiator.id">{{ item.initiator.id }}</code>
-        </dd>
+        <dd>{{ aiOperationActorLabel(item.initiator) }}</dd>
       </div>
       <div>
         <dt>Расход</dt>
@@ -75,9 +150,6 @@ function responsibleLabel(): string {
         <dt>Ответственный</dt>
         <dd>
           {{ responsibleLabel() }}
-          <code v-if="item.responsibleCmsUserId">{{
-            item.responsibleCmsUserId
-          }}</code>
         </dd>
       </div>
       <div>
@@ -96,31 +168,8 @@ function responsibleLabel(): string {
       </div>
     </dl>
 
-    <dl class="technical-facts" aria-label="Техническая атрибуция">
-      <div>
-        <dt>Владелец расхода</dt>
-        <dd>{{ item.chargedEndUserId || "бюджет проекта" }}</dd>
-      </div>
-      <div>
-        <dt>Авторизовал</dt>
-        <dd>
-          {{
-            item.authorizedByCmsUserDisplayName ||
-            item.authorizedByCmsUserId ||
-            "не применяется"
-          }}
-          <code v-if="item.authorizedByCmsUserId">{{
-            item.authorizedByCmsUserId
-          }}</code>
-        </dd>
-      </div>
-    </dl>
-
     <div class="card-footer">
-      <span
-        ><i class="pi pi-link" /> {{ item.sourceKind }} ·
-        {{ compactIdentifier(item.sourceId) }}</span
-      >
+      <span><i class="pi pi-link" /> {{ item.sourceKind }}</span>
       <span><i class="pi pi-server" /> {{ item.usageRecords }} AI-выз.</span>
       <strong v-if="canReadCost && item.cost">{{
         aiOperationCostLabel(item.cost.effectiveCost)
@@ -135,6 +184,22 @@ function responsibleLabel(): string {
       <i class="pi pi-exclamation-triangle" />
       {{ item.limitationCodes.join(" · ") }}
     </div>
+
+    <details class="technical-disclosure">
+      <summary>
+        <span><i class="pi pi-code" /> Технические детали</span>
+        <strong>{{ technicalFacts.length }}</strong>
+      </summary>
+      <div class="technical-facts" aria-label="Техническая атрибуция">
+        <TechnicalIdentifier
+          v-for="fact in technicalFacts"
+          :key="`${fact.label}-${fact.value}`"
+          :label="fact.label"
+          :value="fact.value"
+          :to="fact.to"
+        />
+      </div>
+    </details>
   </article>
 </template>
 
@@ -151,11 +216,12 @@ function responsibleLabel(): string {
     color-mix(in srgb, var(--surface-emphasis) 5%, transparent);
   transition:
     border-color 0.18s ease,
-    transform 0.18s ease;
+    box-shadow 0.18s ease;
 }
 .operation-card:hover {
   border-color: color-mix(in srgb, var(--action-primary) 36%, var(--line));
-  transform: translateY(-2px);
+  box-shadow: 0 16px 40px
+    color-mix(in srgb, var(--surface-emphasis) 8%, transparent);
 }
 .operation-card.failed {
   border-color: color-mix(in srgb, var(--status-danger) 28%, var(--line));
@@ -211,22 +277,6 @@ h2 {
   background: var(--surface-subtle);
   border-radius: 11px;
 }
-.technical-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
-  padding: 10px 12px;
-  background: var(--surface-subtle);
-  border-radius: 11px;
-}
-.technical-facts div {
-  min-width: 0;
-}
-.technical-facts dd {
-  font-size: 0.75rem;
-  font-weight: 600;
-}
 dt {
   color: var(--muted);
   font-size: 0.75rem;
@@ -239,15 +289,6 @@ dd {
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-dd code {
-  display: block;
-  overflow: hidden;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-overflow: ellipsis;
 }
 .card-footer {
   justify-content: flex-start;
@@ -286,9 +327,6 @@ dd code {
     padding: 18px;
   }
   .facts {
-    grid-template-columns: 1fr;
-  }
-  .technical-facts {
     grid-template-columns: 1fr;
   }
   .card-footer strong,

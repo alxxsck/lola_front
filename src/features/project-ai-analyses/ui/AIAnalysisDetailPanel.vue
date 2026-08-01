@@ -4,7 +4,9 @@ import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
+import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
 import type { ProjectAIAnalysisDetailResponseDto } from "@/shared/api/generated/models";
+import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
 import {
   formatUsdTicks,
   presentAnalysisCostStatus,
@@ -19,6 +21,7 @@ const props = defineProps<{
   error: string;
   canManage: boolean;
   canReadCost: boolean;
+  canReadCmsUsers?: boolean;
   cancelling: boolean;
 }>();
 interface AIAnalysisCancelTarget {
@@ -168,19 +171,7 @@ watch(
         </p>
       </header>
 
-      <section class="identity-grid" aria-label="Атрибуция анализа">
-        <span
-          ><small>Analysis ID</small
-          ><code>{{ detail.analysis.analysisId }}</code></span
-        >
-        <span
-          ><small>Создал администратор</small
-          ><code>{{ analysisAuthor }}</code></span
-        >
-        <span v-if="detail.analysis.endUserId"
-          ><small>Пользователь данных</small
-          ><code>{{ detail.analysis.endUserId }}</code></span
-        >
+      <section class="identity-grid" aria-label="Сводка анализа">
         <span
           ><small>Затронуто пользователей</small
           >{{ detail.subjectEvidence.total }}</span
@@ -194,6 +185,41 @@ watch(
           >{{ formatDate(detail.analysis.retentionUntil) }}</span
         >
       </section>
+
+      <details class="technical-section">
+        <summary>
+          <span><i class="pi pi-code" /> Технические данные анализа</span>
+          <i class="pi pi-chevron-down" />
+        </summary>
+        <div class="technical-grid">
+          <TechnicalIdentifier
+            label="Analysis ID"
+            :value="detail.analysis.analysisId"
+          />
+          <TechnicalIdentifier
+            label="Создал администратор"
+            :value="analysisAuthor"
+            :to="
+              detail.analysis.createdByCmsUserId
+                ? cmsUserDetailRoute(
+                    detail.analysis.createdByCmsUserId,
+                    Boolean(canReadCmsUsers),
+                  )
+                : undefined
+            "
+          />
+          <TechnicalIdentifier
+            v-if="detail.analysis.endUserId"
+            label="Пользователь данных"
+            :value="detail.analysis.endUserId"
+            :to="{
+              name: 'users',
+              params: { endUserId: detail.analysis.endUserId },
+              query: { projectId },
+            }"
+          />
+        </div>
+      </details>
 
       <section v-if="detail.schedule" class="schedule-block">
         <div class="section-title">
@@ -221,10 +247,7 @@ watch(
 
       <section v-for="run in detail.runs" :key="run.runId" class="run-block">
         <div class="section-title run-title">
-          <span
-            ><i class="pi pi-play-circle" /> Запуск
-            <code>{{ run.runId }}</code></span
-          >
+          <span><i class="pi pi-play-circle" /> Запуск</span>
           <Tag
             :value="presentAnalysisStatus(run.status).label"
             :severity="presentAnalysisStatus(run.status).severity"
@@ -232,16 +255,7 @@ watch(
         </div>
 
         <div class="run-facts">
-          <span
-            ><small>Инициатор</small>{{ run.initiatedBy
-            }}<code v-if="run.initiatedByCmsUserId">{{
-              run.initiatedByCmsUserId
-            }}</code></span
-          >
-          <span v-if="canReadCost && run.costAttributedToCmsUserId"
-            ><small>Расход администратора</small
-            ><code>{{ run.costAttributedToCmsUserId }}</code></span
-          >
+          <span><small>Инициатор</small>{{ run.initiatedBy }}</span>
           <span v-if="canReadCost && run.actualAiCostUsdTicks"
             ><small>Фактическая AI-стоимость</small
             >{{ formatUsdTicks(run.actualAiCostUsdTicks)
@@ -257,35 +271,79 @@ watch(
           <span v-if="canReadCost && run.budgetReconciliationPending"
             ><small>Статус стоимости</small>Сверка стоимости ожидается</span
           >
-          <span v-if="run.rootAiOperationId"
-            ><small>AI Operation</small
-            ><code>{{ run.rootAiOperationId }}</code></span
-          >
           <span v-if="canReadCost && run.model"
             ><small>Модель</small>{{ run.provider }} / {{ run.model }}</span
           >
-          <span v-if="run.catalogRevisionId"
-            ><small>Catalog revision</small
-            ><code>{{ run.catalogRevisionId }}</code></span
-          >
-          <span v-if="run.catalogRevisionDigest"
-            ><small>Catalog digest</small
-            ><code>{{ run.catalogRevisionDigest }}</code></span
-          >
-          <span v-if="run.queryPolicyRevisionId"
-            ><small>Query policy revision</small
-            ><code>{{ run.queryPolicyRevisionId }}</code></span
-          >
-          <span v-if="run.capabilitySetRevision"
-            ><small>Capability set revision</small
-            ><code>{{ run.capabilitySetRevision }}</code></span
-          >
         </div>
+
+        <details class="technical-section run-technical">
+          <summary>
+            <span><i class="pi pi-code" /> Технические данные запуска</span>
+            <i class="pi pi-chevron-down" />
+          </summary>
+          <div class="technical-grid">
+            <TechnicalIdentifier label="Run ID" :value="run.runId" />
+            <TechnicalIdentifier
+              v-if="run.initiatedByCmsUserId"
+              label="Инициатор"
+              :value="run.initiatedByCmsUserId"
+              :to="
+                cmsUserDetailRoute(
+                  run.initiatedByCmsUserId,
+                  Boolean(canReadCmsUsers),
+                )
+              "
+            />
+            <TechnicalIdentifier
+              v-if="canReadCost && run.costAttributedToCmsUserId"
+              label="Расход администратора"
+              :value="run.costAttributedToCmsUserId"
+              :to="
+                cmsUserDetailRoute(
+                  run.costAttributedToCmsUserId,
+                  Boolean(canReadCmsUsers),
+                )
+              "
+            />
+            <TechnicalIdentifier
+              v-if="run.rootAiOperationId"
+              label="AI Operation"
+              :value="run.rootAiOperationId"
+              :to="{
+                name: 'ai-operation-detail',
+                params: { operationId: run.rootAiOperationId },
+                query: { projectId },
+              }"
+            />
+            <TechnicalIdentifier
+              v-if="run.catalogRevisionId"
+              label="Catalog revision"
+              :value="run.catalogRevisionId"
+            />
+            <TechnicalIdentifier
+              v-if="run.catalogRevisionDigest"
+              label="Catalog digest"
+              :value="run.catalogRevisionDigest"
+            />
+            <TechnicalIdentifier
+              v-if="run.queryPolicyRevisionId"
+              label="Query policy revision"
+              :value="run.queryPolicyRevisionId"
+            />
+            <TechnicalIdentifier
+              v-if="run.capabilitySetRevision"
+              label="Capability set revision"
+              :value="run.capabilitySetRevision"
+            />
+          </div>
+        </details>
 
         <AIAnalysisResultView
           v-if="run.result"
           :result="run.result"
+          :project-id="projectId"
           :can-read-cost="canReadCost"
+          :can-read-cms-users="canReadCmsUsers"
         />
 
         <div v-if="run.receipts.length" class="receipts">
@@ -310,10 +368,6 @@ watch(
               {{ formatDate(receipt.rangeEndedAt) }}</span
             >
             <span
-              ><small>Query hash</small
-              ><code>{{ receipt.queryHash }}</code></span
-            >
-            <span
               ><small>Полнота</small
               >{{ receipt.complete ? "Полный" : "Неполный"
               }}{{ receipt.truncated ? " · усечён" : "" }}</span
@@ -326,6 +380,13 @@ watch(
               ><small>Причина отклонения</small
               ><code>{{ receipt.rejectionCode }}</code></span
             >
+            <details class="receipt-technical">
+              <summary>Технические данные запроса</summary>
+              <TechnicalIdentifier
+                label="Query hash"
+                :value="receipt.queryHash"
+              />
+            </details>
           </article>
         </div>
 
@@ -367,11 +428,10 @@ watch(
   align-content: start;
   gap: 18px;
   min-width: 0;
-  padding: 22px;
+  min-height: 100%;
+  padding: 24px;
   background: var(--surface-card);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  box-shadow: var(--shadow);
+  outline: none;
 }
 .detail-toolbar,
 .title-row,
@@ -476,12 +536,6 @@ em {
 .run-title span {
   min-width: 0;
 }
-.run-title code {
-  display: inline;
-  margin-left: 4px;
-  color: var(--muted);
-  font-weight: 500;
-}
 .receipts {
   display: grid;
   gap: 8px;
@@ -494,6 +548,30 @@ em {
   border: 1px solid var(--line);
   border-radius: 10px;
   font-size: 0.77rem;
+}
+.technical-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 13px;
+  border-top: 1px solid var(--line);
+}
+.run-technical {
+  margin-top: -2px;
+}
+.receipt-technical {
+  grid-column: 1 / -1;
+  padding-top: 4px;
+}
+.receipt-technical summary {
+  min-height: 44px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.receipt-technical > :not(summary) {
+  margin-top: 8px;
 }
 .legacy-block {
   display: flex;
@@ -512,7 +590,8 @@ em {
   .identity-grid,
   .schedule-grid,
   .run-facts,
-  .receipts article {
+  .receipts article,
+  .technical-grid {
     grid-template-columns: 1fr;
   }
   .cancel-confirmation > div,

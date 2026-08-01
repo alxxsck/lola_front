@@ -68,6 +68,16 @@ vi.mock(
   }),
 );
 
+function mountPage() {
+  return shallowMount(AIOperationsPage, {
+    global: {
+      stubs: {
+        Drawer: { template: '<div class="drawer-stub"><slot /></div>' },
+      },
+    },
+  });
+}
+
 const summary = {
   operations: 0,
   rootOperations: 0,
@@ -117,7 +127,7 @@ describe("AIOperationsPage", () => {
   });
 
   it("loads a Project-scoped list and bounded summary period", async () => {
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     expect(mocks.list).toHaveBeenCalledWith(
@@ -141,7 +151,7 @@ describe("AIOperationsPage", () => {
   });
 
   it("applies shared list and summary filters without sending subject-only fields to summary", async () => {
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
     const filters = wrapper.findComponent(AIOperationFilters);
 
@@ -172,7 +182,7 @@ describe("AIOperationsPage", () => {
   });
 
   it("ignores a stale summary response after filters change again", async () => {
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
     let resolveOlder!: (value: typeof summary) => void;
     let resolveLatest!: (value: typeof summary) => void;
@@ -225,7 +235,7 @@ describe("AIOperationsPage", () => {
       items: [],
       pageInfo: { hasMore: false },
     });
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     expect(mocks.detail).toHaveBeenCalledWith("project-1", "operation-1", {
@@ -279,7 +289,7 @@ describe("AIOperationsPage", () => {
           resolveAccess = resolve;
         }),
     );
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
     const panel = wrapper.findComponent(AIOperationDetailPanel);
 
@@ -336,7 +346,7 @@ describe("AIOperationsPage", () => {
         items: [{ accessEventId: "fresh-access" }],
         pageInfo: { hasMore: false },
       });
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
     const panel = wrapper.findComponent(AIOperationDetailPanel);
 
@@ -392,7 +402,7 @@ describe("AIOperationsPage", () => {
       timelinePageInfo: { hasMore: false },
       usage: { attempts: [], pageInfo: { hasMore: false } },
     });
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
     const panel = wrapper.findComponent(AIOperationDetailPanel);
 
@@ -424,7 +434,7 @@ describe("AIOperationsPage", () => {
       },
     };
     mocks.detail.mockResolvedValueOnce(baseDetail);
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
     let resolveTimeline!: (value: typeof baseDetail) => void;
     let resolveUsage!: (value: typeof baseDetail) => void;
@@ -489,7 +499,7 @@ describe("AIOperationsPage", () => {
       timelinePageInfo: { hasMore: false },
       usage: { attempts: [], pageInfo: { hasMore: false } },
     });
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     expect(mocks.detail).toHaveBeenCalled();
@@ -502,7 +512,7 @@ describe("AIOperationsPage", () => {
   it("does not retain or load the journal when base permission is absent", async () => {
     mocks.auth.project.effectivePermissionCodes = [];
 
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     expect(mocks.list).not.toHaveBeenCalled();
@@ -516,7 +526,7 @@ describe("AIOperationsPage", () => {
       items: [{ operationId: "operation-visible-before-revoke" }],
       pageInfo: { hasMore: false, nextCursor: null },
     });
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
     expect(wrapper.findAllComponents(AIOperationCard)).toHaveLength(1);
 
@@ -543,7 +553,7 @@ describe("AIOperationsPage", () => {
       },
     };
     mocks.detail.mockResolvedValueOnce(baseDetail);
-    const wrapper = shallowMount(AIOperationsPage);
+    const wrapper = mountPage();
     await flushPromises();
     let resolvePage!: (value: typeof baseDetail) => void;
     mocks.detail.mockImplementationOnce(

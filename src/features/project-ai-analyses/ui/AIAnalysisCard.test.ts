@@ -1,4 +1,4 @@
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import AIAnalysisCard from "./AIAnalysisCard.vue";
 
@@ -32,8 +32,12 @@ const scheduled = {
 
 describe("AIAnalysisCard", () => {
   it("renders a scheduled placeholder with transparent actor and subject IDs", () => {
-    const wrapper = shallowMount(AIAnalysisCard, {
-      props: { item: scheduled, canReadCost: false },
+    const wrapper = mount(AIAnalysisCard, {
+      props: {
+        item: scheduled,
+        canReadCost: false,
+        canReadCmsUsers: true,
+      },
       global: {
         stubs: {
           RouterLink: {
@@ -53,10 +57,11 @@ describe("AIAnalysisCard", () => {
     expect(wrapper.text()).toContain("end-user-1");
     expect(wrapper.text()).toContain("Europe/Madrid");
     expect(wrapper.text()).not.toContain("Стоимость");
+    expect(wrapper.html()).toContain("platform-cms-users");
   });
 
   it("shows cost attribution only with the dedicated cost permission", () => {
-    const wrapper = shallowMount(AIAnalysisCard, {
+    const wrapper = mount(AIAnalysisCard, {
       props: {
         canReadCost: true,
         item: {
@@ -89,7 +94,7 @@ describe("AIAnalysisCard", () => {
   });
 
   it("distinguishes reserved and pending cost without inventing an actual zero", () => {
-    const wrapper = shallowMount(AIAnalysisCard, {
+    const wrapper = mount(AIAnalysisCard, {
       props: {
         canReadCost: true,
         item: {
@@ -125,7 +130,7 @@ describe("AIAnalysisCard", () => {
   });
 
   it("marks unknown legacy attribution instead of inventing a system actor", () => {
-    const wrapper = shallowMount(AIAnalysisCard, {
+    const wrapper = mount(AIAnalysisCard, {
       props: {
         canReadCost: false,
         item: {

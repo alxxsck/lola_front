@@ -62,6 +62,17 @@ vi.mock(
   }),
 );
 
+function mountPage() {
+  return shallowMount(AIAnalysesPage, {
+    global: {
+      stubs: {
+        Drawer: { template: '<div class="drawer-stub"><slot /></div>' },
+        RouterLink: { template: "<a><slot /></a>" },
+      },
+    },
+  });
+}
+
 describe("AIAnalysesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -80,7 +91,7 @@ describe("AIAnalysesPage", () => {
   });
 
   it("loads the unified Project-scoped analysis list", async () => {
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     expect(mocks.list).toHaveBeenCalledWith("project-1", { limit: 30 });
@@ -91,7 +102,7 @@ describe("AIAnalysesPage", () => {
   it("does not load analyses without the exact base permission", async () => {
     mocks.auth.project.effectivePermissionCodes = [];
 
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     expect(mocks.list).not.toHaveBeenCalled();
@@ -114,16 +125,20 @@ describe("AIAnalysesPage", () => {
       runs: [],
       subjectEvidence: { total: 0 },
     });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
     expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(1);
-    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("detail")).not.toBeNull();
+    expect(
+      wrapper.findComponent(AIAnalysisDetailPanel).props("detail"),
+    ).not.toBeNull();
 
     mocks.activeAuth!.project.effectivePermissionCodes = [];
     await flushPromises();
 
     expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(0);
-    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("detail")).toBeNull();
+    expect(
+      wrapper.findComponent(AIAnalysisDetailPanel).props("detail"),
+    ).toBeNull();
     expect(mocks.push).toHaveBeenCalledWith({ name: "overview" });
   });
 
@@ -142,7 +157,7 @@ describe("AIAnalysesPage", () => {
       runs: [],
       subjectEvidence: { total: 0 },
     });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
     expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(1);
 
@@ -165,7 +180,9 @@ describe("AIAnalysesPage", () => {
     await nextTick();
 
     expect(wrapper.findAllComponents(AIAnalysisCard)).toHaveLength(0);
-    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("detail")).toBeNull();
+    expect(
+      wrapper.findComponent(AIAnalysisDetailPanel).props("detail"),
+    ).toBeNull();
     resolveSafeList({ items: [], nextCursor: null });
     resolveSafeDetail({
       analysis: { analysisId: "analysis-cost", title: "Safe result" },
@@ -190,7 +207,7 @@ describe("AIAnalysesPage", () => {
       runs: [],
       subjectEvidence: { total: 0 },
     });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     mocks.list.mockReturnValueOnce(new Promise(() => undefined));
@@ -210,9 +227,9 @@ describe("AIAnalysesPage", () => {
     expect(
       wrapper.find('button-stub[label="Показать ещё"]').attributes("loading"),
     ).toBe("true");
-    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling")).toBe(
-      true,
-    );
+    expect(
+      wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling"),
+    ).toBe(true);
 
     mocks.list.mockResolvedValueOnce({ items: [], nextCursor: null });
     mocks.detail.mockResolvedValueOnce({
@@ -230,8 +247,12 @@ describe("AIAnalysesPage", () => {
     ];
     await flushPromises();
 
-    expect(wrapper.find('button-stub[label="Показать ещё"]').exists()).toBe(false);
-    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling")).toBe(true);
+    expect(wrapper.find('button-stub[label="Показать ещё"]').exists()).toBe(
+      false,
+    );
+    expect(
+      wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling"),
+    ).toBe(true);
 
     mocks.list.mockResolvedValueOnce({ items: [], nextCursor: null });
     mocks.detail.mockResolvedValueOnce({
@@ -248,7 +269,9 @@ describe("AIAnalysesPage", () => {
 
     expect(mocks.list).toHaveBeenCalledTimes(4);
     expect(mocks.detail).toHaveBeenCalledTimes(3);
-    expect(wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling")).toBe(false);
+    expect(
+      wrapper.findComponent(AIAnalysisDetailPanel).props("cancelling"),
+    ).toBe(false);
   });
 
   it("loads a protected detail for a deep link", async () => {
@@ -259,7 +282,7 @@ describe("AIAnalysesPage", () => {
       subjectEvidence: { total: 0 },
     });
 
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     expect(mocks.detail).toHaveBeenCalledWith("project-1", "analysis-1");
@@ -294,7 +317,7 @@ describe("AIAnalysesPage", () => {
         ],
         nextCursor: null,
       });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     const filters = wrapper.findComponent(AIAnalysisFilters);
 
     filters.vm.$emit("update:modelValue", { status: "SUCCEEDED" });
@@ -336,7 +359,7 @@ describe("AIAnalysesPage", () => {
         runs: [],
         subjectEvidence: { total: 0 },
       });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
 
     await wrapper.get('[data-testid="refresh-ai-analyses"]').trigger("click");
     await flushPromises();
@@ -387,7 +410,7 @@ describe("AIAnalysesPage", () => {
       ],
       nextCursor: null,
     });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     await vi.advanceTimersByTimeAsync(15_000);
@@ -467,7 +490,7 @@ describe("AIAnalysesPage", () => {
         ],
         nextCursor: null,
       });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     await wrapper.find('button-stub[label="Показать ещё"]').trigger("click");
@@ -538,7 +561,7 @@ describe("AIAnalysesPage", () => {
     mocks.list
       .mockResolvedValueOnce({ items: [runningItem], nextCursor: "cursor-2" })
       .mockReturnValueOnce(appendResponse);
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     void wrapper.find('button-stub[label="Показать ещё"]').trigger("click");
@@ -612,7 +635,7 @@ describe("AIAnalysesPage", () => {
         resolveDetailRefresh = resolve;
       }),
     );
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     vi.advanceTimersByTime(15_000);
@@ -671,7 +694,7 @@ describe("AIAnalysesPage", () => {
         nextCursor: `cursor-${page + 1}`,
       });
     }
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     for (let page = 2; page <= 6; page += 1) {
@@ -729,7 +752,7 @@ describe("AIAnalysesPage", () => {
       })
       .mockResolvedValueOnce({ items: [remainingItem], nextCursor: null })
       .mockResolvedValueOnce({ items: [remainingItem], nextCursor: null });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     const filters = wrapper.findComponent(AIAnalysisFilters);
@@ -785,7 +808,7 @@ describe("AIAnalysesPage", () => {
       ],
       nextCursor: null,
     });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     await vi.advanceTimersByTimeAsync(15_000);
@@ -802,7 +825,7 @@ describe("AIAnalysesPage", () => {
       runs: [],
       subjectEvidence: { total: 0 },
     });
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     wrapper.findComponent(AIAnalysisDetailPanel).vm.$emit("cancel", {
@@ -830,7 +853,7 @@ describe("AIAnalysesPage", () => {
       subjectEvidence: { total: 0 },
     });
     mocks.cancel.mockRejectedValueOnce(new Error("Сетевой сбой"));
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
     const target = {
       projectId: "project-1",
@@ -864,7 +887,7 @@ describe("AIAnalysesPage", () => {
     const querySelector = vi
       .spyOn(document, "querySelector")
       .mockReturnValue({ focus } as unknown as Element);
-    const wrapper = shallowMount(AIAnalysesPage);
+    const wrapper = mountPage();
     await flushPromises();
 
     expect(querySelector).toHaveBeenCalledWith(
@@ -875,7 +898,7 @@ describe("AIAnalysesPage", () => {
 
     expect(mocks.push).toHaveBeenCalledWith({ name: "ai-analyses" });
     expect(querySelector).toHaveBeenCalledWith(
-      '[data-analysis-id="analysis-1"] .analysis-link',
+      '[data-analysis-id="analysis-1"] .open-label',
     );
     expect(focus).toHaveBeenCalled();
   });

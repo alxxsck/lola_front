@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import Button from "primevue/button";
 import DatePicker from "primevue/datepicker";
 import InputText from "primevue/inputtext";
@@ -81,6 +81,23 @@ const subjectRoleOptions = [
   { label: "Источник данных", value: "DATA_CONTRIBUTOR" },
   { label: "Прямой субъект", value: "DIRECT_SUBJECT" },
 ];
+const advancedFilterCount = computed(
+  () =>
+    [
+      draft.initiatorCmsUserId,
+      draft.initiatorEndUserId,
+      draft.authorizedByCmsUserId,
+      draft.responsibleCmsUserId,
+      draft.chargedEndUserId,
+      props.canReadSubjects ? draft.subjectEndUserId : "",
+      props.canReadSubjects ? draft.subjectRole : null,
+      draft.eventCode,
+      draft.sourceKind,
+      draft.sourceId,
+      draft.provider,
+      draft.providerResponseId,
+    ].filter(Boolean).length,
+);
 
 watch(
   () => props.modelValue,
@@ -211,135 +228,147 @@ function nextDay(value: Date): Date {
     @submit.prevent="apply"
   >
     <AIFilterToggle v-model:expanded="mobileExpanded" :filters="modelValue" />
-    <Select
-      v-model="draft.status"
-      :options="statusOptions"
-      option-label="label"
-      option-value="value"
-      placeholder="Все статусы"
-      aria-label="Статус AI-операции"
-      :disabled="loading"
-    />
-    <Select
-      v-model="draft.category"
-      :options="categoryOptions"
-      option-label="label"
-      option-value="value"
-      placeholder="Все категории"
-      aria-label="Категория AI-операции"
-      :disabled="loading"
-    />
-    <Select
-      v-model="draft.initiatorType"
-      :options="actorOptions"
-      option-label="label"
-      option-value="value"
-      placeholder="Любой инициатор"
-      aria-label="Тип инициатора"
-      :disabled="loading"
-    />
-    <Select
-      v-model="draft.chargedAccount"
-      :options="accountOptions"
-      option-label="label"
-      option-value="value"
-      placeholder="Любой источник расходов"
-      aria-label="Источник расходов"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.initiatorCmsUserId"
-      placeholder="ID администратора-инициатора"
-      aria-label="ID администратора-инициатора"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.initiatorEndUserId"
-      placeholder="ID пользователя-инициатора"
-      aria-label="ID пользователя-инициатора"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.authorizedByCmsUserId"
-      placeholder="ID администратора-авторизатора"
-      aria-label="ID администратора-авторизатора"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.responsibleCmsUserId"
-      placeholder="ID ответственного администратора"
-      aria-label="ID ответственного администратора"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.chargedEndUserId"
-      placeholder="ID владельца AI-лимита"
-      aria-label="ID пользователя — владельца расхода"
-      :disabled="loading"
-    />
-    <InputText
-      v-if="canReadSubjects"
-      v-model="draft.subjectEndUserId"
-      placeholder="ID участника анализа"
-      aria-label="ID пользователя — участника данных"
-      :disabled="loading"
-    />
-    <Select
-      v-if="canReadSubjects"
-      v-model="draft.subjectRole"
-      :options="subjectRoleOptions"
-      option-label="label"
-      option-value="value"
-      placeholder="Любая роль в данных"
-      aria-label="Роль пользователя в данных"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.eventCode"
-      placeholder="Event code"
-      aria-label="Код события"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.sourceKind"
-      placeholder="Тип источника"
-      aria-label="Тип источника операции"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.sourceId"
-      placeholder="ID источника"
-      aria-label="ID источника операции"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.provider"
-      placeholder="AI-провайдер"
-      aria-label="AI-провайдер"
-      :disabled="loading"
-    />
-    <InputText
-      v-model="draft.providerResponseId"
-      placeholder="Provider response ID"
-      aria-label="ID ответа AI-провайдера"
-      :disabled="loading"
-    />
-    <DatePicker
-      v-model="draft.occurredFrom"
-      date-format="dd.mm.yy"
-      show-icon
-      placeholder="Период с"
-      aria-label="Дата операции с"
-      :disabled="loading"
-    />
-    <DatePicker
-      v-model="draft.occurredTo"
-      date-format="dd.mm.yy"
-      show-icon
-      placeholder="Период по"
-      aria-label="Дата операции по"
-      :disabled="loading"
-    />
+    <div class="filter-primary">
+      <Select
+        v-model="draft.status"
+        :options="statusOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Все статусы"
+        aria-label="Статус AI-операции"
+        :disabled="loading"
+      />
+      <Select
+        v-model="draft.category"
+        :options="categoryOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Все категории"
+        aria-label="Категория AI-операции"
+        :disabled="loading"
+      />
+      <Select
+        v-model="draft.initiatorType"
+        :options="actorOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Любой инициатор"
+        aria-label="Тип инициатора"
+        :disabled="loading"
+      />
+      <Select
+        v-model="draft.chargedAccount"
+        :options="accountOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Любой источник расходов"
+        aria-label="Источник расходов"
+        :disabled="loading"
+      />
+      <DatePicker
+        v-model="draft.occurredFrom"
+        date-format="dd.mm.yy"
+        show-icon
+        placeholder="Период с"
+        aria-label="Дата операции с"
+        :disabled="loading"
+      />
+      <DatePicker
+        v-model="draft.occurredTo"
+        date-format="dd.mm.yy"
+        show-icon
+        placeholder="Период по"
+        aria-label="Дата операции по"
+        :disabled="loading"
+      />
+    </div>
+
+    <details class="advanced-filters">
+      <summary>
+        <span><i class="pi pi-sliders-h" /> Дополнительные фильтры</span>
+        <strong v-if="advancedFilterCount">{{ advancedFilterCount }}</strong>
+        <i class="pi pi-chevron-down" />
+      </summary>
+      <div class="filter-advanced-grid">
+        <InputText
+          v-model="draft.initiatorCmsUserId"
+          placeholder="ID администратора-инициатора"
+          aria-label="ID администратора-инициатора"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.initiatorEndUserId"
+          placeholder="ID пользователя-инициатора"
+          aria-label="ID пользователя-инициатора"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.authorizedByCmsUserId"
+          placeholder="ID администратора-авторизатора"
+          aria-label="ID администратора-авторизатора"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.responsibleCmsUserId"
+          placeholder="ID ответственного администратора"
+          aria-label="ID ответственного администратора"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.chargedEndUserId"
+          placeholder="ID владельца AI-лимита"
+          aria-label="ID пользователя — владельца расхода"
+          :disabled="loading"
+        />
+        <InputText
+          v-if="canReadSubjects"
+          v-model="draft.subjectEndUserId"
+          placeholder="ID участника анализа"
+          aria-label="ID пользователя — участника данных"
+          :disabled="loading"
+        />
+        <Select
+          v-if="canReadSubjects"
+          v-model="draft.subjectRole"
+          :options="subjectRoleOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Любая роль в данных"
+          aria-label="Роль пользователя в данных"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.eventCode"
+          placeholder="Код события"
+          aria-label="Код события"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.sourceKind"
+          placeholder="Тип источника"
+          aria-label="Тип источника операции"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.sourceId"
+          placeholder="ID источника"
+          aria-label="ID источника операции"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.provider"
+          placeholder="AI-провайдер"
+          aria-label="AI-провайдер"
+          :disabled="loading"
+        />
+        <InputText
+          v-model="draft.providerResponseId"
+          placeholder="Provider response ID"
+          aria-label="ID ответа AI-провайдера"
+          :disabled="loading"
+        />
+      </div>
+    </details>
     <div class="filter-actions">
       <Button
         type="button"
@@ -360,20 +389,29 @@ function nextDay(value: Date): Date {
 
 <style scoped>
 .operation-filters {
+  grid-template-columns: minmax(0, 1fr);
+}
+.filter-primary,
+.filter-advanced-grid {
+  display: grid;
   grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
 }
 @media (max-width: 1320px) {
-  .operation-filters {
+  .filter-primary,
+  .filter-advanced-grid {
     grid-template-columns: repeat(3, minmax(160px, 1fr));
   }
 }
 @media (max-width: 1080px) {
-  .operation-filters {
+  .filter-primary,
+  .filter-advanced-grid {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 }
 @media (max-width: 560px) {
-  .operation-filters {
+  .filter-primary,
+  .filter-advanced-grid {
     grid-template-columns: minmax(0, 1fr);
   }
   .operation-filters.collapsed > :not(.ai-filter-toggle) {

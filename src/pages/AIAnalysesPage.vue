@@ -9,6 +9,7 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
+import Drawer from "primevue/drawer";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { useAuthStore } from "@/features/auth/auth.store";
@@ -73,16 +74,15 @@ const canReadAnalyses = computed(() =>
   hasProjectPermission(permissionCodes.value, "project.ai_analyses.read"),
 );
 const canReadCost = computed(() =>
-  hasProjectPermission(
-    permissionCodes.value,
-    "project.ai_analysis_cost.read",
-  ),
+  hasProjectPermission(permissionCodes.value, "project.ai_analysis_cost.read"),
+);
+const canReadCmsUsers = computed(
+  () =>
+    auth.user?.platformPermissionCodes?.includes("platform.cms_users.read") ??
+    false,
 );
 const canManage = computed(() =>
-  hasProjectPermission(
-    permissionCodes.value,
-    "project.ai_analyses.manage",
-  ),
+  hasProjectPermission(permissionCodes.value, "project.ai_analyses.manage"),
 );
 
 function scheduleRefreshDelay(
@@ -422,7 +422,7 @@ async function closeDetail(): Promise<void> {
   if (selectedId)
     document
       .querySelector<HTMLElement>(
-        `[data-analysis-id="${selectedId}"] .analysis-link`,
+        `[data-analysis-id="${selectedId}"] .open-label`,
       )
       ?.focus();
 }
@@ -508,7 +508,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="page analyses-page" :class="{ 'has-detail': analysisId }">
+  <main class="page analyses-page">
     <header class="page-header">
       <div>
         <div class="eyebrow">AI workspace</div>
@@ -562,7 +562,7 @@ onBeforeUnmount(() => {
       </div>
     </Message>
 
-    <div class="analyses-layout" :class="{ selected: analysisId }">
+    <div class="analyses-layout">
       <section class="analysis-list" aria-label="Список AI-анализов">
         <template v-if="loading">
           <Skeleton v-for="index in 4" :key="index" height="13rem" />
@@ -582,6 +582,7 @@ onBeforeUnmount(() => {
           :item="item"
           :project-id="projectId ?? undefined"
           :can-read-cost="canReadCost"
+          :can-read-cms-users="canReadCmsUsers"
         />
         <Button
           v-if="nextCursor"
@@ -592,7 +593,17 @@ onBeforeUnmount(() => {
           @click="loadMore"
         />
       </section>
+    </div>
 
+    <Drawer
+      :visible="Boolean(analysisId && projectId)"
+      position="right"
+      class="ai-ledger-drawer"
+      :style="{ width: 'min(760px, 100vw)' }"
+      :show-close-icon="false"
+      block-scroll
+      @update:visible="!$event && closeDetail()"
+    >
       <AIAnalysisDetailPanel
         v-if="analysisId && projectId"
         :project-id="projectId"
@@ -601,11 +612,12 @@ onBeforeUnmount(() => {
         :error="detailError"
         :can-manage="canManage"
         :can-read-cost="canReadCost"
+        :can-read-cms-users="canReadCmsUsers"
         :cancelling="cancelling"
         @cancel="cancelAnalysis"
         @close="closeDetail"
       />
-    </div>
+    </Drawer>
   </main>
 </template>
 
@@ -668,9 +680,6 @@ h1 {
   grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
-.analyses-layout.selected {
-  grid-template-columns: minmax(310px, 0.86fr) minmax(420px, 1.14fr);
-}
 .analysis-list {
   display: grid;
   align-content: start;
@@ -706,14 +715,6 @@ h1 {
   font-size: 0.76rem;
   line-height: 1.55;
 }
-@media (max-width: 1320px) {
-  .analyses-layout.selected {
-    grid-template-columns: 1fr;
-  }
-  .analyses-layout.selected :deep(.detail-panel) {
-    order: -1;
-  }
-}
 @media (max-width: 620px) {
   .page-header {
     align-items: stretch;
@@ -726,10 +727,6 @@ h1 {
     flex: 1;
     justify-content: center;
     min-height: 44px;
-  }
-  .analyses-page.has-detail :deep(.analysis-filters),
-  .analyses-page.has-detail .analysis-list {
-    display: none;
   }
 }
 @media (max-width: 360px) {

@@ -2,6 +2,11 @@ import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import AIAnalysisDetailPanel from "./AIAnalysisDetailPanel.vue";
 
+const technicalIdentifierStub = {
+  props: ["label", "value"],
+  template: "<div>{{ label }} {{ value }}</div>",
+};
+
 const detail = {
   analysis: {
     analysisId: "analysis-1",
@@ -53,6 +58,7 @@ describe("AIAnalysisDetailPanel", () => {
           Tag: { template: "<span />" },
           Message: { template: "<div><slot /></div>" },
           Skeleton: { template: "<div />" },
+          TechnicalIdentifier: technicalIdentifierStub,
         },
       },
     });
@@ -114,6 +120,7 @@ describe("AIAnalysisDetailPanel", () => {
           Tag: { template: "<span />" },
           Message: { template: "<div><slot /></div>" },
           Skeleton: { template: "<div />" },
+          TechnicalIdentifier: technicalIdentifierStub,
         },
       },
     });
@@ -209,6 +216,7 @@ describe("AIAnalysisDetailPanel", () => {
           Tag: { template: "<span />" },
           Message: { template: "<div><slot /></div>" },
           Skeleton: { template: "<div />" },
+          TechnicalIdentifier: technicalIdentifierStub,
         },
       },
     });

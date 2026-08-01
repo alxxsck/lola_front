@@ -1,10 +1,10 @@
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import AIAnalysisResultView from "./AIAnalysisResultView.vue";
 
 describe("AIAnalysisResultView", () => {
   it("renders a validated answer, table and limitations", () => {
-    const wrapper = shallowMount(AIAnalysisResultView, {
+    const wrapper = mount(AIAnalysisResultView, {
       props: {
         result: {
           answer: "Готовый вывод",
@@ -44,6 +44,9 @@ describe("AIAnalysisResultView", () => {
     expect(wrapper.text()).toContain("Часть данных исключена");
     expect(wrapper.text()).toContain("deposit.completed");
     expect(wrapper.text()).toContain("PARTIAL");
+    expect(
+      wrapper.find(".result-technical").attributes("open"),
+    ).toBeUndefined();
     expect(wrapper.text()).toContain("catalog-1");
     expect(wrapper.text()).toContain("admin-1");
     expect(wrapper.text()).not.toContain("admin-cost");

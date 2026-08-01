@@ -8,7 +8,37 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authApi } from "@/features/auth/auth.api";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { axiosInstance } from "@/shared/api/http/axios-instance";
-import { router } from "./router";
+import { appScrollBehavior, router } from "./router";
+
+describe("scroll behavior", () => {
+  it("preserves window scroll while an AI ledger detail opens or closes", () => {
+    expect(
+      appScrollBehavior(
+        { name: "ai-analysis-detail" } as never,
+        { name: "ai-analyses" } as never,
+        null,
+      ),
+    ).toBe(false);
+    expect(
+      appScrollBehavior(
+        { name: "ai-operations" } as never,
+        { name: "ai-operation-detail" } as never,
+        null,
+      ),
+    ).toBe(false);
+  });
+
+  it("restores browser history positions before applying route defaults", () => {
+    const savedPosition = { left: 0, top: 420 };
+    expect(
+      appScrollBehavior(
+        { name: "ai-analyses" } as never,
+        { name: "overview" } as never,
+        savedPosition,
+      ),
+    ).toEqual(savedPosition);
+  });
+});
 
 vi.mock("@/features/auth/auth.api", () => ({
   authApi: {
@@ -399,8 +429,16 @@ describe("authentication routes", () => {
   });
 
   it.each([
-    ["/cases/case-1?projectId=project-2", "end-user-case-detail", "project.cases.read"],
-    ["/users/end-user-1?conversationId=conversation-1&projectId=project-2", "users", "project.profiles.read"],
+    [
+      "/cases/case-1?projectId=project-2",
+      "end-user-case-detail",
+      "project.cases.read",
+    ],
+    [
+      "/users/end-user-1?conversationId=conversation-1&projectId=project-2",
+      "users",
+      "project.profiles.read",
+    ],
   ])(
     "selects the Project encoded by a related AI result link %s",
     async (path, routeName, permission) => {

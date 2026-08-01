@@ -3,11 +3,13 @@ import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
+import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
 import type {
   AiOperationDetailResponseDto,
   AiOperationProtectedAccessPageResponseDto,
   AiOperationSubjectPageResponseDto,
 } from "@/shared/api/generated/models";
+import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
 import {
   aiOperationActorLabel,
   aiOperationCategoryLabel,
@@ -15,7 +17,6 @@ import {
   aiOperationCostLabel,
   aiOperationDateLabel,
   aiOperationStatusPresentation,
-  compactIdentifier,
 } from "../model/project-ai-operation-presentation";
 
 defineProps<{
@@ -30,6 +31,7 @@ defineProps<{
   accessLoading: boolean;
   error: string;
   canReadCost: boolean;
+  canReadCmsUsers?: boolean;
   canReadSubjects: boolean;
   canReadAudit: boolean;
   canReadAnalysisResult: boolean;
@@ -176,16 +178,12 @@ function resultRoute(
           <div>
             <dt>Инициатор</dt>
             <dd>{{ aiOperationActorLabel(detail.initiator) }}</dd>
-            <code v-if="detail.initiator.id">{{ detail.initiator.id }}</code>
           </div>
           <div>
             <dt>Источник расходов</dt>
             <dd>
               {{ aiOperationChargedAccountLabel(detail.chargedAccount) }}
             </dd>
-            <code v-if="detail.chargedEndUserId">{{
-              detail.chargedEndUserId
-            }}</code>
           </div>
           <div>
             <dt>Ответственный администратор</dt>
@@ -196,9 +194,6 @@ function resultRoute(
                 "не применяется"
               }}
             </dd>
-            <code v-if="detail.responsibleCmsUserId">{{
-              detail.responsibleCmsUserId
-            }}</code>
           </div>
           <div>
             <dt>Авторизовал background-run</dt>
@@ -209,9 +204,6 @@ function resultRoute(
                 "не применяется"
               }}
             </dd>
-            <code v-if="detail.authorizedByCmsUserId">{{
-              detail.authorizedByCmsUserId
-            }}</code>
           </div>
         </dl>
         <div class="cost-line">
@@ -223,8 +215,7 @@ function resultRoute(
             <small>
               состояние: {{ detail.cost.state }} · неизвестных записей:
               {{ detail.cost.unknownUsageRecords }} · резерв:
-              {{ detail.cost.reservedCostUsdTicks }} ticks ·
-              provider:
+              {{ detail.cost.reservedCostUsdTicks }} ticks · provider:
               {{ aiOperationCostLabel(detail.cost.providerReportedCost) }} ·
               fallback:
               {{ aiOperationCostLabel(detail.cost.estimatedFallbackCost) }}
@@ -242,26 +233,11 @@ function resultRoute(
       </section>
 
       <section class="section source-section">
-        <h3>Источник и корреляция</h3>
+        <h3>Источник и результат</h3>
         <dl>
           <div>
-            <dt>Operation ID</dt>
-            <dd>
-              <code>{{ detail.operationId }}</code>
-            </dd>
-          </div>
-          <div>
-            <dt>Root correlation</dt>
-            <dd>
-              <code>{{ detail.rootCorrelationId }}</code>
-            </dd>
-          </div>
-          <div>
-            <dt>Domain source</dt>
-            <dd>
-              {{ detail.sourceKind }} ·
-              <code>{{ detail.sourceId }}</code>
-            </dd>
+            <dt>Источник</dt>
+            <dd>{{ detail.sourceKind }}</dd>
           </div>
           <div v-if="detail.resultReference">
             <dt>Domain result</dt>
@@ -290,7 +266,6 @@ function resultRoute(
                 Открыть {{ detail.resultReference.kind }}
               </RouterLink>
               <span v-else>{{ detail.resultReference.kind }}</span>
-              · <code>{{ detail.resultReference.id }}</code>
             </dd>
           </div>
           <div>
@@ -302,6 +277,89 @@ function resultRoute(
           </div>
         </dl>
       </section>
+
+      <details class="technical-section">
+        <summary>
+          <span><i class="pi pi-code" /> Технические данные операции</span>
+          <i class="pi pi-chevron-down" />
+        </summary>
+        <div class="technical-grid">
+          <TechnicalIdentifier
+            label="Operation ID"
+            :value="detail.operationId"
+          />
+          <TechnicalIdentifier
+            label="Root correlation"
+            :value="detail.rootCorrelationId"
+          />
+          <TechnicalIdentifier label="Источник" :value="detail.sourceId" />
+          <TechnicalIdentifier
+            v-if="detail.initiator.id"
+            label="Инициатор"
+            :value="detail.initiator.id"
+            :to="
+              detail.initiator.type === 'END_USER'
+                ? {
+                    name: 'users',
+                    params: { endUserId: detail.initiator.id },
+                    query: { projectId },
+                  }
+                : detail.initiator.type === 'CMS_USER'
+                  ? cmsUserDetailRoute(
+                      detail.initiator.id,
+                      Boolean(canReadCmsUsers),
+                    )
+                  : undefined
+            "
+          />
+          <TechnicalIdentifier
+            v-if="detail.chargedEndUserId"
+            label="Владелец AI-лимита"
+            :value="detail.chargedEndUserId"
+            :to="{
+              name: 'users',
+              params: { endUserId: detail.chargedEndUserId },
+              query: { projectId },
+            }"
+          />
+          <TechnicalIdentifier
+            v-if="detail.responsibleCmsUserId"
+            label="Ответственный администратор"
+            :value="detail.responsibleCmsUserId"
+            :to="
+              cmsUserDetailRoute(
+                detail.responsibleCmsUserId,
+                Boolean(canReadCmsUsers),
+              )
+            "
+          />
+          <TechnicalIdentifier
+            v-if="detail.authorizedByCmsUserId"
+            label="Авторизовал background-run"
+            :value="detail.authorizedByCmsUserId"
+            :to="
+              cmsUserDetailRoute(
+                detail.authorizedByCmsUserId,
+                Boolean(canReadCmsUsers),
+              )
+            "
+          />
+          <TechnicalIdentifier
+            v-if="detail.resultReference"
+            label="Domain result"
+            :value="detail.resultReference.id"
+            :to="
+              resultRoute(
+                projectId,
+                detail,
+                canReadAnalysisResult,
+                canReadCaseResult,
+                canReadConversationResult,
+              ) ?? undefined
+            "
+          />
+        </div>
+      </details>
 
       <section class="section">
         <div class="section-heading">
@@ -537,10 +595,6 @@ function resultRoute(
 
       <footer class="technical-footer">
         <span>Outcome: {{ detail.outcomeCode || "—" }}</span>
-        <span
-          >Operation:
-          <code>{{ compactIdentifier(detail.operationId) }}</code></span
-        >
       </footer>
     </template>
   </aside>
@@ -552,12 +606,9 @@ function resultRoute(
   align-content: start;
   gap: 18px;
   min-width: 0;
-  padding: 22px;
+  min-height: 100%;
+  padding: 24px;
   background: var(--surface-card);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  box-shadow: 0 18px 50px
-    color-mix(in srgb, var(--surface-emphasis) 9%, transparent);
   outline: none;
 }
 .detail-toolbar,
@@ -683,6 +734,13 @@ code {
   display: grid;
   grid-template-columns: 130px 1fr;
   gap: 10px;
+}
+.technical-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 13px;
+  border-top: 1px solid var(--line);
 }
 .timeline {
   display: grid;
@@ -816,7 +874,8 @@ code {
 }
 @media (max-width: 620px) {
   .attribution-grid,
-  .data-access {
+  .data-access,
+  .technical-grid {
     grid-template-columns: 1fr;
   }
   .source-section dl div {

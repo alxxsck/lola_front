@@ -9,6 +9,7 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
+import Drawer from "primevue/drawer";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { useAuthStore } from "@/features/auth/auth.store";
@@ -79,6 +80,11 @@ const canReadOperations = computed(() =>
 const canReadCost = computed(() =>
   hasProjectPermission(permissionCodes.value, "project.ai_analysis_cost.read"),
 );
+const canReadCmsUsers = computed(
+  () =>
+    auth.user?.platformPermissionCodes?.includes("platform.cms_users.read") ??
+    false,
+);
 const canReadSubjects = computed(() =>
   hasProjectPermission(
     permissionCodes.value,
@@ -97,9 +103,10 @@ const canReadAnalysisResult = computed(() =>
 const canReadCaseResult = computed(() =>
   hasProjectPermission(permissionCodes.value, "project.cases.read"),
 );
-const canReadConversationResult = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.profiles.read") &&
-  hasProjectPermission(permissionCodes.value, "project.conversations.read"),
+const canReadConversationResult = computed(
+  () =>
+    hasProjectPermission(permissionCodes.value, "project.profiles.read") &&
+    hasProjectPermission(permissionCodes.value, "project.conversations.read"),
 );
 
 async function loadList(append = false): Promise<void> {
@@ -607,7 +614,7 @@ function withBoundedDefaultPeriod(
 </script>
 
 <template>
-  <main class="page operations-page" :class="{ 'has-detail': operationId }">
+  <main class="page operations-page">
     <header class="page-header">
       <div>
         <div class="eyebrow">AI operations ledger</div>
@@ -654,7 +661,7 @@ function withBoundedDefaultPeriod(
       </div>
     </Message>
 
-    <div class="operations-layout" :class="{ selected: operationId }">
+    <div class="operations-layout">
       <section class="operation-list" aria-label="Список AI-операций">
         <template v-if="listLoading">
           <Skeleton v-for="index in 4" :key="index" height="14rem" />
@@ -674,6 +681,7 @@ function withBoundedDefaultPeriod(
           :item="item"
           :project-id="projectId ?? ''"
           :can-read-cost="canReadCost"
+          :can-read-cms-users="canReadCmsUsers"
         />
         <Button
           v-if="pageInfo.hasMore"
@@ -684,7 +692,17 @@ function withBoundedDefaultPeriod(
           @click="loadList(true)"
         />
       </section>
+    </div>
 
+    <Drawer
+      :visible="Boolean(operationId)"
+      position="right"
+      class="ai-ledger-drawer"
+      :style="{ width: 'min(760px, 100vw)' }"
+      :show-close-icon="false"
+      block-scroll
+      @update:visible="!$event && closeDetail()"
+    >
       <AIOperationDetailPanel
         v-if="operationId"
         :project-id="projectId ?? ''"
@@ -698,6 +716,7 @@ function withBoundedDefaultPeriod(
         :access-loading="accessLoading"
         :error="detailError"
         :can-read-cost="canReadCost"
+        :can-read-cms-users="canReadCmsUsers"
         :can-read-subjects="canReadSubjects"
         :can-read-audit="canReadAudit"
         :can-read-analysis-result="canReadAnalysisResult"
@@ -711,7 +730,7 @@ function withBoundedDefaultPeriod(
         @load-more-subjects="loadSubjects(true)"
         @load-more-access-history="loadAccessHistory(true)"
       />
-    </div>
+    </Drawer>
   </main>
 </template>
 
@@ -755,12 +774,6 @@ h1 {
   grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
-.operations-layout.selected {
-  grid-template-columns: minmax(360px, 0.88fr) minmax(460px, 1.12fr);
-}
-.operations-layout.selected :deep(.operation-card .facts) {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 .operation-list {
   display: grid;
   align-content: start;
@@ -796,14 +809,6 @@ h1 {
   font-size: 0.76rem;
   line-height: 1.55;
 }
-@media (max-width: 1450px) {
-  .operations-layout.selected {
-    grid-template-columns: 1fr;
-  }
-  .operations-layout.selected :deep(.detail-panel) {
-    order: -1;
-  }
-}
 @media (max-width: 620px) {
   .page-header {
     align-items: stretch;
@@ -812,11 +817,6 @@ h1 {
   .page-header :deep(.p-button) {
     width: 100%;
     min-height: 44px;
-  }
-  .operations-page.has-detail :deep(.summary),
-  .operations-page.has-detail :deep(.operation-filters),
-  .operations-page.has-detail .operation-list {
-    display: none;
   }
 }
 </style>

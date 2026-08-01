@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
+import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
 import { presentAnalysisResult } from "../model/project-ai-analysis-presentation";
 
 const props = withDefaults(
-  defineProps<{ result: unknown; canReadCost?: boolean }>(),
+  defineProps<{
+    result: unknown;
+    canReadCost?: boolean;
+    canReadCmsUsers?: boolean;
+    projectId?: string;
+  }>(),
   { canReadCost: false },
 );
 const view = computed(() => presentAnalysisResult(props.result));
@@ -93,44 +100,66 @@ function formatDate(value: string): string {
       </article>
     </div>
 
-    <div v-if="view.actors" class="actors">
-      <div class="result-section-title">
-        <i class="pi pi-user" /> Атрибуция результата
-      </div>
-      <span v-if="view.actors.createdByCmsUserId"
-        ><small>Создал администратор</small
-        ><code>{{ view.actors.createdByCmsUserId }}</code></span
-      >
-      <span v-if="canReadCost && view.actors.costAttributedToCmsUserId"
-        ><small>Расход администратора</small
-        ><code>{{ view.actors.costAttributedToCmsUserId }}</code></span
-      >
-    </div>
-
-    <div v-if="view.provenance" class="provenance">
-      <div class="result-section-title">
-        <i class="pi pi-verified" /> Provenance результата
-      </div>
-      <div class="provenance-grid">
-        <span v-if="view.provenance.catalogRevisionId"
-          ><small>Catalog revision</small
-          ><code>{{ view.provenance.catalogRevisionId }}</code></span
-        >
-        <span v-if="view.provenance.queryPolicyRevisionId"
-          ><small>Query policy revision</small
-          ><code>{{ view.provenance.queryPolicyRevisionId }}</code></span
-        >
-        <span v-if="view.provenance.aiOperationId"
-          ><small>AI Operation</small
-          ><code>{{ view.provenance.aiOperationId }}</code></span
-        >
-        <span v-if="view.provenance.catalogRevisionDigest"
-          ><small>Catalog digest</small
-          ><code>{{ view.provenance.catalogRevisionDigest }}</code></span
-        >
+    <details v-if="view.actors || view.provenance" class="result-technical">
+      <summary>
+        <span><i class="pi pi-verified" /> Атрибуция и provenance</span>
+        <i class="pi pi-chevron-down" />
+      </summary>
+      <div class="result-technical-grid">
+        <TechnicalIdentifier
+          v-if="view.actors?.createdByCmsUserId"
+          label="Создал администратор"
+          :value="view.actors.createdByCmsUserId"
+          :to="
+            cmsUserDetailRoute(
+              view.actors.createdByCmsUserId,
+              Boolean(canReadCmsUsers),
+            )
+          "
+        />
+        <TechnicalIdentifier
+          v-if="canReadCost && view.actors?.costAttributedToCmsUserId"
+          label="Расход администратора"
+          :value="view.actors.costAttributedToCmsUserId"
+          :to="
+            cmsUserDetailRoute(
+              view.actors.costAttributedToCmsUserId,
+              Boolean(canReadCmsUsers),
+            )
+          "
+        />
+        <TechnicalIdentifier
+          v-if="view.provenance?.catalogRevisionId"
+          label="Catalog revision"
+          :value="view.provenance.catalogRevisionId"
+        />
+        <TechnicalIdentifier
+          v-if="view.provenance?.queryPolicyRevisionId"
+          label="Query policy revision"
+          :value="view.provenance.queryPolicyRevisionId"
+        />
+        <TechnicalIdentifier
+          v-if="view.provenance?.aiOperationId"
+          label="AI Operation"
+          :value="view.provenance.aiOperationId"
+          :to="
+            projectId
+              ? {
+                  name: 'ai-operation-detail',
+                  params: { operationId: view.provenance.aiOperationId },
+                  query: { projectId },
+                }
+              : undefined
+          "
+        />
+        <TechnicalIdentifier
+          v-if="view.provenance?.catalogRevisionDigest"
+          label="Catalog digest"
+          :value="view.provenance.catalogRevisionDigest"
+        />
       </div>
       <div
-        v-for="receipt in view.provenance.queryReceipts"
+        v-for="receipt in view.provenance?.queryReceipts ?? []"
         :key="receipt.id"
         class="provenance-receipt"
       >
@@ -139,9 +168,9 @@ function formatDate(value: string): string {
           {{ receipt.complete ? "полный" : "неполный"
           }}{{ receipt.truncated ? " · усечён" : "" }}</span
         >
-        <code>{{ receipt.queryHash }}</code>
+        <TechnicalIdentifier label="Query hash" :value="receipt.queryHash" />
       </div>
-    </div>
+    </details>
 
     <div v-if="view.limitations.length" class="limitations">
       <div
@@ -188,15 +217,13 @@ function formatDate(value: string): string {
   gap: 12px;
 }
 .evidence-summary,
-.actors,
-.provenance-grid {
+.result-technical-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 10px;
 }
 .evidence-summary span,
-.actors span,
-.provenance-grid span {
+.result-technical-grid > * {
   min-width: 0;
   padding: 11px 12px;
   background: var(--surface-subtle);
@@ -204,8 +231,7 @@ function formatDate(value: string): string {
   font-size: 0.78rem;
 }
 .evidence-summary small,
-.actors small,
-.provenance-grid small {
+.result-technical-grid small {
   display: block;
   margin-bottom: 4px;
   color: var(--muted);
@@ -247,13 +273,42 @@ function formatDate(value: string): string {
   margin: 0;
   line-height: 1.5;
 }
-.actors,
-.provenance {
-  padding-top: 2px;
+.result-technical {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-subtle);
 }
-.actors .result-section-title,
-.provenance .result-section-title {
-  grid-column: 1 / -1;
+.result-technical summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 13px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+  list-style: none;
+}
+.result-technical summary::-webkit-details-marker {
+  display: none;
+}
+.result-technical summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.result-technical summary > i {
+  font-size: 0.72rem;
+  transition: transform 0.18s ease;
+}
+.result-technical[open] summary > i {
+  transform: rotate(180deg);
+}
+.result-technical-grid {
+  padding: 13px;
+  border-top: 1px solid var(--line);
 }
 .provenance-receipt {
   display: grid;
@@ -263,11 +318,6 @@ function formatDate(value: string): string {
   background: var(--surface-subtle);
   border-radius: 10px;
   font-size: 0.76rem;
-}
-code {
-  overflow-wrap: anywhere;
-  color: inherit;
-  font: inherit;
 }
 .interpretation span {
   padding: 12px;
