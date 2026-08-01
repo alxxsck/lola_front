@@ -7,9 +7,15 @@
  */
 import type { CmsAgentImmediateExecutionResponseDtoAnalysis } from "./cmsAgentImmediateExecutionResponseDtoAnalysis";
 import type { CmsAgentImmediateInterpretationResponseDto } from "./cmsAgentImmediateInterpretationResponseDto";
+import type { CmsAgentImmediateExecutionResponseDtoResult } from "./cmsAgentImmediateExecutionResponseDtoResult";
 
 export interface CmsAgentImmediateExecutionResponseDto {
-  /** @nullable */
+  /**
+   * Deprecated V1 compatibility alias for Project Analysis clients.
+   * @nullable
+   */
   analysis?: CmsAgentImmediateExecutionResponseDtoAnalysis;
   interpretation: CmsAgentImmediateInterpretationResponseDto;
+  /** @nullable */
+  result?: CmsAgentImmediateExecutionResponseDtoResult;
 }

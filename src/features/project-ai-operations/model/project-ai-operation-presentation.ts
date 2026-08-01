@@ -31,6 +31,7 @@ export function aiOperationCategoryLabel(
     MEMORY: "Память",
     AI_REVIEW: "AI-проверка",
     AI_ANALYSIS: "AI-анализ",
+    CMS_AGENT: "AI-агент CMS",
     CASE_INTELLIGENCE: "Анализ обращения",
     PROJECT_OVERHEAD: "Системная AI-операция",
   };

@@ -19,4 +19,5 @@ export const AiOperationListItemDtoCategory = {
   AI_ANALYSIS: "AI_ANALYSIS",
   CASE_INTELLIGENCE: "CASE_INTELLIGENCE",
   PROJECT_OVERHEAD: "PROJECT_OVERHEAD",
+  CMS_AGENT: "CMS_AGENT",
 } as const;

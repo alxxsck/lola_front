@@ -32,11 +32,19 @@ export interface CmsAgentInterpretationRunResponseDto {
   effectClass?: string | null;
   /** @nullable */
   executionMode?: string | null;
+  /** @nullable */
+  model?: string | null;
+  /** @nullable */
+  modelPolicyRevision?: string | null;
   outcome: CmsAgentInterpretationRunResponseDtoOutcome;
   /** @nullable */
   outcomeCode?: string | null;
   /** @nullable */
   plan?: CmsAgentInterpretationRunResponseDtoPlan;
+  /** @nullable */
+  planHash?: string | null;
+  /** @nullable */
+  provider?: string | null;
   /** @nullable */
   redactedAt?: string | null;
   runId: string;

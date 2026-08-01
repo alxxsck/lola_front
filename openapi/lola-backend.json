@@ -1503,7 +1503,8 @@
               "AI_REVIEW",
               "AI_ANALYSIS",
               "CASE_INTELLIGENCE",
-              "PROJECT_OVERHEAD"
+              "PROJECT_OVERHEAD",
+              "CMS_AGENT"
             ],
             "type": "string"
           },
@@ -1683,7 +1684,8 @@
               "AI_REVIEW",
               "AI_ANALYSIS",
               "CASE_INTELLIGENCE",
-              "PROJECT_OVERHEAD"
+              "PROJECT_OVERHEAD",
+              "CMS_AGENT"
             ],
             "type": "string"
           },
@@ -3801,6 +3803,7 @@
               "MEMORY",
               "AI_REVIEW",
               "AI_ANALYSIS",
+              "CMS_AGENT",
               "CASE_INTELLIGENCE",
               "PROJECT_OVERHEAD"
             ],
@@ -4015,6 +4018,7 @@
               "MEMORY",
               "AI_REVIEW",
               "AI_ANALYSIS",
+              "CMS_AGENT",
               "CASE_INTELLIGENCE",
               "PROJECT_OVERHEAD"
             ],
@@ -8188,6 +8192,163 @@
         ],
         "type": "object"
       },
+      "CmsAgentConfirmationResponseDto": {
+        "properties": {
+          "capabilityKey": {
+            "type": "string"
+          },
+          "capabilityVersion": {
+            "type": "number"
+          },
+          "confirmationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "confirmationKind": {
+            "type": "string"
+          },
+          "confirmingCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "consumedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "consumedIamSecurityEventId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "originatingIamSecurityEventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revokedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "AVAILABLE",
+              "CONSUMED",
+              "EXPIRED",
+              "REVOKED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirmationId",
+          "confirmationKind",
+          "capabilityKey",
+          "capabilityVersion",
+          "confirmingCmsUserId",
+          "status",
+          "evidence",
+          "originatingIamSecurityEventId",
+          "expiresAt",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CmsAgentDomainLinkResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "domainAiOperationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "domainId": {
+            "type": "string"
+          },
+          "domainKind": {
+            "type": "string"
+          },
+          "interpretationRunId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "linkId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "CREATED",
+              "UPDATED",
+              "EXECUTED",
+              "RESULT"
+            ],
+            "type": "string"
+          },
+          "result": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "linkId",
+          "interpretationRunId",
+          "domainKind",
+          "domainId",
+          "relation",
+          "result",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CmsAgentDomainReferenceResponseDto": {
+        "properties": {
+          "domainAiOperationId": {
+            "type": "string"
+          },
+          "domainId": {
+            "type": "string"
+          },
+          "domainKind": {
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "CREATED",
+              "UPDATED",
+              "EXECUTED",
+              "RESULT"
+            ],
+            "type": "string"
+          },
+          "result": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "domainKind",
+          "domainId",
+          "relation",
+          "result"
+        ],
+        "type": "object"
+      },
       "CmsAgentImmediateAnalysisResponseDto": {
         "properties": {
           "analysisId": {
@@ -8226,11 +8387,21 @@
                 "$ref": "#/components/schemas/CmsAgentImmediateAnalysisResponseDto"
               }
             ],
+            "description": "Deprecated V1 compatibility alias for Project Analysis clients.",
             "nullable": true,
             "type": "object"
           },
           "interpretation": {
             "$ref": "#/components/schemas/CmsAgentImmediateInterpretationResponseDto"
+          },
+          "result": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CmsAgentDomainReferenceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           }
         },
         "required": [
@@ -8315,6 +8486,14 @@
             "nullable": true,
             "type": "string"
           },
+          "model": {
+            "nullable": true,
+            "type": "string"
+          },
+          "modelPolicyRevision": {
+            "nullable": true,
+            "type": "string"
+          },
           "outcome": {
             "enum": [
               "PLANNED",
@@ -8332,6 +8511,14 @@
             "additionalProperties": true,
             "nullable": true,
             "type": "object"
+          },
+          "planHash": {
+            "nullable": true,
+            "type": "string"
+          },
+          "provider": {
+            "nullable": true,
+            "type": "string"
           },
           "redactedAt": {
             "format": "date-time",
@@ -8357,12 +8544,24 @@
       },
       "CmsAgentRequestDetailResponseDto": {
         "properties": {
+          "confirmations": {
+            "items": {
+              "$ref": "#/components/schemas/CmsAgentConfirmationResponseDto"
+            },
+            "type": "array"
+          },
           "contentAvailable": {
             "type": "boolean"
           },
           "createdAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "domainLinks": {
+            "items": {
+              "$ref": "#/components/schemas/CmsAgentDomainLinkResponseDto"
+            },
+            "type": "array"
           },
           "interpretationPageInfo": {
             "$ref": "#/components/schemas/CmsAgentRequestPageInfoDto"
@@ -8432,6 +8631,8 @@
           "createdAt",
           "updatedAt",
           "retentionUntil",
+          "domainLinks",
+          "confirmations",
           "interpretationRuns",
           "interpretationPageInfo"
         ],
@@ -35564,7 +35765,7 @@
           "CMS AI agent"
         ],
         "x-iam-permission": {
-          "code": "project.cms_agent.use",
+          "code": "project.ai_operations.sensitive.read",
           "scope": "PROJECT"
         }
       }
@@ -36364,7 +36565,8 @@
                 "AI_REVIEW",
                 "AI_ANALYSIS",
                 "CASE_INTELLIGENCE",
-                "PROJECT_OVERHEAD"
+                "PROJECT_OVERHEAD",
+                "CMS_AGENT"
               ],
               "type": "string"
             }
@@ -36859,7 +37061,8 @@
                 "AI_REVIEW",
                 "AI_ANALYSIS",
                 "CASE_INTELLIGENCE",
-                "PROJECT_OVERHEAD"
+                "PROJECT_OVERHEAD",
+                "CMS_AGENT"
               ],
               "type": "string"
             }

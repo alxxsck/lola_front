@@ -5,13 +5,17 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CmsAgentConfirmationResponseDto } from "./cmsAgentConfirmationResponseDto";
+import type { CmsAgentDomainLinkResponseDto } from "./cmsAgentDomainLinkResponseDto";
 import type { CmsAgentRequestPageInfoDto } from "./cmsAgentRequestPageInfoDto";
 import type { CmsAgentInterpretationRunResponseDto } from "./cmsAgentInterpretationRunResponseDto";
 import type { CmsAgentRequestDetailResponseDtoStatus } from "./cmsAgentRequestDetailResponseDtoStatus";
 
 export interface CmsAgentRequestDetailResponseDto {
+  confirmations: CmsAgentConfirmationResponseDto[];
   contentAvailable: boolean;
   createdAt: string;
+  domainLinks: CmsAgentDomainLinkResponseDto[];
   interpretationPageInfo: CmsAgentRequestPageInfoDto;
   interpretationRuns: CmsAgentInterpretationRunResponseDto[];
   /** @nullable */

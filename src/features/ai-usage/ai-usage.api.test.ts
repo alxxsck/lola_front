@@ -128,6 +128,19 @@ const response = {
 } satisfies AiUsageReportResponseDto;
 
 describe("AI usage API response validation", () => {
+  it("accepts CMS agent usage returned by the current backend contract", () => {
+    const cmsAgentResponse = {
+      ...response,
+      categories: [
+        { ...response.breakdown[0], category: "CMS_AGENT" as const },
+      ],
+    };
+
+    expect(
+      parseAiUsageReport(cmsAgentResponse, "project-1")?.categories,
+    ).toEqual([expect.objectContaining({ category: "CMS_AGENT" })]);
+  });
+
   it("normalizes decimal strings without exposing raw ledger rows", () => {
     expect(parseAiUsageReport(response, "project-1")).toMatchObject({
       projectId: "project-1",

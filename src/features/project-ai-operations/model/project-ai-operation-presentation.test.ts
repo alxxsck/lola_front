@@ -37,6 +37,7 @@ describe("project AI operation presentation", () => {
       severity: "danger",
     });
     expect(aiOperationCategoryLabel("AI_ANALYSIS")).toBe("AI-анализ");
+    expect(aiOperationCategoryLabel("CMS_AGENT")).toBe("AI-агент CMS");
     expect(aiOperationCostLabel("0.0245")).toContain("$0.0245");
   });
 });

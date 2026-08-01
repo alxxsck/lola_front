@@ -8,6 +8,7 @@
 import type { CmsAgentImmediateAnalysisResponseDto } from "./cmsAgentImmediateAnalysisResponseDto";
 
 /**
+ * Deprecated V1 compatibility alias for Project Analysis clients.
  * @nullable
  */
 export type CmsAgentImmediateExecutionResponseDtoAnalysis =
