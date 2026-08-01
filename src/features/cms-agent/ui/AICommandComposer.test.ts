@@ -94,6 +94,23 @@ describe("AICommandComposer", () => {
     ).toContain("analysis-1");
   });
 
+  it("surfaces an intensified working state while a request is pending", async () => {
+    repository.submit.mockReturnValue(new Promise(() => undefined));
+    const wrapper = mountComposer();
+
+    await wrapper.get("textarea").setValue("Покажи динамику депозитов");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="ai-command-composer"]').classes()).toContain(
+      "is-busy",
+    );
+    expect(wrapper.get("form").attributes("aria-busy")).toBe("true");
+    expect(wrapper.text()).toContain("Сохраняем запрос");
+
+    wrapper.unmount();
+  });
+
   it("presents a clarification without inventing an analysis result", async () => {
     repository.submit.mockResolvedValue({ requestId: "request-2" });
     repository.execute.mockResolvedValue({

@@ -194,6 +194,225 @@ Claude размещает `Search and tools` в нижней левой част
   причина находится рядом с полем/статусом
   ([WCAG Error Identification](https://www.w3.org/WAI/WCAG22/Understanding/error-identification)).
 
+## Светлая outer surface, aurora и tasteful motion
+
+### Что подтверждают первичные дизайн-источники
+
+Современная AI-поверхность не обязана быть тёмной, чтобы восприниматься как
+«умная». В официальном скриншоте ChatGPT composer — светлый нейтральный
+rounded-container с тонкой границей/тенью; идентичность создают сама форма,
+иерархия controls и их состояния, а не сплошной тёмный фон
+([OpenAI ChatGPT Search](https://help.openai.com/en/articles/9237897-connectors-in-chatgpt),
+[прямой официальный скриншот](https://images.ctfassets.net/j22is2dtoxu1/intercom-img-9ce62ecef76c516e5c56a21a/78a2e1227a5a1bf23d98d53dcf32d828/Screenshot_2025-04-28_at_14_44_26.png)).
+На другом официальном ChatGPT-изображении во время генерации цвет и активность
+локализованы в небольшом blue/violet orb над composer, а основная surface
+остаётся нейтральной; это наблюдение по продуктовой иллюстрации, не спецификация
+OpenAI
+([ChatGPT overview](https://chatgpt.com/overview/),
+[прямое изображение busy UI](https://images.ctfassets.net/8su2tbn87fck/1HKIsAZ11GjpEEyopYfLIW/094b52522ff5edf1b2b7d1b0200fd1be/Chat.png?fm=webp&q=90)).
+Notion формулирует тот же принцип как встраивание AI в существующие building
+blocks и показ нужных инструментов в текущем контексте, а AI Home 2025 остаётся
+частью общего workspace, не отдельной «сценой»
+([Notion: design thinking behind Notion AI](https://www.notion.com/blog/the-design-thinking-behind-notion-ai),
+[Notion 2.51 / AI Home](https://www.notion.com/en-US/releases)).
+
+Самое прямое первичное обоснование gradient/aurora-языка даёт команда Google
+Gemini. Она описывает gradients как context builders и передачу энергии:
+более концентрированный leading edge направляет внимание, а diffused tail
+смягчает его. Круги и округлые containers удерживают динамический цвет, а
+внутренняя активность показывает thinking/analysis
+([Google Design: Illustrating the Gemini App](https://design.google/library/gemini-ai-visual-design)).
+При этом Google отдельно говорит, что движение не декоративно и у каждой
+анимации есть определённые начало и конец. Следовательно, для Lola aurora —
+правильный AI-сигнал, но бесконечная активность всей hero-surface не является
+паттерном, который этот источник поддерживает.
+
+Это подтверждает и эволюция самого Gemini: редизайн ноября 2025 Google называет
+clean/modern и направленным на более простой старт conversation, а в мае 2026
+описывает следующий expressive UI как интерфейс, который «оживает» после prompt
+за счёт fluid animations, color, typography и haptics. Практический вывод для
+Lola — выраженность лучше усиливать **после действия**, а не держать всю surface
+одинаково активной всегда
+([Gemini 3 app redesign](https://blog.google/products-and-platforms/products/gemini/gemini-3-gemini-app/),
+[next evolution of the Gemini app](https://blog.google/innovation-and-ai/products/gemini-app/next-evolution-gemini-app/)).
+
+Material и Apple сходятся в том, что motion должен быть семантическим и
+согласованным. Material выбирает скорость по размеру компонента/дистанции,
+разделяет spatial motion и effects вроде color/opacity и даёт системные
+duration-токены от `50` до `1000 ms`; большие перемещения получают большую
+длительность
+([Material Components: Motion](https://github.com/material-components/material-components-android/blob/master/docs/theming/Motion.md),
+[Material 3 Motion](https://m3.material.io/styles/motion/overview/how-it-works)).
+Apple рекомендует purpose-driven motion, краткую и точную feedback-анимацию,
+избегание лишнего motion в часто повторяющихся взаимодействиях и возможность
+не ждать её завершения
+([Apple HIG: Motion](https://developer.apple.com/design/human-interface-guidelines/motion)).
+Классическая Material choreography формулирует полезную проверку для hero:
+motion направляет внимание к одному focal point; несколько одновременно
+конкурирующих движений отвлекают
+([Material Motion: Choreography](https://m1.material.io/motion/choreography.html)).
+
+### Визуальный контракт светлой Lola-surface
+
+Рекомендуемая desktop-композиция:
+
+```text
+┌ light outer wrapper · faint lime/violet aurora ─────────────────┐
+│  ✦ AI WORKSPACE                                                 │
+│  Что нужно узнать о проекте?     ┌ raised composer ───────────┐ │
+│  Короткое доверительное          │ Запрос к Lola              │ │
+│  пояснение                       │ textarea                   │ │
+│                                  │ source · count · shortcut ↑│ │
+│                                  └────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+- Outer wrapper: почти белая/neutral surface с очень слабым tint, тонкая
+  граница, radius примерно `28–32 px`, мягкая широкая тень. Точные значения —
+  продуктовая рекомендация Lola, не стандарт источников.
+- Aurora: два-три больших radial-gradient слоя **за контентом** — lime у
+  AI-label/иконки, violet/blue у composer/submit. Начальная opacity примерно
+  `0.08–0.16`; ни один цветной слой не должен проходить непосредственно под
+  обычным текстом.
+- Composer: отдельная непрозрачная raised surface (`0.94–0.98` visual opacity),
+  чтобы placeholder, border и focus сохраняли стабильный контраст при любом
+  кадре aurora. Контраст проверяется в самом неблагоприятном кадре
+  ([WCAG non-text contrast](https://www.w3.org/WAI/WCAG22/understanding/non-text-contrast.html),
+  [WCAG text contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)).
+- AI-градиент — не заливка каждого control. Он связывает outer wrapper и
+  composer, а единственный насыщенный акцент остаётся у ready-submit.
+- Не использовать rotating conic-gradient вокруг всей карточки, shimmer под
+  текстом, крупные moving blobs или несколько несинхронных pulse. Они разрушают
+  иерархию, делают периферическое движение заметнее и плохо соответствуют
+  Apple-рекомендации минимизировать repetitive/peripheral motion
+  ([Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility/)).
+
+### Motion по состояниям
+
+| Состояние | Рекомендуемое движение Lola | Интенсивность |
+| --- | --- | --- |
+| Первое появление | Один aurora-intro: fade + drift слоя, затем полная остановка | `700–1000 ms`, translate до `2%`, opacity delta до `0.08` |
+| Idle, рекомендуемый вариант | Статичный мягкий gradient после intro | Нет постоянного движения |
+| Idle, continuous-вариант | Очень медленный cross-fade/дрейф двух заранее нарисованных слоёв; обязателен pause control | `28–40 s` на цикл, translate `1–2%`, без breathing-scale, opacity delta `0.02–0.03` |
+| Focus-within | Быстрый border/focus response; aurora лишь чуть яснее | `150–220 ms`, без изменения geometry |
+| Ready | Submit меняет fill/contrast; допустим один короткий arrow response | `150–220 ms` |
+| Submit → busy | Один направленный light sweep по краю или усиление двух aura-слоёв | `600–900 ms` |
+| Долгий busy | После короткого запуска outer aura замирает в более ясном состоянии; progress показывает локальный spinner + текст | максимум `4–5 s` motion, затем static |
+| Success/error | Короткий fade статуса; цвет + иконка + текст | `200–400 ms` |
+| Reduced motion | Сразу конечный статичный кадр, без drift/scale/sweep | `animation: none`; допустима мгновенная смена или короткий opacity-only fade |
+
+Числа в таблице — проектные параметры Lola. Для обычных state transitions они
+укладываются в Material duration-scale, а длинный `28–40 s` цикл — отдельная
+ambient-гипотеза, не Material token. Длинный цикл выбран именно для малой
+скорости и малой амплитуды. В platform-specific разделе visionOS Apple отдельно
+предупреждает против sustained oscillation, а общая accessibility-рекомендация
+просит снижать интенсивность automatic/repetitive motion; это не числовой web-
+стандарт, но полезная верхняя граница осторожности для крупной outer-surface
+([Apple HIG: Motion](https://developer.apple.com/design/human-interface-guidelines/motion),
+[Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility/)).
+
+### Почему continuous idle нельзя включить безусловно
+
+WCAG 2.2 требует pause/stop/hide для автоматически начавшегося движения, которое
+идёт дольше пяти секунд параллельно другому контенту. Простого очень медленного
+цикла недостаточно, если движение всё равно воспринимается
+([SC 2.2.2 Pause, Stop, Hide](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide)).
+Поэтому есть два корректных продуктовых решения:
+
+1. **Предпочтительно:** конечный intro до одной секунды, затем статичный idle;
+   во время submit/busy — конечное усиление до пяти секунд.
+2. **Если continuous является обязательной частью бренда:** рядом с «Как это
+   работает» добавить доступную настройку **«Анимация: вкл/выкл»**, запоминать
+   выбор и автоматически выключать motion при `prefers-reduced-motion: reduce`.
+
+WAI рекомендует строить static styles как базу и включать motion только внутри
+`@media (prefers-reduced-motion: no-preference)`; при `reduce` анимация
+подавляется
+([WAI C39](https://www.w3.org/WAI/WCAG22/Techniques/css/C39),
+[CSS Media Queries Level 5](https://www.w3.org/TR/mediaqueries-5/#prefers-reduced-motion)).
+Apple также требует реагировать на системный Reduce Motion, уменьшая automatic
+и repetitive animation, заменяя spatial transitions на fades и избегая
+animated blur/depth
+([Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility/),
+[Apple reduced-motion evaluation](https://developer.apple.com/help/app-store-connect/manage-app-accessibility/reduced-motion-evaluation-criteria)).
+WCAG отдельно замечает, что opacity/color effects без изменения воспринимаемой
+позиции, размера или формы не относятся к `motion animation` в узком смысле
+SC 2.3.3. Это делает low-amplitude cross-fade безопаснее spatial drift, но не
+отменяет SC 2.2.2, если эффект воспринимается как автоматически движущийся или
+мигающий контент дольше пяти секунд
+([SC 2.3.3 Animation from Interactions](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html),
+[SC 2.2.2 Pause, Stop, Hide](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide)).
+
+### Performance-контракт реализации
+
+- Создать 2 декоративных абсолютных aura-layer/pseudo-elements внутри outer
+  wrapper с `pointer-events: none`, `overflow: hidden` и `isolation: isolate`.
+  Текст и controls остаются отдельным непрозрачным foreground-слоем.
+- Рисовать мягкость самими radial-gradient stops. Не анимировать
+  `filter: blur(...)`, `box-shadow`, `background-position`, gradient stops,
+  border width, размеры или layout-properties.
+- Анимировать только `transform` и `opacity`: web.dev рекомендует держать motion
+  на compositing stage и проверять paint/layout в DevTools
+  ([web.dev: high-performance CSS animations](https://web.dev/articles/animations-guide)).
+- Настоящий animated blur дорог: Chrome показывает, что convolution выполняет
+  тяжёлую GPU-операцию каждый frame; даже cross-fade blurred layers требует
+  осторожности и проверки на слабом mobile GPU
+  ([Chrome Developers: Animating a blur](https://developer.chrome.com/blog/animated-blur/)).
+- Не ставить `will-change` на wrapper постоянно. Добавлять его только активному
+  aura-layer на время конечной анимации и снимать после неё; для infinite-варианта
+  подтвердить пользу профилированием. Избыточное число compositor layers также
+  расходует память.
+- Останавливать decorative motion, когда wrapper вне viewport или документ
+  hidden. Это performance-оптимизация, но не замена пользовательскому pause или
+  `prefers-reduced-motion`.
+- На mobile уменьшить количество aura layers до двух, opacity примерно на
+  треть, убрать scale и оставить только небольшой opacity/translate drift.
+- Проверить Chrome DevTools Performance/Paint flashing на обычном mobile и при
+  `4× CPU slowdown`: нет layout/paint на каждом кадре, нет заметного ухудшения
+  typing latency, focus/submit остаются отзывчивыми. При дисплее `60 Hz` полный
+  frame-budget около `16.66 ms`, поэтому декоративный слой не должен забирать
+  его значимую часть
+  ([web.dev: rendering performance](https://web.dev/articles/rendering-performance)).
+
+### CSS-направление, а не готовая спецификация
+
+```css
+.ai-surface__aura {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: .12;
+  transform: translate3d(0, 0, 0);
+  background:
+    radial-gradient(circle at 18% 25%, var(--ai-aura-lime), transparent 34%),
+    radial-gradient(circle at 82% 72%, var(--ai-aura-violet), transparent 38%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ai-surface.is-entering .ai-surface__aura {
+    animation: ai-aura-intro 900ms cubic-bezier(.05, .7, .1, 1) both;
+  }
+}
+
+@keyframes ai-aura-intro {
+  from { opacity: 0; transform: translate3d(-2%, 1%, 0) scale(.99); }
+  to   { opacity: .12; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-surface__aura {
+    animation: none !important;
+    transform: none;
+  }
+}
+```
+
+Easing в примере соответствует Material emphasized decelerate для входящего
+M3-motion. Для focus/ready использовать более короткий standard/effects
+transition; для idle не переиспользовать `900 ms` loop — это будет заметное
+пульсирование, а не ambient motion
+([Material Components: Motion](https://github.com/material-components/material-components-android/blob/master/docs/theming/Motion.md)).
+
 ## Mobile-контракт
 
 ```text
