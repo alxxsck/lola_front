@@ -599,13 +599,15 @@ function handleShortcut(event: KeyboardEvent): void {
 }
 .ai-orb::before {
   position: absolute;
-  inset: -7px;
-  border: 1px solid transparent;
-  border-top-color: color-mix(in srgb, var(--ai-border-start) 88%, transparent);
-  border-right-color: color-mix(in srgb, var(--ai-border-end) 72%, transparent);
-  border-radius: 21px;
+  inset: -8px;
+  border: 1px solid
+    color-mix(in srgb, var(--ai-border-start) 42%, transparent);
+  border-radius: 22px;
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--ai-aura-violet) 14%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--ai-aura-lime) 8%, transparent);
   content: "";
-  animation: ai-orb-orbit 10s linear infinite;
+  animation: ai-orb-halo 4.8s ease-in-out infinite;
 }
 .ai-orb i {
   font-size: 1.05rem;
@@ -920,9 +922,15 @@ function handleShortcut(event: KeyboardEvent): void {
     border-color: color-mix(in srgb, var(--brand) 54%, var(--status-violet));
   }
 }
-@keyframes ai-orb-orbit {
-  to {
-    transform: rotate(1turn);
+@keyframes ai-orb-halo {
+  0%,
+  100% {
+    opacity: 0.36;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.76;
+    transform: scale(1.04);
   }
 }
 @keyframes ai-spark-breathe {
