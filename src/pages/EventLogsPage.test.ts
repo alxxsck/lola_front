@@ -174,6 +174,26 @@ describe("EventLogsPage", () => {
     });
   });
 
+  it("lets users choose table or timeline when the journal is embedded", async () => {
+    mocks.getEventLogPage.mockResolvedValue({ items: [log], nextCursor: null });
+    const wrapper = shallowMount(EventLogsPage, {
+      props: { embedded: true },
+    });
+    await flushPromises();
+
+    const viewControl = wrapper.get('[aria-label="Вид журнала"]');
+    const [tableButton, timelineButton] = viewControl.findAll("button");
+    expect(viewControl.text()).toContain("Таблица");
+    expect(viewControl.text()).toContain("Путь");
+    expect(wrapper.find("data-table-stub").exists()).toBe(true);
+
+    await timelineButton!.trigger("click");
+    expect(wrapper.find(".timeline").exists()).toBe(true);
+
+    await tableButton!.trigger("click");
+    expect(wrapper.find("data-table-stub").exists()).toBe(true);
+  });
+
   it("does not request sensitive logs for a viewer", async () => {
     mocks.role = "VIEWER";
     mocks.auth.project = {

@@ -428,8 +428,8 @@ function json(value: unknown) {
 
 <template>
   <section :class="['event-logs-page', { page: !embedded }]">
-    <header v-if="!embedded" class="page-header">
-      <div>
+    <header :class="[embedded ? 'event-log-toolbar' : 'page-header']">
+      <div v-if="!embedded">
         <div class="eyebrow">Observability · Event stream</div>
         <h1>Журнал событий</h1>
         <p class="subtitle">
@@ -438,6 +438,7 @@ function json(value: unknown) {
         </p>
       </div>
       <div class="header-actions">
+        <span v-if="embedded" class="view-label">Вид журнала</span>
         <div class="view-switch" role="group" aria-label="Вид журнала">
           <button
             type="button"
@@ -1012,14 +1013,32 @@ function json(value: unknown) {
 </template>
 
 <style scoped>
+.event-log-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  padding: 9px 10px 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-card);
+}
 .header-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+.view-label {
+  color: var(--text-small-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .view-switch {
   display: flex;
   padding: 4px;
+  border: 1px solid var(--line);
   background: var(--surface-active);
   border-radius: 13px;
 }
@@ -1035,6 +1054,17 @@ function json(value: unknown) {
   cursor: pointer;
   font-size: 0.72rem;
   font-weight: 700;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+.view-switch button:hover:not(.active) {
+  color: var(--ink);
+}
+.view-switch button:focus-visible {
+  outline: 2px solid var(--text-brand);
+  outline-offset: 2px;
 }
 .view-switch button.active {
   background: var(--surface-card);
@@ -1577,9 +1607,18 @@ function json(value: unknown) {
   }
 }
 @media (max-width: 700px) {
+  .event-log-toolbar {
+    padding: 8px;
+  }
   .header-actions {
     width: 100%;
     justify-content: space-between;
+  }
+  .view-label {
+    display: none;
+  }
+  .view-switch button {
+    padding-inline: 9px;
   }
   .filter-main,
   .filter-advanced {
