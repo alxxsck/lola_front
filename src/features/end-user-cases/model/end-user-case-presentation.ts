@@ -50,16 +50,6 @@ export const endUserCaseChannelLabel = (channel: string): string =>
   ({ TEXT: "Текст", VOICE: "Голос", CMS: "Администратор" })[channel] ??
   "Другой канал";
 
-export const endUserCaseProposalStatusLabel = (status: string): string =>
-  ({
-    OPEN: "Открыто",
-    ACCEPTED: "Принято",
-    REJECTED: "Отклонено",
-    RESOLVED: "Завершено",
-    EXPIRED: "Срок истёк",
-    CANCELLED: "Отменено",
-  })[status] ?? "Состояние неизвестно";
-
 export const endUserCaseCapabilityLabel = (code: string): string =>
   ({
     check_deposit: "Проверка депозита",

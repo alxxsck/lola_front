@@ -67,8 +67,6 @@ export interface EndUserCaseResponseDto {
   prioritySource: EndUserCaseResponseDtoPrioritySource;
   /** JSON-safe project-local sequence. */
   projectSequence: string;
-  /** @minimum 0 */
-  proposalCount: number;
   /** @nullable */
   reopenedAt?: string | null;
   requiresSpecialist: boolean;

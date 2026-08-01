@@ -402,8 +402,13 @@ const canStartAIReview = computed(
     hasProjectPermission(
       projectPermissions.value,
       "project.event_query_policy.preview",
-    ) &&
-    hasProjectPermission(projectPermissions.value, "project.ai_proposals.read"),
+    ),
+);
+const canReadAIAnalyses = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.ai_analyses.read",
+  ),
 );
 const projectTimezone = computed(() => {
   const scenarioEngine = auth.project?.settings?.scenarioEngine as
@@ -2048,6 +2053,7 @@ function displayField(
       :project-id="projectId"
       :end-user-id="endUserId"
       :timezone="projectTimezone"
+      :can-open-analysis="canReadAIAnalyses"
     />
 
     <Dialog

@@ -5,7 +5,7 @@
         "enum": [
           "SERVER_HANDLER",
           "FRONTEND_COMMAND",
-          "PROPOSAL",
+          "RETIRED",
           "CASE_ESCALATION"
         ],
         "type": "string"
@@ -2835,536 +2835,6 @@
         ],
         "type": "object"
       },
-      "AIProposalDetailResponseDto": {
-        "properties": {
-          "caseLinkState": {
-            "enum": [
-              "LINKED",
-              "MIGRATED",
-              "REPAIR_REQUIRED",
-              "NOT_APPLICABLE",
-              "LEGACY_MISSING"
-            ],
-            "type": "string"
-          },
-          "caseMigrationDisposition": {
-            "enum": [
-              "ACTIVE_IMPORTED",
-              "ACTIVE_COLLAPSED",
-              "TERMINAL_IMPORTED",
-              "CASE_REPAIR_REQUIRED",
-              "ORPHAN_REPAIR_REQUIRED"
-            ],
-            "nullable": true,
-            "type": "string"
-          },
-          "content": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "conversationId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "decidedAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "decidedByActorId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "decisionMode": {
-            "enum": [
-              "ACKNOWLEDGE",
-              "APPROVE_REJECT"
-            ],
-            "type": "string"
-          },
-          "decisionReason": {
-            "nullable": true,
-            "type": "string"
-          },
-          "endUser": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "endUserCase": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserCaseResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "evidence": {
-            "items": {
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "kind": {
-            "enum": [
-              "ADMIN_ATTENTION",
-              "INSIGHT",
-              "ACTION_RECOMMENDATION"
-            ],
-            "type": "string"
-          },
-          "migratedCaseEscalation": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalMigratedCaseEscalationResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "priority": {
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT"
-            ],
-            "type": "string"
-          },
-          "projectSequence": {
-            "type": "string"
-          },
-          "readAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "resolvedAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceInvocationId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceMessageId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceType": {
-            "enum": [
-              "TEXT_CHAT",
-              "VOICE",
-              "BACKGROUND_AI"
-            ],
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "workflowStatus": {
-            "enum": [
-              "OPEN",
-              "ACCEPTED",
-              "REJECTED",
-              "RESOLVED",
-              "EXPIRED",
-              "CANCELLED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "projectSequence",
-          "kind",
-          "workflowStatus",
-          "decisionMode",
-          "priority",
-          "title",
-          "summary",
-          "sourceType",
-          "caseLinkState",
-          "version",
-          "isRead",
-          "createdAt",
-          "updatedAt",
-          "content",
-          "evidence"
-        ],
-        "type": "object"
-      },
-      "AIProposalEndUserCaseResponseDto": {
-        "properties": {
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "priority": {
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT",
-              "CRITICAL"
-            ],
-            "type": "string"
-          },
-          "projectSequence": {
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "OPEN",
-              "IN_PROGRESS",
-              "WAITING_END_USER",
-              "WAITING_SYSTEM",
-              "WAITING_ADMIN",
-              "RESOLVED",
-              "UNRESOLVED",
-              "CANCELLED"
-            ],
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "projectSequence",
-          "title",
-          "summary",
-          "status",
-          "priority",
-          "version"
-        ],
-        "type": "object"
-      },
-      "AIProposalEndUserResponseDto": {
-        "properties": {
-          "externalId": {
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "externalId"
-        ],
-        "type": "object"
-      },
-      "AIProposalListItemResponseDto": {
-        "properties": {
-          "caseLinkState": {
-            "enum": [
-              "LINKED",
-              "MIGRATED",
-              "REPAIR_REQUIRED",
-              "NOT_APPLICABLE",
-              "LEGACY_MISSING"
-            ],
-            "type": "string"
-          },
-          "caseMigrationDisposition": {
-            "enum": [
-              "ACTIVE_IMPORTED",
-              "ACTIVE_COLLAPSED",
-              "TERMINAL_IMPORTED",
-              "CASE_REPAIR_REQUIRED",
-              "ORPHAN_REPAIR_REQUIRED"
-            ],
-            "nullable": true,
-            "type": "string"
-          },
-          "conversationId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "decisionMode": {
-            "enum": [
-              "ACKNOWLEDGE",
-              "APPROVE_REJECT"
-            ],
-            "type": "string"
-          },
-          "endUser": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "endUserCase": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserCaseResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "kind": {
-            "enum": [
-              "ADMIN_ATTENTION",
-              "INSIGHT",
-              "ACTION_RECOMMENDATION"
-            ],
-            "type": "string"
-          },
-          "migratedCaseEscalation": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalMigratedCaseEscalationResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "priority": {
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT"
-            ],
-            "type": "string"
-          },
-          "projectSequence": {
-            "type": "string"
-          },
-          "sourceMessageId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceType": {
-            "enum": [
-              "TEXT_CHAT",
-              "VOICE",
-              "BACKGROUND_AI"
-            ],
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "workflowStatus": {
-            "enum": [
-              "OPEN",
-              "ACCEPTED",
-              "REJECTED",
-              "RESOLVED",
-              "EXPIRED",
-              "CANCELLED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "projectSequence",
-          "kind",
-          "workflowStatus",
-          "decisionMode",
-          "priority",
-          "title",
-          "summary",
-          "sourceType",
-          "caseLinkState",
-          "version",
-          "isRead",
-          "createdAt",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "AIProposalMigratedCaseEscalationResponseDto": {
-        "properties": {
-          "caseId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "disposition": {
-            "enum": [
-              "ACTIVE_IMPORTED",
-              "ACTIVE_COLLAPSED",
-              "TERMINAL_IMPORTED"
-            ],
-            "type": "string"
-          },
-          "escalationId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "REQUESTED",
-              "CLAIMED",
-              "CLOSED",
-              "CANCELLED"
-            ],
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "caseId",
-          "escalationId",
-          "disposition"
-        ],
-        "type": "object"
-      },
-      "AIProposalReadResponseDto": {
-        "properties": {
-          "proposal": {
-            "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-          },
-          "summary": {
-            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-          }
-        },
-        "required": [
-          "proposal",
-          "summary"
-        ],
-        "type": "object"
-      },
-      "AIProposalReceivedResponseDto": {
-        "properties": {
-          "received": {
-            "enum": [
-              true
-            ],
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "received"
-        ],
-        "type": "object"
-      },
-      "AIProposalsPageResponseDto": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/AIProposalListItemResponseDto"
-            },
-            "type": "array"
-          },
-          "nextCursor": {
-            "nullable": true,
-            "type": "string"
-          },
-          "summary": {
-            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-          }
-        },
-        "required": [
-          "items",
-          "summary"
-        ],
-        "type": "object"
-      },
-      "AIProposalSummaryResponseDto": {
-        "properties": {
-          "calculatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "highPriorityUnreadCount": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "lastSequence": {
-            "description": "JSON-safe project event sequence.",
-            "type": "string"
-          },
-          "openCount": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "unreadCount": {
-            "minimum": 0,
-            "type": "number"
-          }
-        },
-        "required": [
-          "openCount",
-          "unreadCount",
-          "highPriorityUnreadCount",
-          "lastSequence",
-          "calculatedAt"
-        ],
-        "type": "object"
-      },
       "AIReviewEstimateResponseDto": {
         "properties": {
           "blocked": {
@@ -3469,10 +2939,6 @@
             "type": "array"
           },
           "policyRevisionId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "proposalId": {
             "format": "uuid",
             "type": "string"
           },
@@ -11491,9 +10957,8 @@
             "type": "string"
           },
           "topic": {
-            "default": "AI_PROPOSALS",
+            "default": "CASE_ESCALATION",
             "enum": [
-              "AI_PROPOSALS",
               "CASE_ESCALATION"
             ],
             "type": "string"
@@ -11961,15 +11426,14 @@
       "CreateSlackNotificationDestinationDto": {
         "properties": {
           "displayName": {
-            "example": "Предложения Lola",
+            "example": "Эскалации обращений",
             "maxLength": 120,
             "minLength": 1,
             "type": "string"
           },
           "topic": {
-            "default": "AI_PROPOSALS",
+            "default": "CASE_ESCALATION",
             "enum": [
-              "AI_PROPOSALS",
               "CASE_ESCALATION"
             ],
             "type": "string"
@@ -12123,30 +11587,6 @@
         ],
         "type": "object"
       },
-      "DecideAIProposalDto": {
-        "properties": {
-          "action": {
-            "enum": [
-              "RESOLVE"
-            ],
-            "type": "string"
-          },
-          "expectedVersion": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "reason": {
-            "maxLength": 2000,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "action",
-          "expectedVersion"
-        ],
-        "type": "object"
-      },
       "DeleteKnowledgeDocumentResponseDto": {
         "properties": {
           "deleted": {
@@ -12225,56 +11665,6 @@
         },
         "required": [
           "expectedUpdatedAt"
-        ],
-        "type": "object"
-      },
-      "EmailAIProposalPreferenceResponseDto": {
-        "properties": {
-          "channel": {
-            "enum": [
-              "EMAIL"
-            ],
-            "type": "string"
-          },
-          "effectiveStatus": {
-            "enum": [
-              "SUBSCRIBED",
-              "UNSUBSCRIBED",
-              "SUSPENDED",
-              "INELIGIBLE"
-            ],
-            "type": "string"
-          },
-          "emailVersion": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "ineligibilityReason": {
-            "enum": [
-              "EMAIL_UNVERIFIED",
-              "EMAIL_CHANGED",
-              "USER_INACTIVE"
-            ],
-            "nullable": true,
-            "type": "string"
-          },
-          "subscribed": {
-            "type": "boolean"
-          },
-          "topic": {
-            "enum": [
-              "AI_PROPOSALS"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "channel",
-          "subscribed",
-          "effectiveStatus",
-          "ineligibilityReason",
-          "emailVersion",
-          "topic"
         ],
         "type": "object"
       },
@@ -13263,86 +12653,6 @@
         ],
         "type": "object"
       },
-      "EndUserCaseProposalResponseDto": {
-        "properties": {
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "kind": {
-            "enum": [
-              "ADMIN_ATTENTION",
-              "INSIGHT",
-              "ACTION_RECOMMENDATION"
-            ],
-            "type": "string"
-          },
-          "priority": {
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT"
-            ],
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "workflowStatus": {
-            "enum": [
-              "OPEN",
-              "ACCEPTED",
-              "REJECTED",
-              "RESOLVED",
-              "EXPIRED",
-              "CANCELLED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "kind",
-          "workflowStatus",
-          "priority",
-          "title",
-          "summary",
-          "version",
-          "createdAt",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "EndUserCaseProposalsResponseDto": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/EndUserCaseProposalResponseDto"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "type": "object"
-      },
       "EndUserCaseResolutionResponseDto": {
         "properties": {
           "assessment": {
@@ -13568,10 +12878,6 @@
             "description": "JSON-safe project-local sequence.",
             "type": "string"
           },
-          "proposalCount": {
-            "minimum": 0,
-            "type": "number"
-          },
           "reopenedAt": {
             "format": "date-time",
             "nullable": true,
@@ -13698,7 +13004,6 @@
           "endUser",
           "requiresSpecialist",
           "messageCount",
-          "proposalCount",
           "firstObservedAt",
           "lastActivityAt",
           "endUserRecontactCount",
@@ -13768,7 +13073,7 @@
           "kind": {
             "enum": [
               "AI_ACTION_INVOCATION",
-              "AI_PROPOSAL",
+              "LEGACY_AI_RESULT",
               "TRUSTED_VERIFICATION"
             ],
             "type": "string"
@@ -19230,7 +18535,6 @@
           },
           "topic": {
             "enum": [
-              "AI_PROPOSALS",
               "CASE_ESCALATION"
             ],
             "type": "string"
@@ -21383,11 +20687,6 @@
             ],
             "type": "string"
           },
-          "linkedProposalId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
           "provenanceStatus": {
             "enum": [
               "PARTIAL",
@@ -21408,7 +20707,7 @@
           "sourceKind": {
             "enum": [
               "AI_REVIEW",
-              "INSIGHT_PROPOSAL"
+              "LEGACY_INSIGHT"
             ],
             "type": "string"
           }
@@ -31499,17 +30798,6 @@
         ],
         "type": "object"
       },
-      "UpdateEmailAIProposalPreferenceDto": {
-        "properties": {
-          "subscribed": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "subscribed"
-        ],
-        "type": "object"
-      },
       "UpdateEmailCaseEscalationPreferenceDto": {
         "properties": {
           "subscribed": {
@@ -32065,7 +31353,7 @@
             "type": "string"
           },
           "displayName": {
-            "example": "Предложения Lola",
+            "example": "Эскалации обращений",
             "maxLength": 120,
             "minLength": 1,
             "type": "string"
@@ -37197,403 +36485,6 @@
         }
       }
     },
-    "/api/v1/admin/projects/{projectId}/ai-proposal-events/{eventId}/received": {
-      "post": {
-        "operationId": "AIProposalEvents_received",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "eventId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalReceivedResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals": {
-      "get": {
-        "operationId": "AIProposals_list",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "status",
-            "required": false,
-            "schema": {
-              "items": {
-                "enum": [
-                  "OPEN",
-                  "ACCEPTED",
-                  "REJECTED",
-                  "RESOLVED",
-                  "EXPIRED",
-                  "CANCELLED"
-                ],
-                "type": "string"
-              },
-              "type": "array"
-            }
-          },
-          {
-            "in": "query",
-            "name": "kind",
-            "required": false,
-            "schema": {
-              "items": {
-                "enum": [
-                  "ADMIN_ATTENTION",
-                  "INSIGHT",
-                  "ACTION_RECOMMENDATION"
-                ],
-                "type": "string"
-              },
-              "type": "array"
-            }
-          },
-          {
-            "in": "query",
-            "name": "priority",
-            "required": false,
-            "schema": {
-              "items": {
-                "enum": [
-                  "LOW",
-                  "NORMAL",
-                  "HIGH",
-                  "URGENT"
-                ],
-                "type": "string"
-              },
-              "type": "array"
-            }
-          },
-          {
-            "in": "query",
-            "name": "read",
-            "required": false,
-            "schema": {
-              "enum": [
-                "READ",
-                "UNREAD"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "endUserId",
-            "required": false,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "createdFrom",
-            "required": false,
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "createdTo",
-            "required": false,
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 100,
-              "minimum": 1,
-              "type": "number"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cursor",
-            "required": false,
-            "schema": {
-              "maxLength": 2048,
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalsPageResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}": {
-      "get": {
-        "operationId": "AIProposals_detail",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "proposalId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/decisions": {
-      "post": {
-        "operationId": "AIProposals_decide",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "proposalId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DecideAIProposalDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.decide",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/read": {
-      "post": {
-        "operationId": "AIProposals_markRead",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "proposalId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalReadResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/summary": {
-      "get": {
-        "operationId": "AIProposals_summary",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
     "/api/v1/admin/projects/{projectId}/ai-review/estimate": {
       "post": {
         "operationId": "AIReview_estimate",
@@ -40498,53 +39389,6 @@
         ],
         "x-iam-permission": {
           "code": "project.cases.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/proposals": {
-      "get": {
-        "operationId": "EndUserCases_proposals",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "caseId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EndUserCaseProposalsResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "End User Cases"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
           "scope": "PROJECT"
         }
       }
@@ -54452,88 +53296,6 @@
         ],
         "x-iam-authenticated": true,
         "x-iam-fresh-strong-authentication": true
-      }
-    },
-    "/api/v1/auth/me/notification-preferences/ai-proposals/email": {
-      "get": {
-        "operationId": "NotificationPreferences_getEmailAIProposals",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmailAIProposalPreferenceResponseDto"
-                }
-              }
-            },
-            "description": "",
-            "headers": {
-              "X-Request-ID": {
-                "description": "Server-generated request identifier returned on every response",
-                "schema": {
-                  "format": "uuid",
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Read effective AI Proposal email subscription for current CMS User",
-        "tags": [
-          "CMS notification preferences"
-        ],
-        "x-iam-authenticated": true
-      },
-      "patch": {
-        "operationId": "NotificationPreferences_setEmailAIProposals",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEmailAIProposalPreferenceDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmailAIProposalPreferenceResponseDto"
-                }
-              }
-            },
-            "description": "",
-            "headers": {
-              "X-Request-ID": {
-                "description": "Server-generated request identifier returned on every response",
-                "schema": {
-                  "format": "uuid",
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Explicitly subscribe or unsubscribe current verified email",
-        "tags": [
-          "CMS notification preferences"
-        ],
-        "x-iam-authenticated": true
       }
     },
     "/api/v1/auth/me/notification-preferences/case-escalations/email": {

@@ -12,6 +12,6 @@ export type EndUserCaseSplitEvidenceResponseDtoKind =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EndUserCaseSplitEvidenceResponseDtoKind = {
   AI_ACTION_INVOCATION: "AI_ACTION_INVOCATION",
-  AI_PROPOSAL: "AI_PROPOSAL",
+  LEGACY_AI_RESULT: "LEGACY_AI_RESULT",
   TRUSTED_VERIFICATION: "TRUSTED_VERIFICATION",
 } as const;

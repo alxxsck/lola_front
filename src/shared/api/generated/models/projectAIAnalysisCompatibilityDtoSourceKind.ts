@@ -12,5 +12,5 @@ export type ProjectAIAnalysisCompatibilityDtoSourceKind =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ProjectAIAnalysisCompatibilityDtoSourceKind = {
   AI_REVIEW: "AI_REVIEW",
-  INSIGHT_PROPOSAL: "INSIGHT_PROPOSAL",
+  LEGACY_INSIGHT: "LEGACY_INSIGHT",
 } as const;

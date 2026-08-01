@@ -11,6 +11,5 @@ export type NotificationDestinationResponseDtoTopic =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const NotificationDestinationResponseDtoTopic = {
-  AI_PROPOSALS: "AI_PROPOSALS",
   CASE_ESCALATION: "CASE_ESCALATION",
 } as const;

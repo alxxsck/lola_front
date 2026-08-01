@@ -1,15 +1,15 @@
 import {
-  notificationPreferencesGetEmailAIProposals,
-  notificationPreferencesSetEmailAIProposals,
+  notificationPreferencesGetEmailCaseEscalations,
+  notificationPreferencesSetEmailCaseEscalations,
 } from '@/shared/api/generated/lola-backend'
-import type { EmailAIProposalPreferenceResponseDto } from '@/shared/api/generated/models'
+import type { EmailCaseEscalationPreferenceResponseDto } from '@/shared/api/generated/models'
 
 export const notificationPreferencesApi = {
-  getEmailAIProposals(): Promise<EmailAIProposalPreferenceResponseDto> {
-    return notificationPreferencesGetEmailAIProposals()
+  getEmailCaseEscalations(): Promise<EmailCaseEscalationPreferenceResponseDto> {
+    return notificationPreferencesGetEmailCaseEscalations()
   },
 
-  setEmailAIProposals(subscribed: boolean): Promise<EmailAIProposalPreferenceResponseDto> {
-    return notificationPreferencesSetEmailAIProposals({ subscribed })
+  setEmailCaseEscalations(subscribed: boolean): Promise<EmailCaseEscalationPreferenceResponseDto> {
+    return notificationPreferencesSetEmailCaseEscalations({ subscribed })
   },
 }

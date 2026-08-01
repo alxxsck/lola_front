@@ -4,7 +4,6 @@ import { createMemoryHistory, createRouter, type Router } from "vue-router";
 import { describe, expect, it, vi } from "vitest";
 import AppShell from "./AppShell.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
-import { useAIProposalsStore } from "@/features/ai-proposals/model/ai-proposals.store";
 
 function project(
   id: string,
@@ -75,32 +74,6 @@ function mountProjectMenu(pinia: Pinia, router: Router) {
 }
 
 describe("AppShell", () => {
-  it("does not activate the legacy proposal workspace from the global shell", async () => {
-    const pinia = createPinia();
-    setActivePinia(pinia);
-    const auth = useAuthStore();
-    const proposals = useAIProposalsStore();
-    const activateProject = vi
-      .spyOn(proposals, "activateProject")
-      .mockResolvedValue();
-    const selected = project("project-1", "Project One", [
-      "project.ai_proposals.read",
-    ]);
-    authenticateWithProjects(auth, [selected]);
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [{ path: "/overview", component: { template: "<div />" } }],
-    });
-    await router.push("/overview");
-    await router.isReady();
-
-    const wrapper = mountProjectMenu(pinia, router);
-    await flushPromises();
-
-    expect(activateProject).not.toHaveBeenCalled();
-    wrapper.unmount();
-  });
-
   it("opens personal security settings from the profile menu", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

@@ -48,8 +48,6 @@ export const PROJECT_PERMISSION_CODES = [
   "project.ai_operations.sensitive.read",
   "project.ai_operations.subjects.read",
   "project.ai_operations.audit.read",
-  "project.ai_proposals.read",
-  "project.ai_proposals.decide",
   "project.cases.read",
   "project.cases.manage",
   "project.cases.assign",

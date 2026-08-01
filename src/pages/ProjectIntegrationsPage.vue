@@ -35,7 +35,7 @@ const pending = ref(false);
 const loadError = ref("");
 const actionError = ref("");
 const actionSuccess = ref("");
-const displayName = ref("Предложения Lola");
+const displayName = ref("Эскалации обращений");
 const webhookUrl = ref("");
 const createRetryKey = ref("");
 const testRetry = ref<{ signature: string; key: string } | null>(null);
@@ -165,7 +165,7 @@ async function load(): Promise<void> {
     if (projectId.value !== selectedProjectId) return;
     destination.value =
       response.items.find(({ channel }) => channel === "SLACK_WEBHOOK") ?? null;
-    displayName.value = destination.value?.displayName ?? "Предложения Lola";
+    displayName.value = destination.value?.displayName ?? "Эскалации обращений";
   } catch {
     if (projectId.value === selectedProjectId) {
       destination.value = null;
@@ -471,7 +471,7 @@ onMounted(load);
         </div>
         <div class="card-title">
           <h2 id="slack-title">Slack для команды</h2>
-          <p>Отправляет новые предложения Lola в выбранный канал команды.</p>
+          <p>Отправляет эскалации обращений в выбранный канал команды.</p>
         </div>
         <span class="status" :data-status="destination?.status ?? 'EMPTY'">
           {{ statusLabel }}
@@ -607,7 +607,7 @@ onMounted(load);
             v-model="displayName"
             name="displayName"
             maxlength="120"
-            placeholder="Например, предложения Lola"
+            placeholder="Например, эскалации обращений"
           />
         </label>
         <label class="integration-field" for="slack-webhook-create">

@@ -21,7 +21,7 @@ const telegramDestination = (
 ): NotificationDestinationResponseDto => ({
   id: "telegram-destination-1",
   projectId: "project-1",
-  topic: "AI_PROPOSALS",
+  topic: "CASE_ESCALATION",
   channel: "TELEGRAM_OPERATIONAL",
   displayName: "Служебные уведомления",
   status: "PENDING_TEST",
