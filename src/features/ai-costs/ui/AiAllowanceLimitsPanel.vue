@@ -4,6 +4,7 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
+import { ApiError } from "@/shared/api/http/api-error";
 import {
   compareDecimalStrings,
   formatDecimalMoney,
@@ -48,6 +49,9 @@ const idempotencyKey = ref("");
 const hardConfirmed = ref(false);
 const showEndUserExactUsd = ref(false);
 const formError = ref("");
+const editingProjectPolicyVersion = ref("");
+const configurationConflict = ref(false);
+const conflictRefreshing = ref(false);
 const namedDialogOpen = ref(false);
 const cohortDialogOpen = ref(false);
 const planKey = ref("");
@@ -106,6 +110,9 @@ watch(
     dialogOpen.value = false;
     namedDialogOpen.value = false;
     cohortDialogOpen.value = false;
+    editingProjectPolicyVersion.value = "";
+    configurationConflict.value = false;
+    conflictRefreshing.value = false;
     if (canRead) void load();
     else {
       loading.value = false;
@@ -164,6 +171,11 @@ async function loadMorePlans(): Promise<void> {
       loadedProjectId.value === requestProjectId &&
       policy.value === current
     ) {
+      if (next.projectPolicyVersion !== current.projectPolicyVersion) {
+        plansLoading.value = false;
+        await load();
+        return;
+      }
       policy.value = {
         ...current,
         plans: [...current.plans, ...next.plans],
@@ -206,6 +218,11 @@ async function loadMoreRevisions(
       loadedProjectId.value === requestProjectId &&
       policy.value === current
     ) {
+      if (page.projectPolicyVersion !== current.projectPolicyVersion) {
+        revisionLoadingKey.value = "";
+        await load();
+        return;
+      }
       policy.value = {
         ...current,
         plans: current.plans.map((item) =>
@@ -236,7 +253,8 @@ async function loadMoreRevisions(
 
 function openEditor(): void {
   if (!props.canManage) return;
-  if (props.canRead && !policyReady.value) return;
+  if (!policyReady.value || !policy.value) return;
+  editingProjectPolicyVersion.value = policy.value.projectPolicyVersion;
   const revision = latestDefaultRevision.value;
   amount.value = revision?.recurringAmountUsd ?? "";
   period.value = revision?.periodKind ?? "DAY";
@@ -248,6 +266,7 @@ function openEditor(): void {
   showEndUserExactUsd.value =
     policy.value?.policy?.showEndUserExactUsd ?? false;
   formError.value = "";
+  configurationConflict.value = false;
   dialogOpen.value = true;
   warningRu.value = policy.value?.policy?.warningContent.ru ?? "";
   warningEn.value = policy.value?.policy?.warningContent.en ?? "";
@@ -261,7 +280,8 @@ function openNamedEditor(
   plan?: AiAllowanceProjectPolicyView["plans"][number],
 ): void {
   if (!props.canManage) return;
-  if (props.canRead && !policyReady.value) return;
+  if (!policyReady.value || !policy.value) return;
+  editingProjectPolicyVersion.value = policy.value.projectPolicyVersion;
   const revision = plan?.revisions[0];
   planKey.value = plan?.key ?? "";
   planName.value = plan?.name ?? "";
@@ -271,6 +291,7 @@ function openNamedEditor(
   reason.value = "";
   idempotencyKey.value = newIdempotencyKey();
   formError.value = "";
+  configurationConflict.value = false;
   categoryRules.value = categories.map((category) => {
     const existing = revision?.categoryRules.find(
       (rule) => rule.category === category,
@@ -291,7 +312,8 @@ function openNamedEditor(
   namedDialogOpen.value = true;
 }
 function openCohortEditor(): void {
-  if (!props.canManage || !policyReady.value) return;
+  if (!props.canManage || !policyReady.value || !policy.value) return;
+  editingProjectPolicyVersion.value = policy.value.projectPolicyVersion;
   cohortScope.value = "SEGMENT";
   cohortId.value = "";
   cohortPlanId.value =
@@ -302,11 +324,14 @@ function openCohortEditor(): void {
   reason.value = "";
   idempotencyKey.value = newIdempotencyKey();
   formError.value = "";
+  configurationConflict.value = false;
   cohortDialogOpen.value = true;
 }
 
 async function save(): Promise<void> {
   if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!editingProjectPolicyVersion.value)
+    return fail("Сначала загрузите актуальную конфигурацию проекта.");
   const exactAmount = parseAllowanceUsd(amount.value.trim());
   if (!exactAmount || compareDecimalStrings(exactAmount, "0") < 0)
     return fail(
@@ -326,10 +351,12 @@ async function save(): Promise<void> {
   const requestProjectId = props.projectId;
   saving.value = true;
   formError.value = "";
+  configurationConflict.value = false;
   try {
-    await aiAllowanceRepository.putDefaultPlan(
+    const result = await aiAllowanceRepository.putDefaultPlan(
       requestProjectId,
       {
+        expectedProjectPolicyVersion: editingProjectPolicyVersion.value,
         amountUsd: exactAmount,
         period: period.value,
         timezone: timezone.value.trim(),
@@ -371,6 +398,7 @@ async function save(): Promise<void> {
       !props.canManage
     )
       return;
+    acceptProjectPolicyVersion(result.projectPolicyVersion);
     dialogOpen.value = false;
     saving.value = false;
     await load();
@@ -378,8 +406,13 @@ async function save(): Promise<void> {
     if (
       requestGeneration === generation &&
       requestProjectId === props.projectId
-    )
-      formError.value = message(cause, "Не удалось сохранить политику лимитов");
+    ) {
+      configurationConflict.value = isConfigurationConflict(cause);
+      formError.value = mutationMessage(
+        cause,
+        "Не удалось сохранить политику лимитов",
+      );
+    }
   } finally {
     if (
       requestGeneration === generation &&
@@ -391,6 +424,8 @@ async function save(): Promise<void> {
 
 async function saveNamed(): Promise<void> {
   if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!editingProjectPolicyVersion.value)
+    return fail("Сначала загрузите актуальную конфигурацию проекта.");
   const key = planKey.value.trim().toUpperCase();
   const exact = parseAllowanceUsd(amount.value.trim());
   const cap = dailyCap.value.trim()
@@ -422,11 +457,13 @@ async function saveNamed(): Promise<void> {
   const requestGeneration = generation;
   const requestProjectId = props.projectId;
   saving.value = true;
+  configurationConflict.value = false;
   try {
-    await aiAllowanceRepository.putPlan(
+    const result = await aiAllowanceRepository.putPlan(
       requestProjectId,
       key,
       {
+        expectedProjectPolicyVersion: editingProjectPolicyVersion.value,
         name: planName.value.trim(),
         amountUsd: exact,
         period: period.value,
@@ -442,6 +479,7 @@ async function saveNamed(): Promise<void> {
       !props.canManage
     )
       return;
+    acceptProjectPolicyVersion(result.projectPolicyVersion);
     namedDialogOpen.value = false;
     saving.value = false;
     await load();
@@ -449,8 +487,10 @@ async function saveNamed(): Promise<void> {
     if (
       requestGeneration === generation &&
       requestProjectId === props.projectId
-    )
-      formError.value = message(cause, "Не удалось сохранить план");
+    ) {
+      configurationConflict.value = isConfigurationConflict(cause);
+      formError.value = mutationMessage(cause, "Не удалось сохранить план");
+    }
   } finally {
     if (
       requestGeneration === generation &&
@@ -461,6 +501,8 @@ async function saveNamed(): Promise<void> {
 }
 async function saveCohort(): Promise<void> {
   if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!editingProjectPolicyVersion.value)
+    return fail("Сначала загрузите актуальную конфигурацию проекта.");
   const id = cohortId.value.trim().toLowerCase();
   const from = localIso(effectiveFrom.value);
   const until = effectiveUntil.value
@@ -491,12 +533,14 @@ async function saveCohort(): Promise<void> {
   const requestGeneration = generation;
   const requestProjectId = props.projectId;
   saving.value = true;
+  configurationConflict.value = false;
   try {
-    await aiAllowanceRepository.putCohortAssignment(
+    const result = await aiAllowanceRepository.putCohortAssignment(
       requestProjectId,
       cohortScope.value,
       id,
       {
+        expectedProjectPolicyVersion: editingProjectPolicyVersion.value,
         planId: cohortPlanId.value,
         priority: cohortPriority.value,
         effectiveFrom: from,
@@ -511,6 +555,7 @@ async function saveCohort(): Promise<void> {
       !props.canManage
     )
       return;
+    acceptProjectPolicyVersion(result.projectPolicyVersion);
     cohortDialogOpen.value = false;
     saving.value = false;
     await load();
@@ -518,8 +563,13 @@ async function saveCohort(): Promise<void> {
     if (
       requestGeneration === generation &&
       requestProjectId === props.projectId
-    )
-      formError.value = message(cause, "Не удалось назначить план когорте");
+    ) {
+      configurationConflict.value = isConfigurationConflict(cause);
+      formError.value = mutationMessage(
+        cause,
+        "Не удалось назначить план когорте",
+      );
+    }
   } finally {
     if (
       requestGeneration === generation &&
@@ -579,6 +629,57 @@ function validTimezone(value: string): boolean {
 function message(cause: unknown, fallback: string): string {
   return cause instanceof Error ? cause.message : fallback;
 }
+function mutationMessage(cause: unknown, fallback: string): string {
+  return isConfigurationConflict(cause)
+    ? "Конфигурация лимитов уже изменилась. Форма сохранена — перезагрузите актуальную конфигурацию и повторите проверку."
+    : message(cause, fallback);
+}
+function isConfigurationConflict(cause: unknown): boolean {
+  return (
+    cause instanceof ApiError &&
+    cause.status === 409 &&
+    cause.code === "AI_ALLOWANCE_CONFIGURATION_VERSION_CONFLICT"
+  );
+}
+async function refreshDraftVersion(): Promise<void> {
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
+  conflictRefreshing.value = true;
+  try {
+    const next = await aiAllowanceRepository.projectPolicy(requestProjectId);
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      !props.canManage
+    )
+      return;
+    policy.value = next;
+    loadedProjectId.value = requestProjectId;
+    editingProjectPolicyVersion.value = next.projectPolicyVersion;
+    configurationConflict.value = false;
+    formError.value = "";
+  } catch (cause) {
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      formError.value = message(
+        cause,
+        "Не удалось загрузить актуальную конфигурацию",
+      );
+  } finally {
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      conflictRefreshing.value = false;
+  }
+}
+function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
+  if (!policy.value) return;
+  policy.value = { ...policy.value, projectPolicyVersion };
+  editingProjectPolicyVersion.value = projectPolicyVersion;
+}
 </script>
 
 <template>
@@ -594,17 +695,23 @@ function message(cause: unknown, fallback: string): string {
     <div v-if="!canRead && canManage" class="card direct-actions">
       <div>
         <h3>Операции управления</h3>
-        <p>Доступны audited mutations без чтения финансового состояния.</p>
+        <p>
+          Для безопасного изменения нужен актуальный номер версии. Выдайте право
+          чтения конфигурации или выполните операцию через API с проверенным
+          OCC-токеном.
+        </p>
       </div>
       <div class="heading-actions">
         <Button
           label="Настроить базовый план"
           icon="pi pi-pencil"
+          disabled
           @click="openEditor"
         /><Button
           label="Создать named plan"
           outlined
           icon="pi pi-plus"
+          disabled
           @click="openNamedEditor()"
         />
       </div>
@@ -934,6 +1041,15 @@ function message(cause: unknown, fallback: string): string {
       <small v-if="formError" class="field-error" role="alert">{{
         formError
       }}</small>
+      <Button
+        v-if="configurationConflict"
+        label="Загрузить актуальную версию"
+        type="button"
+        outlined
+        severity="warn"
+        :loading="conflictRefreshing"
+        @click="refreshDraftVersion"
+      />
       <footer>
         <Button
           label="Отмена"
@@ -1001,6 +1117,15 @@ function message(cause: unknown, fallback: string): string {
       ><small v-if="formError" class="field-error" role="alert">{{
         formError
       }}</small>
+      <Button
+        v-if="configurationConflict"
+        label="Загрузить актуальную версию"
+        type="button"
+        outlined
+        severity="warn"
+        :loading="conflictRefreshing"
+        @click="refreshDraftVersion"
+      />
       <footer>
         <Button
           label="Отмена"
@@ -1082,6 +1207,15 @@ function message(cause: unknown, fallback: string): string {
       ><small v-if="formError" class="field-error" role="alert">{{
         formError
       }}</small>
+      <Button
+        v-if="configurationConflict"
+        label="Загрузить актуальную версию"
+        type="button"
+        outlined
+        severity="warn"
+        :loading="conflictRefreshing"
+        @click="refreshDraftVersion"
+      />
       <footer>
         <Button
           label="Отмена"

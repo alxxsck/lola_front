@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api/http/api-error";
 import AiAllowanceJournalPanel from "./AiAllowanceJournalPanel.vue";
 import AiAllowanceLimitsPanel from "./AiAllowanceLimitsPanel.vue";
 
@@ -33,6 +34,7 @@ vi.mock("../api/ai-allowance-repository", () => ({
 }));
 
 const policy = {
+  projectPolicyVersion: "4",
   policy: {
     projectId: "project-1",
     enforcementMode: "SOFT",
@@ -153,6 +155,18 @@ describe("allowance admin panels", () => {
       endUserAssignment: null,
     });
     mocks.correct.mockResolvedValue({ replayed: false });
+    mocks.putDefaultPlan.mockResolvedValue({
+      projectPolicyVersion: "5",
+      replayed: false,
+    });
+    mocks.putPlan.mockResolvedValue({
+      projectPolicyVersion: "5",
+      replayed: false,
+    });
+    mocks.putCohortAssignment.mockResolvedValue({
+      projectPolicyVersion: "5",
+      replayed: false,
+    });
   });
 
   it("permission-gates the policy read without issuing a request", async () => {
@@ -202,7 +216,10 @@ describe("allowance admin panels", () => {
   });
 
   it("blocks HARD submission until the explicit risk confirmation", async () => {
-    mocks.putDefaultPlan.mockResolvedValue({ replayed: false });
+    mocks.putDefaultPlan.mockResolvedValue({
+      projectPolicyVersion: "5",
+      replayed: false,
+    });
     const wrapper = mount(AiAllowanceLimitsPanel, {
       props: {
         projectId: "project-1",
@@ -239,6 +256,7 @@ describe("allowance admin panels", () => {
     expect(mocks.putDefaultPlan).toHaveBeenCalledWith(
       "project-1",
       expect.objectContaining({
+        expectedProjectPolicyVersion: "4",
         enforcementMode: "HARD",
         amountUsd: "5.000000000001",
       }),
@@ -279,7 +297,10 @@ describe("allowance admin panels", () => {
   });
 
   it("edits the exact end-user USD visibility gate only through the managed policy form", async () => {
-    mocks.putDefaultPlan.mockResolvedValue({ replayed: false });
+    mocks.putDefaultPlan.mockResolvedValue({
+      projectPolicyVersion: "5",
+      replayed: false,
+    });
     const wrapper = mount(AiAllowanceLimitsPanel, {
       props: {
         projectId: "project-1",
@@ -316,8 +337,55 @@ describe("allowance admin panels", () => {
 
     expect(mocks.putDefaultPlan).toHaveBeenCalledWith(
       "project-1",
-      expect.objectContaining({ showEndUserExactUsd: true }),
+      expect.objectContaining({
+        expectedProjectPolicyVersion: "4",
+        showEndUserExactUsd: true,
+      }),
       expect.any(String),
+    );
+  });
+
+  it("keeps the policy draft open after an OCC conflict", async () => {
+    mocks.putDefaultPlan.mockRejectedValue(
+      new ApiError(
+        409,
+        "Conflict",
+        undefined,
+        undefined,
+        "AI_ALLOWANCE_CONFIGURATION_VERSION_CONFLICT",
+      ),
+    );
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Изменить базовый план"))!
+      .trigger("click");
+    const form = wrapper.get("form.allowance-form");
+    await form.findAll("textarea").at(-1)!.setValue("Keep policy draft");
+    await form.trigger("submit");
+    await flushPromises();
+
+    expect(wrapper.find("form.allowance-form").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Конфигурация лимитов уже изменилась");
+    expect(wrapper.text()).toContain("Загрузить актуальную версию");
+    expect(wrapper.findAll("textarea").at(-1)!.element.value).toBe(
+      "Keep policy draft",
     );
   });
 

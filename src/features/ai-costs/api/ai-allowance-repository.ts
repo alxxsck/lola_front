@@ -23,6 +23,7 @@ import type {
   ResolveAiSpendAttemptInput,
   CorrectAiAllowanceInput,
   AiAllowanceReconciliationPage,
+  AiAllowanceConfigurationMutationResult,
 } from "../model/ai-allowance";
 import {
   AI_ALLOWANCE_CATEGORIES,
@@ -54,20 +55,20 @@ export interface AiAllowanceRepository {
     projectId: string,
     input: PutDefaultAllowancePlanInput,
     idempotencyKey: string,
-  ): Promise<unknown>;
+  ): Promise<AiAllowanceConfigurationMutationResult>;
   putPlan(
     projectId: string,
     planKey: string,
     input: PutAllowancePlanInput,
     idempotencyKey: string,
-  ): Promise<unknown>;
+  ): Promise<AiAllowanceConfigurationMutationResult>;
   putCohortAssignment(
     projectId: string,
     scope: "SEGMENT" | "LEVEL",
     cohortId: string,
     input: PutCohortAllowanceAssignmentInput,
     idempotencyKey: string,
-  ): Promise<unknown>;
+  ): Promise<AiAllowanceConfigurationMutationResult>;
   createGrant(
     projectId: string,
     endUserId: string,
@@ -79,7 +80,7 @@ export interface AiAllowanceRepository {
     endUserId: string,
     input: PutEndUserAllowanceAssignmentInput,
     idempotencyKey: string,
-  ): Promise<unknown>;
+  ): Promise<AiAllowanceConfigurationMutationResult>;
   reconcile(
     projectId: string,
     input: ReconcileAiSpendReservationInput,
@@ -145,31 +146,28 @@ export const aiAllowanceRepository: AiAllowanceRepository = {
     return journalPage(response.data);
   },
   async putDefaultPlan(projectId, input, idempotencyKey) {
-    return (
-      await axiosInstance.put(
-        `${root(projectId)}/ai-allowance/default-plan`,
-        input,
-        headers(idempotencyKey),
-      )
-    ).data;
+    const response = await axiosInstance.put(
+      `${root(projectId)}/ai-allowance/default-plan`,
+      input,
+      headers(idempotencyKey),
+    );
+    return await configurationMutationResult(projectId, response.data);
   },
   async putPlan(projectId, planKey, input, idempotencyKey) {
-    return (
-      await axiosInstance.put(
-        `${root(projectId)}/ai-allowance/plans/${encodeURIComponent(planKey)}`,
-        input,
-        headers(idempotencyKey),
-      )
-    ).data;
+    const response = await axiosInstance.put(
+      `${root(projectId)}/ai-allowance/plans/${encodeURIComponent(planKey)}`,
+      input,
+      headers(idempotencyKey),
+    );
+    return await configurationMutationResult(projectId, response.data);
   },
   async putCohortAssignment(projectId, scope, cohortId, input, idempotencyKey) {
-    return (
-      await axiosInstance.put(
-        `${root(projectId)}/ai-allowance/assignments/${scope}/${encodeURIComponent(cohortId)}`,
-        input,
-        headers(idempotencyKey),
-      )
-    ).data;
+    const response = await axiosInstance.put(
+      `${root(projectId)}/ai-allowance/assignments/${scope}/${encodeURIComponent(cohortId)}`,
+      input,
+      headers(idempotencyKey),
+    );
+    return await configurationMutationResult(projectId, response.data);
   },
   async createGrant(projectId, endUserId, input, idempotencyKey) {
     return (
@@ -181,13 +179,12 @@ export const aiAllowanceRepository: AiAllowanceRepository = {
     ).data;
   },
   async putEndUserAssignment(projectId, endUserId, input, idempotencyKey) {
-    return (
-      await axiosInstance.put(
-        `${userRoot(projectId, endUserId)}/assignment`,
-        input,
-        headers(idempotencyKey),
-      )
-    ).data;
+    const response = await axiosInstance.put(
+      `${userRoot(projectId, endUserId)}/assignment`,
+      input,
+      headers(idempotencyKey),
+    );
+    return await configurationMutationResult(projectId, response.data);
   },
   async reconcile(projectId, input, idempotencyKey) {
     return (
@@ -301,6 +298,7 @@ function reconciliationPage(value: unknown): AiAllowanceReconciliationPage {
 
 function policyView(value: unknown): AiAllowanceProjectPolicyView {
   const source = object(value);
+  const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
   const policy = source?.policy === null ? null : parsePolicy(source?.policy);
   const assignment =
     source?.defaultAssignment === null
@@ -310,6 +308,7 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
   const plansPageInfo = parsePageInfo(source?.plansPageInfo);
   if (
     !source ||
+    !projectPolicyVersion ||
     (!policy && source.policy !== null) ||
     (!assignment && source.defaultAssignment !== null) ||
     !Array.isArray(source.plans) ||
@@ -323,6 +322,7 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
   const plans = source.plans.map(parsePlan);
   if (plans.some((item) => !item)) invalid();
   return {
+    projectPolicyVersion,
     policy,
     plans: plans as AiAllowancePlan[],
     plansPageInfo,
@@ -336,6 +336,7 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
 
 function balanceView(value: unknown): AiAllowanceUserBalance {
   const source = object(value);
+  const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
   const account = parseAccount(source?.account);
   const period =
     source?.currentPeriod === null ? null : parsePeriod(source?.currentPeriod);
@@ -353,6 +354,7 @@ function balanceView(value: unknown): AiAllowanceUserBalance {
   const grantsPageInfo = parsePageInfo(source?.grantsPageInfo);
   if (
     !source ||
+    !projectPolicyVersion ||
     !account ||
     (!period && source.currentPeriod !== null) ||
     (!assignment && source.endUserAssignment !== null) ||
@@ -366,6 +368,7 @@ function balanceView(value: unknown): AiAllowanceUserBalance {
   const grants = source.activeGrants.map(parseGrant);
   if (grants.some((item) => !item)) invalid();
   return {
+    projectPolicyVersion,
     account,
     currentPeriod: period,
     currentPeriodSpend,
@@ -378,10 +381,12 @@ function balanceView(value: unknown): AiAllowanceUserBalance {
 
 function planRevisionPage(value: unknown): AiAllowancePlanRevisionPage {
   const source = object(value);
+  const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
   const plan = parsePlanSummary(source?.plan);
   const pageInfo = parsePageInfo(source?.pageInfo);
   if (
     !source ||
+    !projectPolicyVersion ||
     !plan ||
     !pageInfo ||
     !Array.isArray(source.revisions) ||
@@ -392,7 +397,33 @@ function planRevisionPage(value: unknown): AiAllowancePlanRevisionPage {
     parseRevision(revision, true),
   );
   if (revisions.some((revision) => !revision)) invalid();
-  return { plan, revisions: revisions as AiAllowancePlanRevision[], pageInfo };
+  return {
+    projectPolicyVersion,
+    plan,
+    revisions: revisions as AiAllowancePlanRevision[],
+    pageInfo,
+  };
+}
+
+async function configurationMutationResult(
+  projectId: string,
+  value: unknown,
+): Promise<AiAllowanceConfigurationMutationResult> {
+  const source = object(value);
+  const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
+  if (!source || typeof source.replayed !== "boolean") invalid();
+  if (projectPolicyVersion)
+    return { projectPolicyVersion, replayed: source.replayed };
+  if (source.replayed !== true || source.projectPolicyVersion !== undefined)
+    invalid();
+
+  const response = await axiosInstance.get<unknown>(
+    `${root(projectId)}/ai-allowance`,
+  );
+  return {
+    projectPolicyVersion: policyView(response.data).projectPolicyVersion,
+    replayed: true,
+  };
 }
 
 function parseCurrentPeriodSpend(
@@ -840,6 +871,11 @@ function iso(value: unknown): value is string {
 }
 function bigintString(value: unknown): value is string {
   return typeof value === "string" && /^\d+$/.test(value);
+}
+function policyVersion(value: unknown): string | undefined {
+  return typeof value === "string" && /^(?:0|[1-9]\d{0,19})$/.test(value)
+    ? value
+    : undefined;
 }
 function integer(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 1;

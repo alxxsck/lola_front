@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api/http/api-error";
 import AiAllowanceUserDialog from "./AiAllowanceUserDialog.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -21,6 +22,7 @@ describe("AiAllowanceUserDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.balance.mockResolvedValue({
+      projectPolicyVersion: "7",
       account: {
         projectId: "project-1",
         endUserId: "user-1",
@@ -40,8 +42,10 @@ describe("AiAllowanceUserDialog", () => {
       endUserAssignment: null,
     });
     mocks.policy.mockResolvedValue({
+      projectPolicyVersion: "7",
       policy: null,
       plans: [],
+      plansPageInfo: { hasMore: false, nextCursor: null },
       defaultAssignment: null,
       runtimeGates: {
         hardEnforcementApproved: false,
@@ -49,6 +53,10 @@ describe("AiAllowanceUserDialog", () => {
       },
     });
     mocks.grant.mockResolvedValue({ replayed: false });
+    mocks.assignment.mockResolvedValue({
+      projectPolicyVersion: "8",
+      replayed: false,
+    });
   });
 
   it("shows exact balance and hides grant/assignment controls without permissions", async () => {
@@ -157,7 +165,222 @@ describe("AiAllowanceUserDialog", () => {
     expect(wrapper.text()).toContain("user-2 grant");
     expect(wrapper.text()).not.toContain("stale grant");
   });
+
+  it("sends the current project policy version with an end-user assignment", async () => {
+    mocks.balance.mockResolvedValue({
+      ...balanceView("project-1", "user-1", "current grant", false),
+      projectPolicyVersion: "9007199254740993",
+    });
+    mocks.policy.mockResolvedValue({
+      projectPolicyVersion: "9007199254740993",
+      policy: null,
+      plans: [activePlan()],
+      plansPageInfo: { hasMore: false, nextCursor: null },
+      defaultAssignment: null,
+      runtimeGates: {
+        hardEnforcementApproved: false,
+        emergencyDisabled: false,
+      },
+    });
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: true,
+      canReconcile: false,
+    });
+    await flushPromises();
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Назначить план"))!
+      .trigger("click");
+    const form = wrapper.get("form");
+    await form.get("textarea").setValue("Assign current loyalty plan");
+    await form.trigger("submit");
+    await flushPromises();
+
+    expect(mocks.assignment).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      expect.objectContaining({
+        expectedProjectPolicyVersion: "9007199254740993",
+        planId: "11111111-1111-4111-8111-111111111111",
+      }),
+      expect.any(String),
+    );
+  });
+
+  it("does not expose assignment controls from mixed policy generations", async () => {
+    mocks.balance
+      .mockResolvedValueOnce({
+        ...balanceView("project-1", "user-1", "current grant", false),
+        projectPolicyVersion: "7",
+      })
+      .mockResolvedValue({
+        ...balanceView("project-1", "user-1", "current grant", false),
+        projectPolicyVersion: "8",
+      });
+    mocks.policy.mockResolvedValue(policyView("8"));
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: true,
+      canReconcile: false,
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("разных версиях");
+    expect(wrapper.text()).not.toContain("Назначить план");
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Повторить"))!
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Назначить план");
+  });
+
+  it("keeps an assignment form intact after an OCC conflict", async () => {
+    mocks.balance
+      .mockResolvedValueOnce({
+        ...balanceView("project-1", "user-1", "current grant", false),
+        projectPolicyVersion: "7",
+      })
+      .mockResolvedValue({
+        ...balanceView("project-1", "user-1", "current grant", false),
+        projectPolicyVersion: "8",
+      });
+    mocks.policy
+      .mockResolvedValueOnce(policyView("7"))
+      .mockResolvedValue(policyView("8"));
+    mocks.assignment
+      .mockRejectedValueOnce(
+        new ApiError(
+          409,
+          "Conflict",
+          undefined,
+          undefined,
+          "AI_ALLOWANCE_CONFIGURATION_VERSION_CONFLICT",
+        ),
+      )
+      .mockResolvedValue({ projectPolicyVersion: "9", replayed: false });
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: true,
+      canReconcile: false,
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Назначить план"))!
+      .trigger("click");
+    const form = wrapper.get("form");
+    await form.get("textarea").setValue("Keep this assignment draft");
+    await form.trigger("submit");
+    await flushPromises();
+
+    expect(wrapper.find("form").exists()).toBe(true);
+    expect(wrapper.get("textarea").element.value).toBe(
+      "Keep this assignment draft",
+    );
+    expect(wrapper.text()).toContain("Конфигурация лимитов уже изменилась");
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Загрузить актуальную версию"))!
+      .trigger("click");
+    await flushPromises();
+    expect(wrapper.get("textarea").element.value).toBe(
+      "Keep this assignment draft",
+    );
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(mocks.assignment).toHaveBeenLastCalledWith(
+      "project-1",
+      "user-1",
+      expect.objectContaining({ expectedProjectPolicyVersion: "8" }),
+      expect.any(String),
+    );
+  });
+
+  it("keeps the OCC conflict active when refreshing the draft fails", async () => {
+    mocks.policy
+      .mockResolvedValueOnce(policyView("7"))
+      .mockRejectedValueOnce(new Error("Refresh unavailable"));
+    mocks.assignment.mockRejectedValueOnce(
+      new ApiError(
+        409,
+        "Conflict",
+        undefined,
+        undefined,
+        "AI_ALLOWANCE_CONFIGURATION_VERSION_CONFLICT",
+      ),
+    );
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: true,
+      canReconcile: false,
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Назначить план"))!
+      .trigger("click");
+    await wrapper.get("textarea").setValue("Keep failed refresh draft");
+    const originalIdempotencyKey = wrapper.findAll("input").at(-1)!.element
+      .value;
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Загрузить актуальную версию"))!
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Refresh unavailable");
+    expect(wrapper.text()).toContain("Загрузить актуальную версию");
+    expect(wrapper.get("textarea").element.value).toBe(
+      "Keep failed refresh draft",
+    );
+    expect(wrapper.findAll("input").at(-1)!.element.value).toBe(
+      originalIdempotencyKey,
+    );
+
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(mocks.assignment).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).toContain(
+      "Сначала загрузите актуальную конфигурацию",
+    );
+  });
 });
+
+function policyView(projectPolicyVersion: string) {
+  return {
+    projectPolicyVersion,
+    policy: null,
+    plans: [activePlan()],
+    plansPageInfo: { hasMore: false, nextCursor: null },
+    defaultAssignment: null,
+    runtimeGates: {
+      hardEnforcementApproved: false,
+      emergencyDisabled: false,
+    },
+  } as const;
+}
+
+function activePlan() {
+  return {
+    id: "11111111-1111-4111-8111-111111111111",
+    key: "VIP",
+    name: "VIP",
+    status: "ACTIVE",
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    revisions: [],
+    revisionsPageInfo: { hasMore: false, nextCursor: null },
+  } as const;
+}
 
 function balanceView(
   projectId: string,
@@ -166,6 +389,7 @@ function balanceView(
   hasMore: boolean,
 ) {
   return {
+    projectPolicyVersion: "7",
     account: {
       projectId,
       endUserId,

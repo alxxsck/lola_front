@@ -4,6 +4,7 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
+import { ApiError } from "@/shared/api/http/api-error";
 import {
   compareDecimalStrings,
   formatDecimalMoney,
@@ -47,9 +48,11 @@ const planId = ref("");
 const effectiveFrom = ref("");
 const effectiveUntil = ref("");
 const loadedPlans = ref<AiAllowancePlan[]>([]);
+const projectPolicyVersion = ref("");
+const configurationConflict = ref(false);
 let generation = 0;
 const activePlans = computed(() =>
-  (props.plans?.length ? props.plans : loadedPlans.value).filter(
+  (loadedPlans.value.length ? loadedPlans.value : (props.plans ?? [])).filter(
     (plan) => plan.status === "ACTIVE",
   ),
 );
@@ -59,7 +62,10 @@ watch(
   ([visible]) => {
     generation += 1;
     balance.value = null;
+    loadedPlans.value = [];
     loadedContext.value = "";
+    projectPolicyVersion.value = "";
+    configurationConflict.value = false;
     grantsLoading.value = false;
     mutationLoading.value = false;
     formError.value = "";
@@ -84,10 +90,12 @@ watch(
     }
   },
 );
-async function load(): Promise<void> {
+async function load(): Promise<boolean> {
   const requestGeneration = ++generation;
   const requestProjectId = props.projectId;
   const requestEndUserId = props.endUserId;
+  loadedContext.value = "";
+  projectPolicyVersion.value = "";
   loading.value = true;
   error.value = "";
   try {
@@ -95,9 +103,7 @@ async function load(): Promise<void> {
       aiAllowanceRepository.endUserBalance(requestProjectId, requestEndUserId, {
         grantLimit: 50,
       }),
-      props.plans?.length
-        ? Promise.resolve(null)
-        : aiAllowanceRepository.projectPolicy(requestProjectId),
+      aiAllowanceRepository.projectPolicy(requestProjectId),
     ]);
     if (
       requestGeneration !== generation ||
@@ -106,13 +112,23 @@ async function load(): Promise<void> {
       nextBalance.account.projectId !== requestProjectId ||
       nextBalance.account.endUserId !== requestEndUserId
     )
-      return;
+      return false;
+    if (
+      nextBalance.projectPolicyVersion !== projectPolicy.projectPolicyVersion
+    ) {
+      error.value =
+        "Баланс и конфигурация получены в разных версиях. Повторите загрузку.";
+      return false;
+    }
     balance.value = nextBalance;
+    projectPolicyVersion.value = projectPolicy.projectPolicyVersion;
     loadedContext.value = `${requestProjectId}:${requestEndUserId}`;
-    if (projectPolicy) loadedPlans.value = projectPolicy.plans;
+    loadedPlans.value = projectPolicy.plans;
+    return true;
   } catch (cause) {
     if (requestGeneration === generation)
       error.value = text(cause, "Не удалось загрузить баланс пользователя");
+    return false;
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
@@ -179,10 +195,12 @@ function beginGrant(): void {
   reason.value = "";
   idempotencyKey.value = key();
   formError.value = "";
+  configurationConflict.value = false;
 }
 function beginAssignment(): void {
   if (!props.canManage) return;
   if (loadedContext.value !== `${props.projectId}:${props.endUserId}`) return;
+  if (!projectPolicyVersion.value) return;
   mode.value = "assignment";
   planId.value =
     balance.value?.endUserAssignment?.planId ?? activePlans.value[0]?.id ?? "";
@@ -191,6 +209,7 @@ function beginAssignment(): void {
   reason.value = "";
   idempotencyKey.value = key();
   formError.value = "";
+  configurationConflict.value = false;
 }
 async function submitGrant(): Promise<void> {
   if (!props.canGrant) return fail("Операция больше недоступна.");
@@ -218,6 +237,8 @@ async function submitGrant(): Promise<void> {
 }
 async function submitAssignment(): Promise<void> {
   if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!projectPolicyVersion.value)
+    return fail("Сначала загрузите актуальную конфигурацию проекта.");
   const from = iso(effectiveFrom.value);
   const until = effectiveUntil.value ? iso(effectiveUntil.value) : undefined;
   if (
@@ -228,18 +249,23 @@ async function submitAssignment(): Promise<void> {
   if (!from || (effectiveUntil.value && (!until || from >= until)))
     return fail("Проверьте срок назначения.");
   if (!validCommon()) return;
-  await mutate(() =>
-    aiAllowanceRepository.putEndUserAssignment(
-      props.projectId,
-      props.endUserId,
-      {
-        planId: planId.value,
-        effectiveFrom: from,
-        ...(until ? { effectiveUntil: until } : {}),
-        reason: reason.value.trim(),
-      },
-      idempotencyKey.value.trim(),
-    ),
+  await mutate(
+    () =>
+      aiAllowanceRepository.putEndUserAssignment(
+        props.projectId,
+        props.endUserId,
+        {
+          expectedProjectPolicyVersion: projectPolicyVersion.value,
+          planId: planId.value,
+          effectiveFrom: from,
+          ...(until ? { effectiveUntil: until } : {}),
+          reason: reason.value.trim(),
+        },
+        idempotencyKey.value.trim(),
+      ),
+    (result) => {
+      projectPolicyVersion.value = result.projectPolicyVersion;
+    },
   );
 }
 function validCommon(): boolean {
@@ -253,20 +279,26 @@ function validCommon(): boolean {
   }
   return true;
 }
-async function mutate(action: () => Promise<unknown>): Promise<void> {
+async function mutate<T>(
+  action: () => Promise<T>,
+  acceptResult?: (result: T) => void,
+): Promise<void> {
   const requestGeneration = generation;
   const requestProjectId = props.projectId;
   const requestEndUserId = props.endUserId;
   mutationLoading.value = true;
   formError.value = "";
+  configurationConflict.value = false;
   try {
-    await action();
+    const result = await action();
     if (
       requestGeneration !== generation ||
       requestProjectId !== props.projectId ||
       requestEndUserId !== props.endUserId
     )
       return;
+    acceptResult?.(result);
+    mutationLoading.value = false;
     mode.value = "summary";
     await load();
   } catch (cause) {
@@ -274,8 +306,10 @@ async function mutate(action: () => Promise<unknown>): Promise<void> {
       requestGeneration === generation &&
       requestProjectId === props.projectId &&
       requestEndUserId === props.endUserId
-    )
-      formError.value = text(cause, "Операция не выполнена");
+    ) {
+      configurationConflict.value = isConfigurationConflict(cause);
+      formError.value = mutationMessage(cause, "Операция не выполнена");
+    }
   } finally {
     if (
       requestGeneration === generation &&
@@ -321,6 +355,25 @@ function key(): string {
 }
 function text(cause: unknown, fallback: string): string {
   return cause instanceof Error ? cause.message : fallback;
+}
+function mutationMessage(cause: unknown, fallback: string): string {
+  return isConfigurationConflict(cause)
+    ? "Конфигурация лимитов уже изменилась. Форма сохранена — загрузите актуальную версию и повторите проверку."
+    : text(cause, fallback);
+}
+function isConfigurationConflict(cause: unknown): boolean {
+  return (
+    cause instanceof ApiError &&
+    cause.status === 409 &&
+    cause.code === "AI_ALLOWANCE_CONFIGURATION_VERSION_CONFLICT"
+  );
+}
+async function refreshAssignmentDraft(): Promise<void> {
+  const refreshed = await load();
+  if (!refreshed) return;
+  if (loadedContext.value !== `${props.projectId}:${props.endUserId}`) return;
+  configurationConflict.value = false;
+  formError.value = "";
 }
 </script>
 
@@ -536,6 +589,15 @@ function text(cause: unknown, fallback: string): string {
         ><small v-if="formError" class="error" role="alert">{{
           formError
         }}</small>
+        <Button
+          v-if="configurationConflict"
+          label="Загрузить актуальную версию"
+          type="button"
+          outlined
+          severity="warn"
+          :loading="loading"
+          @click="refreshAssignmentDraft"
+        />
         <footer>
           <Button
             label="Назад"

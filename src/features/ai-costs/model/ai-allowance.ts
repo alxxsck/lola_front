@@ -85,6 +85,7 @@ export interface AiAllowanceAssignment {
 }
 
 export interface AiAllowanceProjectPolicyView {
+  projectPolicyVersion: string;
   policy: AiAllowancePolicy | null;
   plans: AiAllowancePlan[];
   plansPageInfo: AiAllowanceCursorPageInfo;
@@ -134,6 +135,7 @@ export interface AiAllowanceGrant {
 }
 
 export interface AiAllowanceUserBalance {
+  projectPolicyVersion: string;
   account: AiAllowanceAccount;
   currentPeriod: AiAllowancePeriod | null;
   currentPeriodSpend: {
@@ -152,6 +154,7 @@ export interface AiAllowanceCursorPageInfo {
   nextCursor: string | null;
 }
 export interface AiAllowancePlanRevisionPage {
+  projectPolicyVersion: string;
   plan: AiAllowancePlanSummary;
   revisions: AiAllowancePlanRevision[];
   pageInfo: AiAllowanceCursorPageInfo;
@@ -198,6 +201,7 @@ export interface AiAllowanceJournalPage {
 }
 
 export interface PutDefaultAllowancePlanInput {
+  expectedProjectPolicyVersion: string;
   amountUsd: DecimalString;
   period: AiAllowancePeriodKind;
   timezone: string;
@@ -209,6 +213,7 @@ export interface PutDefaultAllowancePlanInput {
 }
 
 export interface PutAllowancePlanInput {
+  expectedProjectPolicyVersion: string;
   name: string;
   amountUsd: DecimalString;
   period: AiAllowancePeriodKind;
@@ -222,6 +227,7 @@ export interface PutAllowancePlanInput {
 }
 
 export interface PutCohortAllowanceAssignmentInput {
+  expectedProjectPolicyVersion: string;
   planId: string;
   priority: number;
   effectiveFrom: string;
@@ -237,10 +243,16 @@ export interface ManualAllowanceGrantInput {
 }
 
 export interface PutEndUserAllowanceAssignmentInput {
+  expectedProjectPolicyVersion: string;
   planId: string;
   effectiveFrom: string;
   effectiveUntil?: string;
   reason: string;
+}
+
+export interface AiAllowanceConfigurationMutationResult {
+  projectPolicyVersion: string;
+  replayed: boolean;
 }
 
 export type AiAllowanceReconciliationResolution =

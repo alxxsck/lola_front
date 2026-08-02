@@ -8,6 +8,7 @@ vi.mock("@/shared/api/http/axios-instance", () => ({
 import { aiAllowanceRepository } from "./ai-allowance-repository";
 
 const policyResponse = {
+  projectPolicyVersion: "2",
   policy: {
     projectId: "project-1",
     enforcementMode: "SOFT",
@@ -72,6 +73,7 @@ describe("aiAllowanceRepository", () => {
     vi.mocked(axiosInstance.get)
       .mockResolvedValueOnce({
         data: {
+          projectPolicyVersion: "2",
           account: {
             projectId: "project-1",
             endUserId: "user-1",
@@ -170,6 +172,7 @@ describe("aiAllowanceRepository", () => {
     delete (revisionSummary as { categoryRules?: unknown }).categoryRules;
     vi.mocked(axiosInstance.get).mockResolvedValue({
       data: {
+        projectPolicyVersion: "2",
         account: {
           projectId: "project-1",
           endUserId: "user-1",
@@ -242,9 +245,10 @@ describe("aiAllowanceRepository", () => {
 
   it("uses the published PUT paths for default-plan revisions and user assignments", async () => {
     vi.mocked(axiosInstance.put).mockResolvedValue({
-      data: { replayed: false },
+      data: { projectPolicyVersion: "3", replayed: false },
     });
     const defaultPlan = {
+      expectedProjectPolicyVersion: "2",
       amountUsd: "5.000000000001" as const,
       period: "DAY" as const,
       timezone: "Europe/Madrid",
@@ -253,6 +257,7 @@ describe("aiAllowanceRepository", () => {
       reason: "Daily project allowance",
     };
     const assignment = {
+      expectedProjectPolicyVersion: "3",
       planId: "11111111-1111-4111-8111-111111111111",
       effectiveFrom: "2026-08-02T10:00:00.000Z",
       reason: "VIP assignment",
@@ -286,9 +291,10 @@ describe("aiAllowanceRepository", () => {
 
   it("uses audited endpoints for named plan revisions and ranked cohort assignments", async () => {
     vi.mocked(axiosInstance.put).mockResolvedValue({
-      data: { replayed: false },
+      data: { projectPolicyVersion: "3", replayed: false },
     });
     const plan = {
+      expectedProjectPolicyVersion: "2",
       name: "VIP",
       amountUsd: "20.000000000000" as const,
       period: "MONTH" as const,
@@ -302,6 +308,7 @@ describe("aiAllowanceRepository", () => {
       reason: "Create VIP plan",
     };
     const assignment = {
+      expectedProjectPolicyVersion: "3",
       planId: "11111111-1111-4111-8111-111111111111",
       priority: 500,
       effectiveFrom: "2026-08-02T10:00:00.000Z",
@@ -485,10 +492,97 @@ describe("aiAllowanceRepository", () => {
     ).rejects.toThrow("некорректные данные");
   });
 
+  it.each([undefined, -1, "01", "1.0", "184467440737095516160"])(
+    "fails closed for a malformed project policy version: %s",
+    async (projectPolicyVersion) => {
+      vi.mocked(axiosInstance.get).mockResolvedValue({
+        data: { ...policyResponse, projectPolicyVersion },
+      });
+
+      await expect(
+        aiAllowanceRepository.projectPolicy("project-1"),
+      ).rejects.toThrow("некорректные данные");
+    },
+  );
+
+  it("fails closed when a configuration mutation omits its next version", async () => {
+    vi.mocked(axiosInstance.put).mockResolvedValue({
+      data: { replayed: false },
+    });
+
+    await expect(
+      aiAllowanceRepository.putDefaultPlan(
+        "project-1",
+        {
+          expectedProjectPolicyVersion: "2",
+          amountUsd: "5.000000000001",
+          period: "DAY",
+          timezone: "UTC",
+          enforcementMode: "SOFT",
+          showEndUserExactUsd: false,
+          reason: "Update daily allowance",
+        },
+        "default-key",
+      ),
+    ).rejects.toThrow("некорректные данные");
+  });
+
+  it("recovers a legacy replay version through a mandatory fresh policy read", async () => {
+    vi.mocked(axiosInstance.put).mockResolvedValue({
+      data: { replayed: true },
+    });
+    vi.mocked(axiosInstance.get).mockResolvedValue({
+      data: { ...policyResponse, projectPolicyVersion: "9" },
+    });
+
+    const result = await aiAllowanceRepository.putDefaultPlan(
+      "project-1",
+      {
+        expectedProjectPolicyVersion: "8",
+        amountUsd: "5.000000000001",
+        period: "DAY",
+        timezone: "UTC",
+        enforcementMode: "SOFT",
+        showEndUserExactUsd: false,
+        reason: "Replay daily allowance update",
+      },
+      "legacy-replay-key",
+    );
+
+    expect(result).toEqual({ projectPolicyVersion: "9", replayed: true });
+    expect(axiosInstance.get).toHaveBeenCalledWith(
+      "/api/v1/admin/projects/project-1/ai-allowance",
+    );
+  });
+
+  it("fails closed for an explicitly replayed mutation with a malformed version", async () => {
+    vi.mocked(axiosInstance.put).mockResolvedValue({
+      data: { projectPolicyVersion: "01", replayed: true },
+    });
+
+    await expect(
+      aiAllowanceRepository.putDefaultPlan(
+        "project-1",
+        {
+          expectedProjectPolicyVersion: "0",
+          amountUsd: "5.000000000001",
+          period: "DAY",
+          timezone: "UTC",
+          enforcementMode: "SOFT",
+          showEndUserExactUsd: false,
+          reason: "Reject malformed replay version",
+        },
+        "malformed-replay-key",
+      ),
+    ).rejects.toThrow("некорректные данные");
+    expect(axiosInstance.get).not.toHaveBeenCalled();
+  });
+
   it("consumes plan and grant pagination cursors through published endpoints", async () => {
     vi.mocked(axiosInstance.get)
       .mockResolvedValueOnce({
         data: {
+          projectPolicyVersion: "2",
           plan: policyResponse.plans[0],
           revisions: policyResponse.plans[0]!.revisions,
           pageInfo: { hasMore: false, nextCursor: null },
@@ -496,6 +590,7 @@ describe("aiAllowanceRepository", () => {
       })
       .mockResolvedValueOnce({
         data: {
+          projectPolicyVersion: "2",
           account: {
             projectId: "project-1",
             endUserId: "user-1",
