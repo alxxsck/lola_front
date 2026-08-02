@@ -481,6 +481,37 @@ describe("AppShell", () => {
     expect(wrapper.text()).toContain("Platform Operator");
   });
 
+  it("shows the AI cost-control workspace to cost readers or allowance operators", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    const selected = project("project-1", "Project One", [
+      "project.ai_costs.read",
+    ]);
+    authenticateWithProjects(auth, [selected]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/overview", component: { template: "<div />" } },
+        { path: "/ai-costs", component: { template: "<div />" } },
+      ],
+    });
+    await router.push("/ai-costs");
+    await router.isReady();
+    const wrapper = mountProjectMenu(pinia, router);
+
+    expect(wrapper.get('a[href="/ai-costs"]').text()).toBe("Расходы AI");
+    expect(wrapper.get('a[href="/ai-costs"]').classes()).toContain("active");
+
+    auth.project!.effectivePermissionCodes = ["project.ai_allowance.read"];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('a[href="/ai-costs"]').text()).toBe("Расходы AI");
+
+    auth.project!.effectivePermissionCodes = [];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('a[href="/ai-costs"]').exists()).toBe(false);
+  });
+
   it("shows delivery recovery only to the exact Platform reader", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

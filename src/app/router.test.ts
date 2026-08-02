@@ -356,6 +356,13 @@ describe("authentication routes", () => {
     ).toBeUndefined();
   });
 
+  it("protects the separate AI Costs workspace with its exact read Permission", () => {
+    expect(router.resolve("/ai-costs").name).toBe("ai-costs");
+    expect(router.resolve("/ai-costs").meta.projectPermissionsAny).toContain("project.ai_costs.read");
+    expect(router.resolve("/ai-costs").meta.projectPermissionsAny).toContain("project.ai_allowance.read");
+    expect(router.resolve("/ai-costs").name).not.toBe("ai-operations");
+  });
+
   it("selects the Project encoded by an AI Analysis deep link before checking access", async () => {
     const auth = useAuthStore();
     const makeProject = (id: string, permissions: string[]) => ({

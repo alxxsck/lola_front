@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import {
+  addDecimalStrings,
+  compareDecimalStrings,
+  decimalRatio,
+  type DecimalString,
+} from '@/shared/lib/decimal-money'
 import type {
   AiProviderUsage,
   AiUsageBreakdown,
@@ -45,16 +51,19 @@ const modalities = computed(() =>
   })),
 )
 const operations = computed(() => {
-  const values = new Map<string, number>()
+  const values = new Map<string, DecimalString>()
   for (const item of props.breakdown) {
     values.set(
       item.operation,
-      (values.get(item.operation) ?? 0) + getUsageCost(item),
+      addDecimalStrings([
+        values.get(item.operation) ?? '0',
+        getUsageCost(item),
+      ]),
     )
   }
   const sorted = [...values]
-    .filter(([, value]) => value > 0)
-    .sort((left, right) => right[1] - left[1])
+    .filter(([, value]) => compareDecimalStrings(value, '0') > 0)
+    .sort((left, right) => compareDecimalStrings(right[1], left[1]))
   const grouped =
     sorted.length <= operationColors.length
       ? sorted
@@ -64,8 +73,11 @@ const operations = computed(() => {
             '__other__',
             sorted
               .slice(operationColors.length - 1)
-              .reduce((sum, [, value]) => sum + value, 0),
-          ] as [string, number],
+              .reduce(
+                (sum, [, value]) => addDecimalStrings([sum, value]),
+                '0',
+              ),
+          ] as [string, DecimalString],
         ]
   return grouped.map(([operation, value], index) => ({
     key: operation,
@@ -81,13 +93,23 @@ const chartItems = computed(() =>
   props.metric === 'cost' ? operations.value : modalities.value,
 )
 const chartTotal = computed(() =>
-  chartItems.value.reduce((sum, item) => sum + item.value, 0),
+  props.metric === 'cost'
+    ? operations.value.reduce(
+        (sum, item) => addDecimalStrings([sum, item.value]),
+        '0',
+      )
+    : modalities.value.reduce((sum, item) => sum + item.value, 0),
+)
+const chartHasValue = computed(() =>
+  props.metric === 'cost'
+    ? compareDecimalStrings(chartTotal.value as DecimalString, '0') > 0
+    : (chartTotal.value as number) > 0,
 )
 const chartSegments = computed(() => {
   let offset = 0
   return chartItems.value.map((item) => {
-    const length = chartTotal.value
-      ? (item.value / chartTotal.value) * circumference
+    const length = chartHasValue.value
+      ? valueRatio(item.value) * circumference
       : 0
     const segment = { ...item, length, offset: -offset }
     offset += length
@@ -101,8 +123,8 @@ const chartLabel = computed(() =>
 )
 const totalLabel = computed(() =>
   props.metric === 'cost'
-    ? formatMoney(chartTotal.value, props.currency ?? 'USD')
-    : formatTokenCount(chartTotal.value),
+    ? formatMoney(chartTotal.value as DecimalString, props.currency ?? 'USD')
+    : formatTokenCount(chartTotal.value as number),
 )
 const totalCaption = computed(() =>
   props.metric === 'cost'
@@ -110,18 +132,25 @@ const totalCaption = computed(() =>
     : 'токенов',
 )
 
-function formatValue(value: number, key?: string): string {
-  if (props.metric === 'cost')
-    return formatMoney(value, props.currency ?? 'USD')
-  if (key === 'audio' && value === 0 && props.totals.durationSeconds > 0) {
-    return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(props.totals.durationSeconds)} сек. аудио · токены не переданы`
-  }
-  return `${formatTokenCount(value)} токенов`
+function valueRatio(value: number | DecimalString): number {
+  return props.metric === 'cost'
+    ? decimalRatio(value as DecimalString, chartTotal.value as DecimalString)
+    : (value as number) / (chartTotal.value as number)
 }
 
-function percentage(itemValue: number): string {
-  if (!chartTotal.value) return '0%'
-  const value = (itemValue / chartTotal.value) * 100
+function formatValue(value: number | DecimalString, key?: string): string {
+  if (props.metric === 'cost')
+    return formatMoney(value as DecimalString, props.currency ?? 'USD')
+  const tokenValue = value as number
+  if (key === 'audio' && tokenValue === 0 && props.totals.durationSeconds > 0) {
+    return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(props.totals.durationSeconds)} сек. аудио · токены не переданы`
+  }
+  return `${formatTokenCount(tokenValue)} токенов`
+}
+
+function percentage(itemValue: number | DecimalString): string {
+  if (!chartHasValue.value) return '0%'
+  const value = valueRatio(itemValue) * 100
   return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: value < 1 ? 1 : 0 }).format(value)}%`
 }
 </script>
@@ -151,7 +180,7 @@ function percentage(itemValue: number): string {
       </div>
     </header>
 
-    <div v-if="chartTotal" class="modality-layout">
+    <div v-if="chartHasValue" class="modality-layout">
       <div class="donut-wrap">
         <svg viewBox="0 0 120 120" role="img" :aria-label="chartLabel">
           <circle class="donut-track" cx="60" cy="60" :r="radius" />

@@ -21,8 +21,8 @@ const xAiRow: AiModelUsage = {
   cachedInputTokens: 200,
   outputTokens: 250,
   durationSeconds: 0,
-  estimatedCost: 0.005,
-  billedCost: 0.025,
+  estimatedCost: '0.005',
+  billedCost: '0.025',
 }
 
 const voiceRow: AiModelUsage = {
@@ -35,8 +35,8 @@ const voiceRow: AiModelUsage = {
   cachedInputTokens: 0,
   outputTokens: 0,
   durationSeconds: 170.35,
-  estimatedCost: 0.197958333333,
-  billedCost: 0,
+  estimatedCost: '0.197958333333',
+  billedCost: '0',
 }
 
 const emptyXAiUsage: AiProviderUsage = {
@@ -59,11 +59,11 @@ const emptyXAiUsage: AiProviderUsage = {
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
   durationSeconds: 0,
-  estimatedCost: 0,
-  billedCost: 0,
-  providerReportedCost: 0,
-  estimatedFallbackCost: 0,
-  effectiveCost: 0,
+  estimatedCost: '0',
+  billedCost: '0',
+  providerReportedCost: '0',
+  estimatedFallbackCost: '0',
+  effectiveCost: '0',
 }
 
 const xAiBreakdown: AiUsageBreakdown = {
@@ -90,11 +90,11 @@ const xAiBreakdown: AiUsageBreakdown = {
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
   durationSeconds: 0,
-  estimatedCost: 0.005,
-  billedCost: 0.025,
-  providerReportedCost: 0.025,
-  estimatedFallbackCost: 0.005,
-  effectiveCost: 0.03,
+  estimatedCost: '0.005',
+  billedCost: '0.025',
+  providerReportedCost: '0.025',
+  estimatedFallbackCost: '0.005',
+  effectiveCost: '0.03',
 }
 
 describe('AI usage charts', () => {
@@ -149,8 +149,8 @@ describe('AI usage charts', () => {
           inputTextTokens: 1_000,
           cachedInputTextTokens: 200,
           outputTextTokens: 250,
-          estimatedCost: 0.005,
-          billedCost: 0.025,
+          estimatedCost: '0.005',
+          billedCost: '0.025',
         },
         breakdown: [xAiBreakdown],
         metric: 'tokens',
@@ -183,7 +183,7 @@ describe('AI usage charts', () => {
           inputTextTokens: 80,
           outputTextTokens: 20,
           durationSeconds: 170.35,
-          estimatedCost: 0.197958333333,
+          estimatedCost: '0.197958333333',
         },
         breakdown: [],
         metric: 'tokens',
@@ -200,7 +200,7 @@ describe('AI usage charts', () => {
         totals: {
           ...emptyXAiUsage,
           records: 2,
-          estimatedCost: 0.056,
+          estimatedCost: '0.056',
         },
         breakdown: [
           {
@@ -215,8 +215,8 @@ describe('AI usage charts', () => {
             inputTextTokens: 0,
             cachedInputTextTokens: 0,
             outputTextTokens: 0,
-            estimatedCost: 0.056,
-            billedCost: 0,
+            estimatedCost: '0.056',
+            billedCost: '0',
           },
         ],
         metric: 'cost',
@@ -231,7 +231,7 @@ describe('AI usage charts', () => {
   it('labels speech operations as text-to-speech in a cost breakdown', () => {
     const wrapper = mount(AiModalityChart, {
       props: {
-        totals: { ...emptyXAiUsage, records: 1, estimatedCost: 0.018 },
+        totals: { ...emptyXAiUsage, records: 1, estimatedCost: '0.018' },
         breakdown: [
           {
             ...xAiBreakdown,
@@ -239,8 +239,8 @@ describe('AI usage charts', () => {
             operation: 'speech',
             records: 1,
             totalTokens: 0,
-            estimatedCost: 0.018,
-            billedCost: 0,
+            estimatedCost: '0.018',
+            billedCost: '0',
           },
         ],
         metric: 'cost',
@@ -255,12 +255,12 @@ describe('AI usage charts', () => {
     const breakdown = Array.from({ length: 6 }, (_, index) => ({
       ...xAiBreakdown,
       operation: `operation_${index + 1}`,
-      billedCost: index + 1,
-      estimatedCost: 0,
+      billedCost: String(index + 1),
+      estimatedCost: '0',
     }))
     const wrapper = mount(AiModalityChart, {
       props: {
-        totals: { ...emptyXAiUsage, records: 6, billedCost: 21 },
+        totals: { ...emptyXAiUsage, records: 6, billedCost: '21' },
         breakdown,
         metric: 'cost',
         currency: 'USD',

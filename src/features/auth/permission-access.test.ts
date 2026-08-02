@@ -18,6 +18,8 @@ describe("permission access", () => {
       "project.ai_operations.sensitive.read",
       "project.ai_operations.subjects.read",
       "project.ai_operations.audit.read",
+      "project.ai_costs.read",
+      "project.end_user_state.sensitive.read",
     ];
 
     expect(hasProjectPermission(permissions, "project.cms_agent.use")).toBe(
@@ -38,6 +40,21 @@ describe("permission access", () => {
         "project.ai_operations.subjects.read",
       ),
     ).toBe(false);
+    expect(hasProjectPermission(permissions, "project.ai_costs.read")).toBe(
+      true,
+    );
+  });
+
+  it("keeps allowance read, policy, grant and reconcile authority independent", () => {
+    expect(hasProjectPermission(["project.ai_allowance.read"], "project.ai_allowance.read")).toBe(true);
+    expect(hasProjectPermission(["project.ai_allowance.read"], "project.ai_allowance.manage")).toBe(false);
+    expect(hasProjectPermission(["project.ai_allowance.manage"], "project.ai_allowance.grant")).toBe(false);
+    expect(hasProjectPermission(["project.ai_allowance.grant"], "project.ai_allowance.reconcile")).toBe(false);
+  });
+
+  it("requires the dedicated sensitive reader for operational state", () => {
+    expect(hasProjectPermission(["project.end_user_state.sensitive.read"], "project.end_user_state.sensitive.read")).toBe(true);
+    expect(hasProjectPermission(["project.end_user_state.manage"], "project.end_user_state.sensitive.read")).toBe(false);
   });
 
   it("recognizes the four independent Telegram broadcast capabilities", () => {

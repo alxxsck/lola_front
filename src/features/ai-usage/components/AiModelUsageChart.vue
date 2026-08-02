@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import {
+  compareDecimalStrings,
+  decimalRatio,
+  type DecimalString,
+} from '@/shared/lib/decimal-money'
 import type { AiModelUsage, AiUsageMetric } from '../ai-usage.model'
 import {
   formatMoney,
@@ -17,24 +22,38 @@ const props = defineProps<{
 const sortedRows = computed(() =>
   [...props.rows]
     .filter((row) =>
-      props.metric === 'cost' ? rowValue(row) > 0 : row.records > 0,
+      props.metric === 'cost' ? hasUsageCost(row) : row.records > 0,
     )
-    .sort((left, right) => rowValue(right) - rowValue(left))
+    .sort((left, right) =>
+      props.metric === 'cost'
+        ? compareDecimalStrings(getUsageCost(right), getUsageCost(left))
+        : right.totalTokens - left.totalTokens,
+    )
     .slice(0, 6),
 )
 const hiddenCount = computed(() =>
   Math.max(props.rows.length - sortedRows.value.length, 0),
 )
-const maxValue = computed(() => Math.max(0, ...sortedRows.value.map(rowValue)))
+const maxValue = computed(() =>
+  sortedRows.value.length ? rowValue(sortedRows.value[0]!) : 0,
+)
 
-function rowValue(row: AiModelUsage): number {
+function rowValue(row: AiModelUsage): number | DecimalString {
   if (props.metric === 'cost') return getUsageCost(row)
   return row.totalTokens
 }
 
 function rowWidth(row: AiModelUsage): string {
-  if (!maxValue.value || rowValue(row) <= 0) return '0%'
-  return `${Math.max((rowValue(row) / maxValue.value) * 100, 1.5)}%`
+  if (props.metric === 'cost') {
+    const value = getUsageCost(row)
+    const maximum = maxValue.value as DecimalString
+    if (compareDecimalStrings(value, '0') <= 0) return '0%'
+    return `${Math.max(decimalRatio(value, maximum) * 100, 1.5)}%`
+  }
+  const value = row.totalTokens
+  const maximum = maxValue.value as number
+  if (!maximum || value <= 0) return '0%'
+  return `${Math.max((value / maximum) * 100, 1.5)}%`
 }
 
 function rowLabel(row: AiModelUsage): string {

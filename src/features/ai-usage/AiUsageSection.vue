@@ -5,6 +5,7 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { TranslationUsagePanel } from "@/features/scenario-localization/ui";
 import { isMockMode } from "@/shared/config/data-mode";
+import { compareDecimalStrings } from "@/shared/lib/decimal-money";
 import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
 import { fetchAiUsageReport } from "./ai-usage.api";
 import AiModelUsageSlice from "./components/AiModelUsageSlice.vue";
@@ -55,11 +56,14 @@ const eventQueryUsage = computed(() => report.value?.eventQuery ?? null);
 const xAiCurrency = computed(() => getUsageCurrency(xAiBreakdown.value));
 const eventQueryCost = computed(() => {
   const linked = eventQueryUsage.value?.linkedAiUsage;
-  if (!linked) return 0;
-  const billed = linked.billedCostUsd ?? 0;
-  const estimated = linked.estimatedCostUsd ?? 0;
-  return billed > 0 ? billed : estimated;
+  if (!linked) return "0";
+  const billed = linked.billedCostUsd ?? "0";
+  const estimated = linked.estimatedCostUsd ?? "0";
+  return compareDecimalStrings(billed, "0") > 0 ? billed : estimated;
 });
+const eventQueryHasCost = computed(
+  () => compareDecimalStrings(eventQueryCost.value, "0") > 0,
+);
 
 function operationCount(value: number) {
   return `${formatTokenCount(value)} ${pluralizeRu(value, "операция", "операции", "операций")}`;
@@ -400,7 +404,7 @@ onBeforeUnmount(() => {
                     }}
                     токенов
                   </strong>
-                  <span v-if="eventQueryCost">
+                  <span v-if="eventQueryHasCost">
                     {{ formatMoney(eventQueryCost, "usd") }}
                   </span>
                 </article>

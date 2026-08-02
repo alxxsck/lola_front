@@ -45,11 +45,11 @@ const totals: AiUsageTotals = {
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
   durationSeconds: 95,
-  estimatedCost: 0.05,
-  billedCost: 0.03,
-  providerReportedCost: 0.03,
-  estimatedFallbackCost: 0.05,
-  effectiveCost: 0.08,
+  estimatedCost: "0.05",
+  billedCost: "0.03",
+  providerReportedCost: "0.03",
+  estimatedFallbackCost: "0.05",
+  effectiveCost: "0.08",
 };
 
 function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
@@ -77,11 +77,11 @@ function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
     cachedInputImageTokens: 0,
     outputImageTokens: 0,
     durationSeconds: 0,
-    estimatedCost: 0,
-    billedCost: 0.01,
-    providerReportedCost: 0.01,
-    estimatedFallbackCost: 0,
-    effectiveCost: 0.01,
+    estimatedCost: "0",
+    billedCost: "0.01",
+    providerReportedCost: "0.01",
+    estimatedFallbackCost: "0",
+    effectiveCost: "0.01",
     ...patch,
   };
 }
@@ -141,7 +141,7 @@ describe("AI usage model", () => {
         operation: "case_router",
         records: 2,
         totalTokens: 200,
-        billedCost: 0.02,
+        billedCost: "0.02",
       }),
     ]);
 
@@ -150,7 +150,7 @@ describe("AI usage model", () => {
         model: "grok-4.5",
         records: 3,
         totalTokens: 300,
-        billedCost: 0.03,
+        billedCost: "0.03",
       }),
     ]);
   });
@@ -195,20 +195,20 @@ describe("AI usage model", () => {
       breakdown(),
       breakdown({
         operation: "realtime_response",
-        billedCost: 0,
-        providerReportedCost: 0,
-        estimatedCost: 0.05,
-        estimatedFallbackCost: 0.05,
-        effectiveCost: 0.05,
+        billedCost: "0",
+        providerReportedCost: "0",
+        estimatedCost: "0.05",
+        estimatedFallbackCost: "0.05",
+        effectiveCost: "0.05",
       }),
     ]);
 
     expect(usage).toMatchObject({
-      providerReportedCost: 0.01,
-      estimatedFallbackCost: 0.05,
+      providerReportedCost: "0.01",
+      estimatedFallbackCost: "0.05",
     });
-    expect(usage.effectiveCost).toBeCloseTo(0.06);
-    expect(getUsageCost(usage)).toBeCloseTo(0.06);
+    expect(usage.effectiveCost).toBe("0.06");
+    expect(getUsageCost(usage)).toBe("0.06");
   });
 
   it("keeps currencies separate and refuses to combine their report total", () => {
@@ -263,6 +263,6 @@ describe("AI usage model", () => {
         pluralizeRu(value, "модель", "модели", "моделей"),
       ),
     ).toEqual(["модель", "модели", "моделей", "моделей", "модель", "модели"]);
-    expect(formatMoney(0.0012, "usd")).toBe("< 0,01 $");
+    expect(formatMoney("0.0012", "usd")).toBe("< 0,01 $");
   });
 });

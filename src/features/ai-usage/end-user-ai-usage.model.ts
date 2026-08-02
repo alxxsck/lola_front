@@ -5,6 +5,7 @@ import {
   type AiUsageRangeKey,
   type AiTextToSpeechPricingContext,
 } from "./ai-usage.model";
+import type { DecimalString } from "@/shared/lib/decimal-money";
 
 export type EndUserAiUsageCategory = AiUsageCategory;
 
@@ -16,9 +17,9 @@ export interface EndUserAiUsageSummary {
   inputCharacters: number;
   providerBilledUnits: number;
   durationSeconds: number;
-  providerReportedCost: number;
-  estimatedFallbackCost: number;
-  effectiveCost: number;
+  providerReportedCost: DecimalString;
+  estimatedFallbackCost: DecimalString;
+  effectiveCost: DecimalString;
 }
 
 export interface EndUserAiUsageTotals extends EndUserAiUsageSummary {

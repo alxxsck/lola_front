@@ -183,6 +183,22 @@ const navigation = computed(() =>
       projectPermission: "project.ai_operations.read",
     },
     {
+      label: "Расходы AI",
+      icon: "pi pi-chart-line",
+      to: "/ai-costs",
+      project: true,
+      projectPermissionsAny: [
+        "project.ai_costs.read",
+        "project.ai_allowance.read",
+        "project.ai_allowance.manage",
+        "project.ai_allowance.grant",
+        "project.ai_allowance.reconcile",
+        "project.ai_allowance.accrual_rules.read",
+        "project.ai_allowance.accrual_rules.manage",
+        "project.ai_allowance.accrual_receipts.read",
+      ],
+    },
+    {
       label: "Telegram-рассылки",
       icon: "pi pi-send",
       to: "/telegram/broadcasts",
