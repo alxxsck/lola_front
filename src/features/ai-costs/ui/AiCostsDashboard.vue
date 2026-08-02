@@ -62,6 +62,7 @@ const customTo = ref("");
 const customError = ref("");
 const selectedAllowanceUser = ref<AiCostUserRow | null>(null);
 const tablist = ref<HTMLElement | null>(null);
+const loadedTableKey = ref("");
 let generation = 0;
 let overviewKey = "";
 
@@ -142,14 +143,29 @@ const visibleTabs = computed(() =>
         : canReadCosts.value,
   ),
 );
+const tableContextKey = computed(() =>
+  JSON.stringify([
+    projectId.value,
+    canReadCosts.value,
+    state.value.tab,
+    state.value.from,
+    state.value.to,
+    state.value.page,
+    state.value.sort,
+    state.value.direction,
+  ]),
+);
 const activePage = computed(() =>
-  state.value.tab === "users"
-    ? users.value
-    : state.value.tab === "employees"
-      ? employees.value
-      : null,
+  loadedTableKey.value !== tableContextKey.value
+    ? null
+    : state.value.tab === "users"
+      ? users.value
+      : state.value.tab === "employees"
+        ? employees.value
+        : null,
 );
 const displayedRows = computed<AiCostRankedRow[]>(() => {
+  if (loadedTableKey.value !== tableContextKey.value) return [];
   if (state.value.tab === "users" && users.value) return users.value.items;
   if (state.value.tab === "employees" && employees.value)
     return employees.value.items;
@@ -170,17 +186,11 @@ const activeProjection = computed(() =>
 );
 
 watch(
-  () =>
-    [
-      projectId.value,
-      state.value.tab,
-      state.value.from,
-      state.value.to,
-      state.value.page,
-      state.value.sort,
-      state.value.direction,
-    ] as const,
-  () => void load(),
+  tableContextKey,
+  () => {
+    invalidateTable();
+    void load();
+  },
   { immediate: true },
 );
 watch(
@@ -204,13 +214,13 @@ watch(projectId, () => {
 watch(
   () =>
     [
-      canReadCosts.value,
-      canAccessAllowanceConfiguration.value,
+      visibleTabs.value.map((tab) => tab.key).join("|"),
       state.value.tab,
     ] as const,
-  ([readCosts, allowance, tab]) => {
-    if (!readCosts && allowance && tab !== "limits" && tab !== "journal")
-      replaceState({ tab: "limits", page: 1 });
+  ([, activeTab]) => {
+    if (visibleTabs.value.some((tab) => tab.key === activeTab)) return;
+    const fallback = visibleTabs.value[0];
+    if (fallback) replaceState({ tab: fallback.key, page: 1 });
   },
   { immediate: true },
 );
@@ -228,9 +238,17 @@ watch(
 async function load(): Promise<void> {
   const currentProjectId = projectId.value;
   const current = state.value;
+  const requestContextKey = tableContextKey.value;
   const requestGeneration = ++generation;
   error.value = "";
-  if (!currentProjectId) return;
+  loadedTableKey.value = "";
+  users.value = null;
+  employees.value = null;
+  if (!currentProjectId) {
+    overviewLoading.value = false;
+    tableLoading.value = false;
+    return;
+  }
   if (
     !canReadCosts.value &&
     current.tab !== "limits" &&
@@ -239,6 +257,7 @@ async function load(): Promise<void> {
     overviewLoading.value = false;
     tableLoading.value = false;
     overview.value = null;
+    overviewKey = "";
     error.value =
       "Нет права project.ai_costs.read. Доступны только управление лимитами и журнал allowance.";
     return;
@@ -272,17 +291,23 @@ async function load(): Promise<void> {
     ]);
     if (
       requestGeneration !== generation ||
-      projectId.value !== currentProjectId
+      projectId.value !== currentProjectId ||
+      tableContextKey.value !== requestContextKey ||
+      !canReadCosts.value
     )
       return;
     if (nextOverview) {
       overview.value = nextOverview;
       overviewKey = nextOverviewKey;
     }
-    if (current.tab === "users")
+    if (current.tab === "users") {
       users.value = nextPage as AiCostPage<AiCostUserRow>;
-    if (current.tab === "employees")
+      loadedTableKey.value = requestContextKey;
+    }
+    if (current.tab === "employees") {
       employees.value = nextPage as AiCostPage<AiCostCmsUserRow>;
+      loadedTableKey.value = requestContextKey;
+    }
   } catch (cause) {
     if (requestGeneration !== generation) return;
     error.value =
@@ -294,6 +319,19 @@ async function load(): Promise<void> {
       overviewLoading.value = false;
       tableLoading.value = false;
     }
+  }
+}
+
+function invalidateTable(): void {
+  generation += 1;
+  loadedTableKey.value = "";
+  users.value = null;
+  employees.value = null;
+  tableLoading.value = false;
+  if (!canReadCosts.value) {
+    overview.value = null;
+    overviewKey = "";
+    overviewLoading.value = false;
   }
 }
 
@@ -901,6 +939,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       :identity="selectedAllowanceUser.externalId"
       :can-grant="canGrantAllowance"
       :can-manage="canManageAllowance"
+      :can-reconcile="canReconcileAllowance"
       @update:visible="selectedAllowanceUser = null"
       @open-journal="openJournal"
     />

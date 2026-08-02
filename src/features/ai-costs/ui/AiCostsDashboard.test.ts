@@ -1,4 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
+import { nextTick, reactive } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AiCostsDashboard from "./AiCostsDashboard.vue";
 
@@ -57,10 +58,50 @@ const range = {
   to: "2026-08-03T00:00:00.000Z",
 };
 
+function userPage(externalId: string) {
+  return {
+    range,
+    projection,
+    items: [
+      {
+        endUserId: `id-${externalId}`,
+        externalId,
+        segment: null,
+        records: 1,
+        unpricedRecords: 0,
+        ...costs,
+      },
+    ],
+    pagination: {
+      limit: 25,
+      offset: 0,
+      hasMore: false,
+      nextOffset: null,
+      truncated: false,
+    },
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 describe("AiCostsDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.route.query = { period: "7d", tab: "overview" };
+    mocks.route.query = reactive({ period: "7d", tab: "overview" });
+    mocks.auth.project = reactive({
+      id: "project-1",
+      effectivePermissionCodes: [
+        "project.ai_usage.read",
+        "project.ai_costs.read",
+        "project.profiles.read",
+      ],
+    });
     mocks.overview.mockResolvedValue({
       range,
       timezone: "Europe/Madrid",
@@ -234,5 +275,65 @@ describe("AiCostsDashboard", () => {
     expect(wrapper.text()).toContain("project.ai_allowance.read");
     expect(mocks.users).not.toHaveBeenCalled();
     expect(mocks.cmsUsers).not.toHaveBeenCalled();
+  });
+
+  it("does not restore a previous query page after the replacement query fails", async () => {
+    mocks.route.query = reactive({ period: "7d", tab: "users" });
+    mocks.users.mockResolvedValueOnce(userPage("previous-query-user"));
+    const wrapper = mount(AiCostsDashboard);
+    await flushPromises();
+    expect(wrapper.text()).toContain("previous-query-user");
+
+    mocks.users.mockRejectedValueOnce(new Error("replacement query failed"));
+    mocks.route.query.page = "2";
+    mocks.route.query.sort = "identity";
+    mocks.route.query.direction = "asc";
+    await nextTick();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("replacement query failed");
+    expect(wrapper.text()).not.toContain("previous-query-user");
+  });
+
+  it("never exposes rows from another Project after a failed reload or permission revocation", async () => {
+    mocks.route.query = reactive({ period: "7d", tab: "users" });
+    mocks.users.mockResolvedValueOnce(userPage("tenant-one-user"));
+    const wrapper = mount(AiCostsDashboard);
+    await flushPromises();
+    expect(wrapper.text()).toContain("tenant-one-user");
+
+    mocks.users.mockRejectedValueOnce(new Error("tenant reload failed"));
+    mocks.auth.project.id = "project-2";
+    await nextTick();
+    await flushPromises();
+    expect(wrapper.text()).not.toContain("tenant-one-user");
+
+    mocks.users.mockResolvedValueOnce(userPage("tenant-two-user"));
+    mocks.route.query.page = "2";
+    await nextTick();
+    await flushPromises();
+    expect(wrapper.text()).toContain("tenant-two-user");
+
+    mocks.auth.project.effectivePermissionCodes = [];
+    await nextTick();
+    expect(wrapper.text()).not.toContain("tenant-two-user");
+  });
+
+  it("ignores a late table response from a previous full context", async () => {
+    mocks.route.query = reactive({ period: "7d", tab: "users" });
+    const previous = deferred<ReturnType<typeof userPage>>();
+    mocks.users
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce(userPage("current-tenant-user"));
+    const wrapper = mount(AiCostsDashboard);
+
+    mocks.auth.project.id = "project-2";
+    await nextTick();
+    await flushPromises();
+    previous.resolve(userPage("stale-tenant-user"));
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("current-tenant-user");
+    expect(wrapper.text()).not.toContain("stale-tenant-user");
   });
 });

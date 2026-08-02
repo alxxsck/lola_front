@@ -20,8 +20,15 @@ import type {
   PutCohortAllowanceAssignmentInput,
   PutEndUserAllowanceAssignmentInput,
   ReconcileAiSpendReservationInput,
+  ResolveAiSpendAttemptInput,
+  CorrectAiAllowanceInput,
+  AiAllowanceReconciliationPage,
 } from "../model/ai-allowance";
-import { parseAllowanceUsd, parseSignedDecimal } from "../model/ai-allowance";
+import {
+  AI_ALLOWANCE_CATEGORIES,
+  parseAllowanceUsd,
+  parseSignedDecimal,
+} from "../model/ai-allowance";
 
 export interface AiAllowanceRepository {
   projectPolicy(
@@ -76,6 +83,26 @@ export interface AiAllowanceRepository {
   reconcile(
     projectId: string,
     input: ReconcileAiSpendReservationInput,
+    idempotencyKey: string,
+  ): Promise<unknown>;
+  reconciliationQueue(
+    projectId: string,
+    query: {
+      limit: number;
+      cursor?: string;
+      status?: "RESERVED" | "UNKNOWN_HELD";
+    },
+  ): Promise<AiAllowanceReconciliationPage>;
+  resolveAttempt(
+    projectId: string,
+    attemptId: string,
+    input: ResolveAiSpendAttemptInput,
+    idempotencyKey: string,
+  ): Promise<unknown>;
+  correct(
+    projectId: string,
+    endUserId: string,
+    input: CorrectAiAllowanceInput,
     idempotencyKey: string,
   ): Promise<unknown>;
 }
@@ -171,7 +198,106 @@ export const aiAllowanceRepository: AiAllowanceRepository = {
       )
     ).data;
   },
+  async reconciliationQueue(projectId, query) {
+    const response = await axiosInstance.get<unknown>(
+      `${root(projectId)}/ai-allowance/reconciliation`,
+      { params: query },
+    );
+    return reconciliationPage(response.data);
+  },
+  async resolveAttempt(projectId, attemptId, input, idempotencyKey) {
+    return (
+      await axiosInstance.post(
+        `${root(projectId)}/ai-allowance/attempts/${encodeURIComponent(attemptId)}/resolve`,
+        input,
+        headers(idempotencyKey),
+      )
+    ).data;
+  },
+  async correct(projectId, endUserId, input, idempotencyKey) {
+    return (
+      await axiosInstance.post(
+        `${userRoot(projectId, endUserId)}/corrections`,
+        input,
+        headers(idempotencyKey),
+      )
+    ).data;
+  },
 };
+
+function reconciliationPage(value: unknown): AiAllowanceReconciliationPage {
+  const source = object(value);
+  const pageInfo = parsePageInfo(source?.pageInfo);
+  if (
+    !source ||
+    !pageInfo ||
+    !Array.isArray(source.items) ||
+    source.items.length > 100
+  )
+    invalid();
+  const qualities = [
+    "EXACT_PROVIDER_COST",
+    "EXACT_PROVIDER_UNITS",
+    "MEASURED_ESTIMATE",
+    "RESERVED_ESTIMATE",
+    "UNKNOWN",
+  ] as const;
+  const items = source.items.map((value) => {
+    const item = object(value);
+    const category = enumValue(item?.category, AI_ALLOWANCE_CATEGORIES);
+    const status = enumValue(item?.status, [
+      "RESERVED",
+      "UNKNOWN_HELD",
+    ] as const);
+    const quality = enumValue(item?.costQuality, qualities);
+    const amounts =
+      item &&
+      [
+        "quotedUpperBoundUsd",
+        "reservedUsd",
+        "settledUsd",
+        "unknownHeldUsd",
+        "overageUsd",
+      ].map((key) => parseAllowanceUsd(item[key]));
+    return item &&
+      text(item.id) &&
+      text(item.endUserId) &&
+      text(item.aiOperationId) &&
+      text(item.modelAttemptId) &&
+      text(item.usageGroupId, 1, 255) &&
+      category &&
+      status &&
+      quality &&
+      amounts &&
+      amounts.every(Boolean) &&
+      (item.usageRecordId === null || text(item.usageRecordId)) &&
+      (item.outcomeReason === null || text(item.outcomeReason, 1, 500)) &&
+      iso(item.reservedAt) &&
+      (item.terminalAt === null || iso(item.terminalAt))
+      ? {
+          id: item.id,
+          endUserId: item.endUserId,
+          aiOperationId: item.aiOperationId,
+          modelAttemptId: item.modelAttemptId,
+          usageGroupId: item.usageGroupId,
+          category,
+          status,
+          quotedUpperBoundUsd: amounts[0]!,
+          reservedUsd: amounts[1]!,
+          settledUsd: amounts[2]!,
+          unknownHeldUsd: amounts[3]!,
+          overageUsd: amounts[4]!,
+          costQuality: quality,
+          usageRecordId: item.usageRecordId as string | null,
+          outcomeReason: item.outcomeReason as string | null,
+          reservedAt: item.reservedAt,
+          terminalAt: item.terminalAt as string | null,
+        }
+      : null;
+  });
+  if (items.some((item) => !item)) invalid();
+  return { items: items as AiAllowanceReconciliationPage["items"], pageInfo };
+}
 
 function policyView(value: unknown): AiAllowanceProjectPolicyView {
   const source = object(value);
@@ -331,6 +457,7 @@ function parsePolicy(value: unknown): AiAllowancePolicy | null {
     text(s.timezone, 1, 100) &&
     warningContent &&
     exhaustedContent &&
+    typeof s.showEndUserExactUsd === "boolean" &&
     bigintString(s.version) &&
     iso(s.createdAt) &&
     iso(s.updatedAt)
@@ -340,6 +467,7 @@ function parsePolicy(value: unknown): AiAllowancePolicy | null {
         timezone: s.timezone,
         warningContent,
         exhaustedContent,
+        showEndUserExactUsd: s.showEndUserExactUsd,
         version: s.version,
         createdAt: s.createdAt,
         updatedAt: s.updatedAt,
@@ -424,20 +552,9 @@ function parseRevision(
   if (!requireRules) return base;
   if (!Array.isArray(s.categoryRules) || s.categoryRules.length > 100)
     return null;
-  const categories = [
-    "CHAT",
-    "VOICE",
-    "SPEECH",
-    "MEMORY",
-    "AI_REVIEW",
-    "AI_ANALYSIS",
-    "CMS_AGENT",
-    "CASE_INTELLIGENCE",
-    "PROJECT_OVERHEAD",
-  ] as const;
   const rules = s.categoryRules.map((value) => {
     const r = object(value);
-    const category = enumValue(r?.category, categories);
+    const category = enumValue(r?.category, AI_ALLOWANCE_CATEGORIES);
     const responsibility = enumValue(r?.responsibility, [
       "END_USER_ALLOWANCE",
       "PROJECT_SPONSORED",

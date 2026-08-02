@@ -64,4 +64,60 @@ describe("EndUserOperationalStateCard", () => {
     expect(wrapper.text()).not.toContain("Stale user tags");
     expect(wrapper.get("button").attributes("disabled")).toBeUndefined();
   });
+
+  it("shows a future-effective value as scheduled without presenting it as current", async () => {
+    mocks.get.mockResolvedValue({
+      ...state("project-1", "user-1", "Future tags"),
+      items: [
+        {
+          ...state("project-1", "user-1", "Future tags").items[0],
+          current: {
+            version: 2,
+            definitionVersion: 1,
+            state: "SCHEDULED",
+            value: ["future-vip"],
+            effectiveAt: "2099-08-01T00:00:00.000Z",
+            expiresAt: null,
+            actor: { type: "CMS_USER", id: "admin-1" },
+            reason: "Schedule future tags",
+            updatedAt: "2026-08-01T00:00:00.000Z",
+          },
+        },
+      ],
+    });
+
+    const wrapper = mount(EndUserOperationalStateCard, {
+      props: { projectId: "project-1", endUserId: "user-1", canManage: true },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Запланировано с");
+    expect(wrapper.text()).not.toContain("future-vip");
+  });
+
+  it("closes the editor when manage permission is revoked", async () => {
+    mocks.get.mockResolvedValue(state("project-1", "user-1", "Managed tags"));
+    const wrapper = mount(EndUserOperationalStateCard, {
+      props: { projectId: "project-1", endUserId: "user-1", canManage: true },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Изменить"))!
+      .trigger("click");
+    expect(wrapper.find("form").exists()).toBe(true);
+
+    await wrapper.setProps({ canManage: false });
+
+    expect(wrapper.find("form").exists()).toBe(false);
+    expect(mocks.put).not.toHaveBeenCalled();
+  });
 });

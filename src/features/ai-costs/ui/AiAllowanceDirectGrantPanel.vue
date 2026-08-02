@@ -15,25 +15,31 @@ const reason = ref("");
 const saving = ref(false);
 const error = ref("");
 const notice = ref("");
+let generation = 0;
 
 watch(
   () => props.projectId,
   () => {
+    generation += 1;
     endUserId.value = "";
     amount.value = "";
     reason.value = "";
     error.value = "";
     notice.value = "";
+    saving.value = false;
     validFrom.value = localInput(new Date());
     expiresAt.value = localInput(new Date(Date.now() + 86_400_000));
   },
 );
 
 async function submit(): Promise<void> {
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
+  const requestEndUserId = endUserId.value.trim();
   const amountUsd = parseAllowanceUsd(amount.value.trim());
   const from = instant(validFrom.value);
   const until = instant(expiresAt.value);
-  if (!endUserId.value.trim() || endUserId.value.trim().length > 160)
+  if (!requestEndUserId || requestEndUserId.length > 160)
     return fail("Укажите корректный End User ID.");
   if (!amountUsd || compareDecimalStrings(amountUsd, "0") <= 0)
     return fail("Сумма должна быть больше нуля.");
@@ -46,8 +52,8 @@ async function submit(): Promise<void> {
   notice.value = "";
   try {
     await aiAllowanceRepository.createGrant(
-      props.projectId,
-      endUserId.value.trim(),
+      requestProjectId,
+      requestEndUserId,
       {
         amountUsd,
         validFrom: from,
@@ -56,14 +62,29 @@ async function submit(): Promise<void> {
       },
       globalThis.crypto?.randomUUID?.() ?? `grant-${Date.now()}`,
     );
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId
+    )
+      return;
     notice.value = "Начисление создано и записано в allowance ledger.";
     amount.value = "";
     reason.value = "";
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось создать начисление";
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      error.value =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось создать начисление";
   } finally {
-    saving.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      saving.value = false;
   }
 }
 function fail(message: string): void {

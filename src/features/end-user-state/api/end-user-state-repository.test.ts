@@ -62,4 +62,33 @@ describe("endUserStateRepository", () => {
       { headers: { "Idempotency-Key": "stable-idem" } },
     );
   });
+
+  it("accepts a future-effective current value as scheduled, not active", async () => {
+    vi.mocked(axiosInstance.get).mockResolvedValue({
+      data: {
+        projectId: "project-1",
+        endUserId: "user-1",
+        items: [
+          {
+            definition,
+            current: {
+              version: 4,
+              definitionVersion: 1,
+              state: "SCHEDULED",
+              value: ["segment:future"],
+              effectiveAt: "2099-08-01T00:00:00.000Z",
+              expiresAt: null,
+              actor: { type: "CMS_USER", id: "admin-1" },
+              reason: "Schedule future segment",
+              updatedAt: "2026-08-01T00:00:00.000Z",
+            },
+          },
+        ],
+      },
+    });
+
+    const result = await endUserStateRepository.get("project-1", "user-1");
+
+    expect(result.items[0]?.current?.state).toBe("SCHEDULED");
+  });
 });

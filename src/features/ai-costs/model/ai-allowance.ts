@@ -3,16 +3,18 @@ import type { DecimalString } from "@/shared/lib/decimal-money";
 export type AiAllowanceEnforcementMode =
   "DISABLED" | "SHADOW" | "SOFT" | "HARD";
 export type AiAllowancePeriodKind = "DAY" | "MONTH";
-export type AiAllowanceCategory =
-  | "CHAT"
-  | "VOICE"
-  | "SPEECH"
-  | "MEMORY"
-  | "AI_REVIEW"
-  | "AI_ANALYSIS"
-  | "CMS_AGENT"
-  | "CASE_INTELLIGENCE"
-  | "PROJECT_OVERHEAD";
+export const AI_ALLOWANCE_CATEGORIES = [
+  "CHAT",
+  "VOICE",
+  "SPEECH",
+  "MEMORY",
+  "AI_REVIEW",
+  "AI_ANALYSIS",
+  "CMS_AGENT",
+  "CASE_INTELLIGENCE",
+  "PROJECT_OVERHEAD",
+] as const;
+export type AiAllowanceCategory = (typeof AI_ALLOWANCE_CATEGORIES)[number];
 export interface AiAllowanceLocalizedContent {
   message?: string;
   ru?: string;
@@ -28,6 +30,7 @@ export interface AiAllowancePolicy {
   timezone: string;
   warningContent: AiAllowanceLocalizedContent;
   exhaustedContent: AiAllowanceLocalizedContent;
+  showEndUserExactUsd: boolean;
   version: string;
   createdAt: string;
   updatedAt: string;
@@ -202,6 +205,7 @@ export interface PutDefaultAllowancePlanInput {
   reason: string;
   warningContent?: AiAllowanceLocalizedContent;
   exhaustedContent?: AiAllowanceLocalizedContent;
+  showEndUserExactUsd: boolean;
 }
 
 export interface PutAllowancePlanInput {
@@ -246,6 +250,49 @@ export interface ReconcileAiSpendReservationInput {
   reservationId: string;
   resolution: AiAllowanceReconciliationResolution;
   reason: string;
+}
+
+export interface ResolveAiSpendAttemptInput {
+  resolution: AiAllowanceReconciliationResolution;
+  reason: string;
+}
+
+export interface CorrectAiAllowanceInput {
+  correctsEntryId: string;
+  deltaAvailableUsd: SignedDecimalString;
+  expectedAccountVersion: string;
+  expiresAt?: string;
+  reason: string;
+}
+
+export interface AiAllowanceReconciliationItem {
+  id: string;
+  endUserId: string;
+  aiOperationId: string;
+  modelAttemptId: string;
+  usageGroupId: string;
+  category: AiAllowanceCategory;
+  status: "RESERVED" | "UNKNOWN_HELD";
+  quotedUpperBoundUsd: DecimalString;
+  reservedUsd: DecimalString;
+  settledUsd: DecimalString;
+  unknownHeldUsd: DecimalString;
+  overageUsd: DecimalString;
+  costQuality:
+    | "EXACT_PROVIDER_COST"
+    | "EXACT_PROVIDER_UNITS"
+    | "MEASURED_ESTIMATE"
+    | "RESERVED_ESTIMATE"
+    | "UNKNOWN";
+  usageRecordId: string | null;
+  outcomeReason: string | null;
+  reservedAt: string;
+  terminalAt: string | null;
+}
+
+export interface AiAllowanceReconciliationPage {
+  items: AiAllowanceReconciliationItem[];
+  pageInfo: AiAllowanceCursorPageInfo;
 }
 
 export function parseSignedDecimal(

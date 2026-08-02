@@ -24,6 +24,7 @@ const props = defineProps<{
   plans?: AiAllowancePlan[];
   canGrant: boolean;
   canManage: boolean;
+  canReconcile: boolean;
 }>();
 const emit = defineEmits<{
   "update:visible": [value: boolean];
@@ -59,12 +60,29 @@ watch(
     generation += 1;
     balance.value = null;
     loadedContext.value = "";
+    grantsLoading.value = false;
+    mutationLoading.value = false;
+    formError.value = "";
     if (visible && props.endUserId) {
       mode.value = "summary";
       void load();
     }
   },
   { immediate: true },
+);
+watch(
+  () => [props.canGrant, props.canManage] as const,
+  ([canGrant, canManage]) => {
+    if (
+      (mode.value === "grant" && !canGrant) ||
+      (mode.value === "assignment" && !canManage)
+    ) {
+      generation += 1;
+      mutationLoading.value = false;
+      formError.value = "";
+      mode.value = "summary";
+    }
+  },
 );
 async function load(): Promise<void> {
   const requestGeneration = ++generation;
@@ -109,14 +127,23 @@ async function loadMoreGrants(): Promise<void> {
     loadedContext.value !== `${props.projectId}:${props.endUserId}`
   )
     return;
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
+  const requestEndUserId = props.endUserId;
   grantsLoading.value = true;
   try {
     const next = await aiAllowanceRepository.endUserBalance(
-      props.projectId,
-      props.endUserId,
+      requestProjectId,
+      requestEndUserId,
       { grantLimit: 50, grantCursor: cursor },
     );
-    if (loadedContext.value === `${props.projectId}:${props.endUserId}`) {
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId &&
+      loadedContext.value === `${requestProjectId}:${requestEndUserId}` &&
+      balance.value === current
+    ) {
       balance.value = {
         ...current,
         activeGrants: [...current.activeGrants, ...next.activeGrants],
@@ -124,15 +151,26 @@ async function loadMoreGrants(): Promise<void> {
       };
     }
   } catch (cause) {
-    error.value = text(cause, "Не удалось загрузить остальные начисления");
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    )
+      error.value = text(cause, "Не удалось загрузить остальные начисления");
   } finally {
-    grantsLoading.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    )
+      grantsLoading.value = false;
   }
 }
 function close(): void {
   emit("update:visible", false);
 }
 function beginGrant(): void {
+  if (!props.canGrant) return;
   if (loadedContext.value !== `${props.projectId}:${props.endUserId}`) return;
   mode.value = "grant";
   amount.value = "";
@@ -143,6 +181,7 @@ function beginGrant(): void {
   formError.value = "";
 }
 function beginAssignment(): void {
+  if (!props.canManage) return;
   if (loadedContext.value !== `${props.projectId}:${props.endUserId}`) return;
   mode.value = "assignment";
   planId.value =
@@ -154,6 +193,7 @@ function beginAssignment(): void {
   formError.value = "";
 }
 async function submitGrant(): Promise<void> {
+  if (!props.canGrant) return fail("Операция больше недоступна.");
   const exact = parseAllowanceUsd(amount.value.trim());
   const from = iso(validFrom.value);
   const until = iso(expiresAt.value);
@@ -177,6 +217,7 @@ async function submitGrant(): Promise<void> {
   );
 }
 async function submitAssignment(): Promise<void> {
+  if (!props.canManage) return fail("Операция больше недоступна.");
   const from = iso(effectiveFrom.value);
   const until = effectiveUntil.value ? iso(effectiveUntil.value) : undefined;
   if (
@@ -213,16 +254,35 @@ function validCommon(): boolean {
   return true;
 }
 async function mutate(action: () => Promise<unknown>): Promise<void> {
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
+  const requestEndUserId = props.endUserId;
   mutationLoading.value = true;
   formError.value = "";
   try {
     await action();
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      requestEndUserId !== props.endUserId
+    )
+      return;
     mode.value = "summary";
     await load();
   } catch (cause) {
-    formError.value = text(cause, "Операция не выполнена");
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    )
+      formError.value = text(cause, "Операция не выполнена");
   } finally {
-    mutationLoading.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    )
+      mutationLoading.value = false;
   }
 }
 function fail(value: string): void {
@@ -371,6 +431,14 @@ function text(cause: unknown, fallback: string): string {
             label="Журнал пользователя"
             outlined
             icon="pi pi-list"
+            @click="emit('openJournal', endUserId)"
+          />
+          <Button
+            v-if="canReconcile"
+            label="Корректировать по журналу"
+            severity="warn"
+            outlined
+            icon="pi pi-wrench"
             @click="emit('openJournal', endUserId)"
           /><span /><Button
             v-if="canManage"

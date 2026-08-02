@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
@@ -9,10 +9,13 @@ import {
   type DecimalString,
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
-import type {
-  AiAllowanceJournalPage,
-  AiAllowanceReconciliationResolution,
-  SignedDecimalString,
+import AiAllowanceReconciliationQueue from "./AiAllowanceReconciliationQueue.vue";
+import {
+  parseSignedDecimal,
+  type AiAllowanceJournalEntry,
+  type AiAllowanceJournalPage,
+  type AiAllowanceUserBalance,
+  type SignedDecimalString,
 } from "../model/ai-allowance";
 
 const props = defineProps<{
@@ -28,19 +31,33 @@ const emit = defineEmits<{
 }>();
 const input = ref(props.endUserId);
 const page = ref<AiAllowanceJournalPage | null>(null);
+const balance = ref<AiAllowanceUserBalance | null>(null);
+const loadedContextKey = ref("");
 const loading = ref(false);
 const error = ref("");
+const balanceError = ref("");
 const notice = ref("");
-const reconcileOpen = ref(false);
-const reconciling = ref(false);
-const reconcileError = ref("");
-const reservationId = ref("");
-const resolution =
-  ref<AiAllowanceReconciliationResolution>("SETTLE_FROM_USAGE");
-const reason = ref("");
-const idempotencyKey = ref("");
-const releaseConfirmed = ref(false);
+const correctionTarget = ref<AiAllowanceJournalEntry | null>(null);
+const correctionDelta = ref("");
+const correctionExpiresAt = ref("");
+const correctionReason = ref("");
+const correctionIdempotencyKey = ref("");
+const correctionAccountVersion = ref("");
+const correcting = ref(false);
+const correctionError = ref("");
 let generation = 0;
+const contextKey = computed(() =>
+  JSON.stringify([
+    props.canRead,
+    props.canReconcile,
+    props.projectId,
+    props.endUserId,
+    props.cursor,
+  ]),
+);
+const visiblePage = computed(() =>
+  loadedContextKey.value === contextKey.value ? page.value : null,
+);
 watch(
   () => props.endUserId,
   (value) => {
@@ -50,43 +67,65 @@ watch(
 watch(
   () => props.projectId,
   () => {
-    reconcileOpen.value = false;
-    reservationId.value = "";
+    correctionTarget.value = null;
+    correcting.value = false;
     notice.value = "";
   },
 );
 watch(
-  () =>
-    [props.canRead, props.projectId, props.endUserId, props.cursor] as const,
+  contextKey,
   () => {
+    invalidatePage();
     if (props.canRead && props.endUserId) void load();
-    else {
-      generation += 1;
-      page.value = null;
-    }
   },
   { immediate: true },
 );
 async function load(): Promise<void> {
   const requestGeneration = ++generation;
+  const requestContextKey = contextKey.value;
   const requestProjectId = props.projectId;
   const requestEndUserId = props.endUserId;
   const requestCursor = props.cursor;
   loading.value = true;
   error.value = "";
+  page.value = null;
+  balance.value = null;
+  loadedContextKey.value = "";
+  balanceError.value = "";
   try {
-    const next = await aiAllowanceRepository.journal(
-      requestProjectId,
-      requestEndUserId,
-      { limit: 50, ...(requestCursor ? { cursor: requestCursor } : {}) },
-    );
+    const [next, balanceResult] = await Promise.all([
+      aiAllowanceRepository.journal(requestProjectId, requestEndUserId, {
+        limit: 50,
+        ...(requestCursor ? { cursor: requestCursor } : {}),
+      }),
+      props.canReconcile
+        ? aiAllowanceRepository
+            .endUserBalance(requestProjectId, requestEndUserId)
+            .then((value) => ({ value, cause: null }))
+            .catch((cause: unknown) => ({ value: null, cause }))
+        : Promise.resolve(null),
+    ]);
     if (
       requestGeneration === generation &&
+      requestContextKey === contextKey.value &&
+      props.canRead &&
       requestProjectId === props.projectId &&
       requestEndUserId === props.endUserId &&
       requestCursor === props.cursor
-    )
+    ) {
       page.value = next;
+      if (
+        balanceResult?.value?.account.projectId === requestProjectId &&
+        balanceResult.value.account.endUserId === requestEndUserId
+      )
+        balance.value = balanceResult.value;
+      else if (balanceResult?.cause)
+        balanceError.value = message(
+          balanceResult.cause,
+          "Не удалось загрузить версию allowance account",
+        );
+      loadedContextKey.value = requestContextKey;
+    }
   } catch (cause) {
     if (requestGeneration === generation)
       error.value =
@@ -94,6 +133,17 @@ async function load(): Promise<void> {
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
+}
+function invalidatePage(): void {
+  generation += 1;
+  page.value = null;
+  balance.value = null;
+  loadedContextKey.value = "";
+  loading.value = false;
+  error.value = "";
+  balanceError.value = "";
+  correctionTarget.value = null;
+  correcting.value = false;
 }
 function select(): void {
   const value = input.value.trim();
@@ -103,59 +153,90 @@ function select(): void {
   }
   emit("selectUser", value);
 }
-function openReconcile(id = ""): void {
-  reservationId.value = id;
-  resolution.value = "SETTLE_FROM_USAGE";
-  reason.value = "";
-  idempotencyKey.value =
-    globalThis.crypto?.randomUUID?.() ?? `reconcile-${Date.now()}`;
-  releaseConfirmed.value = false;
-  reconcileError.value = "";
-  reconcileOpen.value = true;
+function openCorrection(item: AiAllowanceJournalEntry): void {
+  if (
+    !props.canReconcile ||
+    !balance.value ||
+    loadedContextKey.value !== contextKey.value
+  )
+    return;
+  correctionTarget.value = item;
+  correctionDelta.value = "";
+  correctionExpiresAt.value = localTomorrow();
+  correctionReason.value = "";
+  correctionIdempotencyKey.value = commandKey();
+  correctionAccountVersion.value = balance.value.account.version;
+  correctionError.value = "";
 }
-async function submitReconcile(): Promise<void> {
-  if (
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      reservationId.value,
-    )
-  )
-    return reconcileFail("Некорректный reservationId.");
-  if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
-    return reconcileFail("Причина должна содержать от 3 до 500 символов.");
-  if (!idempotencyKey.value.trim() || idempotencyKey.value.length > 128)
-    return reconcileFail("Укажите Idempotency-Key длиной до 128 символов.");
-  if (
-    resolution.value === "RELEASE_PROVEN_NON_BILLABLE" &&
-    !releaseConfirmed.value
-  )
-    return reconcileFail(
-      "Подтвердите доказанный non-billable результат перед освобождением резерва.",
+async function submitCorrection(): Promise<void> {
+  const target = correctionTarget.value;
+  const exact = parseSignedDecimal(correctionDelta.value.trim());
+  if (!target || !props.canReconcile)
+    return correctionFail("Операция больше недоступна.");
+  if (!exact || /^-?0(?:\.0+)?$/.test(exact))
+    return correctionFail(
+      "Дельта должна быть ненулевой точной decimal-строкой до 12 знаков.",
     );
-  reconciling.value = true;
-  reconcileError.value = "";
+  const positive = !exact.startsWith("-");
+  const expiresAt = positive ? iso(correctionExpiresAt.value) : undefined;
+  if (positive && (!expiresAt || new Date(expiresAt) <= new Date()))
+    return correctionFail(
+      "Для положительной корректировки укажите будущий expiresAt.",
+    );
+  if (!/^(?:0|[1-9]\d{0,19})$/.test(correctionAccountVersion.value))
+    return correctionFail("Версия allowance account устарела или некорректна.");
+  if (
+    correctionReason.value.trim().length < 3 ||
+    correctionReason.value.trim().length > 500
+  )
+    return correctionFail("Причина должна содержать от 3 до 500 символов.");
+  if (
+    !correctionIdempotencyKey.value.trim() ||
+    correctionIdempotencyKey.value.length > 128
+  )
+    return correctionFail("Некорректный Idempotency-Key.");
+
+  const requestContextKey = contextKey.value;
+  const requestProjectId = props.projectId;
+  const requestEndUserId = props.endUserId;
+  correcting.value = true;
+  correctionError.value = "";
   notice.value = "";
   try {
-    await aiAllowanceRepository.reconcile(
-      props.projectId,
+    await aiAllowanceRepository.correct(
+      requestProjectId,
+      requestEndUserId,
       {
-        reservationId: reservationId.value,
-        resolution: resolution.value,
-        reason: reason.value.trim(),
+        correctsEntryId: target.id,
+        deltaAvailableUsd: exact,
+        expectedAccountVersion: correctionAccountVersion.value,
+        ...(expiresAt ? { expiresAt } : {}),
+        reason: correctionReason.value.trim(),
       },
-      idempotencyKey.value.trim(),
+      correctionIdempotencyKey.value.trim(),
     );
-    reconcileOpen.value = false;
-    notice.value = "Сверка принята. Журнал обновлён.";
+    if (
+      requestContextKey !== contextKey.value ||
+      requestProjectId !== props.projectId ||
+      requestEndUserId !== props.endUserId
+    )
+      return;
+    correctionTarget.value = null;
+    notice.value =
+      "Корректировка записана. Баланс и журнал перечитаны с backend.";
     await load();
   } catch (cause) {
-    reconcileError.value =
-      cause instanceof Error ? cause.message : "Не удалось выполнить сверку";
+    if (requestContextKey === contextKey.value)
+      correctionError.value = message(
+        cause,
+        "Не удалось выполнить корректировку",
+      );
   } finally {
-    reconciling.value = false;
+    if (requestContextKey === contextKey.value) correcting.value = false;
   }
 }
-function reconcileFail(value: string): void {
-  reconcileError.value = value;
+function correctionFail(value: string): void {
+  correctionError.value = value;
 }
 function delta(value: SignedDecimalString): string {
   const negative = value.startsWith("-");
@@ -168,6 +249,25 @@ function date(value: string): string {
     dateStyle: "short",
     timeStyle: "medium",
   }).format(new Date(value));
+}
+function iso(value: string): string | undefined {
+  const result = new Date(value);
+  return value && Number.isFinite(result.valueOf())
+    ? result.toISOString()
+    : undefined;
+}
+function localTomorrow(): string {
+  const value = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+function commandKey(): string {
+  return (
+    globalThis.crypto?.randomUUID?.() ?? `allowance-correction-${Date.now()}`
+  );
+}
+function message(cause: unknown, fallback: string): string {
+  return cause instanceof Error ? cause.message : fallback;
 }
 function provenance(item: AiAllowanceJournalPage["items"][number]): string {
   return item.usageRecordId
@@ -190,13 +290,9 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
     role="tabpanel"
     aria-labelledby="ai-cost-tab-journal"
   >
-    <Button
-      v-if="canReconcile"
-      label="Ручная сверка reservation"
-      severity="warn"
-      outlined
-      icon="pi pi-wrench"
-      @click="openReconcile()"
+    <AiAllowanceReconciliationQueue
+      :project-id="projectId"
+      :can-reconcile="canReconcile"
     />
     <Message v-if="!canRead" severity="warn" :closable="false"
       >Нет права <code>project.ai_allowance.read</code>. Журнал скрыт.</Message
@@ -223,8 +319,9 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
         /><Button label="Открыть журнал" type="submit" />
       </form>
       <Message v-if="canReconcile" severity="warn" :closable="false"
-        >Ручная сверка — audited break-glass mutation. Выполняйте её только по
-        подтверждённому reservation и сохраняйте доказательную причину.</Message
+        >Корректировка — audited break-glass mutation. Она всегда ссылается на
+        существующую запись журнала и использует текущую версию
+        account.</Message
       >
       <Message v-if="notice" severity="success" :closable="false">{{
         notice
@@ -238,11 +335,27 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
           size="small"
           @click="load"
       /></Message>
-      <div v-if="loading" class="journal-loading">
+      <Message
+        v-if="balanceError"
+        severity="warn"
+        :closable="false"
+        role="alert"
+        >{{ balanceError }} Корректировки отключены до успешного повторного
+        чтения. <Button label="Повторить" text size="small" @click="load"
+      /></Message>
+      <div
+        v-if="loading"
+        class="journal-loading"
+        role="status"
+        aria-label="Загрузка журнала пользователя"
+      >
         <Skeleton v-for="index in 7" :key="index" height="44px" />
       </div>
-      <div v-else-if="page?.items.length" class="journal-table">
+      <div v-else-if="visiblePage?.items.length" class="journal-table">
         <table>
+          <caption>
+            Immutable журнал изменений AI allowance пользователя
+          </caption>
           <thead>
             <tr>
               <th>Время / тип</th>
@@ -256,7 +369,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in page.items" :key="item.id">
+            <tr v-for="item in visiblePage.items" :key="item.id">
               <td>
                 <strong>{{ item.entryType }}</strong
                 ><small
@@ -278,19 +391,19 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
               </td>
               <td v-if="canReconcile">
                 <Button
-                  v-if="item.reservationId"
-                  label="Сверить"
+                  label="Корректировать"
                   size="small"
                   outlined
                   severity="warn"
-                  @click="openReconcile(item.reservationId)"
-                /><span v-else>—</span>
+                  :disabled="!balance"
+                  @click="openCorrection(item)"
+                />
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p v-else-if="page" class="empty-state">
+      <p v-else-if="visiblePage" class="empty-state" role="status">
         Записей журнала у этого пользователя пока нет.
       </p>
       <div v-else-if="!endUserId" class="journal-empty">
@@ -301,92 +414,97 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
           точный End User ID.
         </p>
       </div>
-      <footer v-if="page" class="journal-footer">
+      <footer v-if="visiblePage" class="journal-footer">
         <span>До 50 событий на страницу</span
         ><Button
           label="Следующая страница"
           icon="pi pi-chevron-right"
           icon-pos="right"
           outlined
-          :disabled="!page.pageInfo.hasMore || !page.pageInfo.nextCursor"
-          @click="emit('nextCursor', page.pageInfo.nextCursor ?? '')"
+          :disabled="
+            !visiblePage.pageInfo.hasMore || !visiblePage.pageInfo.nextCursor
+          "
+          @click="emit('nextCursor', visiblePage.pageInfo.nextCursor ?? '')"
         />
       </footer>
     </template>
   </section>
 
   <Dialog
-    v-model:visible="reconcileOpen"
+    :visible="Boolean(correctionTarget)"
     modal
-    header="Ручная сверка reservation"
+    header="Корректировка AI allowance"
     :style="{ width: 'min(680px, 94vw)' }"
+    @update:visible="!$event && (correctionTarget = null)"
   >
-    <form class="reconcile-form" @submit.prevent="submitReconcile">
-      <Message severity="warn" :closable="false"
-        >Операция меняет allowance ledger и журналируется как break-glass
-        mutation. Это квота AI, не денежный возврат.</Message
-      >
-      <label>Reservation ID<input v-model="reservationId" /></label>
+    <form class="correction-form" @submit.prevent="submitCorrection">
+      <Message severity="warn" :closable="false">
+        Новая immutable запись исправит выбранную запись журнала. Это квота AI,
+        не денежный перевод пользователю.
+      </Message>
+      <p v-if="correctionTarget">
+        Исправляется <strong>{{ correctionTarget.id }}</strong> · account v{{
+          correctionAccountVersion
+        }}
+      </p>
+      <label for="correction-delta">
+        Дельта доступной квоты, USD
+        <input
+          id="correction-delta"
+          v-model="correctionDelta"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="-1.250000000000 или 1.250000000000"
+        />
+      </label>
       <label
-        >Результат<select v-model="resolution">
-          <option value="SETTLE_FROM_USAGE">
-            Списать по terminal AI Usage
-          </option>
-          <option value="HOLD_UNKNOWN">Перенести в unknown hold</option>
-          <option value="RELEASE_PROVEN_NON_BILLABLE">
-            Освободить доказанный non-billable резерв
-          </option>
-        </select></label
+        v-if="!correctionDelta.trim().startsWith('-')"
+        for="correction-expiry"
       >
-      <Message
-        v-if="resolution === 'SETTLE_FROM_USAGE'"
-        severity="info"
-        :closable="false"
-        >Backend потребует terminal AI Usage с допустимым качеством
-        стоимости.</Message
-      >
-      <Message
-        v-else-if="resolution === 'HOLD_UNKNOWN'"
-        severity="warn"
-        :closable="false"
-        >Сумма останется удержанной до появления доказательств.</Message
-      >
-      <Message v-else severity="error" :closable="false"
-        >Освобождайте резерв только при доказанном non-billable исходе.<label
-          class="release-confirm"
-          ><input v-model="releaseConfirmed" type="checkbox" /> Доказательства
-          проверены</label
-        ></Message
-      >
-      <label
-        >Причина / доказательство<textarea
-          v-model="reason"
+        Положительная дельта истекает
+        <input
+          id="correction-expiry"
+          v-model="correctionExpiresAt"
+          type="datetime-local"
+        />
+      </label>
+      <Message v-else severity="info" :closable="false">
+        Для отрицательной дельты expiresAt не отправляется.
+      </Message>
+      <label for="correction-reason">
+        Причина / доказательство
+        <textarea
+          id="correction-reason"
+          v-model="correctionReason"
           rows="4"
           maxlength="500"
         />
       </label>
-      <label
-        >Idempotency-Key<input
-          v-model="idempotencyKey"
-          maxlength="128"
-          autocomplete="off"
-        /><small>Не меняйте ключ при повторе того же запроса.</small></label
-      >
-      <small v-if="reconcileError" class="reconcile-error" role="alert">{{
-        reconcileError
+      <label for="correction-idempotency">
+        Idempotency-Key
+        <input
+          id="correction-idempotency"
+          :value="correctionIdempotencyKey"
+          readonly
+        />
+        <small>Ключ сохраняется для безопасного повтора команды.</small>
+      </label>
+      <small v-if="correctionError" class="reconcile-error" role="alert">{{
+        correctionError
       }}</small>
       <footer>
         <Button
           label="Отмена"
           text
           type="button"
-          :disabled="reconciling"
-          @click="reconcileOpen = false"
-        /><Button
-          label="Выполнить сверку"
+          :disabled="correcting"
+          @click="correctionTarget = null"
+        />
+        <Button
+          label="Записать корректировку"
           severity="warn"
           type="submit"
-          :loading="reconciling"
+          :loading="correcting"
         />
       </footer>
     </form>
@@ -396,7 +514,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
 <style scoped>
 .journal-panel,
 .journal-loading,
-.reconcile-form {
+.correction-form {
   display: grid;
   gap: 16px;
 }
@@ -446,6 +564,13 @@ table {
   min-width: 1240px;
   border-collapse: collapse;
 }
+caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
 th,
 td {
   padding: 11px 9px;
@@ -492,7 +617,7 @@ td small {
   margin: 4px;
 }
 .journal-footer,
-.reconcile-form footer {
+.correction-form footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -502,15 +627,15 @@ td small {
   color: var(--text-small-muted);
   font-size: 0.7rem;
 }
-.reconcile-form label {
+.correction-form label {
   display: grid;
   gap: 6px;
   font-size: 0.75rem;
   font-weight: 700;
 }
-.reconcile-form input,
-.reconcile-form select,
-.reconcile-form textarea {
+.correction-form input,
+.correction-form select,
+.correction-form textarea {
   width: 100%;
   padding: 10px;
   border: 1px solid var(--border-default);
@@ -519,17 +644,9 @@ td small {
   color: var(--text-primary);
   font: inherit;
 }
-.reconcile-form small {
+.correction-form small {
   color: var(--text-small-muted);
   font-weight: 400;
-}
-.release-confirm {
-  display: flex !important;
-  align-items: center;
-  margin-top: 10px;
-}
-.release-confirm input {
-  width: auto;
 }
 .reconcile-error {
   color: var(--status-danger-text) !important;

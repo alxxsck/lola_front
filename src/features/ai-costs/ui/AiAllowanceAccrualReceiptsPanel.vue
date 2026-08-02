@@ -21,6 +21,7 @@ watch(
   () => {
     generation += 1;
     page.value = null;
+    loadingMore.value = false;
     void load();
   },
   { immediate: true },
@@ -48,8 +49,10 @@ async function load(): Promise<void> {
   }
 }
 async function loadMore(): Promise<void> {
-  const cursor = page.value?.pageInfo.nextCursor;
+  const currentPage = page.value;
+  const cursor = currentPage?.pageInfo.nextCursor;
   if (!cursor || loadingMore.value) return;
+  const requestGeneration = generation;
   const projectId = props.projectId;
   loadingMore.value = true;
   try {
@@ -57,18 +60,24 @@ async function loadMore(): Promise<void> {
       ...query(),
       cursor,
     });
-    if (projectId === props.projectId && page.value)
+    if (
+      requestGeneration === generation &&
+      projectId === props.projectId &&
+      page.value === currentPage
+    )
       page.value = {
-        items: [...page.value.items, ...next.items],
+        items: [...currentPage.items, ...next.items],
         pageInfo: next.pageInfo,
       };
   } catch (cause) {
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить остальные receipts";
+    if (requestGeneration === generation && projectId === props.projectId)
+      error.value =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось загрузить остальные receipts";
   } finally {
-    loadingMore.value = false;
+    if (requestGeneration === generation && projectId === props.projectId)
+      loadingMore.value = false;
   }
 }
 function query() {

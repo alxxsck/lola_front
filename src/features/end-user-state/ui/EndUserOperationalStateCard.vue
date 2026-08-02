@@ -28,6 +28,7 @@ const history = ref<EndUserAttributeHistory | null>(null);
 const historyOpen = ref(false);
 const historyLoading = ref(false);
 let generation = 0;
+let historyGeneration = 0;
 const known = computed(() => state.value?.items ?? []);
 const contextKey = computed(() => `${props.projectId}:${props.endUserId}`);
 const contextReady = computed(
@@ -37,15 +38,32 @@ watch(
   () => [props.projectId, props.endUserId] as const,
   () => {
     generation += 1;
+    historyGeneration += 1;
     state.value = null;
     loadedContext.value = "";
     editKey.value = "";
     historyOpen.value = false;
     history.value = null;
+    historyLoading.value = false;
+    saving.value = false;
     void load();
   },
   { immediate: true },
 );
+watch(
+  () => props.canManage,
+  (canManage) => {
+    if (canManage) return;
+    editKey.value = "";
+    saving.value = false;
+    formError.value = "";
+  },
+);
+watch(historyOpen, (open) => {
+  if (open) return;
+  historyGeneration += 1;
+  historyLoading.value = false;
+});
 async function load() {
   const current = ++generation;
   const requestedProjectId = props.projectId;
@@ -78,10 +96,11 @@ async function load() {
   }
 }
 function openEdit(key: string) {
-  if (!contextReady.value) return;
+  if (!props.canManage || !contextReady.value) return;
   const item = state.value?.items.find(
     (candidate) => candidate.definition.key === key,
   );
+  if (!item?.definition.writable) return;
   editKey.value = key;
   raw.value =
     editorKind(item) === "string-array"
@@ -99,12 +118,14 @@ function openEdit(key: string) {
   formError.value = "";
 }
 async function save(operation: "SET" | "UNSET") {
-  if (!contextReady.value) return fail("Данные пользователя ещё загружаются.");
+  if (!props.canManage || !contextReady.value)
+    return fail("Операция больше недоступна.");
   const item = state.value?.items.find(
     (candidate) => candidate.definition.key === editKey.value,
   );
   if (
     !item ||
+    !item.definition.writable ||
     !editKey.value ||
     reason.value.trim().length < 10 ||
     reason.value.trim().length > 500
@@ -141,12 +162,16 @@ async function save(operation: "SET" | "UNSET") {
       return fail("Введите корректный JSON согласно schema поля.");
     }
   }
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
+  const requestEndUserId = props.endUserId;
+  const requestEditKey = editKey.value;
   saving.value = true;
   try {
     await endUserStateRepository.put(
-      props.projectId,
-      props.endUserId,
-      editKey.value,
+      requestProjectId,
+      requestEndUserId,
+      requestEditKey,
       {
         operation,
         ...(operation === "SET" ? { value } : {}),
@@ -155,17 +180,38 @@ async function save(operation: "SET" | "UNSET") {
       },
       idem.value,
     );
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      requestEndUserId !== props.endUserId ||
+      requestEditKey !== editKey.value ||
+      !props.canManage
+    )
+      return;
     editKey.value = "";
+    saving.value = false;
     await load();
   } catch (cause) {
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      requestEndUserId !== props.endUserId
+    )
+      return;
     formError.value =
       cause instanceof Error
         ? `${cause.message}. Состояние будет перечитано перед повтором.`
         : "Не удалось сохранить";
+    saving.value = false;
     await load();
     if (httpStatus(cause) === 409) idem.value = newIdempotencyKey();
   } finally {
-    saving.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    )
+      saving.value = false;
   }
 }
 function newIdempotencyKey(): string {
@@ -186,35 +232,53 @@ function hasControlCharacters(value: string): boolean {
 }
 async function showHistory(key: string) {
   if (!contextReady.value) return;
+  const requestGeneration = ++historyGeneration;
+  const requestedProjectId = props.projectId;
+  const requestedEndUserId = props.endUserId;
   const requestedContext = contextKey.value;
   historyOpen.value = true;
   historyLoading.value = true;
   history.value = null;
   try {
     const next = await endUserStateRepository.history(
-      props.projectId,
-      props.endUserId,
+      requestedProjectId,
+      requestedEndUserId,
       key,
     );
-    if (requestedContext === contextKey.value && contextReady.value)
+    if (
+      requestGeneration === historyGeneration &&
+      requestedContext === contextKey.value &&
+      contextReady.value &&
+      next.projectId === requestedProjectId &&
+      next.endUserId === requestedEndUserId &&
+      next.attributeKey === key
+    )
       history.value = next;
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить историю";
-    historyOpen.value = false;
+    if (
+      requestGeneration === historyGeneration &&
+      requestedContext === contextKey.value
+    ) {
+      error.value =
+        cause instanceof Error ? cause.message : "Не удалось загрузить историю";
+      historyOpen.value = false;
+    }
   } finally {
-    historyLoading.value = false;
+    if (requestGeneration === historyGeneration) historyLoading.value = false;
   }
 }
 async function loadMoreHistory() {
   if (!history.value?.page.hasMore || historyLoading.value) return;
   const current = history.value;
+  const requestGeneration = ++historyGeneration;
+  const requestedProjectId = props.projectId;
+  const requestedEndUserId = props.endUserId;
   const requestedContext = contextKey.value;
   historyLoading.value = true;
   try {
     const next = await endUserStateRepository.history(
-      props.projectId,
-      props.endUserId,
+      requestedProjectId,
+      requestedEndUserId,
       current.attributeKey,
       {
         limit: current.page.limit,
@@ -224,6 +288,10 @@ async function loadMoreHistory() {
     if (
       requestedContext === contextKey.value &&
       contextReady.value &&
+      requestGeneration === historyGeneration &&
+      history.value === current &&
+      next.projectId === requestedProjectId &&
+      next.endUserId === requestedEndUserId &&
       next.attributeKey === current.attributeKey
     ) {
       history.value = {
@@ -233,18 +301,24 @@ async function loadMoreHistory() {
       };
     }
   } catch (cause) {
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить продолжение истории";
+    if (
+      requestGeneration === historyGeneration &&
+      requestedContext === contextKey.value
+    )
+      error.value =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось загрузить продолжение истории";
   } finally {
-    historyLoading.value = false;
+    if (requestGeneration === historyGeneration) historyLoading.value = false;
   }
 }
 function fail(value: string) {
   formError.value = value;
 }
 function display(item: EndUserOperationalState["items"][number]) {
+  if (item.current?.state === "SCHEDULED")
+    return `Запланировано с ${new Date(item.current.effectiveAt).toLocaleString("ru-RU")}`;
   if (item.current?.state !== "ACTIVE") return "Не задано";
   return Array.isArray(item.current.value)
     ? item.current.value.join(", ")

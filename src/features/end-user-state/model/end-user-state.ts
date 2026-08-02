@@ -11,7 +11,7 @@ export interface EndUserAttributeDefinition {
 export interface EndUserAttributeCurrent {
   version: number;
   definitionVersion: number;
-  state: "UNSET" | "EXPIRED" | "ACTIVE";
+  state: "UNSET" | "SCHEDULED" | "EXPIRED" | "ACTIVE";
   value: unknown;
   effectiveAt: string;
   expiresAt: string | null;

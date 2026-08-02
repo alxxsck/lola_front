@@ -14,6 +14,7 @@ const policyResponse = {
     timezone: "Europe/Madrid",
     warningContent: {},
     exhaustedContent: {},
+    showEndUserExactUsd: false,
     version: "2",
     createdAt: "2026-08-01T00:00:00.000Z",
     updatedAt: "2026-08-02T00:00:00.000Z",
@@ -61,6 +62,7 @@ describe("aiAllowanceRepository", () => {
     expect(result.plans[0]?.revisions[0]?.recurringAmountUsd).toBe(
       "5.000000000001",
     );
+    expect(result.policy?.showEndUserExactUsd).toBe(false);
     expect(axiosInstance.get).toHaveBeenCalledWith(
       "/api/v1/admin/projects/project-1/ai-allowance",
     );
@@ -247,6 +249,7 @@ describe("aiAllowanceRepository", () => {
       period: "DAY" as const,
       timezone: "Europe/Madrid",
       enforcementMode: "SOFT" as const,
+      showEndUserExactUsd: false,
       reason: "Daily project allowance",
     };
     const assignment = {
@@ -342,6 +345,97 @@ describe("aiAllowanceRepository", () => {
       "/api/v1/admin/projects/project-1/ai-allowance/reconcile",
       input,
       { headers: { "Idempotency-Key": "reconcile-key" } },
+    );
+  });
+
+  it("loads the bounded reconciliation queue and sends attempt and correction commands exactly", async () => {
+    vi.mocked(axiosInstance.get).mockResolvedValue({
+      data: {
+        items: [
+          {
+            id: "11111111-1111-4111-8111-111111111111",
+            endUserId: "22222222-2222-4222-8222-222222222222",
+            aiOperationId: "33333333-3333-4333-8333-333333333333",
+            modelAttemptId: "44444444-4444-4444-8444-444444444444",
+            usageGroupId: "group-1",
+            category: "CHAT",
+            status: "UNKNOWN_HELD",
+            quotedUpperBoundUsd: "1.000000000001",
+            reservedUsd: "0.000000000000",
+            settledUsd: "0.000000000000",
+            unknownHeldUsd: "1.000000000001",
+            overageUsd: "0.000000000000",
+            costQuality: "UNKNOWN",
+            usageRecordId: null,
+            outcomeReason: "Provider outcome is unknown",
+            reservedAt: "2026-08-01T10:00:00.000Z",
+            terminalAt: "2026-08-01T10:01:00.000Z",
+          },
+        ],
+        pageInfo: {
+          hasMore: true,
+          nextCursor: "11111111-1111-4111-8111-111111111111",
+        },
+      },
+    });
+    vi.mocked(axiosInstance.post).mockResolvedValue({
+      data: { replayed: false },
+    });
+
+    const page = await aiAllowanceRepository.reconciliationQueue("project-1", {
+      limit: 50,
+      cursor: "cursor-1",
+      status: "UNKNOWN_HELD",
+    });
+    await aiAllowanceRepository.resolveAttempt(
+      "project-1",
+      page.items[0]!.modelAttemptId,
+      {
+        resolution: "HOLD_UNKNOWN",
+        reason: "Provider outcome remains unknown",
+      },
+      "resolve-key",
+    );
+    await aiAllowanceRepository.correct(
+      "project-1",
+      page.items[0]!.endUserId,
+      {
+        correctsEntryId: "55555555-5555-4555-8555-555555555555",
+        deltaAvailableUsd: "1.000000000001" as never,
+        expectedAccountVersion: "7",
+        expiresAt: "2099-08-02T10:00:00.000Z",
+        reason: "Correct an audited allowance entry",
+      },
+      "correction-key",
+    );
+
+    expect(axiosInstance.get).toHaveBeenCalledWith(
+      "/api/v1/admin/projects/project-1/ai-allowance/reconciliation",
+      {
+        params: {
+          limit: 50,
+          cursor: "cursor-1",
+          status: "UNKNOWN_HELD",
+        },
+      },
+    );
+    expect(axiosInstance.post).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/admin/projects/project-1/ai-allowance/attempts/44444444-4444-4444-8444-444444444444/resolve",
+      {
+        resolution: "HOLD_UNKNOWN",
+        reason: "Provider outcome remains unknown",
+      },
+      { headers: { "Idempotency-Key": "resolve-key" } },
+    );
+    expect(axiosInstance.post).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/admin/projects/project-1/end-users/22222222-2222-4222-8222-222222222222/ai-allowance/corrections",
+      expect.objectContaining({
+        deltaAvailableUsd: "1.000000000001",
+        expectedAccountVersion: "7",
+      }),
+      { headers: { "Idempotency-Key": "correction-key" } },
     );
   });
 

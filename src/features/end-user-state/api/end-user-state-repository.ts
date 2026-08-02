@@ -161,7 +161,10 @@ function parseCurrent(
   return s &&
     integer(s.version) &&
     integer(s.definitionVersion) &&
-    (s.state === "UNSET" || s.state === "EXPIRED" || s.state === "ACTIVE") &&
+    (s.state === "UNSET" ||
+      s.state === "SCHEDULED" ||
+      s.state === "EXPIRED" ||
+      s.state === "ACTIVE") &&
     iso(s.effectiveAt) &&
     (s.expiresAt === null || iso(s.expiresAt)) &&
     actor &&

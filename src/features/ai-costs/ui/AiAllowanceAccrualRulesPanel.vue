@@ -56,10 +56,19 @@ watch(
     generation += 1;
     rules.value = [];
     loadedProjectId.value = "";
+    loadingMore.value = false;
     dialog.value = false;
     if (read) void load();
   },
   { immediate: true },
+);
+watch(
+  () => props.canManage,
+  (canManage) => {
+    if (canManage) return;
+    dialog.value = false;
+    saving.value = false;
+  },
 );
 async function load() {
   const current = ++generation;
@@ -86,26 +95,44 @@ async function loadMore() {
   const cursor = pageInfo.value.nextCursor;
   if (!cursor || loadingMore.value || loadedProjectId.value !== props.projectId)
     return;
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
   loadingMore.value = true;
   try {
-    const page = await aiAllowanceAccrualRepository.listRules(props.projectId, {
-      limit: 50,
-      cursor,
-    });
-    if (loadedProjectId.value === props.projectId) {
+    const page = await aiAllowanceAccrualRepository.listRules(
+      requestProjectId,
+      {
+        limit: 50,
+        cursor,
+      },
+    );
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      loadedProjectId.value === requestProjectId
+    ) {
       rules.value = [...rules.value, ...page.items];
       pageInfo.value = page.pageInfo;
     }
   } catch (cause) {
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить остальные правила";
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      error.value =
+        cause instanceof Error
+          ? cause.message
+          : "Не удалось загрузить остальные правила";
   } finally {
-    loadingMore.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      loadingMore.value = false;
   }
 }
 function open(rule?: AiAllowanceAccrualRule) {
+  if (!props.canManage) return;
   if (rule && loadedProjectId.value !== props.projectId) return;
   const revision = rule?.revisions[0];
   key.value = rule?.key ?? "";
@@ -134,6 +161,7 @@ function open(rule?: AiAllowanceAccrualRule) {
   dialog.value = true;
 }
 async function save() {
+  if (!props.canManage) return fail("Операция больше недоступна.");
   const ruleKey = key.value.trim().toUpperCase();
   const rewardUsd = parseAllowanceUsd(reward.value.trim());
   const perEndUserDailyCapUsd = parseAllowanceUsd(userCap.value.trim());
@@ -181,10 +209,12 @@ async function save() {
       (!effectiveUntil || effectiveFrom >= effectiveUntil))
   )
     return fail("Заполните обязательные поля и причину.");
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
   saving.value = true;
   try {
     await aiAllowanceAccrualRepository.putRule(
-      props.projectId,
+      requestProjectId,
       ruleKey,
       {
         name: name.value.trim(),
@@ -204,13 +234,28 @@ async function save() {
       },
       idem.value,
     );
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      !props.canManage
+    )
+      return;
     dialog.value = false;
+    saving.value = false;
     await load();
   } catch (cause) {
-    formError.value =
-      cause instanceof Error ? cause.message : "Не удалось сохранить";
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      formError.value =
+        cause instanceof Error ? cause.message : "Не удалось сохранить";
   } finally {
-    saving.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      saving.value = false;
   }
 }
 function fail(value: string) {

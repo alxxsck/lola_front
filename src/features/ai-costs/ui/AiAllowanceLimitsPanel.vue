@@ -14,8 +14,8 @@ import AiAllowanceAccrualRulesPanel from "./AiAllowanceAccrualRulesPanel.vue";
 import AiAllowanceAccrualReceiptsPanel from "./AiAllowanceAccrualReceiptsPanel.vue";
 import AiAllowanceDirectGrantPanel from "./AiAllowanceDirectGrantPanel.vue";
 import {
+  AI_ALLOWANCE_CATEGORIES,
   parseAllowanceUsd,
-  type AiAllowanceCategory,
   type AiAllowanceEnforcementMode,
   type AiAllowancePeriodKind,
   type AiAllowanceProjectPolicyView,
@@ -46,6 +46,7 @@ const enforcement = ref<AiAllowanceEnforcementMode>("SOFT");
 const reason = ref("");
 const idempotencyKey = ref("");
 const hardConfirmed = ref(false);
+const showEndUserExactUsd = ref(false);
 const formError = ref("");
 const namedDialogOpen = ref(false);
 const cohortDialogOpen = ref(false);
@@ -64,17 +65,7 @@ const cohortPlanId = ref("");
 const cohortPriority = ref(100);
 const effectiveFrom = ref("");
 const effectiveUntil = ref("");
-const categories: readonly AiAllowanceCategory[] = [
-  "CHAT",
-  "VOICE",
-  "SPEECH",
-  "MEMORY",
-  "AI_REVIEW",
-  "AI_ANALYSIS",
-  "CMS_AGENT",
-  "CASE_INTELLIGENCE",
-  "PROJECT_OVERHEAD",
-];
+const categories = AI_ALLOWANCE_CATEGORIES;
 const categoryRules = ref(
   categories.map((category) => ({
     category,
@@ -110,6 +101,8 @@ watch(
     generation += 1;
     policy.value = null;
     loadedProjectId.value = "";
+    plansLoading.value = false;
+    revisionLoadingKey.value = "";
     dialogOpen.value = false;
     namedDialogOpen.value = false;
     cohortDialogOpen.value = false;
@@ -119,6 +112,16 @@ watch(
     }
   },
   { immediate: true },
+);
+watch(
+  () => props.canManage,
+  (canManage) => {
+    if (canManage) return;
+    dialogOpen.value = false;
+    namedDialogOpen.value = false;
+    cohortDialogOpen.value = false;
+    saving.value = false;
+  },
 );
 
 async function load(): Promise<void> {
@@ -146,14 +149,21 @@ async function loadMorePlans(): Promise<void> {
   const current = policy.value;
   const cursor = current?.plansPageInfo.nextCursor;
   if (!policyReady.value || !cursor || plansLoading.value) return;
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
   plansLoading.value = true;
   try {
-    const next = await aiAllowanceRepository.projectPolicy(props.projectId, {
+    const next = await aiAllowanceRepository.projectPolicy(requestProjectId, {
       planCursor: cursor,
       planLimit: 50,
       revisionLimit: 5,
     });
-    if (policyReady.value) {
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      loadedProjectId.value === requestProjectId &&
+      policy.value === current
+    ) {
       policy.value = {
         ...current,
         plans: [...current.plans, ...next.plans],
@@ -161,27 +171,44 @@ async function loadMorePlans(): Promise<void> {
       };
     }
   } catch (cause) {
-    error.value = message(cause, "Не удалось загрузить остальные планы");
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      error.value = message(cause, "Не удалось загрузить остальные планы");
   } finally {
-    plansLoading.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      plansLoading.value = false;
   }
 }
 async function loadMoreRevisions(
   plan: AiAllowanceProjectPolicyView["plans"][number],
 ): Promise<void> {
   const cursor = plan.revisionsPageInfo.nextCursor;
-  if (!policyReady.value || !cursor || revisionLoadingKey.value) return;
+  const current = policy.value;
+  if (!current || !policyReady.value || !cursor || revisionLoadingKey.value)
+    return;
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
   revisionLoadingKey.value = plan.key;
   try {
     const page = await aiAllowanceRepository.planRevisions(
-      props.projectId,
+      requestProjectId,
       plan.key,
       { limit: 25, cursor },
     );
-    if (policyReady.value && policy.value) {
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      loadedProjectId.value === requestProjectId &&
+      policy.value === current
+    ) {
       policy.value = {
-        ...policy.value,
-        plans: policy.value.plans.map((item) =>
+        ...current,
+        plans: current.plans.map((item) =>
           item.id === plan.id
             ? {
                 ...item,
@@ -193,13 +220,22 @@ async function loadMoreRevisions(
       };
     }
   } catch (cause) {
-    error.value = message(cause, "Не удалось загрузить историю ревизий");
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      error.value = message(cause, "Не удалось загрузить историю ревизий");
   } finally {
-    revisionLoadingKey.value = "";
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      revisionLoadingKey.value = "";
   }
 }
 
 function openEditor(): void {
+  if (!props.canManage) return;
   if (props.canRead && !policyReady.value) return;
   const revision = latestDefaultRevision.value;
   amount.value = revision?.recurringAmountUsd ?? "";
@@ -209,6 +245,8 @@ function openEditor(): void {
   reason.value = "";
   idempotencyKey.value = newIdempotencyKey();
   hardConfirmed.value = false;
+  showEndUserExactUsd.value =
+    policy.value?.policy?.showEndUserExactUsd ?? false;
   formError.value = "";
   dialogOpen.value = true;
   warningRu.value = policy.value?.policy?.warningContent.ru ?? "";
@@ -222,6 +260,7 @@ function openEditor(): void {
 function openNamedEditor(
   plan?: AiAllowanceProjectPolicyView["plans"][number],
 ): void {
+  if (!props.canManage) return;
   if (props.canRead && !policyReady.value) return;
   const revision = plan?.revisions[0];
   planKey.value = plan?.key ?? "";
@@ -252,7 +291,7 @@ function openNamedEditor(
   namedDialogOpen.value = true;
 }
 function openCohortEditor(): void {
-  if (!policyReady.value) return;
+  if (!props.canManage || !policyReady.value) return;
   cohortScope.value = "SEGMENT";
   cohortId.value = "";
   cohortPlanId.value =
@@ -267,6 +306,7 @@ function openCohortEditor(): void {
 }
 
 async function save(): Promise<void> {
+  if (!props.canManage) return fail("Операция больше недоступна.");
   const exactAmount = parseAllowanceUsd(amount.value.trim());
   if (!exactAmount || compareDecimalStrings(exactAmount, "0") < 0)
     return fail(
@@ -282,16 +322,19 @@ async function save(): Promise<void> {
     return fail("HARD заблокирован runtime gate проекта.");
   if (enforcement.value === "HARD" && !hardConfirmed.value)
     return fail("Подтвердите риски HARD enforcement.");
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
   saving.value = true;
   formError.value = "";
   try {
     await aiAllowanceRepository.putDefaultPlan(
-      props.projectId,
+      requestProjectId,
       {
         amountUsd: exactAmount,
         period: period.value,
         timezone: timezone.value.trim(),
         enforcementMode: enforcement.value,
+        showEndUserExactUsd: showEndUserExactUsd.value,
         reason: reason.value.trim(),
         ...(compactContent(
           warningMessage.value,
@@ -322,16 +365,32 @@ async function save(): Promise<void> {
       },
       idempotencyKey.value.trim(),
     );
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      !props.canManage
+    )
+      return;
     dialogOpen.value = false;
+    saving.value = false;
     await load();
   } catch (cause) {
-    formError.value = message(cause, "Не удалось сохранить политику лимитов");
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      formError.value = message(cause, "Не удалось сохранить политику лимитов");
   } finally {
-    saving.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      saving.value = false;
   }
 }
 
 async function saveNamed(): Promise<void> {
+  if (!props.canManage) return fail("Операция больше недоступна.");
   const key = planKey.value.trim().toUpperCase();
   const exact = parseAllowanceUsd(amount.value.trim());
   const cap = dailyCap.value.trim()
@@ -360,10 +419,12 @@ async function saveNamed(): Promise<void> {
   }));
   if (rules.some((rule) => "capUsd" in rule && !rule.capUsd))
     return fail("Проверьте caps категорий.");
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
   saving.value = true;
   try {
     await aiAllowanceRepository.putPlan(
-      props.projectId,
+      requestProjectId,
       key,
       {
         name: planName.value.trim(),
@@ -375,22 +436,48 @@ async function saveNamed(): Promise<void> {
       },
       idempotencyKey.value.trim(),
     );
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      !props.canManage
+    )
+      return;
     namedDialogOpen.value = false;
+    saving.value = false;
     await load();
   } catch (cause) {
-    formError.value = message(cause, "Не удалось сохранить план");
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      formError.value = message(cause, "Не удалось сохранить план");
   } finally {
-    saving.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      saving.value = false;
   }
 }
 async function saveCohort(): Promise<void> {
+  if (!props.canManage) return fail("Операция больше недоступна.");
   const id = cohortId.value.trim().toLowerCase();
   const from = localIso(effectiveFrom.value);
   const until = effectiveUntil.value
     ? localIso(effectiveUntil.value)
     : undefined;
-  if (!/^[a-z0-9][a-z0-9._-]{0,99}$/.test(id))
-    return fail("Некорректный ID когорты.");
+  const validCohortId =
+    cohortScope.value === "SEGMENT"
+      ? /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          id,
+        )
+      : /^[a-z0-9][a-z0-9._-]{0,99}$/.test(id);
+  if (!validCohortId)
+    return fail(
+      cohortScope.value === "SEGMENT"
+        ? "Для SEGMENT укажите UUID опубликованного сегмента."
+        : "Некорректный ID уровня.",
+    );
   if (
     !cohortPlanId.value ||
     !Number.isSafeInteger(cohortPriority.value) ||
@@ -401,10 +488,12 @@ async function saveCohort(): Promise<void> {
   )
     return fail("Проверьте план, приоритет и период назначения.");
   if (!validCommon()) return;
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
   saving.value = true;
   try {
     await aiAllowanceRepository.putCohortAssignment(
-      props.projectId,
+      requestProjectId,
       cohortScope.value,
       id,
       {
@@ -416,12 +505,27 @@ async function saveCohort(): Promise<void> {
       },
       idempotencyKey.value.trim(),
     );
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      !props.canManage
+    )
+      return;
     cohortDialogOpen.value = false;
+    saving.value = false;
     await load();
   } catch (cause) {
-    formError.value = message(cause, "Не удалось назначить план когорте");
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      formError.value = message(cause, "Не удалось назначить план когорте");
   } finally {
-    saving.value = false;
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    )
+      saving.value = false;
   }
 }
 function validCommon(): boolean {
@@ -506,7 +610,7 @@ function message(cause: unknown, fallback: string): string {
       </div>
     </div>
     <AiAllowanceDirectGrantPanel v-if="canGrant" :project-id="projectId" />
-    <template v-else>
+    <template>
       <div v-if="loading && !policy" class="allowance-loading">
         <Skeleton height="150px" /><Skeleton height="150px" />
       </div>
@@ -687,7 +791,9 @@ function message(cause: unknown, fallback: string): string {
             :loading="plansLoading"
             @click="loadMorePlans"
           />
-          <p v-else class="empty-state">Планы ещё не настроены.</p>
+          <p v-if="!policy.plans.length" class="empty-state">
+            Планы ещё не настроены.
+          </p>
         </div>
       </template>
     </template>
@@ -800,6 +906,18 @@ function message(cause: unknown, fallback: string): string {
             : "нет runtime approval"
         }}.</Message
       >
+      <label class="visibility-toggle" for="show-end-user-exact-usd">
+        <input
+          id="show-end-user-exact-usd"
+          v-model="showEndUserExactUsd"
+          type="checkbox"
+        />
+        Показывать End User точную оставшуюся квоту в USD
+        <small>
+          Значение станет видимым только при включённом deployment gate.
+          Проектная настройка сама по себе не раскрывает данные.
+        </small>
+      </label>
       <label
         >Причина<textarea v-model="reason" rows="3" maxlength="500" />
       </label>
@@ -902,9 +1020,8 @@ function message(cause: unknown, fallback: string): string {
   >
     <form class="allowance-form" @submit.prevent="saveCohort">
       <Message severity="info" :closable="false"
-        >Когорты определяются внутренними тегами пользователя:
-        <code>segment:&lt;id&gt;</code> или <code>level:&lt;id&gt;</code>.
-        Больший priority побеждает.</Message
+        >SEGMENT ссылается на UUID опубликованного сегмента, LEVEL — на
+        стабильный внутренний ID уровня. Больший priority побеждает.</Message
       >
       <div class="form-row">
         <label
@@ -916,12 +1033,16 @@ function message(cause: unknown, fallback: string): string {
           >ID когорты<input
             v-model="cohortId"
             maxlength="100"
-            :placeholder="cohortScope === 'SEGMENT' ? 'vip' : 'gold'"
-          /><small
-            >Тег: {{ cohortScope.toLowerCase() }}:{{
-              cohortId || "&lt;id&gt;"
-            }}</small
-          ></label
+            :placeholder="
+              cohortScope === 'SEGMENT'
+                ? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+                : 'gold'
+            "
+          /><small>{{
+            cohortScope === "SEGMENT"
+              ? "UUID опубликованного Segment"
+              : "Стабильный ID уровня"
+          }}</small></label
         >
       </div>
       <label
@@ -1153,6 +1274,19 @@ function message(cause: unknown, fallback: string): string {
 }
 .hard-confirm input {
   width: auto;
+}
+.visibility-toggle {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+}
+.visibility-toggle input {
+  width: auto;
+}
+.visibility-toggle small {
+  grid-column: 2;
 }
 .field-error {
   color: var(--status-danger-text) !important;
