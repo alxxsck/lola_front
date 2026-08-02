@@ -33,7 +33,11 @@ export interface EventLogResponseDto {
   message?: string | null;
   occurredAt: string;
   payload: EventLogResponseDtoPayload;
-  /** @nullable */
+  /**
+   * Deprecated compatibility field. Always null; use Scenario APIs for outcomes.
+   * @deprecated
+   * @nullable
+   */
   processingResult?: EventLogResponseDtoProcessingResult;
   projectId: string;
   receivedAt: string;

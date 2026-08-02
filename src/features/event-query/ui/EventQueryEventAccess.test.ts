@@ -72,6 +72,7 @@ const state = {
     reasons: [],
   },
   diagnostics: [],
+  safeFieldRecommendation: { fields: [], skipped: [] },
 };
 
 function mountAccess() {
@@ -129,6 +130,7 @@ describe("EventQueryEventAccess", () => {
     await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
     await flushPromises();
 
+    expect(wrapper.text()).not.toContain("добавлены в форму");
     expect(eventQueryRepository.applyItem).toHaveBeenCalledWith(
       "project-1",
       "definition-1",
@@ -183,6 +185,61 @@ describe("EventQueryEventAccess", () => {
     await flushPromises();
 
     expect(eventQueryRepository.applyItem).not.toHaveBeenCalled();
+  });
+
+  it("prepares typed aggregate fields locally and applies them only after confirmation", async () => {
+    vi.mocked(eventQueryRepository.getItem).mockResolvedValueOnce({
+      ...structuredClone(state),
+      safeFieldRecommendation: {
+        fields: [
+          {
+            path: "amount",
+            semanticType: "MONEY",
+            operations: ["SUM"],
+            sensitivity: "PRIVATE_DERIVED",
+            currencyPath: "currency",
+          },
+          {
+            path: "currency",
+            semanticType: "CURRENCY",
+            operations: ["GROUP_BY"],
+            sensitivity: "PRIVATE_DERIVED",
+          },
+        ],
+        skipped: [],
+      },
+    });
+    const wrapper = mountAccess();
+    await flushPromises();
+
+    await wrapper
+      .get('button[data-test="prepare-recommended-safe-fields"]')
+      .trigger("click");
+    expect(eventQueryRepository.applyItem).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("добавлены в форму");
+
+    await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
+    await flushPromises();
+
+    expect(eventQueryRepository.applyItem).toHaveBeenCalledWith(
+      "project-1",
+      "definition-1",
+      expect.objectContaining({
+        safeFields: [
+          expect.objectContaining({
+            path: "amount",
+            semanticType: "MONEY",
+            operations: ["SUM"],
+            currencyPath: "currency",
+          }),
+          expect.objectContaining({
+            path: "currency",
+            semanticType: "CURRENCY",
+            operations: ["GROUP_BY"],
+          }),
+        ],
+      }),
+    );
   });
 
   it("keeps the Event form and retries with the replacement token after 409", async () => {

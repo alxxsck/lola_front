@@ -95,6 +95,7 @@ describe("AIAnalysisDetailPanel", () => {
               costStatus: "UNKNOWN",
               costStatuses: [],
               limitationCodes: [],
+              limitations: [],
               providerResponseIds: [],
               receipts: [],
               provider: "xai",
@@ -152,6 +153,12 @@ describe("AIAnalysisDetailPanel", () => {
         projectId: "project-1",
         detail: {
           ...detail,
+          schedule: {
+            ...detail.schedule,
+            state: "PAUSED" as const,
+            failureCode: "SCHEDULE_FAILED",
+            failureMessage: "Отложенный запуск не удалось запустить.",
+          },
           analysis: {
             ...detail.analysis,
             createdByCmsUserId: null,
@@ -175,7 +182,15 @@ describe("AIAnalysisDetailPanel", () => {
               capabilitySetRevision: "b".repeat(64),
               costStatus: "UNKNOWN",
               costStatuses: [],
-              limitationCodes: [],
+              limitationCodes: ["RUN_PARTIAL"],
+              limitations: [
+                {
+                  code: "RUN_PARTIAL",
+                  message: "Часть данных запуска недоступна.",
+                },
+              ],
+              errorCode: "RUN_FAILED",
+              errorMessage: "Запуск анализа не удалось завершить.",
               providerResponseIds: [],
               receipts: [
                 {
@@ -195,7 +210,15 @@ describe("AIAnalysisDetailPanel", () => {
                   complete: false,
                   truncated: true,
                   limitationCodes: ["ROW_LIMIT"],
+                  limitations: [
+                    {
+                      code: "ROW_LIMIT",
+                      message: "Достигнут лимит строк.",
+                    },
+                  ],
                   rejectionCode: "POLICY_DENIED",
+                  rejectionMessage:
+                    "Политика доступа не разрешает этот запрос.",
                   createdAt: "2026-07-31T07:00:00.000Z",
                 },
               ],
@@ -223,9 +246,16 @@ describe("AIAnalysisDetailPanel", () => {
 
     expect(wrapper.text()).toContain("catalog-1");
     expect(wrapper.text()).toContain("policy-1");
+    expect(wrapper.text()).toContain("Отложенный запуск не удалось запустить.");
     expect(wrapper.text()).toContain("Неполный · усечён");
     expect(wrapper.text()).toContain("ROW_LIMIT");
     expect(wrapper.text()).toContain("POLICY_DENIED");
+    expect(wrapper.text()).toContain("Часть данных запуска недоступна.");
+    expect(wrapper.text()).toContain("Запуск анализа не удалось завершить.");
+    expect(wrapper.text()).toContain("Достигнут лимит строк.");
+    expect(wrapper.text()).toContain(
+      "Политика доступа не разрешает этот запрос.",
+    );
     expect(wrapper.text()).toContain("Автор неизвестен");
     expect(wrapper.text()).toContain("Provenance сохранён частично");
     expect(wrapper.text()).not.toContain("Отменить");

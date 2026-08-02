@@ -7,6 +7,8 @@
  */
 
 /**
+ * Deprecated compatibility field. Always null; use Scenario APIs for outcomes.
+ * @deprecated
  * @nullable
  */
 export type EventLogResponseDtoProcessingResult = {

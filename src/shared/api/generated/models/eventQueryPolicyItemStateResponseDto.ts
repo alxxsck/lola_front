@@ -10,6 +10,7 @@ import type { EventQueryPolicyDiagnosticDto } from "./eventQueryPolicyDiagnostic
 import type { EventQueryPolicyItemEffectiveResponseDto } from "./eventQueryPolicyItemEffectiveResponseDto";
 import type { EventQueryPolicyItemStateResponseDtoLifecycle } from "./eventQueryPolicyItemStateResponseDtoLifecycle";
 import type { EventQueryPolicyLifecycleRestrictionsDto } from "./eventQueryPolicyLifecycleRestrictionsDto";
+import type { EventQueryPolicySafeFieldRecommendationDto } from "./eventQueryPolicySafeFieldRecommendationDto";
 
 export interface EventQueryPolicyItemStateResponseDto {
   /** Opaque optimistic-concurrency token; no internal revision numbers are exposed. */
@@ -21,4 +22,5 @@ export interface EventQueryPolicyItemStateResponseDto {
   eventCode: string;
   lifecycle: EventQueryPolicyItemStateResponseDtoLifecycle;
   lifecycleRestrictions: EventQueryPolicyLifecycleRestrictionsDto;
+  safeFieldRecommendation: EventQueryPolicySafeFieldRecommendationDto;
 }

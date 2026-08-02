@@ -8349,48 +8349,8 @@
         ],
         "type": "object"
       },
-      "CmsAgentImmediateAnalysisResponseDto": {
-        "properties": {
-          "analysisId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "runId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "QUEUED",
-              "RUNNING",
-              "NEEDS_CLARIFICATION",
-              "SUCCEEDED",
-              "FAILED",
-              "CANCELLED",
-              "EXPIRED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "analysisId",
-          "runId",
-          "status"
-        ],
-        "type": "object"
-      },
       "CmsAgentImmediateExecutionResponseDto": {
         "properties": {
-          "analysis": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CmsAgentImmediateAnalysisResponseDto"
-              }
-            ],
-            "description": "Deprecated V1 compatibility alias for Project Analysis clients.",
-            "nullable": true,
-            "type": "object"
-          },
           "interpretation": {
             "$ref": "#/components/schemas/CmsAgentImmediateInterpretationResponseDto"
           },
@@ -15222,6 +15182,8 @@
           },
           "processingResult": {
             "additionalProperties": true,
+            "deprecated": true,
+            "description": "Deprecated compatibility field. Always null; use Scenario APIs for outcomes.",
             "nullable": true,
             "type": "object"
           },
@@ -15531,6 +15493,30 @@
         ],
         "type": "object"
       },
+      "EventQueryPolicyFieldRecommendationSkipDto": {
+        "properties": {
+          "path": {
+            "example": "access_token",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "CURRENCY_AMBIGUOUS",
+              "NOT_IN_ALL_REVISIONS",
+              "SCALE_UNSUPPORTED",
+              "SEMANTICS_NOT_AGGREGATABLE",
+              "SENSITIVE_OR_FORBIDDEN",
+              "TYPE_UNSTABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "reason"
+        ],
+        "type": "object"
+      },
       "EventQueryPolicyItemConfigurationDto": {
         "properties": {
           "allowedModes": {
@@ -15743,6 +15729,9 @@
           },
           "lifecycleRestrictions": {
             "$ref": "#/components/schemas/EventQueryPolicyLifecycleRestrictionsDto"
+          },
+          "safeFieldRecommendation": {
+            "$ref": "#/components/schemas/EventQueryPolicySafeFieldRecommendationDto"
           }
         },
         "required": [
@@ -15753,6 +15742,7 @@
           "effective",
           "lifecycleRestrictions",
           "diagnostics",
+          "safeFieldRecommendation",
           "concurrencyToken"
         ],
         "type": "object"
@@ -15828,6 +15818,27 @@
           "documentHash",
           "compilerVersion",
           "publishedAt"
+        ],
+        "type": "object"
+      },
+      "EventQueryPolicySafeFieldRecommendationDto": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyFieldDto"
+            },
+            "type": "array"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/EventQueryPolicyFieldRecommendationSkipDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "fields",
+          "skipped"
         ],
         "type": "object"
       },
@@ -21665,6 +21676,10 @@
             "nullable": true,
             "type": "string"
           },
+          "errorMessage": {
+            "nullable": true,
+            "type": "string"
+          },
           "initiatedBy": {
             "enum": [
               "CMS_USER",
@@ -21681,6 +21696,12 @@
           "limitationCodes": {
             "items": {
               "type": "string"
+            },
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisErrorPresentationDto"
             },
             "type": "array"
           },
@@ -21792,9 +21813,25 @@
           "costStatuses",
           "providerResponseIds",
           "limitationCodes",
+          "limitations",
           "createdAt",
           "updatedAt",
           "receipts"
+        ],
+        "type": "object"
+      },
+      "ProjectAIAnalysisErrorPresentationDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
         ],
         "type": "object"
       },
@@ -22011,6 +22048,10 @@
             "nullable": true,
             "type": "string"
           },
+          "errorMessage": {
+            "nullable": true,
+            "type": "string"
+          },
           "model": {
             "type": "string"
           },
@@ -22082,6 +22123,12 @@
             },
             "type": "array"
           },
+          "limitations": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisErrorPresentationDto"
+            },
+            "type": "array"
+          },
           "matchedEndUserCount": {
             "pattern": "^\\d+$",
             "type": "string"
@@ -22112,6 +22159,10 @@
             "type": "string"
           },
           "rejectionCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "rejectionMessage": {
             "nullable": true,
             "type": "string"
           },
@@ -22158,6 +22209,7 @@
           "complete",
           "truncated",
           "limitationCodes",
+          "limitations",
           "createdAt"
         ],
         "type": "object"
@@ -22257,6 +22309,14 @@
             },
             "type": "array"
           },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "errorMessage": {
+            "nullable": true,
+            "type": "string"
+          },
           "eventCodes": {
             "items": {
               "type": "string"
@@ -22269,6 +22329,12 @@
           "limitationCodes": {
             "items": {
               "type": "string"
+            },
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAIAnalysisErrorPresentationDto"
             },
             "type": "array"
           },
@@ -22318,6 +22384,7 @@
           "status",
           "version",
           "limitationCodes",
+          "limitations",
           "hasLimitations",
           "complete",
           "eventCodes"
@@ -22367,6 +22434,10 @@
             "type": "string"
           },
           "failureCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "failureMessage": {
             "nullable": true,
             "type": "string"
           },

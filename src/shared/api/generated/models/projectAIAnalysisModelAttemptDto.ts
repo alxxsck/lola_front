@@ -12,6 +12,8 @@ export interface ProjectAIAnalysisModelAttemptDto {
   completedAt?: string | null;
   /** @nullable */
   errorCode?: string | null;
+  /** @nullable */
+  errorMessage?: string | null;
   model: string;
   operation: string;
   ordinal: number;

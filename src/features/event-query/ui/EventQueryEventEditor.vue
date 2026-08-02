@@ -184,7 +184,8 @@ function schemaType(path: string) {
       </div>
 
       <div v-if="!modelValue.safeFields.length" class="empty-fields">
-        Поля payload не передаются. Для SUMMARY этого достаточно.
+        Поля payload не передаются. AI сможет считать только события и
+        уникальных пользователей, но не суммы и другие значения payload.
       </div>
       <div
         v-for="(field, index) in modelValue.safeFields"

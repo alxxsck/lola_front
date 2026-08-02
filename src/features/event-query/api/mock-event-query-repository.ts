@@ -110,6 +110,7 @@ function itemState(
       readOnly: false,
       reasons: [],
     },
+    safeFieldRecommendation: { fields: [], skipped: [] },
   };
 }
 

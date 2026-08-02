@@ -134,3 +134,21 @@ export function eventQueryPolicyItemApply(
     maxVerificationLookbackHours: item.maxVerificationLookbackHours,
   };
 }
+
+export function mergeRecommendedSafeFields(
+  item: EventQueryPolicyItemDto,
+  recommendations: readonly EventQueryPolicyFieldDto[],
+): EventQueryPolicyItemDto {
+  const existingPaths = new Set(item.safeFields.map((field) => field.path));
+  const additions = recommendations
+    .filter((field) => !existingPaths.has(field.path))
+    .map((field) => ({ ...field, operations: [...field.operations] }));
+  if (additions.length === 0) return item;
+  return {
+    ...item,
+    allowedModes: item.allowedModes.includes("AGGREGATE")
+      ? item.allowedModes
+      : [...item.allowedModes, "AGGREGATE"],
+    safeFields: [...item.safeFields, ...additions],
+  };
+}
