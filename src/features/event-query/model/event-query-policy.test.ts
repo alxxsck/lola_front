@@ -75,6 +75,22 @@ describe("event query policy presentation", () => {
     expect(mergeRecommendedSafeFields(merged, recommendations)).toBe(merged);
   });
 
+  it("enables aggregate event counting even when an Event has no payload fields", () => {
+    const item = {
+      stableCode: "button.clicked",
+      descriptionForAI: "Клик по кнопке",
+      allowedModes: ["SUMMARY" as const],
+      maxInteractiveLookbackHours: 168,
+      maxVerificationLookbackHours: 720,
+      safeFields: [],
+    };
+
+    const merged = mergeRecommendedSafeFields(item, []);
+
+    expect(merged.allowedModes).toEqual(["SUMMARY", "AGGREGATE"]);
+    expect(merged.safeFields).toEqual([]);
+  });
+
   it("parses server-owned per-Event configuration and builds an atomic apply command", () => {
     const item = eventQueryPolicyItemFromConfiguration("deposit.completed", {
       stableCode: "deposit.completed",

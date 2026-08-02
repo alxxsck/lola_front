@@ -215,6 +215,8 @@ function schemaType(path: string) {
               'DECIMAL',
               'MONEY',
               'CURRENCY',
+              'DATETIME',
+              'BUSINESS_TIME',
             ]"
             :key="value"
             :value="value"
@@ -246,6 +248,7 @@ function schemaType(path: string) {
           <label
             v-for="operation in [
               'PROJECT',
+              'FILTER',
               'GROUP_BY',
               'SUM',
               'MIN',

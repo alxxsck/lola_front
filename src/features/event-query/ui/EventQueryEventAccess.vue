@@ -72,6 +72,14 @@ const recommendedSafeFields = computed(() => {
     (field) => !existing.has(field.path),
   );
 });
+const needsAnalysisPreparation = computed(() => {
+  const current = item.value;
+  return (
+    current !== null &&
+    (!current.allowedModes.includes("AGGREGATE") ||
+      recommendedSafeFields.value.length > 0)
+  );
+});
 
 function isCurrent(
   requestGeneration: number,
@@ -141,13 +149,13 @@ async function load() {
 }
 
 function prepareRecommendedSafeFields() {
-  if (!item.value || recommendedSafeFields.value.length === 0) return;
+  if (!item.value || !needsAnalysisPreparation.value) return;
   item.value = mergeRecommendedSafeFields(
     item.value,
     recommendedSafeFields.value,
   );
   recommendationNotice.value =
-    "Типизированные поля добавлены в форму. Проверьте их и нажмите «Применить настройки».";
+    "AI-анализ подготовлен в форме. Проверьте поля и нажмите «Применить настройки».";
 }
 
 async function apply() {
@@ -318,19 +326,27 @@ watch(
           </p>
         </header>
         <Message
-          v-if="recommendedSafeFields.length"
+          v-if="needsAnalysisPreparation"
           severity="info"
           :closable="false"
         >
           <div class="recommendation-message">
             <span>
-              Lola сейчас видит только факт события. Сервер нашёл безопасные
-              типизированные поля для агрегатов:
-              {{ recommendedSafeFields.map((field) => field.path).join(", ") }}.
+              <template v-if="recommendedSafeFields.length">
+                Сервер нашёл типизированные поля, по которым AI сможет
+                фильтровать, группировать и считать метрики:
+                {{
+                  recommendedSafeFields.map((field) => field.path).join(", ")
+                }}.
+              </template>
+              <template v-else>
+                Разрешите AI считать количество событий и уникальных
+                пользователей без доступа к полям payload.
+              </template>
             </span>
             <Button
               data-test="prepare-recommended-safe-fields"
-              label="Подготовить поля"
+              label="Подготовить AI-анализ"
               size="small"
               :disabled="!canManage || archived || applying"
               @click="prepareRecommendedSafeFields"

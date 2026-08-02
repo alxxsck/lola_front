@@ -190,6 +190,27 @@ describe("EventQueryEventAccess", () => {
     expect(eventQueryRepository.applyItem).not.toHaveBeenCalled();
   });
 
+  it("prepares EVENT_COUNT analysis when an Event has no recommended fields", async () => {
+    const wrapper = mountAccess();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("считать количество событий");
+    await wrapper
+      .get('button[data-test="prepare-recommended-safe-fields"]')
+      .trigger("click");
+    await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
+    await flushPromises();
+
+    expect(eventQueryRepository.applyItem).toHaveBeenCalledWith(
+      "project-1",
+      "definition-1",
+      expect.objectContaining({
+        allowedModes: ["SUMMARY", "AGGREGATE"],
+        safeFields: [],
+      }),
+    );
+  });
+
   it("prepares typed aggregate fields locally and applies them only after confirmation", async () => {
     vi.mocked(eventQueryRepository.getItem).mockResolvedValueOnce({
       ...structuredClone(state),
@@ -219,7 +240,7 @@ describe("EventQueryEventAccess", () => {
       .get('button[data-test="prepare-recommended-safe-fields"]')
       .trigger("click");
     expect(eventQueryRepository.applyItem).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain("добавлены в форму");
+    expect(wrapper.text()).toContain("AI-анализ подготовлен в форме");
 
     await wrapper.get('button[data-test="apply-event-query"]').trigger("click");
     await flushPromises();

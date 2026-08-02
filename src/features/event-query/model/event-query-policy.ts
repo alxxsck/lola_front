@@ -54,13 +54,23 @@ const semanticTypes = new Set([
   "DECIMAL",
   "MONEY",
   "CURRENCY",
+  "DATETIME",
+  "BUSINESS_TIME",
 ]);
 const sensitivities = new Set([
   "PUBLIC_TO_END_USER",
   "PRIVATE_DERIVED",
   "FORBIDDEN",
 ]);
-const operations = new Set(["PROJECT", "GROUP_BY", "SUM", "MIN", "MAX", "AVG"]);
+const operations = new Set([
+  "PROJECT",
+  "FILTER",
+  "GROUP_BY",
+  "SUM",
+  "MIN",
+  "MAX",
+  "AVG",
+]);
 
 function policyField(value: unknown): EventQueryPolicyFieldDto | null {
   const field = record(value);
@@ -143,10 +153,11 @@ export function mergeRecommendedSafeFields(
   const additions = recommendations
     .filter((field) => !existingPaths.has(field.path))
     .map((field) => ({ ...field, operations: [...field.operations] }));
-  if (additions.length === 0) return item;
+  const aggregateEnabled = item.allowedModes.includes("AGGREGATE");
+  if (additions.length === 0 && aggregateEnabled) return item;
   return {
     ...item,
-    allowedModes: item.allowedModes.includes("AGGREGATE")
+    allowedModes: aggregateEnabled
       ? item.allowedModes
       : [...item.allowedModes, "AGGREGATE"],
     safeFields: [...item.safeFields, ...additions],
