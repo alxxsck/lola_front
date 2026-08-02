@@ -3,6 +3,7 @@ import type { DecimalString } from "@/shared/lib/decimal-money";
 export type AiAllowanceEnforcementMode =
   "DISABLED" | "SHADOW" | "SOFT" | "HARD";
 export type AiAllowancePeriodKind = "DAY" | "MONTH";
+export type AiAllowanceLowThresholdMode = "PERCENT" | "ABSOLUTE_USD";
 export const AI_ALLOWANCE_CATEGORIES = [
   "CHAT",
   "VOICE",
@@ -29,6 +30,8 @@ export interface AiAllowancePolicy {
   enforcementMode: AiAllowanceEnforcementMode;
   timezone: string;
   warningContent: AiAllowanceLocalizedContent;
+  lowThresholdMode: AiAllowanceLowThresholdMode;
+  lowThresholdValue: DecimalString;
   exhaustedContent: AiAllowanceLocalizedContent;
   showEndUserExactUsd: boolean;
   version: string;
@@ -208,6 +211,8 @@ export interface PutDefaultAllowancePlanInput {
   enforcementMode: AiAllowanceEnforcementMode;
   reason: string;
   warningContent?: AiAllowanceLocalizedContent;
+  lowThresholdMode: AiAllowanceLowThresholdMode;
+  lowThresholdValue: DecimalString;
   exhaustedContent?: AiAllowanceLocalizedContent;
   showEndUserExactUsd: boolean;
 }

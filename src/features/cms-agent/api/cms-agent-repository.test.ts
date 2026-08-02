@@ -30,10 +30,11 @@ describe("cmsAgentRepository", () => {
     generated.submit.mockResolvedValue({ requestId: "request-1" });
     generated.execute.mockResolvedValue({
       interpretation: { outcome: "PLANNED" },
-      analysis: {
-        analysisId: "analysis-1",
-        runId: "run-1",
-        status: "QUEUED",
+      result: {
+        domainId: "analysis-1",
+        domainKind: "AI_ANALYSIS",
+        relation: "CREATED",
+        result: { runId: "run-1", status: "QUEUED" },
       },
     });
 
@@ -53,7 +54,7 @@ describe("cmsAgentRepository", () => {
       cmsAgentRepository.execute("project-1", "request-1"),
     ).resolves.toMatchObject({
       interpretation: { outcome: "PLANNED" },
-      analysis: { analysisId: "analysis-1" },
+      result: { domainId: "analysis-1", domainKind: "AI_ANALYSIS" },
     });
 
     expect(generated.estimate).toHaveBeenCalledWith("project-1", {

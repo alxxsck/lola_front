@@ -71,6 +71,10 @@ const state = {
     readOnly: false,
     reasons: [],
   },
+  safeFieldRecommendation: {
+    fields: [],
+    skipped: [],
+  },
   diagnostics: [],
 };
 

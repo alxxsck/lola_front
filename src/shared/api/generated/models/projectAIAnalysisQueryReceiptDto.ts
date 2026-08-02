@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectAIAnalysisErrorPresentationDto } from "./projectAIAnalysisErrorPresentationDto";
 import type { ProjectAIAnalysisQueryReceiptDtoStatus } from "./projectAIAnalysisQueryReceiptDtoStatus";
 
 export interface ProjectAIAnalysisQueryReceiptDto {
@@ -15,6 +16,7 @@ export interface ProjectAIAnalysisQueryReceiptDto {
   groups: number;
   id: string;
   limitationCodes: string[];
+  limitations: ProjectAIAnalysisErrorPresentationDto[];
   /** @pattern ^\d+$ */
   matchedEndUserCount: string;
   matchedEndUserCountExact: boolean;
@@ -29,6 +31,8 @@ export interface ProjectAIAnalysisQueryReceiptDto {
   redactedAt?: string | null;
   /** @nullable */
   rejectionCode?: string | null;
+  /** @nullable */
+  rejectionMessage?: string | null;
   resultRows: number;
   runId: string;
   serializedBytes: number;

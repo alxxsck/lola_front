@@ -16,6 +16,8 @@ export interface ProjectAIAnalysisScheduleSummaryDto {
   /** @nullable */
   failureCode?: string | null;
   /** @nullable */
+  failureMessage?: string | null;
+  /** @nullable */
   firedAt?: string | null;
   /** @nullable */
   firedRunId?: string | null;

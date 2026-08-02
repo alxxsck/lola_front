@@ -69,10 +69,14 @@ const mockRepository: CmsAgentRepository = {
   async execute() {
     return {
       interpretation: { outcome: "PLANNED", replayed: false },
-      analysis: {
-        analysisId: crypto.randomUUID(),
-        runId: crypto.randomUUID(),
-        status: "QUEUED",
+      result: {
+        domainId: crypto.randomUUID(),
+        domainKind: "AI_ANALYSIS",
+        relation: "CREATED",
+        result: {
+          runId: crypto.randomUUID(),
+          status: "QUEUED",
+        },
       },
     };
   },

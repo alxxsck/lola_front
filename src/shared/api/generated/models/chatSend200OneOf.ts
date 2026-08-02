@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ChatSend200OneOfAiSuspension } from "./chatSend200OneOfAiSuspension";
+import type { ChatSend200OneOfAllowanceNotice } from "./chatSend200OneOfAllowanceNotice";
 import type { ChatSend200OneOfCommandsItem } from "./chatSend200OneOfCommandsItem";
 import type { ChatSend200OneOfResponseDisposition } from "./chatSend200OneOfResponseDisposition";
 import type { ChatSend200OneOfSourcesItem } from "./chatSend200OneOfSourcesItem";
@@ -13,6 +14,8 @@ import type { ChatSend200OneOfSourcesItem } from "./chatSend200OneOfSourcesItem"
 export type ChatSend200OneOf = {
   /** @nullable */
   aiSuspension: ChatSend200OneOfAiSuspension;
+  /** @nullable */
+  allowanceNotice: ChatSend200OneOfAllowanceNotice;
   /** */
   assistantMessageId: string;
   commands: ChatSend200OneOfCommandsItem[];

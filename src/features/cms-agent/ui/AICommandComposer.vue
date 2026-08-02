@@ -110,10 +110,11 @@ function formatUsdTicks(value: string): string {
 
 function applyExecution(result: CmsAgentImmediateExecutionResponseDto): void {
   outcomeCode.value = result.interpretation.code ?? "";
-  if (result.analysis) {
+  const domainResult = result.result;
+  if (domainResult?.domainKind === "AI_ANALYSIS") {
     phase.value = "SUCCEEDED";
-    createdAnalysisId.value = result.analysis.analysisId;
-    emit("analysis-created", result.analysis.analysisId);
+    createdAnalysisId.value = domainResult.domainId;
+    emit("analysis-created", domainResult.domainId);
     return;
   }
   phase.value = phaseByOutcome[result.interpretation.outcome];

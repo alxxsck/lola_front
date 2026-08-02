@@ -1,4 +1,5 @@
 import { axiosInstance } from "@/shared/api/http/axios-instance";
+import { compareDecimalStrings } from "@/shared/lib/decimal-money";
 import type {
   AiAllowanceAccount,
   AiAllowanceAssignment,
@@ -481,12 +482,24 @@ function parsePolicy(value: unknown): AiAllowancePolicy | null {
     "HARD",
   ] as const);
   const warningContent = localizedContent(s?.warningContent);
+  const lowThresholdMode = enumValue(s?.lowThresholdMode, [
+    "PERCENT",
+    "ABSOLUTE_USD",
+  ] as const);
+  const lowThresholdValue = parseAllowanceUsd(s?.lowThresholdValue);
+  const validLowThreshold =
+    lowThresholdMode &&
+    lowThresholdValue &&
+    compareDecimalStrings(lowThresholdValue, "0") > 0 &&
+    (lowThresholdMode === "ABSOLUTE_USD" ||
+      compareDecimalStrings(lowThresholdValue, "100") <= 0);
   const exhaustedContent = localizedContent(s?.exhaustedContent);
   return s &&
     text(s.projectId) &&
     mode &&
     text(s.timezone, 1, 100) &&
     warningContent &&
+    validLowThreshold &&
     exhaustedContent &&
     typeof s.showEndUserExactUsd === "boolean" &&
     bigintString(s.version) &&
@@ -497,6 +510,8 @@ function parsePolicy(value: unknown): AiAllowancePolicy | null {
         enforcementMode: mode,
         timezone: s.timezone,
         warningContent,
+        lowThresholdMode: lowThresholdMode!,
+        lowThresholdValue: lowThresholdValue!,
         exhaustedContent,
         showEndUserExactUsd: s.showEndUserExactUsd,
         version: s.version,

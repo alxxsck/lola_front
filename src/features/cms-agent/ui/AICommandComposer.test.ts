@@ -60,10 +60,11 @@ describe("AICommandComposer", () => {
     repository.submit.mockResolvedValue({ requestId: "request-1" });
     repository.execute.mockResolvedValue({
       interpretation: { outcome: "PLANNED" },
-      analysis: {
-        analysisId: "analysis-1",
-        runId: "run-1",
-        status: "QUEUED",
+      result: {
+        domainId: "analysis-1",
+        domainKind: "AI_ANALYSIS",
+        relation: "CREATED",
+        result: { runId: "run-1", status: "QUEUED" },
       },
     });
     const wrapper = mountComposer();
@@ -118,7 +119,7 @@ describe("AICommandComposer", () => {
         outcome: "CLARIFICATION_REQUIRED",
         code: "AMBIGUOUS_EVENT",
       },
-      analysis: null,
+      result: null,
     });
     const wrapper = mountComposer();
 
@@ -138,10 +139,11 @@ describe("AICommandComposer", () => {
     repository.submit.mockResolvedValue({ requestId: "request-clarified" });
     repository.execute.mockResolvedValue({
       interpretation: { outcome: "PLANNED" },
-      analysis: {
-        analysisId: "analysis-clarified",
-        runId: "run-clarified",
-        status: "QUEUED",
+      result: {
+        domainId: "analysis-clarified",
+        domainKind: "AI_ANALYSIS",
+        relation: "CREATED",
+        result: { runId: "run-clarified", status: "QUEUED" },
       },
     });
     await wrapper.get("form").trigger("submit");
@@ -163,10 +165,11 @@ describe("AICommandComposer", () => {
       .mockRejectedValueOnce(new Error("Временный сбой"))
       .mockResolvedValue({
         interpretation: { outcome: "PLANNED" },
-        analysis: {
-          analysisId: "analysis-3",
-          runId: "run-3",
-          status: "QUEUED",
+        result: {
+          domainId: "analysis-3",
+          domainKind: "AI_ANALYSIS",
+          relation: "CREATED",
+          result: { runId: "run-3", status: "QUEUED" },
         },
       });
     const wrapper = mountComposer();
@@ -190,10 +193,11 @@ describe("AICommandComposer", () => {
       .mockResolvedValue({ requestId: "request-after-timeout" });
     repository.execute.mockResolvedValue({
       interpretation: { outcome: "PLANNED" },
-      analysis: {
-        analysisId: "analysis-after-timeout",
-        runId: "run-after-timeout",
-        status: "QUEUED",
+      result: {
+        domainId: "analysis-after-timeout",
+        domainKind: "AI_ANALYSIS",
+        relation: "CREATED",
+        result: { runId: "run-after-timeout", status: "QUEUED" },
       },
     });
     const wrapper = mountComposer();
@@ -230,10 +234,11 @@ describe("AICommandComposer", () => {
     repository.submit.mockResolvedValue({ requestId: "expensive-request" });
     repository.execute.mockResolvedValue({
       interpretation: { outcome: "PLANNED" },
-      analysis: {
-        analysisId: "expensive-analysis",
-        runId: "expensive-run",
-        status: "QUEUED",
+      result: {
+        domainId: "expensive-analysis",
+        domainKind: "AI_ANALYSIS",
+        relation: "CREATED",
+        result: { runId: "expensive-run", status: "QUEUED" },
       },
     });
     const wrapper = mountComposer();

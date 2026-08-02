@@ -95,6 +95,7 @@ describe("AIAnalysisDetailPanel", () => {
               costStatus: "UNKNOWN",
               costStatuses: [],
               limitationCodes: [],
+              limitations: [],
               providerResponseIds: [],
               receipts: [],
               provider: "xai",
@@ -176,6 +177,7 @@ describe("AIAnalysisDetailPanel", () => {
               costStatus: "UNKNOWN",
               costStatuses: [],
               limitationCodes: [],
+              limitations: [],
               providerResponseIds: [],
               receipts: [
                 {
@@ -195,6 +197,12 @@ describe("AIAnalysisDetailPanel", () => {
                   complete: false,
                   truncated: true,
                   limitationCodes: ["ROW_LIMIT"],
+                  limitations: [
+                    {
+                      code: "ROW_LIMIT",
+                      message: "Результат ограничен лимитом строк",
+                    },
+                  ],
                   rejectionCode: "POLICY_DENIED",
                   createdAt: "2026-07-31T07:00:00.000Z",
                 },

@@ -40,6 +40,8 @@ const policy = {
     enforcementMode: "SOFT",
     timezone: "Europe/Madrid",
     warningContent: {},
+    lowThresholdMode: "PERCENT",
+    lowThresholdValue: "10.000000000000",
     exhaustedContent: {},
     showEndUserExactUsd: false,
     version: "1",
@@ -183,6 +185,23 @@ describe("allowance admin panels", () => {
     expect(mocks.projectPolicy).not.toHaveBeenCalled();
   });
 
+  it("shows the effective LOW threshold to read-only operators", async () => {
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: false,
+        canReconcile: false,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="allowance-low-threshold-summary"]').text()).toBe(
+      "10% от базового лимита",
+    );
+    expect(wrapper.text()).not.toContain("Изменить базовый план");
+  });
+
   it("shows exact default allowance and exposes mutations only with manage permission", async () => {
     const wrapper = mount(AiAllowanceLimitsPanel, {
       props: {
@@ -241,7 +260,7 @@ describe("allowance admin panels", () => {
       .findAll("button")
       .find((button) => button.text().includes("Изменить базовый план"))!
       .trigger("click");
-    await wrapper.findAll("select")[1]!.setValue("HARD");
+    await wrapper.get("#allowance-enforcement").setValue("HARD");
     await wrapper
       .findAll("textarea")
       .at(-1)!
@@ -339,7 +358,58 @@ describe("allowance admin panels", () => {
       "project-1",
       expect.objectContaining({
         expectedProjectPolicyVersion: "4",
+        lowThresholdMode: "PERCENT",
+        lowThresholdValue: "10.000000000000",
         showEndUserExactUsd: true,
+      }),
+      expect.any(String),
+    );
+  });
+
+  it("saves a configurable LOW threshold and rejects an invalid percentage", async () => {
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Изменить базовый план"))!
+      .trigger("click");
+
+    await wrapper.get("#allowance-low-threshold-value").setValue("101");
+    await wrapper
+      .findAll("textarea")
+      .at(-1)!
+      .setValue("Configure warning threshold");
+    await wrapper.get("form.allowance-form").trigger("submit");
+    expect(wrapper.text()).toContain("не больше 100 процентов");
+    expect(mocks.putDefaultPlan).not.toHaveBeenCalled();
+
+    await wrapper
+      .get("#allowance-low-threshold-mode")
+      .setValue("ABSOLUTE_USD");
+    await wrapper.get("#allowance-low-threshold-value").setValue("1.25");
+    await wrapper.get("form.allowance-form").trigger("submit");
+    await flushPromises();
+
+    expect(mocks.putDefaultPlan).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        lowThresholdMode: "ABSOLUTE_USD",
+        lowThresholdValue: "1.25",
       }),
       expect.any(String),
     );
