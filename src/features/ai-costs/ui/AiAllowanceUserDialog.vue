@@ -23,6 +23,7 @@ const props = defineProps<{
   endUserId: string;
   identity: string;
   plans?: AiAllowancePlan[];
+  canRead: boolean;
   canGrant: boolean;
   canManage: boolean;
   canReconcile: boolean;
@@ -48,6 +49,11 @@ const planId = ref("");
 const effectiveFrom = ref("");
 const effectiveUntil = ref("");
 const loadedPlans = ref<AiAllowancePlan[]>([]);
+const plansPageInfo = ref<{ hasMore: boolean; nextCursor: string | null }>({
+  hasMore: false,
+  nextCursor: null,
+});
+const plansLoading = ref(false);
 const projectPolicyVersion = ref("");
 const configurationConflict = ref(false);
 let generation = 0;
@@ -58,19 +64,36 @@ const activePlans = computed(() =>
 );
 
 watch(
-  () => [props.visible, props.projectId, props.endUserId] as const,
-  ([visible]) => {
+  () =>
+    [props.visible, props.projectId, props.endUserId, props.canRead] as const,
+  ([visible, , , canRead]) => {
     generation += 1;
     balance.value = null;
     loadedPlans.value = [];
+    plansPageInfo.value = { hasMore: false, nextCursor: null };
+    plansLoading.value = false;
     loadedContext.value = "";
     projectPolicyVersion.value = "";
     configurationConflict.value = false;
     grantsLoading.value = false;
     mutationLoading.value = false;
+    loading.value = false;
+    error.value = "";
     formError.value = "";
-    if (visible && props.endUserId) {
-      mode.value = "summary";
+    mode.value = "summary";
+    amount.value = "";
+    validFrom.value = "";
+    expiresAt.value = "";
+    reason.value = "";
+    idempotencyKey.value = "";
+    planId.value = "";
+    effectiveFrom.value = "";
+    effectiveUntil.value = "";
+    if (visible && !canRead) {
+      emit("update:visible", false);
+      return;
+    }
+    if (visible && canRead && props.endUserId) {
       void load();
     }
   },
@@ -91,6 +114,7 @@ watch(
   },
 );
 async function load(): Promise<boolean> {
+  if (!props.visible || !props.canRead || !props.endUserId) return false;
   const requestGeneration = ++generation;
   const requestProjectId = props.projectId;
   const requestEndUserId = props.endUserId;
@@ -124,6 +148,7 @@ async function load(): Promise<boolean> {
     projectPolicyVersion.value = projectPolicy.projectPolicyVersion;
     loadedContext.value = `${requestProjectId}:${requestEndUserId}`;
     loadedPlans.value = projectPolicy.plans;
+    plansPageInfo.value = projectPolicy.plansPageInfo;
     return true;
   } catch (cause) {
     if (requestGeneration === generation)
@@ -133,12 +158,70 @@ async function load(): Promise<boolean> {
     if (requestGeneration === generation) loading.value = false;
   }
 }
+async function loadMorePlans(): Promise<void> {
+  const cursor = plansPageInfo.value.nextCursor;
+  if (
+    !props.canRead ||
+    !cursor ||
+    plansLoading.value ||
+    loadedContext.value !== `${props.projectId}:${props.endUserId}` ||
+    !projectPolicyVersion.value
+  )
+    return;
+  const requestGeneration = generation;
+  const requestProjectId = props.projectId;
+  const requestEndUserId = props.endUserId;
+  const requestPolicyVersion = projectPolicyVersion.value;
+  plansLoading.value = true;
+  formError.value = "";
+  try {
+    const next = await aiAllowanceRepository.projectPolicy(requestProjectId, {
+      planCursor: cursor,
+      planLimit: 50,
+      revisionLimit: 1,
+    });
+    if (
+      requestGeneration !== generation ||
+      requestProjectId !== props.projectId ||
+      requestEndUserId !== props.endUserId ||
+      loadedContext.value !== `${requestProjectId}:${requestEndUserId}`
+    )
+      return;
+    if (next.projectPolicyVersion !== requestPolicyVersion) {
+      projectPolicyVersion.value = "";
+      configurationConflict.value = true;
+      formError.value =
+        "Конфигурация планов изменилась во время загрузки. Загрузите актуальную версию.";
+      return;
+    }
+    const plansById = new Map(
+      [...loadedPlans.value, ...next.plans].map((plan) => [plan.id, plan]),
+    );
+    loadedPlans.value = [...plansById.values()];
+    plansPageInfo.value = next.plansPageInfo;
+  } catch (cause) {
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    )
+      formError.value = text(cause, "Не удалось загрузить остальные планы");
+  } finally {
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    )
+      plansLoading.value = false;
+  }
+}
 async function loadMoreGrants(): Promise<void> {
   const current = balance.value;
   const cursor = current?.grantsPageInfo.nextCursor;
   if (
     !current ||
     !cursor ||
+    !props.canRead ||
     grantsLoading.value ||
     loadedContext.value !== `${props.projectId}:${props.endUserId}`
   )
@@ -186,7 +269,7 @@ function close(): void {
   emit("update:visible", false);
 }
 function beginGrant(): void {
-  if (!props.canGrant) return;
+  if (!props.canRead || !props.canGrant) return;
   if (loadedContext.value !== `${props.projectId}:${props.endUserId}`) return;
   mode.value = "grant";
   amount.value = "";
@@ -198,7 +281,7 @@ function beginGrant(): void {
   configurationConflict.value = false;
 }
 function beginAssignment(): void {
-  if (!props.canManage) return;
+  if (!props.canRead || !props.canManage) return;
   if (loadedContext.value !== `${props.projectId}:${props.endUserId}`) return;
   if (!projectPolicyVersion.value) return;
   mode.value = "assignment";
@@ -212,7 +295,8 @@ function beginAssignment(): void {
   configurationConflict.value = false;
 }
 async function submitGrant(): Promise<void> {
-  if (!props.canGrant) return fail("Операция больше недоступна.");
+  if (!props.canRead || !props.canGrant)
+    return fail("Операция больше недоступна.");
   const exact = parseAllowanceUsd(amount.value.trim());
   const from = iso(validFrom.value);
   const until = iso(expiresAt.value);
@@ -236,7 +320,8 @@ async function submitGrant(): Promise<void> {
   );
 }
 async function submitAssignment(): Promise<void> {
-  if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!props.canRead || !props.canManage)
+    return fail("Операция больше недоступна.");
   if (!projectPolicyVersion.value)
     return fail("Сначала загрузите актуальную конфигурацию проекта.");
   const from = iso(effectiveFrom.value);
@@ -379,9 +464,9 @@ async function refreshAssignmentDraft(): Promise<void> {
 
 <template>
   <Dialog
-    :visible="visible"
+    :visible="visible && canRead"
     modal
-    :header="`AI-квота · ${identity}`"
+    :header="canRead ? `AI-квота · ${identity}` : 'AI-квота'"
     :style="{ width: 'min(820px, 96vw)' }"
     @update:visible="emit('update:visible', $event)"
   >
@@ -568,6 +653,15 @@ async function refreshAssignmentDraft(): Promise<void> {
             </option>
           </select></label
         >
+        <Button
+          v-if="plansPageInfo.hasMore"
+          label="Показать остальные планы"
+          type="button"
+          outlined
+          :loading="plansLoading"
+          :disabled="mutationLoading"
+          @click="loadMorePlans"
+        />
         <div class="form-row">
           <label
             >Действует с<input

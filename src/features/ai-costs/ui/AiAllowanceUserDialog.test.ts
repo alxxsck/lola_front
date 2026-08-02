@@ -72,6 +72,30 @@ describe("AiAllowanceUserDialog", () => {
     expect(wrapper.text()).not.toContain("Корректировать по журналу");
   });
 
+  it("zeroizes the loaded balance and closes when read permission is revoked", async () => {
+    const wrapper = mountDialog({
+      canGrant: true,
+      canManage: true,
+      canReconcile: true,
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain("3,00 $");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Начислить квоту"))!
+      .trigger("click");
+    expect(wrapper.find("form").exists()).toBe(true);
+
+    await wrapper.setProps({ canRead: false });
+
+    expect(wrapper.text()).not.toContain("3,00 $");
+    expect(wrapper.text()).not.toContain("external-1");
+    expect(wrapper.find("form").exists()).toBe(false);
+    expect(wrapper.emitted("update:visible")).toEqual([[false]]);
+    expect(mocks.grant).not.toHaveBeenCalled();
+    expect(mocks.assignment).not.toHaveBeenCalled();
+  });
+
   it("keeps the generated idempotency key while rejecting an over-precision grant", async () => {
     const wrapper = mountDialog({
       canGrant: true,
@@ -206,6 +230,82 @@ describe("AiAllowanceUserDialog", () => {
         planId: "11111111-1111-4111-8111-111111111111",
       }),
       expect.any(String),
+    );
+  });
+
+  it("loads the next plan page from the end-user assignment selector", async () => {
+    mocks.balance.mockResolvedValue({
+      ...balanceView("project-1", "user-1", "current grant", false),
+      projectPolicyVersion: "7",
+    });
+    mocks.policy
+      .mockResolvedValueOnce({
+        ...policyView("7"),
+        plansPageInfo: { hasMore: true, nextCursor: "plans-page-2" },
+      })
+      .mockResolvedValueOnce({
+        ...policyView("7"),
+        plans: [activePlan("Enterprise")],
+      });
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: true,
+      canReconcile: false,
+    });
+    await flushPromises();
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Назначить план"))!
+      .trigger("click");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Показать остальные планы"))!
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.policy).toHaveBeenNthCalledWith(2, "project-1", {
+      planCursor: "plans-page-2",
+      planLimit: 50,
+      revisionLimit: 1,
+    });
+    expect(wrapper.get("select").text()).toContain("Enterprise");
+  });
+
+  it("fails closed when a later plan page has a different policy version", async () => {
+    mocks.policy
+      .mockResolvedValueOnce({
+        ...policyView("7"),
+        plansPageInfo: { hasMore: true, nextCursor: "plans-page-2" },
+      })
+      .mockResolvedValueOnce({
+        ...policyView("8"),
+        plans: [activePlan("Enterprise")],
+      });
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: true,
+      canReconcile: false,
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Назначить план"))!
+      .trigger("click");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Показать остальные планы"))!
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(
+      "Конфигурация планов изменилась во время загрузки",
+    );
+    expect(wrapper.get("select").text()).not.toContain("Enterprise");
+    await wrapper.get("form").trigger("submit");
+    expect(mocks.assignment).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain(
+      "Сначала загрузите актуальную конфигурацию",
     );
   });
 
@@ -369,11 +469,14 @@ function policyView(projectPolicyVersion: string) {
   } as const;
 }
 
-function activePlan() {
+function activePlan(name = "VIP") {
   return {
-    id: "11111111-1111-4111-8111-111111111111",
-    key: "VIP",
-    name: "VIP",
+    id:
+      name === "VIP"
+        ? "11111111-1111-4111-8111-111111111111"
+        : "22222222-2222-4222-8222-222222222222",
+    key: name.toUpperCase(),
+    name,
     status: "ACTIVE",
     createdAt: "2026-08-01T00:00:00.000Z",
     updatedAt: "2026-08-01T00:00:00.000Z",
@@ -446,13 +549,15 @@ function mountDialog(permission: {
       projectId: "project-1",
       endUserId: "user-1",
       identity: "external-1",
+      canRead: true,
       ...permission,
     },
     global: {
       stubs: {
         Dialog: {
-          props: ["visible"],
-          template: "<div><slot /><slot name='footer' /></div>",
+          props: ["visible", "header"],
+          template:
+            "<div v-if='visible'>{{ header }}<slot /><slot name='footer' /></div>",
         },
       },
     },

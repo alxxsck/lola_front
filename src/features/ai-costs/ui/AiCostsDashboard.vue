@@ -208,9 +208,13 @@ watch(
   },
   { immediate: true },
 );
-watch(projectId, () => {
-  selectedAllowanceUser.value = null;
-});
+watch(
+  [projectId, canReadAllowance],
+  ([nextProjectId, canRead], [previousProjectId]) => {
+    if (!canRead || nextProjectId !== previousProjectId)
+      selectedAllowanceUser.value = null;
+  },
+);
 watch(
   () =>
     [
@@ -729,18 +733,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
             <div v-if="overview.daily.length" class="bar-list">
               <div v-for="row in overview.daily" :key="row.day" class="bar-row">
                 <span>{{ dayLabel(row.day) }}</span>
-                <div
-                  class="bar-track"
-                  role="meter"
-                  aria-valuemin="0"
-                  :aria-valuenow="row.effectiveCostUsd ?? undefined"
-                  :aria-valuemax="dailyMax"
-                  :aria-label="
-                    row.effectiveCostUsd === null
-                      ? 'Стоимость ещё не определена'
-                      : undefined
-                  "
-                >
+                <div class="bar-track" aria-hidden="true">
                   <span
                     class="bar-fill"
                     :style="{ width: barWidth(row.effectiveCostUsd, dailyMax) }"
@@ -767,18 +760,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
                 class="bar-row"
               >
                 <span>{{ categoryLabel(row.category) }}</span>
-                <div
-                  class="bar-track"
-                  role="meter"
-                  aria-valuemin="0"
-                  :aria-valuenow="row.effectiveCostUsd ?? undefined"
-                  :aria-valuemax="categoryMax"
-                  :aria-label="
-                    row.effectiveCostUsd === null
-                      ? 'Стоимость ещё не определена'
-                      : undefined
-                  "
-                >
+                <div class="bar-track" aria-hidden="true">
                   <span
                     class="bar-fill category"
                     :style="{
@@ -932,11 +914,12 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       </section>
     </template>
     <AiAllowanceUserDialog
-      v-if="projectId && selectedAllowanceUser"
+      v-if="projectId && canReadAllowance && selectedAllowanceUser"
       :visible="true"
       :project-id="projectId"
       :end-user-id="selectedAllowanceUser.endUserId"
       :identity="selectedAllowanceUser.externalId"
+      :can-read="canReadAllowance"
       :can-grant="canGrantAllowance"
       :can-manage="canManageAllowance"
       :can-reconcile="canReconcileAllowance"

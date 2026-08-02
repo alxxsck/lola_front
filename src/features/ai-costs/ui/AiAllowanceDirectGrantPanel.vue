@@ -15,6 +15,8 @@ const reason = ref("");
 const saving = ref(false);
 const error = ref("");
 const notice = ref("");
+const commandFingerprint = ref("");
+const commandIdempotencyKey = ref("");
 let generation = 0;
 
 watch(
@@ -27,12 +29,14 @@ watch(
     error.value = "";
     notice.value = "";
     saving.value = false;
+    resetCommand();
     validFrom.value = localInput(new Date());
     expiresAt.value = localInput(new Date(Date.now() + 86_400_000));
   },
 );
 
 async function submit(): Promise<void> {
+  if (saving.value) return;
   const requestGeneration = generation;
   const requestProjectId = props.projectId;
   const requestEndUserId = endUserId.value.trim();
@@ -47,6 +51,24 @@ async function submit(): Promise<void> {
     return fail("Проверьте период действия начисления.");
   if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
     return fail("Причина должна содержать от 3 до 500 символов.");
+  const command = {
+    amountUsd,
+    validFrom: from,
+    expiresAt: until,
+    reason: reason.value.trim(),
+  };
+  const fingerprint = JSON.stringify([
+    requestProjectId,
+    requestEndUserId,
+    command.amountUsd,
+    command.validFrom,
+    command.expiresAt,
+    command.reason,
+  ]);
+  if (commandFingerprint.value !== fingerprint) {
+    commandFingerprint.value = fingerprint;
+    commandIdempotencyKey.value = newIdempotencyKey();
+  }
   saving.value = true;
   error.value = "";
   notice.value = "";
@@ -54,13 +76,8 @@ async function submit(): Promise<void> {
     await aiAllowanceRepository.createGrant(
       requestProjectId,
       requestEndUserId,
-      {
-        amountUsd,
-        validFrom: from,
-        expiresAt: until,
-        reason: reason.value.trim(),
-      },
-      globalThis.crypto?.randomUUID?.() ?? `grant-${Date.now()}`,
+      command,
+      commandIdempotencyKey.value,
     );
     if (
       requestGeneration !== generation ||
@@ -70,6 +87,7 @@ async function submit(): Promise<void> {
     notice.value = "Начисление создано и записано в allowance ledger.";
     amount.value = "";
     reason.value = "";
+    resetCommand();
   } catch (cause) {
     if (
       requestGeneration === generation &&
@@ -89,6 +107,13 @@ async function submit(): Promise<void> {
 }
 function fail(message: string): void {
   error.value = message;
+}
+function resetCommand(): void {
+  commandFingerprint.value = "";
+  commandIdempotencyKey.value = "";
+}
+function newIdempotencyKey(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `grant-${Date.now()}`;
 }
 function instant(value: string): string | undefined {
   const parsed = new Date(value);

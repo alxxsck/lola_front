@@ -161,6 +161,19 @@ describe("AiCostsDashboard", () => {
     expect(wrapper.get(".category-chart").text()).toContain("Чат с Lola");
   });
 
+  it("exposes chart bars as decorative when the adjacent text carries the value", async () => {
+    const wrapper = mount(AiCostsDashboard);
+    await flushPromises();
+
+    const chartBars = wrapper.findAll(".bar-track");
+    expect(chartBars).toHaveLength(2);
+    for (const bar of chartBars) {
+      expect(bar.attributes("aria-hidden")).toBe("true");
+      expect(bar.attributes("role")).toBeUndefined();
+      expect(bar.attributes("aria-valuenow")).toBeUndefined();
+    }
+  });
+
   it("loads a URL-selected users page and provides the existing profile drilldown", async () => {
     mocks.route.query = {
       period: "7d",
@@ -317,6 +330,48 @@ describe("AiCostsDashboard", () => {
     mocks.auth.project.effectivePermissionCodes = [];
     await nextTick();
     expect(wrapper.text()).not.toContain("tenant-two-user");
+  });
+
+  it("closes an open allowance balance when its read permission is revoked", async () => {
+    mocks.route.query = reactive({ period: "7d", tab: "users" });
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_usage.read",
+      "project.ai_costs.read",
+      "project.profiles.read",
+      "project.ai_allowance.read",
+    ];
+    mocks.users.mockResolvedValueOnce(userPage("allowance-user"));
+    const wrapper = mount(AiCostsDashboard, {
+      global: {
+        stubs: {
+          AiAllowanceUserDialog: {
+            props: ["endUserId"],
+            template:
+              '<div data-testid="allowance-user-dialog">{{ endUserId }}</div>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Баланс"))!
+      .trigger("click");
+    expect(wrapper.get('[data-testid="allowance-user-dialog"]').text()).toBe(
+      "id-allowance-user",
+    );
+
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_usage.read",
+      "project.ai_costs.read",
+      "project.profiles.read",
+    ];
+    await nextTick();
+
+    expect(wrapper.find('[data-testid="allowance-user-dialog"]').exists()).toBe(
+      false,
+    );
   });
 
   it("ignores a late table response from a previous full context", async () => {
