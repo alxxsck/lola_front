@@ -6,5 +6,5 @@
   "artifact": "lola-backend.json",
   "contractRevision": "sha256:84b7e56224cdedf9e2cb07a278ed06e380f017ee006b75a03af29cc3c24e4716",
   "sha256": "84b7e56224cdedf9e2cb07a278ed06e380f017ee006b75a03af29cc3c24e4716",
-  "backendSourceRevision": "da5b50f5200722fe77e80748d0ef1465aefaa508"
+  "backendSourceRevision": "1a6c792fc111ba364c9b82abd39d7cd4a12bf2d7"
 }
