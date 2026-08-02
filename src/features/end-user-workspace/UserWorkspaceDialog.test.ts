@@ -239,10 +239,10 @@ describe("единое рабочее пространство пользова�
       global: {
         stubs: {
           Dialog: {
-            props: ["blockScroll"],
+            props: ["blockScroll", "visible"],
             emits: ["update:visible"],
             template:
-              '<section :data-block-scroll="String(blockScroll)"><button data-action="close-dialog" @click="$emit(\'update:visible\', false)">close</button><slot name="header"/><slot/></section>',
+              '<section v-if="visible !== false" :data-block-scroll="String(blockScroll)"><button data-action="close-dialog" @click="$emit(\'update:visible\', false)">close</button><slot name="header"/><slot/></section>',
           },
           Button: {
             props: ["label"],
@@ -293,6 +293,41 @@ describe("единое рабочее пространство пользова�
             template:
               '<div data-testid="end-user-ai-usage" :data-project-id="projectId" :data-end-user-id="endUserId" />',
           },
+          EndUserAiAllowanceCard: {
+            props: [
+              "projectId",
+              "endUserId",
+              "canGrant",
+              "canManage",
+              "canReconcile",
+              "refreshKey",
+            ],
+            emits: ["open-details", "open-journal"],
+            template:
+              '<div data-testid="end-user-ai-allowance" :data-project-id="projectId" :data-end-user-id="endUserId" :data-can-grant="String(canGrant)" :data-can-manage="String(canManage)" :data-can-reconcile="String(canReconcile)" :data-refresh-key="String(refreshKey)"><button data-action="open-allowance-details" @click="$emit(\'open-details\', \'summary\')">details</button><button data-action="open-allowance-grant" @click="$emit(\'open-details\', \'grant\')">grant</button><button data-action="open-allowance-journal" @click="$emit(\'open-journal\')">journal</button></div>',
+          },
+          AiAllowanceUserDialog: {
+            props: [
+              "visible",
+              "projectId",
+              "endUserId",
+              "identity",
+              "initialMode",
+              "canRead",
+              "canGrant",
+              "canManage",
+              "canReconcile",
+            ],
+            emits: ["update:visible", "open-journal", "changed"],
+            template:
+              '<div v-if="visible && canRead" data-testid="ai-allowance-user-dialog" :data-project-id="projectId" :data-end-user-id="endUserId" :data-identity="identity" :data-initial-mode="initialMode" :data-can-grant="String(canGrant)" :data-can-manage="String(canManage)" :data-can-reconcile="String(canReconcile)"><button data-action="allowance-changed" @click="$emit(\'changed\')">changed</button></div>',
+          },
+          AiAllowanceJournalPanel: {
+            props: ["projectId", "endUserId", "cursor", "embedded"],
+            emits: ["next-cursor", "changed"],
+            template:
+              '<div data-testid="ai-allowance-journal" :data-project-id="projectId" :data-end-user-id="endUserId" :data-cursor="cursor" :data-embedded="String(embedded)" />',
+          },
           AIReviewDialog: true,
         },
       },
@@ -336,6 +371,70 @@ describe("единое рабочее пространство пользова�
 
     await wrapper.get('[data-action="open-profile"]').trigger("click");
     expect(wrapper.get('[data-testid="profile-overview"]')).toBeTruthy();
+  });
+
+  it("shows and opens the independently authorized AI allowance in the user profile", async () => {
+    mocks.permissions.push(
+      "project.ai_allowance.read",
+      "project.ai_allowance.grant",
+    );
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    const card = wrapper.get('[data-testid="end-user-ai-allowance"]');
+    expect(card.attributes()).toMatchObject({
+      "data-project-id": "project-1",
+      "data-end-user-id": "user-1",
+      "data-can-grant": "true",
+      "data-can-manage": "false",
+      "data-can-reconcile": "false",
+    });
+
+    await card.get('[data-action="open-allowance-details"]').trigger("click");
+    const dialog = wrapper.get('[data-testid="ai-allowance-user-dialog"]');
+    expect(dialog.attributes()).toMatchObject({
+      "data-project-id": "project-1",
+      "data-end-user-id": "user-1",
+      "data-identity": "customer-1",
+      "data-can-grant": "true",
+      "data-can-manage": "false",
+      "data-can-reconcile": "false",
+      "data-initial-mode": "summary",
+    });
+
+    await dialog.get('[data-action="allowance-changed"]').trigger("click");
+    expect(card.attributes("data-refresh-key")).toBe("1");
+
+    await card.get('[data-action="open-allowance-grant"]').trigger("click");
+    expect(
+      wrapper
+        .get('[data-testid="ai-allowance-user-dialog"]')
+        .attributes("data-initial-mode"),
+    ).toBe("grant");
+
+    await card.get('[data-action="open-allowance-journal"]').trigger("click");
+    await flushPromises();
+    expect(mocks.updateVisible).not.toHaveBeenCalledWith(false);
+    expect(
+      wrapper.get('[data-testid="ai-allowance-journal"]').attributes(),
+    ).toMatchObject({
+      "data-project-id": "project-1",
+      "data-end-user-id": "user-1",
+      "data-cursor": "",
+      "data-embedded": "",
+    });
+  });
+
+  it("does not expose AI allowance without its read permission", async () => {
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="end-user-ai-allowance"]').exists()).toBe(
+      false,
+    );
+    expect(
+      wrapper.find('[data-testid="ai-allowance-user-dialog"]').exists(),
+    ).toBe(false);
   });
 
   it("фильтрует список диалогов по названию без перезагрузки истории", async () => {
@@ -418,8 +517,7 @@ describe("единое рабочее пространство пользова�
       nextCursor: null,
     });
     let resolveTranslation:
-      | ((value: { items: never[]; queued: boolean }) => void)
-      | undefined;
+      ((value: { items: never[]; queued: boolean }) => void) | undefined;
     vi.spyOn(
       conversationTranslationApi,
       "translateMessages",
@@ -869,9 +967,7 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
-    expect(wrapper.get(".conversation-language-fact strong").text()).toBe(
-      "EN",
-    );
+    expect(wrapper.get(".conversation-language-fact strong").text()).toBe("EN");
     expect(wrapper.get(".conversation-badge.accent").text()).toBe("EN");
     expect(getTranslation).not.toHaveBeenCalled();
   });
@@ -881,10 +977,7 @@ describe("единое рабочее пространство пользова�
     const getTranslation = vi
       .spyOn(conversationTranslationApi, "getConversation")
       .mockRejectedValue(new Error("translation unavailable"));
-    const translate = vi.spyOn(
-      conversationTranslationApi,
-      "translateMessages",
-    );
+    const translate = vi.spyOn(conversationTranslationApi, "translateMessages");
     mocks.getMessages.mockResolvedValue({
       items: [
         {
@@ -1233,9 +1326,9 @@ describe("единое рабочее пространство пользова�
       .find((button) => button.text().includes("Шаблоны"))
       ?.trigger("click");
 
-    expect(wrapper.get('[data-testid="reply-template-gallery"]').text()).toContain(
-      "Галерея шаблонов",
-    );
+    expect(
+      wrapper.get('[data-testid="reply-template-gallery"]').text(),
+    ).toContain("Галерея шаблонов");
   });
 
   it("после reconnect сверяет REST projection выбранного диалога", async () => {

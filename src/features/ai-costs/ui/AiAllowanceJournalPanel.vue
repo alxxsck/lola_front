@@ -24,10 +24,12 @@ const props = defineProps<{
   canReconcile: boolean;
   endUserId: string;
   cursor: string;
+  embedded?: boolean;
 }>();
 const emit = defineEmits<{
   selectUser: [id: string];
   nextCursor: [cursor: string];
+  changed: [];
 }>();
 const input = ref(props.endUserId);
 const page = ref<AiAllowanceJournalPage | null>(null);
@@ -225,6 +227,7 @@ async function submitCorrection(): Promise<void> {
     notice.value =
       "Корректировка записана. Баланс и журнал перечитаны с backend.";
     await load();
+    emit("changed");
   } catch (cause) {
     if (requestContextKey === contextKey.value)
       correctionError.value = message(
@@ -288,9 +291,11 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
   <section
     class="journal-panel"
     role="tabpanel"
-    aria-labelledby="ai-cost-tab-journal"
+    :aria-labelledby="embedded ? undefined : 'ai-cost-tab-journal'"
+    :aria-label="embedded ? 'Журнал AI-квоты пользователя' : undefined"
   >
     <AiAllowanceReconciliationQueue
+      v-if="!embedded"
       :project-id="projectId"
       :can-reconcile="canReconcile"
     />
@@ -308,7 +313,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
           </p>
         </div>
       </header>
-      <form class="user-selector" @submit.prevent="select">
+      <form v-if="!embedded" class="user-selector" @submit.prevent="select">
         <label for="allowance-user-id">End User ID</label
         ><input
           id="allowance-user-id"

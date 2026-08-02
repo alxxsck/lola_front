@@ -6,6 +6,7 @@ import AiAllowanceUserDialog from "./AiAllowanceUserDialog.vue";
 const mocks = vi.hoisted(() => ({
   balance: vi.fn(),
   policy: vi.fn(),
+  revisions: vi.fn(),
   grant: vi.fn(),
   assignment: vi.fn(),
 }));
@@ -13,6 +14,7 @@ vi.mock("../api/ai-allowance-repository", () => ({
   aiAllowanceRepository: {
     endUserBalance: mocks.balance,
     projectPolicy: mocks.policy,
+    planRevisions: mocks.revisions,
     createGrant: mocks.grant,
     putEndUserAssignment: mocks.assignment,
   },
@@ -53,6 +55,12 @@ describe("AiAllowanceUserDialog", () => {
       },
     });
     mocks.grant.mockResolvedValue({ replayed: false });
+    mocks.revisions.mockResolvedValue({
+      projectPolicyVersion: "7",
+      plan: activePlan(),
+      revisions: [],
+      pageInfo: { hasMore: false, nextCursor: null },
+    });
     mocks.assignment.mockResolvedValue({
       projectPolicyVersion: "8",
       replayed: false,
@@ -70,6 +78,371 @@ describe("AiAllowanceUserDialog", () => {
     expect(wrapper.text()).not.toContain("Начислить квоту");
     expect(wrapper.text()).not.toContain("Назначить план");
     expect(wrapper.text()).not.toContain("Корректировать по журналу");
+  });
+
+  it("does not invent an effective project assignment that the API did not return", async () => {
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: false,
+      canReconcile: false,
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(
+      "источник группового плана API пока не сообщает",
+    );
+    expect(wrapper.text()).not.toContain(
+      "Используется проектный план по умолчанию",
+    );
+  });
+
+  it("opens the requested grant workflow after loading the current balance", async () => {
+    const wrapper = mountDialog(
+      {
+        canGrant: true,
+        canManage: false,
+        canReconcile: false,
+      },
+      "grant",
+    );
+    await flushPromises();
+
+    expect(wrapper.get("form").text()).toContain("Ручное начисление");
+    expect(wrapper.findAll("input").at(-1)!.element.value).not.toBe("");
+  });
+
+  it("notifies its owner only after a successful grant and refreshed balance", async () => {
+    const wrapper = mountDialog(
+      {
+        canGrant: true,
+        canManage: false,
+        canReconcile: false,
+      },
+      "grant",
+    );
+    await flushPromises();
+
+    await wrapper.findAll("input")[0]!.setValue("1.25");
+    await wrapper.get("textarea").setValue("Loyalty reward");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(mocks.grant).toHaveBeenCalledOnce();
+    expect(mocks.balance).toHaveBeenCalledTimes(2);
+    expect(wrapper.emitted("changed")).toEqual([[]]);
+  });
+
+  it("previews a grant and keeps an auditable receipt including safe replay", async () => {
+    mocks.balance
+      .mockResolvedValueOnce({
+        ...balanceView("project-1", "user-1", "before", false),
+        account: {
+          ...balanceView("project-1", "user-1", "before", false).account,
+          availableUsd: "3.000000000000",
+        },
+      })
+      .mockResolvedValueOnce({
+        ...balanceView("project-1", "user-1", "after", false),
+        account: {
+          ...balanceView("project-1", "user-1", "after", false).account,
+          availableUsd: "2.000000000000",
+        },
+      });
+    mocks.grant.mockResolvedValue({
+      grant: {
+        id: "grant-replayed-1",
+        amountUsd: "1.250000000000",
+        validFrom: "2026-08-02T10:00:00.000Z",
+        expiresAt: "2026-08-03T10:00:00.000Z",
+        reason: "Customer loyalty reward",
+        actorType: "ADMIN",
+        actorId: "admin-1",
+      },
+      account: { availableUsd: "4.250000000000" },
+      replayed: true,
+    });
+    const wrapper = mountDialog(
+      {
+        canGrant: true,
+        canManage: false,
+        canReconcile: false,
+      },
+      "grant",
+    );
+    await flushPromises();
+
+    await wrapper.findAll("input")[0]!.setValue("1.25");
+    expect(wrapper.text()).toContain(
+      "Предварительно доступно после начисления",
+    );
+    expect(wrapper.text()).toContain("4,25 $");
+    expect(wrapper.get("select").text()).toContain("До конца текущего периода");
+    expect(wrapper.get("select").text()).toContain("24 часа");
+    expect(wrapper.get("select").text()).toContain("Выбранная дата");
+    await wrapper.get("textarea").setValue("Customer loyalty reward");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    const receipt = wrapper.get('[data-testid="grant-receipt"]');
+    expect(receipt.text()).toContain("grant-replayed-1");
+    expect(receipt.text()).toContain("Доступно после команды: 4,25 $");
+    expect(receipt.text()).toContain("При открытии формы было 3,00 $");
+    expect(receipt.text()).not.toContain("Доступно после команды: 2,00 $");
+    expect(receipt.text()).toContain("ADMIN:admin-1");
+    expect(receipt.text()).toContain("дубликат не создан");
+  });
+
+  it("requires an operationally useful grant reason", async () => {
+    const wrapper = mountDialog(
+      {
+        canGrant: true,
+        canManage: false,
+        canReconcile: false,
+      },
+      "grant",
+    );
+    await flushPromises();
+
+    await wrapper.findAll("input")[0]!.setValue("1");
+    await wrapper.get("textarea").setValue("short");
+    await wrapper.get("form").trigger("submit");
+
+    expect(wrapper.text()).toContain("от 10 до 500 символов");
+    expect(mocks.grant).not.toHaveBeenCalled();
+  });
+
+  it("switches expiry to custom when the operator edits the start date", async () => {
+    const wrapper = mountDialog(
+      {
+        canGrant: true,
+        canManage: false,
+        canReconcile: false,
+      },
+      "grant",
+    );
+    await flushPromises();
+    const dateInputs = wrapper.findAll('input[type="datetime-local"]');
+
+    expect(wrapper.get("select").element.value).toBe("24H");
+    expect(dateInputs[1]!.attributes("readonly")).toBeDefined();
+    await dateInputs[0]!.setValue("2026-08-03T12:00");
+
+    expect(wrapper.get("select").element.value).toBe("CUSTOM");
+    expect(dateInputs[1]!.attributes("readonly")).toBeUndefined();
+  });
+
+  it("shows responsibility and cap rules from the current plan revision", async () => {
+    const revision = {
+      id: "revision-1",
+      planId: "11111111-1111-4111-8111-111111111111",
+      revisionNumber: 1,
+      periodKind: "DAY" as const,
+      recurringAmountUsd: "5.000000000000",
+      dailyCapUsd: null,
+      effectiveFrom: "2026-08-01T00:00:00.000Z",
+      changeReason: "Initial plan",
+      createdAt: "2026-08-01T00:00:00.000Z",
+      categoryRules: [
+        {
+          category: "VOICE" as const,
+          responsibility: "PROJECT_SPONSORED" as const,
+          capUsd: "2.000000000000",
+        },
+      ],
+    };
+    mocks.balance.mockResolvedValue({
+      ...balanceView("project-1", "user-1", "current grant", false),
+      currentPeriod: {
+        id: "period-1",
+        kind: "DAY",
+        timezone: "Europe/Madrid",
+        startsAt: "2026-08-02T22:00:00.000Z",
+        endsAt: "2026-08-03T22:00:00.000Z",
+        baseAllocatedUsd: "5.000000000000",
+        status: "OPEN",
+        planRevision: revision,
+      },
+    });
+    mocks.policy.mockResolvedValue({
+      ...policyView("7"),
+      policy: {
+        projectId: "project-1",
+        enforcementMode: "SOFT",
+        timezone: "Europe/Madrid",
+        warningContent: {},
+        lowThresholdMode: "PERCENT",
+        lowThresholdValue: "10",
+        exhaustedContent: {},
+        showEndUserExactUsd: true,
+        version: "7",
+        createdAt: "2026-08-01T00:00:00.000Z",
+        updatedAt: "2026-08-01T00:00:00.000Z",
+      },
+      plans: [{ ...activePlan(), revisions: [revision] }],
+    });
+
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: false,
+      canReconcile: false,
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Правила категорий текущего периода");
+    expect(wrapper.text()).toContain("VOICE");
+    expect(wrapper.text()).toContain("Оплачивает проект");
+    expect(wrapper.text()).toContain("2,00 $");
+    expect(wrapper.text()).toContain("Europe/Madrid");
+  });
+
+  it("loads the exact pinned revision when it is older than the initial page", async () => {
+    const targetRevision = {
+      id: "old-revision",
+      planId: "11111111-1111-4111-8111-111111111111",
+      revisionNumber: 1,
+      periodKind: "DAY" as const,
+      recurringAmountUsd: "5.000000000000",
+      dailyCapUsd: null,
+      effectiveFrom: "2025-01-01T00:00:00.000Z",
+      changeReason: "Pinned legacy period",
+      createdAt: "2025-01-01T00:00:00.000Z",
+      categoryRules: [
+        {
+          category: "CHAT" as const,
+          responsibility: "END_USER_ALLOWANCE" as const,
+          capUsd: "1.000000000000",
+        },
+      ],
+    };
+    mocks.balance.mockResolvedValue({
+      ...balanceView("project-1", "user-1", "current grant", false),
+      currentPeriod: {
+        id: "period-old",
+        kind: "DAY",
+        timezone: "UTC",
+        startsAt: "2026-08-01T00:00:00.000Z",
+        endsAt: "2026-08-02T00:00:00.000Z",
+        baseAllocatedUsd: "5.000000000000",
+        status: "OPEN",
+        planRevision: targetRevision,
+      },
+    });
+    mocks.policy.mockResolvedValue({
+      ...policyView("7"),
+      plans: [
+        {
+          ...activePlan(),
+          revisions: [],
+          revisionsPageInfo: {
+            hasMore: true,
+            nextCursor: "older-revisions",
+          },
+        },
+      ],
+    });
+    mocks.revisions.mockResolvedValue({
+      projectPolicyVersion: "7",
+      plan: activePlan(),
+      revisions: [targetRevision],
+      pageInfo: { hasMore: false, nextCursor: null },
+    });
+
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: false,
+      canReconcile: false,
+    });
+    await flushPromises();
+
+    expect(mocks.revisions).toHaveBeenCalledWith("project-1", "VIP", {
+      limit: 50,
+      cursor: "older-revisions",
+    });
+    expect(wrapper.text()).toContain("CHAT");
+    expect(wrapper.text()).toContain("Квота пользователя");
+  });
+
+  it("never keeps category rules from a previous pinned revision after refresh fails", async () => {
+    const oldRevision = {
+      id: "revision-old",
+      planId: "11111111-1111-4111-8111-111111111111",
+      revisionNumber: 1,
+      periodKind: "DAY" as const,
+      recurringAmountUsd: "5.000000000000",
+      dailyCapUsd: null,
+      effectiveFrom: "2026-08-01T00:00:00.000Z",
+      changeReason: "Old rules",
+      createdAt: "2026-08-01T00:00:00.000Z",
+      categoryRules: [
+        {
+          category: "VOICE" as const,
+          responsibility: "PROJECT_SPONSORED" as const,
+          capUsd: "2.000000000000",
+        },
+      ],
+    };
+    const newRevision = {
+      ...oldRevision,
+      id: "revision-new",
+      revisionNumber: 2,
+      categoryRules: [],
+    };
+    const period = (revision: typeof oldRevision) => ({
+      id: `period-${revision.id}`,
+      kind: "DAY" as const,
+      timezone: "UTC",
+      startsAt: "2026-08-02T00:00:00.000Z",
+      endsAt: "2026-08-03T00:00:00.000Z",
+      baseAllocatedUsd: "5.000000000000",
+      status: "OPEN" as const,
+      planRevision: revision,
+    });
+    mocks.balance
+      .mockResolvedValueOnce({
+        ...balanceView("project-1", "user-1", "old", false),
+        currentPeriod: period(oldRevision),
+      })
+      .mockResolvedValueOnce({
+        ...balanceView("project-1", "user-1", "new", false),
+        currentPeriod: period(newRevision),
+      });
+    mocks.policy
+      .mockResolvedValueOnce({
+        ...policyView("7"),
+        plans: [{ ...activePlan(), revisions: [oldRevision] }],
+      })
+      .mockResolvedValueOnce({
+        ...policyView("7"),
+        plans: [
+          {
+            ...activePlan(),
+            revisions: [],
+            revisionsPageInfo: {
+              hasMore: true,
+              nextCursor: "new-revision-page",
+            },
+          },
+        ],
+      });
+    mocks.revisions.mockRejectedValueOnce(
+      new Error("Pinned revision unavailable"),
+    );
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: false,
+      canReconcile: false,
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain("VOICE");
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Обновить правила"))!
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("VOICE");
+    expect(wrapper.text()).toContain("Pinned revision unavailable");
   });
 
   it("zeroizes the loaded balance and closes when read permission is revoked", async () => {
@@ -538,17 +911,21 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-function mountDialog(permission: {
-  canGrant: boolean;
-  canManage: boolean;
-  canReconcile: boolean;
-}) {
+function mountDialog(
+  permission: {
+    canGrant: boolean;
+    canManage: boolean;
+    canReconcile: boolean;
+  },
+  initialMode: "summary" | "grant" | "assignment" = "summary",
+) {
   return mount(AiAllowanceUserDialog, {
     props: {
       visible: true,
       projectId: "project-1",
       endUserId: "user-1",
       identity: "external-1",
+      initialMode,
       canRead: true,
       ...permission,
     },

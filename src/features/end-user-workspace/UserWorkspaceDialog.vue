@@ -45,6 +45,9 @@ import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
 import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
 import EndUserAiUsageCard from "@/features/ai-usage/EndUserAiUsageCard.vue";
+import AiAllowanceUserDialog from "@/features/ai-costs/ui/AiAllowanceUserDialog.vue";
+import AiAllowanceJournalPanel from "@/features/ai-costs/ui/AiAllowanceJournalPanel.vue";
+import EndUserAiAllowanceCard from "@/features/ai-costs/ui/EndUserAiAllowanceCard.vue";
 import EndUserOperationalStateCard from "@/features/end-user-state/ui/EndUserOperationalStateCard.vue";
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
@@ -102,6 +105,11 @@ const suspensionHistoryVisible = ref(false);
 const suspensionDialogMode = ref<SuspensionMode>("START");
 const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
 const aiReviewVisible = ref(false);
+const allowanceDialogVisible = ref(false);
+const allowanceDialogMode = ref<"summary" | "grant" | "assignment">("summary");
+const allowanceJournalVisible = ref(false);
+const allowanceJournalCursor = ref("");
+const allowanceRefreshKey = ref(0);
 const liveMessageIds = ref<string[]>([]);
 const telegramDraftDirty = ref(false);
 const sendWithoutTranslationVisible = ref(false);
@@ -184,6 +192,21 @@ const canReadUserMemory = computed(() =>
 );
 const canReadAiUsage = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
+);
+const canReadAllowance = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.ai_allowance.read"),
+);
+const canManageAllowance = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.ai_allowance.manage"),
+);
+const canGrantAllowance = computed(() =>
+  hasProjectPermission(projectPermissions.value, "project.ai_allowance.grant"),
+);
+const canReconcileAllowance = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.ai_allowance.reconcile",
+  ),
 );
 const canReadEndUserState = computed(() =>
   hasProjectPermission(
@@ -416,10 +439,7 @@ const canStartAIReview = computed(
     ),
 );
 const canReadAIAnalyses = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.ai_analyses.read",
-  ),
+  hasProjectPermission(projectPermissions.value, "project.ai_analyses.read"),
 );
 const projectTimezone = computed(() => {
   const scenarioEngine = auth.project?.settings?.scenarioEngine as
@@ -533,6 +553,13 @@ watch(
   },
   { immediate: true },
 );
+watch(canReadAllowance, (canRead) => {
+  if (canRead) return;
+  allowanceDialogVisible.value = false;
+  allowanceDialogMode.value = "summary";
+  allowanceJournalVisible.value = false;
+  allowanceJournalCursor.value = "";
+});
 
 onMounted(() => {
   document.body.classList.toggle("workspace-scroll-locked", visible.value);
@@ -678,6 +705,10 @@ function closeWorkspace(): void {
   composerActionsVisible.value = false;
   conversationMenuVisible.value = false;
   ticketDrawerVisible.value = false;
+  allowanceDialogVisible.value = false;
+  allowanceDialogMode.value = "summary";
+  allowanceJournalVisible.value = false;
+  allowanceJournalCursor.value = "";
   replyTemplateGalleryVisible.value = false;
   translationFeedbackEnabled.value = false;
   replyTranslationRequested.value = false;
@@ -698,6 +729,25 @@ async function openChat(): Promise<void> {
 function openProfile(): void {
   workspaceMode.value = "PROFILE";
   emit("profileSelected");
+}
+
+function openAllowanceDetails(
+  mode: "summary" | "grant" | "assignment" = "summary",
+): void {
+  if (!canReadAllowance.value || !props.endUserId) return;
+  allowanceDialogMode.value = mode;
+  allowanceDialogVisible.value = true;
+}
+
+function openAllowanceJournal(): void {
+  if (!canReadAllowance.value || !props.endUserId) return;
+  allowanceDialogVisible.value = false;
+  allowanceJournalCursor.value = "";
+  allowanceJournalVisible.value = true;
+}
+
+function refreshAllowance(): void {
+  allowanceRefreshKey.value += 1;
 }
 
 function messageFromEvent(
@@ -1295,6 +1345,17 @@ function displayField(
               <span>Нужно право на чтение статистики AI проекта.</span>
             </div>
           </section>
+          <EndUserAiAllowanceCard
+            v-if="canReadAllowance && endUserId"
+            :project-id="projectId"
+            :end-user-id="endUserId"
+            :can-grant="canGrantAllowance"
+            :can-manage="canManageAllowance"
+            :can-reconcile="canReconcileAllowance"
+            :refresh-key="allowanceRefreshKey"
+            @open-details="openAllowanceDetails"
+            @open-journal="openAllowanceJournal"
+          />
           <EndUserOperationalStateCard
             v-if="canReadEndUserState && endUserId"
             :project-id="projectId"
@@ -2049,6 +2110,41 @@ function displayField(
       :timezone="projectTimezone"
       :can-open-analysis="canReadAIAnalyses"
     />
+
+    <AiAllowanceUserDialog
+      v-if="allowanceDialogVisible && canReadAllowance && endUserId"
+      :visible="true"
+      :project-id="projectId"
+      :end-user-id="endUserId"
+      :identity="detail?.externalUserId || externalUserId || endUserId"
+      :initial-mode="allowanceDialogMode"
+      :can-read="canReadAllowance"
+      :can-grant="canGrantAllowance"
+      :can-manage="canManageAllowance"
+      :can-reconcile="canReconcileAllowance"
+      @update:visible="allowanceDialogVisible = $event"
+      @open-journal="openAllowanceJournal"
+      @changed="refreshAllowance"
+    />
+
+    <Dialog
+      v-if="canReadAllowance && endUserId"
+      v-model:visible="allowanceJournalVisible"
+      modal
+      :header="`Журнал AI-квоты · ${detail?.externalUserId || externalUserId || endUserId}`"
+      :style="{ width: 'min(1180px, 96vw)' }"
+    >
+      <AiAllowanceJournalPanel
+        :project-id="projectId"
+        :can-read="canReadAllowance"
+        :can-reconcile="canReconcileAllowance"
+        :end-user-id="endUserId"
+        :cursor="allowanceJournalCursor"
+        embedded
+        @next-cursor="allowanceJournalCursor = $event"
+        @changed="refreshAllowance"
+      />
+    </Dialog>
 
     <Dialog
       v-model:visible="newChatOpen"

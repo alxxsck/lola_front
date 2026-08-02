@@ -196,9 +196,9 @@ describe("allowance admin panels", () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="allowance-low-threshold-summary"]').text()).toBe(
-      "10% от базового лимита",
-    );
+    expect(
+      wrapper.get('[data-testid="allowance-low-threshold-summary"]').text(),
+    ).toBe("10% от базового лимита");
     expect(wrapper.text()).not.toContain("Изменить базовый план");
   });
 
@@ -398,9 +398,7 @@ describe("allowance admin panels", () => {
     expect(wrapper.text()).toContain("не больше 100 процентов");
     expect(mocks.putDefaultPlan).not.toHaveBeenCalled();
 
-    await wrapper
-      .get("#allowance-low-threshold-mode")
-      .setValue("ABSOLUTE_USD");
+    await wrapper.get("#allowance-low-threshold-mode").setValue("ABSOLUTE_USD");
     await wrapper.get("#allowance-low-threshold-value").setValue("1.25");
     await wrapper.get("form.allowance-form").trigger("submit");
     await flushPromises();
@@ -692,6 +690,7 @@ describe("allowance admin panels", () => {
       },
       key,
     );
+    expect(wrapper.emitted("changed")).toEqual([[]]);
   });
 
   it("omits expiry for a negative correction and drops mutation feedback after tenant change", async () => {

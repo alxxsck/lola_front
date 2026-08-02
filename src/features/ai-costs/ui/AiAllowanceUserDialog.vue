@@ -6,6 +6,7 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
+  addDecimalStrings,
   compareDecimalStrings,
   formatDecimalMoney,
   type DecimalString,
@@ -13,7 +14,10 @@ import {
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
 import {
   parseAllowanceUsd,
+  type AiAllowanceAssignment,
   type AiAllowancePlan,
+  type AiAllowancePlanRevision,
+  type AiAllowanceProjectPolicyView,
   type AiAllowanceUserBalance,
 } from "../model/ai-allowance";
 
@@ -22,6 +26,7 @@ const props = defineProps<{
   projectId: string;
   endUserId: string;
   identity: string;
+  initialMode?: "summary" | "grant" | "assignment";
   plans?: AiAllowancePlan[];
   canRead: boolean;
   canGrant: boolean;
@@ -31,6 +36,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:visible": [value: boolean];
   openJournal: [endUserId: string];
+  changed: [];
 }>();
 const balance = ref<AiAllowanceUserBalance | null>(null);
 const loadedContext = ref("");
@@ -45,6 +51,7 @@ const validFrom = ref("");
 const expiresAt = ref("");
 const reason = ref("");
 const idempotencyKey = ref("");
+const grantExpiryPreset = ref<"PERIOD_END" | "24H" | "CUSTOM">("24H");
 const planId = ref("");
 const effectiveFrom = ref("");
 const effectiveUntil = ref("");
@@ -55,13 +62,49 @@ const plansPageInfo = ref<{ hasMore: boolean; nextCursor: string | null }>({
 });
 const plansLoading = ref(false);
 const projectPolicyVersion = ref("");
+const defaultAssignment = ref<AiAllowanceAssignment | null>(null);
 const configurationConflict = ref(false);
+const projectTimezone = ref("UTC");
+const pinnedPlanRevision = ref<AiAllowancePlanRevision | null>(null);
+const planRevisionError = ref("");
+interface GrantReceipt {
+  id: string;
+  amountUsd: DecimalString;
+  validFrom: string;
+  expiresAt: string;
+  reason: string;
+  actor: string;
+  formOpenedAvailableUsd: DecimalString;
+  newAvailableUsd: DecimalString;
+  replayed: boolean;
+}
+const grantReceipt = ref<GrantReceipt | null>(null);
+let initialModeApplied = false;
 let generation = 0;
 const activePlans = computed(() =>
   (loadedPlans.value.length ? loadedPlans.value : (props.plans ?? [])).filter(
     (plan) => plan.status === "ACTIVE",
   ),
 );
+const currentPlanRevision = computed(() => {
+  const revisionId = balance.value?.currentPeriod?.planRevision.id;
+  if (!revisionId) return null;
+  if (pinnedPlanRevision.value?.id === revisionId)
+    return pinnedPlanRevision.value;
+  for (const plan of loadedPlans.value) {
+    const revision = plan.revisions.find((item) => item.id === revisionId);
+    if (revision) return revision;
+  }
+  return null;
+});
+const grantPreview = computed(() => {
+  const exact = parseAllowanceUsd(amount.value.trim());
+  const available = balance.value?.account.availableUsd;
+  const overage = balance.value?.account.overageUsd;
+  return exact && available && overage
+    ? addDecimalStrings([available, nonNegativeDifference(exact, overage)])
+    : null;
+});
 
 watch(
   () =>
@@ -74,7 +117,13 @@ watch(
     plansLoading.value = false;
     loadedContext.value = "";
     projectPolicyVersion.value = "";
+    defaultAssignment.value = null;
     configurationConflict.value = false;
+    pinnedPlanRevision.value = null;
+    planRevisionError.value = "";
+    grantReceipt.value = null;
+    projectTimezone.value = "UTC";
+    initialModeApplied = false;
     grantsLoading.value = false;
     mutationLoading.value = false;
     loading.value = false;
@@ -86,6 +135,7 @@ watch(
     expiresAt.value = "";
     reason.value = "";
     idempotencyKey.value = "";
+    grantExpiryPreset.value = "24H";
     planId.value = "";
     effectiveFrom.value = "";
     effectiveUntil.value = "";
@@ -120,6 +170,8 @@ async function load(): Promise<boolean> {
   const requestEndUserId = props.endUserId;
   loadedContext.value = "";
   projectPolicyVersion.value = "";
+  pinnedPlanRevision.value = null;
+  planRevisionError.value = "";
   loading.value = true;
   error.value = "";
   try {
@@ -146,9 +198,29 @@ async function load(): Promise<boolean> {
     }
     balance.value = nextBalance;
     projectPolicyVersion.value = projectPolicy.projectPolicyVersion;
+    defaultAssignment.value = projectPolicy.defaultAssignment;
+    projectTimezone.value =
+      projectPolicy.policy?.timezone ??
+      nextBalance.currentPeriod?.timezone ??
+      "UTC";
     loadedContext.value = `${requestProjectId}:${requestEndUserId}`;
     loadedPlans.value = projectPolicy.plans;
     plansPageInfo.value = projectPolicy.plansPageInfo;
+    try {
+      pinnedPlanRevision.value = await findPinnedPlanRevision(
+        nextBalance,
+        projectPolicy,
+        requestGeneration,
+      );
+    } catch (cause) {
+      if (requestGeneration === generation)
+        planRevisionError.value = text(
+          cause,
+          "Не удалось загрузить правила текущей ревизии",
+        );
+    }
+    if (requestGeneration !== generation) return false;
+    applyInitialMode();
     return true;
   } catch (cause) {
     if (requestGeneration === generation)
@@ -157,6 +229,67 @@ async function load(): Promise<boolean> {
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
+}
+async function findPinnedPlanRevision(
+  nextBalance: AiAllowanceUserBalance,
+  initialPolicy: AiAllowanceProjectPolicyView,
+  requestGeneration: number,
+): Promise<AiAllowancePlanRevision | null> {
+  const target = nextBalance.currentPeriod?.planRevision;
+  if (!target) return null;
+  let page = initialPolicy;
+  let plan = page.plans.find((item) => item.id === target.planId);
+  for (
+    let pageCount = 0;
+    !plan && page.plansPageInfo.nextCursor && pageCount < 20;
+    pageCount += 1
+  ) {
+    page = await aiAllowanceRepository.projectPolicy(props.projectId, {
+      planCursor: page.plansPageInfo.nextCursor,
+      planLimit: 50,
+      revisionLimit: 5,
+    });
+    assertPinnedRevisionContext(requestGeneration, initialPolicy, page);
+    plan = page.plans.find((item) => item.id === target.planId);
+  }
+  if (!plan) return null;
+  const included = plan.revisions.find((item) => item.id === target.id);
+  if (included) return included;
+
+  let cursor = plan.revisionsPageInfo.nextCursor;
+  for (let pageCount = 0; cursor && pageCount < 20; pageCount += 1) {
+    const revisions = await aiAllowanceRepository.planRevisions(
+      props.projectId,
+      plan.key,
+      { limit: 50, cursor },
+    );
+    if (
+      requestGeneration !== generation ||
+      revisions.projectPolicyVersion !== initialPolicy.projectPolicyVersion
+    )
+      throw new Error("Конфигурация планов изменилась во время загрузки.");
+    const found = revisions.revisions.find((item) => item.id === target.id);
+    if (found) return found;
+    cursor = revisions.pageInfo.nextCursor;
+  }
+  return null;
+}
+function assertPinnedRevisionContext(
+  requestGeneration: number,
+  initialPolicy: AiAllowanceProjectPolicyView,
+  nextPolicy: AiAllowanceProjectPolicyView,
+): void {
+  if (
+    requestGeneration !== generation ||
+    nextPolicy.projectPolicyVersion !== initialPolicy.projectPolicyVersion
+  )
+    throw new Error("Конфигурация планов изменилась во время загрузки.");
+}
+function applyInitialMode(): void {
+  if (initialModeApplied) return;
+  initialModeApplied = true;
+  if (props.initialMode === "grant") beginGrant();
+  if (props.initialMode === "assignment") beginAssignment();
 }
 async function loadMorePlans(): Promise<void> {
   const cursor = plansPageInfo.value.nextCursor;
@@ -274,7 +407,8 @@ function beginGrant(): void {
   mode.value = "grant";
   amount.value = "";
   validFrom.value = localNow();
-  expiresAt.value = localTomorrow();
+  grantExpiryPreset.value = balance.value?.currentPeriod ? "PERIOD_END" : "24H";
+  applyGrantExpiryPreset();
   reason.value = "";
   idempotencyKey.value = key();
   formError.value = "";
@@ -305,18 +439,25 @@ async function submitGrant(): Promise<void> {
   if (!from || !until || from >= until)
     return fail("Дата окончания должна быть позже даты начала.");
   if (!validCommon()) return;
-  await mutate(() =>
-    aiAllowanceRepository.createGrant(
-      props.projectId,
-      props.endUserId,
-      {
-        amountUsd: exact,
-        validFrom: from,
-        expiresAt: until,
-        reason: reason.value.trim(),
-      },
-      idempotencyKey.value.trim(),
-    ),
+  if (reason.value.trim().length < 10 || reason.value.trim().length > 500)
+    return fail("Причина начисления должна содержать от 10 до 500 символов.");
+  const previousAvailableUsd = balance.value?.account.availableUsd ?? "0";
+  await mutate(
+    () =>
+      aiAllowanceRepository.createGrant(
+        props.projectId,
+        props.endUserId,
+        {
+          amountUsd: exact,
+          validFrom: from,
+          expiresAt: until,
+          reason: reason.value.trim(),
+        },
+        idempotencyKey.value.trim(),
+      ),
+    (result) => {
+      grantReceipt.value = parseGrantReceipt(result, previousAvailableUsd);
+    },
   );
 }
 async function submitAssignment(): Promise<void> {
@@ -386,6 +527,7 @@ async function mutate<T>(
     mutationLoading.value = false;
     mode.value = "summary";
     await load();
+    emit("changed");
   } catch (cause) {
     if (
       requestGeneration === generation &&
@@ -414,10 +556,15 @@ function nonZero(value: DecimalString | undefined): boolean {
   return Boolean(value && compareDecimalStrings(value, "0") !== 0);
 }
 function date(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  try {
+    return new Intl.DateTimeFormat("ru-RU", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: projectTimezone.value,
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
 }
 function iso(value: string): string | undefined {
   const result = new Date(value);
@@ -430,6 +577,80 @@ function localNow(): string {
 }
 function localTomorrow(): string {
   return localInput(new Date(Date.now() + 24 * 60 * 60 * 1000));
+}
+function applyGrantExpiryPreset(): void {
+  if (grantExpiryPreset.value === "CUSTOM") return;
+  if (
+    grantExpiryPreset.value === "PERIOD_END" &&
+    balance.value?.currentPeriod
+  ) {
+    expiresAt.value = localInput(new Date(balance.value.currentPeriod.endsAt));
+    return;
+  }
+  expiresAt.value = localTomorrow();
+}
+function parseGrantReceipt(
+  value: unknown,
+  formOpenedAvailableUsd: DecimalString,
+): GrantReceipt | null {
+  if (!value || typeof value !== "object") return null;
+  const source = value as Record<string, unknown>;
+  const grant = source.grant;
+  const account = source.account;
+  if (
+    !grant ||
+    typeof grant !== "object" ||
+    !account ||
+    typeof account !== "object"
+  )
+    return null;
+  const grantValue = grant as Record<string, unknown>;
+  const accountValue = account as Record<string, unknown>;
+  const amountUsd = parseAllowanceUsd(grantValue.amountUsd);
+  const newAvailableUsd = parseAllowanceUsd(accountValue.availableUsd);
+  if (
+    typeof grantValue.id !== "string" ||
+    !amountUsd ||
+    typeof grantValue.validFrom !== "string" ||
+    typeof grantValue.expiresAt !== "string" ||
+    typeof grantValue.reason !== "string" ||
+    typeof grantValue.actorType !== "string" ||
+    typeof grantValue.actorId !== "string" ||
+    !newAvailableUsd ||
+    typeof source.replayed !== "boolean"
+  )
+    return null;
+  return {
+    id: grantValue.id,
+    amountUsd,
+    validFrom: grantValue.validFrom,
+    expiresAt: grantValue.expiresAt,
+    reason: grantValue.reason,
+    actor: `${grantValue.actorType}:${grantValue.actorId}`,
+    formOpenedAvailableUsd,
+    newAvailableUsd,
+    replayed: source.replayed,
+  };
+}
+function nonNegativeDifference(
+  left: DecimalString,
+  right: DecimalString,
+): DecimalString {
+  const scale = Math.max(
+    left.split(".")[1]?.length ?? 0,
+    right.split(".")[1]?.length ?? 0,
+  );
+  const coefficient = (value: DecimalString) => {
+    const [whole = "0", fraction = ""] = value.split(".");
+    return BigInt(`${whole}${fraction.padEnd(scale, "0")}`);
+  };
+  const difference = coefficient(left) - coefficient(right);
+  if (difference <= 0n) return "0";
+  if (scale === 0) return difference.toString();
+  const padded = difference.toString().padStart(scale + 1, "0");
+  const whole = padded.slice(0, -scale);
+  const fraction = padded.slice(-scale).replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole;
 }
 function localInput(value: Date): string {
   const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
@@ -482,6 +703,32 @@ async function refreshAssignmentDraft(): Promise<void> {
         >{{ error }} <Button label="Повторить" text size="small" @click="load"
       /></Message>
       <template v-if="balance && mode === 'summary'">
+        <Message
+          v-if="grantReceipt"
+          severity="success"
+          :closable="false"
+          data-testid="grant-receipt"
+        >
+          <strong>Начисление записано</strong>
+          <span>
+            {{ grantReceipt.id }} · {{ money(grantReceipt.amountUsd) }} ·
+            {{ date(grantReceipt.validFrom) }} —
+            {{ date(grantReceipt.expiresAt) }}
+          </span>
+          <span>
+            Доступно после команды: {{ money(grantReceipt.newAvailableUsd) }} ·
+            {{ grantReceipt.actor }} · {{ grantReceipt.reason }}
+          </span>
+          <span>
+            При открытии формы было
+            {{ money(grantReceipt.formOpenedAvailableUsd) }}. Это справочное
+            значение, не часть атомарного command receipt.
+          </span>
+          <span v-if="grantReceipt.replayed"
+            >Безопасный повтор: существующее начисление, дубликат не
+            создан.</span
+          >
+        </Message>
         <div class="balance-grid">
           <article>
             <small>Доступно сейчас</small
@@ -528,7 +775,9 @@ async function refreshAssignmentDraft(): Promise<void> {
             <strong>{{ money(balance.currentPeriod.baseAllocatedUsd) }}</strong>
             · {{ balance.currentPeriod.kind }} · до
             {{ date(balance.currentPeriod.endsAt) }}
-            <span>{{ balance.currentPeriod.status }}</span>
+            <span
+              >{{ balance.currentPeriod.status }} · {{ projectTimezone }}</span
+            >
           </p>
           <p v-else>
             Период ещё не создан. При первом применении будет начислено
@@ -544,7 +793,15 @@ async function refreshAssignmentDraft(): Promise<void> {
             }}
             · с {{ date(balance.endUserAssignment.effectiveFrom) }}
           </p>
-          <p v-else>Используется проектный план по умолчанию.</p>
+          <p v-else-if="defaultAssignment">
+            Персональный план не назначен. Базовый план проекта настроен:
+            {{ defaultAssignment.plan?.name ?? defaultAssignment.planId }}.
+            Точный источник текущего плана API пока не сообщает.
+          </p>
+          <p v-else>
+            Персональный план не назначен. Действуют правила проекта; источник
+            группового плана API пока не сообщает.
+          </p>
         </section>
         <section class="details">
           <h3>Активные начисления</h3>
@@ -563,6 +820,48 @@ async function refreshAssignmentDraft(): Promise<void> {
             :loading="grantsLoading"
             @click="loadMoreGrants"
           />
+        </section>
+        <section v-if="currentPlanRevision" class="details">
+          <div class="details-heading">
+            <h3>Правила категорий текущего периода</h3>
+            <Button
+              label="Обновить правила"
+              text
+              size="small"
+              :loading="loading"
+              @click="load"
+            />
+          </div>
+          <div class="category-rules">
+            <p
+              v-for="rule in currentPlanRevision.categoryRules"
+              :key="rule.category"
+            >
+              <strong>{{ rule.category }}</strong>
+              <span>
+                {{
+                  rule.responsibility === "END_USER_ALLOWANCE"
+                    ? "Квота пользователя"
+                    : "Оплачивает проект"
+                }}
+                · лимит
+                {{ rule.capUsd ? money(rule.capUsd) : "без ограничения" }}
+              </span>
+            </p>
+          </div>
+        </section>
+        <section
+          v-else-if="balance.currentPeriod"
+          class="details"
+          data-testid="category-rules-unavailable"
+        >
+          <h3>Правила категорий текущего периода</h3>
+          <p>
+            {{
+              planRevisionError ||
+              "Точная закреплённая ревизия не найдена в admin API."
+            }}
+          </p>
         </section>
         <footer>
           <Button
@@ -607,11 +906,39 @@ async function refreshAssignmentDraft(): Promise<void> {
           <label
             >Действует с<input
               v-model="validFrom"
-              type="datetime-local" /></label
+              type="datetime-local"
+              @input="grantExpiryPreset = 'CUSTOM'" /></label
           ><label
-            >Истекает<input v-model="expiresAt" type="datetime-local"
+            >Истекает<input
+              v-model="expiresAt"
+              type="datetime-local"
+              :readonly="grantExpiryPreset !== 'CUSTOM'"
           /></label>
         </div>
+        <label
+          >Срок начисления<select
+            v-model="grantExpiryPreset"
+            @change="applyGrantExpiryPreset"
+          >
+            <option value="PERIOD_END" :disabled="!balance?.currentPeriod">
+              До конца текущего периода
+            </option>
+            <option value="24H">24 часа</option>
+            <option value="CUSTOM">Выбранная дата</option>
+          </select></label
+        >
+        <small
+          >Даты вводятся в часовом поясе браузера; проект:
+          {{ projectTimezone }}.</small
+        >
+        <Message v-if="grantPreview" severity="info" :closable="false">
+          Предварительно доступно после начисления:
+          <strong>{{ money(grantPreview) }}</strong>
+          <span v-if="nonZero(balance?.account.overageUsd)">
+            Сначала начисление погасит текущий перерасход
+            {{ money(balance?.account.overageUsd ?? "0") }}.
+          </span>
+        </Message>
         <label
           >Причина<textarea v-model="reason" rows="3" maxlength="500" /></label
         ><label
@@ -673,6 +1000,10 @@ async function refreshAssignmentDraft(): Promise<void> {
               type="datetime-local"
           /></label>
         </div>
+        <small
+          >Даты вводятся в часовом поясе браузера; проект:
+          {{ projectTimezone }}.</small
+        >
         <label
           >Причина<textarea v-model="reason" rows="3" maxlength="500" /></label
         ><label
@@ -758,8 +1089,30 @@ async function refreshAssignmentDraft(): Promise<void> {
 .mutation-form h3 {
   margin: 0;
 }
+.details-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 .details span {
   margin-left: 6px;
+}
+.category-rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.category-rules p {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.category-rules span {
+  margin: 0;
+  font-size: 0.78rem;
 }
 .grants article {
   display: flex;
@@ -804,7 +1157,8 @@ async function refreshAssignmentDraft(): Promise<void> {
 @media (max-width: 650px) {
   .balance-grid,
   .loading,
-  .form-row {
+  .form-row,
+  .category-rules {
     grid-template-columns: 1fr;
   }
   .user-allowance footer {
