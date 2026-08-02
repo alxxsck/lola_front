@@ -10,6 +10,7 @@ import type {
   ProjectAIAnalysisErrorPresentationDto,
 } from "@/shared/api/generated/models";
 import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
+import { aiErrorMessage } from "@/features/ai-errors/model/ai-error-message";
 import {
   formatUsdTicks,
   presentAnalysisCostStatus,
@@ -250,10 +251,9 @@ watch(
             >{{ detail.schedule.localDateTime }}</span
           >
           <span
-            v-if="
-              detail.schedule.failureMessage || detail.schedule.failureCode
-            "
-            ><small>Причина остановки</small>{{
+            v-if="detail.schedule.failureMessage || detail.schedule.failureCode"
+            ><small>Причина остановки</small
+            >{{
               detail.schedule.failureMessage ??
               "Отложенный запуск не удалось выполнить."
             }}</span
@@ -459,7 +459,13 @@ watch(
           severity="error"
           :closable="false"
         >
-          {{ run.errorMessage ?? "Запуск завершился с ошибкой." }}
+          {{
+            run.errorMessage ??
+            aiErrorMessage(
+              run.errorCode,
+              "Запуск завершился с ошибкой. Технический код доступен в данных запуска.",
+            )
+          }}
         </Message>
       </section>
 

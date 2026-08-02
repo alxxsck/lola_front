@@ -179,10 +179,7 @@ function formatDate(value: string): string {
         class="limitation"
       >
         <i class="pi pi-exclamation-triangle" />
-        <span
-          ><strong>{{ limitation.code }}</strong
-          >{{ limitation.message }}</span
-        >
+        <span>{{ limitation.message }}</span>
       </div>
     </div>
   </section>

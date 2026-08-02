@@ -9,6 +9,7 @@ import MultiSelect from "primevue/multiselect";
 import ProgressSpinner from "primevue/progressspinner";
 import Textarea from "primevue/textarea";
 import { useRouter } from "vue-router";
+import { aiErrorMessage } from "@/features/ai-errors/model/ai-error-message";
 import { eventQueryRepository } from "@/features/event-query/api/event-query-repository";
 import { aiReviewRepository } from "../api/ai-review-repository";
 import type {
@@ -458,7 +459,10 @@ function formatRange(value: string) {
           {{
             run.status === "OUTCOME_UNKNOWN"
               ? "Ответ провайдера потерян. Автоматический повтор отключён, чтобы не списать токены дважды."
-              : `Анализ завершился с ошибкой: ${run.errorCode ?? "UNKNOWN"}`
+              : aiErrorMessage(
+                  run.errorCode,
+                  "Анализ завершился с ошибкой. Технические данные доступны в журнале операций.",
+                )
           }}
         </Message>
         <div v-if="running" class="running">

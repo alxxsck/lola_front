@@ -32,6 +32,21 @@ describe("project AI analysis presentation", () => {
     });
   });
 
+  it("removes persisted limitation codes from the user-facing answer", () => {
+    const result = presentAnalysisResult({
+      answer: "Результат неполный: EVENT_RETENTION_LIMIT_REACHED.",
+      limitations: [
+        {
+          code: "EVENT_RETENTION_LIMIT_REACHED",
+          message: "EVENT_RETENTION_LIMIT_REACHED",
+        },
+      ],
+    });
+
+    expect(result.answer).toContain("доступной истории событий");
+    expect(result.answer).not.toContain("EVENT_RETENTION_LIMIT_REACHED");
+  });
+
   it("accepts the bounded structured result and rejects malformed tables", () => {
     expect(
       presentAnalysisResult({

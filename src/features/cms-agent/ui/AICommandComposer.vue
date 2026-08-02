@@ -6,6 +6,7 @@ import Textarea from "primevue/textarea";
 import { cmsAgentRepository } from "../api/cms-agent-repository";
 import type { ProjectAIAnalysisEstimateResponseDto } from "@/shared/api/generated/models";
 import type { CmsAgentExecution } from "../model/cms-agent-execution";
+import { aiErrorMessage } from "@/features/ai-errors/model/ai-error-message";
 
 const props = defineProps<{ projectId: string }>();
 const emit = defineEmits<{ "analysis-created": [analysisId: string] }>();
@@ -36,7 +37,6 @@ const phaseByExecutionKind = {
 const text = ref("");
 const phase = ref<ComposerPhase>("IDLE");
 const error = ref("");
-const outcomeCode = ref("");
 const pendingRequestId = ref<string | null>(null);
 const pendingProjectId = ref<string | null>(null);
 const idempotencyKey = ref<string | null>(null);
@@ -105,7 +105,6 @@ function formatUsdTicks(value: string): string {
 }
 
 function applyExecution(result: CmsAgentExecution): void {
-  outcomeCode.value = "code" in result ? (result.code ?? "") : "";
   if (result.kind === "ANALYSIS_QUEUED") {
     phase.value = "SUCCEEDED";
     createdAnalysisId.value = result.analysisId;
@@ -113,6 +112,12 @@ function applyExecution(result: CmsAgentExecution): void {
     return;
   }
   phase.value = phaseByExecutionKind[result.kind];
+  if (result.kind === "FAILED") {
+    error.value = aiErrorMessage(
+      result.code,
+      "Запрос не удалось выполнить. Откройте журнал операции для технических данных.",
+    );
+  }
   if (result.kind === "PROTOCOL_ERROR") {
     error.value =
       "Сервер запустил запрос, но вернул неполный результат. Проверьте журнал анализов перед повтором.";
@@ -159,7 +164,6 @@ async function submit(): Promise<void> {
     const question = trimmedText.value;
     phase.value = "ESTIMATING";
     error.value = "";
-    outcomeCode.value = "";
     try {
       const quoted = await cmsAgentRepository.estimate(projectId, {
         executionPath: "CMS_AGENT",
@@ -195,7 +199,6 @@ async function submit(): Promise<void> {
   }
   phase.value = "SUBMITTING";
   error.value = "";
-  outcomeCode.value = "";
   idempotencyKey.value ??= createIdempotencyKey();
   try {
     const request = await cmsAgentRepository.submit(projectId, {
@@ -238,7 +241,6 @@ function reviseRequest(): void {
 function resetRequest(): void {
   phase.value = "IDLE";
   error.value = "";
-  outcomeCode.value = "";
   pendingRequestId.value = null;
   pendingProjectId.value = null;
   idempotencyKey.value = null;
@@ -421,8 +423,7 @@ function handleShortcut(event: KeyboardEvent): void {
         <div class="message-content">
           <span>
             <strong>Нужно уточнение.</strong>
-            Укажите событие, период или пользователя точнее
-            <span v-if="outcomeCode">({{ outcomeCode }})</span>.
+            Укажите событие, период или пользователя точнее.
           </span>
           <Button
             data-testid="ai-command-revise"

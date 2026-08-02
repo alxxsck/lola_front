@@ -32,7 +32,9 @@ describe("AIAnalysisResultView", () => {
             aiOperationId: "operation-1",
             queryReceipts: [],
           },
-          limitations: [{ code: "PARTIAL", message: "Часть данных исключена" }],
+          limitations: [
+            { code: "RAW_LIMIT_CODE", message: "Часть данных исключена" },
+          ],
         },
         canReadCost: false,
       },
@@ -42,6 +44,7 @@ describe("AIAnalysisResultView", () => {
     expect(wrapper.text()).toContain("GEO");
     expect(wrapper.text()).toContain("ES");
     expect(wrapper.text()).toContain("Часть данных исключена");
+    expect(wrapper.text()).not.toContain("RAW_LIMIT_CODE");
     expect(wrapper.text()).toContain("deposit.completed");
     expect(wrapper.text()).toContain("PARTIAL");
     expect(

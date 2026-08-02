@@ -1,3 +1,5 @@
+import { aiLimitationMessage } from "@/features/ai-errors/model/ai-error-message";
+
 export interface PresentedAnalysisResult {
   title: string | null;
   answer: string | null;
@@ -93,9 +95,10 @@ export function presentAnalysisResult(value: unknown): PresentedAnalysisResult {
   const source = record(value);
   const interpretedScope = record(source.interpretedScope);
   const interpretedTime = record(source.interpretedTime);
+  const limitations = presentLimitations(source.limitations);
   return {
     title: text(source.title, 500),
-    answer: text(source.answer, 20_000),
+    answer: presentAnswer(text(source.answer, 20_000), limitations),
     scope: text(interpretedScope.description, 1_000),
     time:
       typeof interpretedTime.from === "string" &&
@@ -113,10 +116,24 @@ export function presentAnalysisResult(value: unknown): PresentedAnalysisResult {
     definitions: presentDefinitions(source.definitions),
     receiptOrdinals: presentReceiptOrdinals(source.receiptOrdinals),
     completeness: presentCompleteness(source.completeness),
-    limitations: presentLimitations(source.limitations),
+    limitations,
     actors: presentActors(source.actors),
     provenance: presentProvenance(source.provenance),
   };
+}
+
+function presentAnswer(
+  answer: string | null,
+  limitations: PresentedAnalysisResult["limitations"],
+): string | null {
+  if (!answer) return null;
+  return limitations.reduce((current, limitation) => {
+    const occurrence = new RegExp(
+      `${limitation.code}(?:[.!?](?=\\s|$))?`,
+      "gu",
+    );
+    return current.replace(occurrence, limitation.message);
+  }, answer);
 }
 
 function presentTable(value: unknown): PresentedAnalysisResult["table"] {
@@ -158,7 +175,9 @@ function presentLimitations(
     const limitation = record(item);
     const code = text(limitation.code, 200);
     const message = text(limitation.message, 2_000);
-    return code && message ? [{ code, message }] : [];
+    return code && message
+      ? [{ code, message: aiLimitationMessage(code, message) }]
+      : [];
   });
 }
 

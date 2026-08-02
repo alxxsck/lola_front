@@ -150,6 +150,25 @@ describe("AICommandComposer", () => {
     );
   });
 
+  it("explains a planner output-token limit instead of rendering its raw code", async () => {
+    repository.submit.mockResolvedValue({ requestId: "request-limited" });
+    repository.execute.mockResolvedValue({
+      kind: "FAILED",
+      code: "AI_STRUCTURED_OUTPUT_TOKEN_LIMIT_EXCEEDED",
+    });
+    const wrapper = mountComposer();
+
+    await wrapper.get("textarea").setValue("Сложный анализ");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("выходных токенов");
+    expect(wrapper.text()).toContain("токены рассуждения");
+    expect(wrapper.text()).not.toContain(
+      "AI_STRUCTURED_OUTPUT_TOKEN_LIMIT_EXCEEDED",
+    );
+  });
+
   it("retries execution without creating a duplicate Agent request", async () => {
     repository.submit.mockResolvedValue({ requestId: "request-3" });
     repository.execute
