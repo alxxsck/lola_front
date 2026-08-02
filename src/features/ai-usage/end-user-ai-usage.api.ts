@@ -1,5 +1,6 @@
 import { endUserAiUsageReport } from "@/shared/api/generated/lola-backend";
 import { isMockMode } from "@/shared/config/data-mode";
+import { parseDecimalString } from "@/shared/lib/decimal-money";
 import {
   buildDemoTextToSpeechPricingContext,
   parseAiUsageEventQueryBreakdown,
@@ -29,7 +30,7 @@ function integer(value: unknown): number | undefined {
     : undefined;
 }
 
-function decimal(value: unknown): number | undefined {
+function measurementDecimal(value: unknown): number | undefined {
   if (
     typeof value === "string" &&
     (value.length > 64 || !/^\d+(?:\.\d+)?$/.test(value))
@@ -49,11 +50,11 @@ function parseSummary(value: unknown): EndUserAiUsageSummary | undefined {
     inputTokens: integer(source.inputTokens),
     outputTokens: integer(source.outputTokens),
     inputCharacters: integer(source.inputCharacters),
-    providerBilledUnits: decimal(source.providerBilledUnits),
-    durationSeconds: decimal(source.durationSeconds),
-    providerReportedCost: decimal(source.providerReportedCost),
-    estimatedFallbackCost: decimal(source.estimatedFallbackCost),
-    effectiveCost: decimal(source.effectiveCost),
+    providerBilledUnits: measurementDecimal(source.providerBilledUnits),
+    durationSeconds: measurementDecimal(source.durationSeconds),
+    providerReportedCost: parseDecimalString(source.providerReportedCost),
+    estimatedFallbackCost: parseDecimalString(source.estimatedFallbackCost),
+    effectiveCost: parseDecimalString(source.effectiveCost),
   };
   return Object.values(parsed).some((item) => item === undefined)
     ? undefined
@@ -160,9 +161,9 @@ export function buildEndUserAiUsageDemoReport(
     inputCharacters: 0,
     providerBilledUnits: 0,
     durationSeconds: 0,
-    providerReportedCost: 0,
-    estimatedFallbackCost: 0,
-    effectiveCost: 0,
+    providerReportedCost: "0",
+    estimatedFallbackCost: "0",
+    effectiveCost: "0",
     ...values,
   });
   const categories: EndUserAiUsageCategoryRow[] = [
@@ -174,8 +175,8 @@ export function buildEndUserAiUsageDemoReport(
         totalTokens: 34_200,
         inputTokens: 27_500,
         outputTokens: 6_700,
-        providerReportedCost: 0.14,
-        effectiveCost: 0.14,
+        providerReportedCost: "0.14",
+        effectiveCost: "0.14",
       }),
     },
     {
@@ -186,8 +187,8 @@ export function buildEndUserAiUsageDemoReport(
         totalTokens: 8_100,
         inputTokens: 5_900,
         outputTokens: 2_200,
-        estimatedFallbackCost: 0.06,
-        effectiveCost: 0.06,
+        estimatedFallbackCost: "0.06",
+        effectiveCost: "0.06",
         durationSeconds: 146,
       }),
     },
@@ -197,8 +198,8 @@ export function buildEndUserAiUsageDemoReport(
       ...summary({
         records: 4,
         inputCharacters: 1_980,
-        estimatedFallbackCost: 0.0297,
-        effectiveCost: 0.0297,
+        estimatedFallbackCost: "0.0297",
+        effectiveCost: "0.0297",
       }),
     },
     {
@@ -209,8 +210,8 @@ export function buildEndUserAiUsageDemoReport(
         totalTokens: 2_400,
         inputTokens: 1_900,
         outputTokens: 500,
-        providerReportedCost: 0.02,
-        effectiveCost: 0.02,
+        providerReportedCost: "0.02",
+        effectiveCost: "0.02",
       }),
     },
   ];
@@ -231,9 +232,9 @@ export function buildEndUserAiUsageDemoReport(
         outputTokens: 9_400,
         inputCharacters: 1_980,
         durationSeconds: 146,
-        providerReportedCost: 0.16,
-        estimatedFallbackCost: 0.0897,
-        effectiveCost: 0.2497,
+        providerReportedCost: "0.16",
+        estimatedFallbackCost: "0.0897",
+        effectiveCost: "0.2497",
       }),
       providerReportedCostRecords: 19,
       estimatedRecords: 11,
@@ -251,7 +252,7 @@ export function buildEndUserAiUsageDemoReport(
         inputTokens: 60_000,
         outputTokens: 14_546,
         totalTokens: 74_546,
-        billedCostUsd: 0.0295008,
+        billedCostUsd: "0.0295008",
         estimatedCostUsd: null,
       },
     },

@@ -3,6 +3,12 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
+import {
+  compareDecimalStrings,
+  decimalRatio,
+  formatDecimalMoney,
+  type DecimalString,
+} from "@/shared/lib/decimal-money";
 import { pluralizeRu, type AiUsageRangeKey } from "./ai-usage.model";
 import { fetchEndUserAiUsageReport } from "./end-user-ai-usage.api";
 import {
@@ -26,9 +32,12 @@ let requestGeneration = 0;
 let controller: AbortController | undefined;
 
 const maxCategoryCost = computed(() =>
-  Math.max(
-    0,
-    ...(report.value?.categories.map((item) => item.effectiveCost) ?? [0]),
+  (report.value?.categories ?? []).reduce<DecimalString>(
+    (maximum, item) =>
+      compareDecimalStrings(item.effectiveCost, maximum) > 0
+        ? item.effectiveCost
+        : maximum,
+    "0",
   ),
 );
 const hasSpeechUsage = computed(() =>
@@ -38,8 +47,8 @@ const hasSpeechUsage = computed(() =>
 );
 
 function categoryWidth(category: EndUserAiUsageCategoryRow) {
-  if (!maxCategoryCost.value || !category.effectiveCost) return "0%";
-  return `${Math.max(8, (category.effectiveCost / maxCategoryCost.value) * 100)}%`;
+  if (compareDecimalStrings(category.effectiveCost, "0") <= 0) return "0%";
+  return `${Math.max(8, decimalRatio(category.effectiveCost, maxCategoryCost.value) * 100)}%`;
 }
 
 function formatCount(value: number) {
@@ -49,13 +58,15 @@ function formatCount(value: number) {
   }).format(value);
 }
 
-function formatMoney(value: number, currency = "usd", precise = false) {
-  return new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: precise ? 2 : value > 0 && value < 0.01 ? 4 : 2,
-    maximumFractionDigits: precise ? 6 : value > 0 && value < 0.01 ? 6 : 2,
-  }).format(value);
+function formatMoney(value: DecimalString, currency = "usd", precise = false) {
+  const tiny =
+    compareDecimalStrings(value, "0") > 0 &&
+    compareDecimalStrings(value, "0.01") < 0;
+  return formatDecimalMoney(value, currency, {
+    minimumFractionDigits: !precise && tiny ? 4 : 2,
+    maximumFractionDigits: precise || tiny ? 6 : 2,
+    lessThan: null,
+  });
 }
 
 function categoryMetric(category: EndUserAiUsageCategoryRow) {
@@ -85,7 +96,7 @@ function categoryCost(category: EndUserAiUsageCategoryRow) {
       "генерации",
       "генераций",
     )}`;
-    return category.estimatedFallbackCost > 0
+    return compareDecimalStrings(category.estimatedFallbackCost, "0") > 0
       ? `${formatMoney(
           category.estimatedFallbackCost,
           category.currency,
@@ -93,18 +104,20 @@ function categoryCost(category: EndUserAiUsageCategoryRow) {
         )} расчёт · ${generations}`
       : generations;
   }
-  if (category.providerReportedCost > 0)
+  if (compareDecimalStrings(category.providerReportedCost, "0") > 0)
     return `${formatMoney(category.providerReportedCost, category.currency)} по данным провайдера`;
-  if (category.estimatedFallbackCost > 0)
+  if (compareDecimalStrings(category.estimatedFallbackCost, "0") > 0)
     return `${formatMoney(category.estimatedFallbackCost, category.currency)} расчёт`;
   return `${category.records} операций`;
 }
 
 function eventQueryCost(value: EndUserAiUsageReport["eventQuery"]) {
-  const billed = value.linkedAiUsage.billedCostUsd ?? 0;
-  const estimated = value.linkedAiUsage.estimatedCostUsd ?? 0;
-  if (billed) return `${formatMoney(billed)} по данным провайдера`;
-  if (estimated) return `${formatMoney(estimated)} оценка`;
+  const billed = value.linkedAiUsage.billedCostUsd ?? "0";
+  const estimated = value.linkedAiUsage.estimatedCostUsd ?? "0";
+  if (compareDecimalStrings(billed, "0") > 0)
+    return `${formatMoney(billed)} по данным провайдера`;
+  if (compareDecimalStrings(estimated, "0") > 0)
+    return `${formatMoney(estimated)} оценка`;
   return "Стоимость не связана";
 }
 

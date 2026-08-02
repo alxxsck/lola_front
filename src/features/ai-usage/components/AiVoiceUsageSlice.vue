@@ -43,7 +43,7 @@ function operationCount(value: number) {
         <small>Расчётная стоимость</small>
         <strong>{{
           formatMoney(
-            usage?.estimatedFallbackCost ?? 0,
+            usage?.estimatedFallbackCost ?? '0',
             usage?.currency ?? props.fallbackCurrency ?? 'USD',
           )
         }}</strong>

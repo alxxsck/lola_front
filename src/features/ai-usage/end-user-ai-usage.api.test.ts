@@ -68,16 +68,16 @@ const response = {
 };
 
 describe("End User AI consumption response validation", () => {
-  it("keeps server window metadata and normalizes decimal values", () => {
+  it("keeps server window metadata and canonical decimal strings", () => {
     expect(
       parseEndUserAiUsageReport(response, "project-1", "user-1"),
     ).toMatchObject({
       window: "7d",
       range: { timezone: "Europe/Madrid" },
       totals: {
-        providerReportedCost: 0.12,
-        estimatedFallbackCost: 0.03,
-        effectiveCost: 0.15,
+        providerReportedCost: "0.120000000000",
+        estimatedFallbackCost: "0.030000000000",
+        effectiveCost: "0.150000000000",
       },
       categories: [{ category: "CHAT", totalTokens: 10_000 }],
       eventQuery: {
@@ -85,7 +85,7 @@ describe("End User AI consumption response validation", () => {
         resultBytes: 3_300,
         linkedAiUsage: {
           totalTokens: 74_546,
-          billedCostUsd: 0.0295008,
+          billedCostUsd: "0.029500800000",
         },
       },
       textToSpeechPricing: {
@@ -93,6 +93,19 @@ describe("End User AI consumption response validation", () => {
         sourceUrl: "https://docs.x.ai/developers/pricing",
       },
     });
+  });
+
+  it("rejects numeric monetary values instead of silently losing precision", () => {
+    expect(
+      parseEndUserAiUsageReport(
+        {
+          ...response,
+          totals: { ...response.totals, effectiveCost: 0.15 },
+        },
+        "project-1",
+        "user-1",
+      ),
+    ).toBeUndefined();
   });
 
   it("rejects missing Event Query data or a false totals-inclusion contract", () => {
@@ -244,12 +257,12 @@ describe("End User AI consumption response validation", () => {
     expect(speech).toMatchObject({
       inputCharacters: 1_980,
       providerBilledUnits: 0,
-      estimatedFallbackCost: 0.0297,
-      effectiveCost: 0.0297,
+      estimatedFallbackCost: "0.0297",
+      effectiveCost: "0.0297",
     });
     expect(demo.totals).toMatchObject({
-      estimatedFallbackCost: 0.0897,
-      effectiveCost: 0.2497,
+      estimatedFallbackCost: "0.0897",
+      effectiveCost: "0.2497",
       providerUnitOnlyRecords: 0,
     });
     expect(demo.textToSpeechPricing.current?.rate).toBe("15");

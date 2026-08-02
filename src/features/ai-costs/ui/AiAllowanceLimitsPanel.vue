@@ -1,0 +1,1192 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import Message from "primevue/message";
+import Skeleton from "primevue/skeleton";
+import {
+  compareDecimalStrings,
+  formatDecimalMoney,
+  type DecimalString,
+} from "@/shared/lib/decimal-money";
+import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import AiAllowanceAccrualRulesPanel from "./AiAllowanceAccrualRulesPanel.vue";
+import AiAllowanceAccrualReceiptsPanel from "./AiAllowanceAccrualReceiptsPanel.vue";
+import AiAllowanceDirectGrantPanel from "./AiAllowanceDirectGrantPanel.vue";
+import {
+  parseAllowanceUsd,
+  type AiAllowanceCategory,
+  type AiAllowanceEnforcementMode,
+  type AiAllowancePeriodKind,
+  type AiAllowanceProjectPolicyView,
+} from "../model/ai-allowance";
+
+const props = defineProps<{
+  projectId: string;
+  canRead: boolean;
+  canManage: boolean;
+  canReconcile: boolean;
+  canGrant?: boolean;
+  canReadAccrual?: boolean;
+  canManageAccrual?: boolean;
+  canReadAccrualReceipts?: boolean;
+}>();
+const policy = ref<AiAllowanceProjectPolicyView | null>(null);
+const loading = ref(false);
+const saving = ref(false);
+const plansLoading = ref(false);
+const revisionLoadingKey = ref("");
+const error = ref("");
+const loadedProjectId = ref("");
+const dialogOpen = ref(false);
+const amount = ref("");
+const period = ref<AiAllowancePeriodKind>("DAY");
+const timezone = ref("UTC");
+const enforcement = ref<AiAllowanceEnforcementMode>("SOFT");
+const reason = ref("");
+const idempotencyKey = ref("");
+const hardConfirmed = ref(false);
+const formError = ref("");
+const namedDialogOpen = ref(false);
+const cohortDialogOpen = ref(false);
+const planKey = ref("");
+const planName = ref("");
+const dailyCap = ref("");
+const warningRu = ref("");
+const warningEn = ref("");
+const warningMessage = ref("");
+const exhaustedRu = ref("");
+const exhaustedEn = ref("");
+const exhaustedMessage = ref("");
+const cohortScope = ref<"SEGMENT" | "LEVEL">("SEGMENT");
+const cohortId = ref("");
+const cohortPlanId = ref("");
+const cohortPriority = ref(100);
+const effectiveFrom = ref("");
+const effectiveUntil = ref("");
+const categories: readonly AiAllowanceCategory[] = [
+  "CHAT",
+  "VOICE",
+  "SPEECH",
+  "MEMORY",
+  "AI_REVIEW",
+  "AI_ANALYSIS",
+  "CMS_AGENT",
+  "CASE_INTELLIGENCE",
+  "PROJECT_OVERHEAD",
+];
+const categoryRules = ref(
+  categories.map((category) => ({
+    category,
+    responsibility: (category === "AI_REVIEW" ||
+    category === "AI_ANALYSIS" ||
+    category === "CMS_AGENT" ||
+    category === "PROJECT_OVERHEAD"
+      ? "PROJECT_SPONSORED"
+      : "END_USER_ALLOWANCE") as "END_USER_ALLOWANCE" | "PROJECT_SPONSORED",
+    capUsd: "",
+  })),
+);
+let generation = 0;
+
+const latestDefaultRevision = computed(
+  () =>
+    policy.value?.plans.find(
+      (plan) => plan.id === policy.value?.defaultAssignment?.planId,
+    )?.revisions[0] ?? null,
+);
+const canActivateHard = computed(
+  () =>
+    Boolean(policy.value?.runtimeGates.hardEnforcementApproved) &&
+    !policy.value?.runtimeGates.emergencyDisabled,
+);
+const policyReady = computed(
+  () => loadedProjectId.value === props.projectId && Boolean(policy.value),
+);
+
+watch(
+  () => [props.projectId, props.canRead] as const,
+  ([, canRead]) => {
+    generation += 1;
+    policy.value = null;
+    loadedProjectId.value = "";
+    dialogOpen.value = false;
+    namedDialogOpen.value = false;
+    cohortDialogOpen.value = false;
+    if (canRead) void load();
+    else {
+      loading.value = false;
+    }
+  },
+  { immediate: true },
+);
+
+async function load(): Promise<void> {
+  const requestGeneration = ++generation;
+  const requestProjectId = props.projectId;
+  loading.value = true;
+  error.value = "";
+  try {
+    const next = await aiAllowanceRepository.projectPolicy(requestProjectId);
+    if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId
+    ) {
+      policy.value = next;
+      loadedProjectId.value = requestProjectId;
+    }
+  } catch (cause) {
+    if (requestGeneration === generation)
+      error.value = message(cause, "Не удалось загрузить политику лимитов");
+  } finally {
+    if (requestGeneration === generation) loading.value = false;
+  }
+}
+async function loadMorePlans(): Promise<void> {
+  const current = policy.value;
+  const cursor = current?.plansPageInfo.nextCursor;
+  if (!policyReady.value || !cursor || plansLoading.value) return;
+  plansLoading.value = true;
+  try {
+    const next = await aiAllowanceRepository.projectPolicy(props.projectId, {
+      planCursor: cursor,
+      planLimit: 50,
+      revisionLimit: 5,
+    });
+    if (policyReady.value) {
+      policy.value = {
+        ...current,
+        plans: [...current.plans, ...next.plans],
+        plansPageInfo: next.plansPageInfo,
+      };
+    }
+  } catch (cause) {
+    error.value = message(cause, "Не удалось загрузить остальные планы");
+  } finally {
+    plansLoading.value = false;
+  }
+}
+async function loadMoreRevisions(
+  plan: AiAllowanceProjectPolicyView["plans"][number],
+): Promise<void> {
+  const cursor = plan.revisionsPageInfo.nextCursor;
+  if (!policyReady.value || !cursor || revisionLoadingKey.value) return;
+  revisionLoadingKey.value = plan.key;
+  try {
+    const page = await aiAllowanceRepository.planRevisions(
+      props.projectId,
+      plan.key,
+      { limit: 25, cursor },
+    );
+    if (policyReady.value && policy.value) {
+      policy.value = {
+        ...policy.value,
+        plans: policy.value.plans.map((item) =>
+          item.id === plan.id
+            ? {
+                ...item,
+                revisions: [...item.revisions, ...page.revisions],
+                revisionsPageInfo: page.pageInfo,
+              }
+            : item,
+        ),
+      };
+    }
+  } catch (cause) {
+    error.value = message(cause, "Не удалось загрузить историю ревизий");
+  } finally {
+    revisionLoadingKey.value = "";
+  }
+}
+
+function openEditor(): void {
+  if (props.canRead && !policyReady.value) return;
+  const revision = latestDefaultRevision.value;
+  amount.value = revision?.recurringAmountUsd ?? "";
+  period.value = revision?.periodKind ?? "DAY";
+  timezone.value = policy.value?.policy?.timezone ?? "UTC";
+  enforcement.value = policy.value?.policy?.enforcementMode ?? "SOFT";
+  reason.value = "";
+  idempotencyKey.value = newIdempotencyKey();
+  hardConfirmed.value = false;
+  formError.value = "";
+  dialogOpen.value = true;
+  warningRu.value = policy.value?.policy?.warningContent.ru ?? "";
+  warningEn.value = policy.value?.policy?.warningContent.en ?? "";
+  warningMessage.value = policy.value?.policy?.warningContent.message ?? "";
+  exhaustedRu.value = policy.value?.policy?.exhaustedContent.ru ?? "";
+  exhaustedEn.value = policy.value?.policy?.exhaustedContent.en ?? "";
+  exhaustedMessage.value = policy.value?.policy?.exhaustedContent.message ?? "";
+}
+
+function openNamedEditor(
+  plan?: AiAllowanceProjectPolicyView["plans"][number],
+): void {
+  if (props.canRead && !policyReady.value) return;
+  const revision = plan?.revisions[0];
+  planKey.value = plan?.key ?? "";
+  planName.value = plan?.name ?? "";
+  amount.value = revision?.recurringAmountUsd ?? "";
+  period.value = revision?.periodKind ?? "MONTH";
+  dailyCap.value = revision?.dailyCapUsd ?? "";
+  reason.value = "";
+  idempotencyKey.value = newIdempotencyKey();
+  formError.value = "";
+  categoryRules.value = categories.map((category) => {
+    const existing = revision?.categoryRules.find(
+      (rule) => rule.category === category,
+    );
+    return {
+      category,
+      responsibility:
+        existing?.responsibility ??
+        (category === "AI_REVIEW" ||
+        category === "AI_ANALYSIS" ||
+        category === "CMS_AGENT" ||
+        category === "PROJECT_OVERHEAD"
+          ? "PROJECT_SPONSORED"
+          : "END_USER_ALLOWANCE"),
+      capUsd: existing?.capUsd ?? "",
+    };
+  });
+  namedDialogOpen.value = true;
+}
+function openCohortEditor(): void {
+  if (!policyReady.value) return;
+  cohortScope.value = "SEGMENT";
+  cohortId.value = "";
+  cohortPlanId.value =
+    policy.value?.plans.find((plan) => plan.status === "ACTIVE")?.id ?? "";
+  cohortPriority.value = 100;
+  effectiveFrom.value = localInput(new Date());
+  effectiveUntil.value = "";
+  reason.value = "";
+  idempotencyKey.value = newIdempotencyKey();
+  formError.value = "";
+  cohortDialogOpen.value = true;
+}
+
+async function save(): Promise<void> {
+  const exactAmount = parseAllowanceUsd(amount.value.trim());
+  if (!exactAmount || compareDecimalStrings(exactAmount, "0") < 0)
+    return fail(
+      "Сумма должна быть неотрицательной decimal-строкой (до 12 знаков после точки).",
+    );
+  if (!validTimezone(timezone.value.trim()))
+    return fail("Укажите корректный IANA timezone длиной до 100 символов.");
+  if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
+    return fail("Причина должна содержать от 3 до 500 символов.");
+  if (!idempotencyKey.value.trim() || idempotencyKey.value.length > 128)
+    return fail("Укажите Idempotency-Key длиной до 128 символов.");
+  if (enforcement.value === "HARD" && !canActivateHard.value)
+    return fail("HARD заблокирован runtime gate проекта.");
+  if (enforcement.value === "HARD" && !hardConfirmed.value)
+    return fail("Подтвердите риски HARD enforcement.");
+  saving.value = true;
+  formError.value = "";
+  try {
+    await aiAllowanceRepository.putDefaultPlan(
+      props.projectId,
+      {
+        amountUsd: exactAmount,
+        period: period.value,
+        timezone: timezone.value.trim(),
+        enforcementMode: enforcement.value,
+        reason: reason.value.trim(),
+        ...(compactContent(
+          warningMessage.value,
+          warningRu.value,
+          warningEn.value,
+        )
+          ? {
+              warningContent: compactContent(
+                warningMessage.value,
+                warningRu.value,
+                warningEn.value,
+              ),
+            }
+          : {}),
+        ...(compactContent(
+          exhaustedMessage.value,
+          exhaustedRu.value,
+          exhaustedEn.value,
+        )
+          ? {
+              exhaustedContent: compactContent(
+                exhaustedMessage.value,
+                exhaustedRu.value,
+                exhaustedEn.value,
+              ),
+            }
+          : {}),
+      },
+      idempotencyKey.value.trim(),
+    );
+    dialogOpen.value = false;
+    await load();
+  } catch (cause) {
+    formError.value = message(cause, "Не удалось сохранить политику лимитов");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function saveNamed(): Promise<void> {
+  const key = planKey.value.trim().toUpperCase();
+  const exact = parseAllowanceUsd(amount.value.trim());
+  const cap = dailyCap.value.trim()
+    ? parseAllowanceUsd(dailyCap.value.trim())
+    : undefined;
+  if (!/^[A-Z][A-Z0-9_-]{0,99}$/.test(key) || key === "DEFAULT")
+    return fail(
+      "Ключ: A-Z, 0-9, _ или -, до 100 символов; DEFAULT зарезервирован.",
+    );
+  if (
+    planName.value.trim().length < 1 ||
+    planName.value.trim().length > 160 ||
+    !exact
+  )
+    return fail("Проверьте название и сумму плана.");
+  if (dailyCap.value && !cap) return fail("Некорректный дневной cap.");
+  if (period.value === "DAY" && cap && compareDecimalStrings(cap, exact) > 0)
+    return fail("Для дневного плана cap не может превышать лимит.");
+  if (!validCommon()) return;
+  const rules = categoryRules.value.map((rule) => ({
+    category: rule.category,
+    responsibility: rule.responsibility,
+    ...(rule.capUsd.trim()
+      ? { capUsd: parseAllowanceUsd(rule.capUsd.trim()) }
+      : {}),
+  }));
+  if (rules.some((rule) => "capUsd" in rule && !rule.capUsd))
+    return fail("Проверьте caps категорий.");
+  saving.value = true;
+  try {
+    await aiAllowanceRepository.putPlan(
+      props.projectId,
+      key,
+      {
+        name: planName.value.trim(),
+        amountUsd: exact,
+        period: period.value,
+        ...(cap ? { dailyCapUsd: cap } : {}),
+        categoryRules: rules as never,
+        reason: reason.value.trim(),
+      },
+      idempotencyKey.value.trim(),
+    );
+    namedDialogOpen.value = false;
+    await load();
+  } catch (cause) {
+    formError.value = message(cause, "Не удалось сохранить план");
+  } finally {
+    saving.value = false;
+  }
+}
+async function saveCohort(): Promise<void> {
+  const id = cohortId.value.trim().toLowerCase();
+  const from = localIso(effectiveFrom.value);
+  const until = effectiveUntil.value
+    ? localIso(effectiveUntil.value)
+    : undefined;
+  if (!/^[a-z0-9][a-z0-9._-]{0,99}$/.test(id))
+    return fail("Некорректный ID когорты.");
+  if (
+    !cohortPlanId.value ||
+    !Number.isSafeInteger(cohortPriority.value) ||
+    cohortPriority.value < 0 ||
+    cohortPriority.value > 1_000_000 ||
+    !from ||
+    (effectiveUntil.value && (!until || from >= until))
+  )
+    return fail("Проверьте план, приоритет и период назначения.");
+  if (!validCommon()) return;
+  saving.value = true;
+  try {
+    await aiAllowanceRepository.putCohortAssignment(
+      props.projectId,
+      cohortScope.value,
+      id,
+      {
+        planId: cohortPlanId.value,
+        priority: cohortPriority.value,
+        effectiveFrom: from,
+        ...(until ? { effectiveUntil: until } : {}),
+        reason: reason.value.trim(),
+      },
+      idempotencyKey.value.trim(),
+    );
+    cohortDialogOpen.value = false;
+    await load();
+  } catch (cause) {
+    formError.value = message(cause, "Не удалось назначить план когорте");
+  } finally {
+    saving.value = false;
+  }
+}
+function validCommon(): boolean {
+  if (reason.value.trim().length < 3 || reason.value.trim().length > 500) {
+    fail("Причина должна содержать от 3 до 500 символов.");
+    return false;
+  }
+  if (!idempotencyKey.value.trim() || idempotencyKey.value.length > 128) {
+    fail("Некорректный Idempotency-Key.");
+    return false;
+  }
+  return true;
+}
+function compactContent(message: string, ru: string, en: string) {
+  const content = {
+    ...(message.trim() ? { message: message.trim() } : {}),
+    ...(ru.trim() ? { ru: ru.trim() } : {}),
+    ...(en.trim() ? { en: en.trim() } : {}),
+  };
+  return Object.keys(content).length ? content : undefined;
+}
+function localInput(value: Date): string {
+  const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+function localIso(value: string): string | undefined {
+  const date = new Date(value);
+  return value && Number.isFinite(date.valueOf())
+    ? date.toISOString()
+    : undefined;
+}
+
+function fail(value: string): void {
+  formError.value = value;
+}
+function formatMoney(value: DecimalString): string {
+  return formatDecimalMoney(value, "USD");
+}
+function newIdempotencyKey(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `allowance-${Date.now()}`;
+}
+function validTimezone(value: string): boolean {
+  if (!value || value.length > 100) return false;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: value }).format();
+    return true;
+  } catch {
+    return false;
+  }
+}
+function message(cause: unknown, fallback: string): string {
+  return cause instanceof Error ? cause.message : fallback;
+}
+</script>
+
+<template>
+  <section
+    class="allowance-panel"
+    role="tabpanel"
+    aria-labelledby="ai-cost-tab-limits"
+  >
+    <Message v-if="!canRead" severity="warn" :closable="false"
+      >Нет права <code>project.ai_allowance.read</code>. Политика и балансы
+      скрыты.</Message
+    >
+    <div v-if="!canRead && canManage" class="card direct-actions">
+      <div>
+        <h3>Операции управления</h3>
+        <p>Доступны audited mutations без чтения финансового состояния.</p>
+      </div>
+      <div class="heading-actions">
+        <Button
+          label="Настроить базовый план"
+          icon="pi pi-pencil"
+          @click="openEditor"
+        /><Button
+          label="Создать named plan"
+          outlined
+          icon="pi pi-plus"
+          @click="openNamedEditor()"
+        />
+      </div>
+    </div>
+    <AiAllowanceDirectGrantPanel v-if="canGrant" :project-id="projectId" />
+    <template v-else>
+      <div v-if="loading && !policy" class="allowance-loading">
+        <Skeleton height="150px" /><Skeleton height="150px" />
+      </div>
+      <Message v-if="error" severity="error" :closable="false"
+        ><span>{{ error }}</span
+        ><Button label="Повторить" text size="small" @click="load"
+      /></Message>
+      <template v-if="policy">
+        <div class="allowance-heading">
+          <div>
+            <span class="eyebrow">Project allowance policy</span>
+            <h2>Лимиты расходов</h2>
+            <p>
+              Бюджет AI в USD — внутренняя квота на потребление, не денежный
+              кошелёк и не доступные к выводу средства.
+            </p>
+          </div>
+          <div class="heading-actions">
+            <Button
+              v-if="canManage"
+              label="Изменить базовый план"
+              icon="pi pi-pencil"
+              @click="openEditor"
+            /><Button
+              v-if="canManage"
+              label="Новый план"
+              outlined
+              icon="pi pi-plus"
+              @click="openNamedEditor()"
+            /><Button
+              v-if="canManage"
+              label="Назначить когорте"
+              outlined
+              icon="pi pi-users"
+              @click="openCohortEditor"
+            />
+          </div>
+        </div>
+        <Message
+          v-if="policy.policy?.enforcementMode === 'HARD'"
+          severity="error"
+          :closable="false"
+          >HARD enforcement активен: операции могут быть заблокированы при
+          исчерпании квоты.</Message
+        >
+        <div
+          v-if="policy.runtimeGates.emergencyDisabled"
+          class="gate-warning emergency"
+          role="alert"
+        >
+          <i class="pi pi-shield" aria-hidden="true" /><strong
+            >Emergency disable активен.</strong
+          >
+          HARD нельзя включить или повторно сохранить до снятия аварийного
+          флага.
+        </div>
+        <div
+          v-else-if="!policy.runtimeGates.hardEnforcementApproved"
+          class="gate-warning"
+          role="status"
+        >
+          <i class="pi pi-shield" aria-hidden="true" /><strong
+            >HARD enforcement не одобрен</strong
+          >
+          runtime-конфигурацией проекта.
+        </div>
+        <div class="runtime-gates" aria-label="Runtime gates HARD enforcement">
+          <span :class="{ ready: policy.runtimeGates.hardEnforcementApproved }"
+            >Approval:
+            {{
+              policy.runtimeGates.hardEnforcementApproved
+                ? "разрешён"
+                : "не выдан"
+            }}</span
+          >
+          <span
+            :class="{
+              danger: policy.runtimeGates.emergencyDisabled,
+              ready: !policy.runtimeGates.emergencyDisabled,
+            }"
+            >Emergency:
+            {{
+              policy.runtimeGates.emergencyDisabled
+                ? "disable активен"
+                : "норма"
+            }}</span
+          >
+        </div>
+        <div class="policy-grid">
+          <article>
+            <small>Режим</small
+            ><strong class="mode-badge">{{
+              policy.policy?.enforcementMode ?? "DISABLED"
+            }}</strong
+            ><span>Backend остаётся окончательной точкой enforcement.</span>
+          </article>
+          <article>
+            <small>Базовый лимит</small
+            ><strong>{{
+              latestDefaultRevision
+                ? formatMoney(latestDefaultRevision.recurringAmountUsd)
+                : "Не задан"
+            }}</strong
+            ><span>{{
+              latestDefaultRevision?.periodKind === "MONTH"
+                ? "в месяц"
+                : "в день"
+            }}</span>
+          </article>
+          <article>
+            <small>Часовой пояс</small
+            ><strong>{{ policy.policy?.timezone ?? "UTC" }}</strong
+            ><span>Определяет границы периода и сброса.</span>
+          </article>
+          <article>
+            <small>Планы</small><strong>{{ policy.plans.length }}</strong
+            ><span>{{
+              policy.defaultAssignment
+                ? "Есть назначение по умолчанию"
+                : "Нет назначения по умолчанию"
+            }}</span>
+          </article>
+        </div>
+        <div class="plans card">
+          <header>
+            <div>
+              <h3>Планы и ревизии</h3>
+              <p>
+                История не перезаписывается: изменение создаёт новую ревизию.
+              </p>
+            </div>
+            <span v-if="canReconcile" class="permission-badge"
+              >Право сверки выдано</span
+            >
+          </header>
+          <div v-if="policy.plans.length" class="plan-list">
+            <article v-for="plan in policy.plans" :key="plan.id">
+              <div>
+                <strong>{{ plan.name }}</strong
+                ><small>{{ plan.key }} · {{ plan.status }}</small>
+              </div>
+              <div v-if="plan.revisions[0]">
+                <strong
+                  >{{ formatMoney(plan.revisions[0].recurringAmountUsd) }} /
+                  {{
+                    plan.revisions[0].periodKind === "DAY" ? "день" : "месяц"
+                  }}</strong
+                ><small
+                  >ревизия {{ plan.revisions[0].revisionNumber }} · cap
+                  {{
+                    plan.revisions[0].dailyCapUsd
+                      ? formatMoney(plan.revisions[0].dailyCapUsd)
+                      : "нет"
+                  }}</small
+                >
+              </div>
+              <Button
+                v-if="canManage && plan.key !== 'DEFAULT'"
+                label="Новая ревизия"
+                text
+                size="small"
+                @click="openNamedEditor(plan)"
+              />
+              <Button
+                v-if="plan.revisionsPageInfo.hasMore"
+                label="Старые ревизии"
+                text
+                size="small"
+                :loading="revisionLoadingKey === plan.key"
+                @click="loadMoreRevisions(plan)"
+              />
+            </article>
+          </div>
+          <Button
+            v-if="policy.plansPageInfo.hasMore"
+            label="Показать остальные планы"
+            outlined
+            :loading="plansLoading"
+            @click="loadMorePlans"
+          />
+          <p v-else class="empty-state">Планы ещё не настроены.</p>
+        </div>
+      </template>
+    </template>
+    <AiAllowanceAccrualRulesPanel
+      v-if="canReadAccrual || canManageAccrual"
+      :project-id="projectId"
+      :can-read="Boolean(canReadAccrual)"
+      :can-manage="Boolean(canManageAccrual)"
+    />
+    <AiAllowanceAccrualReceiptsPanel
+      v-if="canReadAccrualReceipts"
+      :project-id="projectId"
+    />
+  </section>
+
+  <Dialog
+    v-model:visible="dialogOpen"
+    modal
+    header="Базовый план проекта"
+    :style="{ width: 'min(680px, 94vw)' }"
+  >
+    <form class="allowance-form" @submit.prevent="save">
+      <Message severity="warn" :closable="false"
+        >Изменение влияет на новые периоды. Это квота AI, а не платёжный
+        баланс.</Message
+      >
+      <label
+        >Лимит, USD<input
+          v-model="amount"
+          inputmode="decimal"
+          autocomplete="off"
+      /></label>
+      <div class="form-row">
+        <label
+          >Период<select v-model="period">
+            <option value="DAY">День</option>
+            <option value="MONTH">Месяц</option>
+          </select></label
+        ><label>Timezone<input v-model="timezone" autocomplete="off" /></label>
+      </div>
+      <label
+        >Enforcement<select v-model="enforcement">
+          <option value="DISABLED">DISABLED — только учёт</option>
+          <option value="SHADOW">SHADOW — теневая проверка</option>
+          <option value="SOFT">SOFT — предупреждение</option>
+          <option value="HARD" :disabled="!canActivateHard">
+            HARD — блокировка
+          </option>
+        </select></label
+      >
+      <div class="form-row">
+        <label
+          >Fallback-сообщение<textarea
+            v-model="warningMessage"
+            rows="2"
+            maxlength="2000"
+          />
+        </label>
+        <label
+          >Предупреждение (RU)<textarea
+            v-model="warningRu"
+            rows="2"
+            maxlength="2000"
+          /></label
+        ><label
+          >Warning (EN)<textarea
+            v-model="warningEn"
+            rows="2"
+            maxlength="2000"
+          />
+        </label>
+      </div>
+      <div class="form-row">
+        <label
+          >Fallback при исчерпании<textarea
+            v-model="exhaustedMessage"
+            rows="2"
+            maxlength="2000"
+          />
+        </label>
+        <label
+          >Лимит исчерпан (RU)<textarea
+            v-model="exhaustedRu"
+            rows="2"
+            maxlength="2000"
+          /></label
+        ><label
+          >Exhausted (EN)<textarea
+            v-model="exhaustedEn"
+            rows="2"
+            maxlength="2000"
+          />
+        </label>
+      </div>
+      <Message
+        v-if="enforcement === 'HARD' && canActivateHard"
+        severity="error"
+        :closable="false"
+        >Runtime gates разрешают HARD. Backend повторно проверит их атомарно при
+        сохранении.<label class="hard-confirm"
+          ><input v-model="hardConfirmed" type="checkbox" /> Я понимаю, что HARD
+          может блокировать AI-операции</label
+        ></Message
+      >
+      <Message v-else-if="!canActivateHard" severity="warn" :closable="false"
+        >HARD недоступен:
+        {{
+          policy?.runtimeGates.emergencyDisabled
+            ? "активен emergency disable"
+            : "нет runtime approval"
+        }}.</Message
+      >
+      <label
+        >Причина<textarea v-model="reason" rows="3" maxlength="500" />
+      </label>
+      <label
+        >Idempotency-Key<input
+          v-model="idempotencyKey"
+          autocomplete="off"
+          maxlength="128"
+        /><small
+          >Сохраняется при повторной попытке; новый ключ создаётся при новом
+          открытии формы.</small
+        ></label
+      >
+      <small v-if="formError" class="field-error" role="alert">{{
+        formError
+      }}</small>
+      <footer>
+        <Button
+          label="Отмена"
+          text
+          type="button"
+          :disabled="saving"
+          @click="dialogOpen = false"
+        /><Button label="Сохранить ревизию" type="submit" :loading="saving" />
+      </footer>
+    </form>
+  </Dialog>
+
+  <Dialog
+    v-model:visible="namedDialogOpen"
+    modal
+    header="Named allowance plan"
+    :style="{ width: 'min(900px, 96vw)' }"
+  >
+    <form class="allowance-form" @submit.prevent="saveNamed">
+      <Message severity="info" :closable="false"
+        >Каждое сохранение создаёт неизменяемую ревизию. Архивирование планов
+        backend пока не публикует.</Message
+      >
+      <div class="form-row">
+        <label
+          >Ключ<input
+            v-model="planKey"
+            :readonly="policy?.plans.some((plan) => plan.key === planKey)"
+            maxlength="100" /></label
+        ><label>Название<input v-model="planName" maxlength="160" /></label>
+      </div>
+      <div class="form-row">
+        <label>Лимит, USD<input v-model="amount" inputmode="decimal" /></label
+        ><label
+          >Период<select v-model="period">
+            <option value="DAY">День</option>
+            <option value="MONTH">Месяц</option>
+          </select></label
+        >
+      </div>
+      <label
+        >Дневной cap, USD (необязательно)<input
+          v-model="dailyCap"
+          inputmode="decimal"
+      /></label>
+      <fieldset class="category-grid">
+        <legend>Ответственность и caps категорий</legend>
+        <label v-for="rule in categoryRules" :key="rule.category"
+          ><span>{{ rule.category }}</span
+          ><select v-model="rule.responsibility">
+            <option value="END_USER_ALLOWANCE">Квота пользователя</option>
+            <option value="PROJECT_SPONSORED">Проект</option></select
+          ><input
+            v-model="rule.capUsd"
+            inputmode="decimal"
+            placeholder="cap USD"
+        /></label>
+      </fieldset>
+      <label
+        >Причина<textarea v-model="reason" rows="3" maxlength="500" /></label
+      ><label
+        >Idempotency-Key<input
+          v-model="idempotencyKey"
+          maxlength="128" /></label
+      ><small v-if="formError" class="field-error" role="alert">{{
+        formError
+      }}</small>
+      <footer>
+        <Button
+          label="Отмена"
+          text
+          type="button"
+          @click="namedDialogOpen = false"
+        /><Button label="Сохранить ревизию" type="submit" :loading="saving" />
+      </footer>
+    </form>
+  </Dialog>
+
+  <Dialog
+    v-model:visible="cohortDialogOpen"
+    modal
+    header="Назначение плана когорте"
+    :style="{ width: 'min(700px, 96vw)' }"
+  >
+    <form class="allowance-form" @submit.prevent="saveCohort">
+      <Message severity="info" :closable="false"
+        >Когорты определяются внутренними тегами пользователя:
+        <code>segment:&lt;id&gt;</code> или <code>level:&lt;id&gt;</code>.
+        Больший priority побеждает.</Message
+      >
+      <div class="form-row">
+        <label
+          >Тип<select v-model="cohortScope">
+            <option value="SEGMENT">SEGMENT</option>
+            <option value="LEVEL">LEVEL</option>
+          </select></label
+        ><label
+          >ID когорты<input
+            v-model="cohortId"
+            maxlength="100"
+            :placeholder="cohortScope === 'SEGMENT' ? 'vip' : 'gold'"
+          /><small
+            >Тег: {{ cohortScope.toLowerCase() }}:{{
+              cohortId || "&lt;id&gt;"
+            }}</small
+          ></label
+        >
+      </div>
+      <label
+        >План<select v-model="cohortPlanId">
+          <option value="" disabled>Выберите план</option>
+          <option
+            v-for="plan in policy?.plans.filter(
+              (item) => item.status === 'ACTIVE',
+            )"
+            :key="plan.id"
+            :value="plan.id"
+          >
+            {{ plan.name }} ({{ plan.key }})
+          </option>
+        </select></label
+      ><label
+        >Приоритет<input
+          v-model.number="cohortPriority"
+          type="number"
+          min="0"
+          max="1000000"
+      /></label>
+      <div class="form-row">
+        <label>С<input v-model="effectiveFrom" type="datetime-local" /></label
+        ><label
+          >До (необязательно)<input
+            v-model="effectiveUntil"
+            type="datetime-local"
+        /></label>
+      </div>
+      <label
+        >Причина<textarea v-model="reason" rows="3" maxlength="500" /></label
+      ><label
+        >Idempotency-Key<input
+          v-model="idempotencyKey"
+          maxlength="128" /></label
+      ><small v-if="formError" class="field-error" role="alert">{{
+        formError
+      }}</small>
+      <footer>
+        <Button
+          label="Отмена"
+          text
+          type="button"
+          @click="cohortDialogOpen = false"
+        /><Button label="Назначить" type="submit" :loading="saving" />
+      </footer>
+    </form>
+  </Dialog>
+</template>
+
+<style scoped>
+.heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.category-grid {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+}
+.category-grid label {
+  grid-template-columns: minmax(130px, 1fr) minmax(170px, 1.4fr) minmax(
+      100px,
+      0.8fr
+    );
+  align-items: center;
+}
+.category-grid legend {
+  padding: 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.allowance-panel,
+.allowance-loading {
+  display: grid;
+  gap: 16px;
+}
+.allowance-loading {
+  grid-template-columns: 1fr 1fr;
+}
+.allowance-heading,
+.plans > header,
+.plan-list article,
+.allowance-form footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.allowance-heading h2,
+.plans h3 {
+  margin: 3px 0 0;
+}
+.allowance-heading p,
+.plans p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+}
+.gate-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px;
+  border: 1px solid
+    color-mix(in srgb, var(--status-warning) 40%, var(--border-default));
+  border-radius: 11px;
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+  font-size: 0.73rem;
+}
+.gate-warning.emergency {
+  border-color: color-mix(
+    in srgb,
+    var(--status-danger) 40%,
+    var(--border-default)
+  );
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
+.runtime-gates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.runtime-gates span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+.runtime-gates span.ready {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.runtime-gates span.danger {
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.policy-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  background: var(--surface-card);
+}
+.policy-grid small,
+.policy-grid span,
+.plan-list small {
+  color: var(--text-small-muted);
+}
+.policy-grid strong {
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+.mode-badge,
+.permission-badge {
+  width: max-content;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--action-soft);
+  color: var(--action-primary);
+  font-size: 0.72rem;
+}
+.plans {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+.plan-list {
+  display: grid;
+}
+.plan-list article {
+  padding: 13px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.plan-list article > div {
+  display: grid;
+  gap: 4px;
+}
+.plan-list article > div:last-child {
+  text-align: right;
+}
+.allowance-form {
+  display: grid;
+  gap: 15px;
+}
+.allowance-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.allowance-form input,
+.allowance-form select,
+.allowance-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+}
+.allowance-form small {
+  color: var(--text-small-muted);
+  font-weight: 400;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.hard-confirm {
+  display: flex !important;
+  align-items: center;
+  margin-top: 10px;
+}
+.hard-confirm input {
+  width: auto;
+}
+.field-error {
+  color: var(--status-danger-text) !important;
+}
+.eyebrow {
+  color: var(--text-small-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.empty-state {
+  text-align: center;
+  color: var(--text-small-muted);
+}
+@media (max-width: 900px) {
+  .policy-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .allowance-loading,
+  .policy-grid,
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  .allowance-heading,
+  .plans > header,
+  .plan-list article {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .plan-list article > div:last-child {
+    text-align: left;
+  }
+}
+</style>

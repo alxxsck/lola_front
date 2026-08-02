@@ -141,20 +141,20 @@ describe("AI usage API response validation", () => {
     ).toEqual([expect.objectContaining({ category: "CMS_AGENT" })]);
   });
 
-  it("normalizes decimal strings without exposing raw ledger rows", () => {
+  it("preserves canonical decimal strings without exposing raw ledger rows", () => {
     expect(parseAiUsageReport(response, "project-1")).toMatchObject({
       projectId: "project-1",
       eventQuery: {
         calls: 6,
         linkedAiUsage: {
           totalTokens: 74_546,
-          billedCostUsd: 0.0295008,
+          billedCostUsd: "0.029500800000",
         },
       },
       totals: {
         inputCharacters: 0,
         providerBilledUnits: 0,
-        estimatedCost: 0.0012,
+        estimatedCost: "0.001200000000",
       },
       workloads: [
         {
@@ -163,7 +163,7 @@ describe("AI usage API response validation", () => {
           reasoningEffort: "low",
           reasoningTokens: 24,
           requests: 3,
-          effectiveCostUsd: 0.0031,
+          effectiveCostUsd: "0.003100000000",
         },
       ],
       breakdown: [
@@ -171,10 +171,22 @@ describe("AI usage API response validation", () => {
           model: "grok-4.5",
           inputCharacters: 0,
           providerBilledUnits: 0,
-          estimatedCost: 0.0012,
+          estimatedCost: "0.001200000000",
         },
       ],
     });
+  });
+
+  it("rejects numeric monetary values instead of silently losing precision", () => {
+    expect(
+      parseAiUsageReport(
+        {
+          ...response,
+          totals: { ...response.totals, effectiveCost: 0.0012 },
+        },
+        "project-1",
+      ),
+    ).toBeUndefined();
   });
 
   it("accepts fractional average workload latency from a multi-day aggregate", () => {
@@ -344,7 +356,7 @@ describe("AI usage API response validation", () => {
       model: null,
       operation: "speech",
       inputCharacters: 240,
-      effectiveCost: 0.0036,
+      effectiveCost: "0.003600000000",
     });
     expect(
       parseAiUsageReport(
@@ -379,7 +391,7 @@ describe("AI usage API response validation", () => {
           category: "CASE_INTELLIGENCE",
           records: 23,
           totalTokens: 41_099,
-          billedCost: 0.0890324,
+          billedCost: "0.089032400000",
         },
       ],
     });
@@ -407,7 +419,7 @@ describe("AI usage API response validation", () => {
           category: "AI_ANALYSIS",
           records: 7,
           totalTokens: 12_345,
-          billedCost: 0.0412,
+          billedCost: "0.041200000000",
         },
       ],
     });
@@ -435,8 +447,16 @@ describe("AI usage API response validation", () => {
     expect(
       parseAiUsageReport(providerReportedResponse, "project-1"),
     ).toMatchObject({
-      totals: { estimatedCost: 0, billedCost: 0.018152 },
-      breakdown: [{ estimatedCost: 0, billedCost: 0.018152 }],
+      totals: {
+        estimatedCost: "0.000000000000",
+        billedCost: "0.018152000000",
+      },
+      breakdown: [
+        {
+          estimatedCost: "0.000000000000",
+          billedCost: "0.018152000000",
+        },
+      ],
     });
   });
 

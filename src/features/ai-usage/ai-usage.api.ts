@@ -1,5 +1,9 @@
 import { aiUsageReport } from "@/shared/api/generated/lola-backend";
 import { isMockMode } from "@/shared/config/data-mode";
+import {
+  parseDecimalString,
+  type DecimalString,
+} from "@/shared/lib/decimal-money";
 import { isValidTextToSpeechRate } from "@/features/ai-pricing/ai-pricing.model";
 import type {
   AiUsageBreakdown,
@@ -38,7 +42,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       inputTokens: 60_000,
       outputTokens: 14_546,
       totalTokens: 74_546,
-      billedCostUsd: 0.0295008,
+      billedCostUsd: "0.0295008",
       estimatedCostUsd: null,
     },
   },
@@ -65,11 +69,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
     cachedInputImageTokens: 0,
     outputImageTokens: 0,
     durationSeconds: 428,
-    estimatedCost: 1.384999,
-    billedCost: 0.1765,
-    providerReportedCost: 0.1765,
-    estimatedFallbackCost: 1.384999,
-    effectiveCost: 1.561499,
+    estimatedCost: "1.384999",
+    billedCost: "0.1765",
+    providerReportedCost: "0.1765",
+    estimatedFallbackCost: "1.384999",
+    effectiveCost: "1.561499",
   },
   workloads: [
     {
@@ -80,7 +84,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       reasoningTokens: 8_120,
       requests: 112,
       averageLatencyMs: 780,
-      effectiveCostUsd: 0.1765,
+      effectiveCostUsd: "0.1765",
       isOther: false,
     },
     {
@@ -91,7 +95,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       reasoningTokens: 1_240,
       requests: 48,
       averageLatencyMs: 460,
-      effectiveCostUsd: 0.0412,
+      effectiveCostUsd: "0.0412",
       isOther: false,
     },
   ],
@@ -120,11 +124,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0,
-      billedCost: 0.1765,
-      providerReportedCost: 0.1765,
-      estimatedFallbackCost: 0,
-      effectiveCost: 0.1765,
+      estimatedCost: "0",
+      billedCost: "0.1765",
+      providerReportedCost: "0.1765",
+      estimatedFallbackCost: "0",
+      effectiveCost: "0.1765",
     },
     {
       provider: "xai",
@@ -150,11 +154,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0.8467,
-      billedCost: 0,
-      providerReportedCost: 0,
-      estimatedFallbackCost: 0.8467,
-      effectiveCost: 0.8467,
+      estimatedCost: "0.8467",
+      billedCost: "0",
+      providerReportedCost: "0",
+      estimatedFallbackCost: "0.8467",
+      effectiveCost: "0.8467",
     },
     {
       provider: "xai",
@@ -180,11 +184,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0.1964,
-      billedCost: 0,
-      providerReportedCost: 0,
-      estimatedFallbackCost: 0.1964,
-      effectiveCost: 0.1964,
+      estimatedCost: "0.1964",
+      billedCost: "0",
+      providerReportedCost: "0",
+      estimatedFallbackCost: "0.1964",
+      effectiveCost: "0.1964",
     },
     {
       provider: "xai",
@@ -210,11 +214,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 428,
-      estimatedCost: 0.064999,
-      billedCost: 0,
-      providerReportedCost: 0,
-      estimatedFallbackCost: 0.064999,
-      effectiveCost: 0.064999,
+      estimatedCost: "0.064999",
+      billedCost: "0",
+      providerReportedCost: "0",
+      estimatedFallbackCost: "0.064999",
+      effectiveCost: "0.064999",
     },
     {
       provider: "xai",
@@ -240,11 +244,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0.2769,
-      billedCost: 0,
-      providerReportedCost: 0,
-      estimatedFallbackCost: 0.2769,
-      effectiveCost: 0.2769,
+      estimatedCost: "0.2769",
+      billedCost: "0",
+      providerReportedCost: "0",
+      estimatedFallbackCost: "0.2769",
+      effectiveCost: "0.2769",
     },
   ],
   categories: [
@@ -270,11 +274,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 428,
-      estimatedCost: 1.108099,
-      billedCost: 0,
-      providerReportedCost: 0,
-      estimatedFallbackCost: 1.108099,
-      effectiveCost: 1.108099,
+      estimatedCost: "1.108099",
+      billedCost: "0",
+      providerReportedCost: "0",
+      estimatedFallbackCost: "1.108099",
+      effectiveCost: "1.108099",
     },
     {
       category: "SPEECH",
@@ -298,11 +302,11 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: 0.2769,
-      billedCost: 0,
-      providerReportedCost: 0,
-      estimatedFallbackCost: 0.2769,
-      effectiveCost: 0.2769,
+      estimatedCost: "0.2769",
+      billedCost: "0",
+      providerReportedCost: "0",
+      estimatedFallbackCost: "0.2769",
+      effectiveCost: "0.2769",
     },
   ],
   textToSpeechPricing: buildDemoTextToSpeechPricingContext(),
@@ -349,9 +353,11 @@ const breakdownIntegerKeys = [
   "cachedInputImageTokens",
   "outputImageTokens",
 ] as const;
-const decimalKeys = [
+const measurementDecimalKeys = [
   "providerBilledUnits",
   "durationSeconds",
+] as const;
+const moneyKeys = [
   "estimatedCost",
   "billedCost",
   "providerReportedCost",
@@ -385,7 +391,7 @@ function nonNegativeNumber(value: unknown): number | undefined {
     : undefined;
 }
 
-function decimal(value: unknown): number | undefined {
+function measurementDecimal(value: unknown): number | undefined {
   if (
     typeof value === "string" &&
     (value.length > 64 || !/^\d+(?:\.\d+)?$/.test(value))
@@ -402,8 +408,8 @@ function normalizeNumbers(
   source: Record<string, unknown>,
   integerKeys: readonly string[],
   optionalIntegerKeys: readonly string[] = [],
-): Record<string, number> | undefined {
-  const normalized: Record<string, number> = {};
+): Record<string, number | DecimalString> | undefined {
+  const normalized: Record<string, number | DecimalString> = {};
   for (const key of integerKeys) {
     const value = safeInteger(source[key]);
     if (value === undefined) return undefined;
@@ -418,8 +424,13 @@ function normalizeNumbers(
     if (value === undefined) return undefined;
     normalized[key] = value;
   }
-  for (const key of decimalKeys) {
-    const value = decimal(source[key]);
+  for (const key of measurementDecimalKeys) {
+    const value = measurementDecimal(source[key]);
+    if (value === undefined) return undefined;
+    normalized[key] = value;
+  }
+  for (const key of moneyKeys) {
+    const value = parseDecimalString(source[key]);
     if (value === undefined) return undefined;
     normalized[key] = value;
   }
@@ -495,9 +506,9 @@ function parseCategory(value: unknown): AiUsageCategoryBreakdown | undefined {
   } as unknown as AiUsageCategoryBreakdown;
 }
 
-function nullableDecimal(value: unknown): number | null | undefined {
+function nullableMoney(value: unknown): DecimalString | null | undefined {
   if (value === null) return null;
-  return decimal(value);
+  return parseDecimalString(value);
 }
 
 export function parseAiUsageEventQueryBreakdown(
@@ -513,8 +524,8 @@ export function parseAiUsageEventQueryBreakdown(
   const inputTokens = safeInteger(value.linkedAiUsage.inputTokens);
   const outputTokens = safeInteger(value.linkedAiUsage.outputTokens);
   const totalTokens = safeInteger(value.linkedAiUsage.totalTokens);
-  const billedCostUsd = nullableDecimal(value.linkedAiUsage.billedCostUsd);
-  const estimatedCostUsd = nullableDecimal(
+  const billedCostUsd = nullableMoney(value.linkedAiUsage.billedCostUsd);
+  const estimatedCostUsd = nullableMoney(
     value.linkedAiUsage.estimatedCostUsd,
   );
   if (
@@ -614,7 +625,7 @@ function parseWorkloads(value: unknown): AiUsageWorkload[] | undefined {
       item.averageLatencyMs === null
         ? null
         : nonNegativeNumber(item.averageLatencyMs);
-    const effectiveCostUsd = decimal(item.effectiveCostUsd);
+    const effectiveCostUsd = parseDecimalString(item.effectiveCostUsd);
     if (
       typeof item.workload !== "string" ||
       !workloadNames.has(item.workload as AiUsageWorkload["workload"]) ||

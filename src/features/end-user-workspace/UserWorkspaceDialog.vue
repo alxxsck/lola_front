@@ -39,15 +39,13 @@ import type {
 } from "@/shared/api/generated/models";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import { formatDate, relativeTime } from "@/shared/lib/format";
-import {
-  inferLocaleFromText,
-  localeDisplayName,
-} from "@/shared/lib/locale";
+import { inferLocaleFromText, localeDisplayName } from "@/shared/lib/locale";
 import type { ConversationMessage } from "@/shared/types/domain";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
 import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
 import EndUserAiUsageCard from "@/features/ai-usage/EndUserAiUsageCard.vue";
+import EndUserOperationalStateCard from "@/features/end-user-state/ui/EndUserOperationalStateCard.vue";
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
 import ConversationTicketDrawer from "./ConversationTicketDrawer.vue";
@@ -187,6 +185,18 @@ const canReadUserMemory = computed(() =>
 const canReadAiUsage = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
 );
+const canReadEndUserState = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.end_user_state.sensitive.read",
+  ),
+);
+const canManageEndUserState = computed(() =>
+  hasProjectPermission(
+    projectPermissions.value,
+    "project.end_user_state.manage",
+  ),
+);
 const canReadConversations = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.read"),
 );
@@ -297,8 +307,7 @@ const bulkTranslationActive = computed(
 const bulkTranslationCompleted = computed(
   () =>
     bulkTranslationIds.value.filter((messageId) => {
-      const state =
-        translation.messageTranslations.value.get(messageId)?.state;
+      const state = translation.messageTranslations.value.get(messageId)?.state;
       return state === "COMPLETED" || state === "FAILED" || state === "SKIPPED";
     }).length,
 );
@@ -322,7 +331,9 @@ async function setTranslationEnabled(enabled: boolean): Promise<void> {
   }
 }
 
-async function setTranslationTargetLocale(locale: string | null): Promise<void> {
+async function setTranslationTargetLocale(
+  locale: string | null,
+): Promise<void> {
   if (!(await ensureTranslationLoaded())) return;
   await translation.updatePreference({ endUserLocaleOverride: locale });
   const preference = translation.state.value?.preference;
@@ -496,10 +507,7 @@ watch(
     liveMessageIds.value = [];
     if (conversationAISuspensionEnabled)
       void suspensionStore.loadDetail(props.endUserId, conversationId);
-    if (
-      canManageTranslation.value &&
-      translation.hasStoredReplyDraft()
-    ) {
+    if (canManageTranslation.value && translation.hasStoredReplyDraft()) {
       await translation.load();
       replyTranslationRequested.value = Boolean(translation.draft.value);
     }
@@ -1282,6 +1290,12 @@ function displayField(
               <span>Нужно право на чтение статистики AI проекта.</span>
             </div>
           </section>
+          <EndUserOperationalStateCard
+            v-if="canReadEndUserState && endUserId"
+            :project-id="projectId"
+            :end-user-id="endUserId"
+            :can-manage="canManageEndUserState"
+          />
         </main>
 
         <aside class="profile-actions" aria-label="Действия с пользователем">
@@ -1354,17 +1368,16 @@ function displayField(
           aria-label="К профилю"
           @click="openProfile"
         >
-          <span class="avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
+          <span class="avatar">{{
+            displayName.slice(0, 1).toUpperCase()
+          }}</span>
           <div>
             <strong>{{ displayName }}</strong>
             <small>
               {{ (conversationLocale ?? "—").toUpperCase() }}
             </small>
           </div>
-          <span
-            class="connection-status"
-            :data-state="realtimeStatus.state"
-          >
+          <span class="connection-status" :data-state="realtimeStatus.state">
             <i class="connection-live-dot" />
             {{ realtimeStatus.label }}
           </span>
@@ -1492,21 +1505,13 @@ function displayField(
                 selectedConversation.status === "ACTIVE" ? "Открыт" : "Закрыт"
               }}
               · сессия #{{
-                Math.max(
-                  selectedConversation.currentInteractionSessionCount,
-                  1,
-                )
+                Math.max(selectedConversation.currentInteractionSessionCount, 1)
               }}
             </span>
           </div>
-          <div
-            v-if="canManageTranslation"
-            class="conversation-language-fact"
-          >
+          <div v-if="canManageTranslation" class="conversation-language-fact">
             <span>Пользователь пишет на</span>
-            <strong>{{
-              (conversationLocale ?? "—").toUpperCase()
-            }}</strong>
+            <strong>{{ (conversationLocale ?? "—").toUpperCase() }}</strong>
           </div>
           <div
             v-if="canManageTranslation"
@@ -1591,9 +1596,7 @@ function displayField(
                 :eligible-count="visibleTranslationMessageIds.length"
                 @reload="ensureTranslationLoaded"
                 @update-enabled="setTranslationEnabled"
-                @update-target-locale="
-                  setTranslationTargetLocale($event)
-                "
+                @update-target-locale="setTranslationTargetLocale($event)"
                 @translate-visible="
                   translation.translateMessages(visibleTranslationMessageIds)
                 "
@@ -1603,9 +1606,7 @@ function displayField(
                 role="menuitem"
                 @click="
                   messageViewMode =
-                    messageViewMode === 'ORIGINAL'
-                      ? 'TRANSLATED'
-                      : 'ORIGINAL'
+                    messageViewMode === 'ORIGINAL' ? 'TRANSLATED' : 'ORIGINAL'
                 "
               >
                 <i class="pi pi-eye" aria-hidden="true" />
@@ -1673,8 +1674,7 @@ function displayField(
                   (
                     translation.state.value?.preference.workingLocale ?? "ru"
                   ).toUpperCase()
-                }}…
-                {{ bulkTranslationCompleted }} из
+                }}… {{ bulkTranslationCompleted }} из
                 {{ bulkTranslationIds.length }}
               </span>
               <button
@@ -1778,9 +1778,7 @@ function displayField(
         >
           <div class="composer-source">
             <div class="composer-label">
-              <span>
-                Ваш текст · {{ workingLocaleLabel }}
-              </span>
+              <span> Ваш текст · {{ workingLocaleLabel }} </span>
               <span v-if="!onlineSession" class="composer-label__offline">
                 <i class="pi pi-wifi" aria-hidden="true" /> Пользователь офлайн
               </span>
@@ -1855,7 +1853,9 @@ function displayField(
               "
               icon="pi pi-sparkles"
               size="small"
-              :loading="translation.loading.value || translation.previewing.value"
+              :loading="
+                translation.loading.value || translation.previewing.value
+              "
               :disabled="
                 messagesLoading ||
                 !onlineSession ||
@@ -1873,10 +1873,7 @@ function displayField(
               }}
             </span>
             <div>
-              <div
-                v-if="canReply"
-                class="composer-action-menu"
-              >
+              <div v-if="canReply" class="composer-action-menu">
                 <button
                   v-if="composerActionsVisible"
                   type="button"
@@ -1906,9 +1903,7 @@ function displayField(
                   role="menu"
                 >
                   <span class="mobile-sheet-handle" aria-hidden="true" />
-                  <strong class="mobile-sheet-title"
-                    >Действия в диалоге</strong
-                  >
+                  <strong class="mobile-sheet-title">Действия в диалоге</strong>
                   <span class="menu-section-label">Сейчас</span>
                   <button
                     type="button"
@@ -1936,8 +1931,7 @@ function displayField(
                   </button>
                   <button
                     v-if="
-                      canReplyWithoutTranslation &&
-                      replyTranslationRequested
+                      canReplyWithoutTranslation && replyTranslationRequested
                     "
                     type="button"
                     role="menuitem"
@@ -3615,7 +3609,12 @@ function displayField(
   flex: 0 0 52px;
   width: 58%;
   border-radius: 4px 14px 14px;
-  background: linear-gradient(90deg, var(--surface-active) 25%, var(--surface-hover) 37%, var(--surface-active) 63%);
+  background: linear-gradient(
+    90deg,
+    var(--surface-active) 25%,
+    var(--surface-hover) 37%,
+    var(--surface-active) 63%
+  );
   background-size: 360px 100%;
   animation: skeleton-shimmer 1.3s infinite;
 }
@@ -4157,8 +4156,7 @@ function displayField(
     grid-row: 2;
     order: initial;
   }
-  .conversation-state-rail
-    :deep(.ai-suspension-header-actions .p-button) {
+  .conversation-state-rail :deep(.ai-suspension-header-actions .p-button) {
     min-height: 34px;
     padding-inline: 10px;
   }

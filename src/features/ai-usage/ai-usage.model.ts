@@ -1,3 +1,10 @@
+import {
+  addDecimalStrings,
+  compareDecimalStrings,
+  formatDecimalMoney,
+  type DecimalString,
+} from "@/shared/lib/decimal-money";
+
 export type AiUsageRangeKey = "today" | "7d" | "30d" | "all";
 export type AiUsageMetric = "tokens" | "cost";
 export const AI_USAGE_CATEGORIES = [
@@ -44,11 +51,11 @@ export interface AiUsageTotals {
   cachedInputImageTokens: number;
   outputImageTokens: number;
   durationSeconds: number;
-  estimatedCost: number;
-  billedCost: number;
-  providerReportedCost: number;
-  estimatedFallbackCost: number;
-  effectiveCost: number;
+  estimatedCost: DecimalString;
+  billedCost: DecimalString;
+  providerReportedCost: DecimalString;
+  estimatedFallbackCost: DecimalString;
+  effectiveCost: DecimalString;
 }
 
 export interface AiUsageBreakdown {
@@ -75,11 +82,11 @@ export interface AiUsageBreakdown {
   cachedInputImageTokens: number;
   outputImageTokens: number;
   durationSeconds: number;
-  estimatedCost: number;
-  billedCost: number;
-  providerReportedCost: number;
-  estimatedFallbackCost: number;
-  effectiveCost: number;
+  estimatedCost: DecimalString;
+  billedCost: DecimalString;
+  providerReportedCost: DecimalString;
+  estimatedFallbackCost: DecimalString;
+  effectiveCost: DecimalString;
 }
 
 export interface AiUsageCategoryBreakdown extends Omit<
@@ -109,11 +116,11 @@ export interface AiProviderUsage {
   cachedInputImageTokens: number;
   outputImageTokens: number;
   durationSeconds: number;
-  estimatedCost: number;
-  billedCost: number;
-  providerReportedCost: number;
-  estimatedFallbackCost: number;
-  effectiveCost: number;
+  estimatedCost: DecimalString;
+  billedCost: DecimalString;
+  providerReportedCost: DecimalString;
+  estimatedFallbackCost: DecimalString;
+  effectiveCost: DecimalString;
 }
 
 export interface AiUsageEventQueryBreakdown {
@@ -126,8 +133,8 @@ export interface AiUsageEventQueryBreakdown {
     inputTokens: number;
     outputTokens: number;
     totalTokens: number;
-    billedCostUsd: number | null;
-    estimatedCostUsd: number | null;
+    billedCostUsd: DecimalString | null;
+    estimatedCostUsd: DecimalString | null;
   };
 }
 
@@ -153,7 +160,7 @@ export interface AiUsageWorkload {
   reasoningTokens: number;
   requests: number;
   averageLatencyMs: number | null;
-  effectiveCostUsd: number;
+  effectiveCostUsd: DecimalString;
   isOther: boolean;
 }
 
@@ -180,8 +187,8 @@ export interface AiModelUsage {
   cachedInputTokens: number;
   outputTokens: number;
   durationSeconds: number;
-  estimatedCost: number;
-  billedCost: number;
+  estimatedCost: DecimalString;
+  billedCost: DecimalString;
 }
 
 export interface AiModalityUsage {
@@ -244,8 +251,14 @@ export function aggregateModelUsage(
       current.cachedInputTokens += item.cachedInputTokens;
       current.outputTokens += item.outputTokens;
       current.durationSeconds += item.durationSeconds;
-      current.estimatedCost += item.estimatedCost;
-      current.billedCost += item.billedCost;
+      current.estimatedCost = addDecimalStrings([
+        current.estimatedCost,
+        item.estimatedCost,
+      ]);
+      current.billedCost = addDecimalStrings([
+        current.billedCost,
+        item.billedCost,
+      ]);
       continue;
     }
 
@@ -328,16 +341,41 @@ export function aggregateProviderUsage(
     cachedInputImageTokens: 0,
     outputImageTokens: 0,
     durationSeconds: 0,
-    estimatedCost: 0,
-    billedCost: 0,
-    providerReportedCost: 0,
-    estimatedFallbackCost: 0,
-    effectiveCost: 0,
+    estimatedCost: "0",
+    billedCost: "0",
+    providerReportedCost: "0",
+    estimatedFallbackCost: "0",
+    effectiveCost: "0",
   };
 
   for (const item of breakdown) {
-    for (const key of Object.keys(totals) as Array<keyof AiProviderUsage>) {
-      totals[key] += item[key];
+    totals.records += item.records;
+    totals.inputCharacters += item.inputCharacters;
+    totals.providerBilledUnits += item.providerBilledUnits;
+    totals.totalTokens += item.totalTokens;
+    totals.inputTokens += item.inputTokens;
+    totals.cachedInputTokens += item.cachedInputTokens;
+    totals.cacheWriteInputTokens += item.cacheWriteInputTokens;
+    totals.outputTokens += item.outputTokens;
+    totals.reasoningTokens += item.reasoningTokens;
+    totals.inputTextTokens += item.inputTextTokens;
+    totals.cachedInputTextTokens += item.cachedInputTextTokens;
+    totals.outputTextTokens += item.outputTextTokens;
+    totals.inputAudioTokens += item.inputAudioTokens;
+    totals.cachedInputAudioTokens += item.cachedInputAudioTokens;
+    totals.outputAudioTokens += item.outputAudioTokens;
+    totals.inputImageTokens += item.inputImageTokens;
+    totals.cachedInputImageTokens += item.cachedInputImageTokens;
+    totals.outputImageTokens += item.outputImageTokens;
+    totals.durationSeconds += item.durationSeconds;
+    for (const key of [
+      "estimatedCost",
+      "billedCost",
+      "providerReportedCost",
+      "estimatedFallbackCost",
+      "effectiveCost",
+    ] as const) {
+      totals[key] = addDecimalStrings([totals[key], item[key]]);
     }
   }
 
@@ -382,12 +420,12 @@ export function getUsageCurrency(
 
 export function getUsageCost(
   usage: Pick<AiModelUsage, "billedCost" | "estimatedCost">,
-): number {
-  return usage.billedCost + usage.estimatedCost;
+): DecimalString {
+  return addDecimalStrings([usage.billedCost, usage.estimatedCost]);
 }
 
 export function hasUsageCost(row: AiModelUsage): boolean {
-  return getUsageCost(row) > 0;
+  return compareDecimalStrings(getUsageCost(row), "0") > 0;
 }
 
 export function formatTokenCount(value: number): string {
@@ -398,18 +436,8 @@ export function formatTokenCount(value: number): string {
   }).format(value);
 }
 
-export function formatMoney(value: number, currency: string): string {
-  const normalizedCurrency = /^[a-z]{3}$/i.test(currency)
-    ? currency.toUpperCase()
-    : "USD";
-  const formatter = new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: normalizedCurrency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  if (value > 0 && value < 0.01) return `< ${formatter.format(0.01)}`;
-  return formatter.format(value);
+export function formatMoney(value: DecimalString, currency: string): string {
+  return formatDecimalMoney(value, currency);
 }
 
 export function formatDuration(value: number): string {

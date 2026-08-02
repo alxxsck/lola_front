@@ -279,6 +279,23 @@ export const router = createRouter({
           meta: { projectPermission: "project.ai_operations.read" },
         },
         {
+          path: "ai-costs",
+          name: "ai-costs",
+          component: () => import("@/pages/AICostsPage.vue"),
+          meta: {
+            projectPermissionsAny: [
+              "project.ai_costs.read",
+              "project.ai_allowance.read",
+              "project.ai_allowance.manage",
+              "project.ai_allowance.grant",
+              "project.ai_allowance.reconcile",
+              "project.ai_allowance.accrual_rules.read",
+              "project.ai_allowance.accrual_rules.manage",
+              "project.ai_allowance.accrual_receipts.read",
+            ],
+          },
+        },
+        {
           path: "ai-proposals",
           name: "ai-proposals",
           component: () => import("@/pages/AIProposalsPage.vue"),
@@ -445,6 +462,7 @@ router.beforeEach(async (to) => {
     (to.name === "ai-proposal-detail" ||
       to.name === "ai-analysis-detail" ||
       to.name === "ai-operation-detail" ||
+      to.name === "ai-costs" ||
       to.name === "end-user-case-detail" ||
       to.name === "users") &&
     typeof to.query.projectId === "string"

@@ -4,6 +4,7 @@ vi.mock('@/shared/config/data-mode', () => ({ isMockMode: true }))
 
 import { fetchAiUsageReport } from './ai-usage.api'
 import { getModelBreakdown } from './ai-usage.model'
+import { compareDecimalStrings } from '@/shared/lib/decimal-money'
 
 describe('AI usage demo report', () => {
   it('contains factual model, calculated Voice and calculated Speech usage without ElevenLabs', async () => {
@@ -20,16 +21,16 @@ describe('AI usage demo report', () => {
     expect(getModelBreakdown(report.breakdown).map((row) => row.operation)).toEqual(
       ['response'],
     )
-    expect(report.totals.providerReportedCost).toBeGreaterThan(0)
-    expect(report.totals.estimatedFallbackCost).toBeGreaterThan(0)
+    expect(compareDecimalStrings(report.totals.providerReportedCost, '0')).toBe(1)
+    expect(compareDecimalStrings(report.totals.estimatedFallbackCost, '0')).toBe(1)
     expect(voice).toMatchObject({
       durationSeconds: expect.any(Number),
-      estimatedFallbackCost: expect.any(Number),
+      estimatedFallbackCost: expect.any(String),
     })
     expect(voice!.durationSeconds).toBeGreaterThan(0)
     expect(speech).toMatchObject({
       inputCharacters: expect.any(Number),
-      estimatedFallbackCost: expect.any(Number),
+      estimatedFallbackCost: expect.any(String),
     })
     expect(speech!.inputCharacters).toBeGreaterThan(0)
     expect(report.textToSpeechPricing.sourceUrl).toMatch(/^https:\/\//)
