@@ -5,7 +5,7 @@
         "enum": [
           "SERVER_HANDLER",
           "FRONTEND_COMMAND",
-          "PROPOSAL",
+          "RETIRED",
           "CASE_ESCALATION"
         ],
         "type": "string"
@@ -1053,6 +1053,30 @@
         ],
         "type": "object"
       },
+      "AiAllowanceAccrualAdminResponseDto": {
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "AiAllowanceAdminResponseDto": {
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "AiCapabilityIssueResponseDto": {
         "properties": {
           "code": {
@@ -1122,6 +1146,437 @@
           "description",
           "parameters",
           "strict"
+        ],
+        "type": "object"
+      },
+      "AiCostCategoryResponseDto": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "effectiveCostUsd": {
+            "example": "1.375000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "estimatedFallbackCostUsd": {
+            "example": "0.125000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "pricedCostRecords": {
+            "description": "Records with a concrete cost amount.",
+            "type": "number"
+          },
+          "providerReportedCostUsd": {
+            "example": "1.250000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "records": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "providerReportedCostUsd",
+          "estimatedFallbackCostUsd",
+          "effectiveCostUsd",
+          "pricedCostRecords",
+          "category",
+          "records"
+        ],
+        "type": "object"
+      },
+      "AiCostCmsUserItemResponseDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "effectiveCostUsd": {
+            "example": "1.375000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "estimatedFallbackCostUsd": {
+            "example": "0.125000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "pricedCostRecords": {
+            "description": "Records with a concrete cost amount.",
+            "type": "number"
+          },
+          "providerReportedCostUsd": {
+            "example": "1.250000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "records": {
+            "type": "number"
+          },
+          "unpricedRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "providerReportedCostUsd",
+          "estimatedFallbackCostUsd",
+          "effectiveCostUsd",
+          "pricedCostRecords",
+          "cmsUserId",
+          "email",
+          "records",
+          "unpricedRecords"
+        ],
+        "type": "object"
+      },
+      "AiCostCmsUserPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiCostCmsUserItemResponseDto"
+            },
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/AiCostPaginationResponseDto"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/AiCostProjectionResponseDto"
+          },
+          "range": {
+            "$ref": "#/components/schemas/AiCostRangeResponseDto"
+          }
+        },
+        "required": [
+          "range",
+          "projection",
+          "items",
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "AiCostCompletenessResponseDto": {
+        "properties": {
+          "estimatedRecords": {
+            "type": "number"
+          },
+          "pricedPercent": {
+            "example": "99.50",
+            "type": "string"
+          },
+          "providerReportedRecords": {
+            "type": "number"
+          },
+          "totalRecords": {
+            "type": "number"
+          },
+          "unpricedRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "totalRecords",
+          "providerReportedRecords",
+          "estimatedRecords",
+          "unpricedRecords",
+          "pricedPercent"
+        ],
+        "type": "object"
+      },
+      "AiCostDailyResponseDto": {
+        "properties": {
+          "day": {
+            "example": "2026-07-01",
+            "format": "date",
+            "type": "string"
+          },
+          "effectiveCostUsd": {
+            "example": "1.375000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "estimatedFallbackCostUsd": {
+            "example": "0.125000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "pricedCostRecords": {
+            "description": "Records with a concrete cost amount.",
+            "type": "number"
+          },
+          "providerReportedCostUsd": {
+            "example": "1.250000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "records": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "providerReportedCostUsd",
+          "estimatedFallbackCostUsd",
+          "effectiveCostUsd",
+          "pricedCostRecords",
+          "day",
+          "records"
+        ],
+        "type": "object"
+      },
+      "AiCostEndUserItemResponseDto": {
+        "properties": {
+          "effectiveCostUsd": {
+            "example": "1.375000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "estimatedFallbackCostUsd": {
+            "example": "0.125000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "pricedCostRecords": {
+            "description": "Records with a concrete cost amount.",
+            "type": "number"
+          },
+          "providerReportedCostUsd": {
+            "example": "1.250000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "records": {
+            "type": "number"
+          },
+          "segment": {
+            "nullable": true,
+            "type": "string"
+          },
+          "unpricedRecords": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "providerReportedCostUsd",
+          "estimatedFallbackCostUsd",
+          "effectiveCostUsd",
+          "pricedCostRecords",
+          "endUserId",
+          "externalId",
+          "segment",
+          "records",
+          "unpricedRecords"
+        ],
+        "type": "object"
+      },
+      "AiCostEndUserPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiCostEndUserItemResponseDto"
+            },
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/AiCostPaginationResponseDto"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/AiCostProjectionResponseDto"
+          },
+          "range": {
+            "$ref": "#/components/schemas/AiCostRangeResponseDto"
+          }
+        },
+        "required": [
+          "range",
+          "projection",
+          "items",
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "AiCostOverviewResponseDto": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/AiCostCategoryResponseDto"
+            },
+            "type": "array"
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/AiCostCompletenessResponseDto"
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/AiCostDailyResponseDto"
+            },
+            "type": "array"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/AiCostProjectionResponseDto"
+          },
+          "range": {
+            "$ref": "#/components/schemas/AiCostRangeResponseDto"
+          },
+          "timezone": {
+            "example": "Europe/Madrid",
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/AiCostTotalsResponseDto"
+          }
+        },
+        "required": [
+          "range",
+          "timezone",
+          "projection",
+          "totals",
+          "completeness",
+          "categories",
+          "daily"
+        ],
+        "type": "object"
+      },
+      "AiCostPaginationResponseDto": {
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "limit": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "number"
+          },
+          "nextOffset": {
+            "nullable": true,
+            "type": "number"
+          },
+          "offset": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "truncated": {
+            "description": "More rows exist but the bounded offset window requires narrower filters.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "limit",
+          "offset",
+          "hasMore",
+          "nextOffset",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "AiCostProjectionResponseDto": {
+        "properties": {
+          "asOf": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "driftDetected": {
+            "type": "boolean"
+          },
+          "lastReconciledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectedRecords": {
+            "example": "125000",
+            "type": "string"
+          },
+          "rebuildGeneration": {
+            "example": "3",
+            "type": "string"
+          },
+          "sourceRecords": {
+            "example": "125000",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "FRESH",
+              "STALE"
+            ],
+            "type": "string"
+          },
+          "timezone": {
+            "example": "Europe/Madrid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "timezone",
+          "asOf",
+          "lastReconciledAt",
+          "sourceRecords",
+          "projectedRecords",
+          "rebuildGeneration",
+          "driftDetected"
+        ],
+        "type": "object"
+      },
+      "AiCostRangeResponseDto": {
+        "properties": {
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "AiCostTotalsResponseDto": {
+        "properties": {
+          "effectiveCostUsd": {
+            "example": "1.375000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "estimatedFallbackCostUsd": {
+            "example": "0.125000000000",
+            "nullable": true,
+            "type": "string"
+          },
+          "pricedCostRecords": {
+            "description": "Records with a concrete cost amount.",
+            "type": "number"
+          },
+          "providerReportedCostUsd": {
+            "example": "1.250000000000",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "providerReportedCostUsd",
+          "estimatedFallbackCostUsd",
+          "effectiveCostUsd",
+          "pricedCostRecords"
         ],
         "type": "object"
       },
@@ -2835,536 +3290,6 @@
         ],
         "type": "object"
       },
-      "AIProposalDetailResponseDto": {
-        "properties": {
-          "caseLinkState": {
-            "enum": [
-              "LINKED",
-              "MIGRATED",
-              "REPAIR_REQUIRED",
-              "NOT_APPLICABLE",
-              "LEGACY_MISSING"
-            ],
-            "type": "string"
-          },
-          "caseMigrationDisposition": {
-            "enum": [
-              "ACTIVE_IMPORTED",
-              "ACTIVE_COLLAPSED",
-              "TERMINAL_IMPORTED",
-              "CASE_REPAIR_REQUIRED",
-              "ORPHAN_REPAIR_REQUIRED"
-            ],
-            "nullable": true,
-            "type": "string"
-          },
-          "content": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "conversationId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "decidedAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "decidedByActorId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "decisionMode": {
-            "enum": [
-              "ACKNOWLEDGE",
-              "APPROVE_REJECT"
-            ],
-            "type": "string"
-          },
-          "decisionReason": {
-            "nullable": true,
-            "type": "string"
-          },
-          "endUser": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "endUserCase": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserCaseResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "evidence": {
-            "items": {
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "kind": {
-            "enum": [
-              "ADMIN_ATTENTION",
-              "INSIGHT",
-              "ACTION_RECOMMENDATION"
-            ],
-            "type": "string"
-          },
-          "migratedCaseEscalation": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalMigratedCaseEscalationResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "priority": {
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT"
-            ],
-            "type": "string"
-          },
-          "projectSequence": {
-            "type": "string"
-          },
-          "readAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "resolvedAt": {
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceInvocationId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceMessageId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceType": {
-            "enum": [
-              "TEXT_CHAT",
-              "VOICE",
-              "BACKGROUND_AI"
-            ],
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "workflowStatus": {
-            "enum": [
-              "OPEN",
-              "ACCEPTED",
-              "REJECTED",
-              "RESOLVED",
-              "EXPIRED",
-              "CANCELLED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "projectSequence",
-          "kind",
-          "workflowStatus",
-          "decisionMode",
-          "priority",
-          "title",
-          "summary",
-          "sourceType",
-          "caseLinkState",
-          "version",
-          "isRead",
-          "createdAt",
-          "updatedAt",
-          "content",
-          "evidence"
-        ],
-        "type": "object"
-      },
-      "AIProposalEndUserCaseResponseDto": {
-        "properties": {
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "priority": {
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT",
-              "CRITICAL"
-            ],
-            "type": "string"
-          },
-          "projectSequence": {
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "OPEN",
-              "IN_PROGRESS",
-              "WAITING_END_USER",
-              "WAITING_SYSTEM",
-              "WAITING_ADMIN",
-              "RESOLVED",
-              "UNRESOLVED",
-              "CANCELLED"
-            ],
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "projectSequence",
-          "title",
-          "summary",
-          "status",
-          "priority",
-          "version"
-        ],
-        "type": "object"
-      },
-      "AIProposalEndUserResponseDto": {
-        "properties": {
-          "externalId": {
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "externalId"
-        ],
-        "type": "object"
-      },
-      "AIProposalListItemResponseDto": {
-        "properties": {
-          "caseLinkState": {
-            "enum": [
-              "LINKED",
-              "MIGRATED",
-              "REPAIR_REQUIRED",
-              "NOT_APPLICABLE",
-              "LEGACY_MISSING"
-            ],
-            "type": "string"
-          },
-          "caseMigrationDisposition": {
-            "enum": [
-              "ACTIVE_IMPORTED",
-              "ACTIVE_COLLAPSED",
-              "TERMINAL_IMPORTED",
-              "CASE_REPAIR_REQUIRED",
-              "ORPHAN_REPAIR_REQUIRED"
-            ],
-            "nullable": true,
-            "type": "string"
-          },
-          "conversationId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "decisionMode": {
-            "enum": [
-              "ACKNOWLEDGE",
-              "APPROVE_REJECT"
-            ],
-            "type": "string"
-          },
-          "endUser": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "endUserCase": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalEndUserCaseResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "kind": {
-            "enum": [
-              "ADMIN_ATTENTION",
-              "INSIGHT",
-              "ACTION_RECOMMENDATION"
-            ],
-            "type": "string"
-          },
-          "migratedCaseEscalation": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AIProposalMigratedCaseEscalationResponseDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "priority": {
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT"
-            ],
-            "type": "string"
-          },
-          "projectSequence": {
-            "type": "string"
-          },
-          "sourceMessageId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceType": {
-            "enum": [
-              "TEXT_CHAT",
-              "VOICE",
-              "BACKGROUND_AI"
-            ],
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "workflowStatus": {
-            "enum": [
-              "OPEN",
-              "ACCEPTED",
-              "REJECTED",
-              "RESOLVED",
-              "EXPIRED",
-              "CANCELLED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "projectSequence",
-          "kind",
-          "workflowStatus",
-          "decisionMode",
-          "priority",
-          "title",
-          "summary",
-          "sourceType",
-          "caseLinkState",
-          "version",
-          "isRead",
-          "createdAt",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "AIProposalMigratedCaseEscalationResponseDto": {
-        "properties": {
-          "caseId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "disposition": {
-            "enum": [
-              "ACTIVE_IMPORTED",
-              "ACTIVE_COLLAPSED",
-              "TERMINAL_IMPORTED"
-            ],
-            "type": "string"
-          },
-          "escalationId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "REQUESTED",
-              "CLAIMED",
-              "CLOSED",
-              "CANCELLED"
-            ],
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "caseId",
-          "escalationId",
-          "disposition"
-        ],
-        "type": "object"
-      },
-      "AIProposalReadResponseDto": {
-        "properties": {
-          "proposal": {
-            "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-          },
-          "summary": {
-            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-          }
-        },
-        "required": [
-          "proposal",
-          "summary"
-        ],
-        "type": "object"
-      },
-      "AIProposalReceivedResponseDto": {
-        "properties": {
-          "received": {
-            "enum": [
-              true
-            ],
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "received"
-        ],
-        "type": "object"
-      },
-      "AIProposalsPageResponseDto": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/AIProposalListItemResponseDto"
-            },
-            "type": "array"
-          },
-          "nextCursor": {
-            "nullable": true,
-            "type": "string"
-          },
-          "summary": {
-            "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-          }
-        },
-        "required": [
-          "items",
-          "summary"
-        ],
-        "type": "object"
-      },
-      "AIProposalSummaryResponseDto": {
-        "properties": {
-          "calculatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "highPriorityUnreadCount": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "lastSequence": {
-            "description": "JSON-safe project event sequence.",
-            "type": "string"
-          },
-          "openCount": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "unreadCount": {
-            "minimum": 0,
-            "type": "number"
-          }
-        },
-        "required": [
-          "openCount",
-          "unreadCount",
-          "highPriorityUnreadCount",
-          "lastSequence",
-          "calculatedAt"
-        ],
-        "type": "object"
-      },
       "AIReviewEstimateResponseDto": {
         "properties": {
           "blocked": {
@@ -3469,10 +3394,6 @@
             "type": "array"
           },
           "policyRevisionId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "proposalId": {
             "format": "uuid",
             "type": "string"
           },
@@ -4339,6 +4260,23 @@
         "required": [
           "eventQuery"
         ],
+        "type": "object"
+      },
+      "AllowanceLocalizedContentDto": {
+        "properties": {
+          "en": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "ru": {
+            "maxLength": 2000,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "AllRuleExplanationResponseDto": {
@@ -10034,6 +9972,18 @@
         ],
         "type": "object"
       },
+      "CompactAiAllowanceFundingDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
       "CompatibilityCreateMessageDto": {
         "properties": {},
         "type": "object"
@@ -11219,6 +11169,38 @@
         ],
         "type": "object"
       },
+      "CorrectAiAllowanceDto": {
+        "properties": {
+          "correctsEntryId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "deltaAvailableUsd": {
+            "pattern": "^-?(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "expectedAccountVersion": {
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "Required for positive corrections; forbidden for negative corrections.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "correctsEntryId",
+          "deltaAvailableUsd",
+          "expectedAccountVersion",
+          "reason"
+        ],
+        "type": "object"
+      },
       "CountGtePredicateDto": {
         "properties": {
           "operator": {
@@ -11451,9 +11433,8 @@
             "type": "string"
           },
           "topic": {
-            "default": "AI_PROPOSALS",
+            "default": "CASE_ESCALATION",
             "enum": [
-              "AI_PROPOSALS",
               "CASE_ESCALATION"
             ],
             "type": "string"
@@ -11921,15 +11902,14 @@
       "CreateSlackNotificationDestinationDto": {
         "properties": {
           "displayName": {
-            "example": "Предложения Lola",
+            "example": "Эскалации обращений",
             "maxLength": 120,
             "minLength": 1,
             "type": "string"
           },
           "topic": {
-            "default": "AI_PROPOSALS",
+            "default": "CASE_ESCALATION",
             "enum": [
-              "AI_PROPOSALS",
               "CASE_ESCALATION"
             ],
             "type": "string"
@@ -12083,30 +12063,6 @@
         ],
         "type": "object"
       },
-      "DecideAIProposalDto": {
-        "properties": {
-          "action": {
-            "enum": [
-              "RESOLVE"
-            ],
-            "type": "string"
-          },
-          "expectedVersion": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "reason": {
-            "maxLength": 2000,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "action",
-          "expectedVersion"
-        ],
-        "type": "object"
-      },
       "DeleteKnowledgeDocumentResponseDto": {
         "properties": {
           "deleted": {
@@ -12185,56 +12141,6 @@
         },
         "required": [
           "expectedUpdatedAt"
-        ],
-        "type": "object"
-      },
-      "EmailAIProposalPreferenceResponseDto": {
-        "properties": {
-          "channel": {
-            "enum": [
-              "EMAIL"
-            ],
-            "type": "string"
-          },
-          "effectiveStatus": {
-            "enum": [
-              "SUBSCRIBED",
-              "UNSUBSCRIBED",
-              "SUSPENDED",
-              "INELIGIBLE"
-            ],
-            "type": "string"
-          },
-          "emailVersion": {
-            "minimum": 0,
-            "type": "number"
-          },
-          "ineligibilityReason": {
-            "enum": [
-              "EMAIL_UNVERIFIED",
-              "EMAIL_CHANGED",
-              "USER_INACTIVE"
-            ],
-            "nullable": true,
-            "type": "string"
-          },
-          "subscribed": {
-            "type": "boolean"
-          },
-          "topic": {
-            "enum": [
-              "AI_PROPOSALS"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "channel",
-          "subscribed",
-          "effectiveStatus",
-          "ineligibilityReason",
-          "emailVersion",
-          "topic"
         ],
         "type": "object"
       },
@@ -13223,86 +13129,6 @@
         ],
         "type": "object"
       },
-      "EndUserCaseProposalResponseDto": {
-        "properties": {
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "kind": {
-            "enum": [
-              "ADMIN_ATTENTION",
-              "INSIGHT",
-              "ACTION_RECOMMENDATION"
-            ],
-            "type": "string"
-          },
-          "priority": {
-            "enum": [
-              "LOW",
-              "NORMAL",
-              "HIGH",
-              "URGENT"
-            ],
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "minimum": 1,
-            "type": "number"
-          },
-          "workflowStatus": {
-            "enum": [
-              "OPEN",
-              "ACCEPTED",
-              "REJECTED",
-              "RESOLVED",
-              "EXPIRED",
-              "CANCELLED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "kind",
-          "workflowStatus",
-          "priority",
-          "title",
-          "summary",
-          "version",
-          "createdAt",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "EndUserCaseProposalsResponseDto": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/EndUserCaseProposalResponseDto"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "type": "object"
-      },
       "EndUserCaseResolutionResponseDto": {
         "properties": {
           "assessment": {
@@ -13528,10 +13354,6 @@
             "description": "JSON-safe project-local sequence.",
             "type": "string"
           },
-          "proposalCount": {
-            "minimum": 0,
-            "type": "number"
-          },
           "reopenedAt": {
             "format": "date-time",
             "nullable": true,
@@ -13658,7 +13480,6 @@
           "endUser",
           "requiresSpecialist",
           "messageCount",
-          "proposalCount",
           "firstObservedAt",
           "lastActivityAt",
           "endUserRecontactCount",
@@ -13728,7 +13549,7 @@
           "kind": {
             "enum": [
               "AI_ACTION_INVOCATION",
-              "AI_PROPOSAL",
+              "LEGACY_AI_RESULT",
               "TRUSTED_VERIFICATION"
             ],
             "type": "string"
@@ -13862,6 +13683,30 @@
           "cmsParticipation",
           "blockers",
           "limitations"
+        ],
+        "type": "object"
+      },
+      "EndUserOperationalStateResponseDto": {
+        "properties": {
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "endUserId",
+          "items"
         ],
         "type": "object"
       },
@@ -18926,6 +18771,33 @@
         ],
         "type": "object"
       },
+      "ManualAllowanceGrantDto": {
+        "properties": {
+          "amountUsd": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "validFrom": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amountUsd",
+          "validFrom",
+          "expiresAt",
+          "reason"
+        ],
+        "type": "object"
+      },
       "MergeEndUserCasesDto": {
         "properties": {
           "expectedVersion": {
@@ -19241,7 +19113,6 @@
           },
           "topic": {
             "enum": [
-              "AI_PROPOSALS",
               "CASE_ESCALATION"
             ],
             "type": "string"
@@ -19909,6 +19780,10 @@
           "kind",
           "child"
         ],
+        "type": "object"
+      },
+      "Object": {
+        "properties": {},
         "type": "object"
       },
       "OldContractIntegrationResponseDto": {
@@ -21394,11 +21269,6 @@
             ],
             "type": "string"
           },
-          "linkedProposalId": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
           "provenanceStatus": {
             "enum": [
               "PARTIAL",
@@ -21419,7 +21289,7 @@
           "sourceKind": {
             "enum": [
               "AI_REVIEW",
-              "INSIGHT_PROPOSAL"
+              "LEGACY_INSIGHT"
             ],
             "type": "string"
           }
@@ -24298,6 +24168,357 @@
         ],
         "type": "object"
       },
+      "PutAiAllowanceAccrualRuleDto": {
+        "properties": {
+          "allowedSources": {
+            "items": {
+              "enum": [
+                "SERVER",
+                "FRONTEND",
+                "INTERNAL"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "cooldownSeconds": {
+            "maximum": 31622400,
+            "minimum": 0,
+            "type": "number"
+          },
+          "effectiveFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "effectiveUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "grantTtlSeconds": {
+            "maximum": 31622400,
+            "minimum": 60,
+            "type": "number"
+          },
+          "lifecycle": {
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 160,
+            "type": "string"
+          },
+          "perEndUserDailyCapUsd": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "projectDailyCapUsd": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "rewardUsd": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "timezone": {
+            "example": "Europe/Madrid",
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "lifecycle",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionIds",
+          "allowedSources",
+          "timezone",
+          "rewardUsd",
+          "perEndUserDailyCapUsd",
+          "projectDailyCapUsd",
+          "grantTtlSeconds",
+          "cooldownSeconds",
+          "effectiveFrom",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "PutAllowancePlanCategoryRuleDto": {
+        "properties": {
+          "capUsd": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "CHAT",
+              "VOICE",
+              "SPEECH",
+              "MEMORY",
+              "AI_REVIEW",
+              "AI_ANALYSIS",
+              "CMS_AGENT",
+              "CASE_INTELLIGENCE",
+              "PROJECT_OVERHEAD"
+            ],
+            "type": "string"
+          },
+          "responsibility": {
+            "enum": [
+              "END_USER_ALLOWANCE",
+              "PROJECT_SPONSORED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "responsibility"
+        ],
+        "type": "object"
+      },
+      "PutAllowancePlanDto": {
+        "properties": {
+          "amountUsd": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "categoryRules": {
+            "items": {
+              "$ref": "#/components/schemas/PutAllowancePlanCategoryRuleDto"
+            },
+            "type": "array"
+          },
+          "dailyCapUsd": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "expectedProjectPolicyVersion": {
+            "description": "Project-wide allowance configuration generation returned by the latest allowance read.",
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 160,
+            "type": "string"
+          },
+          "period": {
+            "enum": [
+              "DAY",
+              "MONTH"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedProjectPolicyVersion",
+          "name",
+          "amountUsd",
+          "period",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "PutCohortAllowanceAssignmentDto": {
+        "properties": {
+          "effectiveFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "effectiveUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expectedProjectPolicyVersion": {
+            "description": "Project-wide allowance configuration generation returned by the latest allowance read.",
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "planId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "priority": {
+            "maximum": 1000000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedProjectPolicyVersion",
+          "planId",
+          "priority",
+          "effectiveFrom",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "PutDefaultAllowancePlanDto": {
+        "properties": {
+          "amountUsd": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "enforcementMode": {
+            "enum": [
+              "DISABLED",
+              "SHADOW",
+              "SOFT",
+              "HARD"
+            ],
+            "type": "string"
+          },
+          "exhaustedContent": {
+            "$ref": "#/components/schemas/AllowanceLocalizedContentDto"
+          },
+          "expectedProjectPolicyVersion": {
+            "description": "Project-wide allowance configuration generation returned by the latest allowance read.",
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "lowThresholdMode": {
+            "default": "PERCENT",
+            "enum": [
+              "PERCENT",
+              "ABSOLUTE_USD"
+            ],
+            "type": "string"
+          },
+          "lowThresholdValue": {
+            "default": "10.000000000000",
+            "description": "Percentage in (0,100] or an exact positive USD amount, selected by mode.",
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "period": {
+            "enum": [
+              "DAY",
+              "MONTH"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "showEndUserExactUsd": {
+            "default": false,
+            "type": "boolean"
+          },
+          "timezone": {
+            "example": "Europe/Madrid",
+            "type": "string"
+          },
+          "warningContent": {
+            "$ref": "#/components/schemas/AllowanceLocalizedContentDto"
+          }
+        },
+        "required": [
+          "expectedProjectPolicyVersion",
+          "amountUsd",
+          "period",
+          "timezone",
+          "enforcementMode",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "PutEndUserAllowanceAssignmentDto": {
+        "properties": {
+          "effectiveFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "effectiveUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expectedProjectPolicyVersion": {
+            "description": "Project-wide allowance configuration generation returned by the latest allowance read.",
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "planId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedProjectPolicyVersion",
+          "planId",
+          "effectiveFrom",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "PutEndUserOperationalAttributeDto": {
+        "properties": {
+          "effectiveAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "SET",
+              "UNSET"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "value": {
+            "description": "Typed value; required for SET and forbidden for UNSET",
+            "type": "object"
+          }
+        },
+        "required": [
+          "operation",
+          "expectedVersion",
+          "reason"
+        ],
+        "type": "object"
+      },
       "QuietHoursSettingsDto": {
         "properties": {
           "enabled": {
@@ -24400,6 +24621,32 @@
           "expectedAssignedMembershipCountCapped",
           "reason",
           "replacementRoleIds"
+        ],
+        "type": "object"
+      },
+      "ReconcileAiSpendReservationDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "reservationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "resolution": {
+            "enum": [
+              "SETTLE_FROM_USAGE",
+              "HOLD_UNKNOWN",
+              "RELEASE_PROVEN_NON_BILLABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "reservationId",
+          "resolution",
+          "reason"
         ],
         "type": "object"
       },
@@ -24637,6 +24884,27 @@
           "expectedCaseVersion",
           "reasonCode",
           "summary"
+        ],
+        "type": "object"
+      },
+      "ResolveAiSpendAttemptDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "resolution": {
+            "enum": [
+              "SETTLE_FROM_USAGE",
+              "HOLD_UNKNOWN",
+              "RELEASE_PROVEN_NON_BILLABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "resolution",
+          "reason"
         ],
         "type": "object"
       },
@@ -31570,17 +31838,6 @@
         ],
         "type": "object"
       },
-      "UpdateEmailAIProposalPreferenceDto": {
-        "properties": {
-          "subscribed": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "subscribed"
-        ],
-        "type": "object"
-      },
       "UpdateEmailCaseEscalationPreferenceDto": {
         "properties": {
           "subscribed": {
@@ -32136,7 +32393,7 @@
             "type": "string"
           },
           "displayName": {
-            "example": "Предложения Lola",
+            "example": "Эскалации обращений",
             "maxLength": 120,
             "minLength": 1,
             "type": "string"
@@ -35888,6 +36145,749 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/ai-allowance": {
+      "get": {
+        "operationId": "AiAllowanceAdmin_projectPolicy",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "planLimit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "planCursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revisionLimit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "maximum": 20,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_allowance.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/accrual-receipts": {
+      "get": {
+        "operationId": "AiAllowanceAccrualAdmin_listReceipts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ],
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "GRANTED",
+                "REJECTED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAccrualAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance accrual"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_allowance.accrual_receipts.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/accrual-rules": {
+      "get": {
+        "operationId": "AiAllowanceAccrualAdmin_listRules",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ],
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "description": "Last Rule key from the previous page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAccrualAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance accrual"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_allowance.accrual_rules.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/accrual-rules/{ruleKey}": {
+      "put": {
+        "operationId": "AiAllowanceAccrualAdmin_putRule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "ruleKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutAiAllowanceAccrualRuleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAccrualAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance accrual"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.accrual_rules.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/assignments/{scope}/{cohortId}": {
+      "put": {
+        "operationId": "AiAllowanceAdmin_putCohortAssignment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "cohortId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutCohortAllowanceAssignmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/attempts/{attemptId}/resolve": {
+      "post": {
+        "operationId": "AiAllowanceAdmin_resolveAttempt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attemptId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveAiSpendAttemptDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.reconcile",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/default-plan": {
+      "put": {
+        "operationId": "AiAllowanceAdmin_putDefaultPlan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutDefaultAllowancePlanDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/plans/{planKey}": {
+      "put": {
+        "operationId": "AiAllowanceAdmin_putPlan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "planKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutAllowancePlanDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/plans/{planKey}/revisions": {
+      "get": {
+        "operationId": "AiAllowanceAdmin_planRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "planKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_allowance.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/reconcile": {
+      "post": {
+        "operationId": "AiAllowanceAdmin_reconcile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconcileAiSpendReservationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.reconcile",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-allowance/reconciliation": {
+      "get": {
+        "operationId": "AiAllowanceAdmin_reconciliationQueue",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "RESERVED",
+                "UNKNOWN_HELD"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_allowance.reconcile",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/ai-analyses": {
       "get": {
         "operationId": "ProjectAIAnalysis_list",
@@ -36349,6 +37349,289 @@
         ],
         "x-iam-permission": {
           "code": "project.ai_analysis_cost.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-costs/cms-users": {
+      "get": {
+        "operationId": "AiCosts_cmsUsers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive midnight in the project timezone.",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "example": "2026-06-30T22:00:00.000Z",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive midnight in the project timezone; maximum 366 calendar days.",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "example": "2026-07-31T22:00:00.000Z",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "effectiveCostUsd",
+              "enum": [
+                "identity",
+                "records",
+                "unpricedRecords",
+                "effectiveCostUsd"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "desc",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiCostCmsUserPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI costs"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_costs.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-costs/overview": {
+      "get": {
+        "operationId": "AiCosts_overview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive midnight in the project timezone.",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "example": "2026-06-30T22:00:00.000Z",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive midnight in the project timezone; maximum 366 calendar days.",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "example": "2026-07-31T22:00:00.000Z",
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiCostOverviewResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI costs"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_costs.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/ai-costs/users": {
+      "get": {
+        "operationId": "AiCosts_users",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive midnight in the project timezone.",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "example": "2026-06-30T22:00:00.000Z",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive midnight in the project timezone; maximum 366 calendar days.",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "example": "2026-07-31T22:00:00.000Z",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "effectiveCostUsd",
+              "enum": [
+                "identity",
+                "records",
+                "unpricedRecords",
+                "effectiveCostUsd"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "desc",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiCostEndUserPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI costs"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_costs.read",
           "scope": "PROJECT"
         }
       }
@@ -37264,403 +38547,6 @@
         ],
         "x-iam-permission": {
           "code": "project.ai_operations.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposal-events/{eventId}/received": {
-      "post": {
-        "operationId": "AIProposalEvents_received",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "eventId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalReceivedResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals": {
-      "get": {
-        "operationId": "AIProposals_list",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "status",
-            "required": false,
-            "schema": {
-              "items": {
-                "enum": [
-                  "OPEN",
-                  "ACCEPTED",
-                  "REJECTED",
-                  "RESOLVED",
-                  "EXPIRED",
-                  "CANCELLED"
-                ],
-                "type": "string"
-              },
-              "type": "array"
-            }
-          },
-          {
-            "in": "query",
-            "name": "kind",
-            "required": false,
-            "schema": {
-              "items": {
-                "enum": [
-                  "ADMIN_ATTENTION",
-                  "INSIGHT",
-                  "ACTION_RECOMMENDATION"
-                ],
-                "type": "string"
-              },
-              "type": "array"
-            }
-          },
-          {
-            "in": "query",
-            "name": "priority",
-            "required": false,
-            "schema": {
-              "items": {
-                "enum": [
-                  "LOW",
-                  "NORMAL",
-                  "HIGH",
-                  "URGENT"
-                ],
-                "type": "string"
-              },
-              "type": "array"
-            }
-          },
-          {
-            "in": "query",
-            "name": "read",
-            "required": false,
-            "schema": {
-              "enum": [
-                "READ",
-                "UNREAD"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "endUserId",
-            "required": false,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "createdFrom",
-            "required": false,
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "createdTo",
-            "required": false,
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 100,
-              "minimum": 1,
-              "type": "number"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cursor",
-            "required": false,
-            "schema": {
-              "maxLength": 2048,
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalsPageResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}": {
-      "get": {
-        "operationId": "AIProposals_detail",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "proposalId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/decisions": {
-      "post": {
-        "operationId": "AIProposals_decide",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "proposalId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DecideAIProposalDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalDetailResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.decide",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/{proposalId}/read": {
-      "post": {
-        "operationId": "AIProposals_markRead",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "proposalId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalReadResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
-    "/api/v1/admin/projects/{projectId}/ai-proposals/summary": {
-      "get": {
-        "operationId": "AIProposals_summary",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIProposalSummaryResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "AI Proposals"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
           "scope": "PROJECT"
         }
       }
@@ -40573,53 +41459,6 @@
         }
       }
     },
-    "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/proposals": {
-      "get": {
-        "operationId": "EndUserCases_proposals",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "projectId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "caseId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EndUserCaseProposalsResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "End User Cases"
-        ],
-        "x-iam-permission": {
-          "code": "project.ai_proposals.read",
-          "scope": "PROJECT"
-        }
-      }
-    },
     "/api/v1/admin/projects/{projectId}/end-user-cases/{caseId}/split": {
       "post": {
         "operationId": "EndUserCases_split",
@@ -41225,6 +42064,404 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/ai-allowance": {
+      "get": {
+        "operationId": "AiAllowanceAdmin_endUserBalance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "grantLimit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "grantCursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_allowance.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/ai-allowance/assignment": {
+      "put": {
+        "operationId": "AiAllowanceAdmin_putEndUserAssignment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutEndUserAllowanceAssignmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/ai-allowance/corrections": {
+      "post": {
+        "operationId": "AiAllowanceAdmin_correct",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectAiAllowanceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.reconcile",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/ai-allowance/funding-lots/compact": {
+      "post": {
+        "operationId": "AiAllowanceAdmin_compactFundingLots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompactAiAllowanceFundingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.reconcile",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/ai-allowance/grants": {
+      "post": {
+        "operationId": "AiAllowanceAdmin_manualGrant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualAllowanceGrantDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.ai_allowance.grant",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/ai-allowance/journal": {
+      "get": {
+        "operationId": "AiAllowanceAdmin_journal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
+        ],
+        "x-iam-permission": {
+          "code": "project.ai_allowance.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/ai-usage": {
       "get": {
         "operationId": "EndUserAiUsage_report",
@@ -41321,6 +42558,204 @@
         ],
         "x-iam-permission": {
           "code": "project.ai_usage.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/operational-state": {
+      "get": {
+        "operationId": "EndUserState_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserOperationalStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User operational state"
+        ],
+        "x-iam-permission": {
+          "code": "project.end_user_state.sensitive.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/operational-state/{attributeKey}": {
+      "put": {
+        "operationId": "EndUserState_write",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attributeKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutEndUserOperationalAttributeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserOperationalStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User operational state"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.end_user_state.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/end-users/{endUserId}/operational-state/{attributeKey}/history": {
+      "get": {
+        "operationId": "EndUserState_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "endUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attributeKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserOperationalStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "End User operational state"
+        ],
+        "x-iam-permission": {
+          "code": "project.end_user_state.sensitive.read",
           "scope": "PROJECT"
         }
       }
@@ -54525,88 +55960,6 @@
         "x-iam-fresh-strong-authentication": true
       }
     },
-    "/api/v1/auth/me/notification-preferences/ai-proposals/email": {
-      "get": {
-        "operationId": "NotificationPreferences_getEmailAIProposals",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmailAIProposalPreferenceResponseDto"
-                }
-              }
-            },
-            "description": "",
-            "headers": {
-              "X-Request-ID": {
-                "description": "Server-generated request identifier returned on every response",
-                "schema": {
-                  "format": "uuid",
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Read effective AI Proposal email subscription for current CMS User",
-        "tags": [
-          "CMS notification preferences"
-        ],
-        "x-iam-authenticated": true
-      },
-      "patch": {
-        "operationId": "NotificationPreferences_setEmailAIProposals",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEmailAIProposalPreferenceDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmailAIProposalPreferenceResponseDto"
-                }
-              }
-            },
-            "description": "",
-            "headers": {
-              "X-Request-ID": {
-                "description": "Server-generated request identifier returned on every response",
-                "schema": {
-                  "format": "uuid",
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Explicitly subscribe or unsubscribe current verified email",
-        "tags": [
-          "CMS notification preferences"
-        ],
-        "x-iam-authenticated": true
-      }
-    },
     "/api/v1/auth/me/notification-preferences/case-escalations/email": {
       "get": {
         "operationId": "NotificationPreferences_getEmailCaseEscalations",
@@ -56077,6 +57430,57 @@
                           "nullable": true,
                           "type": "object"
                         },
+                        "allowanceNotice": {
+                          "nullable": true,
+                          "properties": {
+                            "availableUsd": {
+                              "pattern": "^\\d+\\.\\d{12}$",
+                              "type": "string"
+                            },
+                            "code": {
+                              "enum": [
+                                "AI_ALLOWANCE_LOW"
+                              ],
+                              "type": "string"
+                            },
+                            "crossingNumber": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "eventId": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "resetAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "thresholdUsd": {
+                              "pattern": "^\\d+\\.\\d{12}$",
+                              "type": "string"
+                            },
+                            "type": {
+                              "enum": [
+                                "ai.allowance.low"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "code",
+                            "eventId",
+                            "crossingNumber",
+                            "message",
+                            "availableUsd",
+                            "thresholdUsd",
+                            "resetAt"
+                          ],
+                          "type": "object"
+                        },
                         "assistantMessageId": {
                           "format": "uuid",
                           "nullable": false,
@@ -56138,7 +57542,131 @@
                         "text",
                         "commands",
                         "sources",
-                        "aiSuspension"
+                        "aiSuspension",
+                        "allowanceNotice"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "aiSuspension": {
+                          "nullable": true,
+                          "type": "object"
+                        },
+                        "allowanceNotice": {
+                          "nullable": true,
+                          "properties": {
+                            "availableUsd": {
+                              "pattern": "^\\d+\\.\\d{12}$",
+                              "type": "string"
+                            },
+                            "code": {
+                              "enum": [
+                                "AI_ALLOWANCE_LOW"
+                              ],
+                              "type": "string"
+                            },
+                            "crossingNumber": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "eventId": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "resetAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "thresholdUsd": {
+                              "pattern": "^\\d+\\.\\d{12}$",
+                              "type": "string"
+                            },
+                            "type": {
+                              "enum": [
+                                "ai.allowance.low"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "code",
+                            "eventId",
+                            "crossingNumber",
+                            "message",
+                            "availableUsd",
+                            "thresholdUsd",
+                            "resetAt"
+                          ],
+                          "type": "object"
+                        },
+                        "assistantMessageId": {
+                          "format": "uuid",
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "commands": {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "conversationCreated": {
+                          "type": "boolean"
+                        },
+                        "conversationId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "messageId": {
+                          "format": "uuid",
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "responseDisposition": {
+                          "enum": [
+                            "ALLOWANCE_EXHAUSTED"
+                          ],
+                          "type": "string"
+                        },
+                        "sources": {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "text": {
+                          "nullable": false,
+                          "type": "string"
+                        },
+                        "threadId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "userMessageId": {
+                          "format": "uuid",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "responseDisposition",
+                        "userMessageId",
+                        "assistantMessageId",
+                        "messageId",
+                        "threadId",
+                        "conversationId",
+                        "conversationCreated",
+                        "text",
+                        "commands",
+                        "sources",
+                        "aiSuspension",
+                        "allowanceNotice"
                       ],
                       "type": "object"
                     },
@@ -56163,6 +57691,57 @@
                             "version",
                             "serverTime",
                             "suspendedUntil"
+                          ],
+                          "type": "object"
+                        },
+                        "allowanceNotice": {
+                          "nullable": true,
+                          "properties": {
+                            "availableUsd": {
+                              "pattern": "^\\d+\\.\\d{12}$",
+                              "type": "string"
+                            },
+                            "code": {
+                              "enum": [
+                                "AI_ALLOWANCE_LOW"
+                              ],
+                              "type": "string"
+                            },
+                            "crossingNumber": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "eventId": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "resetAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "thresholdUsd": {
+                              "pattern": "^\\d+\\.\\d{12}$",
+                              "type": "string"
+                            },
+                            "type": {
+                              "enum": [
+                                "ai.allowance.low"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "code",
+                            "eventId",
+                            "crossingNumber",
+                            "message",
+                            "availableUsd",
+                            "thresholdUsd",
+                            "resetAt"
                           ],
                           "type": "object"
                         },
@@ -56227,7 +57806,8 @@
                         "text",
                         "commands",
                         "sources",
-                        "aiSuspension"
+                        "aiSuspension",
+                        "allowanceNotice"
                       ],
                       "type": "object"
                     },
@@ -56235,23 +57815,56 @@
                       "properties": {
                         "aiSuspension": {
                           "nullable": true,
+                          "type": "object"
+                        },
+                        "allowanceNotice": {
+                          "nullable": true,
                           "properties": {
-                            "serverTime": {
+                            "availableUsd": {
+                              "pattern": "^\\d+\\.\\d{12}$",
+                              "type": "string"
+                            },
+                            "code": {
+                              "enum": [
+                                "AI_ALLOWANCE_LOW"
+                              ],
+                              "type": "string"
+                            },
+                            "crossingNumber": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "eventId": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "resetAt": {
                               "format": "date-time",
                               "type": "string"
                             },
-                            "suspendedUntil": {
-                              "format": "date-time",
+                            "thresholdUsd": {
+                              "pattern": "^\\d+\\.\\d{12}$",
                               "type": "string"
                             },
-                            "version": {
+                            "type": {
+                              "enum": [
+                                "ai.allowance.low"
+                              ],
                               "type": "string"
                             }
                           },
                           "required": [
-                            "version",
-                            "serverTime",
-                            "suspendedUntil"
+                            "type",
+                            "code",
+                            "eventId",
+                            "crossingNumber",
+                            "message",
+                            "availableUsd",
+                            "thresholdUsd",
+                            "resetAt"
                           ],
                           "type": "object"
                         },
@@ -56316,7 +57929,8 @@
                         "text",
                         "commands",
                         "sources",
-                        "aiSuspension"
+                        "aiSuspension",
+                        "allowanceNotice"
                       ],
                       "type": "object"
                     }
@@ -57478,6 +59092,71 @@
         ],
         "tags": [
           "integration users"
+        ]
+      }
+    },
+    "/api/v1/users/me/ai-allowance": {
+      "get": {
+        "operationId": "AiAllowancePublic_read",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "availableUsd": {
+                      "pattern": "^\\d+\\.\\d{12}$",
+                      "type": "string"
+                    },
+                    "exactUsdVisible": {
+                      "type": "boolean"
+                    },
+                    "reservedUsd": {
+                      "pattern": "^\\d+\\.\\d{12}$",
+                      "type": "string"
+                    },
+                    "resetAt": {
+                      "format": "date-time",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "AVAILABLE",
+                        "LOW",
+                        "EXHAUSTED"
+                      ],
+                      "type": "string"
+                    },
+                    "unknownHeldUsd": {
+                      "pattern": "^\\d+\\.\\d{12}$",
+                      "type": "string"
+                    },
+                    "usedUsd": {
+                      "pattern": "^\\d+\\.\\d{12}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "resetAt",
+                    "exactUsdVisible"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "AI allowance"
         ]
       }
     },

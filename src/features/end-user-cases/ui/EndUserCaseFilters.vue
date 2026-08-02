@@ -91,8 +91,8 @@ const yesNoOptions = (anyLabel: string, yesLabel: string, noLabel: string) => [
 ];
 const adminAttentionOptions = [
   { value: undefined, label: "Любое внимание" },
-  { value: "OPEN", label: "Есть открытое предложение" },
-  { value: "NONE", label: "Нет открытого предложения" },
+  { value: "OPEN", label: "Есть активная эскалация" },
+  { value: "NONE", label: "Нет активной эскалации" },
 ];
 const channels = [
   { value: "TEXT", label: "Текст" },
@@ -199,9 +199,7 @@ const advancedVisible = ref(false);
       />
       <Button
         class="advanced-toggle"
-        :label="
-          advancedVisible ? 'Скрыть фильтры' : 'Дополнительные фильтры'
-        "
+        :label="advancedVisible ? 'Скрыть фильтры' : 'Дополнительные фильтры'"
         :icon="advancedVisible ? 'pi pi-chevron-up' : 'pi pi-sliders-h'"
         severity="secondary"
         text
@@ -214,213 +212,221 @@ const advancedVisible = ref(false);
         id="advanced-case-filters"
         class="advanced-controls"
       >
-      <MultiSelect
-        :model-value="modelValue.impact"
-        :options="impacts"
-        option-label="label"
-        option-value="value"
-        placeholder="Влияние"
-        aria-label="Влияние"
-        display="chip"
-        :max-selected-labels="2"
-        @update:model-value="
-          update({ impact: $event?.length ? $event : undefined })
-        "
-      />
-      <MultiSelect
-        :model-value="modelValue.urgency"
-        :options="urgencies"
-        option-label="label"
-        option-value="value"
-        placeholder="Срочность"
-        aria-label="Срочность"
-        display="chip"
-        :max-selected-labels="2"
-        @update:model-value="
-          update({ urgency: $event?.length ? $event : undefined })
-        "
-      />
-      <MultiSelect
-        :model-value="modelValue.resolutionAssessment"
-        :options="resolutionAssessments"
-        option-label="label"
-        option-value="value"
-        placeholder="Оценка решения"
-        aria-label="Оценка решения"
-        display="chip"
-        :max-selected-labels="2"
-        @update:model-value="
-          update({
-            resolutionAssessment: $event?.length ? $event : undefined,
-          })
-        "
-      />
-      <MultiSelect
-        :model-value="modelValue.resolutionSource"
-        :options="resolutionSources"
-        option-label="label"
-        option-value="value"
-        placeholder="Источник решения"
-        aria-label="Источник решения"
-        display="chip"
-        :max-selected-labels="2"
-        @update:model-value="
-          update({ resolutionSource: $event?.length ? $event : undefined })
-        "
-      />
-      <InputText
-        :model-value="modelValue.groupCode"
-        maxlength="64"
-        placeholder="Код категории"
-        aria-label="Код категории"
-        @update:model-value="update({ groupCode: $event || undefined })"
-      />
-      <InputText
-        :model-value="modelValue.assignedCmsUserId"
-        maxlength="36"
-        placeholder="ID исполнителя"
-        aria-label="ID исполнителя"
-        @update:model-value="update({ assignedCmsUserId: $event || undefined })"
-      />
-      <InputText
-        :model-value="modelValue.endUserId"
-        maxlength="36"
-        placeholder="ID пользователя"
-        aria-label="ID пользователя"
-        @update:model-value="update({ endUserId: $event || undefined })"
-      />
-      <InputText
-        :model-value="modelValue.primaryLanguage"
-        maxlength="35"
-        placeholder="Язык, например ru"
-        aria-label="Основной язык"
-        @update:model-value="update({ primaryLanguage: $event || undefined })"
-      />
-      <Select
-        :model-value="modelValue.adminAttention"
-        :options="adminAttentionOptions"
-        option-label="label"
-        option-value="value"
-        placeholder="Предложение администратора"
-        aria-label="Предложение администратора"
-        @update:model-value="update({ adminAttention: $event })"
-      />
-      <Select
-        :model-value="modelValue.cmsParticipation"
-        :options="
-          yesNoOptions(
-            'Любое участие администратора',
-            'Администратор участвовал',
-            'Без участия администратора',
-          )
-        "
-        option-label="label"
-        option-value="value"
-        aria-label="Участие администратора"
-        @update:model-value="update({ cmsParticipation: $event })"
-      />
-      <Select
-        :model-value="modelValue.recontacted"
-        :options="recontacts"
-        option-label="label"
-        option-value="value"
-        placeholder="Возврат"
-        aria-label="Возврат"
-        @update:model-value="update({ recontacted: $event })"
-      />
-      <Select
-        :model-value="modelValue.reopened"
-        :options="
-          yesNoOptions('Любое переоткрытие', 'Переоткрыто', 'Не переоткрыто')
-        "
-        option-label="label"
-        option-value="value"
-        aria-label="Переоткрытие"
-        @update:model-value="update({ reopened: $event })"
-      />
-      <Select
-        :model-value="modelValue.stale"
-        :options="yesNoOptions('Любая давность', 'Просрочено', 'Не просрочено')"
-        option-label="label"
-        option-value="value"
-        aria-label="Просроченность"
-        @update:model-value="update({ stale: $event })"
-      />
-      <Select
-        :model-value="modelValue.degraded"
-        :options="
-          yesNoOptions(
-            'Любое состояние анализа',
-            'Анализ отстаёт',
-            'Анализ актуален',
-          )
-        "
-        option-label="label"
-        option-value="value"
-        aria-label="Состояние анализа"
-        @update:model-value="update({ degraded: $event })"
-      />
-      <MultiSelect
-        :model-value="modelValue.channel"
-        :options="channels"
-        option-label="label"
-        option-value="value"
-        placeholder="Канал"
-        aria-label="Канал"
-        display="chip"
-        :max-selected-labels="2"
-        @update:model-value="
-          update({ channel: $event?.length ? $event : undefined })
-        "
-      />
-      <InputText
-        type="datetime-local"
-        :model-value="dateTimeLocalValue(modelValue.createdFrom)"
-        aria-label="Создано с"
-        @update:model-value="update({ createdFrom: absoluteDateTime($event) })"
-      />
-      <InputText
-        type="datetime-local"
-        :model-value="dateTimeLocalValue(modelValue.createdTo)"
-        aria-label="Создано до"
-        @update:model-value="update({ createdTo: absoluteDateTime($event) })"
-      />
-      <InputText
-        type="datetime-local"
-        :model-value="dateTimeLocalValue(modelValue.lastActivityFrom)"
-        aria-label="Активность с"
-        @update:model-value="
-          update({ lastActivityFrom: absoluteDateTime($event) })
-        "
-      />
-      <InputText
-        type="datetime-local"
-        :model-value="dateTimeLocalValue(modelValue.lastActivityTo)"
-        aria-label="Активность до"
-        @update:model-value="
-          update({ lastActivityTo: absoluteDateTime($event) })
-        "
-      />
-      <InputText
-        :model-value="modelValue.aiCapabilityCode"
-        maxlength="100"
-        placeholder="Код инструмента Lola"
-        aria-label="Код инструмента Lola"
-        @update:model-value="update({ aiCapabilityCode: $event || undefined })"
-      />
-      <MultiSelect
-        :model-value="modelValue.aiCapabilityOutcome"
-        :options="capabilityOutcomes"
-        option-label="label"
-        option-value="value"
-        placeholder="Результат инструмента"
-        aria-label="Результат инструмента"
-        display="chip"
-        :max-selected-labels="2"
-        @update:model-value="
-          update({ aiCapabilityOutcome: $event?.length ? $event : undefined })
-        "
-      />
+        <MultiSelect
+          :model-value="modelValue.impact"
+          :options="impacts"
+          option-label="label"
+          option-value="value"
+          placeholder="Влияние"
+          aria-label="Влияние"
+          display="chip"
+          :max-selected-labels="2"
+          @update:model-value="
+            update({ impact: $event?.length ? $event : undefined })
+          "
+        />
+        <MultiSelect
+          :model-value="modelValue.urgency"
+          :options="urgencies"
+          option-label="label"
+          option-value="value"
+          placeholder="Срочность"
+          aria-label="Срочность"
+          display="chip"
+          :max-selected-labels="2"
+          @update:model-value="
+            update({ urgency: $event?.length ? $event : undefined })
+          "
+        />
+        <MultiSelect
+          :model-value="modelValue.resolutionAssessment"
+          :options="resolutionAssessments"
+          option-label="label"
+          option-value="value"
+          placeholder="Оценка решения"
+          aria-label="Оценка решения"
+          display="chip"
+          :max-selected-labels="2"
+          @update:model-value="
+            update({
+              resolutionAssessment: $event?.length ? $event : undefined,
+            })
+          "
+        />
+        <MultiSelect
+          :model-value="modelValue.resolutionSource"
+          :options="resolutionSources"
+          option-label="label"
+          option-value="value"
+          placeholder="Источник решения"
+          aria-label="Источник решения"
+          display="chip"
+          :max-selected-labels="2"
+          @update:model-value="
+            update({ resolutionSource: $event?.length ? $event : undefined })
+          "
+        />
+        <InputText
+          :model-value="modelValue.groupCode"
+          maxlength="64"
+          placeholder="Код категории"
+          aria-label="Код категории"
+          @update:model-value="update({ groupCode: $event || undefined })"
+        />
+        <InputText
+          :model-value="modelValue.assignedCmsUserId"
+          maxlength="36"
+          placeholder="ID исполнителя"
+          aria-label="ID исполнителя"
+          @update:model-value="
+            update({ assignedCmsUserId: $event || undefined })
+          "
+        />
+        <InputText
+          :model-value="modelValue.endUserId"
+          maxlength="36"
+          placeholder="ID пользователя"
+          aria-label="ID пользователя"
+          @update:model-value="update({ endUserId: $event || undefined })"
+        />
+        <InputText
+          :model-value="modelValue.primaryLanguage"
+          maxlength="35"
+          placeholder="Язык, например ru"
+          aria-label="Основной язык"
+          @update:model-value="update({ primaryLanguage: $event || undefined })"
+        />
+        <Select
+          :model-value="modelValue.adminAttention"
+          :options="adminAttentionOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Эскалация обращения"
+          aria-label="Эскалация обращения"
+          @update:model-value="update({ adminAttention: $event })"
+        />
+        <Select
+          :model-value="modelValue.cmsParticipation"
+          :options="
+            yesNoOptions(
+              'Любое участие администратора',
+              'Администратор участвовал',
+              'Без участия администратора',
+            )
+          "
+          option-label="label"
+          option-value="value"
+          aria-label="Участие администратора"
+          @update:model-value="update({ cmsParticipation: $event })"
+        />
+        <Select
+          :model-value="modelValue.recontacted"
+          :options="recontacts"
+          option-label="label"
+          option-value="value"
+          placeholder="Возврат"
+          aria-label="Возврат"
+          @update:model-value="update({ recontacted: $event })"
+        />
+        <Select
+          :model-value="modelValue.reopened"
+          :options="
+            yesNoOptions('Любое переоткрытие', 'Переоткрыто', 'Не переоткрыто')
+          "
+          option-label="label"
+          option-value="value"
+          aria-label="Переоткрытие"
+          @update:model-value="update({ reopened: $event })"
+        />
+        <Select
+          :model-value="modelValue.stale"
+          :options="
+            yesNoOptions('Любая давность', 'Просрочено', 'Не просрочено')
+          "
+          option-label="label"
+          option-value="value"
+          aria-label="Просроченность"
+          @update:model-value="update({ stale: $event })"
+        />
+        <Select
+          :model-value="modelValue.degraded"
+          :options="
+            yesNoOptions(
+              'Любое состояние анализа',
+              'Анализ отстаёт',
+              'Анализ актуален',
+            )
+          "
+          option-label="label"
+          option-value="value"
+          aria-label="Состояние анализа"
+          @update:model-value="update({ degraded: $event })"
+        />
+        <MultiSelect
+          :model-value="modelValue.channel"
+          :options="channels"
+          option-label="label"
+          option-value="value"
+          placeholder="Канал"
+          aria-label="Канал"
+          display="chip"
+          :max-selected-labels="2"
+          @update:model-value="
+            update({ channel: $event?.length ? $event : undefined })
+          "
+        />
+        <InputText
+          type="datetime-local"
+          :model-value="dateTimeLocalValue(modelValue.createdFrom)"
+          aria-label="Создано с"
+          @update:model-value="
+            update({ createdFrom: absoluteDateTime($event) })
+          "
+        />
+        <InputText
+          type="datetime-local"
+          :model-value="dateTimeLocalValue(modelValue.createdTo)"
+          aria-label="Создано до"
+          @update:model-value="update({ createdTo: absoluteDateTime($event) })"
+        />
+        <InputText
+          type="datetime-local"
+          :model-value="dateTimeLocalValue(modelValue.lastActivityFrom)"
+          aria-label="Активность с"
+          @update:model-value="
+            update({ lastActivityFrom: absoluteDateTime($event) })
+          "
+        />
+        <InputText
+          type="datetime-local"
+          :model-value="dateTimeLocalValue(modelValue.lastActivityTo)"
+          aria-label="Активность до"
+          @update:model-value="
+            update({ lastActivityTo: absoluteDateTime($event) })
+          "
+        />
+        <InputText
+          :model-value="modelValue.aiCapabilityCode"
+          maxlength="100"
+          placeholder="Код инструмента Lola"
+          aria-label="Код инструмента Lola"
+          @update:model-value="
+            update({ aiCapabilityCode: $event || undefined })
+          "
+        />
+        <MultiSelect
+          :model-value="modelValue.aiCapabilityOutcome"
+          :options="capabilityOutcomes"
+          option-label="label"
+          option-value="value"
+          placeholder="Результат инструмента"
+          aria-label="Результат инструмента"
+          display="chip"
+          :max-selected-labels="2"
+          @update:model-value="
+            update({ aiCapabilityOutcome: $event?.length ? $event : undefined })
+          "
+        />
       </div>
     </div>
   </div>

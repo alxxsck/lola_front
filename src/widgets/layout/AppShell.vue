@@ -15,7 +15,6 @@ import {
 } from "@/features/auth/permission-access";
 import { canReadProjectMemberships } from "@/features/project-memberships/model/project-membership-permissions";
 import { canReadProjectRoles } from "@/features/project-roles/model/project-role-permissions";
-import AIProposalBadge from "@/features/ai-proposals/ui/AIProposalBadge.vue";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
@@ -439,10 +438,10 @@ onBeforeUnmount(() => {
                 "
               />
               <span>{{ item.label }}</span>
-              <AIProposalBadge
-                v-if="item.cases"
-                :count="cases.summary?.attentionCount ?? 0"
-              />
+              <span
+                v-if="item.cases && (cases.summary?.attentionCount ?? 0) > 0"
+                class="nav-count"
+              >{{ cases.summary?.attentionCount }}</span>
               <span v-if="item.live" class="live-pulse" />
             </RouterLink>
           </template>
@@ -709,6 +708,18 @@ nav {
   height: 22px;
   background: var(--brand);
   border-radius: 0 3px 3px 0;
+}
+.nav-count {
+  min-width: 20px;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--action-primary);
+  color: var(--text-on-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
 }
 .live-pulse {
   margin-left: auto;

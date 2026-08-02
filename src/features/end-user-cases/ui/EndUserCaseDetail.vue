@@ -19,7 +19,6 @@ import {
   endUserCaseEventLabel,
   endUserCaseGroupLabel,
   endUserCasePriorityLabel,
-  endUserCaseProposalStatusLabel,
   endUserCaseStatusLabel,
   endUserCaseToneLabel,
 } from "../model/end-user-case-presentation";
@@ -35,7 +34,6 @@ const props = defineProps<{
   currentCmsUserId?: string;
   canReadEndUser?: boolean;
   canReadConversation?: boolean;
-  canReadProposals?: boolean;
   error?: string | null;
   projectId?: string;
   canVerifyEvents?: boolean;
@@ -55,9 +53,9 @@ defineEmits<{
   verificationCompleted: [run: CaseVerificationRunResponseDto];
 }>();
 
-type RelatedTab = "messages" | "proposals" | "history";
+type RelatedTab = "messages" | "history";
 
-const relatedTabs: readonly RelatedTab[] = ["messages", "proposals", "history"];
+const relatedTabs: readonly RelatedTab[] = ["messages", "history"];
 const activeRelatedTab = ref<RelatedTab>("messages");
 const resolutionActions: readonly EndUserCaseStatus[] = [
   "RESOLVED",
@@ -444,21 +442,6 @@ const hasMessageGap = (
             <strong>{{ value.messages.items.length }}</strong>
           </button>
           <button
-            id="case-proposals-tab"
-            type="button"
-            role="tab"
-            aria-controls="case-proposals-panel"
-            :aria-selected="activeRelatedTab === 'proposals'"
-            :tabindex="activeRelatedTab === 'proposals' ? 0 : -1"
-            @click="activeRelatedTab = 'proposals'"
-            @keydown="handleRelatedTabKeydown($event, 'proposals')"
-          >
-            Предложения Lola
-            <strong>{{
-              canReadProposals ? value.proposals.items.length : "—"
-            }}</strong>
-          </button>
-          <button
             id="case-history-tab"
             type="button"
             role="tab"
@@ -574,44 +557,6 @@ const hasMessageGap = (
             :loading="messagesLoading"
             @click="$emit('loadMoreMessages')"
           />
-        </div>
-
-        <div
-          v-else-if="activeRelatedTab === 'proposals'"
-          id="case-proposals-panel"
-          class="related-panel"
-          role="tabpanel"
-          aria-labelledby="case-proposals-tab"
-        >
-          <div
-            v-if="canReadProposals && !value.proposals.items.length"
-            class="empty-copy"
-          >
-            Связанных предложений нет.
-          </div>
-          <template v-if="canReadProposals">
-            <RouterLink
-              v-for="proposal in value.proposals.items"
-              :key="proposal.id"
-              class="proposal-row"
-              :to="{
-                name: 'ai-proposal-detail',
-                params: { proposalId: proposal.id },
-              }"
-            >
-              <div>
-                <strong>{{ proposal.title }}</strong>
-                <span>{{ proposal.summary }}</span>
-              </div>
-              <span>
-                {{ endUserCaseProposalStatusLabel(proposal.workflowStatus) }}
-                <i class="pi pi-arrow-up-right" />
-              </span>
-            </RouterLink>
-          </template>
-          <div v-else class="empty-copy">
-            Для просмотра AI-предложений требуется отдельное разрешение проекта.
-          </div>
         </div>
 
         <div
@@ -884,8 +829,7 @@ const hasMessageGap = (
   color: var(--text-link);
   font-weight: 700;
 }
-.message-row,
-.proposal-row {
+.message-row {
   padding: 13px 0;
   border-top: 1px solid var(--border-subtle);
 }
@@ -906,8 +850,7 @@ const hasMessageGap = (
   border: 1px dashed var(--border-default);
   background: transparent;
 }
-.message-row:first-of-type,
-.proposal-row:first-of-type {
+.message-row:first-of-type {
   border-top: 0;
 }
 .message-meta {
@@ -917,22 +860,6 @@ const hasMessageGap = (
 }
 .message-meta time {
   margin-left: auto;
-}
-.proposal-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-.proposal-row strong,
-.proposal-row span {
-  display: block;
-}
-.proposal-row div > span {
-  margin-top: 4px;
-  color: var(--text-secondary);
-  font-size: 0.74rem;
 }
 .timeline-row {
   gap: 9px;

@@ -6,12 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
-  AIProposalDetailResponseDto,
-  AIProposalReadResponseDto,
-  AIProposalReceivedResponseDto,
-  AIProposalSummaryResponseDto,
-  AIProposalsListParams,
-  AIProposalsPageResponseDto,
   AIReviewEstimateResponseDto,
   AIReviewRunResponseDto,
   AIReviewScopeDto,
@@ -27,7 +21,23 @@ import type {
   AdminEndUserProfilesHistoryParams,
   AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
+  AiAllowanceAccrualAdminListReceiptsParams,
+  AiAllowanceAccrualAdminListRulesParams,
+  AiAllowanceAccrualAdminResponseDto,
+  AiAllowanceAdminEndUserBalanceParams,
+  AiAllowanceAdminJournalParams,
+  AiAllowanceAdminPlanRevisionsParams,
+  AiAllowanceAdminProjectPolicyParams,
+  AiAllowanceAdminReconciliationQueueParams,
+  AiAllowanceAdminResponseDto,
+  AiAllowancePublicRead200,
   AiCapabilityPreviewResponseDto,
+  AiCostCmsUserPageResponseDto,
+  AiCostEndUserPageResponseDto,
+  AiCostOverviewResponseDto,
+  AiCostsCmsUsersParams,
+  AiCostsOverviewParams,
+  AiCostsUsersParams,
   AiModelCatalogResponseDto,
   AiModelSettingsCatalogParams,
   AiModelSettingsResponseDto,
@@ -108,6 +118,7 @@ import type {
   CmsUserProvisioningProvision201,
   CmsUserReactivationResponseDto,
   CmsUserResetResponseDto,
+  CompactAiAllowanceFundingDto,
   CompatibilityCreateMessageDto,
   CompatibilityEndVoiceSessionDto,
   CompatibilityGetVoiceSessionDto,
@@ -126,6 +137,7 @@ import type {
   ConversationTranslationGetParams,
   ConversationTranslationPutParams,
   ConversationTranslationResponseDto,
+  CorrectAiAllowanceDto,
   CreateConversationDto,
   CreateConversationMessageTranslationsDto,
   CreateCustomerDto,
@@ -148,11 +160,9 @@ import type {
   CreateTelegramBroadcastDto,
   CreateTranslationJobDto,
   CreateUiElementDto,
-  DecideAIProposalDto,
   DeleteKnowledgeDocumentResponseDto,
   DisableTelegramChannelDto,
   EditReplyTranslationDraftDto,
-  EmailAIProposalPreferenceResponseDto,
   EmailCaseEscalationPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
   EndUserAiUsageReportParams,
@@ -166,15 +176,16 @@ import type {
   EndUserCasePolicyPreviewResponseDto,
   EndUserCasePolicyResponseDto,
   EndUserCasePolicyRevisionResponseDto,
-  EndUserCaseProposalsResponseDto,
   EndUserCaseResponseDto,
   EndUserCaseSummaryResponseDto,
   EndUserCaseTimelineResponseDto,
   EndUserCasesListParams,
   EndUserCasesMessagesParams,
   EndUserCasesPageResponseDto,
+  EndUserOperationalStateResponseDto,
   EndUserPageResponseDto,
   EndUserResponseDto,
+  EndUserStateHistoryParams,
   EndVoiceSessionDto,
   EstimateCaseVerificationDto,
   EstimateProjectAIAnalysisDto,
@@ -251,6 +262,7 @@ import type {
   LinkEndUserCaseMessageDto,
   ListMessagesDto,
   ListThreadMessagesDto,
+  ManualAllowanceGrantDto,
   MergeEndUserCasesDto,
   MergeEndUserCasesResponseDto,
   MutateEndUserAttributesDto,
@@ -321,12 +333,20 @@ import type {
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
   PublishedSegmentResponseDto,
+  PutAiAllowanceAccrualRuleDto,
+  PutAllowancePlanDto,
+  PutCohortAllowanceAssignmentDto,
+  PutDefaultAllowancePlanDto,
+  PutEndUserAllowanceAssignmentDto,
+  PutEndUserOperationalAttributeDto,
   ReassignProjectRoleDto,
+  ReconcileAiSpendReservationDto,
   RemoveProjectMembershipDto,
   RenameConversationDto,
   ReplaceCmsUserPlatformRolesDto,
   ReplyTranslationDraftResponseDto,
   RequestEndUserCaseEscalationDto,
+  ResolveAiSpendAttemptDto,
   RestoreEventDefinitionDto,
   ResumeConversationAIDto,
   RevokeCmsUserSessionDto,
@@ -407,7 +427,6 @@ import type {
   UpdateAiModelSettingsDto,
   UpdateCmsUserProfileDto,
   UpdateConversationTranslationPreferenceDto,
-  UpdateEmailAIProposalPreferenceDto,
   UpdateEmailCaseEscalationPreferenceDto,
   UpdateEndUserCaseWorkflowDto,
   UpdateEventDefinitionMetadataDto,
@@ -994,6 +1013,183 @@ export const cmsAgentRequestExecute = (
   );
 };
 
+export const aiAllowanceAdminProjectPolicy = (
+  projectId: string,
+  params?: AiAllowanceAdminProjectPolicyParams,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAccrualAdminListReceipts = (
+  projectId: string,
+  params?: AiAllowanceAccrualAdminListReceiptsParams,
+  options?: SecondParameter<typeof request<AiAllowanceAccrualAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAccrualAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/accrual-receipts`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAccrualAdminListRules = (
+  projectId: string,
+  params?: AiAllowanceAccrualAdminListRulesParams,
+  options?: SecondParameter<typeof request<AiAllowanceAccrualAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAccrualAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/accrual-rules`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAccrualAdminPutRule = (
+  projectId: string,
+  ruleKey: string,
+  putAiAllowanceAccrualRuleDto: BodyType<PutAiAllowanceAccrualRuleDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAccrualAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAccrualAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/accrual-rules/${ruleKey}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: putAiAllowanceAccrualRuleDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminPutCohortAssignment = (
+  projectId: string,
+  scope: string,
+  cohortId: string,
+  putCohortAllowanceAssignmentDto: BodyType<PutCohortAllowanceAssignmentDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/assignments/${scope}/${cohortId}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: putCohortAllowanceAssignmentDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminResolveAttempt = (
+  projectId: string,
+  attemptId: string,
+  resolveAiSpendAttemptDto: BodyType<ResolveAiSpendAttemptDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/attempts/${attemptId}/resolve`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: resolveAiSpendAttemptDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminPutDefaultPlan = (
+  projectId: string,
+  putDefaultAllowancePlanDto: BodyType<PutDefaultAllowancePlanDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/default-plan`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: putDefaultAllowancePlanDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminPutPlan = (
+  projectId: string,
+  planKey: string,
+  putAllowancePlanDto: BodyType<PutAllowancePlanDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/plans/${planKey}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: putAllowancePlanDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminPlanRevisions = (
+  projectId: string,
+  planKey: string,
+  params?: AiAllowanceAdminPlanRevisionsParams,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/plans/${planKey}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminReconcile = (
+  projectId: string,
+  reconcileAiSpendReservationDto: BodyType<ReconcileAiSpendReservationDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/reconcile`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: reconcileAiSpendReservationDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminReconciliationQueue = (
+  projectId: string,
+  params?: AiAllowanceAdminReconciliationQueueParams,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-allowance/reconciliation`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const projectAIAnalysisList = (
   projectId: string,
   params?: ProjectAIAnalysisListParams,
@@ -1079,6 +1275,51 @@ export const projectAIAnalysisUsageRead = (
   return request<ProjectAIAnalysisUsageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/ai-analysis-usage`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiCostsCmsUsers = (
+  projectId: string,
+  params: AiCostsCmsUsersParams,
+  options?: SecondParameter<typeof request<AiCostCmsUserPageResponseDto>>,
+) => {
+  return request<AiCostCmsUserPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-costs/cms-users`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiCostsOverview = (
+  projectId: string,
+  params: AiCostsOverviewParams,
+  options?: SecondParameter<typeof request<AiCostOverviewResponseDto>>,
+) => {
+  return request<AiCostOverviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-costs/overview`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiCostsUsers = (
+  projectId: string,
+  params: AiCostsUsersParams,
+  options?: SecondParameter<typeof request<AiCostEndUserPageResponseDto>>,
+) => {
+  return request<AiCostEndUserPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-costs/users`,
       method: "GET",
       params,
     },
@@ -1234,93 +1475,6 @@ export const aiOperationsSummary = (
       url: `/api/v1/admin/projects/${projectId}/ai-operations/summary`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const aIProposalEventsReceived = (
-  projectId: string,
-  eventId: string,
-  options?: SecondParameter<typeof request<AIProposalReceivedResponseDto>>,
-) => {
-  return request<AIProposalReceivedResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposal-events/${eventId}/received`,
-      method: "POST",
-    },
-    options,
-  );
-};
-
-export const aIProposalsList = (
-  projectId: string,
-  params?: AIProposalsListParams,
-  options?: SecondParameter<typeof request<AIProposalsPageResponseDto>>,
-) => {
-  return request<AIProposalsPageResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
-export const aIProposalsDetail = (
-  projectId: string,
-  proposalId: string,
-  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
-) => {
-  return request<AIProposalDetailResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const aIProposalsDecide = (
-  projectId: string,
-  proposalId: string,
-  decideAIProposalDto: BodyType<DecideAIProposalDto>,
-  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
-) => {
-  return request<AIProposalDetailResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/decisions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: decideAIProposalDto,
-    },
-    options,
-  );
-};
-
-export const aIProposalsMarkRead = (
-  projectId: string,
-  proposalId: string,
-  options?: SecondParameter<typeof request<AIProposalReadResponseDto>>,
-) => {
-  return request<AIProposalReadResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/read`,
-      method: "POST",
-    },
-    options,
-  );
-};
-
-export const aIProposalsSummary = (
-  projectId: string,
-  options?: SecondParameter<typeof request<AIProposalSummaryResponseDto>>,
-) => {
-  return request<AIProposalSummaryResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/summary`,
-      method: "GET",
     },
     options,
   );
@@ -1924,20 +2078,6 @@ export const endUserCasesMessages = (
   );
 };
 
-export const endUserCasesProposals = (
-  projectId: string,
-  caseId: string,
-  options?: SecondParameter<typeof request<EndUserCaseProposalsResponseDto>>,
-) => {
-  return request<EndUserCaseProposalsResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/proposals`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
 export const endUserCasesSplit = (
   projectId: string,
   caseId: string,
@@ -2091,6 +2231,106 @@ export const adminEndUserProfilesList = (
   );
 };
 
+export const aiAllowanceAdminEndUserBalance = (
+  projectId: string,
+  endUserId: string,
+  params?: AiAllowanceAdminEndUserBalanceParams,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/ai-allowance`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminPutEndUserAssignment = (
+  projectId: string,
+  endUserId: string,
+  putEndUserAllowanceAssignmentDto: BodyType<PutEndUserAllowanceAssignmentDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/ai-allowance/assignment`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: putEndUserAllowanceAssignmentDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminCorrect = (
+  projectId: string,
+  endUserId: string,
+  correctAiAllowanceDto: BodyType<CorrectAiAllowanceDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/ai-allowance/corrections`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: correctAiAllowanceDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminCompactFundingLots = (
+  projectId: string,
+  endUserId: string,
+  compactAiAllowanceFundingDto: BodyType<CompactAiAllowanceFundingDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/ai-allowance/funding-lots/compact`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: compactAiAllowanceFundingDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminManualGrant = (
+  projectId: string,
+  endUserId: string,
+  manualAllowanceGrantDto: BodyType<ManualAllowanceGrantDto>,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/ai-allowance/grants`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: manualAllowanceGrantDto,
+    },
+    options,
+  );
+};
+
+export const aiAllowanceAdminJournal = (
+  projectId: string,
+  endUserId: string,
+  params?: AiAllowanceAdminJournalParams,
+  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+) => {
+  return request<AiAllowanceAdminResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/ai-allowance/journal`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const endUserAiUsageReport = (
   projectId: string,
   endUserId: string,
@@ -2100,6 +2340,55 @@ export const endUserAiUsageReport = (
   return request<EndUserAiUsageReportResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/ai-usage`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const endUserStateRead = (
+  projectId: string,
+  endUserId: string,
+  options?: SecondParameter<typeof request<EndUserOperationalStateResponseDto>>,
+) => {
+  return request<EndUserOperationalStateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/operational-state`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserStateWrite = (
+  projectId: string,
+  endUserId: string,
+  attributeKey: string,
+  putEndUserOperationalAttributeDto: BodyType<PutEndUserOperationalAttributeDto>,
+  options?: SecondParameter<typeof request<EndUserOperationalStateResponseDto>>,
+) => {
+  return request<EndUserOperationalStateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/operational-state/${attributeKey}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: putEndUserOperationalAttributeDto,
+    },
+    options,
+  );
+};
+
+export const endUserStateHistory = (
+  projectId: string,
+  endUserId: string,
+  attributeKey: string,
+  params?: EndUserStateHistoryParams,
+  options?: SecondParameter<typeof request<EndUserOperationalStateResponseDto>>,
+) => {
+  return request<EndUserOperationalStateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-users/${endUserId}/operational-state/${attributeKey}/history`,
       method: "GET",
       params,
     },
@@ -5209,43 +5498,6 @@ export const iamMfaManagementRotateRecoveryCodes = (
 };
 
 /**
- * @summary Read effective AI Proposal email subscription for current CMS User
- */
-export const notificationPreferencesGetEmailAIProposals = (
-  options?: SecondParameter<
-    typeof request<EmailAIProposalPreferenceResponseDto>
-  >,
-) => {
-  return request<EmailAIProposalPreferenceResponseDto>(
-    {
-      url: `/api/v1/auth/me/notification-preferences/ai-proposals/email`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-/**
- * @summary Explicitly subscribe or unsubscribe current verified email
- */
-export const notificationPreferencesSetEmailAIProposals = (
-  updateEmailAIProposalPreferenceDto: BodyType<UpdateEmailAIProposalPreferenceDto>,
-  options?: SecondParameter<
-    typeof request<EmailAIProposalPreferenceResponseDto>
-  >,
-) => {
-  return request<EmailAIProposalPreferenceResponseDto>(
-    {
-      url: `/api/v1/auth/me/notification-preferences/ai-proposals/email`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: updateEmailAIProposalPreferenceDto,
-    },
-    options,
-  );
-};
-
-/**
  * @summary Read effective Case escalation email subscription
  */
 export const notificationPreferencesGetEmailCaseEscalations = (
@@ -6012,6 +6264,15 @@ export const integrationUsersUpsert = (
   );
 };
 
+export const aiAllowancePublicRead = (
+  options?: SecondParameter<typeof request<AiAllowancePublicRead200>>,
+) => {
+  return request<AiAllowancePublicRead200>(
+    { url: `/api/v1/users/me/ai-allowance`, method: "GET" },
+    options,
+  );
+};
+
 export const integrationUsersSchema = (
   options?: SecondParameter<typeof request<UserAttributeSchemaResponseDto>>,
 ) => {
@@ -6203,6 +6464,39 @@ export type CmsAgentRequestDetailResult = NonNullable<
 export type CmsAgentRequestExecuteResult = NonNullable<
   Awaited<ReturnType<typeof cmsAgentRequestExecute>>
 >;
+export type AiAllowanceAdminProjectPolicyResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminProjectPolicy>>
+>;
+export type AiAllowanceAccrualAdminListReceiptsResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAccrualAdminListReceipts>>
+>;
+export type AiAllowanceAccrualAdminListRulesResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAccrualAdminListRules>>
+>;
+export type AiAllowanceAccrualAdminPutRuleResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAccrualAdminPutRule>>
+>;
+export type AiAllowanceAdminPutCohortAssignmentResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminPutCohortAssignment>>
+>;
+export type AiAllowanceAdminResolveAttemptResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminResolveAttempt>>
+>;
+export type AiAllowanceAdminPutDefaultPlanResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminPutDefaultPlan>>
+>;
+export type AiAllowanceAdminPutPlanResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminPutPlan>>
+>;
+export type AiAllowanceAdminPlanRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminPlanRevisions>>
+>;
+export type AiAllowanceAdminReconcileResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminReconcile>>
+>;
+export type AiAllowanceAdminReconciliationQueueResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminReconciliationQueue>>
+>;
 export type ProjectAIAnalysisListResult = NonNullable<
   Awaited<ReturnType<typeof projectAIAnalysisList>>
 >;
@@ -6220,6 +6514,15 @@ export type ProjectAIAnalysisEstimateResult = NonNullable<
 >;
 export type ProjectAIAnalysisUsageReadResult = NonNullable<
   Awaited<ReturnType<typeof projectAIAnalysisUsageRead>>
+>;
+export type AiCostsCmsUsersResult = NonNullable<
+  Awaited<ReturnType<typeof aiCostsCmsUsers>>
+>;
+export type AiCostsOverviewResult = NonNullable<
+  Awaited<ReturnType<typeof aiCostsOverview>>
+>;
+export type AiCostsUsersResult = NonNullable<
+  Awaited<ReturnType<typeof aiCostsUsers>>
 >;
 export type UserMemorySettingsResult = NonNullable<
   Awaited<ReturnType<typeof userMemorySettings>>
@@ -6250,24 +6553,6 @@ export type AiOperationsSubjectsResult = NonNullable<
 >;
 export type AiOperationsSummaryResult = NonNullable<
   Awaited<ReturnType<typeof aiOperationsSummary>>
->;
-export type AIProposalEventsReceivedResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalEventsReceived>>
->;
-export type AIProposalsListResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsList>>
->;
-export type AIProposalsDetailResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsDetail>>
->;
-export type AIProposalsDecideResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsDecide>>
->;
-export type AIProposalsMarkReadResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsMarkRead>>
->;
-export type AIProposalsSummaryResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsSummary>>
 >;
 export type AIReviewEstimateResult = NonNullable<
   Awaited<ReturnType<typeof aIReviewEstimate>>
@@ -6377,9 +6662,6 @@ export type EndUserCasesUnlinkMessageResult = NonNullable<
 export type EndUserCasesMessagesResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesMessages>>
 >;
-export type EndUserCasesProposalsResult = NonNullable<
-  Awaited<ReturnType<typeof endUserCasesProposals>>
->;
 export type EndUserCasesSplitResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesSplit>>
 >;
@@ -6410,8 +6692,35 @@ export type EndUserCasesCostSummaryResult = NonNullable<
 export type AdminEndUserProfilesListResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesList>>
 >;
+export type AiAllowanceAdminEndUserBalanceResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminEndUserBalance>>
+>;
+export type AiAllowanceAdminPutEndUserAssignmentResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminPutEndUserAssignment>>
+>;
+export type AiAllowanceAdminCorrectResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminCorrect>>
+>;
+export type AiAllowanceAdminCompactFundingLotsResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminCompactFundingLots>>
+>;
+export type AiAllowanceAdminManualGrantResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminManualGrant>>
+>;
+export type AiAllowanceAdminJournalResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowanceAdminJournal>>
+>;
 export type EndUserAiUsageReportResult = NonNullable<
   Awaited<ReturnType<typeof endUserAiUsageReport>>
+>;
+export type EndUserStateReadResult = NonNullable<
+  Awaited<ReturnType<typeof endUserStateRead>>
+>;
+export type EndUserStateWriteResult = NonNullable<
+  Awaited<ReturnType<typeof endUserStateWrite>>
+>;
+export type EndUserStateHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof endUserStateHistory>>
 >;
 export type AdminEndUserProfilesProfileResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesProfile>>
@@ -6989,12 +7298,6 @@ export type IamMfaManagementBeginPasskeyEnrollmentResult = NonNullable<
 export type IamMfaManagementRotateRecoveryCodesResult = NonNullable<
   Awaited<ReturnType<typeof iamMfaManagementRotateRecoveryCodes>>
 >;
-export type NotificationPreferencesGetEmailAIProposalsResult = NonNullable<
-  Awaited<ReturnType<typeof notificationPreferencesGetEmailAIProposals>>
->;
-export type NotificationPreferencesSetEmailAIProposalsResult = NonNullable<
-  Awaited<ReturnType<typeof notificationPreferencesSetEmailAIProposals>>
->;
 export type NotificationPreferencesGetEmailCaseEscalationsResult = NonNullable<
   Awaited<ReturnType<typeof notificationPreferencesGetEmailCaseEscalations>>
 >;
@@ -7158,6 +7461,9 @@ export type IntegrationUsersListResult = NonNullable<
 >;
 export type IntegrationUsersUpsertResult = NonNullable<
   Awaited<ReturnType<typeof integrationUsersUpsert>>
+>;
+export type AiAllowancePublicReadResult = NonNullable<
+  Awaited<ReturnType<typeof aiAllowancePublicRead>>
 >;
 export type IntegrationUsersSchemaResult = NonNullable<
   Awaited<ReturnType<typeof integrationUsersSchema>>

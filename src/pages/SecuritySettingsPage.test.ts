@@ -37,8 +37,8 @@ vi.mock('@/features/auth/mfa.api', () => ({
 
 vi.mock('@/features/notification-preferences/notification-preferences.api', () => ({
   notificationPreferencesApi: {
-    getEmailAIProposals: vi.fn(),
-    setEmailAIProposals: vi.fn(),
+    getEmailCaseEscalations: vi.fn(),
+    setEmailCaseEscalations: vi.fn(),
   },
 }))
 
@@ -152,16 +152,16 @@ describe('SecuritySettingsPage', () => {
     vi.mocked(mfaManagementApi.rotateRecoveryCodes).mockResolvedValue({
       recoveryCodes: ['lrc_one', 'lrc_two'],
     })
-    vi.mocked(notificationPreferencesApi.getEmailAIProposals).mockResolvedValue({
-      topic: 'AI_PROPOSALS',
+    vi.mocked(notificationPreferencesApi.getEmailCaseEscalations).mockResolvedValue({
+      topic: 'CASE_ESCALATION',
       channel: 'EMAIL',
       subscribed: false,
       effectiveStatus: 'INELIGIBLE',
       ineligibilityReason: 'EMAIL_UNVERIFIED',
       emailVersion: 0,
     })
-    vi.mocked(notificationPreferencesApi.setEmailAIProposals).mockImplementation(async (subscribed) => ({
-      topic: 'AI_PROPOSALS',
+    vi.mocked(notificationPreferencesApi.setEmailCaseEscalations).mockImplementation(async (subscribed) => ({
+      topic: 'CASE_ESCALATION',
       channel: 'EMAIL',
       subscribed,
       effectiveStatus: subscribed ? 'SUBSCRIBED' : 'UNSUBSCRIBED',
@@ -307,18 +307,18 @@ describe('SecuritySettingsPage', () => {
     expect(wrapper.text()).toContain('Письмо для подтверждения отправлено.')
   })
 
-  it('keeps AI Proposal email opt-in disabled until the current address is verified', async () => {
+  it('keeps Case escalation email opt-in disabled until the current address is verified', async () => {
     const wrapper = await mountPage()
 
-    expect(notificationPreferencesApi.getEmailAIProposals).toHaveBeenCalledOnce()
-    expect(wrapper.text()).toContain('Предложения Lola по email')
+    expect(notificationPreferencesApi.getEmailCaseEscalations).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('Эскалации обращений по email')
     expect(wrapper.text()).toContain('Сначала подтвердите текущий email')
-    expect(wrapper.get('[data-testid="ai-proposal-email-toggle"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="case-escalation-email-toggle"]').attributes('disabled')).toBeDefined()
   })
 
   it('explicitly subscribes a verified CMS User without coupling consent to verification', async () => {
-    vi.mocked(notificationPreferencesApi.getEmailAIProposals).mockResolvedValue({
-      topic: 'AI_PROPOSALS',
+    vi.mocked(notificationPreferencesApi.getEmailCaseEscalations).mockResolvedValue({
+      topic: 'CASE_ESCALATION',
       channel: 'EMAIL',
       subscribed: false,
       effectiveStatus: 'UNSUBSCRIBED',
@@ -327,16 +327,16 @@ describe('SecuritySettingsPage', () => {
     })
     const wrapper = await mountPage({ emailVerifiedAt: '2026-07-23T10:00:00.000Z' })
 
-    await wrapper.get('[data-testid="ai-proposal-email-toggle"]').trigger('click')
+    await wrapper.get('[data-testid="case-escalation-email-toggle"]').trigger('click')
     await flushPromises()
 
-    expect(notificationPreferencesApi.setEmailAIProposals).toHaveBeenCalledWith(true)
+    expect(notificationPreferencesApi.setEmailCaseEscalations).toHaveBeenCalledWith(true)
     expect(wrapper.text()).toContain('Подписка включена')
   })
 
   it('allows explicit reconfirmation after a verified email address changes', async () => {
-    vi.mocked(notificationPreferencesApi.getEmailAIProposals).mockResolvedValue({
-      topic: 'AI_PROPOSALS',
+    vi.mocked(notificationPreferencesApi.getEmailCaseEscalations).mockResolvedValue({
+      topic: 'CASE_ESCALATION',
       channel: 'EMAIL',
       subscribed: false,
       effectiveStatus: 'SUSPENDED',
@@ -345,19 +345,19 @@ describe('SecuritySettingsPage', () => {
     })
     const wrapper = await mountPage({ emailVerifiedAt: '2026-07-23T10:00:00.000Z' })
 
-    const toggle = wrapper.get('[data-testid="ai-proposal-email-toggle"]')
+    const toggle = wrapper.get('[data-testid="case-escalation-email-toggle"]')
     expect(toggle.attributes('disabled')).toBeUndefined()
     await toggle.trigger('click')
     await flushPromises()
 
-    expect(notificationPreferencesApi.setEmailAIProposals).toHaveBeenCalledWith(true)
+    expect(notificationPreferencesApi.setEmailCaseEscalations).toHaveBeenCalledWith(true)
   })
 
   it('keeps a failed preference load non-actionable and exposes retry', async () => {
-    vi.mocked(notificationPreferencesApi.getEmailAIProposals)
+    vi.mocked(notificationPreferencesApi.getEmailCaseEscalations)
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValueOnce({
-        topic: 'AI_PROPOSALS',
+        topic: 'CASE_ESCALATION',
         channel: 'EMAIL',
         subscribed: false,
         effectiveStatus: 'UNSUBSCRIBED',
@@ -366,12 +366,12 @@ describe('SecuritySettingsPage', () => {
       })
     const wrapper = await mountPage({ emailVerifiedAt: '2026-07-23T10:00:00.000Z' })
 
-    expect(wrapper.find('[data-testid="ai-proposal-email-toggle"]').exists()).toBe(false)
-    await wrapper.get('[data-testid="ai-proposal-email-retry"]').trigger('click')
+    expect(wrapper.find('[data-testid="case-escalation-email-toggle"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="case-escalation-email-retry"]').trigger('click')
     await flushPromises()
 
-    expect(notificationPreferencesApi.getEmailAIProposals).toHaveBeenCalledTimes(2)
-    expect(wrapper.find('[data-testid="ai-proposal-email-toggle"]').exists()).toBe(true)
+    expect(notificationPreferencesApi.getEmailCaseEscalations).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-testid="case-escalation-email-toggle"]').exists()).toBe(true)
   })
 
   it('starts, cancels and allows restarting a password-proved email change', async () => {

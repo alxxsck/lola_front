@@ -76,7 +76,7 @@ vi.mock(
 const destination = (overrides: Record<string, unknown> = {}) => ({
   id: "destination-1",
   projectId: "project-1",
-  topic: "AI_PROPOSALS",
+  topic: "CASE_ESCALATION",
   channel: "SLACK_WEBHOOK",
   displayName: "Поддержка",
   status: "PENDING_TEST",

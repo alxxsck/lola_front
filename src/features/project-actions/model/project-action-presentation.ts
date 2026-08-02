@@ -119,7 +119,8 @@ export function actionExecutorLabel(executor: string): string {
     {
       FRONTEND_COMMAND: "В приложении",
       SERVER_HANDLER: "На сервере",
-      PROPOSAL: "Запрос администратору",
+      CASE_ESCALATION: "Эскалация обращения",
+      RETIRED: "Выведено из эксплуатации",
     }[executor] ?? "Способ выполнения не указан"
   );
 }

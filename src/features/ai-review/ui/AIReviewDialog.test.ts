@@ -25,12 +25,13 @@ vi.mock("@/features/event-query/api/event-query-repository", () => ({
 }));
 vi.mock("vue-router", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
-function mountDialog() {
+function mountDialog(canOpenAnalysis = true) {
   return mount(AIReviewDialog, {
     props: {
       projectId: "project-1",
       endUserId: "user-1",
       visible: true,
+      canOpenAnalysis,
       "onUpdate:visible": () => undefined,
     },
     global: {
@@ -202,7 +203,6 @@ describe("типизированный AI Review", () => {
         id: "run-1",
         status: "FAILED",
         costLevel: "LOW",
-        proposalId: null,
       });
     const wrapper = mountDialog();
     await flushPromises();
@@ -221,6 +221,98 @@ describe("типизированный AI Review", () => {
     const first = mocks.start.mock.calls[0]?.[1] as { idempotencyKey: string };
     const second = mocks.start.mock.calls[1]?.[1] as { idempotencyKey: string };
     expect(first.idempotencyKey).toBe(second.idempotencyKey);
+  });
+
+  it("открывает созданный AI-анализ по точному analysisId", async () => {
+    mocks.estimate.mockResolvedValueOnce({
+      eventCount: 1,
+      redactedBytes: 100,
+      estimatedInputTokens: 34,
+      costLevel: "LOW",
+      requiresConfirmation: false,
+      blocked: false,
+      timezone: "UTC",
+      range: {
+        start: "2026-07-23T00:00:00.000Z",
+        end: "2026-07-24T00:00:00.000Z",
+      },
+    });
+    mocks.start.mockResolvedValueOnce({
+      id: "review-run-1",
+      analysisId: "analysis-1",
+      status: "SUCCEEDED",
+      costLevel: "LOW",
+      eventCount: 1,
+      redactedBytes: 100,
+      estimatedInputTokens: 34,
+      limitations: [],
+      createdAt: "2026-07-23T00:00:00.000Z",
+      completedAt: "2026-07-23T00:00:01.000Z",
+    });
+    const wrapper = mountDialog();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: { localDate: string; eventCodes: string[]; instruction: string };
+      calculateEstimate: () => Promise<void>;
+      start: () => Promise<void>;
+    };
+    vm.form.eventCodes = ["deposit.failed"];
+    await vm.calculateEstimate();
+    await vm.start();
+    await flushPromises();
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Открыть AI-анализ")!
+      .trigger("click");
+
+    expect(mocks.push).toHaveBeenCalledWith({
+      name: "ai-analysis-detail",
+      params: { analysisId: "analysis-1" },
+      query: { projectId: "project-1" },
+    });
+  });
+
+  it("не показывает ссылку на анализ без отдельного права чтения", async () => {
+    mocks.estimate.mockResolvedValueOnce({
+      eventCount: 1,
+      redactedBytes: 100,
+      estimatedInputTokens: 34,
+      costLevel: "LOW",
+      requiresConfirmation: false,
+      blocked: false,
+      timezone: "UTC",
+      range: {
+        start: "2026-07-23T00:00:00.000Z",
+        end: "2026-07-24T00:00:00.000Z",
+      },
+    });
+    mocks.start.mockResolvedValueOnce({
+      id: "review-run-1",
+      analysisId: "analysis-1",
+      status: "SUCCEEDED",
+      costLevel: "LOW",
+      eventCount: 1,
+      redactedBytes: 100,
+      estimatedInputTokens: 34,
+      limitations: [],
+      createdAt: "2026-07-23T00:00:00.000Z",
+      completedAt: "2026-07-23T00:00:01.000Z",
+    });
+    const wrapper = mountDialog(false);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: { localDate: string; eventCodes: string[]; instruction: string };
+      calculateEstimate: () => Promise<void>;
+      start: () => Promise<void>;
+    };
+    vm.form.eventCodes = ["deposit.failed"];
+    await vm.calculateEstimate();
+    await vm.start();
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Открыть AI-анализ");
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
   it("отбрасывает estimate для уже изменённого scope", async () => {
@@ -309,7 +401,6 @@ describe("типизированный AI Review", () => {
       id: "run-1",
       status: "RUNNING",
       costLevel: "LOW",
-      proposalId: null,
     });
     let rejectPoll: ((reason: Error) => void) | undefined;
     mocks.get.mockReturnValueOnce(

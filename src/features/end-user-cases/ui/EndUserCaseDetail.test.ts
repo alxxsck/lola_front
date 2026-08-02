@@ -34,7 +34,6 @@ const detail = {
     endUser: { id: "user-1", externalId: "customer-42" },
     assignee: null,
     messageCount: 1,
-    proposalCount: 1,
     firstObservedAt: "2026-07-26T09:00:00.000Z",
     lastActivityAt: "2026-07-26T10:00:00.000Z",
     waitingSince: "2026-07-26T09:30:00.000Z",
@@ -86,21 +85,6 @@ const detail = {
     nextCursor: "cursor-2",
   },
   timeline: { events: [], revisions: [] },
-  proposals: {
-    items: [
-      {
-        id: "proposal-1",
-        kind: "ADMIN_ATTENTION",
-        workflowStatus: "OPEN",
-        priority: "HIGH",
-        title: "Подключиться к диалогу",
-        summary: "Пользователь просит администратора",
-        version: 1,
-        createdAt: "2026-07-26T09:05:00.000Z",
-        updatedAt: "2026-07-26T09:05:00.000Z",
-      },
-    ],
-  },
   escalations: { items: [] },
 };
 
@@ -119,7 +103,6 @@ describe("EndUserCaseDetail", () => {
         value: detail as never,
         loading: false,
         canManage: true,
-        canReadProposals: true,
       },
       global: {
         stubs: {
@@ -152,20 +135,8 @@ describe("EndUserCaseDetail", () => {
       "Связанные сообщения",
     );
     expect(wrapper.find("#case-messages-panel").exists()).toBe(true);
-    expect(wrapper.find("#case-proposals-panel").exists()).toBe(false);
-
-    await wrapper.get("#case-proposals-tab").trigger("click");
-
-    expect(wrapper.find("#case-messages-panel").exists()).toBe(false);
-    expect(wrapper.get("#case-proposals-panel").text()).toContain(
-      "Подключиться к диалогу",
-    );
-    expect(wrapper.get("#case-proposals-tab").attributes("aria-selected")).toBe(
-      "true",
-    );
-
     await wrapper
-      .get("#case-proposals-tab")
+      .get("#case-messages-tab")
       .trigger("keydown", { key: "ArrowRight" });
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
@@ -193,7 +164,6 @@ describe("EndUserCaseDetail", () => {
         canAssign: true,
         canReadEndUser: true,
         canReadConversation: true,
-        canReadProposals: true,
       },
       global: {
         stubs: {
@@ -226,9 +196,6 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).not.toContain("check_deposit");
     expect(wrapper.text()).not.toContain("CONCERNED");
     expect(wrapper.html()).toContain("conversationId");
-    await wrapper.get("#case-proposals-tab").trigger("click");
-    expect(wrapper.html()).toContain("ai-proposal-detail");
-    expect(wrapper.text()).toContain("Открыто");
     await wrapper.get('[data-status="RESOLVED"]').trigger("click");
     expect(wrapper.emitted("requestTransition")?.[0]).toEqual(["RESOLVED"]);
   });
@@ -430,7 +397,6 @@ describe("EndUserCaseDetail", () => {
         },
       },
     ];
-    value.proposals.items = [];
     value.timeline.events = [
       {
         id: "event-1",
@@ -447,7 +413,6 @@ describe("EndUserCaseDetail", () => {
         loading: false,
         canManage: true,
         canAssign: true,
-        canReadProposals: true,
         error: "Последнее действие не выполнено",
       },
       global: {
@@ -475,8 +440,6 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Инструменты Lola ещё не использовались");
     expect(wrapper.text()).toContain("Часть диалога не относится");
     expect(wrapper.text()).toContain("Администратор");
-    await wrapper.get("#case-proposals-tab").trigger("click");
-    expect(wrapper.text()).toContain("Связанных предложений нет");
     await wrapper.get("#case-history-tab").trigger("click");
     expect(wrapper.text()).toContain("Назначен исполнитель");
     expect(wrapper.text()).not.toContain("ASSIGNED");
@@ -508,7 +471,6 @@ describe("EndUserCaseDetail", () => {
         loading: false,
         canReadEndUser: false,
         canReadConversation: false,
-        canReadProposals: false,
       },
       global: {
         stubs: {
@@ -525,45 +487,5 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("customer-42");
     expect(wrapper.html()).not.toContain('"users"');
     expect(wrapper.text()).not.toContain("Открыть диалог");
-    await wrapper.get("#case-proposals-tab").trigger("click");
-    expect(wrapper.text()).toContain(
-      "Для просмотра AI-предложений требуется отдельное разрешение проекта",
-    );
-    expect(wrapper.text()).not.toContain("Подключиться к диалогу");
-    expect(wrapper.text()).not.toContain("Пользователь просит администратора");
-    expect(wrapper.html()).not.toContain("ai-proposal-detail");
-  });
-
-  it("removes proposal content immediately when its read permission is revoked", async () => {
-    const wrapper = mount(EndUserCaseDetail, {
-      props: {
-        value: detail as never,
-        loading: false,
-        canReadProposals: true,
-      },
-      global: {
-        stubs: {
-          Button: true,
-          Message: { template: "<div><slot /></div>" },
-          Skeleton: true,
-          RouterLink: {
-            props: ["to"],
-            template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
-          },
-        },
-      },
-    });
-    await wrapper.get("#case-proposals-tab").trigger("click");
-    expect(wrapper.text()).toContain("Подключиться к диалогу");
-
-    await wrapper.setProps({ canReadProposals: false });
-
-    expect(wrapper.get("#case-proposals-tab").text()).toContain("—");
-    expect(wrapper.get("#case-proposals-tab").text()).not.toContain("1");
-    expect(wrapper.text()).not.toContain("Подключиться к диалогу");
-    expect(wrapper.text()).not.toContain("Пользователь просит администратора");
-    expect(wrapper.text()).toContain(
-      "Для просмотра AI-предложений требуется отдельное разрешение проекта",
-    );
   });
 });

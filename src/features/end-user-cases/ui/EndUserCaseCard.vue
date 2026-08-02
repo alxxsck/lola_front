@@ -37,11 +37,6 @@ defineEmits<{ select: [] }>();
     <span class="context">
       <span><i class="pi pi-user" /> {{ item.endUser.externalId }}</span>
       <span><i class="pi pi-comments" /> {{ item.messageCount }}</span>
-      <span v-if="item.proposalCount">
-        <i class="pi pi-inbox" />
-        {{ item.proposalCount }}
-        {{ item.proposalCount === 1 ? "предложение" : "предложения" }}
-      </span>
       <span v-if="item.endUserRecontactCount">
         <i class="pi pi-replay" /> Возвратов: {{ item.endUserRecontactCount }}
       </span>

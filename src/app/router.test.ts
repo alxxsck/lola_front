@@ -11,6 +11,11 @@ import { axiosInstance } from "@/shared/api/http/axios-instance";
 import { appScrollBehavior, router } from "./router";
 
 describe("scroll behavior", () => {
+  it("does not expose the retired Lola Proposals routes", () => {
+    expect(router.hasRoute("ai-proposals")).toBe(false);
+    expect(router.hasRoute("ai-proposal-detail")).toBe(false);
+  });
+
   it("preserves window scroll while an AI ledger detail opens or closes", () => {
     expect(
       appScrollBehavior(
@@ -291,42 +296,6 @@ describe("authentication routes", () => {
     await router.push("/overview");
     await router.push("/settings/integrations");
     expect(router.currentRoute.value.name).toBe("overview");
-  });
-
-  it("selects the Project encoded by an AI Proposal deep link before checking access", async () => {
-    const auth = useAuthStore();
-    const makeProject = (id: string, permissions: string[]) => ({
-      id,
-      name: id,
-      slug: id,
-      status: "ACTIVE" as const,
-      publicKey: `public-${id}`,
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Lola",
-      systemPrompt: "",
-      voiceInstructions: "",
-      settings: {},
-      effectivePermissionCodes: permissions,
-    });
-    const current = makeProject("project-1", []);
-    const target = makeProject("project-2", ["project.ai_proposals.read"]);
-    auth.$patch({
-      restored: true,
-      phase: "AUTHENTICATED",
-      user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
-      },
-      project: current,
-      projects: [current, target],
-    });
-
-    await router.push("/ai-proposals/proposal-1?projectId=project-2");
-
-    expect(router.currentRoute.value.name).toBe("ai-proposal-detail");
-    expect(auth.project?.id).toBe("project-2");
   });
 
   it("protects AI Analysis list and detail with the exact read Permission", () => {

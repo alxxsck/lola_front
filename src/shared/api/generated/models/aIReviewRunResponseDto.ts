@@ -19,7 +19,6 @@ export interface AIReviewRunResponseDto {
   id: string;
   limitations: string[];
   policyRevisionId?: string;
-  proposalId?: string;
   redactedBytes: number;
   /** @nullable */
   runId?: string | null;

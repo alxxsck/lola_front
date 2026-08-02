@@ -8,7 +8,7 @@ import {
 describe("mock End User Cases repository", () => {
   beforeEach(resetMockEndUserCases);
 
-  it("keeps demo mode useful with active cases, summary and linked proposals", async () => {
+  it("keeps demo mode useful with active cases, summary and escalations", async () => {
     const page = await mockEndUserCasesRepository.list(
       "project-demo",
       defaultEndUserCaseFilters(),
@@ -30,15 +30,10 @@ describe("mock End User Cases repository", () => {
       }),
     );
     expect(detail.messages.items).toHaveLength(3);
-    expect(detail.proposals.items[0]).toEqual(
-      expect.objectContaining({
-        id: "proposal-demo-1",
-        kind: "INSIGHT",
-      }),
-    );
+    expect(detail.escalations.items).toEqual(expect.any(Array));
   });
 
-  it("keeps escalation occurrences independent from AI proposals", async () => {
+  it("persists an escalation on the concrete Case", async () => {
     const before = await mockEndUserCasesRepository.detail(
       "project-demo",
       "case-demo-deposit",
@@ -59,8 +54,6 @@ describe("mock End User Cases repository", () => {
       "project-demo",
       "case-demo-deposit",
     );
-    expect(after.case.proposalCount).toBe(before.case.proposalCount);
-    expect(after.proposals).toEqual(before.proposals);
     expect(after.escalations.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -69,6 +62,57 @@ describe("mock End User Cases repository", () => {
         }),
       ]),
     );
+  });
+
+  it("resets the Case escalation timeline between demo sessions", async () => {
+    const before = await mockEndUserCasesRepository.detail(
+      "project-demo",
+      "case-demo-deposit",
+    );
+    const requested = await mockEndUserCasesRepository.requestEscalation(
+      "project-demo",
+      "case-demo-deposit",
+      {
+        expectedCaseVersion: before.case.version,
+        reasonCode: "DEPOSIT_HELP",
+        summary: "Нужна ручная проверка депозита",
+      },
+      "demo-timeline-request",
+    );
+    await mockEndUserCasesRepository.claimEscalation(
+      "project-demo",
+      "case-demo-deposit",
+      requested.escalation.id,
+      {
+        expectedCaseVersion: requested.caseVersion,
+        expectedEscalationVersion: requested.escalation.version,
+        reason: "Беру обращение в работу",
+      },
+      "demo-timeline-claim",
+    );
+
+    const mutated = await mockEndUserCasesRepository.detail(
+      "project-demo",
+      "case-demo-deposit",
+    );
+    expect(mutated.timeline.events.map(({ type }) => type)).toEqual([
+      "ADMIN_ATTENTION_REQUESTED",
+      "ADMIN_ATTENTION_CLAIMED",
+    ]);
+
+    resetMockEndUserCases();
+    const restoredDeposit = await mockEndUserCasesRepository.detail(
+      "project-demo",
+      "case-demo-deposit",
+    );
+    const restoredGame = await mockEndUserCasesRepository.detail(
+      "project-demo",
+      "case-demo-game",
+    );
+    expect(restoredDeposit.timeline.events).toEqual([]);
+    expect(restoredGame.timeline.events.map(({ type }) => type)).toEqual([
+      "ADMIN_ATTENTION_REQUESTED",
+    ]);
   });
 
   it("persists a versioned workflow change and resets between demo sessions", async () => {

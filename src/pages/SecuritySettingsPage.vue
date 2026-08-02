@@ -11,7 +11,7 @@ import { normalizeApiError } from '@/shared/api/http/api-error'
 import { emailIdentityApi } from '@/features/email-identity/email-identity.api'
 import { mfaManagementApi, type MfaPasskeySummary } from '@/features/auth/mfa.api'
 import { notificationPreferencesApi } from '@/features/notification-preferences/notification-preferences.api'
-import type { EmailAIProposalPreferenceResponseDto } from '@/shared/api/generated/models'
+import type { EmailCaseEscalationPreferenceResponseDto } from '@/shared/api/generated/models'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -59,7 +59,7 @@ const factorPending = ref(false)
 const passkeyLabel = ref('')
 const oneTimeRecoveryCodes = ref<string[]>([])
 const recoveryCodesSaved = ref(false)
-const emailPreference = ref<EmailAIProposalPreferenceResponseDto | null>(null)
+const emailPreference = ref<EmailCaseEscalationPreferenceResponseDto | null>(null)
 const emailPreferenceLoading = ref(true)
 const emailPreferenceSaving = ref(false)
 const emailPreferenceError = ref('')
@@ -81,7 +81,7 @@ async function loadEmailPreference() {
   emailPreferenceLoading.value = true
   emailPreferenceError.value = ''
   try {
-    emailPreference.value = await notificationPreferencesApi.getEmailAIProposals()
+    emailPreference.value = await notificationPreferencesApi.getEmailCaseEscalations()
   } catch {
     emailPreference.value = null
     emailPreferenceError.value = 'Не удалось загрузить настройку email-уведомлений.'
@@ -95,12 +95,12 @@ async function toggleEmailPreference() {
   clearFeedback()
   emailPreferenceSaving.value = true
   try {
-    emailPreference.value = await notificationPreferencesApi.setEmailAIProposals(
+    emailPreference.value = await notificationPreferencesApi.setEmailCaseEscalations(
       !emailPreference.value.subscribed,
     )
     actionSuccess.value = emailPreference.value.subscribed
-      ? 'Подписка на предложения Lola включена.'
-      : 'Подписка на предложения Lola отключена.'
+      ? 'Подписка на эскалации обращений включена.'
+      : 'Подписка на эскалации обращений отключена.'
   } catch {
     actionError.value = 'Не удалось изменить подписку. Обновите страницу и повторите.'
   } finally {
@@ -489,16 +489,16 @@ onBeforeUnmount(() => {
         </div>
       </form>
 
-      <div class="notification-preference" aria-labelledby="ai-proposal-email-heading">
+      <div class="notification-preference" aria-labelledby="case-escalation-email-heading">
         <div>
-          <strong id="ai-proposal-email-heading">Предложения Lola по email</strong>
-          <span>Получайте новые запросы внимания по текущему подтверждённому адресу.</span>
+          <strong id="case-escalation-email-heading">Эскалации обращений по email</strong>
+          <span>Получайте уведомления, когда обращению требуется помощь администратора.</span>
           <small :class="emailPreferenceBlocked ? 'preference-warning' : ''">{{ emailPreferenceStatus }}</small>
         </div>
         <div class="item-actions">
           <Button
             v-if="!emailPreferenceError"
-            data-testid="ai-proposal-email-toggle"
+            data-testid="case-escalation-email-toggle"
             :label="emailPreference?.subscribed ? 'Отключить' : 'Подписаться'"
             :icon="emailPreference?.subscribed ? 'pi pi-bell-slash' : 'pi pi-bell'"
             :severity="emailPreference?.subscribed ? 'secondary' : 'primary'"
@@ -509,7 +509,7 @@ onBeforeUnmount(() => {
           />
           <Button
             v-else
-            data-testid="ai-proposal-email-retry"
+            data-testid="case-escalation-email-retry"
             label="Повторить"
             icon="pi pi-refresh"
             outlined

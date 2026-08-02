@@ -44,7 +44,7 @@ const compatibility = computed(() => {
     source:
       value.sourceKind === "AI_REVIEW"
         ? "Исторический AI Review"
-        : "Историческое AI-предложение",
+        : "Исторический AI-результат",
     provenance:
       value.provenanceStatus === "PARTIAL"
         ? "Provenance частичный"

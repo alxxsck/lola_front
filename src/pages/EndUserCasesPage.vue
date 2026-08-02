@@ -65,9 +65,6 @@ const canReadEndUser = computed(() =>
 const canReadConversations = computed(() =>
   hasProjectPermission(permissions.value, "project.conversations.read"),
 );
-const canReadProposals = computed(() =>
-  hasProjectPermission(permissions.value, "project.ai_proposals.read"),
-);
 const canVerifyEvents = computed(() =>
   hasProjectPermission(permissions.value, "project.end_user_cases.verify"),
 );
@@ -98,7 +95,7 @@ async function openCase(id: string): Promise<void> {
     params: { caseId: id },
     query: endUserCaseRouteQuery(store.filters),
   });
-  if (store.selectedId !== id) await store.open(id, canReadProposals.value);
+  if (store.selectedId !== id) await store.open(id);
   await nextTick();
   document.querySelector<HTMLElement>(".case-detail h2")?.focus();
 }
@@ -126,7 +123,7 @@ async function handleVerificationCompleted(
 ): Promise<void> {
   if (!store.selectedId) return;
   latestVerification.value = { caseId: store.selectedId, run };
-  await store.open(store.selectedId, canReadProposals.value);
+  await store.open(store.selectedId);
 }
 
 onMounted(async () => {
@@ -139,7 +136,7 @@ onMounted(async () => {
     await store.setFilters(initialFilters);
   const caseId = route.params.caseId;
   if (typeof caseId === "string")
-    await store.open(caseId, canReadProposals.value);
+    await store.open(caseId);
 });
 
 onBeforeUnmount(() => window.removeEventListener("resize", updateViewport));
@@ -148,7 +145,7 @@ watch(
   () => route.params.caseId,
   async (caseId) => {
     if (typeof caseId === "string" && caseId !== store.selectedId)
-      await store.open(caseId, canReadProposals.value);
+      await store.open(caseId);
     else if (!caseId && store.selectedId) store.close();
   },
 );
@@ -163,12 +160,9 @@ watch(canRead, async (allowed) => {
   await store.activateProject(projectId);
   const caseId = route.params.caseId;
   if (typeof caseId === "string")
-    await store.open(caseId, canReadProposals.value);
+    await store.open(caseId);
 });
 
-watch(canReadProposals, (allowed) => {
-  void store.setProposalAccess(allowed);
-});
 </script>
 
 <template>
@@ -309,14 +303,13 @@ watch(canReadProposals, (allowed) => {
             :current-cms-user-id="auth.user?.id"
             :can-read-end-user="canReadEndUser"
             :can-read-conversation="canReadConversations"
-            :can-read-proposals="canReadProposals"
             :project-id="auth.project?.id"
             :can-verify-events="canVerifyEvents"
             :can-preview-events="canPreviewEvents"
             :verification-run="selectedVerificationRun"
             :error="store.detailError"
             @retry="
-              store.selectedId && store.open(store.selectedId, canReadProposals)
+              store.selectedId && store.open(store.selectedId)
             "
             @request-transition="dialogs?.requestTransition($event)"
             @request-assignment="dialogs?.requestAssignment()"
@@ -353,7 +346,6 @@ watch(canReadProposals, (allowed) => {
       :current-cms-user-id="auth.user?.id"
       :can-read-end-user="canReadEndUser"
       :can-read-conversation="canReadConversations"
-      :can-read-proposals="canReadProposals"
       :project-id="auth.project?.id"
       :can-verify-events="canVerifyEvents"
       :can-preview-events="canPreviewEvents"

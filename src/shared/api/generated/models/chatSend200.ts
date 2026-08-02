@@ -6,8 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ChatSend200OneOf } from "./chatSend200OneOf";
-import type { ChatSend200OneOfSix } from "./chatSend200OneOfSix";
-import type { ChatSend200OneOfOneone } from "./chatSend200OneOfOneone";
+import type { ChatSend200OneOfNine } from "./chatSend200OneOfNine";
+import type { ChatSend200OneOfOneseven } from "./chatSend200OneOfOneseven";
+import type { ChatSend200OneOfTwofive } from "./chatSend200OneOfTwofive";
 
 export type ChatSend200 =
-  ChatSend200OneOf | ChatSend200OneOfSix | ChatSend200OneOfOneone;
+  | ChatSend200OneOf
+  | ChatSend200OneOfNine
+  | ChatSend200OneOfOneseven
+  | ChatSend200OneOfTwofive;

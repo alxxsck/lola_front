@@ -471,7 +471,7 @@ watch(
           {{
             detail.analysis.compatibility.sourceKind === "AI_REVIEW"
               ? "AI Review"
-              : "AI-предложение"
+              : "исторический AI-результат"
           }}.
           {{
             detail.analysis.compatibility.attributionStatus ===

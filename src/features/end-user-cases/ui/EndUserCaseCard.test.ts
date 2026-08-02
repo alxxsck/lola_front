@@ -27,7 +27,6 @@ const item = {
   endUser: { id: "user-1", externalId: "customer-42" },
   assignee: null,
   messageCount: 8,
-  proposalCount: 1,
   firstObservedAt: "2026-07-26T09:00:00.000Z",
   lastActivityAt: "2026-07-26T10:00:00.000Z",
   waitingSince: "2026-07-26T09:30:00.000Z",
@@ -47,7 +46,6 @@ describe("EndUserCaseCard", () => {
     });
     expect(wrapper.text()).toContain("Срочно");
     expect(wrapper.text()).toContain("Нужен администратор");
-    expect(wrapper.text()).toContain("1 предложение");
     expect(wrapper.find("script").exists()).toBe(false);
     expect(wrapper.text()).toContain('<script>alert("x")</script>');
   });
@@ -58,7 +56,6 @@ describe("EndUserCaseCard", () => {
         item: {
           ...item,
           summary: "",
-          proposalCount: 0,
           endUserRecontactCount: 2,
           toneTrend: "STABLE",
           degradedReason: "BUDGET",

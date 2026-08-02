@@ -99,7 +99,7 @@ async function installFixtures(page: Page) {
       destination = {
         id: destinationId,
         projectId,
-        topic: "AI_PROPOSALS",
+        topic: "CASE_ESCALATION",
         channel: "TELEGRAM_OPERATIONAL",
         displayName: input.displayName,
         status: "PENDING_TEST",
@@ -223,9 +223,14 @@ test("Project admin binds, tests and activates a separate operational Telegram b
   const token = `123456789:${"A".repeat(32)}`;
   await page.goto("/settings/integrations");
 
-  await page.getByLabel("Название служебного подключения").fill("Operations");
-  await page.getByLabel("Bot token от BotFather").fill(token);
-  await page.getByRole("button", { name: "Проверить бота" }).click();
+  const createTelegramForm = page.locator('[data-form="create-telegram"]');
+  await createTelegramForm
+    .getByLabel("Название подключения")
+    .fill("Operations");
+  await createTelegramForm.getByLabel("Токен бота").fill(token);
+  await createTelegramForm
+    .getByRole("button", { name: "Подключить и проверить" })
+    .click();
   await page.getByRole("button", { name: "Получить команду привязки" }).click();
   await expect(page.getByText("/connect AbCdEf1234567890abcd")).toBeVisible();
   await expect(page.locator('[data-field="telegram-bot-id"]')).toContainText(
@@ -236,7 +241,7 @@ test("Project admin binds, tests and activates a separate operational Telegram b
   ).toContainText("Нет");
   await expect(
     page.locator('[data-field="telegram-updated-by"]'),
-  ).toContainText("Пользователь · user-1");
+  ).toContainText("Администратор · user-1");
   await expect(
     page.locator('[data-field="telegram-updated-at"]'),
   ).not.toContainText("—");
@@ -263,15 +268,20 @@ test("Token rotation invalidates the old command while webhook setup is pending"
   const replacementToken = `987654321:${"B".repeat(32)}`;
   await page.goto("/settings/integrations");
 
-  await page.getByLabel("Название служебного подключения").fill("Operations");
-  await page.getByLabel("Bot token от BotFather").fill(token);
-  await page.getByRole("button", { name: "Проверить бота" }).click();
+  const createTelegramForm = page.locator('[data-form="create-telegram"]');
+  await createTelegramForm
+    .getByLabel("Название подключения")
+    .fill("Operations");
+  await createTelegramForm.getByLabel("Токен бота").fill(token);
+  await createTelegramForm
+    .getByRole("button", { name: "Подключить и проверить" })
+    .click();
   await page.getByRole("button", { name: "Получить команду привязки" }).click();
   await expect(page.getByText("/connect AbCdEf1234567890abcd")).toBeVisible();
 
   page.on("dialog", (dialog) => dialog.accept());
-  await page.getByLabel("Новый bot token").fill(replacementToken);
-  await page.getByRole("button", { name: "Заменить token" }).click();
+  await page.getByLabel("Новый токен бота").fill(replacementToken);
+  await page.getByRole("button", { name: "Заменить токен" }).click();
 
   await expect(page.getByText("Регистрируем защищённый webhook")).toBeVisible();
   await expect(

@@ -13,6 +13,6 @@ export type ActionExecutorAdapter =
 export const ActionExecutorAdapter = {
   SERVER_HANDLER: "SERVER_HANDLER",
   FRONTEND_COMMAND: "FRONTEND_COMMAND",
-  PROPOSAL: "PROPOSAL",
+  RETIRED: "RETIRED",
   CASE_ESCALATION: "CASE_ESCALATION",
 } as const;
