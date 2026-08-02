@@ -5,7 +5,6 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { Object } from "./object";
 import type { AiAllowanceAccrualAdminListReceiptsStatus } from "./aiAllowanceAccrualAdminListReceiptsStatus";
 
 export type AiAllowanceAccrualAdminListReceiptsParams = {
@@ -13,7 +12,7 @@ export type AiAllowanceAccrualAdminListReceiptsParams = {
    * @minimum 1
    * @maximum 100
    */
-  limit?: Object;
+  limit?: number;
   cursor?: string;
   endUserId?: string;
   status?: AiAllowanceAccrualAdminListReceiptsStatus;

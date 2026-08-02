@@ -19782,10 +19782,6 @@
         ],
         "type": "object"
       },
-      "Object": {
-        "properties": {},
-        "type": "object"
-      },
       "OldContractIntegrationResponseDto": {
         "properties": {
           "acceptedUntil": {
@@ -36232,14 +36228,10 @@
             "name": "limit",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ],
               "default": 50,
               "maximum": 100,
-              "minimum": 1
+              "minimum": 1,
+              "type": "number"
             }
           },
           {
@@ -36316,14 +36308,10 @@
             "name": "limit",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ],
               "default": 50,
               "maximum": 100,
-              "minimum": 1
+              "minimum": 1,
+              "type": "number"
             }
           },
           {

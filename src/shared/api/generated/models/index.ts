@@ -1181,7 +1181,6 @@ export * from "./notificationOperationsRetentionHealthDto";
 export * from "./notificationQuarantineDto";
 export * from "./notificationQuarantineDtoReason";
 export * from "./notificationUnsubscribeUnsubscribeParams";
-export * from "./object";
 export * from "./oldContractIntegrationResponseDto";
 export * from "./operateTelegramBroadcastDto";
 export * from "./operationalTelegramWebhookIngest200";
