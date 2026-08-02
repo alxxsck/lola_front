@@ -15,10 +15,6 @@ vi.mock("@/shared/api/http/auth-session", () => ({
 vi.mock("@/shared/api/http/axios-instance", () => ({
   refreshAccessToken: mocks.refreshAccessToken,
 }));
-vi.mock("@/features/ai-proposals/api/ai-proposals-repository", () => ({
-  aiProposalsRepository: { acknowledge: mocks.acknowledge },
-}));
-
 import { CmsRealtimeClient } from "./cms-realtime-client";
 
 function fakeSocket() {
@@ -50,14 +46,14 @@ describe("CmsRealtimeClient", () => {
     const socket = fakeSocket();
     mocks.io.mockReturnValue(socket);
     const client = new CmsRealtimeClient();
-    const proposals = vi.fn();
+    const cases = vi.fn();
     const suspensions = vi.fn();
 
-    client.subscribe(["ai_proposal.summary"], proposals);
+    client.subscribe(["end_user_case.summary"], cases);
     client.subscribe(["conversation.ai_suspension.started.v1"], suspensions);
     await client.activateProject("project-1");
 
-    socket.trigger("ai_proposal.summary", { eventId: "proposal-1" });
+    socket.trigger("end_user_case.summary", { eventId: "case-summary-1" });
     socket.trigger("conversation.ai_suspension.started.v1", {
       eventId: "suspension-1",
     });
@@ -65,7 +61,7 @@ describe("CmsRealtimeClient", () => {
 
     expect(mocks.io).toHaveBeenCalledTimes(1);
     expect(socket.disconnect).not.toHaveBeenCalled();
-    expect(proposals).toHaveBeenCalledWith({ eventId: "proposal-1" });
+    expect(cases).toHaveBeenCalledWith({ eventId: "case-summary-1" });
     expect(suspensions).toHaveBeenCalledWith({ eventId: "suspension-1" });
   });
 
@@ -138,36 +134,32 @@ describe("CmsRealtimeClient", () => {
     const client = new CmsRealtimeClient();
     await client.connect("project-1", {
       subscriptions: {
-        "ai_proposal.summary": async (value) => {
+        "end_user_case.updated": async (value) => {
           applied.push("applied");
           return (value as { eventId: string }).eventId;
         },
       },
       acknowledgement: {
-        socketEvent: "ai_proposal.received",
+        socketEvent: "end_user_case.received",
         rest: mocks.acknowledge,
       },
       onConnect: vi.fn(),
       onStateChange: vi.fn(),
     });
-    socket.trigger("ai_proposal.summary", {
-      type: "ai_proposal.summary",
+    socket.trigger("end_user_case.updated", {
+      type: "end_user_case.updated",
       contractVersion: 1,
       eventId: "event-1",
       projectSequence: "4",
       occurredAt: "2026-07-19T18:00:00.000Z",
       data: {
-        openCount: 1,
-        unreadCount: 1,
-        highPriorityUnreadCount: 0,
-        lastSequence: "4",
-        calculatedAt: "2026-07-19T18:00:00.000Z",
+        case: { id: "case-1" },
       },
     });
     await vi.waitFor(() => expect(socket.emit).toHaveBeenCalled());
 
     expect(applied).toEqual(["applied"]);
-    expect(socket.emit).toHaveBeenCalledWith("ai_proposal.received", {
+    expect(socket.emit).toHaveBeenCalledWith("end_user_case.received", {
       eventId: "event-1",
     });
   });

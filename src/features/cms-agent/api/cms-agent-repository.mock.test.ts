@@ -7,17 +7,14 @@ vi.mock("@/shared/config/data-mode", () => ({
 import { cmsAgentRepository } from "./cms-agent-repository";
 
 describe("cmsAgentRepository in mock mode", () => {
-  it("returns the current domain-reference execution contract", async () => {
+  it("returns the same decoded execution contract as API mode", async () => {
     await expect(
       cmsAgentRepository.execute("project-1", "request-1"),
     ).resolves.toMatchObject({
-      interpretation: { outcome: "PLANNED", replayed: false },
-      result: {
-        domainId: expect.any(String),
-        domainKind: "AI_ANALYSIS",
-        relation: "CREATED",
-        result: { runId: expect.any(String), status: "QUEUED" },
-      },
+      kind: "ANALYSIS_QUEUED",
+      analysisId: expect.any(String),
+      runId: expect.any(String),
+      status: "QUEUED",
     });
   });
 });

@@ -33,7 +33,6 @@ const state = vi.hoisted(() => ({
     reconcile: vi.fn(),
     loadPage: vi.fn(),
     open: vi.fn(),
-    setProposalAccess: vi.fn(),
     close: vi.fn(),
     deactivate: vi.fn(),
     transition: vi.fn(),
@@ -315,7 +314,7 @@ describe("EndUserCasesPage", () => {
         channel: ["VOICE"],
       }),
     );
-    expect(state.store.open).toHaveBeenCalledWith("case-7", false);
+    expect(state.store.open).toHaveBeenCalledWith("case-7");
   });
 
   it("syncs filters and list selection into shareable routes", async () => {
@@ -366,7 +365,7 @@ describe("EndUserCasesPage", () => {
         params: { caseId: "case-1" },
       }),
     );
-    expect(state.store.open).toHaveBeenCalledWith("case-1", false);
+    expect(state.store.open).toHaveBeenCalledWith("case-1");
   });
 
   it("uses the full-screen detail on tablet and mobile widths", async () => {
@@ -460,47 +459,8 @@ describe("EndUserCasesPage", () => {
     await vi.waitFor(() =>
       expect(state.store.activateProject).toHaveBeenCalledWith("project-1"),
     );
-    expect(state.store.open).toHaveBeenCalledWith("case-1", false);
+    expect(state.store.open).toHaveBeenCalledWith("case-1");
     expect(wrapper.find('[data-test="case-detail"]').exists()).toBe(true);
-  });
-
-  it("scrubs and authoritatively reloads proposal data when its permission changes", async () => {
-    const wrapper = mount(EndUserCasesPage, {
-      global: {
-        stubs: {
-          Button: true,
-          Drawer: true,
-          Message: true,
-          Skeleton: true,
-          EndUserCaseFilters: true,
-          EndUserCaseCard: true,
-          EndUserCaseDetail: true,
-          EndUserCaseDialogs: true,
-          EndUserCaseEscalationDialogs: true,
-        },
-      },
-    });
-    await vi.waitFor(() =>
-      expect(state.store.activateProject).toHaveBeenCalledWith("project-1"),
-    );
-
-    authState.runtime!.project!.effectivePermissionCodes.push(
-      "project.ai_proposals.read",
-    );
-    await vi.waitFor(() =>
-      expect(state.store.setProposalAccess).toHaveBeenCalledWith(true),
-    );
-
-    authState.runtime!.project!.effectivePermissionCodes.splice(
-      authState.runtime!.project!.effectivePermissionCodes.indexOf(
-        "project.ai_proposals.read",
-      ),
-      1,
-    );
-    await vi.waitFor(() =>
-      expect(state.store.setProposalAccess).toHaveBeenCalledWith(false),
-    );
-    wrapper.unmount();
   });
 
   it("renders the standard forbidden state without loading project data", async () => {

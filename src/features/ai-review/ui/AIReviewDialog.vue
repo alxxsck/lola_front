@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
 import Dialog from "primevue/dialog";
@@ -9,6 +8,7 @@ import Message from "primevue/message";
 import MultiSelect from "primevue/multiselect";
 import ProgressSpinner from "primevue/progressspinner";
 import Textarea from "primevue/textarea";
+import { useRouter } from "vue-router";
 import { eventQueryRepository } from "@/features/event-query/api/event-query-repository";
 import { aiReviewRepository } from "../api/ai-review-repository";
 import type {
@@ -21,6 +21,7 @@ const props = defineProps<{
   projectId: string;
   endUserId: string;
   timezone?: string;
+  canOpenAnalysis?: boolean;
 }>();
 const visible = defineModel<boolean>("visible", { required: true });
 const router = useRouter();
@@ -62,6 +63,16 @@ const canStart = computed(
 const running = computed(
   () => run.value?.status === "PENDING" || run.value?.status === "RUNNING",
 );
+
+async function openAnalysis(): Promise<void> {
+  if (!run.value?.analysisId) return;
+  visible.value = false;
+  await router.push({
+    name: "ai-analysis-detail",
+    params: { analysisId: run.value.analysisId },
+    query: { projectId: props.projectId },
+  });
+}
 
 watch(
   visible,
@@ -279,16 +290,6 @@ async function poll() {
   }
 }
 
-async function openProposal(value: AIReviewRun) {
-  stopPolling();
-  if (!value.proposalId) return;
-  visible.value = false;
-  await router.push({
-    name: "ai-proposal-detail",
-    params: { proposalId: value.proposalId },
-  });
-}
-
 function stopPolling() {
   if (pollTimer) clearTimeout(pollTimer);
   pollTimer = undefined;
@@ -486,13 +487,20 @@ function formatRange(value: string) {
             </span>
             <span v-else>Ограничения выборки не зафиксированы.</span>
           </div>
-          <Button
-            v-if="run.proposalId"
-            label="Открыть предложение"
-            icon="pi pi-arrow-right"
-            @click="openProposal(run)"
-          />
         </section>
+        <Button
+          v-if="
+            run?.status === 'SUCCEEDED' &&
+            run.analysisId &&
+            props.canOpenAnalysis === true
+          "
+          class="review-action"
+          label="Открыть AI-анализ"
+          icon="pi pi-arrow-up-right"
+          severity="secondary"
+          outlined
+          @click="openAnalysis"
+        />
         <Button
           class="review-action review-action-primary"
           label="Запустить AI Review"

@@ -116,7 +116,7 @@ describe("EndUserCaseFilters", () => {
     field("ID пользователя").vm.$emit("update:modelValue", "user-id");
     field("Назначение").vm.$emit("update:modelValue", "ASSIGNED");
     field("Основной язык").vm.$emit("update:modelValue", "es");
-    field("Предложение администратора").vm.$emit("update:modelValue", "OPEN");
+    field("Эскалация обращения").vm.$emit("update:modelValue", "OPEN");
     field("Участие администратора").vm.$emit("update:modelValue", "YES");
     field("Возврат").vm.$emit("update:modelValue", "YES");
     field("Переоткрытие").vm.$emit("update:modelValue", "YES");

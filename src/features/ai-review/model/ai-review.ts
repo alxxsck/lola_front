@@ -30,6 +30,7 @@ export interface AIReviewEstimate {
 
 export interface AIReviewRun {
   id: string;
+  analysisId?: string;
   status: AIReviewRunStatus;
   costLevel: AIReviewCostLevel;
   eventCount: number;
@@ -37,7 +38,6 @@ export interface AIReviewRun {
   estimatedInputTokens: number;
   policyRevisionId?: string;
   limitations?: string[];
-  proposalId?: string;
   errorCode?: string;
   createdAt: string;
   completedAt?: string;

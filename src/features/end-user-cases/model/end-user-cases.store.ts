@@ -47,7 +47,6 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   let listRequest = 0;
   let detailRequest = 0;
   let messagesRequest = 0;
-  let detailIncludesProposals = true;
   let reconciliation: Promise<void> | null = null;
   let reconciliationRequested = false;
   let reconciliationGeneration = 0;
@@ -148,20 +147,16 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     }
   }
 
-  async function open(id: string, includeProposals?: boolean): Promise<void> {
+  async function open(id: string): Promise<void> {
     const activeProjectId = projectId.value;
     if (!activeProjectId) return;
-    if (includeProposals !== undefined)
-      detailIncludesProposals = includeProposals;
     const request = ++detailRequest;
     messagesRequest += 1;
     selectedId.value = id;
     detailLoading.value = true;
     detailError.value = null;
     try {
-      const value = await endUserCasesRepository.detail(activeProjectId, id, {
-        includeProposals: detailIncludesProposals,
-      });
+      const value = await endUserCasesRepository.detail(activeProjectId, id);
       if (
         request !== detailRequest ||
         projectId.value !== activeProjectId ||
@@ -176,23 +171,6 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     } finally {
       if (request === detailRequest) detailLoading.value = false;
     }
-  }
-
-  async function setProposalAccess(allowed: boolean): Promise<void> {
-    detailIncludesProposals = allowed;
-    detailRequest += 1;
-    detailLoading.value = false;
-    if (!allowed) {
-      if (selected.value) {
-        selected.value = {
-          ...selected.value,
-          proposals: { items: [] },
-        };
-      }
-      return;
-    }
-    const id = selectedId.value;
-    if (id) await open(id, true);
   }
 
   function close(): void {
@@ -611,7 +589,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
       if (!isCurrentRealtimeScope(expectedProjectId, expectedGeneration))
         return;
       // The realtime DTO intentionally does not contain every relation used by
-      // server filters (channels, capability outcomes and open Proposals).
+      // server filters (channels, capability outcomes and active escalations).
       // Reconcile every Case event so a previously visible row cannot remain in
       // a filtered inbox after one of those relations changes.
       await reconcile();
@@ -695,7 +673,6 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     error.value = null;
     detailError.value = null;
     lastAppliedSequence.value = 0n;
-    detailIncludesProposals = true;
     reconciliationGeneration += 1;
     reconciliation = null;
     reconciliationRequested = false;
@@ -731,7 +708,6 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     loadPage,
     refreshSummary,
     open,
-    setProposalAccess,
     loadMoreMessages,
     close,
     transition,
@@ -768,8 +744,7 @@ function caseMatchesFilters(
     return (
       value.priority === "CRITICAL" ||
       Boolean(value.staleAt) ||
-      value.status === "WAITING_ADMIN" ||
-      value.proposalCount > 0
+      value.status === "WAITING_ADMIN"
     );
   return true;
 }

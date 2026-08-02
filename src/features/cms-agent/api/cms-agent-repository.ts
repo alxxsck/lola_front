@@ -4,13 +4,16 @@ import {
   projectAIAnalysisEstimate,
 } from "@/shared/api/generated/lola-backend";
 import type {
-  CmsAgentImmediateExecutionResponseDto,
   CmsAgentRequestResponseDto,
   EstimateProjectAIAnalysisDto,
   ProjectAIAnalysisEstimateResponseDto,
   SubmitCmsAgentRequestDto,
 } from "@/shared/api/generated/models";
 import { isMockMode } from "@/shared/config/data-mode";
+import {
+  decodeCmsAgentExecution,
+  type CmsAgentExecution,
+} from "../model/cms-agent-execution";
 
 export interface CmsAgentRepository {
   estimate(
@@ -21,16 +24,17 @@ export interface CmsAgentRepository {
     projectId: string,
     input: SubmitCmsAgentRequestDto,
   ): Promise<CmsAgentRequestResponseDto>;
-  execute(
-    projectId: string,
-    requestId: string,
-  ): Promise<CmsAgentImmediateExecutionResponseDto>;
+  execute(projectId: string, requestId: string): Promise<CmsAgentExecution>;
 }
 
 const apiRepository: CmsAgentRepository = {
   estimate: projectAIAnalysisEstimate,
   submit: cmsAgentRequestSubmit,
-  execute: cmsAgentRequestExecute,
+  async execute(projectId, requestId) {
+    return decodeCmsAgentExecution(
+      await cmsAgentRequestExecute(projectId, requestId),
+    );
+  },
 };
 
 const mockRepository: CmsAgentRepository = {
@@ -68,16 +72,10 @@ const mockRepository: CmsAgentRepository = {
   },
   async execute() {
     return {
-      interpretation: { outcome: "PLANNED", replayed: false },
-      result: {
-        domainId: crypto.randomUUID(),
-        domainKind: "AI_ANALYSIS",
-        relation: "CREATED",
-        result: {
-          runId: crypto.randomUUID(),
-          status: "QUEUED",
-        },
-      },
+      kind: "ANALYSIS_QUEUED",
+      analysisId: crypto.randomUUID(),
+      runId: crypto.randomUUID(),
+      status: "QUEUED",
     };
   },
 };

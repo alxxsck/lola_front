@@ -5,7 +5,6 @@ const api = vi.hoisted(() => ({
   detail: vi.fn(),
   messages: vi.fn(),
   timeline: vi.fn(),
-  proposals: vi.fn(),
   escalations: vi.fn(),
   requestEscalation: vi.fn(),
   claimEscalation: vi.fn(),
@@ -23,7 +22,6 @@ vi.mock("@/shared/api/generated/lola-backend", () => ({
   endUserCasesDetail: api.detail,
   endUserCasesMessages: api.messages,
   endUserCasesTimeline: api.timeline,
-  endUserCasesProposals: api.proposals,
   endUserCasesListEscalations: api.escalations,
   endUserCasesRequestEscalation: api.requestEscalation,
   endUserCasesClaimEscalation: api.claimEscalation,
@@ -78,14 +76,12 @@ describe("End User Cases repository", () => {
     api.detail.mockResolvedValue({ id: "case-1" });
     api.messages.mockResolvedValue({ items: [], nextCursor: "message-cursor" });
     api.timeline.mockResolvedValue({ events: [], revisions: [] });
-    api.proposals.mockResolvedValue({ items: [] });
     api.escalations.mockResolvedValue({ items: [] });
     const value = await endUserCasesRepository.detail("project-1", "case-1");
     expect(value).toEqual({
       case: { id: "case-1" },
       messages: { items: [], nextCursor: "message-cursor" },
       timeline: { events: [], revisions: [] },
-      proposals: { items: [] },
       escalations: { items: [] },
     });
     expect(api.messages).toHaveBeenCalledWith("project-1", "case-1", {
@@ -104,21 +100,6 @@ describe("End User Cases repository", () => {
       limit: 100,
       cursor: "message-cursor",
     });
-  });
-
-  it("does not require Proposal permission to load the Case detail bundle", async () => {
-    api.detail.mockResolvedValue({ id: "case-1" });
-    api.messages.mockResolvedValue({ items: [], nextCursor: null });
-    api.timeline.mockResolvedValue({ events: [], revisions: [] });
-    api.escalations.mockResolvedValue({ items: [] });
-
-    const value = await endUserCasesRepository.detail("project-1", "case-1", {
-      includeProposals: false,
-    });
-
-    expect(value.proposals).toEqual({ items: [] });
-    expect(api.proposals).not.toHaveBeenCalled();
-    expect(api.escalations).toHaveBeenCalledWith("project-1", "case-1");
   });
 
   it("loads only assignable active project members from the Case contract", async () => {

@@ -11,8 +11,6 @@ import type { ProjectAIAnalysisCompatibilityDtoSourceKind } from "./projectAIAna
 
 export interface ProjectAIAnalysisCompatibilityDto {
   attributionStatus: ProjectAIAnalysisCompatibilityDtoAttributionStatus;
-  /** @nullable */
-  linkedProposalId?: string | null;
   provenanceStatus: ProjectAIAnalysisCompatibilityDtoProvenanceStatus;
   readOnly: boolean;
   sourceId: string;

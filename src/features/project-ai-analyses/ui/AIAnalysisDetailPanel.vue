@@ -5,7 +5,10 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
-import type { ProjectAIAnalysisDetailResponseDto } from "@/shared/api/generated/models";
+import type {
+  ProjectAIAnalysisDetailResponseDto,
+  ProjectAIAnalysisErrorPresentationDto,
+} from "@/shared/api/generated/models";
 import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
 import {
   formatUsdTicks,
@@ -63,6 +66,14 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
 
 function formatDate(value?: string | null): string {
   return value ? dateFormatter.format(new Date(value)) : "—";
+}
+
+function limitationMessages(
+  limitations: ProjectAIAnalysisErrorPresentationDto[],
+  codes: string[],
+): string[] {
+  if (limitations.length) return limitations.map(({ message }) => message);
+  return codes.length ? ["Данные получены с ограничениями."] : [];
 }
 
 function confirmCancel(): void {
@@ -238,11 +249,26 @@ watch(
             ><small>Локальное время</small
             >{{ detail.schedule.localDateTime }}</span
           >
-          <span v-if="detail.schedule.failureCode"
-            ><small>Код остановки</small
-            ><code>{{ detail.schedule.failureCode }}</code></span
+          <span
+            v-if="
+              detail.schedule.failureMessage || detail.schedule.failureCode
+            "
+            ><small>Причина остановки</small>{{
+              detail.schedule.failureMessage ??
+              "Отложенный запуск не удалось выполнить."
+            }}</span
           >
         </div>
+        <details v-if="detail.schedule.failureCode" class="technical-section">
+          <summary>
+            <span><i class="pi pi-code" /> Технические данные остановки</span>
+            <i class="pi pi-chevron-down" />
+          </summary>
+          <TechnicalIdentifier
+            label="Код остановки"
+            :value="detail.schedule.failureCode"
+          />
+        </details>
       </section>
 
       <section v-for="run in detail.runs" :key="run.runId" class="run-block">
@@ -335,6 +361,16 @@ watch(
               label="Capability set revision"
               :value="run.capabilitySetRevision"
             />
+            <TechnicalIdentifier
+              v-if="run.limitationCodes.length"
+              label="Коды ограничений"
+              :value="run.limitationCodes.join(', ')"
+            />
+            <TechnicalIdentifier
+              v-if="run.errorCode"
+              label="Код завершения"
+              :value="run.errorCode"
+            />
           </div>
         </details>
 
@@ -345,6 +381,18 @@ watch(
           :can-read-cost="canReadCost"
           :can-read-cms-users="canReadCmsUsers"
         />
+
+        <Message
+          v-for="message in limitationMessages(
+            run.limitations,
+            run.limitationCodes,
+          )"
+          :key="message"
+          severity="warn"
+          :closable="false"
+        >
+          {{ message }}
+        </Message>
 
         <div v-if="run.receipts.length" class="receipts">
           <div class="section-title">
@@ -372,13 +420,19 @@ watch(
               >{{ receipt.complete ? "Полный" : "Неполный"
               }}{{ receipt.truncated ? " · усечён" : "" }}</span
             >
-            <span v-if="receipt.limitationCodes.length"
-              ><small>Ограничения</small
-              ><code>{{ receipt.limitationCodes.join(", ") }}</code></span
+            <span
+              v-for="message in limitationMessages(
+                receipt.limitations,
+                receipt.limitationCodes,
+              )"
+              :key="message"
+              ><small>Ограничение</small>{{ message }}</span
             >
-            <span v-if="receipt.rejectionCode"
+            <span v-if="receipt.rejectionMessage || receipt.rejectionCode"
               ><small>Причина отклонения</small
-              ><code>{{ receipt.rejectionCode }}</code></span
+              >{{
+                receipt.rejectionMessage ?? "Запрос к данным был отклонён."
+              }}</span
             >
             <details class="receipt-technical">
               <summary>Технические данные запроса</summary>
@@ -386,12 +440,26 @@ watch(
                 label="Query hash"
                 :value="receipt.queryHash"
               />
+              <TechnicalIdentifier
+                v-if="receipt.limitationCodes.length"
+                label="Коды ограничений"
+                :value="receipt.limitationCodes.join(', ')"
+              />
+              <TechnicalIdentifier
+                v-if="receipt.rejectionCode"
+                label="Код отклонения"
+                :value="receipt.rejectionCode"
+              />
             </details>
           </article>
         </div>
 
-        <Message v-if="run.errorCode" severity="error" :closable="false">
-          Код завершения: <code>{{ run.errorCode }}</code>
+        <Message
+          v-if="run.errorMessage || run.errorCode"
+          severity="error"
+          :closable="false"
+        >
+          {{ run.errorMessage ?? "Запуск завершился с ошибкой." }}
         </Message>
       </section>
 
@@ -403,7 +471,7 @@ watch(
           {{
             detail.analysis.compatibility.sourceKind === "AI_REVIEW"
               ? "AI Review"
-              : "AI-предложение"
+              : "исторический AI-результат"
           }}.
           {{
             detail.analysis.compatibility.attributionStatus ===

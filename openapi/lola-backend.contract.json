@@ -4,7 +4,7 @@
     "repository": "alxxsck/lola_back"
   },
   "artifact": "lola-backend.json",
-  "contractRevision": "sha256:54845f52346c67d46b510a464a0b36dd4f10fb80713ef09bfb96e9b5b725cb47",
-  "sha256": "54845f52346c67d46b510a464a0b36dd4f10fb80713ef09bfb96e9b5b725cb47",
-  "backendSourceRevision": "5352936d03a9d39a4612f41760904be0821d4ad6"
+  "contractRevision": "sha256:84b7e56224cdedf9e2cb07a278ed06e380f017ee006b75a03af29cc3c24e4716",
+  "sha256": "84b7e56224cdedf9e2cb07a278ed06e380f017ee006b75a03af29cc3c24e4716",
+  "backendSourceRevision": "3a8a9a9b8a92c43e058b84668a1ec8bfe9948a30"
 }

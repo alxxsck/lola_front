@@ -8,6 +8,7 @@ import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
+import type { ActionExecutorAdapter } from "@/shared/api/generated/models";
 import type {
   ConfigureProjectActionInput,
   ProjectAction,
@@ -33,8 +34,7 @@ type StatusFilter =
   | "DISABLED"
   | "ARCHIVED"
   | "ISSUES";
-type ExecutorFilter =
-  "ALL" | "FRONTEND_COMMAND" | "SERVER_HANDLER" | "PROPOSAL";
+type ExecutorFilter = "ALL" | ActionExecutorAdapter;
 type OriginFilter = "ALL" | "SYSTEM" | "INTEGRATION";
 
 const auth = useAuthStore();
@@ -152,7 +152,8 @@ const executorOptions = [
   { label: "Где выполняется: везде", value: "ALL" },
   { label: "В приложении", value: "FRONTEND_COMMAND" },
   { label: "На сервере", value: "SERVER_HANDLER" },
-  { label: "Через администратора", value: "PROPOSAL" },
+  { label: "Эскалация обращения", value: "CASE_ESCALATION" },
+  { label: "Выведено из эксплуатации", value: "RETIRED" },
 ];
 const originOptions = [
   { label: "Источник: любой", value: "ALL" },

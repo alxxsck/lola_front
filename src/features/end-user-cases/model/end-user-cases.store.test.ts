@@ -59,7 +59,6 @@ describe("End User Cases store", () => {
       case: item,
       messages: { items: [], nextCursor: null },
       timeline: { events: [], revisions: [] },
-      proposals: { items: [] },
       escalations: { items: [] },
     });
     realtime.activateProject.mockResolvedValue(undefined);
@@ -126,7 +125,6 @@ describe("End User Cases store", () => {
       case: { ...item, version: 2, status: "IN_PROGRESS" },
       messages: { items: [], nextCursor: null },
       timeline: { events: [], revisions: [] },
-      proposals: { items: [] },
       escalations: { items: [] },
     });
     expect(await store.transition("IN_PROGRESS", "Взяли в работу")).toBe(true);
@@ -190,7 +188,6 @@ describe("End User Cases store", () => {
       case: { ...item, version: 4, status: "WAITING_ADMIN" },
       messages: { items: [], nextCursor: null },
       timeline: { events: [], revisions: [] },
-      proposals: { items: [] },
       escalations: { items: [escalation] },
     });
     let releaseClaim!: () => void;
@@ -243,7 +240,6 @@ describe("End User Cases store", () => {
       case: { ...item, version: 4, status: "IN_PROGRESS" },
       messages: { items: [], nextCursor: null },
       timeline: { events: [], revisions: [] },
-      proposals: { items: [] },
       escalations: { items: [escalation] },
     });
     repository.releaseEscalation.mockResolvedValue({});
@@ -314,30 +310,6 @@ describe("End User Cases store", () => {
     );
   });
 
-  it("keeps Proposal reads disabled across mutation, realtime, and reconciliation", async () => {
-    repository.workflow.mockResolvedValue({});
-    const store = useEndUserCasesStore();
-    await store.activateProject("project-1");
-    await store.open("case-1", false);
-    expect(repository.detail).toHaveBeenLastCalledWith("project-1", "case-1", {
-      includeProposals: false,
-    });
-
-    await store.transition("IN_PROGRESS", "Take ownership");
-    await store.applyRealtimeEvent({
-      type: "end_user_case.updated",
-      contractVersion: 1,
-      eventId: "event-private-refresh",
-      projectSequence: "2",
-      data: { case: { ...item, version: 2, projectSequence: "2" } },
-    } as never);
-    await store.reconcile();
-
-    for (const call of repository.detail.mock.calls.slice(1)) {
-      expect(call[2]).toEqual({ includeProposals: false });
-    }
-  });
-
   it("submits merge with every source version and reconciles the survivor", async () => {
     const store = useEndUserCasesStore();
     await store.activateProject("project-1");
@@ -368,7 +340,6 @@ describe("End User Cases store", () => {
         nextCursor: "cursor-2",
       },
       timeline: { events: [], revisions: [] },
-      proposals: { items: [] },
       escalations: { items: [] },
     });
     repository.messages.mockResolvedValue({
@@ -494,7 +465,6 @@ describe("End User Cases store", () => {
         case: { ...item, id },
         messages: { items: [], nextCursor: null },
         timeline: { events: [], revisions: [] },
-        proposals: { items: [] },
         escalations: { items: [] },
       }),
     );
@@ -542,46 +512,6 @@ describe("End User Cases store", () => {
     expect(store.projectId).toBeNull();
     expect(store.items).toEqual([]);
     expect(unsubscribe).toHaveBeenCalledTimes(3);
-  });
-
-  it("scrubs proposal cache, fences stale detail and refetches on access restore", async () => {
-    const proposalDetail = {
-      case: item,
-      messages: { items: [], nextCursor: null },
-      timeline: { events: [], revisions: [] },
-      proposals: { items: [{ id: "proposal-stale", title: "Stale" }] },
-      escalations: { items: [] },
-    };
-    const store = useEndUserCasesStore();
-    await store.activateProject("project-1");
-    repository.detail.mockResolvedValueOnce(proposalDetail);
-    await store.open("case-1", true);
-    expect(store.selected?.proposals.items).toHaveLength(1);
-
-    let resolveStale!: (value: typeof proposalDetail) => void;
-    repository.detail.mockImplementationOnce(
-      () =>
-        new Promise<typeof proposalDetail>((resolve) => {
-          resolveStale = resolve;
-        }),
-    );
-    const staleRequest = store.open("case-1", true);
-    await store.setProposalAccess(false);
-    expect(store.selected?.proposals.items).toEqual([]);
-    resolveStale(proposalDetail);
-    await staleRequest;
-    expect(store.selected?.proposals.items).toEqual([]);
-
-    repository.detail.mockResolvedValueOnce({
-      ...proposalDetail,
-      proposals: { items: [{ id: "proposal-fresh", title: "Fresh" }] },
-    });
-    await store.setProposalAccess(true);
-
-    expect(repository.detail).toHaveBeenLastCalledWith("project-1", "case-1", {
-      includeProposals: true,
-    });
-    expect(store.selected?.proposals.items[0]?.id).toBe("proposal-fresh");
   });
 
   it("reconciles realtime gaps and ignores stale summary regressions", async () => {

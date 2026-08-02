@@ -16,7 +16,6 @@ import {
   endUserCasesListEscalations,
   endUserCasesMessages,
   endUserCasesMerge,
-  endUserCasesProposals,
   endUserCasesReleaseEscalation,
   endUserCasesRequestEscalation,
   endUserCasesSummary,
@@ -59,7 +58,6 @@ import {
   type EndUserCase,
   type EndUserCaseFilters,
   type EndUserCaseMessages,
-  type EndUserCaseProposals,
   type EndUserCaseSummary,
   type EndUserCaseTimeline,
 } from "../model/end-user-case";
@@ -70,7 +68,6 @@ export interface EndUserCaseDetailBundle {
   case: EndUserCase;
   messages: EndUserCaseMessages;
   timeline: EndUserCaseTimeline;
-  proposals: EndUserCaseProposals;
   escalations: EndUserCaseEscalationsResponseDto;
 }
 
@@ -87,11 +84,7 @@ export interface EndUserCasesRepository {
     caseId: string,
     cursor?: string,
   ): Promise<EndUserCaseMessages>;
-  detail(
-    projectId: string,
-    caseId: string,
-    options?: { includeProposals?: boolean },
-  ): Promise<EndUserCaseDetailBundle>;
+  detail(projectId: string, caseId: string): Promise<EndUserCaseDetailBundle>;
   workflow(
     projectId: string,
     caseId: string,
@@ -193,18 +186,14 @@ const apiEndUserCasesRepository: EndUserCasesRepository = {
   },
   summary: endUserCasesSummary,
   assignees: endUserCasesAssignees,
-  async detail(projectId, caseId, options) {
-    const [item, messages, timeline, proposals, escalations] =
-      await Promise.all([
-        endUserCasesDetail(projectId, caseId),
-        endUserCasesMessages(projectId, caseId, { limit: 100 }),
-        endUserCasesTimeline(projectId, caseId),
-        options?.includeProposals === false
-          ? Promise.resolve({ items: [] })
-          : endUserCasesProposals(projectId, caseId),
-        endUserCasesListEscalations(projectId, caseId),
-      ]);
-    return { case: item, messages, timeline, proposals, escalations };
+  async detail(projectId, caseId) {
+    const [item, messages, timeline, escalations] = await Promise.all([
+      endUserCasesDetail(projectId, caseId),
+      endUserCasesMessages(projectId, caseId, { limit: 100 }),
+      endUserCasesTimeline(projectId, caseId),
+      endUserCasesListEscalations(projectId, caseId),
+    ]);
+    return { case: item, messages, timeline, escalations };
   },
   messages(projectId, caseId, cursor) {
     return endUserCasesMessages(projectId, caseId, {

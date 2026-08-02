@@ -59,13 +59,10 @@ describe("AICommandComposer", () => {
   it("submits trimmed text and executes the durable request", async () => {
     repository.submit.mockResolvedValue({ requestId: "request-1" });
     repository.execute.mockResolvedValue({
-      interpretation: { outcome: "PLANNED" },
-      result: {
-        domainId: "analysis-1",
-        domainKind: "AI_ANALYSIS",
-        relation: "CREATED",
-        result: { runId: "run-1", status: "QUEUED" },
-      },
+      kind: "ANALYSIS_QUEUED",
+      analysisId: "analysis-1",
+      runId: "run-1",
+      status: "QUEUED",
     });
     const wrapper = mountComposer();
 
@@ -103,9 +100,9 @@ describe("AICommandComposer", () => {
     await wrapper.get("form").trigger("submit");
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="ai-command-composer"]').classes()).toContain(
-      "is-busy",
-    );
+    expect(
+      wrapper.get('[data-testid="ai-command-composer"]').classes(),
+    ).toContain("is-busy");
     expect(wrapper.get("form").attributes("aria-busy")).toBe("true");
     expect(wrapper.text()).toContain("Сохраняем запрос");
 
@@ -115,11 +112,8 @@ describe("AICommandComposer", () => {
   it("presents a clarification without inventing an analysis result", async () => {
     repository.submit.mockResolvedValue({ requestId: "request-2" });
     repository.execute.mockResolvedValue({
-      interpretation: {
-        outcome: "CLARIFICATION_REQUIRED",
-        code: "AMBIGUOUS_EVENT",
-      },
-      result: null,
+      kind: "CLARIFICATION_REQUIRED",
+      code: "AMBIGUOUS_EVENT",
     });
     const wrapper = mountComposer();
 
@@ -138,13 +132,10 @@ describe("AICommandComposer", () => {
     await wrapper.get("textarea").setValue("Депозиты за вчера");
     repository.submit.mockResolvedValue({ requestId: "request-clarified" });
     repository.execute.mockResolvedValue({
-      interpretation: { outcome: "PLANNED" },
-      result: {
-        domainId: "analysis-clarified",
-        domainKind: "AI_ANALYSIS",
-        relation: "CREATED",
-        result: { runId: "run-clarified", status: "QUEUED" },
-      },
+      kind: "ANALYSIS_QUEUED",
+      analysisId: "analysis-clarified",
+      runId: "run-clarified",
+      status: "QUEUED",
     });
     await wrapper.get("form").trigger("submit");
     await flushPromises();
@@ -164,13 +155,10 @@ describe("AICommandComposer", () => {
     repository.execute
       .mockRejectedValueOnce(new Error("Временный сбой"))
       .mockResolvedValue({
-        interpretation: { outcome: "PLANNED" },
-        result: {
-          domainId: "analysis-3",
-          domainKind: "AI_ANALYSIS",
-          relation: "CREATED",
-          result: { runId: "run-3", status: "QUEUED" },
-        },
+        kind: "ANALYSIS_QUEUED",
+        analysisId: "analysis-3",
+        runId: "run-3",
+        status: "QUEUED",
       });
     const wrapper = mountComposer();
 
@@ -192,13 +180,10 @@ describe("AICommandComposer", () => {
       .mockRejectedValueOnce(new Error("Сетевой таймаут"))
       .mockResolvedValue({ requestId: "request-after-timeout" });
     repository.execute.mockResolvedValue({
-      interpretation: { outcome: "PLANNED" },
-      result: {
-        domainId: "analysis-after-timeout",
-        domainKind: "AI_ANALYSIS",
-        relation: "CREATED",
-        result: { runId: "run-after-timeout", status: "QUEUED" },
-      },
+      kind: "ANALYSIS_QUEUED",
+      analysisId: "analysis-after-timeout",
+      runId: "run-after-timeout",
+      status: "QUEUED",
     });
     const wrapper = mountComposer();
 
@@ -233,13 +218,10 @@ describe("AICommandComposer", () => {
     });
     repository.submit.mockResolvedValue({ requestId: "expensive-request" });
     repository.execute.mockResolvedValue({
-      interpretation: { outcome: "PLANNED" },
-      result: {
-        domainId: "expensive-analysis",
-        domainKind: "AI_ANALYSIS",
-        relation: "CREATED",
-        result: { runId: "expensive-run", status: "QUEUED" },
-      },
+      kind: "ANALYSIS_QUEUED",
+      analysisId: "expensive-analysis",
+      runId: "expensive-run",
+      status: "QUEUED",
     });
     const wrapper = mountComposer();
 

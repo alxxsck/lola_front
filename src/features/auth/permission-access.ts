@@ -58,8 +58,6 @@ export const PROJECT_PERMISSION_CODES = [
   "project.ai_allowance.manage",
   "project.ai_allowance.grant",
   "project.ai_allowance.reconcile",
-  "project.ai_proposals.read",
-  "project.ai_proposals.decide",
   "project.cases.read",
   "project.cases.manage",
   "project.cases.assign",

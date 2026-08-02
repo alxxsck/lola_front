@@ -11,6 +11,5 @@ export type CreateSlackNotificationDestinationDtoTopic =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CreateSlackNotificationDestinationDtoTopic = {
-  AI_PROPOSALS: "AI_PROPOSALS",
   CASE_ESCALATION: "CASE_ESCALATION",
 } as const;

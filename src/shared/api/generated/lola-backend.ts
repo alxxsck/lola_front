@@ -6,12 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
-  AIProposalDetailResponseDto,
-  AIProposalReadResponseDto,
-  AIProposalReceivedResponseDto,
-  AIProposalSummaryResponseDto,
-  AIProposalsListParams,
-  AIProposalsPageResponseDto,
   AIReviewEstimateResponseDto,
   AIReviewRunResponseDto,
   AIReviewScopeDto,
@@ -166,11 +160,9 @@ import type {
   CreateTelegramBroadcastDto,
   CreateTranslationJobDto,
   CreateUiElementDto,
-  DecideAIProposalDto,
   DeleteKnowledgeDocumentResponseDto,
   DisableTelegramChannelDto,
   EditReplyTranslationDraftDto,
-  EmailAIProposalPreferenceResponseDto,
   EmailCaseEscalationPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
   EndUserAiUsageReportParams,
@@ -184,7 +176,6 @@ import type {
   EndUserCasePolicyPreviewResponseDto,
   EndUserCasePolicyResponseDto,
   EndUserCasePolicyRevisionResponseDto,
-  EndUserCaseProposalsResponseDto,
   EndUserCaseResponseDto,
   EndUserCaseSummaryResponseDto,
   EndUserCaseTimelineResponseDto,
@@ -436,7 +427,6 @@ import type {
   UpdateAiModelSettingsDto,
   UpdateCmsUserProfileDto,
   UpdateConversationTranslationPreferenceDto,
-  UpdateEmailAIProposalPreferenceDto,
   UpdateEmailCaseEscalationPreferenceDto,
   UpdateEndUserCaseWorkflowDto,
   UpdateEventDefinitionMetadataDto,
@@ -1490,93 +1480,6 @@ export const aiOperationsSummary = (
   );
 };
 
-export const aIProposalEventsReceived = (
-  projectId: string,
-  eventId: string,
-  options?: SecondParameter<typeof request<AIProposalReceivedResponseDto>>,
-) => {
-  return request<AIProposalReceivedResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposal-events/${eventId}/received`,
-      method: "POST",
-    },
-    options,
-  );
-};
-
-export const aIProposalsList = (
-  projectId: string,
-  params?: AIProposalsListParams,
-  options?: SecondParameter<typeof request<AIProposalsPageResponseDto>>,
-) => {
-  return request<AIProposalsPageResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
-export const aIProposalsDetail = (
-  projectId: string,
-  proposalId: string,
-  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
-) => {
-  return request<AIProposalDetailResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const aIProposalsDecide = (
-  projectId: string,
-  proposalId: string,
-  decideAIProposalDto: BodyType<DecideAIProposalDto>,
-  options?: SecondParameter<typeof request<AIProposalDetailResponseDto>>,
-) => {
-  return request<AIProposalDetailResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/decisions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: decideAIProposalDto,
-    },
-    options,
-  );
-};
-
-export const aIProposalsMarkRead = (
-  projectId: string,
-  proposalId: string,
-  options?: SecondParameter<typeof request<AIProposalReadResponseDto>>,
-) => {
-  return request<AIProposalReadResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/${proposalId}/read`,
-      method: "POST",
-    },
-    options,
-  );
-};
-
-export const aIProposalsSummary = (
-  projectId: string,
-  options?: SecondParameter<typeof request<AIProposalSummaryResponseDto>>,
-) => {
-  return request<AIProposalSummaryResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-proposals/summary`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
 export const aIReviewEstimate = (
   projectId: string,
   aIReviewScopeDto: BodyType<AIReviewScopeDto>,
@@ -2170,20 +2073,6 @@ export const endUserCasesMessages = (
       url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/messages`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const endUserCasesProposals = (
-  projectId: string,
-  caseId: string,
-  options?: SecondParameter<typeof request<EndUserCaseProposalsResponseDto>>,
-) => {
-  return request<EndUserCaseProposalsResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/proposals`,
-      method: "GET",
     },
     options,
   );
@@ -5609,43 +5498,6 @@ export const iamMfaManagementRotateRecoveryCodes = (
 };
 
 /**
- * @summary Read effective AI Proposal email subscription for current CMS User
- */
-export const notificationPreferencesGetEmailAIProposals = (
-  options?: SecondParameter<
-    typeof request<EmailAIProposalPreferenceResponseDto>
-  >,
-) => {
-  return request<EmailAIProposalPreferenceResponseDto>(
-    {
-      url: `/api/v1/auth/me/notification-preferences/ai-proposals/email`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-/**
- * @summary Explicitly subscribe or unsubscribe current verified email
- */
-export const notificationPreferencesSetEmailAIProposals = (
-  updateEmailAIProposalPreferenceDto: BodyType<UpdateEmailAIProposalPreferenceDto>,
-  options?: SecondParameter<
-    typeof request<EmailAIProposalPreferenceResponseDto>
-  >,
-) => {
-  return request<EmailAIProposalPreferenceResponseDto>(
-    {
-      url: `/api/v1/auth/me/notification-preferences/ai-proposals/email`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: updateEmailAIProposalPreferenceDto,
-    },
-    options,
-  );
-};
-
-/**
  * @summary Read effective Case escalation email subscription
  */
 export const notificationPreferencesGetEmailCaseEscalations = (
@@ -6702,24 +6554,6 @@ export type AiOperationsSubjectsResult = NonNullable<
 export type AiOperationsSummaryResult = NonNullable<
   Awaited<ReturnType<typeof aiOperationsSummary>>
 >;
-export type AIProposalEventsReceivedResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalEventsReceived>>
->;
-export type AIProposalsListResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsList>>
->;
-export type AIProposalsDetailResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsDetail>>
->;
-export type AIProposalsDecideResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsDecide>>
->;
-export type AIProposalsMarkReadResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsMarkRead>>
->;
-export type AIProposalsSummaryResult = NonNullable<
-  Awaited<ReturnType<typeof aIProposalsSummary>>
->;
 export type AIReviewEstimateResult = NonNullable<
   Awaited<ReturnType<typeof aIReviewEstimate>>
 >;
@@ -6827,9 +6661,6 @@ export type EndUserCasesUnlinkMessageResult = NonNullable<
 >;
 export type EndUserCasesMessagesResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesMessages>>
->;
-export type EndUserCasesProposalsResult = NonNullable<
-  Awaited<ReturnType<typeof endUserCasesProposals>>
 >;
 export type EndUserCasesSplitResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesSplit>>
@@ -7466,12 +7297,6 @@ export type IamMfaManagementBeginPasskeyEnrollmentResult = NonNullable<
 >;
 export type IamMfaManagementRotateRecoveryCodesResult = NonNullable<
   Awaited<ReturnType<typeof iamMfaManagementRotateRecoveryCodes>>
->;
-export type NotificationPreferencesGetEmailAIProposalsResult = NonNullable<
-  Awaited<ReturnType<typeof notificationPreferencesGetEmailAIProposals>>
->;
-export type NotificationPreferencesSetEmailAIProposalsResult = NonNullable<
-  Awaited<ReturnType<typeof notificationPreferencesSetEmailAIProposals>>
 >;
 export type NotificationPreferencesGetEmailCaseEscalationsResult = NonNullable<
   Awaited<ReturnType<typeof notificationPreferencesGetEmailCaseEscalations>>

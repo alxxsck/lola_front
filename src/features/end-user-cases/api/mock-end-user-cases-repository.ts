@@ -69,7 +69,6 @@ const primaryCase: EndUserCase = {
   endUser: { id: "usr_1", externalId: "player-0042" },
   assignee: null,
   messageCount: 3,
-  proposalCount: 1,
   firstObservedAt: "2026-07-26T09:00:00.000Z",
   lastActivityAt: now,
   lastEndUserRecontactAt: "2026-07-26T09:45:00.000Z",
@@ -136,7 +135,6 @@ const mockSeed: EndUserCase[] = [
     toneTrend: "WORSENING",
     channels: ["TEXT"],
     endUser: { id: "usr_2", externalId: "player-0198" },
-    proposalCount: 0,
     messageCount: 6,
     endUserRecontactCount: 0,
     lastActivityAt: "2026-07-26T09:20:00.000Z",
@@ -165,7 +163,6 @@ const mockSeed: EndUserCase[] = [
     toneTrend: "IMPROVING",
     channels: ["TEXT"],
     endUser: { id: "usr_3", externalId: "player-0281" },
-    proposalCount: 0,
     messageCount: 5,
     endUserRecontactCount: 1,
     resolvedAt: "2026-07-26T08:30:00.000Z",
@@ -175,6 +172,27 @@ const mockSeed: EndUserCase[] = [
 
 let mockCases = structuredClone(mockSeed);
 const mockEscalations = [structuredClone(requestedEscalation)];
+type MockTimelineEvent = {
+  id: string;
+  caseId: string;
+  type: "ADMIN_ATTENTION_REQUESTED" | "ADMIN_ATTENTION_CLAIMED";
+  caseVersion: number;
+  projectSequence: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+};
+const mockTimelineSeed: MockTimelineEvent[] = [
+  {
+    id: "event-demo-game-requested",
+    caseId: "case-demo-game",
+    type: "ADMIN_ATTENTION_REQUESTED",
+    caseVersion: 1,
+    projectSequence: "47",
+    payload: {},
+    createdAt: requestedEscalation.requestedAt,
+  },
+];
+let mockTimelineEvents = structuredClone(mockTimelineSeed);
 
 const messages = {
   items: [
@@ -360,42 +378,28 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
   async messages() {
     return structuredClone(messages);
   },
-  async detail(_projectId, caseId, options) {
+  async detail(_projectId, caseId) {
     return {
       case: structuredClone(caseById(caseId)),
       messages: structuredClone(messages),
       timeline: {
-        events: [
-          {
-            id: "event-demo-1",
-            type: "ADMIN_ATTENTION_REQUESTED",
-            caseVersion: 2,
-            projectSequence: "48",
-            payload: {},
-            createdAt: "2026-07-26T09:05:00.000Z",
-          },
-        ],
+        events: structuredClone(
+          mockTimelineEvents
+            .filter((event) => event.caseId === caseId)
+            .map(
+              ({ id, type, caseVersion, projectSequence, payload, createdAt }) =>
+                ({
+                  id,
+                  type,
+                  caseVersion,
+                  projectSequence,
+                  payload,
+                  createdAt,
+                }),
+            ),
+        ),
         revisions: [],
       },
-      proposals:
-        options?.includeProposals === false || caseId !== primaryCase.id
-          ? { items: [] }
-          : {
-              items: [
-                {
-                  id: "proposal-demo-1",
-                  kind: "INSIGHT",
-                  workflowStatus: "OPEN",
-                  priority: "HIGH",
-                  title: "Проверить задержки провайдера",
-                  summary:
-                    "Lola заметила повторяющиеся задержки обработки депозитов.",
-                  version: 1,
-                  createdAt: "2026-07-26T09:05:00.000Z",
-                  updatedAt: "2026-07-26T09:05:00.000Z",
-                },
-              ],
-            },
       escalations: {
         items: structuredClone(
           mockEscalations.filter((item) => item.caseId === caseId),
@@ -534,6 +538,15 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
       },
       command.expectedCaseVersion,
     );
+    mockTimelineEvents.push({
+      id: `event-${escalation.id}-requested`,
+      caseId,
+      type: "ADMIN_ATTENTION_REQUESTED",
+      caseVersion: value.version,
+      projectSequence: value.projectSequence,
+      payload: { escalationId: escalation.id },
+      createdAt: requestedAt,
+    });
     return {
       escalation: structuredClone(escalation),
       caseVersion: value.version,
@@ -569,6 +582,18 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
       },
       command.expectedCaseVersion,
     );
+    mockTimelineEvents.push({
+      id: `event-${escalation.id}-claimed`,
+      caseId,
+      type: "ADMIN_ATTENTION_CLAIMED",
+      caseVersion: value.version,
+      projectSequence: value.projectSequence,
+      payload: {
+        escalationId: escalation.id,
+        claimantCmsUserId: escalation.claimant?.id,
+      },
+      createdAt: claimedAt,
+    });
     return { escalation, caseVersion: value.version, replayed: false };
   },
   async releaseEscalation(_projectId, caseId, escalationId, command) {
@@ -733,6 +758,7 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
 
 export function resetMockEndUserCases(): void {
   mockCases = structuredClone(mockSeed);
+  mockTimelineEvents = structuredClone(mockTimelineSeed);
   mockEscalations.splice(
     0,
     mockEscalations.length,

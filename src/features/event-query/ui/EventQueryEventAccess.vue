@@ -15,6 +15,7 @@ import {
   eventQueryPolicyItemFromConfiguration,
   eventQueryPolicyItemApply,
   flattenSchemaFields,
+  mergeRecommendedSafeFields,
 } from "../model/event-query-policy";
 import EventQueryEventEditor from "./EventQueryEventEditor.vue";
 
@@ -33,6 +34,7 @@ const loading = ref(true);
 const applying = ref(false);
 const error = ref("");
 const success = ref("");
+const recommendationNotice = ref("");
 let generation = 0;
 
 const archived = computed(
@@ -63,6 +65,13 @@ const canApply = computed(
     dirty.value &&
     !applying.value,
 );
+const recommendedSafeFields = computed(() => {
+  if (!state.value || !item.value) return [];
+  const existing = new Set(item.value.safeFields.map((field) => field.path));
+  return (state.value.safeFieldRecommendation?.fields ?? []).filter(
+    (field) => !existing.has(field.path),
+  );
+});
 
 function isCurrent(
   requestGeneration: number,
@@ -113,6 +122,7 @@ async function load() {
   loading.value = true;
   error.value = "";
   success.value = "";
+  recommendationNotice.value = "";
   try {
     const next = await eventQueryRepository.getItem(projectId, definitionKeyId);
     if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
@@ -128,6 +138,16 @@ async function load() {
       loading.value = false;
     }
   }
+}
+
+function prepareRecommendedSafeFields() {
+  if (!item.value || recommendedSafeFields.value.length === 0) return;
+  item.value = mergeRecommendedSafeFields(
+    item.value,
+    recommendedSafeFields.value,
+  );
+  recommendationNotice.value =
+    "Типизированные поля добавлены в форму. Проверьте их и нажмите «Применить настройки».";
 }
 
 async function apply() {
@@ -161,6 +181,7 @@ async function apply() {
     );
     if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
     applyState(next);
+    recommendationNotice.value = "";
     success.value = "Настройки доступа AI применены.";
   } catch (cause) {
     if (!isCurrent(requestGeneration, projectId, definitionKeyId)) return;
@@ -215,6 +236,9 @@ watch(
       <Message v-if="success" severity="success" :closable="false">{{
         success
       }}</Message>
+      <Message v-if="recommendationNotice" severity="info" :closable="false">
+        {{ recommendationNotice }}
+      </Message>
 
       <div
         class="effective-state"
@@ -293,6 +317,26 @@ watch(
             безопасные поля payload.
           </p>
         </header>
+        <Message
+          v-if="recommendedSafeFields.length"
+          severity="info"
+          :closable="false"
+        >
+          <div class="recommendation-message">
+            <span>
+              Lola сейчас видит только факт события. Сервер нашёл безопасные
+              типизированные поля для агрегатов:
+              {{ recommendedSafeFields.map((field) => field.path).join(", ") }}.
+            </span>
+            <Button
+              data-test="prepare-recommended-safe-fields"
+              label="Подготовить поля"
+              size="small"
+              :disabled="!canManage || archived || applying"
+              @click="prepareRecommendedSafeFields"
+            />
+          </div>
+        </Message>
         <EventQueryEventEditor
           v-model="item"
           :schema-fields="schemaFields"
@@ -391,6 +435,12 @@ watch(
   margin: 4px 0 0;
   color: var(--text-secondary);
   font-size: 0.74rem;
+}
+.recommendation-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .access-actions {
   display: flex;

@@ -1,6 +1,5 @@
 import type {
   EndUserCaseMessagesResponseDto,
-  EndUserCaseProposalsResponseDto,
   EndUserCaseResponseDto,
   EndUserCasesListParams,
   EndUserCaseSummaryResponseDto,
@@ -11,7 +10,6 @@ export type EndUserCase = EndUserCaseResponseDto;
 export type EndUserCaseSummary = EndUserCaseSummaryResponseDto;
 export type EndUserCaseMessages = EndUserCaseMessagesResponseDto;
 export type EndUserCaseTimeline = EndUserCaseTimelineResponseDto;
-export type EndUserCaseProposals = EndUserCaseProposalsResponseDto;
 export type EndUserCaseStatus = EndUserCase["status"];
 export type EndUserCasePriority = EndUserCase["priority"];
 export type EndUserCaseImpact = EndUserCase["impact"];

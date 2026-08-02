@@ -31,10 +31,14 @@ describe("cmsAgentRepository", () => {
     generated.execute.mockResolvedValue({
       interpretation: { outcome: "PLANNED" },
       result: {
-        domainId: "analysis-1",
+        domainId: "613fabf4-d8b4-4835-b4fb-28f2d7aab6e1",
         domainKind: "AI_ANALYSIS",
-        relation: "CREATED",
-        result: { runId: "run-1", status: "QUEUED" },
+        relation: "EXECUTED",
+        result: {
+          analysisId: "613fabf4-d8b4-4835-b4fb-28f2d7aab6e1",
+          runId: "ce1446d5-28af-4f18-a6a9-5cb1d42bd71e",
+          status: "QUEUED",
+        },
       },
     });
 
@@ -53,8 +57,8 @@ describe("cmsAgentRepository", () => {
     await expect(
       cmsAgentRepository.execute("project-1", "request-1"),
     ).resolves.toMatchObject({
-      interpretation: { outcome: "PLANNED" },
-      result: { domainId: "analysis-1", domainKind: "AI_ANALYSIS" },
+      kind: "ANALYSIS_QUEUED",
+      analysisId: "613fabf4-d8b4-4835-b4fb-28f2d7aab6e1",
     });
 
     expect(generated.estimate).toHaveBeenCalledWith("project-1", {
@@ -66,5 +70,20 @@ describe("cmsAgentRepository", () => {
       text: "Сколько депозитов было вчера?",
     });
     expect(generated.execute).toHaveBeenCalledWith("project-1", "request-1");
+  });
+
+  it("rejects the deprecated analysis alias without a canonical domain result", async () => {
+    generated.execute.mockResolvedValue({
+      interpretation: { outcome: "PLANNED" },
+      analysis: {
+        analysisId: "legacy-analysis",
+        runId: "legacy-run",
+        status: "QUEUED",
+      },
+    });
+
+    await expect(
+      cmsAgentRepository.execute("project-1", "request-legacy"),
+    ).resolves.toEqual({ kind: "PROTOCOL_ERROR" });
   });
 });

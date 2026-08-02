@@ -111,13 +111,45 @@ test("case detail keeps specialist escalation inside the case", async ({
   await expect(
     page.getByRole("button", { name: "Позвать специалиста" }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: /Предложения Lola/ }).click();
-  await expect(page.getByText("Проверка депозита")).toBeVisible();
+  const caseUrl = page.url();
+
+  await page.getByRole("button", { name: "Позвать специалиста" }).click();
+  const requestDialog = page.getByRole("dialog", {
+    name: "Позвать специалиста",
+  });
+  await expect(requestDialog).toBeVisible();
+  await requestDialog
+    .getByRole("button", { name: "Отправить запрос" })
+    .click();
+
+  await expect(page.getByText("Ожидает специалиста")).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /Подключиться к обращению/ }),
-  ).toHaveCount(0);
+    page.getByRole("button", { name: "Взять в работу" }),
+  ).toBeVisible();
+  expect(page.url()).toBe(caseUrl);
+
+  await page.getByRole("button", { name: "Взять в работу" }).click();
+  const claimDialog = page.getByRole("dialog", {
+    name: "Взять обращение в работу",
+  });
+  await expect(claimDialog).toBeVisible();
+  await claimDialog
+    .getByLabel("Основание")
+    .fill("Проверяю депозит и связываюсь с пользователем");
+  await claimDialog.getByRole("button", { name: "Взять в работу" }).click();
+
+  await expect(page.getByText("В работе у специалиста")).toBeVisible();
+  await expect(
+    page
+      .getByLabel("В работе у специалиста")
+      .getByText("Алексей Владелец"),
+  ).toBeVisible();
+  expect(page.url()).toBe(caseUrl);
   await page.getByRole("tab", { name: /История/ }).click();
   await expect(page.getByText("Запрошена помощь администратора")).toBeVisible();
+  await expect(
+    page.getByText("Специалист взял обращение в работу"),
+  ).toBeVisible();
 });
 
 test("workflow change is persisted in demo mode and reloaded", async ({

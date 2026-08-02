@@ -54,7 +54,7 @@ async function installFixtures(page: Page) {
       return json(route, { passkeys: [], recoveryCodesRemaining: 0 });
     }
     if (
-      path === "/api/v1/auth/me/notification-preferences/ai-proposals/email"
+      path === "/api/v1/auth/me/notification-preferences/case-escalations/email"
     ) {
       if (request.method() === "PATCH") {
         subscribed = Boolean(
@@ -63,7 +63,7 @@ async function installFixtures(page: Page) {
         mutations.push(subscribed);
       }
       return json(route, {
-        topic: "AI_PROPOSALS",
+        topic: "CASE_ESCALATION",
         channel: "EMAIL",
         subscribed,
         effectiveStatus: subscribed ? "SUBSCRIBED" : "UNSUBSCRIBED",
@@ -92,7 +92,7 @@ test("verified CMS User explicitly subscribes and the choice survives reload", a
 
   await page.goto("/settings/security");
   await expect(
-    page.getByRole("heading", { name: "Пароль и активные сессии" }),
+    page.getByRole("heading", { name: "Безопасность аккаунта", level: 1 }),
   ).toBeVisible();
   await expect(page.getByText("Подписка выключена")).toBeVisible();
   await page.getByRole("button", { name: "Подписаться" }).click();

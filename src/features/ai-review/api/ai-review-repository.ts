@@ -89,6 +89,7 @@ const mockRepository: AIReviewRepository = {
   async start(_projectId, input) {
     const run: AIReviewRun = {
       id: input.idempotencyKey,
+      analysisId: `analysis-${input.idempotencyKey}`,
       status: "SUCCEEDED",
       costLevel: "LOW",
       eventCount: input.eventCodes.length * 3,
@@ -96,7 +97,6 @@ const mockRepository: AIReviewRepository = {
       estimatedInputTokens: input.eventCodes.length * 900,
       policyRevisionId: "60000000-0000-4000-8000-000000000006",
       limitations: [],
-      proposalId: "30000000-0000-4000-8000-000000000003",
       createdAt: new Date().toISOString(),
       completedAt: new Date().toISOString(),
     };

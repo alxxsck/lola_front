@@ -82,7 +82,7 @@ async function installFixtures(page: Page) {
       destination = {
         id: destinationId,
         projectId,
-        topic: "AI_PROPOSALS",
+        topic: "CASE_ESCALATION",
         channel: "SLACK_WEBHOOK",
         displayName: input.displayName,
         status: "PENDING_TEST",
@@ -157,15 +157,18 @@ test("Project admin creates, tests and activates a write-only Slack destination"
   await expect(
     page.getByRole("heading", { name: "Интеграции", level: 1 }),
   ).toBeVisible();
-  await page.getByLabel("Название подключения").fill("Команда поддержки");
-  await page.getByLabel("Incoming Webhook URL", { exact: true }).fill(secret);
+  const createSlackForm = page.locator('[data-form="create-slack"]');
+  await createSlackForm
+    .getByLabel("Название подключения")
+    .fill("Команда поддержки");
+  await createSlackForm.getByLabel("Webhook URL", { exact: true }).fill(secret);
   await page.getByRole("button", { name: "Сохранить и проверить" }).click();
 
   await expect(page.getByText("Проверка Slack прошла успешно")).toBeVisible();
   await expect(page.getByText("a1b2c3d4e5f60708")).toBeVisible();
   await expect(page.locator("body")).not.toContainText(secret);
   await page.getByRole("button", { name: "Активировать" }).click();
-  await expect(page.getByText("Подключено")).toBeVisible();
+  await expect(page.getByText("Подключено", { exact: true })).toBeVisible();
   await expect(page.getByText("Slack-уведомления включены.")).toBeVisible();
 
   expect(fixture.idempotencyKeys).toHaveLength(2);
