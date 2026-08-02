@@ -9,6 +9,10 @@ import { aiAllowanceRepository } from "./ai-allowance-repository";
 
 const policyResponse = {
   projectPolicyVersion: "2",
+  localization: {
+    defaultLocale: "en",
+    supportedLocales: ["en", "es", "pt-BR"],
+  },
   policy: {
     projectId: "project-1",
     enforcementMode: "SOFT",
@@ -71,6 +75,37 @@ describe("aiAllowanceRepository", () => {
     expect(axiosInstance.get).toHaveBeenCalledWith(
       "/api/v1/admin/projects/project-1/ai-allowance",
     );
+  });
+
+  it("accepts and preserves arbitrary Project Locale allowance copy", async () => {
+    vi.mocked(axiosInstance.get).mockResolvedValue({
+      data: {
+        ...policyResponse,
+        policy: {
+          ...policyResponse.policy,
+          warningContent: {
+            message: "Fallback",
+            variants: { es: "Presupuesto bajo", "pt-BR": "Orçamento baixo" },
+          },
+          exhaustedContent: {
+            en: "Allowance exhausted",
+            es: "Presupuesto agotado",
+          },
+        },
+      },
+    });
+
+    const result = await aiAllowanceRepository.projectPolicy("project-1");
+
+    expect(result.localization).toEqual(policyResponse.localization);
+    expect(result.policy?.warningContent.variants).toEqual({
+      es: "Presupuesto bajo",
+      "pt-BR": "Orçamento baixo",
+    });
+    expect(result.policy?.exhaustedContent.variants).toEqual({
+      en: "Allowance exhausted",
+      es: "Presupuesto agotado",
+    });
   });
 
   it.each([
@@ -170,7 +205,7 @@ describe("aiAllowanceRepository", () => {
     expect(journal.pageInfo.nextCursor).toBe(journal.items[0]?.id);
   });
 
-  it("accepts Prisma include summaries for assignment.plan and period.planRevision", async () => {
+  it("accepts assignment plan summaries and the pinned period revision with category rules", async () => {
     const planSummary = {
       id: "11111111-1111-4111-8111-111111111111",
       projectId: "project-1",
@@ -197,7 +232,6 @@ describe("aiAllowanceRepository", () => {
       plan: planSummary,
     };
     const revisionSummary = { ...policyResponse.plans[0]!.revisions[0] };
-    delete (revisionSummary as { categoryRules?: unknown }).categoryRules;
     vi.mocked(axiosInstance.get).mockResolvedValue({
       data: {
         projectPolicyVersion: "2",
@@ -241,9 +275,58 @@ describe("aiAllowanceRepository", () => {
     );
 
     expect(result.endUserAssignment?.plan?.name).toBe("VIP");
-    expect(result.currentPeriod?.planRevision.recurringAmountUsd).toBe(
-      "5.000000000001",
+    const pinnedRevision = result.currentPeriod?.planRevision;
+    expect(pinnedRevision).not.toBeNull();
+    if (!pinnedRevision) throw new Error("Expected a pinned plan revision");
+    expect(pinnedRevision.recurringAmountUsd).toBe("5.000000000001");
+    expect(pinnedRevision.categoryRules).toEqual([]);
+  });
+
+  it("accepts a non-hard observation period without an assignment revision", async () => {
+    vi.mocked(axiosInstance.get).mockResolvedValue({
+      data: {
+        projectPolicyVersion: "2",
+        account: {
+          projectId: "project-1",
+          endUserId: "user-1",
+          currency: "USD",
+          availableUsd: "0.000000000000",
+          reservedUsd: "0.000000000000",
+          settledUsd: "0.100000000000",
+          unknownHeldUsd: "0.000000000000",
+          overageUsd: "0.100000000000",
+          version: "1",
+        },
+        currentPeriod: {
+          id: "77777777-7777-4777-8777-777777777777",
+          kind: "DAY",
+          timezone: "UTC",
+          startsAt: "2026-08-02T00:00:00.000Z",
+          endsAt: "2026-08-03T00:00:00.000Z",
+          baseAllocatedUsd: "0.000000000000",
+          status: "OPEN",
+          planRevision: null,
+        },
+        currentPeriodSpend: {
+          reservedUsd: "0.000000000000",
+          settledUsd: "0.100000000000",
+          unknownHeldUsd: "0.000000000000",
+          overageUsd: "0.100000000000",
+        },
+        pendingBaseAllocationUsd: "0.000000000000",
+        activeGrants: [],
+        grantsPageInfo: { hasMore: false, nextCursor: null },
+        endUserAssignment: null,
+      },
+    });
+
+    const result = await aiAllowanceRepository.endUserBalance(
+      "project-1",
+      "user-1",
     );
+
+    expect(result.currentPeriod?.planRevision).toBeNull();
+    expect(result.currentPeriodSpend?.overageUsd).toBe("0.100000000000");
   });
 
   it("sends exact mutation payloads with a stable Idempotency-Key", async () => {
@@ -284,6 +367,7 @@ describe("aiAllowanceRepository", () => {
       lowThresholdMode: "PERCENT" as const,
       lowThresholdValue: "10.000000000000" as const,
       showEndUserExactUsd: false,
+      categoryRules: [],
       reason: "Daily project allowance",
     };
     const assignment = {
@@ -552,6 +636,7 @@ describe("aiAllowanceRepository", () => {
           lowThresholdMode: "PERCENT",
           lowThresholdValue: "10.000000000000",
           showEndUserExactUsd: false,
+          categoryRules: [],
           reason: "Update daily allowance",
         },
         "default-key",
@@ -578,6 +663,7 @@ describe("aiAllowanceRepository", () => {
         lowThresholdMode: "PERCENT",
         lowThresholdValue: "10.000000000000",
         showEndUserExactUsd: false,
+        categoryRules: [],
         reason: "Replay daily allowance update",
       },
       "legacy-replay-key",
@@ -606,6 +692,7 @@ describe("aiAllowanceRepository", () => {
           lowThresholdMode: "PERCENT",
           lowThresholdValue: "10.000000000000",
           showEndUserExactUsd: false,
+          categoryRules: [],
           reason: "Reject malformed replay version",
         },
         "malformed-replay-key",

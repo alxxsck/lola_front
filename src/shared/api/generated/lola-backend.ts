@@ -21,6 +21,8 @@ import type {
   AdminEndUserProfilesHistoryParams,
   AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
+  AdminProjectConversationsListParams,
+  AdminProjectConversationsPageResponseDto,
   AiAllowanceAccrualAdminListReceiptsParams,
   AiAllowanceAccrualAdminListRulesParams,
   AiAllowanceAccrualAdminResponseDto,
@@ -4273,6 +4275,23 @@ export const platformOperationsUpdateProjectSettings = (
   );
 };
 
+export const adminProjectConversationsList = (
+  projectId: string,
+  params?: AdminProjectConversationsListParams,
+  options?: SecondParameter<
+    typeof request<AdminProjectConversationsPageResponseDto>
+  >,
+) => {
+  return request<AdminProjectConversationsPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/conversations`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const telegramBroadcastList = (
   projectId: string,
   params?: TelegramBroadcastListParams,
@@ -7066,6 +7085,9 @@ export type PlatformOperationsProjectSettingsResult = NonNullable<
 >;
 export type PlatformOperationsUpdateProjectSettingsResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsUpdateProjectSettings>>
+>;
+export type AdminProjectConversationsListResult = NonNullable<
+  Awaited<ReturnType<typeof adminProjectConversationsList>>
 >;
 export type TelegramBroadcastListResult = NonNullable<
   Awaited<ReturnType<typeof telegramBroadcastList>>

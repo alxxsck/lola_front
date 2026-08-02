@@ -18,6 +18,7 @@ import {
   AI_ALLOWANCE_CATEGORIES,
   parseAllowanceUsd,
   type AiAllowanceEnforcementMode,
+  type AiAllowanceLocalizedContent,
   type AiAllowanceLowThresholdMode,
   type AiAllowancePeriodKind,
   type AiAllowanceProjectPolicyView,
@@ -32,6 +33,8 @@ const props = defineProps<{
   canReadAccrual?: boolean;
   canManageAccrual?: boolean;
   canReadAccrualReceipts?: boolean;
+  defaultLocale?: string;
+  supportedLocales?: string[];
 }>();
 const policy = ref<AiAllowanceProjectPolicyView | null>(null);
 const loading = ref(false);
@@ -60,12 +63,12 @@ const cohortDialogOpen = ref(false);
 const planKey = ref("");
 const planName = ref("");
 const dailyCap = ref("");
-const warningRu = ref("");
-const warningEn = ref("");
+const warningVariants = ref<Record<string, string>>({});
 const warningMessage = ref("");
-const exhaustedRu = ref("");
-const exhaustedEn = ref("");
+const exhaustedVariants = ref<Record<string, string>>({});
 const exhaustedMessage = ref("");
+const clearWarningContent = ref(false);
+const clearExhaustedContent = ref(false);
 const cohortScope = ref<"SEGMENT" | "LEVEL">("SEGMENT");
 const cohortId = ref("");
 const cohortPlanId = ref("");
@@ -73,6 +76,27 @@ const cohortPriority = ref(100);
 const effectiveFrom = ref("");
 const effectiveUntil = ref("");
 const categories = AI_ALLOWANCE_CATEGORIES;
+const messageLocales = computed(() => {
+  const configured = (
+    policy.value?.localization.supportedLocales ??
+    props.supportedLocales ??
+    []
+  )
+    .map((locale) => locale.trim())
+    .filter(Boolean);
+  const defaultLocale =
+    policy.value?.localization.defaultLocale ?? props.defaultLocale;
+  const existing = [
+    ...localizedContentLocales(policy.value?.policy?.warningContent),
+    ...localizedContentLocales(policy.value?.policy?.exhaustedContent),
+  ];
+  const candidates = [
+    ...(defaultLocale ? [defaultLocale] : []),
+    ...configured,
+    ...existing,
+  ];
+  return [...new Set(candidates.length ? candidates : ["ru", "en"])];
+});
 const categoryRules = ref(
   categories.map((category) => ({
     category,
@@ -87,11 +111,14 @@ const categoryRules = ref(
 );
 let generation = 0;
 
-const latestDefaultRevision = computed(
+const latestDefaultPlan = computed(
   () =>
     policy.value?.plans.find(
       (plan) => plan.id === policy.value?.defaultAssignment?.planId,
-    )?.revisions[0] ?? null,
+    ) ?? null,
+);
+const latestDefaultRevision = computed(
+  () => latestDefaultPlan.value?.revisions[0] ?? null,
 );
 const canActivateHard = computed(
   () =>
@@ -148,11 +175,12 @@ async function load(): Promise<void> {
   error.value = "";
   try {
     const next = await aiAllowanceRepository.projectPolicy(requestProjectId);
+    const hydrated = await hydrateDefaultPlan(requestProjectId, next);
     if (
       requestGeneration === generation &&
       requestProjectId === props.projectId
     ) {
-      policy.value = next;
+      policy.value = hydrated;
       loadedProjectId.value = requestProjectId;
     }
   } catch (cause) {
@@ -161,6 +189,48 @@ async function load(): Promise<void> {
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
+}
+
+async function hydrateDefaultPlan(
+  projectId: string,
+  view: AiAllowanceProjectPolicyView,
+): Promise<AiAllowanceProjectPolicyView> {
+  const assignment = view.defaultAssignment;
+  if (!assignment || view.plans.some((plan) => plan.id === assignment.planId))
+    return view;
+  const page = await aiAllowanceRepository.planRevisions(projectId, "DEFAULT", {
+    limit: 1,
+  });
+  if (
+    page.projectPolicyVersion !== view.projectPolicyVersion ||
+    page.plan.id !== assignment.planId
+  )
+    throw new Error("Default allowance plan changed while it was loading");
+  return {
+    ...view,
+    plans: [
+      {
+        ...page.plan,
+        revisions: page.revisions,
+        revisionsPageInfo: page.pageInfo,
+      },
+      ...view.plans,
+    ],
+  };
+}
+
+function contentSummary(content: AiAllowanceLocalizedContent): string {
+  const localized = messageLocales.value
+    .map((locale) => {
+      const text = localizedContentVariant(content, locale);
+      return text ? `${locale.toUpperCase()}: ${text}` : "";
+    })
+    .filter(Boolean);
+  const variants = [
+    content.message ? `Fallback: ${content.message}` : "",
+    ...localized,
+  ].filter(Boolean);
+  return variants.join(" · ") || "Системный текст";
 }
 async function loadMorePlans(): Promise<void> {
   const current = policy.value;
@@ -186,9 +256,12 @@ async function loadMorePlans(): Promise<void> {
         await load();
         return;
       }
+      const plansById = new Map(
+        [...current.plans, ...next.plans].map((plan) => [plan.id, plan]),
+      );
       policy.value = {
         ...current,
-        plans: [...current.plans, ...next.plans],
+        plans: [...plansById.values()],
         plansPageInfo: next.plansPageInfo,
       };
     }
@@ -275,19 +348,23 @@ function openEditor(): void {
   hardConfirmed.value = false;
   showEndUserExactUsd.value =
     policy.value?.policy?.showEndUserExactUsd ?? false;
-  lowThresholdMode.value =
-    policy.value?.policy?.lowThresholdMode ?? "PERCENT";
+  lowThresholdMode.value = policy.value?.policy?.lowThresholdMode ?? "PERCENT";
   lowThresholdValue.value =
     policy.value?.policy?.lowThresholdValue ?? "10.000000000000";
   formError.value = "";
   configurationConflict.value = false;
   dialogOpen.value = true;
-  warningRu.value = policy.value?.policy?.warningContent.ru ?? "";
-  warningEn.value = policy.value?.policy?.warningContent.en ?? "";
+  warningVariants.value = draftLocalizedVariants(
+    policy.value?.policy?.warningContent,
+  );
   warningMessage.value = policy.value?.policy?.warningContent.message ?? "";
-  exhaustedRu.value = policy.value?.policy?.exhaustedContent.ru ?? "";
-  exhaustedEn.value = policy.value?.policy?.exhaustedContent.en ?? "";
+  exhaustedVariants.value = draftLocalizedVariants(
+    policy.value?.policy?.exhaustedContent,
+  );
   exhaustedMessage.value = policy.value?.policy?.exhaustedContent.message ?? "";
+  clearWarningContent.value = false;
+  clearExhaustedContent.value = false;
+  categoryRules.value = draftCategoryRules(revision);
 }
 
 function openNamedEditor(
@@ -306,7 +383,14 @@ function openNamedEditor(
   idempotencyKey.value = newIdempotencyKey();
   formError.value = "";
   configurationConflict.value = false;
-  categoryRules.value = categories.map((category) => {
+  categoryRules.value = draftCategoryRules(revision);
+  namedDialogOpen.value = true;
+}
+function draftCategoryRules(
+  revision?:
+    AiAllowanceProjectPolicyView["plans"][number]["revisions"][number] | null,
+) {
+  return categories.map((category) => {
     const existing = revision?.categoryRules.find(
       (rule) => rule.category === category,
     );
@@ -323,7 +407,6 @@ function openNamedEditor(
       capUsd: existing?.capUsd ?? "",
     };
   });
-  namedDialogOpen.value = true;
 }
 function openCohortEditor(): void {
   if (!props.canManage || !policyReady.value || !policy.value) return;
@@ -373,6 +456,21 @@ async function save(): Promise<void> {
     return fail("HARD заблокирован runtime gate проекта.");
   if (enforcement.value === "HARD" && !hardConfirmed.value)
     return fail("Подтвердите риски HARD enforcement.");
+  const rules = categoryRules.value.map((rule) => ({
+    category: rule.category,
+    responsibility: rule.responsibility,
+    ...(rule.capUsd.trim()
+      ? { capUsd: parseAllowanceUsd(rule.capUsd.trim()) }
+      : {}),
+  }));
+  if (
+    rules.some(
+      (rule) =>
+        "capUsd" in rule &&
+        (!rule.capUsd || compareDecimalStrings(rule.capUsd, "0") <= 0),
+    )
+  )
+    return fail("Cap категории должен быть больше 0 USD или оставаться пустым.");
   const requestGeneration = generation;
   const requestProjectId = props.projectId;
   saving.value = true;
@@ -390,33 +488,28 @@ async function save(): Promise<void> {
         lowThresholdMode: lowThresholdMode.value,
         lowThresholdValue: exactLowThreshold,
         showEndUserExactUsd: showEndUserExactUsd.value,
+        categoryRules: rules as never,
         reason: reason.value.trim(),
-        ...(compactContent(
-          warningMessage.value,
-          warningRu.value,
-          warningEn.value,
-        )
-          ? {
-              warningContent: compactContent(
-                warningMessage.value,
-                warningRu.value,
-                warningEn.value,
-              ),
-            }
-          : {}),
-        ...(compactContent(
-          exhaustedMessage.value,
-          exhaustedRu.value,
-          exhaustedEn.value,
-        )
-          ? {
-              exhaustedContent: compactContent(
-                exhaustedMessage.value,
-                exhaustedRu.value,
-                exhaustedEn.value,
-              ),
-            }
-          : {}),
+        ...(clearWarningContent.value
+          ? { clearWarningContent: true }
+          : compactContent(warningMessage.value, warningVariants.value)
+            ? {
+                warningContent: compactContent(
+                  warningMessage.value,
+                  warningVariants.value,
+                ),
+              }
+            : {}),
+        ...(clearExhaustedContent.value
+          ? { clearExhaustedContent: true }
+          : compactContent(exhaustedMessage.value, exhaustedVariants.value)
+            ? {
+                exhaustedContent: compactContent(
+                  exhaustedMessage.value,
+                  exhaustedVariants.value,
+                ),
+              }
+            : {}),
       },
       idempotencyKey.value.trim(),
     );
@@ -469,7 +562,11 @@ async function saveNamed(): Promise<void> {
     !exact
   )
     return fail("Проверьте название и сумму плана.");
-  if (dailyCap.value && !cap) return fail("Некорректный дневной cap.");
+  if (
+    dailyCap.value &&
+    (!cap || compareDecimalStrings(cap, "0") <= 0)
+  )
+    return fail("Дневной cap должен быть больше 0 USD.");
   if (period.value === "DAY" && cap && compareDecimalStrings(cap, exact) > 0)
     return fail("Для дневного плана cap не может превышать лимит.");
   if (!validCommon()) return;
@@ -480,8 +577,14 @@ async function saveNamed(): Promise<void> {
       ? { capUsd: parseAllowanceUsd(rule.capUsd.trim()) }
       : {}),
   }));
-  if (rules.some((rule) => "capUsd" in rule && !rule.capUsd))
-    return fail("Проверьте caps категорий.");
+  if (
+    rules.some(
+      (rule) =>
+        "capUsd" in rule &&
+        (!rule.capUsd || compareDecimalStrings(rule.capUsd, "0") <= 0),
+    )
+  )
+    return fail("Cap категории должен быть больше 0 USD или оставаться пустым.");
   const requestGeneration = generation;
   const requestProjectId = props.projectId;
   saving.value = true;
@@ -617,13 +720,59 @@ function validCommon(): boolean {
   }
   return true;
 }
-function compactContent(message: string, ru: string, en: string) {
+function compactContent(message: string, variants: Record<string, string>) {
+  const normalized = Object.fromEntries(
+    Object.entries(variants)
+      .map(([locale, text]) => [locale, text.trim()])
+      .filter((entry): entry is [string, string] => Boolean(entry[1])),
+  );
+  const additionalVariants = Object.fromEntries(
+    Object.entries(normalized).filter(
+      ([locale]) => locale !== "ru" && locale !== "en",
+    ),
+  );
   const content = {
     ...(message.trim() ? { message: message.trim() } : {}),
-    ...(ru.trim() ? { ru: ru.trim() } : {}),
-    ...(en.trim() ? { en: en.trim() } : {}),
+    ...(normalized.ru ? { ru: normalized.ru } : {}),
+    ...(normalized.en ? { en: normalized.en } : {}),
+    ...(Object.keys(additionalVariants).length
+      ? { variants: additionalVariants }
+      : {}),
   };
   return Object.keys(content).length ? content : undefined;
+}
+function localizedContentVariant(
+  content: AiAllowanceLocalizedContent | undefined,
+  locale: string,
+): string {
+  if (!content) return "";
+  const direct = content[locale];
+  if (typeof direct === "string") return direct;
+  return content.variants?.[locale] ?? "";
+}
+function localizedContentLocales(
+  content: AiAllowanceLocalizedContent | undefined,
+): string[] {
+  if (!content) return [];
+  return [
+    ...Object.keys(content.variants ?? {}),
+    ...Object.keys(content).filter(
+      (key) => key !== "message" && key !== "variants",
+    ),
+  ];
+}
+function draftLocalizedVariants(
+  content: AiAllowanceLocalizedContent | undefined,
+): Record<string, string> {
+  return Object.fromEntries(
+    messageLocales.value.map((locale) => [
+      locale,
+      localizedContentVariant(content, locale),
+    ]),
+  );
+}
+function localeFieldId(kind: "warning" | "exhausted", locale: string): string {
+  return `allowance-${kind}-${locale.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 }
 function localInput(value: Date): string {
   const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
@@ -854,11 +1003,15 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
                 ? formatMoney(latestDefaultRevision.recurringAmountUsd)
                 : "Не задан"
             }}</strong
-            ><span>{{
-              latestDefaultRevision?.periodKind === "MONTH"
+            ><span v-if="latestDefaultRevision">{{
+              latestDefaultRevision.periodKind === "MONTH"
                 ? "в месяц"
                 : "в день"
-            }}</span>
+            }}</span
+            ><span v-else>Назначьте project default.</span>
+            <span v-if="latestDefaultPlan"
+              >{{ latestDefaultPlan.name }} · {{ latestDefaultPlan.key }}</span
+            >
           </article>
           <article>
             <small>Часовой пояс</small
@@ -870,7 +1023,9 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             ><strong data-testid="allowance-low-threshold-summary">{{
               lowThresholdDisplay
             }}</strong
-            ><span>При пересечении пользователь получит настроенное сообщение.</span>
+            ><span
+              >При пересечении пользователь получит настроенное сообщение.</span
+            >
           </article>
           <article>
             <small>Планы</small><strong>{{ policy.plans.length }}</strong
@@ -880,6 +1035,59 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
                 : "Нет назначения по умолчанию"
             }}</span>
           </article>
+          <article>
+            <small>Точный остаток End User</small
+            ><strong data-testid="allowance-exact-visibility-summary">{{
+              policy.policy?.showEndUserExactUsd ? "Разрешён проектом" : "Скрыт"
+            }}</strong
+            ><span
+              >Для показа также нужен deployment gate
+              AI_ALLOWANCE_END_USER_EXACT_USD_VISIBLE=true.</span
+            >
+          </article>
+          <article>
+            <small>Сообщение LOW</small
+            ><strong data-testid="allowance-warning-summary">{{
+              contentSummary(policy.policy?.warningContent ?? {})
+            }}</strong
+            ><span>По locale пользователя, затем fallback.</span>
+          </article>
+          <article>
+            <small>Сообщение при исчерпании</small
+            ><strong data-testid="allowance-exhausted-summary">{{
+              contentSummary(policy.policy?.exhaustedContent ?? {})
+            }}</strong
+            ><span>Возвращается пользователю при HARD-отказе.</span>
+          </article>
+        </div>
+        <div v-if="latestDefaultRevision" class="plans card">
+          <header>
+            <div>
+              <h3>Категории базового плана</h3>
+              <p>
+                Кто оплачивает категорию и какой cap закреплён в текущей
+                ревизии.
+              </p>
+            </div>
+          </header>
+          <div class="plan-list">
+            <article
+              v-for="rule in latestDefaultRevision.categoryRules"
+              :key="`summary-${rule.category}`"
+            >
+              <div>
+                <strong>{{ rule.category }}</strong
+                ><small>{{
+                  rule.responsibility === "END_USER_ALLOWANCE"
+                    ? "Квота пользователя"
+                    : "Оплачивает проект"
+                }}</small>
+              </div>
+              <strong>{{
+                rule.capUsd ? formatMoney(rule.capUsd) : "Без cap"
+              }}</strong>
+            </article>
+          </div>
         </div>
         <div class="plans card">
           <header>
@@ -1013,58 +1221,93 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           </option>
         </select></label
       >
+      <fieldset class="category-grid">
+        <legend>Ответственность и caps категорий базового плана</legend>
+        <label v-for="rule in categoryRules" :key="`default-${rule.category}`"
+          ><span>{{ rule.category }}</span
+          ><select v-model="rule.responsibility">
+            <option value="END_USER_ALLOWANCE">Квота пользователя</option>
+            <option value="PROJECT_SPONSORED">Проект</option></select
+          ><input
+            v-model="rule.capUsd"
+            inputmode="decimal"
+            placeholder="cap USD"
+        /></label>
+      </fieldset>
       <div class="form-row">
-        <label
+        <label for="allowance-warning-fallback"
           >Fallback-сообщение<textarea
+            id="allowance-warning-fallback"
             v-model="warningMessage"
+            :disabled="clearWarningContent"
             rows="2"
             maxlength="2000"
           />
         </label>
         <label
-          >Предупреждение (RU)<textarea
-            v-model="warningRu"
-            rows="2"
-            maxlength="2000"
-          /></label
-        ><label
-          >Warning (EN)<textarea
-            v-model="warningEn"
+          v-for="locale in messageLocales"
+          :key="`warning-${locale}`"
+          :for="localeFieldId('warning', locale)"
+          >Предупреждение ({{ locale }})<textarea
+            :id="localeFieldId('warning', locale)"
+            v-model="warningVariants[locale]"
+            :disabled="clearWarningContent"
             rows="2"
             maxlength="2000"
           />
         </label>
       </div>
+      <label class="visibility-toggle" for="allowance-clear-warning-content">
+        <input
+          id="allowance-clear-warning-content"
+          v-model="clearWarningContent"
+          type="checkbox"
+        />
+        Сбросить предупреждение LOW на системный текст
+      </label>
       <div class="form-row">
-        <label
+        <label for="allowance-exhausted-fallback"
           >Fallback при исчерпании<textarea
+            id="allowance-exhausted-fallback"
             v-model="exhaustedMessage"
+            :disabled="clearExhaustedContent"
             rows="2"
             maxlength="2000"
           />
         </label>
         <label
-          >Лимит исчерпан (RU)<textarea
-            v-model="exhaustedRu"
-            rows="2"
-            maxlength="2000"
-          /></label
-        ><label
-          >Exhausted (EN)<textarea
-            v-model="exhaustedEn"
+          v-for="locale in messageLocales"
+          :key="`exhausted-${locale}`"
+          :for="localeFieldId('exhausted', locale)"
+          >Лимит исчерпан ({{ locale }})<textarea
+            :id="localeFieldId('exhausted', locale)"
+            v-model="exhaustedVariants[locale]"
+            :disabled="clearExhaustedContent"
             rows="2"
             maxlength="2000"
           />
         </label>
       </div>
+      <label class="visibility-toggle" for="allowance-clear-exhausted-content">
+        <input
+          id="allowance-clear-exhausted-content"
+          v-model="clearExhaustedContent"
+          type="checkbox"
+        />
+        Сбросить сообщение об исчерпании на системный текст
+      </label>
       <Message
         v-if="enforcement === 'HARD' && canActivateHard"
         severity="error"
         :closable="false"
         >Runtime gates разрешают HARD. Backend повторно проверит их атомарно при
         сохранении.<label class="hard-confirm"
-          ><input v-model="hardConfirmed" type="checkbox" /> Я понимаю, что HARD
-          может блокировать AI-операции</label
+          ><input
+            id="allowance-hard-confirmed"
+            v-model="hardConfirmed"
+            type="checkbox"
+          />
+          Я понимаю, что HARD может блокировать AI-операции</label
         ></Message
       >
       <Message v-else-if="!canActivateHard" severity="warn" :closable="false"

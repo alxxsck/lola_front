@@ -306,6 +306,12 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
       ? null
       : parseAssignment(source?.defaultAssignment);
   const gates = object(source?.runtimeGates);
+  const localization = object(source?.localization);
+  const supportedLocales = Array.isArray(localization?.supportedLocales)
+    ? localization.supportedLocales
+    : null;
+  const canonicalSupportedLocales = supportedLocales?.map(canonicalLocale);
+  const defaultLocale = canonicalLocale(localization?.defaultLocale);
   const plansPageInfo = parsePageInfo(source?.plansPageInfo);
   if (
     !source ||
@@ -315,6 +321,15 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
     !Array.isArray(source.plans) ||
     source.plans.length > 100 ||
     !gates ||
+    !localization ||
+    !defaultLocale ||
+    !supportedLocales ||
+    supportedLocales.length < 1 ||
+    supportedLocales.length > 50 ||
+    !canonicalSupportedLocales ||
+    canonicalSupportedLocales.some((locale) => !locale) ||
+    new Set(canonicalSupportedLocales).size !== canonicalSupportedLocales.length ||
+    !canonicalSupportedLocales.includes(defaultLocale) ||
     !plansPageInfo ||
     typeof gates.hardEnforcementApproved !== "boolean" ||
     typeof gates.emergencyDisabled !== "boolean"
@@ -324,6 +339,10 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
   if (plans.some((item) => !item)) invalid();
   return {
     projectPolicyVersion,
+    localization: {
+      defaultLocale,
+      supportedLocales: canonicalSupportedLocales as string[],
+    },
     policy,
     plans: plans as AiAllowancePlan[],
     plansPageInfo,
@@ -714,7 +733,8 @@ function parsePeriod(value: unknown): AiAllowancePeriod | null {
   const kind = enumValue(s?.kind, ["DAY", "MONTH"] as const);
   const status = enumValue(s?.status, ["OPEN", "CLOSED"] as const);
   const amount = parseAllowanceUsd(s?.baseAllocatedUsd);
-  const revision = parseRevision(s?.planRevision, false);
+  const revision =
+    s?.planRevision === null ? null : parseRevision(s?.planRevision, true);
   return s &&
     text(s.id) &&
     kind &&
@@ -723,7 +743,7 @@ function parsePeriod(value: unknown): AiAllowancePeriod | null {
     iso(s.endsAt) &&
     amount &&
     status &&
-    revision
+    (revision !== null || s.planRevision === null)
     ? {
         id: s.id,
         kind,
@@ -866,15 +886,37 @@ function localizedContent(
 ): AiAllowancePolicy["warningContent"] | undefined {
   const s = object(value);
   if (!s) return undefined;
-  const keys = ["message", "ru", "en"] as const;
-  if (
-    Object.keys(s).some(
-      (key) => !keys.includes(key as (typeof keys)[number]),
-    ) ||
-    keys.some((key) => s[key] !== undefined && !text(s[key], 1, 2000))
-  )
+  if (s.message !== undefined && !text(s.message, 1, 2000)) return undefined;
+  const nested = s.variants === undefined ? {} : object(s.variants);
+  if (!nested) return undefined;
+  const localeEntries = [
+    ...Object.entries(nested),
+    ...Object.entries(s).filter(([key]) => key !== "message" && key !== "variants"),
+  ];
+  if (localeEntries.length > 50) return undefined;
+  const variants: Record<string, string> = {};
+  for (const [rawLocale, rawText] of localeEntries) {
+    const locale = canonicalLocale(rawLocale);
+    if (!locale || !text(rawText, 1, 2000) || variants[locale] !== undefined)
+      return undefined;
+    variants[locale] = rawText;
+  }
+  return {
+    ...(typeof s.message === "string" ? { message: s.message } : {}),
+    ...(variants.ru ? { ru: variants.ru } : {}),
+    ...(variants.en ? { en: variants.en } : {}),
+    ...(Object.keys(variants).length ? { variants } : {}),
+  };
+}
+function canonicalLocale(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim() || value.length > 64)
     return undefined;
-  return s as AiAllowancePolicy["warningContent"];
+  try {
+    const canonical = Intl.getCanonicalLocales(value.trim().replaceAll("_", "-"));
+    return canonical.length === 1 ? canonical[0] : undefined;
+  } catch {
+    return undefined;
+  }
 }
 function text(value: unknown, min = 1, max = 500): value is string {
   return (

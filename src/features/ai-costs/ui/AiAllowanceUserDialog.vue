@@ -17,7 +17,6 @@ import {
   type AiAllowanceAssignment,
   type AiAllowancePlan,
   type AiAllowancePlanRevision,
-  type AiAllowanceProjectPolicyView,
   type AiAllowanceUserBalance,
 } from "../model/ai-allowance";
 
@@ -66,7 +65,6 @@ const defaultAssignment = ref<AiAllowanceAssignment | null>(null);
 const configurationConflict = ref(false);
 const projectTimezone = ref("UTC");
 const pinnedPlanRevision = ref<AiAllowancePlanRevision | null>(null);
-const planRevisionError = ref("");
 interface GrantReceipt {
   id: string;
   amountUsd: DecimalString;
@@ -87,7 +85,7 @@ const activePlans = computed(() =>
   ),
 );
 const currentPlanRevision = computed(() => {
-  const revisionId = balance.value?.currentPeriod?.planRevision.id;
+  const revisionId = balance.value?.currentPeriod?.planRevision?.id;
   if (!revisionId) return null;
   if (pinnedPlanRevision.value?.id === revisionId)
     return pinnedPlanRevision.value;
@@ -120,7 +118,6 @@ watch(
     defaultAssignment.value = null;
     configurationConflict.value = false;
     pinnedPlanRevision.value = null;
-    planRevisionError.value = "";
     grantReceipt.value = null;
     projectTimezone.value = "UTC";
     initialModeApplied = false;
@@ -171,7 +168,6 @@ async function load(): Promise<boolean> {
   loadedContext.value = "";
   projectPolicyVersion.value = "";
   pinnedPlanRevision.value = null;
-  planRevisionError.value = "";
   loading.value = true;
   error.value = "";
   try {
@@ -206,19 +202,7 @@ async function load(): Promise<boolean> {
     loadedContext.value = `${requestProjectId}:${requestEndUserId}`;
     loadedPlans.value = projectPolicy.plans;
     plansPageInfo.value = projectPolicy.plansPageInfo;
-    try {
-      pinnedPlanRevision.value = await findPinnedPlanRevision(
-        nextBalance,
-        projectPolicy,
-        requestGeneration,
-      );
-    } catch (cause) {
-      if (requestGeneration === generation)
-        planRevisionError.value = text(
-          cause,
-          "Не удалось загрузить правила текущей ревизии",
-        );
-    }
+    pinnedPlanRevision.value = nextBalance.currentPeriod?.planRevision ?? null;
     if (requestGeneration !== generation) return false;
     applyInitialMode();
     return true;
@@ -229,61 +213,6 @@ async function load(): Promise<boolean> {
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
-}
-async function findPinnedPlanRevision(
-  nextBalance: AiAllowanceUserBalance,
-  initialPolicy: AiAllowanceProjectPolicyView,
-  requestGeneration: number,
-): Promise<AiAllowancePlanRevision | null> {
-  const target = nextBalance.currentPeriod?.planRevision;
-  if (!target) return null;
-  let page = initialPolicy;
-  let plan = page.plans.find((item) => item.id === target.planId);
-  for (
-    let pageCount = 0;
-    !plan && page.plansPageInfo.nextCursor && pageCount < 20;
-    pageCount += 1
-  ) {
-    page = await aiAllowanceRepository.projectPolicy(props.projectId, {
-      planCursor: page.plansPageInfo.nextCursor,
-      planLimit: 50,
-      revisionLimit: 5,
-    });
-    assertPinnedRevisionContext(requestGeneration, initialPolicy, page);
-    plan = page.plans.find((item) => item.id === target.planId);
-  }
-  if (!plan) return null;
-  const included = plan.revisions.find((item) => item.id === target.id);
-  if (included) return included;
-
-  let cursor = plan.revisionsPageInfo.nextCursor;
-  for (let pageCount = 0; cursor && pageCount < 20; pageCount += 1) {
-    const revisions = await aiAllowanceRepository.planRevisions(
-      props.projectId,
-      plan.key,
-      { limit: 50, cursor },
-    );
-    if (
-      requestGeneration !== generation ||
-      revisions.projectPolicyVersion !== initialPolicy.projectPolicyVersion
-    )
-      throw new Error("Конфигурация планов изменилась во время загрузки.");
-    const found = revisions.revisions.find((item) => item.id === target.id);
-    if (found) return found;
-    cursor = revisions.pageInfo.nextCursor;
-  }
-  return null;
-}
-function assertPinnedRevisionContext(
-  requestGeneration: number,
-  initialPolicy: AiAllowanceProjectPolicyView,
-  nextPolicy: AiAllowanceProjectPolicyView,
-): void {
-  if (
-    requestGeneration !== generation ||
-    nextPolicy.projectPolicyVersion !== initialPolicy.projectPolicyVersion
-  )
-    throw new Error("Конфигурация планов изменилась во время загрузки.");
 }
 function applyInitialMode(): void {
   if (initialModeApplied) return;
@@ -374,13 +303,23 @@ async function loadMoreGrants(): Promise<void> {
       requestProjectId === props.projectId &&
       requestEndUserId === props.endUserId &&
       loadedContext.value === `${requestProjectId}:${requestEndUserId}` &&
-      balance.value === current
+      balance.value === current &&
+      next.account.projectId === requestProjectId &&
+      next.account.endUserId === requestEndUserId &&
+      next.projectPolicyVersion === current.projectPolicyVersion
     ) {
       balance.value = {
         ...current,
         activeGrants: [...current.activeGrants, ...next.activeGrants],
         grantsPageInfo: next.grantsPageInfo,
       };
+    } else if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    ) {
+      grantsLoading.value = false;
+      await load();
     }
   } catch (cause) {
     if (
@@ -857,10 +796,8 @@ async function refreshAssignmentDraft(): Promise<void> {
         >
           <h3>Правила категорий текущего периода</h3>
           <p>
-            {{
-              planRevisionError ||
-              "Точная закреплённая ревизия не найдена в admin API."
-            }}
+            Наблюдательный период работает без закреплённого плана; правила
+            категорий появятся после назначения совместимого плана.
           </p>
         </section>
         <footer>

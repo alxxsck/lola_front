@@ -45,6 +45,7 @@ describe("AiAllowanceUserDialog", () => {
     });
     mocks.policy.mockResolvedValue({
       projectPolicyVersion: "7",
+      localization: { defaultLocale: "ru", supportedLocales: ["ru"] },
       policy: null,
       plans: [],
       plansPageInfo: { hasMore: false, nextCursor: null },
@@ -295,7 +296,7 @@ describe("AiAllowanceUserDialog", () => {
     expect(wrapper.text()).toContain("Europe/Madrid");
   });
 
-  it("loads the exact pinned revision when it is older than the initial page", async () => {
+  it("uses the exact pinned revision embedded in the balance without pagination", async () => {
     const targetRevision = {
       id: "old-revision",
       planId: "11111111-1111-4111-8111-111111111111",
@@ -340,11 +341,31 @@ describe("AiAllowanceUserDialog", () => {
         },
       ],
     });
-    mocks.revisions.mockResolvedValue({
-      projectPolicyVersion: "7",
-      plan: activePlan(),
-      revisions: [targetRevision],
-      pageInfo: { hasMore: false, nextCursor: null },
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: false,
+      canReconcile: false,
+    });
+    await flushPromises();
+
+    expect(mocks.revisions).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("CHAT");
+    expect(wrapper.text()).toContain("Квота пользователя");
+  });
+
+  it("shows an observation period when no plan revision is pinned", async () => {
+    mocks.balance.mockResolvedValue({
+      ...balanceView("project-1", "user-1", "observed", false),
+      currentPeriod: {
+        id: "period-observation",
+        kind: "DAY",
+        timezone: "UTC",
+        startsAt: "2026-08-01T00:00:00.000Z",
+        endsAt: "2026-08-02T00:00:00.000Z",
+        baseAllocatedUsd: "0.000000000000",
+        status: "OPEN",
+        planRevision: null,
+      },
     });
 
     const wrapper = mountDialog({
@@ -354,15 +375,16 @@ describe("AiAllowanceUserDialog", () => {
     });
     await flushPromises();
 
-    expect(mocks.revisions).toHaveBeenCalledWith("project-1", "VIP", {
-      limit: 50,
-      cursor: "older-revisions",
-    });
-    expect(wrapper.text()).toContain("CHAT");
-    expect(wrapper.text()).toContain("Квота пользователя");
+    expect(wrapper.find('[data-testid="category-rules-unavailable"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.text()).toContain(
+      "Наблюдательный период работает без закреплённого плана",
+    );
+    expect(wrapper.text()).not.toContain("Сервис временно недоступен");
   });
 
-  it("never keeps category rules from a previous pinned revision after refresh fails", async () => {
+  it("replaces pinned category rules directly from a refreshed balance", async () => {
     const oldRevision = {
       id: "revision-old",
       planId: "11111111-1111-4111-8111-111111111111",
@@ -424,9 +446,6 @@ describe("AiAllowanceUserDialog", () => {
           },
         ],
       });
-    mocks.revisions.mockRejectedValueOnce(
-      new Error("Pinned revision unavailable"),
-    );
     const wrapper = mountDialog({
       canGrant: false,
       canManage: false,
@@ -442,7 +461,8 @@ describe("AiAllowanceUserDialog", () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("VOICE");
-    expect(wrapper.text()).toContain("Pinned revision unavailable");
+    expect(wrapper.text()).not.toContain("Pinned revision unavailable");
+    expect(mocks.revisions).not.toHaveBeenCalled();
   });
 
   it("zeroizes the loaded balance and closes when read permission is revoked", async () => {
@@ -561,6 +581,40 @@ describe("AiAllowanceUserDialog", () => {
 
     expect(wrapper.text()).toContain("user-2 grant");
     expect(wrapper.text()).not.toContain("stale grant");
+  });
+
+  it("rejects a grants page whose account or policy version does not match the loaded user", async () => {
+    mocks.balance.mockImplementation(
+      (
+        projectId: string,
+        endUserId: string,
+        query?: { grantCursor?: string },
+      ) =>
+        Promise.resolve(
+          query?.grantCursor
+            ? {
+                ...balanceView("project-2", "user-2", "foreign grant", false),
+                projectPolicyVersion: "5",
+              }
+            : balanceView(projectId, endUserId, "current grant", true),
+        ),
+    );
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: false,
+      canReconcile: false,
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) =>
+        button.text().includes("Показать остальные начисления"),
+      )!
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("current grant");
+    expect(wrapper.text()).not.toContain("foreign grant");
   });
 
   it("sends the current project policy version with an end-user assignment", async () => {

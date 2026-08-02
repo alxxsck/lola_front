@@ -39,10 +39,19 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+      - name: Run build and deployment script tests
+        run: npm run test:scripts
+
+      - name: Install Chromium for allowance regression
+        run: npx playwright install --with-deps chromium
+
+      - name: Run End User allowance regression
+        run: npm run test:e2e -- e2e/end-user-allowance-profile.spec.ts
+
   verify:
     runs-on: ubuntu-latest
     env:
-      LOLA_BACKEND_REF: ${{ vars.LOLA_BACKEND_REF || 'main' }}
+      LOLA_BACKEND_REF: ${{ vars.LOLA_BACKEND_REF }}
     steps:
       - name: Checkout frontend
         uses: actions/checkout@v4
@@ -53,6 +62,9 @@ jobs:
         env:
           LOLA_BACKEND_READ_TOKEN: ${{ secrets.LOLA_BACKEND_READ_TOKEN }}
         run: test -n "$LOLA_BACKEND_READ_TOKEN"
+
+      - name: Require immutable backend revision
+        run: test "${#LOLA_BACKEND_REF}" -eq 40
 
       - name: Checkout explicitly configured backend contract source
         uses: actions/checkout@v4

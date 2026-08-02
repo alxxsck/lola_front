@@ -45,6 +45,7 @@ const balance = {
       effectiveFrom: "2026-08-01T00:00:00.000Z",
       changeReason: "VIP tier",
       createdAt: "2026-08-01T00:00:00.000Z",
+      categoryRules: [],
     },
   },
   currentPeriodSpend: {

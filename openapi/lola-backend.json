@@ -904,6 +904,113 @@
         ],
         "type": "object"
       },
+      "AdminProjectConversationEndUserResponseDto": {
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId"
+        ],
+        "type": "object"
+      },
+      "AdminProjectConversationResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currentInteractionSessionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/AdminProjectConversationEndUserResponseDto"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "lastMessage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminConversationPreviewMessageResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "messageCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ThreadStatus"
+              }
+            ]
+          },
+          "title": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "endUserId",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "endUser",
+          "messageCount",
+          "lastMessage",
+          "isCurrent",
+          "currentInteractionSessionCount"
+        ],
+        "type": "object"
+      },
+      "AdminProjectConversationsPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminProjectConversationResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "AdminStoredMessageResponseDto": {
         "properties": {
           "clientMessageId": {
@@ -4275,6 +4382,14 @@
           "ru": {
             "maxLength": 2000,
             "type": "string"
+          },
+          "variants": {
+            "additionalProperties": {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            "description": "Localized variants keyed by a canonical BCP-47 Project Locale (for example es or pt-BR).",
+            "type": "object"
           }
         },
         "type": "object"
@@ -24381,6 +24496,20 @@
             "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
             "type": "string"
           },
+          "categoryRules": {
+            "items": {
+              "$ref": "#/components/schemas/PutAllowancePlanCategoryRuleDto"
+            },
+            "type": "array"
+          },
+          "clearExhaustedContent": {
+            "description": "Explicitly restore the built-in exhausted allowance copy.",
+            "type": "boolean"
+          },
+          "clearWarningContent": {
+            "description": "Explicitly restore the built-in LOW warning copy.",
+            "type": "boolean"
+          },
           "enforcementMode": {
             "enum": [
               "DISABLED",
@@ -24441,7 +24570,9 @@
           "period",
           "timezone",
           "enforcementMode",
-          "reason"
+          "reason",
+          "showEndUserExactUsd",
+          "categoryRules"
         ],
         "type": "object"
       },
@@ -50758,6 +50889,85 @@
         ],
         "x-iam-permission": {
           "code": "project.settings.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/conversations": {
+      "get": {
+        "operationId": "AdminProjectConversations_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ConversationStatus"
+            }
+          },
+          {
+            "description": "Opaque cursor returned by the previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 1024,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Optional internal End User id filter.",
+            "in": "query",
+            "name": "endUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProjectConversationsPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin support conversations"
+        ],
+        "x-iam-permission": {
+          "code": "project.conversations.read",
           "scope": "PROJECT"
         }
       }

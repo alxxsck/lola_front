@@ -609,6 +609,8 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       v-if="state.tab === 'limits' && projectId"
       id="ai-cost-panel-limits"
       :project-id="projectId"
+      :default-locale="auth.project?.defaultLocale"
+      :supported-locales="auth.project?.supportedLocales"
       :can-read="canReadAllowance"
       :can-manage="canManageAllowance"
       :can-grant="canGrantAllowance"

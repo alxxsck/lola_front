@@ -52,6 +52,10 @@ async function stubAllowance(page: Page) {
         const [, projectId] = policyMatch;
         return json(route, {
           projectPolicyVersion: "7",
+          localization: {
+            defaultLocale: "ru",
+            supportedLocales: ["ru"],
+          },
           policy: {
             projectId,
             enforcementMode: "SOFT",

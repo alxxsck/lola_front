@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AllowanceLocalizedContentDtoVariants } from "./allowanceLocalizedContentDtoVariants";
 
 export interface AllowanceLocalizedContentDto {
   /** @maxLength 2000 */
@@ -13,4 +14,6 @@ export interface AllowanceLocalizedContentDto {
   message?: string;
   /** @maxLength 2000 */
   ru?: string;
+  /** Localized variants keyed by a canonical BCP-47 Project Locale (for example es or pt-BR). */
+  variants?: AllowanceLocalizedContentDtoVariants;
 }

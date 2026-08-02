@@ -9,7 +9,7 @@
     "api:sync:local": "node scripts/check-backend-openapi-drift.mjs --backend-directory ../Lola_backend --write && npm run api:generate",
     "dev": "vite",
     "preview": "vite preview",
-    "build": "npm run api:check && vue-tsc -b && vite build",
+    "build": "node scripts/validate-vercel-env.mjs && npm run api:check && vue-tsc -b && vite build",
     "typecheck": "vue-tsc -b",
     "lint": "eslint . --max-warnings=0 && npm run architecture:check",
     "architecture:check": "node scripts/check-iam-authority.mjs",

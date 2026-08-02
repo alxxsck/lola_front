@@ -20,6 +20,8 @@ export interface AiAllowanceLocalizedContent {
   message?: string;
   ru?: string;
   en?: string;
+  variants?: Record<string, string>;
+  [locale: string]: string | Record<string, string> | undefined;
 }
 export type SignedDecimalString = string & {
   readonly __signedDecimal: unique symbol;
@@ -89,6 +91,10 @@ export interface AiAllowanceAssignment {
 
 export interface AiAllowanceProjectPolicyView {
   projectPolicyVersion: string;
+  localization: {
+    defaultLocale: string;
+    supportedLocales: string[];
+  };
   policy: AiAllowancePolicy | null;
   plans: AiAllowancePlan[];
   plansPageInfo: AiAllowanceCursorPageInfo;
@@ -120,7 +126,7 @@ export interface AiAllowancePeriod {
   endsAt: string;
   baseAllocatedUsd: DecimalString;
   status: "OPEN" | "CLOSED";
-  planRevision: AiAllowancePlanRevisionSummary;
+  planRevision: AiAllowancePlanRevision | null;
 }
 
 export interface AiAllowanceGrant {
@@ -211,10 +217,13 @@ export interface PutDefaultAllowancePlanInput {
   enforcementMode: AiAllowanceEnforcementMode;
   reason: string;
   warningContent?: AiAllowanceLocalizedContent;
+  clearWarningContent?: boolean;
   lowThresholdMode: AiAllowanceLowThresholdMode;
   lowThresholdValue: DecimalString;
   exhaustedContent?: AiAllowanceLocalizedContent;
+  clearExhaustedContent?: boolean;
   showEndUserExactUsd: boolean;
+  categoryRules: PutAllowancePlanInput["categoryRules"];
 }
 
 export interface PutAllowancePlanInput {
