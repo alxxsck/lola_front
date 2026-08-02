@@ -4,11 +4,8 @@ import Button from "primevue/button";
 import Message from "primevue/message";
 import Textarea from "primevue/textarea";
 import { cmsAgentRepository } from "../api/cms-agent-repository";
-import type {
-  CmsAgentImmediateExecutionResponseDto,
-  CmsAgentImmediateInterpretationResponseDtoOutcome,
-  ProjectAIAnalysisEstimateResponseDto,
-} from "@/shared/api/generated/models";
+import type { ProjectAIAnalysisEstimateResponseDto } from "@/shared/api/generated/models";
+import type { CmsAgentExecution } from "../model/cms-agent-execution";
 
 const props = defineProps<{ projectId: string }>();
 const emit = defineEmits<{ "analysis-created": [analysisId: string] }>();
@@ -25,15 +22,14 @@ type ComposerPhase =
   | "FAILED"
   | "OUTCOME_UNKNOWN";
 
-const phaseByOutcome = {
+const phaseByExecutionKind = {
   CLARIFICATION_REQUIRED: "CLARIFICATION",
   UNSUPPORTED: "UNSUPPORTED",
   OUTCOME_UNKNOWN: "OUTCOME_UNKNOWN",
   FAILED: "FAILED",
-  PENDING: "OUTCOME_UNKNOWN",
-  PLANNED: "FAILED",
+  PROTOCOL_ERROR: "FAILED",
 } satisfies Record<
-  CmsAgentImmediateInterpretationResponseDtoOutcome,
+  Exclude<CmsAgentExecution["kind"], "ANALYSIS_QUEUED">,
   ComposerPhase
 >;
 
@@ -108,15 +104,19 @@ function formatUsdTicks(value: string): string {
   return `$${whole.toString()}${fraction ? `.${fraction}` : ""}`;
 }
 
-function applyExecution(result: CmsAgentImmediateExecutionResponseDto): void {
-  outcomeCode.value = result.interpretation.code ?? "";
-  if (result.analysis) {
+function applyExecution(result: CmsAgentExecution): void {
+  outcomeCode.value = "code" in result ? (result.code ?? "") : "";
+  if (result.kind === "ANALYSIS_QUEUED") {
     phase.value = "SUCCEEDED";
-    createdAnalysisId.value = result.analysis.analysisId;
-    emit("analysis-created", result.analysis.analysisId);
+    createdAnalysisId.value = result.analysisId;
+    emit("analysis-created", result.analysisId);
     return;
   }
-  phase.value = phaseByOutcome[result.interpretation.outcome];
+  phase.value = phaseByExecutionKind[result.kind];
+  if (result.kind === "PROTOCOL_ERROR") {
+    error.value =
+      "Сервер запустил запрос, но вернул неполный результат. Проверьте журнал анализов перед повтором.";
+  }
 }
 
 async function executePending(
@@ -315,7 +315,11 @@ function handleShortcut(event: KeyboardEvent): void {
           <i class="pi pi-sparkles" aria-hidden="true" />
           {{ buttonLabel }}
         </span>
-        <span v-else class="shortcut" aria-label="Command или Control плюс Enter">
+        <span
+          v-else
+          class="shortcut"
+          aria-label="Command или Control плюс Enter"
+        >
           <kbd>⌘/Ctrl</kbd><span aria-hidden="true">+</span><kbd>Enter</kbd>
         </span>
         <Button
@@ -561,8 +565,7 @@ function handleShortcut(event: KeyboardEvent): void {
   bottom: -148px;
   width: 250px;
   height: 250px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-violet) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-violet) 22%, transparent);
   border-radius: 50%;
   content: "";
   box-shadow:
@@ -600,8 +603,7 @@ function handleShortcut(event: KeyboardEvent): void {
 .ai-orb::before {
   position: absolute;
   inset: -8px;
-  border: 1px solid
-    color-mix(in srgb, var(--ai-border-start) 42%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ai-border-start) 42%, transparent);
   border-radius: 22px;
   box-shadow:
     0 0 18px color-mix(in srgb, var(--ai-aura-violet) 14%, transparent),
@@ -647,7 +649,11 @@ function handleShortcut(event: KeyboardEvent): void {
   padding: 7px;
   overflow: hidden;
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--surface-raised) 94%, var(--surface-card));
+  background: color-mix(
+    in srgb,
+    var(--surface-raised) 94%,
+    var(--surface-card)
+  );
   border: 1px solid
     color-mix(in srgb, var(--status-violet) 18%, var(--border-default));
   border-radius: 24px;

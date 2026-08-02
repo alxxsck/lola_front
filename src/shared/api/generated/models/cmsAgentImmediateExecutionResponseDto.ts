@@ -5,16 +5,10 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CmsAgentImmediateExecutionResponseDtoAnalysis } from "./cmsAgentImmediateExecutionResponseDtoAnalysis";
 import type { CmsAgentImmediateInterpretationResponseDto } from "./cmsAgentImmediateInterpretationResponseDto";
 import type { CmsAgentImmediateExecutionResponseDtoResult } from "./cmsAgentImmediateExecutionResponseDtoResult";
 
 export interface CmsAgentImmediateExecutionResponseDto {
-  /**
-   * Deprecated V1 compatibility alias for Project Analysis clients.
-   * @nullable
-   */
-  analysis?: CmsAgentImmediateExecutionResponseDtoAnalysis;
   interpretation: CmsAgentImmediateInterpretationResponseDto;
   /** @nullable */
   result?: CmsAgentImmediateExecutionResponseDtoResult;

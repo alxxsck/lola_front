@@ -10,6 +10,7 @@ import type { ProjectAIAnalysisBudgetReservationDto } from "./projectAIAnalysisB
 import type { ProjectAIAnalysisDetailRunDtoCostStatus } from "./projectAIAnalysisDetailRunDtoCostStatus";
 import type { ProjectAIAnalysisDetailRunDtoCostStatusesItem } from "./projectAIAnalysisDetailRunDtoCostStatusesItem";
 import type { ProjectAIAnalysisDetailRunDtoInitiatedBy } from "./projectAIAnalysisDetailRunDtoInitiatedBy";
+import type { ProjectAIAnalysisErrorPresentationDto } from "./projectAIAnalysisErrorPresentationDto";
 import type { ProjectAIAnalysisModelAttemptDto } from "./projectAIAnalysisModelAttemptDto";
 import type { ProjectAIAnalysisDetailRunDtoPricingSnapshot } from "./projectAIAnalysisDetailRunDtoPricingSnapshot";
 import type { ProjectAIAnalysisQueryReceiptDto } from "./projectAIAnalysisQueryReceiptDto";
@@ -53,10 +54,13 @@ export interface ProjectAIAnalysisDetailRunDto {
   createdAt: string;
   /** @nullable */
   errorCode?: string | null;
+  /** @nullable */
+  errorMessage?: string | null;
   initiatedBy: ProjectAIAnalysisDetailRunDtoInitiatedBy;
   /** @nullable */
   initiatedByCmsUserId?: string | null;
   limitationCodes: string[];
+  limitations: ProjectAIAnalysisErrorPresentationDto[];
   /** @pattern ^\d+$ */
   maxAiCostUsdTicks?: string;
   /** @pattern ^\d+$ */

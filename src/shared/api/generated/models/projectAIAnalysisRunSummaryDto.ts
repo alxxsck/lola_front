@@ -7,6 +7,7 @@
  */
 import type { ProjectAIAnalysisRunSummaryDtoCostStatus } from "./projectAIAnalysisRunSummaryDtoCostStatus";
 import type { ProjectAIAnalysisRunSummaryDtoCostStatusesItem } from "./projectAIAnalysisRunSummaryDtoCostStatusesItem";
+import type { ProjectAIAnalysisErrorPresentationDto } from "./projectAIAnalysisErrorPresentationDto";
 import type { ProjectAIAnalysisRunSummaryDtoStatus } from "./projectAIAnalysisRunSummaryDtoStatus";
 
 export interface ProjectAIAnalysisRunSummaryDto {
@@ -22,9 +23,14 @@ export interface ProjectAIAnalysisRunSummaryDto {
   costAttributedToCmsUserId?: string;
   costStatus?: ProjectAIAnalysisRunSummaryDtoCostStatus;
   costStatuses?: ProjectAIAnalysisRunSummaryDtoCostStatusesItem[];
+  /** @nullable */
+  errorCode?: string | null;
+  /** @nullable */
+  errorMessage?: string | null;
   eventCodes: string[];
   hasLimitations: boolean;
   limitationCodes: string[];
+  limitations: ProjectAIAnalysisErrorPresentationDto[];
   /** @minimum 0 */
   modelAttempts?: number;
   /** @pattern ^\d+$ */
