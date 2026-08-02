@@ -141,6 +141,26 @@ test("standalone check verifies the committed artifact without a sibling backend
   }
 });
 
+test("explicit Backend export regenerates Prisma Client before compiling", async () => {
+  const source = await readFile(checker, "utf8");
+  const generation = source.indexOf('["run", "prisma:generate"]');
+  const build = source.indexOf('["run", "build"]');
+
+  assert.notEqual(generation, -1);
+  assert.notEqual(build, -1);
+  assert.ok(generation < build);
+});
+
+test("directory write resolves and persists the verified Backend HEAD", async () => {
+  const source = await readFile(checker, "utf8");
+
+  assert.match(
+    source,
+    /backendSourceRevision = await assertRequestedBackendRevision/u,
+  );
+  assert.match(source, /\{ backendSourceRevision \}/u);
+});
+
 test("standalone check fails when contract metadata is missing", async () => {
   const paths = await fixture();
   const missingMetadata = path.join(paths.root, "missing-contract.json");
@@ -322,6 +342,70 @@ test("write mode rejects a source revision that differs from backend HEAD", asyn
     });
     assert.equal(result.code, 1);
     assert.match(result.stderr, /does not match Backend checkout HEAD/);
+  } finally {
+    await rm(paths.root, { recursive: true, force: true });
+  }
+});
+
+test("explicit Backend export rejects tracked worktree changes", async () => {
+  const paths = await fixture();
+  const backendDirectory = path.join(paths.root, "backend");
+  await runCommand("git", ["init", backendDirectory], paths.root);
+  await runCommand(
+    "git",
+    ["config", "user.email", "contract-test@example.com"],
+    backendDirectory,
+  );
+  await runCommand(
+    "git",
+    ["config", "user.name", "Contract Test"],
+    backendDirectory,
+  );
+  await writeFile(path.join(backendDirectory, "marker"), "committed\n");
+  await runCommand("git", ["add", "marker"], backendDirectory);
+  await runCommand("git", ["commit", "-m", "contract source"], backendDirectory);
+  await writeFile(path.join(backendDirectory, "marker"), "uncommitted\n");
+  try {
+    const result = await runChecker({
+      ...paths,
+      backendDirectory,
+      backendDocumentPath: undefined,
+      write: true,
+    });
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /tracked or untracked changes/);
+  } finally {
+    await rm(paths.root, { recursive: true, force: true });
+  }
+});
+
+test("explicit Backend export rejects untracked source files", async () => {
+  const paths = await fixture();
+  const backendDirectory = path.join(paths.root, "backend");
+  await runCommand("git", ["init", backendDirectory], paths.root);
+  await runCommand(
+    "git",
+    ["config", "user.email", "contract-test@example.com"],
+    backendDirectory,
+  );
+  await runCommand(
+    "git",
+    ["config", "user.name", "Contract Test"],
+    backendDirectory,
+  );
+  await writeFile(path.join(backendDirectory, "marker"), "committed\n");
+  await runCommand("git", ["add", "marker"], backendDirectory);
+  await runCommand("git", ["commit", "-m", "contract source"], backendDirectory);
+  await writeFile(path.join(backendDirectory, "untracked.ts"), "export {};\n");
+  try {
+    const result = await runChecker({
+      ...paths,
+      backendDirectory,
+      backendDocumentPath: undefined,
+      write: true,
+    });
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /tracked or untracked changes/);
   } finally {
     await rm(paths.root, { recursive: true, force: true });
   }

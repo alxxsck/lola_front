@@ -71,8 +71,11 @@ const state = {
     readOnly: false,
     reasons: [],
   },
+  safeFieldRecommendation: {
+    fields: [],
+    skipped: [],
+  },
   diagnostics: [],
-  safeFieldRecommendation: { fields: [], skipped: [] },
 };
 
 function mountAccess() {

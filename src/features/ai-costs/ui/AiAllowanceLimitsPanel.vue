@@ -18,6 +18,7 @@ import {
   AI_ALLOWANCE_CATEGORIES,
   parseAllowanceUsd,
   type AiAllowanceEnforcementMode,
+  type AiAllowanceLowThresholdMode,
   type AiAllowancePeriodKind,
   type AiAllowanceProjectPolicyView,
 } from "../model/ai-allowance";
@@ -48,6 +49,8 @@ const reason = ref("");
 const idempotencyKey = ref("");
 const hardConfirmed = ref(false);
 const showEndUserExactUsd = ref(false);
+const lowThresholdMode = ref<AiAllowanceLowThresholdMode>("PERCENT");
+const lowThresholdValue = ref("10");
 const formError = ref("");
 const editingProjectPolicyVersion = ref("");
 const configurationConflict = ref(false);
@@ -98,6 +101,13 @@ const canActivateHard = computed(
 const policyReady = computed(
   () => loadedProjectId.value === props.projectId && Boolean(policy.value),
 );
+const lowThresholdDisplay = computed(() => {
+  const configured = policy.value?.policy;
+  if (!configured) return "Не задан";
+  return configured.lowThresholdMode === "ABSOLUTE_USD"
+    ? formatMoney(configured.lowThresholdValue)
+    : `${compactDecimal(configured.lowThresholdValue)}% от базового лимита`;
+});
 
 watch(
   () => [props.projectId, props.canRead] as const,
@@ -265,6 +275,10 @@ function openEditor(): void {
   hardConfirmed.value = false;
   showEndUserExactUsd.value =
     policy.value?.policy?.showEndUserExactUsd ?? false;
+  lowThresholdMode.value =
+    policy.value?.policy?.lowThresholdMode ?? "PERCENT";
+  lowThresholdValue.value =
+    policy.value?.policy?.lowThresholdValue ?? "10.000000000000";
   formError.value = "";
   configurationConflict.value = false;
   dialogOpen.value = true;
@@ -339,6 +353,18 @@ async function save(): Promise<void> {
     );
   if (!validTimezone(timezone.value.trim()))
     return fail("Укажите корректный IANA timezone длиной до 100 символов.");
+  const exactLowThreshold = parseAllowanceUsd(lowThresholdValue.value.trim());
+  if (
+    !exactLowThreshold ||
+    compareDecimalStrings(exactLowThreshold, "0") <= 0 ||
+    (lowThresholdMode.value === "PERCENT" &&
+      compareDecimalStrings(exactLowThreshold, "100") > 0)
+  )
+    return fail(
+      lowThresholdMode.value === "PERCENT"
+        ? "Порог LOW должен быть больше 0 и не больше 100 процентов."
+        : "Порог LOW должен быть положительной суммой USD (до 12 знаков после точки).",
+    );
   if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
     return fail("Причина должна содержать от 3 до 500 символов.");
   if (!idempotencyKey.value.trim() || idempotencyKey.value.length > 128)
@@ -361,6 +387,8 @@ async function save(): Promise<void> {
         period: period.value,
         timezone: timezone.value.trim(),
         enforcementMode: enforcement.value,
+        lowThresholdMode: lowThresholdMode.value,
+        lowThresholdValue: exactLowThreshold,
         showEndUserExactUsd: showEndUserExactUsd.value,
         reason: reason.value.trim(),
         ...(compactContent(
@@ -614,6 +642,11 @@ function fail(value: string): void {
 function formatMoney(value: DecimalString): string {
   return formatDecimalMoney(value, "USD");
 }
+function compactDecimal(value: DecimalString): string {
+  const [whole, fraction = ""] = value.split(".");
+  const significantFraction = fraction.replace(/0+$/u, "");
+  return significantFraction ? `${whole}.${significantFraction}` : whole!;
+}
 function newIdempotencyKey(): string {
   return globalThis.crypto?.randomUUID?.() ?? `allowance-${Date.now()}`;
 }
@@ -833,6 +866,13 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             ><span>Определяет границы периода и сброса.</span>
           </article>
           <article>
+            <small>Порог предупреждения LOW</small
+            ><strong data-testid="allowance-low-threshold-summary">{{
+              lowThresholdDisplay
+            }}</strong
+            ><span>При пересечении пользователь получит настроенное сообщение.</span>
+          </article>
+          <article>
             <small>Планы</small><strong>{{ policy.plans.length }}</strong
             ><span>{{
               policy.defaultAssignment
@@ -941,8 +981,30 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           </select></label
         ><label>Timezone<input v-model="timezone" autocomplete="off" /></label>
       </div>
-      <label
-        >Enforcement<select v-model="enforcement">
+      <div class="form-row">
+        <label for="allowance-low-threshold-mode"
+          >Порог LOW<select
+            id="allowance-low-threshold-mode"
+            v-model="lowThresholdMode"
+          >
+            <option value="PERCENT">Процент от базового лимита</option>
+            <option value="ABSOLUTE_USD">Фиксированная сумма USD</option>
+          </select></label
+        ><label for="allowance-low-threshold-value"
+          >Значение порога<input
+            id="allowance-low-threshold-value"
+            v-model="lowThresholdValue"
+            inputmode="decimal"
+            autocomplete="off"
+          /><small>{{
+            lowThresholdMode === "PERCENT"
+              ? "Больше 0 и не больше 100."
+              : "Положительная точная сумма USD."
+          }}</small></label
+        >
+      </div>
+      <label for="allowance-enforcement"
+        >Enforcement<select id="allowance-enforcement" v-model="enforcement">
           <option value="DISABLED">DISABLED — только учёт</option>
           <option value="SHADOW">SHADOW — теневая проверка</option>
           <option value="SOFT">SOFT — предупреждение</option>

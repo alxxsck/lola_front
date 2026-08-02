@@ -172,22 +172,42 @@ async function assertPinnedBackendRevision(backendDirectory, metadata) {
 }
 
 async function assertRequestedBackendRevision(backendDirectory, expected) {
-  if (!expected) return;
   const actual = await capture(
     "git",
     ["rev-parse", "HEAD"],
     backendDirectory,
     "Backend revision resolution",
   );
-  if (actual !== expected) {
+  if (expected && actual !== expected) {
     throw new Error(
       `Requested Backend source revision ${expected} does not match Backend checkout HEAD ${actual}`,
+    );
+  }
+  return actual;
+}
+
+async function assertCleanBackendCheckout(backendDirectory) {
+  const changes = await capture(
+    "git",
+    ["status", "--porcelain=v1", "--untracked-files=normal"],
+    backendDirectory,
+    "Backend worktree status",
+  );
+  if (changes) {
+    throw new Error(
+      "Explicit Backend checkout has tracked or untracked changes; commit, remove, or use a clean worktree before exporting OpenAPI",
     );
   }
 }
 
 async function exportBackendOpenApi(backendDirectory, target) {
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+  await run(
+    npm,
+    ["run", "prisma:generate"],
+    backendDirectory,
+    "Backend Prisma Client generation",
+  );
   await run(npm, ["run", "build"], backendDirectory, "Backend build");
   await run(
     process.execPath,
@@ -241,17 +261,19 @@ async function main() {
   const exportedDocumentPath =
     options.backendDocument ??
     path.join(temporaryDirectory, "lola-backend.json");
+  let backendSourceRevision;
 
   try {
     if (options.backendDirectory) {
       if (options.write) {
-        await assertRequestedBackendRevision(
+        backendSourceRevision = await assertRequestedBackendRevision(
           options.backendDirectory,
           options.backendRef,
         );
       } else {
         await assertPinnedBackendRevision(options.backendDirectory, metadata);
       }
+      await assertCleanBackendCheckout(options.backendDirectory);
       await exportBackendOpenApi(
         options.backendDirectory,
         exportedDocumentPath,
@@ -277,8 +299,8 @@ async function main() {
         `${JSON.stringify(
           {
             ...baseMetadata,
-            ...(options.backendRef
-              ? { backendSourceRevision: options.backendRef }
+            ...(backendSourceRevision
+              ? { backendSourceRevision }
               : {}),
             contractRevision: `sha256:${sha256(content)}`,
             sha256: sha256(content),

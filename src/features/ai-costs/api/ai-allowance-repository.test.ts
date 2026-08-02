@@ -14,6 +14,8 @@ const policyResponse = {
     enforcementMode: "SOFT",
     timezone: "Europe/Madrid",
     warningContent: {},
+    lowThresholdMode: "PERCENT",
+    lowThresholdValue: "10.000000000000",
     exhaustedContent: {},
     showEndUserExactUsd: false,
     version: "2",
@@ -64,10 +66,36 @@ describe("aiAllowanceRepository", () => {
       "5.000000000001",
     );
     expect(result.policy?.showEndUserExactUsd).toBe(false);
+    expect(result.policy?.lowThresholdMode).toBe("PERCENT");
+    expect(result.policy?.lowThresholdValue).toBe("10.000000000000");
     expect(axiosInstance.get).toHaveBeenCalledWith(
       "/api/v1/admin/projects/project-1/ai-allowance",
     );
   });
+
+  it.each([
+    ["PERCENT", "0.000000000000"],
+    ["PERCENT", "100.000000000001"],
+    ["ABSOLUTE_USD", "0"],
+  ] as const)(
+    "fails closed for invalid LOW threshold %s %s",
+    async (lowThresholdMode, lowThresholdValue) => {
+      vi.mocked(axiosInstance.get).mockResolvedValue({
+        data: {
+          ...policyResponse,
+          policy: {
+            ...policyResponse.policy,
+            lowThresholdMode,
+            lowThresholdValue,
+          },
+        },
+      });
+
+      await expect(
+        aiAllowanceRepository.projectPolicy("project-1"),
+      ).rejects.toThrow("некорректные данные");
+    },
+  );
 
   it("loads exact balance and cursor journal entries with signed deltas", async () => {
     vi.mocked(axiosInstance.get)
@@ -253,6 +281,8 @@ describe("aiAllowanceRepository", () => {
       period: "DAY" as const,
       timezone: "Europe/Madrid",
       enforcementMode: "SOFT" as const,
+      lowThresholdMode: "PERCENT" as const,
+      lowThresholdValue: "10.000000000000" as const,
       showEndUserExactUsd: false,
       reason: "Daily project allowance",
     };
@@ -519,6 +549,8 @@ describe("aiAllowanceRepository", () => {
           period: "DAY",
           timezone: "UTC",
           enforcementMode: "SOFT",
+          lowThresholdMode: "PERCENT",
+          lowThresholdValue: "10.000000000000",
           showEndUserExactUsd: false,
           reason: "Update daily allowance",
         },
@@ -543,6 +575,8 @@ describe("aiAllowanceRepository", () => {
         period: "DAY",
         timezone: "UTC",
         enforcementMode: "SOFT",
+        lowThresholdMode: "PERCENT",
+        lowThresholdValue: "10.000000000000",
         showEndUserExactUsd: false,
         reason: "Replay daily allowance update",
       },
@@ -569,6 +603,8 @@ describe("aiAllowanceRepository", () => {
           period: "DAY",
           timezone: "UTC",
           enforcementMode: "SOFT",
+          lowThresholdMode: "PERCENT",
+          lowThresholdValue: "10.000000000000",
           showEndUserExactUsd: false,
           reason: "Reject malformed replay version",
         },

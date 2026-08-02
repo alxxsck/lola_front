@@ -110,7 +110,13 @@ function itemState(
       readOnly: false,
       reasons: [],
     },
-    safeFieldRecommendation: { fields: [], skipped: [] },
+    safeFieldRecommendation: {
+      fields: settings.item.safeFields.map((field) => ({
+        ...field,
+        operations: [...field.operations],
+      })),
+      skipped: [],
+    },
   };
 }
 

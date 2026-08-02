@@ -1961,6 +1961,24 @@ for (const schemaName of [
   }
 }
 
+for (const path of [
+  "/api/v1/admin/projects/{projectId}/ai-allowance/accrual-rules",
+  "/api/v1/admin/projects/{projectId}/ai-allowance/accrual-receipts",
+]) {
+  const parameters = document.paths?.[path]?.get?.parameters ?? [];
+  const limit = parameters.find(
+    (parameter) => parameter?.in === "query" && parameter?.name === "limit",
+  );
+  if (
+    !limit ||
+    limit.schema?.type !== "number" ||
+    limit.schema?.minimum !== 1 ||
+    limit.schema?.maximum !== 100
+  ) {
+    throw new Error(`${path} must publish limit as a bounded number`);
+  }
+}
+
 console.log(
   `OpenAPI contract check passed (${requiredOperations.size} required operations)`,
 );
