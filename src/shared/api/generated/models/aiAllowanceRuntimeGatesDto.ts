@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Localized variants keyed by a canonical BCP-47 Project Locale (for example es or pt-BR).
- */
-export type AllowanceLocalizedContentDtoVariants = { [key: string]: string };
+export interface AiAllowanceRuntimeGatesDto {
+  emergencyDisabled: boolean;
+  hardEnforcementApproved: boolean;
+}

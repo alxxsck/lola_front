@@ -7,9 +7,10 @@
  */
 import type { PutAllowancePlanCategoryRuleDto } from "./putAllowancePlanCategoryRuleDto";
 import type { PutDefaultAllowancePlanDtoEnforcementMode } from "./putDefaultAllowancePlanDtoEnforcementMode";
-import type { AllowanceLocalizedContentDto } from "./allowanceLocalizedContentDto";
+import type { PutDefaultAllowancePlanDtoExhaustedContent } from "./putDefaultAllowancePlanDtoExhaustedContent";
 import type { PutDefaultAllowancePlanDtoLowThresholdMode } from "./putDefaultAllowancePlanDtoLowThresholdMode";
 import type { PutDefaultAllowancePlanDtoPeriod } from "./putDefaultAllowancePlanDtoPeriod";
+import type { PutDefaultAllowancePlanDtoWarningContent } from "./putDefaultAllowancePlanDtoWarningContent";
 
 export interface PutDefaultAllowancePlanDto {
   /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
@@ -20,7 +21,8 @@ export interface PutDefaultAllowancePlanDto {
   /** Explicitly restore the built-in LOW warning copy. */
   clearWarningContent?: boolean;
   enforcementMode: PutDefaultAllowancePlanDtoEnforcementMode;
-  exhaustedContent?: AllowanceLocalizedContentDto;
+  /** SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map. */
+  exhaustedContent?: PutDefaultAllowancePlanDtoExhaustedContent;
   /**
    * Project-wide allowance configuration generation returned by the latest allowance read.
    * @pattern ^(?:0|[1-9]\d{0,19})$
@@ -37,5 +39,6 @@ export interface PutDefaultAllowancePlanDto {
   reason: string;
   showEndUserExactUsd: boolean;
   timezone: string;
-  warningContent?: AllowanceLocalizedContentDto;
+  /** SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map. */
+  warningContent?: PutDefaultAllowancePlanDtoWarningContent;
 }

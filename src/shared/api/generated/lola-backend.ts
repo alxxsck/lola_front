@@ -32,6 +32,7 @@ import type {
   AiAllowanceAdminProjectPolicyParams,
   AiAllowanceAdminReconciliationQueueParams,
   AiAllowanceAdminResponseDto,
+  AiAllowanceProjectPolicyResponseDto,
   AiAllowancePublicRead200,
   AiCapabilityPreviewResponseDto,
   AiCostCmsUserPageResponseDto,
@@ -1018,9 +1019,11 @@ export const cmsAgentRequestExecute = (
 export const aiAllowanceAdminProjectPolicy = (
   projectId: string,
   params?: AiAllowanceAdminProjectPolicyParams,
-  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+  options?: SecondParameter<
+    typeof request<AiAllowanceProjectPolicyResponseDto>
+  >,
 ) => {
-  return request<AiAllowanceAdminResponseDto>(
+  return request<AiAllowanceProjectPolicyResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/ai-allowance`,
       method: "GET",

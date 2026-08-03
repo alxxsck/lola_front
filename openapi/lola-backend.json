@@ -1184,6 +1184,271 @@
         ],
         "type": "object"
       },
+      "AiAllowanceLocalizationCatalogDto": {
+        "properties": {
+          "defaultLocale": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "supportedLocales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "translationSupportedLocales": {
+            "description": "Project locales accepted by the existing translation-jobs API as source/target locales.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "defaultLocale",
+          "supportedLocales",
+          "translationSupportedLocales"
+        ],
+        "type": "object"
+      },
+      "AiAllowanceProjectPolicyDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "enforcementMode": {
+            "enum": [
+              "DISABLED",
+              "SHADOW",
+              "SOFT",
+              "HARD"
+            ],
+            "type": "string"
+          },
+          "exhaustedContent": {
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "SYSTEM"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "defaultLocale": {
+                    "example": "pt-BR",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "CUSTOM"
+                    ],
+                    "type": "string"
+                  },
+                  "translations": {
+                    "additionalProperties": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
+                    "maxProperties": 50,
+                    "minProperties": 1,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "defaultLocale",
+                  "translations"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "lowThresholdMode": {
+            "enum": [
+              "PERCENT",
+              "ABSOLUTE_USD"
+            ],
+            "type": "string"
+          },
+          "lowThresholdValue": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "showEndUserExactUsd": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "warningContent": {
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "SYSTEM"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "defaultLocale": {
+                    "example": "pt-BR",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "CUSTOM"
+                    ],
+                    "type": "string"
+                  },
+                  "translations": {
+                    "additionalProperties": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
+                    "maxProperties": 50,
+                    "minProperties": 1,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "defaultLocale",
+                  "translations"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "projectId",
+          "enforcementMode",
+          "timezone",
+          "warningContent",
+          "lowThresholdMode",
+          "lowThresholdValue",
+          "exhaustedContent",
+          "showEndUserExactUsd",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AiAllowanceProjectPolicyResponseDto": {
+        "properties": {
+          "defaultAssignment": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "localization": {
+            "$ref": "#/components/schemas/AiAllowanceLocalizationCatalogDto"
+          },
+          "plans": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "plansPageInfo": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "policy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiAllowanceProjectPolicyDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "projectPolicyVersion": {
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "runtimeGates": {
+            "$ref": "#/components/schemas/AiAllowanceRuntimeGatesDto"
+          }
+        },
+        "required": [
+          "projectPolicyVersion",
+          "localization",
+          "policy",
+          "plans",
+          "plansPageInfo",
+          "defaultAssignment",
+          "runtimeGates"
+        ],
+        "type": "object"
+      },
+      "AiAllowanceRuntimeGatesDto": {
+        "properties": {
+          "emergencyDisabled": {
+            "type": "boolean"
+          },
+          "hardEnforcementApproved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hardEnforcementApproved",
+          "emergencyDisabled"
+        ],
+        "type": "object"
+      },
       "AiCapabilityIssueResponseDto": {
         "properties": {
           "code": {
@@ -4367,31 +4632,6 @@
         "required": [
           "eventQuery"
         ],
-        "type": "object"
-      },
-      "AllowanceLocalizedContentDto": {
-        "properties": {
-          "en": {
-            "maxLength": 2000,
-            "type": "string"
-          },
-          "message": {
-            "maxLength": 2000,
-            "type": "string"
-          },
-          "ru": {
-            "maxLength": 2000,
-            "type": "string"
-          },
-          "variants": {
-            "additionalProperties": {
-              "maxLength": 2000,
-              "type": "string"
-            },
-            "description": "Localized variants keyed by a canonical BCP-47 Project Locale (for example es or pt-BR).",
-            "type": "object"
-          }
-        },
         "type": "object"
       },
       "AllRuleExplanationResponseDto": {
@@ -24520,7 +24760,61 @@
             "type": "string"
           },
           "exhaustedContent": {
-            "$ref": "#/components/schemas/AllowanceLocalizedContentDto"
+            "description": "SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map.",
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "SYSTEM"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "defaultLocale": {
+                    "example": "pt-BR",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "CUSTOM"
+                    ],
+                    "type": "string"
+                  },
+                  "translations": {
+                    "additionalProperties": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
+                    "maxProperties": 50,
+                    "minProperties": 1,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "defaultLocale",
+                  "translations"
+                ],
+                "type": "object"
+              }
+            ]
           },
           "expectedProjectPolicyVersion": {
             "description": "Project-wide allowance configuration generation returned by the latest allowance read.",
@@ -24561,7 +24855,61 @@
             "type": "string"
           },
           "warningContent": {
-            "$ref": "#/components/schemas/AllowanceLocalizedContentDto"
+            "description": "SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map.",
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "SYSTEM"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "defaultLocale": {
+                    "example": "pt-BR",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "CUSTOM"
+                    ],
+                    "type": "string"
+                  },
+                  "translations": {
+                    "additionalProperties": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
+                    "maxProperties": 50,
+                    "minProperties": 1,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "defaultLocale",
+                  "translations"
+                ],
+                "type": "object"
+              }
+            ]
           }
         },
         "required": [
@@ -36321,7 +36669,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                  "$ref": "#/components/schemas/AiAllowanceProjectPolicyResponseDto"
                 }
               }
             },
