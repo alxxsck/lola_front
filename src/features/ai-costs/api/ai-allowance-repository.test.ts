@@ -61,6 +61,49 @@ const policyResponse = {
 describe("aiAllowanceRepository", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("accepts an unconfigured project policy at version zero", async () => {
+    vi.mocked(axiosInstance.get).mockResolvedValue({
+      data: {
+        projectPolicyVersion: "0",
+        localization: {
+          defaultLocale: "ru",
+          supportedLocales: [
+            "ru",
+            "en",
+            "it",
+            "de",
+            "es",
+            "pt",
+            "pl",
+            "bn",
+            "sw",
+            "so",
+            "ar",
+          ],
+        },
+        policy: null,
+        plans: [],
+        plansPageInfo: { hasMore: false, nextCursor: null },
+        defaultAssignment: null,
+        runtimeGates: {
+          hardEnforcementApproved: false,
+          emergencyDisabled: true,
+        },
+      },
+    });
+
+    await expect(
+      aiAllowanceRepository.projectPolicy("project-1"),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        projectPolicyVersion: "0",
+        policy: null,
+        plans: [],
+        defaultAssignment: null,
+      }),
+    );
+  });
+
   it("validates the project policy graph and preserves exact money", async () => {
     vi.mocked(axiosInstance.get).mockResolvedValue({ data: policyResponse });
 

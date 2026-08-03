@@ -898,7 +898,6 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         />
       </div>
     </div>
-    <AiAllowanceDirectGrantPanel v-if="canGrant" :project-id="projectId" />
     <template>
       <div v-if="loading && !policy" class="allowance-loading">
         <Skeleton height="150px" /><Skeleton height="150px" />
@@ -911,16 +910,21 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         <div class="allowance-heading">
           <div>
             <span class="eyebrow">Project allowance policy</span>
-            <h2>Лимиты расходов</h2>
+            <h2>Общий лимит для всех пользователей</h2>
             <p>
-              Бюджет AI в USD — внутренняя квота на потребление, не денежный
-              кошелёк и не доступные к выводу средства.
+              Лимиты расходов задают базовую AI-квоту в USD каждому
+              пользователю проекта. Это внутренняя квота на потребление, не
+              денежный кошелёк и не доступные к выводу средства.
             </p>
           </div>
           <div class="heading-actions">
             <Button
               v-if="canManage"
-              label="Изменить базовый план"
+              :label="
+                latestDefaultRevision
+                  ? 'Изменить базовый план'
+                  : 'Настроить общий лимит'
+              "
               icon="pi pi-pencil"
               @click="openEditor"
             /><Button
@@ -1152,6 +1156,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         </div>
       </template>
     </template>
+    <AiAllowanceDirectGrantPanel v-if="canGrant" :project-id="projectId" />
     <AiAllowanceAccrualRulesPanel
       v-if="canReadAccrual || canManageAccrual"
       :project-id="projectId"

@@ -237,6 +237,40 @@ describe("allowance admin panels", () => {
     expect(wrapper.text()).toContain("Изменить базовый план");
   });
 
+  it("makes the universal limit the primary action for an unconfigured project", async () => {
+    mocks.projectPolicy.mockResolvedValueOnce({
+      projectPolicyVersion: "0",
+      localization: {
+        defaultLocale: "ru",
+        supportedLocales: ["ru", "en"],
+      },
+      policy: null,
+      plans: [],
+      plansPageInfo: { hasMore: false, nextCursor: null },
+      defaultAssignment: null,
+      runtimeGates: {
+        hardEnforcementApproved: false,
+        emergencyDisabled: true,
+      },
+    });
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canGrant: true,
+        canReconcile: false,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Общий лимит для всех пользователей");
+    expect(wrapper.text()).toContain("Настроить общий лимит");
+    expect(wrapper.text().indexOf("Общий лимит для всех пользователей")).toBeLessThan(
+      wrapper.text().indexOf("Ручное начисление квоты"),
+    );
+  });
+
   it("blocks HARD submission until the explicit risk confirmation", async () => {
     mocks.putDefaultPlan.mockResolvedValue({
       projectPolicyVersion: "5",
