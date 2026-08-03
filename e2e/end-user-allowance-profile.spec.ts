@@ -55,15 +55,16 @@ async function stubAllowance(page: Page) {
           localization: {
             defaultLocale: "ru",
             supportedLocales: ["ru"],
+            translationSupportedLocales: ["ru"],
           },
           policy: {
             projectId,
             enforcementMode: "SOFT",
             timezone: "Europe/Madrid",
-            warningContent: {},
+            warningContent: { mode: "SYSTEM" },
             lowThresholdMode: "PERCENT",
             lowThresholdValue: "10",
-            exhaustedContent: {},
+            exhaustedContent: { mode: "SYSTEM" },
             showEndUserExactUsd: true,
             version: "7",
             createdAt: "2026-08-01T00:00:00.000Z",
