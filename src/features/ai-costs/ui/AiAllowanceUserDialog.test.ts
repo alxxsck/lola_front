@@ -133,6 +133,51 @@ describe("AiAllowanceUserDialog", () => {
     expect(wrapper.emitted("changed")).toEqual([[]]);
   });
 
+  it.each([
+    { family: "manual grant", mode: "grant" as const },
+    { family: "personal assignment", mode: "assignment" as const },
+  ])(
+    "requires one fresh login for $family and never replays the mutation",
+    async ({ mode }) => {
+      const protectedMutation =
+        mode === "grant" ? mocks.grant : mocks.assignment;
+      protectedMutation.mockRejectedValue(reauthenticationError());
+      if (mode === "assignment") {
+        mocks.policy.mockResolvedValue({
+          ...policyView("7"),
+          plans: [activePlan()],
+        });
+      }
+      const wrapper = mountDialog(
+        {
+          canGrant: mode === "grant",
+          canManage: mode === "assignment",
+          canReconcile: false,
+        },
+        mode,
+      );
+      await flushPromises();
+      if (mode === "grant") {
+        await wrapper.findAll("input")[0]!.setValue("1.25");
+        await wrapper.get("textarea").setValue("Protected loyalty reward");
+      } else {
+        await wrapper.get("textarea").setValue("Assign protected VIP plan");
+      }
+
+      await wrapper.get("form").trigger("submit");
+      await flushPromises();
+      await wrapper
+        .get('[data-testid="allowance-fresh-login"]')
+        .trigger("click");
+
+      expect(wrapper.text()).toContain("не будут повторены автоматически");
+      expect(wrapper.text()).not.toContain("unsafe backend text");
+      expect(wrapper.emitted("fresh-login")).toEqual([[]]);
+      expect(protectedMutation).toHaveBeenCalledOnce();
+      expect(wrapper.find("form").exists()).toBe(true);
+    },
+  );
+
   it("previews a grant and keeps an auditable receipt including safe replay", async () => {
     mocks.balance
       .mockResolvedValueOnce({
@@ -375,9 +420,9 @@ describe("AiAllowanceUserDialog", () => {
     });
     await flushPromises();
 
-    expect(wrapper.find('[data-testid="category-rules-unavailable"]').exists()).toBe(
-      true,
-    );
+    expect(
+      wrapper.find('[data-testid="category-rules-unavailable"]').exists(),
+    ).toBe(true);
     expect(wrapper.text()).toContain(
       "Наблюдательный период работает без закреплённого плана",
     );
@@ -699,6 +744,45 @@ describe("AiAllowanceUserDialog", () => {
     expect(wrapper.get("select").text()).toContain("Enterprise");
   });
 
+  it("settles plan pagination across assignment permission revoke and regrant", async () => {
+    const nextPlans = deferred<ReturnType<typeof policyView>>();
+    mocks.policy
+      .mockResolvedValueOnce({
+        ...policyView("7"),
+        plansPageInfo: { hasMore: true, nextCursor: "plans-page-2" },
+      })
+      .mockReturnValueOnce(nextPlans.promise);
+    const wrapper = mountDialog({
+      canGrant: false,
+      canManage: true,
+      canReconcile: false,
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Назначить план"))!
+      .trigger("click");
+    void wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Показать остальные планы"))!
+      .trigger("click");
+    await flushPromises();
+
+    await wrapper.setProps({ canManage: false });
+    await wrapper.setProps({ canManage: true });
+    nextPlans.resolve({
+      ...policyView("7"),
+      plans: [activePlan("Enterprise")],
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Назначить план"))!
+      .trigger("click");
+
+    expect(wrapper.get("select").text()).toContain("Enterprise");
+  });
+
   it("fails closed when a later plan page has a different policy version", async () => {
     mocks.policy
       .mockResolvedValueOnce({
@@ -963,6 +1047,16 @@ function deferred<T>() {
     resolve = done;
   });
   return { promise, resolve };
+}
+
+function reauthenticationError(): ApiError {
+  return new ApiError(
+    428,
+    "unsafe backend text",
+    undefined,
+    "step-up-request",
+    "REAUTHENTICATION_REQUIRED",
+  );
 }
 
 function mountDialog(

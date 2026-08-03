@@ -12,6 +12,8 @@ import {
   type DecimalString,
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 import {
   parseAllowanceUsd,
   type AiAllowanceAssignment,
@@ -36,6 +38,7 @@ const emit = defineEmits<{
   "update:visible": [value: boolean];
   openJournal: [endUserId: string];
   changed: [];
+  "fresh-login": [];
 }>();
 const balance = ref<AiAllowanceUserBalance | null>(null);
 const loadedContext = ref("");
@@ -63,6 +66,7 @@ const plansLoading = ref(false);
 const projectPolicyVersion = ref("");
 const defaultAssignment = ref<AiAllowanceAssignment | null>(null);
 const configurationConflict = ref(false);
+const reauthenticationRequired = ref(false);
 const projectTimezone = ref("UTC");
 const pinnedPlanRevision = ref<AiAllowancePlanRevision | null>(null);
 interface GrantReceipt {
@@ -79,6 +83,7 @@ interface GrantReceipt {
 const grantReceipt = ref<GrantReceipt | null>(null);
 let initialModeApplied = false;
 let generation = 0;
+let mutationGeneration = 0;
 const activePlans = computed(() =>
   (loadedPlans.value.length ? loadedPlans.value : (props.plans ?? [])).filter(
     (plan) => plan.status === "ACTIVE",
@@ -109,6 +114,7 @@ watch(
     [props.visible, props.projectId, props.endUserId, props.canRead] as const,
   ([visible, , , canRead]) => {
     generation += 1;
+    mutationGeneration += 1;
     balance.value = null;
     loadedPlans.value = [];
     plansPageInfo.value = { hasMore: false, nextCursor: null };
@@ -117,6 +123,7 @@ watch(
     projectPolicyVersion.value = "";
     defaultAssignment.value = null;
     configurationConflict.value = false;
+    reauthenticationRequired.value = false;
     pinnedPlanRevision.value = null;
     grantReceipt.value = null;
     projectTimezone.value = "UTC";
@@ -153,7 +160,7 @@ watch(
       (mode.value === "grant" && !canGrant) ||
       (mode.value === "assignment" && !canManage)
     ) {
-      generation += 1;
+      mutationGeneration += 1;
       mutationLoading.value = false;
       formError.value = "";
       mode.value = "summary";
@@ -352,6 +359,7 @@ function beginGrant(): void {
   idempotencyKey.value = key();
   formError.value = "";
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
 }
 function beginAssignment(): void {
   if (!props.canRead || !props.canManage) return;
@@ -366,6 +374,7 @@ function beginAssignment(): void {
   idempotencyKey.value = key();
   formError.value = "";
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
 }
 async function submitGrant(): Promise<void> {
   if (!props.canRead || !props.canGrant)
@@ -448,16 +457,17 @@ async function mutate<T>(
   action: () => Promise<T>,
   acceptResult?: (result: T) => void,
 ): Promise<void> {
-  const requestGeneration = generation;
+  const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   const requestEndUserId = props.endUserId;
   mutationLoading.value = true;
   formError.value = "";
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
   try {
     const result = await action();
     if (
-      requestGeneration !== generation ||
+      requestGeneration !== mutationGeneration ||
       requestProjectId !== props.projectId ||
       requestEndUserId !== props.endUserId
     )
@@ -469,16 +479,20 @@ async function mutate<T>(
     emit("changed");
   } catch (cause) {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId &&
       requestEndUserId === props.endUserId
     ) {
       configurationConflict.value = isConfigurationConflict(cause);
-      formError.value = mutationMessage(cause, "Операция не выполнена");
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      formError.value = reauthenticationRequired.value
+        ? ""
+        : mutationMessage(cause, "Операция не выполнена");
     }
   } finally {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId &&
       requestEndUserId === props.endUserId
     )
@@ -887,6 +901,10 @@ async function refreshAssignmentDraft(): Promise<void> {
         ><small v-if="formError" class="error" role="alert">{{
           formError
         }}</small>
+        <AiAllowanceReauthenticationAction
+          :required="reauthenticationRequired"
+          @fresh-login="emit('fresh-login')"
+        />
         <footer>
           <Button
             label="Назад"
@@ -951,6 +969,10 @@ async function refreshAssignmentDraft(): Promise<void> {
         ><small v-if="formError" class="error" role="alert">{{
           formError
         }}</small>
+        <AiAllowanceReauthenticationAction
+          :required="reauthenticationRequired"
+          @fresh-login="emit('fresh-login')"
+        />
         <Button
           v-if="configurationConflict"
           label="Загрузить актуальную версию"

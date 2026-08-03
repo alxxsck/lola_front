@@ -6,6 +6,8 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { formatDecimalMoney } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 import type {
   AiAllowanceReconciliationItem,
   AiAllowanceReconciliationPage,
@@ -16,6 +18,7 @@ const props = defineProps<{
   projectId: string;
   canReconcile: boolean;
 }>();
+const emit = defineEmits<{ "fresh-login": [] }>();
 
 const status = ref<"" | "RESERVED" | "UNKNOWN_HELD">("");
 const cursor = ref("");
@@ -32,6 +35,7 @@ const idempotencyKey = ref("");
 const confirmed = ref(false);
 const formError = ref("");
 const resolving = ref(false);
+const reauthenticationRequired = ref(false);
 let generation = 0;
 
 const contextKey = computed(() =>
@@ -53,6 +57,7 @@ watch(
     selected.value = null;
     resolving.value = false;
     notice.value = "";
+    reauthenticationRequired.value = false;
   },
 );
 watch(
@@ -129,6 +134,7 @@ function openResolve(item: AiAllowanceReconciliationItem): void {
   idempotencyKey.value = commandKey();
   confirmed.value = false;
   formError.value = "";
+  reauthenticationRequired.value = false;
 }
 
 async function submitResolve(): Promise<void> {
@@ -145,6 +151,7 @@ async function submitResolve(): Promise<void> {
   const requestProjectId = props.projectId;
   resolving.value = true;
   formError.value = "";
+  reauthenticationRequired.value = false;
   notice.value = "";
   try {
     await aiAllowanceRepository.resolveAttempt(
@@ -163,8 +170,13 @@ async function submitResolve(): Promise<void> {
     if (cursor.value) cursor.value = "";
     else await load();
   } catch (cause) {
-    if (requestContextKey === contextKey.value)
-      formError.value = message(cause, "Не удалось разрешить attempt");
+    if (requestContextKey === contextKey.value) {
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      formError.value = reauthenticationRequired.value
+        ? ""
+        : message(cause, "Не удалось разрешить attempt");
+    }
   } finally {
     if (requestContextKey === contextKey.value) resolving.value = false;
   }
@@ -373,6 +385,10 @@ function message(cause: unknown, fallback: string): string {
       <small v-if="formError" class="form-error" role="alert">{{
         formError
       }}</small>
+      <AiAllowanceReauthenticationAction
+        :required="reauthenticationRequired"
+        @fresh-login="emit('fresh-login')"
+      />
       <footer>
         <Button
           label="Отмена"

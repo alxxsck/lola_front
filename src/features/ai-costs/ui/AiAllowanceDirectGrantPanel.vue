@@ -5,8 +5,11 @@ import Message from "primevue/message";
 import { compareDecimalStrings } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
 import { parseAllowanceUsd } from "../model/ai-allowance";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 
 const props = defineProps<{ projectId: string }>();
+const emit = defineEmits<{ "fresh-login": [] }>();
 const endUserId = ref("");
 const amount = ref("");
 const validFrom = ref(localInput(new Date()));
@@ -15,6 +18,7 @@ const reason = ref("");
 const saving = ref(false);
 const error = ref("");
 const notice = ref("");
+const reauthenticationRequired = ref(false);
 const commandFingerprint = ref("");
 const commandIdempotencyKey = ref("");
 let generation = 0;
@@ -28,6 +32,7 @@ watch(
     reason.value = "";
     error.value = "";
     notice.value = "";
+    reauthenticationRequired.value = false;
     saving.value = false;
     resetCommand();
     validFrom.value = localInput(new Date());
@@ -72,6 +77,7 @@ async function submit(): Promise<void> {
   saving.value = true;
   error.value = "";
   notice.value = "";
+  reauthenticationRequired.value = false;
   try {
     await aiAllowanceRepository.createGrant(
       requestProjectId,
@@ -92,11 +98,15 @@ async function submit(): Promise<void> {
     if (
       requestGeneration === generation &&
       requestProjectId === props.projectId
-    )
-      error.value =
-        cause instanceof Error
+    ) {
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      error.value = reauthenticationRequired.value
+        ? ""
+        : cause instanceof Error
           ? cause.message
           : "Не удалось создать начисление";
+    }
   } finally {
     if (
       requestGeneration === generation &&
@@ -185,6 +195,10 @@ function localInput(value: Date): string {
     <Message v-if="error" severity="error" :closable="false">{{
       error
     }}</Message>
+    <AiAllowanceReauthenticationAction
+      :required="reauthenticationRequired"
+      @fresh-login="emit('fresh-login')"
+    />
     <Message v-if="notice" severity="success" :closable="false">{{
       notice
     }}</Message>

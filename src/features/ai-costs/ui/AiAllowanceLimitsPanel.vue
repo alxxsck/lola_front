@@ -28,6 +28,8 @@ import { aiAllowanceRepository } from "../api/ai-allowance-repository";
 import AiAllowanceAccrualRulesPanel from "./AiAllowanceAccrualRulesPanel.vue";
 import AiAllowanceAccrualReceiptsPanel from "./AiAllowanceAccrualReceiptsPanel.vue";
 import AiAllowanceDirectGrantPanel from "./AiAllowanceDirectGrantPanel.vue";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
 import {
   AI_ALLOWANCE_CATEGORIES,
   parseAllowanceUsd,
@@ -161,6 +163,7 @@ const props = defineProps<{
   defaultLocale?: string;
   supportedLocales?: string[];
 }>();
+const emit = defineEmits<{ "fresh-login": [] }>();
 const policy = ref<AiAllowanceProjectPolicyView | null>(null);
 const loading = ref(false);
 const saving = ref(false);
@@ -186,6 +189,7 @@ const lowThresholdEdited = ref(false);
 const formError = ref("");
 const editingProjectPolicyVersion = ref("");
 const configurationConflict = ref(false);
+const reauthenticationRequired = ref(false);
 const conflictRefreshing = ref(false);
 const namedDialogOpen = ref(false);
 const cohortDialogOpen = ref(false);
@@ -210,6 +214,7 @@ const categories = AI_ALLOWANCE_CATEGORIES;
 const categoryRules = ref<CategoryRuleDraft[]>([]);
 const preservedCategoryRules = ref<CategoryRuleDraft[]>([]);
 let generation = 0;
+let mutationGeneration = 0;
 
 const latestDefaultPlan = computed(
   () =>
@@ -366,6 +371,7 @@ watch(
         : null;
     }
     generation += 1;
+    mutationGeneration += 1;
     policy.value = null;
     loadedProjectId.value = "";
     plansLoading.value = false;
@@ -393,6 +399,7 @@ watch(
       );
       return;
     }
+    mutationGeneration += 1;
     messageTranslationController?.dispose();
     messageTranslationController = null;
     translationControllerGeneration += 1;
@@ -583,6 +590,7 @@ function openEditor(): void {
   );
   lowThresholdEdited.value = false;
   formError.value = "";
+  reauthenticationRequired.value = false;
   translationError.value = "";
   messageTranslationStates.value = {};
   configurationConflict.value = false;
@@ -626,6 +634,7 @@ function openNamedEditor(
   reason.value = "";
   idempotencyKey.value = newIdempotencyKey();
   formError.value = "";
+  reauthenticationRequired.value = false;
   configurationConflict.value = false;
   const meaningfulRules = (revision?.categoryRules ?? [])
     .filter(
@@ -657,6 +666,7 @@ function openCohortEditor(): void {
   reason.value = "";
   idempotencyKey.value = newIdempotencyKey();
   formError.value = "";
+  reauthenticationRequired.value = false;
   configurationConflict.value = false;
   cohortDialogOpen.value = true;
 }
@@ -714,11 +724,12 @@ async function save(): Promise<void> {
     return fail("Блокировку сейчас нельзя включить для этого проекта.");
   if (enforcement.value === "HARD" && !hardConfirmed.value)
     return fail("Подтвердите, что AI-операции можно блокировать.");
-  const requestGeneration = generation;
+  const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   saving.value = true;
   formError.value = "";
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
   try {
     const result = await aiAllowanceRepository.putDefaultPlan(
       requestProjectId,
@@ -749,7 +760,7 @@ async function save(): Promise<void> {
       idempotencyKey.value.trim(),
     );
     if (
-      requestGeneration !== generation ||
+      requestGeneration !== mutationGeneration ||
       requestProjectId !== props.projectId ||
       !props.canManage
     )
@@ -760,18 +771,19 @@ async function save(): Promise<void> {
     await load();
   } catch (cause) {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
     ) {
       configurationConflict.value = isConfigurationConflict(cause);
-      formError.value = mutationMessage(
-        cause,
-        "Не удалось сохранить политику лимитов",
-      );
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      formError.value = reauthenticationRequired.value
+        ? ""
+        : mutationMessage(cause, "Не удалось сохранить политику лимитов");
     }
   } finally {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
     )
       saving.value = false;
@@ -843,10 +855,11 @@ async function saveNamed(): Promise<void> {
     return fail(
       "Проверьте ограничения выбранных категорий — не более двух знаков после запятой.",
     );
-  const requestGeneration = generation;
+  const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   saving.value = true;
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
   try {
     const result = await aiAllowanceRepository.putPlan(
       requestProjectId,
@@ -863,7 +876,7 @@ async function saveNamed(): Promise<void> {
       idempotencyKey.value.trim(),
     );
     if (
-      requestGeneration !== generation ||
+      requestGeneration !== mutationGeneration ||
       requestProjectId !== props.projectId ||
       !props.canManage
     )
@@ -874,15 +887,19 @@ async function saveNamed(): Promise<void> {
     await load();
   } catch (cause) {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
     ) {
       configurationConflict.value = isConfigurationConflict(cause);
-      formError.value = mutationMessage(cause, "Не удалось сохранить вариант");
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      formError.value = reauthenticationRequired.value
+        ? ""
+        : mutationMessage(cause, "Не удалось сохранить вариант");
     }
   } finally {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
     )
       saving.value = false;
@@ -919,10 +936,11 @@ async function saveCohort(): Promise<void> {
   )
     return fail("Проверьте вариант лимита, приоритет и период назначения.");
   if (!validCommon()) return;
-  const requestGeneration = generation;
+  const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   saving.value = true;
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
   try {
     const result = await aiAllowanceRepository.putCohortAssignment(
       requestProjectId,
@@ -939,7 +957,7 @@ async function saveCohort(): Promise<void> {
       idempotencyKey.value.trim(),
     );
     if (
-      requestGeneration !== generation ||
+      requestGeneration !== mutationGeneration ||
       requestProjectId !== props.projectId ||
       !props.canManage
     )
@@ -950,18 +968,19 @@ async function saveCohort(): Promise<void> {
     await load();
   } catch (cause) {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
     ) {
       configurationConflict.value = isConfigurationConflict(cause);
-      formError.value = mutationMessage(
-        cause,
-        "Не удалось назначить лимит группе",
-      );
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      formError.value = reauthenticationRequired.value
+        ? ""
+        : mutationMessage(cause, "Не удалось назначить лимит группе");
     }
   } finally {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
     )
       saving.value = false;
@@ -1512,12 +1531,17 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         </div>
       </template>
     </template>
-    <AiAllowanceDirectGrantPanel v-if="canGrant" :project-id="projectId" />
+    <AiAllowanceDirectGrantPanel
+      v-if="canGrant"
+      :project-id="projectId"
+      @fresh-login="emit('fresh-login')"
+    />
     <AiAllowanceAccrualRulesPanel
       v-if="canReadAccrual || canManageAccrual"
       :project-id="projectId"
       :can-read="Boolean(canReadAccrual)"
       :can-manage="Boolean(canManageAccrual)"
+      @fresh-login="emit('fresh-login')"
     />
     <AiAllowanceAccrualReceiptsPanel
       v-if="canReadAccrualReceipts"
@@ -1848,6 +1872,10 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         :loading="conflictRefreshing"
         @click="refreshDraftVersion"
       />
+      <AiAllowanceReauthenticationAction
+        :required="reauthenticationRequired"
+        @fresh-login="emit('fresh-login')"
+      />
       <footer>
         <Button
           label="Отмена"
@@ -2012,6 +2040,10 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
       <small v-if="formError" class="field-error" role="alert">{{
         formError
       }}</small>
+      <AiAllowanceReauthenticationAction
+        :required="reauthenticationRequired"
+        @fresh-login="emit('fresh-login')"
+      />
       <Button
         v-if="configurationConflict"
         label="Загрузить актуальную версию"
@@ -2103,6 +2135,10 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
       ><small v-if="formError" class="field-error" role="alert">{{
         formError
       }}</small>
+      <AiAllowanceReauthenticationAction
+        :required="reauthenticationRequired"
+        @fresh-login="emit('fresh-login')"
+      />
       <Button
         v-if="configurationConflict"
         label="Загрузить актуальную версию"

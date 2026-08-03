@@ -62,6 +62,7 @@ const customFrom = ref("");
 const customTo = ref("");
 const customError = ref("");
 const selectedAllowanceUser = ref<AiCostUserRow | null>(null);
+const freshLoginPending = ref(false);
 const tablist = ref<HTMLElement | null>(null);
 const loadedTableKey = ref("");
 let generation = 0;
@@ -416,6 +417,22 @@ function openJournal(endUserId: string): void {
   });
 }
 
+async function requireFreshAllowanceLogin(): Promise<void> {
+  if (freshLoginPending.value) return;
+  freshLoginPending.value = true;
+  const redirect = route.fullPath;
+  try {
+    await auth.logout();
+  } catch {
+    // logout() clears local authority in finally; navigation must not depend on the network.
+  }
+  selectedAllowanceUser.value = null;
+  await router.replace({
+    name: "login",
+    query: { redirect },
+  });
+}
+
 function selectJournalUser(endUserId: string): void {
   replaceState({ allowanceUser: endUserId, allowanceCursor: "" });
 }
@@ -658,6 +675,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       :can-read-accrual="canReadAccrual"
       :can-manage-accrual="canManageAccrual"
       :can-read-accrual-receipts="canReadAccrualReceipts"
+      @fresh-login="requireFreshAllowanceLogin"
     />
     <AiAllowanceJournalPanel
       v-if="state.tab === 'journal' && projectId"
@@ -669,6 +687,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       :cursor="state.allowanceCursor"
       @select-user="selectJournalUser"
       @next-cursor="nextJournalCursor"
+      @fresh-login="requireFreshAllowanceLogin"
     />
 
     <template v-if="state.tab !== 'limits' && state.tab !== 'journal'">
@@ -967,6 +986,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       :can-reconcile="canReconcileAllowance"
       @update:visible="selectedAllowanceUser = null"
       @open-journal="openJournal"
+      @fresh-login="requireFreshAllowanceLogin"
     />
   </main>
 </template>

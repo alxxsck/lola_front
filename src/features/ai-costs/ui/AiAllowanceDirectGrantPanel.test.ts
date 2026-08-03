@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api/http/api-error";
 import AiAllowanceDirectGrantPanel from "./AiAllowanceDirectGrantPanel.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -88,7 +89,62 @@ describe("AiAllowanceDirectGrantPanel", () => {
       mocks.createGrant.mock.calls[0]![3],
     );
   });
+
+  it("offers one explicit fresh login without replaying a protected grant", async () => {
+    mocks.createGrant.mockRejectedValue(reauthenticationError());
+    const wrapper = mount(AiAllowanceDirectGrantPanel, {
+      props: { projectId: "project-1" },
+    });
+    await fillGrant(wrapper, "user-1", "1.25", "Loyalty reward");
+
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    const button = wrapper.get('[data-testid="allowance-fresh-login"]');
+    await button.trigger("click");
+    await button.trigger("click");
+
+    expect(wrapper.text()).toContain("не будут повторены автоматически");
+    expect(wrapper.text()).not.toContain("unsafe backend text");
+    expect(wrapper.emitted("fresh-login")).toEqual([[]]);
+    expect(mocks.createGrant).toHaveBeenCalledOnce();
+  });
+
+  it("ignores a late failure from the previous Project", async () => {
+    const pending = deferredReject();
+    mocks.createGrant.mockReturnValue(pending.promise);
+    const wrapper = mount(AiAllowanceDirectGrantPanel, {
+      props: { projectId: "project-1" },
+    });
+    await fillGrant(wrapper, "user-1", "1.25", "Loyalty reward");
+
+    void wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(mocks.createGrant).toHaveBeenCalledOnce();
+    await wrapper.setProps({ projectId: "project-2" });
+    pending.reject(new Error("previous Project backend detail"));
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("previous Project backend detail");
+  });
 });
+
+function deferredReject() {
+  let reject!: (cause: unknown) => void;
+  const promise = new Promise<never>((_resolve, rejectPromise) => {
+    reject = rejectPromise;
+  });
+  return { promise, reject };
+}
+
+function reauthenticationError(): ApiError {
+  return new ApiError(
+    428,
+    "unsafe backend text",
+    undefined,
+    "step-up-request",
+    "REAUTHENTICATION_REQUIRED",
+  );
+}
 
 async function fillGrant(
   wrapper: ReturnType<typeof mount>,

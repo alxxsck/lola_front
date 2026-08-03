@@ -15,8 +15,12 @@ const mocks = vi.hoisted(() => ({
   users: vi.fn(),
   cmsUsers: vi.fn(),
   replace: vi.fn(),
-  route: { query: {} as Record<string, string> },
+  route: {
+    query: {} as Record<string, string>,
+    fullPath: "/ai-costs?period=7d&tab=overview",
+  },
   auth: {
+    logout: vi.fn(),
     project: {
       id: "project-1",
       effectivePermissionCodes: [
@@ -124,6 +128,7 @@ describe("AiCostsDashboard", () => {
       })),
     );
     mocks.route.query = reactive({ period: "7d", tab: "overview" });
+    mocks.route.fullPath = "/ai-costs?period=7d&tab=overview";
     mocks.auth.project = reactive({
       id: "project-1",
       effectivePermissionCodes: [
@@ -363,6 +368,155 @@ describe("AiCostsDashboard", () => {
     expect(wrapper.text()).toContain("project.ai_allowance.read");
     expect(mocks.users).not.toHaveBeenCalled();
     expect(mocks.cmsUsers).not.toHaveBeenCalled();
+  });
+
+  it("starts a fresh login for an allowance step-up without replaying the mutation", async () => {
+    mocks.route.query = { period: "7d", tab: "limits" };
+    mocks.route.fullPath = "/ai-costs?period=7d&tab=limits";
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_costs.read",
+      "project.ai_allowance.read",
+      "project.ai_allowance.manage",
+    ];
+    const logout = deferred<void>();
+    mocks.auth.logout.mockReturnValue(logout.promise);
+    const wrapper = mountDashboard({
+      global: {
+        stubs: {
+          AiAllowanceLimitsPanel: {
+            emits: ["fresh-login"],
+            template:
+              '<button data-testid="request-allowance-step-up" @click="$emit(\'fresh-login\')">Войти заново</button>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    const button = wrapper.get('[data-testid="request-allowance-step-up"]');
+    await button.trigger("click");
+    await button.trigger("click");
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
+    expect(mocks.replace).not.toHaveBeenCalled();
+
+    mocks.route.fullPath = "/ai-costs?period=7d&tab=journal";
+    logout.resolve();
+    await flushPromises();
+
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: { redirect: "/ai-costs?period=7d&tab=limits" },
+    });
+  });
+
+  it("still leaves the protected workspace when remote logout fails", async () => {
+    mocks.route.query = { period: "7d", tab: "limits" };
+    mocks.route.fullPath = "/ai-costs?period=7d&tab=limits";
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_costs.read",
+      "project.ai_allowance.read",
+      "project.ai_allowance.manage",
+    ];
+    mocks.auth.logout.mockRejectedValue(new Error("network unavailable"));
+    const wrapper = mountDashboard({
+      global: {
+        stubs: {
+          AiAllowanceLimitsPanel: {
+            emits: ["fresh-login"],
+            template:
+              '<button data-testid="request-allowance-step-up" @click="$emit(\'fresh-login\')">Войти заново</button>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    await wrapper
+      .get('[data-testid="request-allowance-step-up"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: { redirect: "/ai-costs?period=7d&tab=limits" },
+    });
+  });
+
+  it("returns a journal correction to the same journal and user context", async () => {
+    mocks.route.query = {
+      period: "7d",
+      tab: "journal",
+      allowanceUser: "end-user-7",
+    };
+    mocks.route.fullPath =
+      "/ai-costs?period=7d&tab=journal&allowanceUser=end-user-7";
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_costs.read",
+      "project.ai_allowance.read",
+      "project.ai_allowance.reconcile",
+    ];
+    const wrapper = mountDashboard({
+      global: {
+        stubs: {
+          AiAllowanceJournalPanel: {
+            emits: ["fresh-login"],
+            template:
+              '<button data-testid="request-journal-step-up" @click="$emit(\'fresh-login\')">Войти заново</button>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    await wrapper
+      .get('[data-testid="request-journal-step-up"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: {
+        redirect: "/ai-costs?period=7d&tab=journal&allowanceUser=end-user-7",
+      },
+    });
+  });
+
+  it("returns a user allowance mutation to the same user dialog context", async () => {
+    mocks.route.query = reactive({ period: "7d", tab: "users" });
+    mocks.route.fullPath =
+      "/ai-costs?period=7d&tab=users&allowanceUser=id-user-dialog";
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_costs.read",
+      "project.profiles.read",
+      "project.ai_allowance.read",
+      "project.ai_allowance.manage",
+    ];
+    mocks.users.mockResolvedValueOnce(userPage("user-dialog"));
+    const wrapper = mountDashboard({
+      global: {
+        stubs: {
+          AiAllowanceUserDialog: {
+            props: ["visible"],
+            emits: ["fresh-login"],
+            template:
+              '<button data-testid="request-user-step-up" @click="$emit(\'fresh-login\')">Войти заново</button>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper.get('button[aria-label="Баланс"]').trigger("click");
+    await wrapper.get('[data-testid="request-user-step-up"]').trigger("click");
+    await flushPromises();
+
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: {
+        redirect: "/ai-costs?period=7d&tab=users&allowanceUser=id-user-dialog",
+      },
+    });
   });
 
   it("does not restore a previous query page after the replacement query fails", async () => {

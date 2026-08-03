@@ -11,9 +11,10 @@ import {
   storeAccessToken,
 } from "./auth-session";
 import {
-  axiosInstance,
+  authTeardownRequestOptions,
   beginAuthTeardown,
   endAuthTeardown,
+  axiosInstance,
   registerMfaRequirementHandler,
   registerRefreshHandler,
 } from "./axios-instance";
@@ -52,6 +53,35 @@ describe("axios auth lifecycle", () => {
     expect(axiosInstance.defaults.withCredentials).toBe(true);
   });
 
+  it("preserves a logout token snapshot after local authority is cleared", async () => {
+    storeAccessToken({ accessToken: "snapshot-access", expiresIn: 60 });
+    clearAuthSession();
+    let authorization = "";
+    let leakedInternalOption = false;
+    axiosInstance.defaults.adapter = async (config) => {
+      authorization = String(
+        AxiosHeaders.from(config.headers).get("Authorization") ?? "",
+      );
+      leakedInternalOption = "_authTeardownAccessToken" in config;
+      return response(config, 200);
+    };
+
+    beginAuthTeardown();
+    try {
+      await axiosInstance.post(
+        "/api/v1/auth/logout",
+        undefined,
+        authTeardownRequestOptions("snapshot-access"),
+      );
+    } finally {
+      endAuthTeardown();
+    }
+
+    expect(authorization).toBe("Bearer snapshot-access");
+    expect(leakedInternalOption).toBe(false);
+    expect(getAccessToken()).toBeNull();
+  });
+
   it("uses one refresh for parallel 401 responses and retries with the new token", async () => {
     storeAccessToken({ accessToken: "stale", expiresIn: 60 });
     let refreshCount = 0;
@@ -80,6 +110,36 @@ describe("axios auth lifecycle", () => {
 
     expect(refreshCount).toBe(1);
     expect(retryAuthorizations).toEqual(["Bearer fresh", "Bearer fresh"]);
+  });
+
+  it("does not replay a protected request when logout invalidates its pending refresh", async () => {
+    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+    let releaseRefresh!: () => void;
+    let loggedOut = false;
+    registerRefreshHandler(async () => {
+      await new Promise<void>((resolve) => {
+        releaseRefresh = resolve;
+      });
+      if (loggedOut) throw new Error("authentication cancelled");
+      storeAccessToken({ accessToken: "late", expiresIn: 60 });
+    });
+    let attempts = 0;
+    axiosInstance.defaults.adapter = async (config) => {
+      attempts += 1;
+      return reject(config, 401);
+    };
+    const request = axiosInstance.get("/protected-mutation");
+    await vi.waitFor(() => expect(releaseRefresh).toBeTypeOf("function"));
+
+    loggedOut = true;
+    clearAuthSession();
+    releaseRefresh();
+
+    await expect(request).rejects.toMatchObject({
+      message: "authentication cancelled",
+    });
+    expect(attempts).toBe(1);
+    expect(getAccessToken()).toBeNull();
   });
 
   it("retries with a token synchronized by another tab without refreshing again", async () => {

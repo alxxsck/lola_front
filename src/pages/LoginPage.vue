@@ -25,6 +25,7 @@ const {
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
+auth.setPostAuthenticationRedirect(route.query.redirect);
 const passwordResetCompleted = computed(
   () => route.query.passwordReset === "success",
 );
@@ -49,6 +50,7 @@ async function submit() {
     return;
   }
   loading.value = true;
+  auth.setPostAuthenticationRedirect(route.query.redirect);
   try {
     const result = await auth.login(normalizedLogin, password.value);
     if (result === "PASSWORD_SETUP_REQUIRED") {
@@ -56,14 +58,17 @@ async function submit() {
       return;
     }
     if (result === "MFA_ENROLLMENT_REQUIRED" || result === "MFA_REQUIRED") {
-      await router.push({ name: "mfa" });
+      await router.push({
+        name: "mfa",
+        ...(auth.postAuthenticationRedirect
+          ? { query: { redirect: auth.postAuthenticationRedirect } }
+          : {}),
+      });
       return;
     }
     if (auth.requiresProjectSelection) return;
     await router.replace(
-      typeof route.query.redirect === "string"
-        ? route.query.redirect
-        : auth.authenticatedLandingPath,
+      auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath,
     );
   } catch (cause) {
     presentError(cause, "Не удалось войти");
@@ -81,9 +86,7 @@ async function focusError() {
 async function chooseProject(projectId: string) {
   auth.selectProject(projectId);
   await router.replace(
-    typeof route.query.redirect === "string"
-      ? route.query.redirect
-      : auth.authenticatedLandingPath,
+    auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath,
   );
 }
 </script>

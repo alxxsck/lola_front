@@ -9,7 +9,9 @@ import {
   type DecimalString,
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
 import AiAllowanceReconciliationQueue from "./AiAllowanceReconciliationQueue.vue";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 import {
   parseSignedDecimal,
   type AiAllowanceJournalEntry,
@@ -30,6 +32,7 @@ const emit = defineEmits<{
   selectUser: [id: string];
   nextCursor: [cursor: string];
   changed: [];
+  "fresh-login": [];
 }>();
 const input = ref(props.endUserId);
 const page = ref<AiAllowanceJournalPage | null>(null);
@@ -47,6 +50,7 @@ const correctionIdempotencyKey = ref("");
 const correctionAccountVersion = ref("");
 const correcting = ref(false);
 const correctionError = ref("");
+const reauthenticationRequired = ref(false);
 let generation = 0;
 const contextKey = computed(() =>
   JSON.stringify([
@@ -72,6 +76,7 @@ watch(
     correctionTarget.value = null;
     correcting.value = false;
     notice.value = "";
+    reauthenticationRequired.value = false;
   },
 );
 watch(
@@ -169,6 +174,7 @@ function openCorrection(item: AiAllowanceJournalEntry): void {
   correctionIdempotencyKey.value = commandKey();
   correctionAccountVersion.value = balance.value.account.version;
   correctionError.value = "";
+  reauthenticationRequired.value = false;
 }
 async function submitCorrection(): Promise<void> {
   const target = correctionTarget.value;
@@ -203,6 +209,7 @@ async function submitCorrection(): Promise<void> {
   const requestEndUserId = props.endUserId;
   correcting.value = true;
   correctionError.value = "";
+  reauthenticationRequired.value = false;
   notice.value = "";
   try {
     await aiAllowanceRepository.correct(
@@ -229,11 +236,13 @@ async function submitCorrection(): Promise<void> {
     await load();
     emit("changed");
   } catch (cause) {
-    if (requestContextKey === contextKey.value)
-      correctionError.value = message(
-        cause,
-        "Не удалось выполнить корректировку",
-      );
+    if (requestContextKey === contextKey.value) {
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      correctionError.value = reauthenticationRequired.value
+        ? ""
+        : message(cause, "Не удалось выполнить корректировку");
+    }
   } finally {
     if (requestContextKey === contextKey.value) correcting.value = false;
   }
@@ -298,6 +307,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
       v-if="!embedded"
       :project-id="projectId"
       :can-reconcile="canReconcile"
+      @fresh-login="emit('fresh-login')"
     />
     <Message v-if="!canRead" severity="warn" :closable="false"
       >Нет права <code>project.ai_allowance.read</code>. Журнал скрыт.</Message
@@ -497,6 +507,10 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
       <small v-if="correctionError" class="reconcile-error" role="alert">{{
         correctionError
       }}</small>
+      <AiAllowanceReauthenticationAction
+        :required="reauthenticationRequired"
+        @fresh-login="emit('fresh-login')"
+      />
       <footer>
         <Button
           label="Отмена"

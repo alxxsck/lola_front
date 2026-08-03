@@ -31,24 +31,35 @@ interface AuthSessionClearedMessage {
 }
 
 type AuthSessionMessage =
-  | AccessTokenMessage
-  | AccessTokenRequestMessage
-  | AuthSessionClearedMessage;
+  AccessTokenMessage | AccessTokenRequestMessage | AuthSessionClearedMessage;
 
 interface AccessTokenCoordinatorOptions {
   channel?: AccessTokenChannel;
   lock?: AccessTokenLock;
   responseTimeoutMs?: number;
   now?: () => number;
+  requireCrossContextLock?: boolean;
+}
+
+export class CrossContextAuthLockUnavailableError extends Error {
+  constructor() {
+    super(
+      "Браузер не поддерживает безопасную межвкладочную блокировку авторизации.",
+    );
+    this.name = "CrossContextAuthLockUnavailableError";
+  }
 }
 
 export interface AccessTokenCoordinator {
   get(): string | null;
+  sessionGeneration(): number;
   store(tokens: { accessToken: string; expiresIn: number }): void;
   clearLocal(): void;
   clear(): void;
   adoptSharedToken(): Promise<boolean>;
   refresh(refreshBackend: () => Promise<void>): Promise<void>;
+  runExclusive<T>(operation: () => Promise<T>): Promise<T>;
+  runSessionReplacement<T>(operation: () => Promise<T>): Promise<T>;
   onRemoteClear(listener: () => void): () => void;
   close(): void;
 }
@@ -60,11 +71,15 @@ export function createAccessTokenCoordinator({
   lock,
   responseTimeoutMs = 250,
   now = () => Date.now(),
+  requireCrossContextLock = false,
 }: AccessTokenCoordinatorOptions = {}): AccessTokenCoordinator {
   let accessToken: string | null = null;
   let accessExpiresAt = 0;
   let accessIssuedAt = 0;
   let revision = 0;
+  let authorityGeneration = 0;
+  let exclusiveTail: Promise<void> = Promise.resolve();
+  let acceptsRemoteTokens = true;
   const tokenWaiters = new Set<(available: boolean) => void>();
   const remoteClearListeners = new Set<() => void>();
 
@@ -72,8 +87,13 @@ export function createAccessTokenCoordinator({
     return accessToken && accessExpiresAt > now() ? accessToken : null;
   }
 
-  function applyToken(message: AccessTokenMessage): void {
+  function sessionGeneration(): number {
+    return authorityGeneration;
+  }
+
+  function applyToken(message: AccessTokenMessage, remote = false): void {
     if (
+      (remote && !acceptsRemoteTokens) ||
       message.expiresAt <= now() ||
       (accessToken !== null &&
         (message.issuedAt < accessIssuedAt ||
@@ -92,10 +112,8 @@ export function createAccessTokenCoordinator({
     tokenWaiters.clear();
   }
 
-  function store(tokens: {
-    accessToken: string;
-    expiresIn: number;
-  }): void {
+  function store(tokens: { accessToken: string; expiresIn: number }): void {
+    acceptsRemoteTokens = true;
     const issuedAt = Math.max(now(), accessIssuedAt + 1);
     const message: AccessTokenMessage = {
       type: "ACCESS_TOKEN",
@@ -108,6 +126,8 @@ export function createAccessTokenCoordinator({
   }
 
   function clearLocal(): void {
+    acceptsRemoteTokens = false;
+    authorityGeneration += 1;
     accessToken = null;
     accessExpiresAt = 0;
     accessIssuedAt = 0;
@@ -122,8 +142,7 @@ export function createAccessTokenCoordinator({
   }
 
   function isMessage(value: unknown): value is AuthSessionMessage {
-    if (!value || typeof value !== "object" || !("type" in value))
-      return false;
+    if (!value || typeof value !== "object" || !("type" in value)) return false;
     if (value.type === "ACCESS_TOKEN_REQUEST")
       return Object.keys(value).length === 1;
     if (value.type === "AUTH_SESSION_CLEARED")
@@ -153,7 +172,7 @@ export function createAccessTokenCoordinator({
       return;
     }
     if (event.data.type === "ACCESS_TOKEN") {
-      applyToken(event.data);
+      applyToken(event.data, true);
       return;
     }
     clearLocal();
@@ -179,6 +198,29 @@ export function createAccessTokenCoordinator({
     });
   }
 
+  async function runExclusive<T>(operation: () => Promise<T>): Promise<T> {
+    const previous = exclusiveTail;
+    let release = () => {};
+    exclusiveTail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      if (lock) return await lock.request(REFRESH_LOCK_NAME, operation);
+      return await operation();
+    } finally {
+      release();
+    }
+  }
+
+  async function runSessionReplacement<T>(
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    if (requireCrossContextLock && !lock)
+      throw new CrossContextAuthLockUnavailableError();
+    return runExclusive(operation);
+  }
+
   async function refresh(refreshBackend: () => Promise<void>): Promise<void> {
     const startingRevision = revision;
     const run = async () => {
@@ -187,8 +229,7 @@ export function createAccessTokenCoordinator({
       if (revision !== startingRevision && get()) return;
       await refreshBackend();
     };
-    if (lock) await lock.request(REFRESH_LOCK_NAME, run);
-    else await run();
+    await runExclusive(run);
   }
 
   function onRemoteClear(listener: () => void): () => void {
@@ -205,11 +246,14 @@ export function createAccessTokenCoordinator({
 
   return {
     get,
+    sessionGeneration,
     store,
     clearLocal,
     clear,
     adoptSharedToken,
     refresh,
+    runExclusive,
+    runSessionReplacement,
     onRemoteClear,
     close,
   };

@@ -17,6 +17,7 @@ import {
 } from "@/features/email-identity/email-action-capability";
 import AppShell from "@/widgets/layout/AppShell.vue";
 import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance";
+import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
 
 const AI_LEDGER_ROUTE_GROUPS = new Map([
   ["ai-analyses", "analyses"],
@@ -441,9 +442,20 @@ router.beforeEach(async (to) => {
     to.name === "mfa" &&
     !auth.mfaChallenge &&
     auth.phase !== "MFA_RECOVERY_CODES"
-  )
-    return { name: "login" };
-  if (auth.mfaChallenge && to.name !== "mfa") return { name: "mfa" };
+  ) {
+    const redirect = safeInternalRedirect(to.query.redirect);
+    return {
+      name: "login",
+      ...(redirect ? { query: { redirect } } : {}),
+    };
+  }
+  if (auth.mfaChallenge && to.name !== "mfa") {
+    const redirect = safeInternalRedirect(to.query.redirect);
+    return {
+      name: "mfa",
+      ...(redirect ? { query: { redirect } } : {}),
+    };
+  }
   if (!to.meta.public && !auth.isAuthenticated)
     return { name: "login", query: { redirect: to.fullPath } };
   if (

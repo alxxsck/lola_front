@@ -82,6 +82,24 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("login");
   });
 
+  it("preserves a validated return target when an MFA page reload loses its memory capability", async () => {
+    await router.push(
+      "/auth/mfa?redirect=/ai-costs?tab=journal%26allowanceUser=user-1",
+    );
+
+    expect(router.currentRoute.value.name).toBe("login");
+    expect(router.currentRoute.value.query.redirect).toBe(
+      "/ai-costs?tab=journal&allowanceUser=user-1",
+    );
+  });
+
+  it("drops an unsafe return target when an MFA page reloads", async () => {
+    await router.push("/auth/mfa?redirect=https%3A%2F%2Fevil.example%2Fsteal");
+
+    expect(router.currentRoute.value.name).toBe("login");
+    expect(router.currentRoute.value.query.redirect).toBeUndefined();
+  });
+
   it("allows only an in-memory MFA ceremony to enter the dedicated route", async () => {
     const auth = useAuthStore();
     auth.$patch({
@@ -327,8 +345,12 @@ describe("authentication routes", () => {
 
   it("protects the separate AI Costs workspace with its exact read Permission", () => {
     expect(router.resolve("/ai-costs").name).toBe("ai-costs");
-    expect(router.resolve("/ai-costs").meta.projectPermissionsAny).toContain("project.ai_costs.read");
-    expect(router.resolve("/ai-costs").meta.projectPermissionsAny).toContain("project.ai_allowance.read");
+    expect(router.resolve("/ai-costs").meta.projectPermissionsAny).toContain(
+      "project.ai_costs.read",
+    );
+    expect(router.resolve("/ai-costs").meta.projectPermissionsAny).toContain(
+      "project.ai_allowance.read",
+    );
     expect(router.resolve("/ai-costs").name).not.toBe("ai-operations");
   });
 

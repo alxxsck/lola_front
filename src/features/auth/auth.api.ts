@@ -13,20 +13,22 @@ import type {
 } from "@/shared/api/generated/models";
 import { demoProject } from "@/shared/api/mock-data";
 import {
+  authTeardownRequestOptions,
   beginAuthTeardown,
   endAuthTeardown,
-  refreshAccessToken,
   registerRefreshHandler,
 } from "@/shared/api/http/axios-instance";
 import {
   clearAuthSession,
   clearLocalAuthSession,
+  coordinateAuthSessionMutation,
   coordinateAccessTokenRefresh,
   getAccessToken,
   getSelectedProjectId,
   storeAccessToken,
 } from "@/shared/api/http/auth-session";
 import { isMockMode } from "@/shared/config/data-mode";
+import { isInteractiveLoginRequired } from "./interactive-login-requirement";
 import type { AuthProject, CmsUser } from "@/shared/types/domain";
 import { PROJECT_PERMISSION_CODES } from "./permission-access";
 import {
@@ -45,6 +47,20 @@ const DEMO_SESSION_KEY = "lola-cms-demo-auth-v1";
 const DEMO_KNOWLEDGE_PREFIX = "lola-cms-demo-knowledge-v1:";
 const TRANSLATION_JOB_PREFIX = "lola:translation-jobs:";
 const pendingEnrollmentOptions = new Map<string, MfaEnrollmentOptions>();
+type AuthenticationOperationGuard = () => boolean;
+
+export class AuthenticationOperationCancelledError extends Error {
+  constructor() {
+    super("Вход был отменён. Начните авторизацию заново.");
+    this.name = "AuthenticationOperationCancelledError";
+  }
+}
+
+function assertAuthenticationOperationCurrent(
+  isCurrent: AuthenticationOperationGuard,
+): void {
+  if (!isCurrent()) throw new AuthenticationOperationCancelledError();
+}
 
 function validPendingEnrollment(key: string): MfaEnrollmentOptions | undefined {
   const pending = pendingEnrollmentOptions.get(key);
@@ -162,8 +178,15 @@ function rememberAccess(response: CmsAuthenticatedResponseDto): void {
 }
 
 registerRefreshHandler(async () => {
+  if (isInteractiveLoginRequired())
+    throw new AuthenticationOperationCancelledError();
   await coordinateAccessTokenRefresh(async () => {
-    rememberAccess(await initialAccessRefresh());
+    if (isInteractiveLoginRequired())
+      throw new AuthenticationOperationCancelledError();
+    const response = await initialAccessRefresh();
+    if (isInteractiveLoginRequired())
+      throw new AuthenticationOperationCancelledError();
+    rememberAccess(response);
   });
 });
 
@@ -204,22 +227,31 @@ function demoContext(login: string): AuthContext {
 export const authApi = {
   mode: isMockMode ? "mock" : "api",
 
-  async login(login: string, password: string): Promise<AuthLoginResult> {
+  async login(
+    login: string,
+    password: string,
+    isCurrent: AuthenticationOperationGuard = () => true,
+  ): Promise<AuthLoginResult> {
     if (isMockMode) {
       const context = demoContext(login);
       sessionStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(context));
       return { kind: "AUTHENTICATED", context };
     }
-    clearLocalAuthSession();
+    assertAuthenticationOperationCurrent(isCurrent);
     clearPendingMfaCeremonies();
     try {
-      const response = await initialAccessLogin({
-        identifier: login,
-        secret: password,
+      const response = await coordinateAuthSessionMutation(async () => {
+        assertAuthenticationOperationCurrent(isCurrent);
+        clearAuthSession();
+        return initialAccessLogin({
+          identifier: login,
+          secret: password,
+        });
       });
+      assertAuthenticationOperationCurrent(isCurrent);
       return response as AuthLoginResult;
     } catch (cause) {
-      clearLocalAuthSession();
+      if (isCurrent()) clearLocalAuthSession();
       throw cause;
     }
   },
@@ -227,7 +259,9 @@ export const authApi = {
   async completeMfaPasskey(
     challenge: MfaChallenge,
     label?: string,
+    isCurrent: AuthenticationOperationGuard = () => true,
   ): Promise<MfaCompletionResult> {
+    assertAuthenticationOperationCurrent(isCurrent);
     if (challenge.kind === "MFA_ENROLLMENT_REQUIRED") {
       const options =
         validPendingEnrollment(challenge.ceremonyToken) ??
@@ -237,30 +271,45 @@ export const authApi = {
         optionsJSON:
           options.publicKey as unknown as PublicKeyCredentialCreationOptionsJSON,
       });
-      const response = await mfaApi.completeEnrollment(
-        options.ceremonyToken,
-        credential,
-        label,
-      );
+      assertAuthenticationOperationCurrent(isCurrent);
+      const response = await coordinateAuthSessionMutation(() => {
+        assertAuthenticationOperationCurrent(isCurrent);
+        return mfaApi.completeEnrollment(
+          options.ceremonyToken,
+          credential,
+          label,
+        );
+      });
+      assertAuthenticationOperationCurrent(isCurrent);
       pendingEnrollmentOptions.delete(challenge.ceremonyToken);
       return response;
     }
     const credential = await startAuthentication({
       optionsJSON: challenge.publicKey,
     });
-    const response = await mfaApi.completeAuthentication(
-      challenge.ceremonyToken,
-      credential,
-    );
-    rememberAccess(response);
-    return { kind: "AUTHENTICATED", context: await loadContext() };
+    assertAuthenticationOperationCurrent(isCurrent);
+    await coordinateAuthSessionMutation(async () => {
+      assertAuthenticationOperationCurrent(isCurrent);
+      const authenticated = await mfaApi.completeAuthentication(
+        challenge.ceremonyToken,
+        credential,
+      );
+      assertAuthenticationOperationCurrent(isCurrent);
+      rememberAccess(authenticated);
+      return authenticated;
+    });
+    const context = await loadContext();
+    assertAuthenticationOperationCurrent(isCurrent);
+    return { kind: "AUTHENTICATED", context };
   },
 
   async completeMfaRecovery(
     challenge: Extract<MfaChallenge, { kind: "MFA_REQUIRED" }>,
     recoveryCode: string,
     label?: string,
+    isCurrent: AuthenticationOperationGuard = () => true,
   ): Promise<MfaEnrolledResponse> {
+    assertAuthenticationOperationCurrent(isCurrent);
     const options =
       validPendingEnrollment(challenge.ceremonyToken) ??
       (await mfaApi.completeRecovery(challenge.ceremonyToken, recoveryCode));
@@ -269,11 +318,12 @@ export const authApi = {
       optionsJSON:
         options.publicKey as unknown as PublicKeyCredentialCreationOptionsJSON,
     });
-    const response = await mfaApi.completeEnrollment(
-      options.ceremonyToken,
-      credential,
-      label,
-    );
+    assertAuthenticationOperationCurrent(isCurrent);
+    const response = await coordinateAuthSessionMutation(() => {
+      assertAuthenticationOperationCurrent(isCurrent);
+      return mfaApi.completeEnrollment(options.ceremonyToken, credential, label);
+    });
+    assertAuthenticationOperationCurrent(isCurrent);
     pendingEnrollmentOptions.delete(challenge.ceremonyToken);
     return response;
   },
@@ -282,7 +332,9 @@ export const authApi = {
     clearPendingMfaCeremonies();
   },
 
-  async restore(): Promise<AuthContext | null> {
+  async restore(
+    isCurrent: AuthenticationOperationGuard = () => true,
+  ): Promise<AuthContext | null> {
     clearPendingMfaCeremonies();
     if (isMockMode) {
       const raw = sessionStorage.getItem(DEMO_SESSION_KEY);
@@ -295,10 +347,18 @@ export const authApi = {
       }
     }
     try {
-      await refreshAccessToken();
-      return await loadContext();
+      await coordinateAccessTokenRefresh(async () => {
+        assertAuthenticationOperationCurrent(isCurrent);
+        const response = await initialAccessRefresh();
+        assertAuthenticationOperationCurrent(isCurrent);
+        rememberAccess(response);
+      });
+      assertAuthenticationOperationCurrent(isCurrent);
+      const context = await loadContext();
+      assertAuthenticationOperationCurrent(isCurrent);
+      return context;
     } catch (cause) {
-      clearLocalAuthSession();
+      if (isCurrent()) clearLocalAuthSession();
       throw cause;
     }
   },
@@ -324,16 +384,24 @@ export const authApi = {
     };
   },
 
-  async logout(): Promise<void> {
+  async logout(accessToken?: string | null): Promise<void> {
     clearPendingMfaCeremonies();
     if (isMockMode) {
       clearDemoSession();
       return;
     }
+    beginAuthTeardown();
     try {
-      if (!getAccessToken()) await refreshAccessToken();
-      beginAuthTeardown();
-      await cmsSecuritySettingsLogout();
+      await coordinateAuthSessionMutation(async () => {
+        let token = accessToken ?? getAccessToken();
+        try {
+          token = (await initialAccessRefresh()).accessToken;
+        } catch {
+          // Fall back to the pre-cleanup token when the refresh cookie is unavailable.
+        }
+        if (!token) return;
+        await cmsSecuritySettingsLogout(authTeardownRequestOptions(token));
+      });
     } catch {
       // Logout remains locally authoritative when the session is already expired or offline.
     } finally {
@@ -342,16 +410,24 @@ export const authApi = {
     }
   },
 
-  async logoutAll(): Promise<void> {
+  async logoutAll(accessToken?: string | null): Promise<void> {
     clearPendingMfaCeremonies();
     if (isMockMode) {
       clearDemoSession();
       return;
     }
+    beginAuthTeardown();
     try {
-      if (!getAccessToken()) await refreshAccessToken();
-      beginAuthTeardown();
-      await cmsSecuritySettingsLogoutAll();
+      await coordinateAuthSessionMutation(async () => {
+        let token = accessToken ?? getAccessToken();
+        try {
+          token = (await initialAccessRefresh()).accessToken;
+        } catch {
+          // Fall back to the pre-cleanup token when the refresh cookie is unavailable.
+        }
+        if (!token) return;
+        await cmsSecuritySettingsLogoutAll(authTeardownRequestOptions(token));
+      });
     } catch {
       // Local credentials must still be removed when server-side revocation is unavailable.
     } finally {

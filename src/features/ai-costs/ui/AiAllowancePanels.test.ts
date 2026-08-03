@@ -1088,6 +1088,85 @@ describe("allowance admin panels", () => {
     );
   });
 
+  it.each([
+    { family: "default plan", mutation: "default" as const },
+    { family: "named plan", mutation: "named" as const },
+    { family: "cohort assignment", mutation: "cohort" as const },
+  ])(
+    "requires one fresh login for $family without replaying it",
+    async ({ mutation }) => {
+      const protectedMutation =
+        mutation === "default"
+          ? mocks.putDefaultPlan
+          : mutation === "named"
+            ? mocks.putPlan
+            : mocks.putCohortAssignment;
+      protectedMutation.mockRejectedValue(
+        new ApiError(
+          428,
+          "unsafe backend text",
+          undefined,
+          "step-up-request",
+          "REAUTHENTICATION_REQUIRED",
+        ),
+      );
+      const wrapper = mount(AiAllowanceLimitsPanel, {
+        props: {
+          projectId: "project-1",
+          canRead: true,
+          canManage: true,
+          canReconcile: false,
+        },
+        global: {
+          stubs: {
+            Dialog: {
+              props: ["visible"],
+              template: "<div v-if='visible'><slot /></div>",
+            },
+          },
+        },
+      });
+      await flushPromises();
+      const openLabel =
+        mutation === "default"
+          ? "Настроить общий лимит"
+          : mutation === "named"
+            ? "Создать вариант"
+            : "Назначить группе";
+      await wrapper
+        .findAll("button")
+        .find((button) => button.text().includes(openLabel))!
+        .trigger("click");
+      const form = wrapper.get("form.allowance-form");
+      if (mutation === "named") {
+        const inputs = form.findAll("input");
+        await inputs[0]!.setValue("VIP_NEW");
+        await inputs[1]!.setValue("VIP New");
+        await inputs[2]!.setValue("10");
+      }
+      if (mutation === "cohort") {
+        await form
+          .get('input[placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"]')
+          .setValue("33333333-3333-4333-8333-333333333333");
+      }
+      await form
+        .findAll("textarea")
+        .at(-1)!
+        .setValue("Protected allowance mutation");
+      await form.trigger("submit");
+      await flushPromises();
+
+      expect(wrapper.find("form.allowance-form").exists()).toBe(true);
+      expect(wrapper.text()).toContain("не будут повторены автоматически");
+      expect(wrapper.text()).not.toContain("unsafe backend text");
+      await wrapper
+        .get('[data-testid="allowance-fresh-login"]')
+        .trigger("click");
+      expect(wrapper.emitted("fresh-login")).toEqual([[]]);
+      expect(protectedMutation).toHaveBeenCalledOnce();
+    },
+  );
+
   it("does not merge a late plans page from the previous project", async () => {
     const projectView = (
       projectId: string,
@@ -1179,6 +1258,76 @@ describe("allowance admin panels", () => {
 
     expect(wrapper.find("form.allowance-form").exists()).toBe(false);
     expect(mocks.putDefaultPlan).not.toHaveBeenCalled();
+  });
+
+  it("does not let a pre-revocation mutation close a new policy draft", async () => {
+    const previousMutation = deferred<{
+      projectPolicyVersion: string;
+      replayed: boolean;
+    }>();
+    mocks.putDefaultPlan.mockReturnValue(previousMutation.promise);
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    const open = () =>
+      wrapper
+        .findAll("button")
+        .find((button) => button.text().includes("Настроить общий лимит"))!;
+    await open().trigger("click");
+    const previousForm = wrapper.get("form.allowance-form");
+    await previousForm.findAll("textarea").at(-1)!.setValue("Previous draft");
+    void previousForm.trigger("submit");
+    await flushPromises();
+    expect(mocks.putDefaultPlan).toHaveBeenCalledOnce();
+
+    await wrapper.setProps({ canManage: false });
+    await wrapper.setProps({ canManage: true });
+    await open().trigger("click");
+    const currentForm = wrapper.get("form.allowance-form");
+    await currentForm.findAll("textarea").at(-1)!.setValue("Current draft");
+
+    previousMutation.resolve({ projectPolicyVersion: "5", replayed: false });
+    await flushPromises();
+
+    expect(wrapper.find("form.allowance-form").exists()).toBe(true);
+    expect(wrapper.findAll("textarea").at(-1)!.element.value).toBe(
+      "Current draft",
+    );
+  });
+
+  it("finishes a pending policy read across manage revoke and regrant", async () => {
+    const pendingPolicy = deferred<typeof policy>();
+    mocks.projectPolicy.mockReturnValue(pendingPolicy.promise);
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+    });
+
+    await wrapper.setProps({ canManage: false });
+    await wrapper.setProps({ canManage: true });
+    pendingPolicy.resolve(policy);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("5,00");
+    expect(wrapper.text()).toContain("Настроить общий лимит");
   });
 
   it("requires a published Segment UUID for a SEGMENT assignment", async () => {
@@ -1322,6 +1471,52 @@ describe("allowance admin panels", () => {
       key,
     );
     expect(wrapper.emitted("changed")).toEqual([[]]);
+  });
+
+  it("requires a fresh login for a correction without replaying it", async () => {
+    mocks.journal.mockResolvedValue(journalPage("protected correction"));
+    mocks.correct.mockRejectedValue(
+      new ApiError(
+        428,
+        "unsafe backend text",
+        undefined,
+        "step-up-request",
+        "REAUTHENTICATION_REQUIRED",
+      ),
+    );
+    const wrapper = mount(AiAllowanceJournalPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canReconcile: true,
+        endUserId: "user-1",
+        cursor: "",
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Корректировать"))!
+      .trigger("click");
+    const form = wrapper.get("form.correction-form");
+    await form.get('input[inputmode="decimal"]').setValue("-1");
+    await form.get("textarea").setValue("Reverse incorrect allowance entry");
+    await form.trigger("submit");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("не будут повторены автоматически");
+    expect(wrapper.text()).not.toContain("unsafe backend text");
+    await wrapper.get('[data-testid="allowance-fresh-login"]').trigger("click");
+    expect(wrapper.emitted("fresh-login")).toEqual([[]]);
+    expect(mocks.correct).toHaveBeenCalledOnce();
   });
 
   it("omits expiry for a negative correction and drops mutation feedback after tenant change", async () => {

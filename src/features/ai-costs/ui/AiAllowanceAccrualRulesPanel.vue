@@ -10,6 +10,8 @@ import {
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceAccrualRepository } from "../api/ai-allowance-accrual-repository";
 import { parseAllowanceUsd } from "../model/ai-allowance";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 import type {
   AccrualLifecycle,
   AccrualSource,
@@ -37,6 +39,7 @@ const props = defineProps<{
   canRead: boolean;
   canManage: boolean;
 }>();
+const emit = defineEmits<{ "fresh-login": [] }>();
 const rules = ref<AiAllowanceAccrualRule[]>([]);
 const pageInfo = ref<{ hasMore: boolean; nextCursor: string | null }>({
   hasMore: false,
@@ -50,6 +53,7 @@ const saving = ref(false);
 const error = ref("");
 const dialog = ref(false);
 const formError = ref("");
+const reauthenticationRequired = ref(false);
 const key = ref("");
 const name = ref("");
 const lifecycle = ref<AccrualLifecycle>("ACTIVE");
@@ -67,10 +71,12 @@ const until = ref("");
 const reason = ref("");
 const idem = ref("");
 let generation = 0;
+let mutationGeneration = 0;
 watch(
   () => [props.projectId, props.canRead] as const,
   ([, read]) => {
     generation += 1;
+    mutationGeneration += 1;
     rules.value = [];
     loadedProjectId.value = "";
     loadingMore.value = false;
@@ -83,6 +89,7 @@ watch(
   () => props.canManage,
   (canManage) => {
     if (canManage) return;
+    mutationGeneration += 1;
     dialog.value = false;
     saving.value = false;
   },
@@ -175,6 +182,7 @@ function open(rule?: AiAllowanceAccrualRule) {
   reason.value = "";
   idem.value = globalThis.crypto?.randomUUID?.() ?? `accrual-${Date.now()}`;
   formError.value = "";
+  reauthenticationRequired.value = false;
   dialog.value = true;
 }
 async function save() {
@@ -226,9 +234,10 @@ async function save() {
       (!effectiveUntil || effectiveFrom >= effectiveUntil))
   )
     return fail("Заполните обязательные поля и причину.");
-  const requestGeneration = generation;
+  const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   saving.value = true;
+  reauthenticationRequired.value = false;
   try {
     await aiAllowanceAccrualRepository.putRule(
       requestProjectId,
@@ -252,7 +261,7 @@ async function save() {
       idem.value,
     );
     if (
-      requestGeneration !== generation ||
+      requestGeneration !== mutationGeneration ||
       requestProjectId !== props.projectId ||
       !props.canManage
     )
@@ -262,14 +271,20 @@ async function save() {
     await load();
   } catch (cause) {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
-    )
-      formError.value =
-        cause instanceof Error ? cause.message : "Не удалось сохранить";
+    ) {
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      formError.value = reauthenticationRequired.value
+        ? ""
+        : cause instanceof Error
+          ? cause.message
+          : "Не удалось сохранить";
+    }
   } finally {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
     )
       saving.value = false;
@@ -471,6 +486,10 @@ function validTimezone(value: string): boolean {
       ><small v-if="formError" class="error" role="alert">{{
         formError
       }}</small>
+      <AiAllowanceReauthenticationAction
+        :required="reauthenticationRequired"
+        @fresh-login="emit('fresh-login')"
+      />
       <footer>
         <Button
           label="Отмена"

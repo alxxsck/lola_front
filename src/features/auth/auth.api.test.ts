@@ -16,9 +16,15 @@ import type {
 } from "@/shared/api/generated/models";
 import {
   clearAuthSession,
+  coordinateAccessTokenRefresh,
   getAccessToken,
   storeAccessToken,
 } from "@/shared/api/http/auth-session";
+import { refreshAccessToken } from "@/shared/api/http/axios-instance";
+import {
+  clearInteractiveLoginRequirement,
+  requireInteractiveLogin,
+} from "./interactive-login-requirement";
 import { authApi } from "./auth.api";
 
 vi.mock("@/shared/api/generated/lola-backend", () => ({
@@ -95,6 +101,8 @@ describe("target CMS User auth API", () => {
     vi.clearAllMocks();
     clearAuthSession();
     sessionStorage.clear();
+    localStorage.clear();
+    clearInteractiveLoginRequirement();
   });
 
   it("keeps a Password Setup capability out of browser storage", async () => {
@@ -117,6 +125,42 @@ describe("target CMS User auth API", () => {
     expect(JSON.stringify(Object.values(sessionStorage))).not.toContain(
       response.setupToken,
     );
+  });
+
+  it("waits for an in-flight refresh before clearing authority for explicit login", async () => {
+    storeAccessToken({ accessToken: "old-session", expiresIn: 900 });
+    let releaseRefresh!: () => void;
+    const refresh = coordinateAccessTokenRefresh(async () => {
+      await new Promise<void>((resolve) => {
+        releaseRefresh = resolve;
+      });
+      storeAccessToken({
+        accessToken: "refreshed-old-session",
+        expiresIn: 900,
+      });
+    });
+    await vi.waitFor(() => expect(releaseRefresh).toBeTypeOf("function"));
+    vi.mocked(initialAccessLogin).mockResolvedValue({
+      kind: "MFA_REQUIRED",
+      ceremonyToken: "lmf_new_login",
+      expiresAt: "2099-07-21T21:10:00.000Z",
+      publicKey: { challenge: "challenge" },
+      recoveryAvailable: false,
+    });
+
+    const login = authApi.login(
+      "operator@example.com",
+      "a long permanent passphrase",
+    );
+
+    expect(initialAccessLogin).not.toHaveBeenCalled();
+    expect(getAccessToken()).toBe("old-session");
+    releaseRefresh();
+    await refresh;
+    await login;
+
+    expect(initialAccessLogin).toHaveBeenCalledOnce();
+    expect(getAccessToken()).toBeNull();
   });
 
   it("loads target memberships and effective permissions from the self context", async () => {
@@ -268,7 +312,9 @@ describe("target CMS User auth API", () => {
     await authApi.logout();
 
     expect(initialAccessRefresh).toHaveBeenCalledWith();
-    expect(cmsSecuritySettingsLogout).toHaveBeenCalledWith();
+    expect(cmsSecuritySettingsLogout).toHaveBeenCalledWith({
+      _authTeardownAccessToken: "fresh",
+    });
     expect(getAccessToken()).toBeNull();
   });
 
@@ -294,8 +340,10 @@ describe("target CMS User auth API", () => {
 
     await expect(authApi.logout()).resolves.toBeUndefined();
 
-    expect(initialAccessRefresh).not.toHaveBeenCalled();
-    expect(cmsSecuritySettingsLogout).toHaveBeenCalledWith();
+    expect(initialAccessRefresh).toHaveBeenCalledOnce();
+    expect(cmsSecuritySettingsLogout).toHaveBeenCalledWith({
+      _authTeardownAccessToken: "still-valid",
+    });
     expect(getAccessToken()).toBeNull();
   });
 
@@ -314,6 +362,25 @@ describe("target CMS User auth API", () => {
     );
   });
 
+  it("does not publish a refresh response that arrives after logout", async () => {
+    let resolveRefresh!: (value: CmsAuthenticatedResponseDto) => void;
+    vi.mocked(initialAccessRefresh).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRefresh = resolve;
+      }),
+    );
+    const refresh = refreshAccessToken();
+
+    requireInteractiveLogin();
+    clearAuthSession();
+    resolveRefresh(authenticatedResponse);
+
+    await expect(refresh).rejects.toMatchObject({
+      name: "AuthenticationOperationCancelledError",
+    });
+    expect(getAccessToken()).toBeNull();
+  });
+
   it("uses the cookie refresh before revoking every server session", async () => {
     vi.mocked(initialAccessRefresh).mockResolvedValue(authenticatedResponse);
     vi.mocked(cmsSecuritySettingsLogoutAll).mockResolvedValue({
@@ -323,7 +390,9 @@ describe("target CMS User auth API", () => {
     await authApi.logoutAll();
 
     expect(initialAccessRefresh).toHaveBeenCalledWith();
-    expect(cmsSecuritySettingsLogoutAll).toHaveBeenCalledWith();
+    expect(cmsSecuritySettingsLogoutAll).toHaveBeenCalledWith({
+      _authTeardownAccessToken: "access",
+    });
     expect(getAccessToken()).toBeNull();
   });
 
@@ -338,8 +407,10 @@ describe("target CMS User auth API", () => {
 
     await expect(authApi.logoutAll()).resolves.toBeUndefined();
 
-    expect(initialAccessRefresh).not.toHaveBeenCalled();
-    expect(cmsSecuritySettingsLogoutAll).toHaveBeenCalledWith();
+    expect(initialAccessRefresh).toHaveBeenCalledOnce();
+    expect(cmsSecuritySettingsLogoutAll).toHaveBeenCalledWith({
+      _authTeardownAccessToken: "still-valid",
+    });
     expect(getAccessToken()).toBeNull();
   });
 });

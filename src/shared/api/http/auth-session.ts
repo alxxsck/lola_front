@@ -37,10 +37,15 @@ function browserLock(): AccessTokenLock | undefined {
 const accessTokens = createAccessTokenCoordinator({
   channel: browserChannel(),
   lock: browserLock(),
+  requireCrossContextLock: import.meta.env.PROD,
 });
 
 export function getAccessToken(): string | null {
   return accessTokens.get();
+}
+
+export function getAuthSessionGeneration(): number {
+  return accessTokens.sessionGeneration();
 }
 
 export function getSelectedProjectId(): string | undefined {
@@ -90,6 +95,12 @@ export function coordinateAccessTokenRefresh(
   refreshBackend: () => Promise<void>,
 ): Promise<void> {
   return accessTokens.refresh(refreshBackend);
+}
+
+export function coordinateAuthSessionMutation<T>(
+  operation: () => Promise<T>,
+): Promise<T> {
+  return accessTokens.runSessionReplacement(operation);
 }
 
 export function registerRemoteAuthSessionClearHandler(

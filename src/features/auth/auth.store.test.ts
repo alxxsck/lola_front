@@ -2,6 +2,11 @@ import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authApi } from "./auth.api";
 import { useAuthStore } from "./auth.store";
+import {
+  clearInteractiveLoginRequirement,
+  isInteractiveLoginRequired,
+  requireInteractiveLogin,
+} from "./interactive-login-requirement";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
   getAccessToken,
@@ -10,6 +15,12 @@ import {
 } from "@/shared/api/http/auth-session";
 
 vi.mock("./auth.api", () => ({
+  AuthenticationOperationCancelledError: class extends Error {
+    constructor() {
+      super("Вход был отменён. Начните авторизацию заново.");
+      this.name = "AuthenticationOperationCancelledError";
+    }
+  },
   authApi: {
     mode: "api",
     login: vi.fn(),
@@ -29,6 +40,8 @@ describe("CMS User authentication state", () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
     sessionStorage.clear();
+    localStorage.clear();
+    clearInteractiveLoginRequirement();
   });
 
   afterEach(() => {
@@ -52,6 +65,7 @@ describe("CMS User authentication state", () => {
     expect(auth.setupToken).toBe("lps_setup-secret");
     expect(auth.isAuthenticated).toBe(false);
     expect(auth.user).toBeNull();
+    expect(auth.postAuthenticationRedirect).toBeNull();
     expect(auth.project).toBeNull();
     expect(sessionStorage.getItem("lola-cms-auth-v1")).toBeNull();
     expect(JSON.stringify(storageWrite.mock.calls)).not.toContain(
@@ -335,6 +349,36 @@ describe("CMS User authentication state", () => {
     expect(sessionStorage.getItem("lola-cms-selected-project-v1")).toBeNull();
   });
 
+  it("does not restore cached authority when context refresh completes after logout", async () => {
+    let resolveContext!: (value: {
+      user: { id: string; email: string; name: string };
+      projects: [];
+    }) => void;
+    vi.mocked(authApi.refreshContext).mockReturnValue(
+      new Promise((resolve) => {
+        resolveContext = resolve;
+      }),
+    );
+    vi.mocked(authApi.logout).mockResolvedValue();
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
+    });
+    const pendingRefresh = auth.refreshContext();
+
+    await auth.logout();
+    resolveContext({
+      user: { id: "stale-user", email: "stale@example.com", name: "Stale" },
+      projects: [],
+    });
+    await pendingRefresh;
+
+    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.user).toBeNull();
+    expect(auth.projects).toEqual([]);
+  });
+
   it("preserves selected IAM authority when a settings response omits access context", () => {
     const auth = useAuthStore();
     const current = {
@@ -489,11 +533,251 @@ describe("CMS User authentication state", () => {
     vi.mocked(authApi.logout).mockResolvedValue();
     const auth = useAuthStore();
     await auth.login("operator@example.com", "a long permanent passphrase");
+    auth.setPostAuthenticationRedirect("/ai-costs?tab=limits");
 
     await auth.logout();
 
     expect(auth.phase).toBe("ANONYMOUS");
     expect(auth.isAuthenticated).toBe(false);
     expect(auth.user).toBeNull();
+    expect(auth.postAuthenticationRedirect).toBeNull();
+  });
+
+  it("removes local authority before remote logout settles", async () => {
+    let resolveLogout!: () => void;
+    vi.mocked(authApi.logout).mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveLogout = resolve;
+      }),
+    );
+    const auth = useAuthStore();
+    storeAccessToken({ accessToken: "access-before-logout", expiresIn: 900 });
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
+    });
+
+    const logout = auth.logout();
+
+    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.isAuthenticated).toBe(false);
+    expect(auth.user).toBeNull();
+    expect(getAccessToken()).toBeNull();
+    expect(authApi.logout).toHaveBeenCalledWith("access-before-logout");
+
+    resolveLogout();
+    await logout;
+  });
+
+  it("still removes local authority when persistent storage is denied", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Storage denied", "SecurityError");
+    });
+    vi.mocked(authApi.logout).mockResolvedValue();
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
+    });
+
+    await expect(auth.logout()).resolves.toBeUndefined();
+
+    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.user).toBeNull();
+  });
+
+  it("keeps a validated post-authentication redirect in memory and consumes it once", () => {
+    const storageWrite = vi.spyOn(Storage.prototype, "setItem");
+    const auth = useAuthStore();
+
+    auth.setPostAuthenticationRedirect("/ai-costs?tab=limits");
+
+    expect(auth.consumePostAuthenticationRedirect()).toBe(
+      "/ai-costs?tab=limits",
+    );
+    expect(auth.consumePostAuthenticationRedirect()).toBeNull();
+    expect(JSON.stringify(storageWrite.mock.calls)).not.toContain("ai-costs");
+  });
+
+  it("scrubs local authority even when remote logout fails", async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      kind: "AUTHENTICATED",
+      context: {
+        user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
+        projects: [],
+      },
+    });
+    vi.mocked(authApi.logout).mockRejectedValue(
+      new Error("network unavailable"),
+    );
+    const auth = useAuthStore();
+    await auth.login("operator@example.com", "a long permanent passphrase");
+    auth.setPostAuthenticationRedirect("/ai-costs?tab=limits");
+
+    await expect(auth.logout()).rejects.toThrow("network unavailable");
+
+    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.isAuthenticated).toBe(false);
+    expect(auth.user).toBeNull();
+    expect(auth.project).toBeNull();
+    expect(auth.postAuthenticationRedirect).toBeNull();
+  });
+
+  it("does not restore a stale refresh cookie after offline logout until credentials succeed", async () => {
+    const authenticated = {
+      kind: "AUTHENTICATED" as const,
+      context: {
+        user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
+        projects: [],
+      },
+    };
+    vi.mocked(authApi.login).mockResolvedValue(authenticated);
+    vi.mocked(authApi.logout).mockRejectedValue(new Error("offline"));
+    const auth = useAuthStore();
+    await auth.login("operator@example.com", "a long permanent passphrase");
+
+    await expect(auth.logout()).rejects.toThrow("offline");
+    expect(isInteractiveLoginRequired()).toBe(true);
+
+    setActivePinia(createPinia());
+    const afterReload = useAuthStore();
+    await afterReload.restore();
+    expect(authApi.restore).not.toHaveBeenCalled();
+    expect(afterReload.phase).toBe("ANONYMOUS");
+
+    await afterReload.login(
+      "operator@example.com",
+      "a long permanent passphrase",
+    );
+    expect(isInteractiveLoginRequired()).toBe(false);
+  });
+
+  it("fences a pending restore when another tab clears the session", async () => {
+    let resolveRestore!: (value: {
+      user: { id: string; email: string; name: string };
+      projects: [];
+    }) => void;
+    vi.mocked(authApi.restore).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRestore = resolve;
+      }),
+    );
+    const auth = useAuthStore();
+    const pendingRestore = auth.restore();
+
+    requireInteractiveLogin();
+    resolveRestore({
+      user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
+      projects: [],
+    });
+    await pendingRestore;
+
+    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.isAuthenticated).toBe(false);
+    expect(isInteractiveLoginRequired()).toBe(true);
+  });
+
+  it("does not apply a login response after the ceremony is cancelled", async () => {
+    let resolveLogin!: (value: {
+      kind: "AUTHENTICATED";
+      context: {
+        user: { id: string; email: string; name: string };
+        projects: [];
+      };
+    }) => void;
+    vi.mocked(authApi.login).mockReturnValue(
+      new Promise((resolve) => {
+        resolveLogin = resolve;
+      }),
+    );
+    const auth = useAuthStore();
+    const pendingLogin = auth.login(
+      "operator@example.com",
+      "a long permanent passphrase",
+    );
+
+    auth.cancelMfa();
+    resolveLogin({
+      kind: "AUTHENTICATED",
+      context: {
+        user: { id: "stale-user", email: "stale@example.com", name: "Stale" },
+        projects: [],
+      },
+    });
+
+    await expect(pendingLogin).rejects.toMatchObject({
+      name: "AuthenticationOperationCancelledError",
+    });
+    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.user).toBeNull();
+  });
+
+  it("does not apply a passkey response after reauthentication is required", async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      kind: "MFA_REQUIRED",
+      ceremonyToken: "lmf_login-capability",
+      expiresAt: "2026-07-21T21:10:00.000Z",
+      publicKey: { challenge: "challenge" },
+      recoveryAvailable: false,
+    });
+    let resolvePasskey!: (value: {
+      kind: "AUTHENTICATED";
+      context: {
+        user: { id: string; email: string; name: string };
+        projects: [];
+      };
+    }) => void;
+    vi.mocked(authApi.completeMfaPasskey).mockReturnValue(
+      new Promise((resolve) => {
+        resolvePasskey = resolve;
+      }),
+    );
+    const auth = useAuthStore();
+    await auth.login("operator@example.com", "a long permanent passphrase");
+    const pendingPasskey = auth.completeMfaPasskey();
+
+    auth.requireMfaReauthentication();
+    resolvePasskey({
+      kind: "AUTHENTICATED",
+      context: {
+        user: { id: "stale-user", email: "stale@example.com", name: "Stale" },
+        projects: [],
+      },
+    });
+
+    await expect(pendingPasskey).rejects.toMatchObject({
+      name: "AuthenticationOperationCancelledError",
+    });
+    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.user).toBeNull();
+  });
+
+  it("does not let a stale restore rejection overwrite a newer login", async () => {
+    let rejectRestore!: (cause: Error) => void;
+    vi.mocked(authApi.restore).mockReturnValue(
+      new Promise((_, reject) => {
+        rejectRestore = reject;
+      }),
+    );
+    vi.mocked(authApi.login).mockResolvedValue({
+      kind: "AUTHENTICATED",
+      context: {
+        user: {
+          id: "current-user",
+          email: "current@example.com",
+          name: "Current",
+        },
+        projects: [],
+      },
+    });
+    const auth = useAuthStore();
+    const pendingRestore = auth.restore();
+
+    await auth.login("current@example.com", "a long permanent passphrase");
+    rejectRestore(new Error("stale refresh failed"));
+    await pendingRestore;
+
+    expect(auth.phase).toBe("AUTHENTICATED");
+    expect(auth.user?.id).toBe("current-user");
   });
 });
