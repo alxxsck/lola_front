@@ -30,6 +30,25 @@ function formatDate(value: string): string {
 
 <template>
   <section class="result-view">
+    <div v-if="view.clarification" class="clarification">
+      <div class="result-label">
+        <i class="pi pi-question-circle" /> Что требовалось уточнить
+      </div>
+      <p>{{ view.clarification.question }}</p>
+      <div class="clarification-candidates" aria-label="Варианты определения">
+        <code
+          v-for="candidate in view.clarification.candidates"
+          :key="candidate"
+          >{{ candidate }}</code
+        >
+      </div>
+      <small>
+        Этот запуск уже завершён. Новые запросы Lola сначала попробует разрешить
+        такую неоднозначность сама; для повторения старого запуска добавьте
+        подходящий код определения в новый запрос.
+      </small>
+    </div>
+
     <div v-if="view.answer" class="answer">
       <div class="result-label"><i class="pi pi-sparkles" /> Вывод Lola</div>
       <p>{{ view.answer }}</p>
@@ -195,6 +214,36 @@ function formatDate(value: string): string {
   background: color-mix(in srgb, var(--brand) 7%, var(--surface-subtle));
   border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
   border-radius: 14px;
+}
+.clarification {
+  padding: 18px;
+  background: var(--status-warning-soft);
+  border: 1px solid color-mix(in srgb, var(--status-warning) 32%, var(--line));
+  border-radius: 14px;
+}
+.clarification p {
+  margin: 9px 0 12px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.clarification-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.clarification-candidates code {
+  padding: 5px 8px;
+  background: var(--surface-card);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+.clarification small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
 }
 .result-label {
   color: var(--text-brand);
