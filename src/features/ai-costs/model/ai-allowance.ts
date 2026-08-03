@@ -16,12 +16,17 @@ export const AI_ALLOWANCE_CATEGORIES = [
   "PROJECT_OVERHEAD",
 ] as const;
 export type AiAllowanceCategory = (typeof AI_ALLOWANCE_CATEGORIES)[number];
-export interface AiAllowanceLocalizedContent {
-  message?: string;
-  ru?: string;
-  en?: string;
-  variants?: Record<string, string>;
-  [locale: string]: string | Record<string, string> | undefined;
+export type AiAllowanceLocalizedContent =
+  | { mode: "SYSTEM" }
+  | {
+      mode: "CUSTOM";
+      defaultLocale: string;
+      translations: Record<string, string>;
+    };
+export interface AiAllowanceLocalizationCatalog {
+  defaultLocale: string;
+  supportedLocales: string[];
+  translationSupportedLocales: string[];
 }
 export type SignedDecimalString = string & {
   readonly __signedDecimal: unique symbol;
@@ -91,10 +96,7 @@ export interface AiAllowanceAssignment {
 
 export interface AiAllowanceProjectPolicyView {
   projectPolicyVersion: string;
-  localization: {
-    defaultLocale: string;
-    supportedLocales: string[];
-  };
+  localization: AiAllowanceLocalizationCatalog;
   policy: AiAllowancePolicy | null;
   plans: AiAllowancePlan[];
   plansPageInfo: AiAllowanceCursorPageInfo;
@@ -212,6 +214,11 @@ export interface AiAllowanceJournalPage {
 export interface PutDefaultAllowancePlanInput {
   expectedProjectPolicyVersion: string;
   amountUsd: DecimalString;
+  categoryRules: Array<{
+    category: AiAllowanceCategory;
+    responsibility: "END_USER_ALLOWANCE" | "PROJECT_SPONSORED";
+    capUsd?: DecimalString;
+  }>;
   period: AiAllowancePeriodKind;
   timezone: string;
   enforcementMode: AiAllowanceEnforcementMode;
@@ -223,7 +230,6 @@ export interface PutDefaultAllowancePlanInput {
   exhaustedContent?: AiAllowanceLocalizedContent;
   clearExhaustedContent?: boolean;
   showEndUserExactUsd: boolean;
-  categoryRules: PutAllowancePlanInput["categoryRules"];
 }
 
 export interface PutAllowancePlanInput {

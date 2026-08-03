@@ -14,6 +14,7 @@ import type {
   AiAllowancePlanSummary,
   AiAllowancePolicy,
   AiAllowanceProjectPolicyView,
+  AiAllowanceLocalizationCatalog,
   AiAllowanceUserBalance,
   ManualAllowanceGrantInput,
   PutDefaultAllowancePlanInput,
@@ -300,36 +301,24 @@ function reconciliationPage(value: unknown): AiAllowanceReconciliationPage {
 function policyView(value: unknown): AiAllowanceProjectPolicyView {
   const source = object(value);
   const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
-  const policy = source?.policy === null ? null : parsePolicy(source?.policy);
+  const localization = parseLocalizationCatalog(source?.localization);
+  const policy =
+    source?.policy === null ? null : parsePolicy(source?.policy, localization);
   const assignment =
     source?.defaultAssignment === null
       ? null
       : parseAssignment(source?.defaultAssignment);
   const gates = object(source?.runtimeGates);
-  const localization = object(source?.localization);
-  const supportedLocales = Array.isArray(localization?.supportedLocales)
-    ? localization.supportedLocales
-    : null;
-  const canonicalSupportedLocales = supportedLocales?.map(canonicalLocale);
-  const defaultLocale = canonicalLocale(localization?.defaultLocale);
   const plansPageInfo = parsePageInfo(source?.plansPageInfo);
   if (
     !source ||
     !projectPolicyVersion ||
+    !localization ||
     (!policy && source.policy !== null) ||
     (!assignment && source.defaultAssignment !== null) ||
     !Array.isArray(source.plans) ||
     source.plans.length > 100 ||
     !gates ||
-    !localization ||
-    !defaultLocale ||
-    !supportedLocales ||
-    supportedLocales.length < 1 ||
-    supportedLocales.length > 50 ||
-    !canonicalSupportedLocales ||
-    canonicalSupportedLocales.some((locale) => !locale) ||
-    new Set(canonicalSupportedLocales).size !== canonicalSupportedLocales.length ||
-    !canonicalSupportedLocales.includes(defaultLocale) ||
     !plansPageInfo ||
     typeof gates.hardEnforcementApproved !== "boolean" ||
     typeof gates.emergencyDisabled !== "boolean"
@@ -339,10 +328,7 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
   if (plans.some((item) => !item)) invalid();
   return {
     projectPolicyVersion,
-    localization: {
-      defaultLocale,
-      supportedLocales: canonicalSupportedLocales as string[],
-    },
+    localization,
     policy,
     plans: plans as AiAllowancePlan[],
     plansPageInfo,
@@ -492,7 +478,10 @@ function journalPage(value: unknown): AiAllowanceJournalPage {
   };
 }
 
-function parsePolicy(value: unknown): AiAllowancePolicy | null {
+function parsePolicy(
+  value: unknown,
+  localization: AiAllowanceLocalizationCatalog | undefined,
+): AiAllowancePolicy | null {
   const s = object(value);
   const mode = enumValue(s?.enforcementMode, [
     "DISABLED",
@@ -500,7 +489,7 @@ function parsePolicy(value: unknown): AiAllowancePolicy | null {
     "SOFT",
     "HARD",
   ] as const);
-  const warningContent = localizedContent(s?.warningContent);
+  const warningContent = localizedContent(s?.warningContent, localization);
   const lowThresholdMode = enumValue(s?.lowThresholdMode, [
     "PERCENT",
     "ABSOLUTE_USD",
@@ -512,7 +501,7 @@ function parsePolicy(value: unknown): AiAllowancePolicy | null {
     compareDecimalStrings(lowThresholdValue, "0") > 0 &&
     (lowThresholdMode === "ABSOLUTE_USD" ||
       compareDecimalStrings(lowThresholdValue, "100") <= 0);
-  const exhaustedContent = localizedContent(s?.exhaustedContent);
+  const exhaustedContent = localizedContent(s?.exhaustedContent, localization);
   return s &&
     text(s.projectId) &&
     mode &&
@@ -883,39 +872,80 @@ function parsePageInfo(
 }
 function localizedContent(
   value: unknown,
+  localization: AiAllowanceLocalizationCatalog | undefined,
 ): AiAllowancePolicy["warningContent"] | undefined {
   const s = object(value);
-  if (!s) return undefined;
-  if (s.message !== undefined && !text(s.message, 1, 2000)) return undefined;
-  const nested = s.variants === undefined ? {} : object(s.variants);
-  if (!nested) return undefined;
-  const localeEntries = [
-    ...Object.entries(nested),
-    ...Object.entries(s).filter(([key]) => key !== "message" && key !== "variants"),
-  ];
-  if (localeEntries.length > 50) return undefined;
-  const variants: Record<string, string> = {};
-  for (const [rawLocale, rawText] of localeEntries) {
-    const locale = canonicalLocale(rawLocale);
-    if (!locale || !text(rawText, 1, 2000) || variants[locale] !== undefined)
-      return undefined;
-    variants[locale] = rawText;
-  }
+  if (!s || !localization) return undefined;
+  if (s.mode === "SYSTEM" && Object.keys(s).length === 1)
+    return { mode: "SYSTEM" };
+  const translations = object(s.translations);
+  if (
+    s.mode !== "CUSTOM" ||
+    !localeCode(s.defaultLocale) ||
+    !localization.supportedLocales.includes(s.defaultLocale) ||
+    !translations ||
+    Object.keys(s).some(
+      (key) => !["mode", "defaultLocale", "translations"].includes(key),
+    ) ||
+    Object.keys(translations).length < 1 ||
+    Object.keys(translations).length > 50 ||
+    !text(translations[s.defaultLocale], 1, 2000) ||
+    Object.entries(translations).some(
+      ([locale, content]) =>
+        !localeCode(locale) ||
+        !localization.supportedLocales.includes(locale) ||
+        !text(content, 1, 2000),
+    )
+  )
+    return undefined;
   return {
-    ...(typeof s.message === "string" ? { message: s.message } : {}),
-    ...(variants.ru ? { ru: variants.ru } : {}),
-    ...(variants.en ? { en: variants.en } : {}),
-    ...(Object.keys(variants).length ? { variants } : {}),
+    mode: "CUSTOM",
+    defaultLocale: s.defaultLocale,
+    translations: translations as Record<string, string>,
   };
 }
-function canonicalLocale(value: unknown): string | undefined {
-  if (typeof value !== "string" || !value.trim() || value.length > 64)
+
+function parseLocalizationCatalog(
+  value: unknown,
+): AiAllowanceLocalizationCatalog | undefined {
+  const source = object(value);
+  const supportedLocales = source?.supportedLocales;
+  const translationSupportedLocales = source?.translationSupportedLocales;
+  if (
+    !source ||
+    !localeCode(source.defaultLocale) ||
+    !localeList(supportedLocales) ||
+    !localeList(translationSupportedLocales) ||
+    !supportedLocales.includes(source.defaultLocale) ||
+    translationSupportedLocales.some(
+      (locale) => !supportedLocales.includes(locale),
+    )
+  )
     return undefined;
+  return {
+    defaultLocale: source.defaultLocale,
+    supportedLocales: [...supportedLocales],
+    translationSupportedLocales: [...translationSupportedLocales],
+  };
+}
+
+function localeList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.length <= 20 &&
+    new Set(value).size === value.length &&
+    value.every(localeCode)
+  );
+}
+
+function localeCode(value: unknown): value is string {
+  if (typeof value !== "string" || value.length < 1 || value.length > 64)
+    return false;
   try {
-    const canonical = Intl.getCanonicalLocales(value.trim().replaceAll("_", "-"));
-    return canonical.length === 1 ? canonical[0] : undefined;
+    return Intl.getCanonicalLocales(value)[0] === value;
   } catch {
-    return undefined;
+    return false;
   }
 }
 function text(value: unknown, min = 1, max = 500): value is string {

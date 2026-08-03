@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
+import DatePicker from "primevue/datepicker";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { useAuthStore } from "@/features/auth/auth.store";
@@ -65,6 +66,20 @@ const tablist = ref<HTMLElement | null>(null);
 const loadedTableKey = ref("");
 let generation = 0;
 let overviewKey = "";
+
+const customDateRange = computed<Date[] | null>({
+  get: () => {
+    const from = parseIsoDay(customFrom.value);
+    const to = parseIsoDay(customTo.value);
+    if (!from) return null;
+    return to ? [from, to] : [from];
+  },
+  set: (range) => {
+    customFrom.value = formatIsoDay(range?.[0]);
+    customTo.value = formatIsoDay(range?.[1]);
+    customError.value = "";
+  },
+});
 
 const projectId = computed(() => auth.project?.id ?? null);
 const configuredTimezone = computed(() =>
@@ -435,6 +450,28 @@ function applyCustomPeriod(): void {
   });
 }
 
+function parseIsoDay(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+    ? date
+    : null;
+}
+
+function formatIsoDay(value: Date | null | undefined): string {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function changeSort(sort: AiCostSortKey): void {
   replaceState({
     sort,
@@ -524,7 +561,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
   <main class="ai-costs-page">
     <header class="page-heading">
       <div>
-        <span class="eyebrow">AI cost control</span>
+        <span class="eyebrow">Контроль расходов</span>
         <h1>Расходы AI</h1>
         <p>
           Фактическая, расчётная и неполная стоимость по задачам, пользователям
@@ -540,42 +577,6 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
         Часовой пояс проекта: <strong>{{ displayTimezone }}</strong>
       </span>
     </header>
-
-    <section
-      v-if="state.tab !== 'limits' && state.tab !== 'journal'"
-      class="period-panel"
-      aria-label="Период отчёта"
-    >
-      <div class="preset-group" role="group" aria-label="Быстрый выбор периода">
-        <button
-          v-for="periodOption in periods"
-          :key="periodOption.key"
-          type="button"
-          :class="{ active: state.period === periodOption.key }"
-          :aria-pressed="state.period === periodOption.key"
-          @click="selectPeriod(periodOption.key)"
-        >
-          {{ periodOption.label }}
-        </button>
-      </div>
-      <div class="custom-period">
-        <label>С <input v-model="customFrom" type="date" /></label>
-        <label>По <input v-model="customTo" type="date" /></label>
-        <Button
-          label="Применить"
-          size="small"
-          outlined
-          @click="applyCustomPeriod"
-        />
-      </div>
-      <small class="period-note"
-        >Диапазон считается полуинтервалом: начало включено, следующий день
-        после окончания исключён.</small
-      >
-      <small v-if="customError" class="field-error" role="alert">{{
-        customError
-      }}</small>
-    </section>
 
     <nav
       ref="tablist"
@@ -599,6 +600,45 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
         {{ tab.label }}
       </button>
     </nav>
+
+    <section
+      v-if="state.tab !== 'limits' && state.tab !== 'journal'"
+      class="period-panel"
+      aria-label="Период отчёта"
+    >
+      <div class="preset-group" role="group" aria-label="Быстрый выбор периода">
+        <button
+          v-for="periodOption in periods"
+          :key="periodOption.key"
+          type="button"
+          :class="{ active: state.period === periodOption.key }"
+          :aria-pressed="state.period === periodOption.key"
+          @click="selectPeriod(periodOption.key)"
+        >
+          {{ periodOption.label }}
+        </button>
+      </div>
+      <div class="custom-period" role="group" aria-label="Произвольный период">
+        <DatePicker
+          v-model="customDateRange"
+          selection-mode="range"
+          date-format="dd.mm.yy"
+          show-icon
+          icon-display="input"
+          placeholder="Выбрать даты"
+          aria-label="Начальная и конечная даты отчёта"
+        />
+        <Button
+          label="Применить"
+          size="small"
+          :disabled="!customFrom || !customTo"
+          @click="applyCustomPeriod"
+        />
+      </div>
+      <small v-if="customError" class="field-error" role="alert">{{
+        customError
+      }}</small>
+    </section>
 
     <Message v-if="error" severity="error" :closable="false">
       <span>{{ error }}</span>
@@ -984,11 +1024,11 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
   white-space: nowrap;
 }
 .period-panel {
-  flex-wrap: wrap;
-  padding: 14px;
+  min-height: 58px;
+  padding: 9px 10px;
   border: 1px solid var(--border-default);
-  border-radius: 16px;
-  background: var(--surface-card);
+  border-radius: 14px;
+  background: var(--surface-subtle);
 }
 .preset-group {
   display: flex;
@@ -1005,9 +1045,10 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
   cursor: pointer;
 }
 .preset-group button {
-  padding: 7px 12px;
+  min-height: 38px;
+  padding: 7px 14px;
   border-radius: 8px;
-  font-size: 0.74rem;
+  font-size: 0.78rem;
 }
 .preset-group button.active {
   background: var(--surface-card);
@@ -1016,26 +1057,19 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
 }
 .custom-period {
   display: flex;
-  align-items: end;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
 }
-.custom-period label {
-  display: grid;
-  gap: 4px;
-  color: var(--text-small-muted);
-  font-size: 0.65rem;
+.custom-period :deep(.p-datepicker) {
+  width: 230px;
 }
-.custom-period input {
-  min-height: 34px;
-  padding: 5px 8px;
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  background: var(--surface-card);
-  color: var(--text-primary);
+.custom-period :deep(.p-inputtext),
+.custom-period :deep(.p-button) {
+  min-height: 42px;
 }
-.period-note {
-  flex-basis: 100%;
-  color: var(--text-small-muted);
+.custom-period :deep(.p-inputtext) {
+  padding-block: 8px;
+  font-size: 0.78rem;
 }
 .field-error {
   flex-basis: 100%;
@@ -1305,7 +1339,6 @@ td .warning {
   .period-panel {
     flex-wrap: nowrap;
   }
-  .period-note,
   .field-error {
     flex-basis: auto;
   }
@@ -1314,8 +1347,11 @@ td .warning {
     white-space: normal;
   }
   .custom-period {
-    align-items: stretch;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .custom-period :deep(.p-datepicker) {
+    width: 100%;
   }
   .kpi-grid {
     grid-template-columns: 1fr;

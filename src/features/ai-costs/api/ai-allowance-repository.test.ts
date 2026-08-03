@@ -10,17 +10,18 @@ import { aiAllowanceRepository } from "./ai-allowance-repository";
 const policyResponse = {
   projectPolicyVersion: "2",
   localization: {
-    defaultLocale: "en",
-    supportedLocales: ["en", "es", "pt-BR"],
+    defaultLocale: "ru-RU",
+    supportedLocales: ["ru-RU", "en-US", "pt-BR"],
+    translationSupportedLocales: ["ru-RU", "en-US", "pt-BR"],
   },
   policy: {
     projectId: "project-1",
     enforcementMode: "SOFT",
     timezone: "Europe/Madrid",
-    warningContent: {},
+    warningContent: { mode: "SYSTEM" },
     lowThresholdMode: "PERCENT",
     lowThresholdValue: "10.000000000000",
-    exhaustedContent: {},
+    exhaustedContent: { mode: "SYSTEM" },
     showEndUserExactUsd: false,
     version: "2",
     createdAt: "2026-08-01T00:00:00.000Z",
@@ -80,6 +81,7 @@ describe("aiAllowanceRepository", () => {
             "so",
             "ar",
           ],
+          translationSupportedLocales: ["ru", "en", "it", "de", "es"],
         },
         policy: null,
         plans: [],
@@ -115,24 +117,25 @@ describe("aiAllowanceRepository", () => {
     expect(result.policy?.showEndUserExactUsd).toBe(false);
     expect(result.policy?.lowThresholdMode).toBe("PERCENT");
     expect(result.policy?.lowThresholdValue).toBe("10.000000000000");
+    expect(result.localization.defaultLocale).toBe("ru-RU");
     expect(axiosInstance.get).toHaveBeenCalledWith(
       "/api/v1/admin/projects/project-1/ai-allowance",
     );
   });
 
-  it("accepts and preserves arbitrary Project Locale allowance copy", async () => {
+  it("accepts canonical BCP-47 custom allowance translations", async () => {
     vi.mocked(axiosInstance.get).mockResolvedValue({
       data: {
         ...policyResponse,
         policy: {
           ...policyResponse.policy,
           warningContent: {
-            message: "Fallback",
-            variants: { es: "Presupuesto bajo", "pt-BR": "Orçamento baixo" },
-          },
-          exhaustedContent: {
-            en: "Allowance exhausted",
-            es: "Presupuesto agotado",
+            mode: "CUSTOM",
+            defaultLocale: "ru-RU",
+            translations: {
+              "ru-RU": "Лимит почти исчерпан.",
+              "pt-BR": "O limite está quase esgotado.",
+            },
           },
         },
       },
@@ -140,14 +143,13 @@ describe("aiAllowanceRepository", () => {
 
     const result = await aiAllowanceRepository.projectPolicy("project-1");
 
-    expect(result.localization).toEqual(policyResponse.localization);
-    expect(result.policy?.warningContent.variants).toEqual({
-      es: "Presupuesto bajo",
-      "pt-BR": "Orçamento baixo",
-    });
-    expect(result.policy?.exhaustedContent.variants).toEqual({
-      en: "Allowance exhausted",
-      es: "Presupuesto agotado",
+    expect(result.policy?.warningContent).toEqual({
+      mode: "CUSTOM",
+      defaultLocale: "ru-RU",
+      translations: {
+        "ru-RU": "Лимит почти исчерпан.",
+        "pt-BR": "O limite está quase esgotado.",
+      },
     });
   });
 
@@ -404,13 +406,13 @@ describe("aiAllowanceRepository", () => {
     const defaultPlan = {
       expectedProjectPolicyVersion: "2",
       amountUsd: "5.000000000001" as const,
+      categoryRules: [],
       period: "DAY" as const,
       timezone: "Europe/Madrid",
       enforcementMode: "SOFT" as const,
       lowThresholdMode: "PERCENT" as const,
       lowThresholdValue: "10.000000000000" as const,
       showEndUserExactUsd: false,
-      categoryRules: [],
       reason: "Daily project allowance",
     };
     const assignment = {
@@ -673,13 +675,13 @@ describe("aiAllowanceRepository", () => {
         {
           expectedProjectPolicyVersion: "2",
           amountUsd: "5.000000000001",
+          categoryRules: [],
           period: "DAY",
           timezone: "UTC",
           enforcementMode: "SOFT",
           lowThresholdMode: "PERCENT",
           lowThresholdValue: "10.000000000000",
           showEndUserExactUsd: false,
-          categoryRules: [],
           reason: "Update daily allowance",
         },
         "default-key",
@@ -700,13 +702,13 @@ describe("aiAllowanceRepository", () => {
       {
         expectedProjectPolicyVersion: "8",
         amountUsd: "5.000000000001",
+        categoryRules: [],
         period: "DAY",
         timezone: "UTC",
         enforcementMode: "SOFT",
         lowThresholdMode: "PERCENT",
         lowThresholdValue: "10.000000000000",
         showEndUserExactUsd: false,
-        categoryRules: [],
         reason: "Replay daily allowance update",
       },
       "legacy-replay-key",
@@ -729,13 +731,13 @@ describe("aiAllowanceRepository", () => {
         {
           expectedProjectPolicyVersion: "0",
           amountUsd: "5.000000000001",
+          categoryRules: [],
           period: "DAY",
           timezone: "UTC",
           enforcementMode: "SOFT",
           lowThresholdMode: "PERCENT",
           lowThresholdValue: "10.000000000000",
           showEndUserExactUsd: false,
-          categoryRules: [],
           reason: "Reject malformed replay version",
         },
         "malformed-replay-key",

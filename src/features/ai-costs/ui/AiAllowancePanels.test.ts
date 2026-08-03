@@ -1,4 +1,4 @@
-import { flushPromises, mount } from "@vue/test-utils";
+import { config, flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api/http/api-error";
 import AiAllowanceJournalPanel from "./AiAllowanceJournalPanel.vue";
@@ -11,6 +11,10 @@ const mocks = vi.hoisted(() => ({
   putDefaultPlan: vi.fn(),
   putPlan: vi.fn(),
   putCohortAssignment: vi.fn(),
+  translationCreate: vi.fn(),
+  translationGet: vi.fn(),
+  translationCancel: vi.fn(),
+  translationRetryTarget: vi.fn(),
   reconcile: vi.fn(),
   reconciliationQueue: vi.fn(),
   resolveAttempt: vi.fn(),
@@ -32,18 +36,30 @@ vi.mock("../api/ai-allowance-repository", () => ({
     correct: mocks.correct,
   },
 }));
+vi.mock("@/features/scenario-localization/api/translation-repository", () => ({
+  translationRepository: {
+    create: mocks.translationCreate,
+    get: mocks.translationGet,
+    cancel: mocks.translationCancel,
+    retryTarget: mocks.translationRetryTarget,
+  },
+}));
 
 const policy = {
   projectPolicyVersion: "4",
-  localization: { defaultLocale: "ru", supportedLocales: ["ru", "en"] },
+  localization: {
+    defaultLocale: "ru-RU",
+    supportedLocales: ["ru-RU", "en-US", "es-ES"],
+    translationSupportedLocales: ["ru-RU", "en-US", "es-ES"],
+  },
   policy: {
     projectId: "project-1",
     enforcementMode: "SOFT",
     timezone: "Europe/Madrid",
-    warningContent: {},
+    warningContent: { mode: "SYSTEM" },
     lowThresholdMode: "PERCENT",
     lowThresholdValue: "10.000000000000",
-    exhaustedContent: {},
+    exhaustedContent: { mode: "SYSTEM" },
     showEndUserExactUsd: false,
     version: "1",
     createdAt: "2026-08-01T00:00:00.000Z",
@@ -126,6 +142,14 @@ function deferred<T>() {
 
 describe("allowance admin panels", () => {
   beforeEach(() => {
+    sessionStorage.clear();
+    config.global.stubs.Select = {
+      inheritAttrs: false,
+      props: ["modelValue", "options", "optionLabel", "optionValue"],
+      emits: ["update:modelValue"],
+      template:
+        '<select v-bind="$attrs" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option></select>',
+    };
     vi.clearAllMocks();
     mocks.projectPolicy.mockResolvedValue(policy);
     mocks.journal.mockResolvedValue({
@@ -170,6 +194,30 @@ describe("allowance admin panels", () => {
       projectPolicyVersion: "5",
       replayed: false,
     });
+    mocks.translationCreate.mockResolvedValue({
+      jobId: "translation-job-1",
+      createdAt: "2026-08-03T10:00:00.000Z",
+    });
+    mocks.translationGet.mockResolvedValue({
+      jobId: "translation-job-1",
+      status: "COMPLETED",
+      sourceHash: "source-hash",
+      createdAt: "2026-08-03T10:00:00.000Z",
+      sourceLocale: "ru-RU",
+      targets: [
+        {
+          targetLocale: "en-US",
+          status: "SUCCESS",
+          outputUnits: [
+            {
+              key: "allowance.warning",
+              text: "Your AI allowance is almost exhausted.",
+            },
+          ],
+          errorCode: null,
+        },
+      ],
+    });
   });
 
   it("permission-gates the policy read without issuing a request", async () => {
@@ -186,7 +234,7 @@ describe("allowance admin panels", () => {
     expect(mocks.projectPolicy).not.toHaveBeenCalled();
   });
 
-  it("shows the effective LOW threshold to read-only operators", async () => {
+  it("shows the warning threshold without internal terminology", async () => {
     const wrapper = mount(AiAllowanceLimitsPanel, {
       props: {
         projectId: "project-1",
@@ -200,7 +248,10 @@ describe("allowance admin panels", () => {
     expect(
       wrapper.get('[data-testid="allowance-low-threshold-summary"]').text(),
     ).toBe("10% от базового лимита");
-    expect(wrapper.text()).not.toContain("Изменить базовый план");
+    expect(wrapper.text()).toContain("Лимиты для пользователей");
+    expect(wrapper.text()).not.toContain("LOW");
+    expect(wrapper.text()).not.toContain("project default");
+    expect(wrapper.text()).not.toContain("Настроить общий лимит");
   });
 
   it("shows exact default allowance and exposes mutations only with manage permission", async () => {
@@ -216,7 +267,7 @@ describe("allowance admin panels", () => {
     });
     await flushPromises();
     expect(wrapper.text()).toContain("5,00 $");
-    expect(wrapper.get("button").text()).toContain("Изменить базовый план");
+    expect(wrapper.get("button").text()).toContain("Настроить общий лимит");
     expect(mocks.projectPolicy).toHaveBeenCalledWith("project-1");
   });
 
@@ -232,9 +283,9 @@ describe("allowance admin panels", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Ручное начисление квоты");
-    expect(wrapper.text()).toContain("Лимиты расходов");
-    expect(wrapper.text()).toContain("Изменить базовый план");
+    expect(wrapper.text()).toContain("Начислить дополнительный лимит");
+    expect(wrapper.text()).toContain("Общий лимит проекта");
+    expect(wrapper.text()).toContain("Настроить общий лимит");
   });
 
   it("makes the universal limit the primary action for an unconfigured project", async () => {
@@ -243,6 +294,7 @@ describe("allowance admin panels", () => {
       localization: {
         defaultLocale: "ru",
         supportedLocales: ["ru", "en"],
+        translationSupportedLocales: ["ru", "en"],
       },
       policy: null,
       plans: [],
@@ -264,10 +316,10 @@ describe("allowance admin panels", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Общий лимит для всех пользователей");
+    expect(wrapper.text()).toContain("Общий лимит проекта");
     expect(wrapper.text()).toContain("Настроить общий лимит");
-    expect(wrapper.text().indexOf("Общий лимит для всех пользователей")).toBeLessThan(
-      wrapper.text().indexOf("Ручное начисление квоты"),
+    expect(wrapper.text().indexOf("Общий лимит проекта")).toBeLessThan(
+      wrapper.text().indexOf("Начислить дополнительный лимит"),
     );
   });
 
@@ -286,10 +338,10 @@ describe("allowance admin panels", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Общий лимит для всех пользователей");
+    expect(wrapper.text()).toContain("Общий лимит проекта");
     expect(wrapper.text()).toContain("Политика временно недоступна");
-    expect(wrapper.text().indexOf("Общий лимит для всех пользователей")).toBeLessThan(
-      wrapper.text().indexOf("Ручное начисление квоты"),
+    expect(wrapper.text().indexOf("Общий лимит проекта")).toBeLessThan(
+      wrapper.text().indexOf("Начислить дополнительный лимит"),
     );
   });
 
@@ -317,18 +369,20 @@ describe("allowance admin panels", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
+      .find((button) => button.text().includes("Настроить общий лимит"))!
       .trigger("click");
-    await wrapper.get("#allowance-enforcement").setValue("HARD");
+    await wrapper.get('input[type="radio"][value="HARD"]').setValue(true);
     await wrapper
       .findAll("textarea")
       .at(-1)!
       .setValue("Enable approved hard limit");
     await wrapper.find("form").trigger("submit");
-    expect(wrapper.text()).toContain("Подтвердите риски HARD enforcement");
+    expect(wrapper.text()).toContain(
+      "Подтвердите, что AI-операции можно блокировать",
+    );
     expect(mocks.putDefaultPlan).not.toHaveBeenCalled();
 
-    await wrapper.get("#allowance-hard-confirmed").setValue(true);
+    await wrapper.get("#hard-enforcement-confirmation").setValue(true);
     await wrapper.find("form").trigger("submit");
     await flushPromises();
     expect(mocks.putDefaultPlan).toHaveBeenCalledWith(
@@ -364,13 +418,19 @@ describe("allowance admin panels", () => {
       },
     });
     await flushPromises();
-    expect(wrapper.text()).toContain("Emergency disable активен");
+    expect(wrapper.text()).toContain("Блокировка расходов временно отключена");
+    expect(wrapper.text()).toContain(
+      "Расходы продолжают учитываться, но AI не остановится",
+    );
+    expect(wrapper.text()).not.toContain("Emergency");
+    expect(wrapper.text()).not.toContain("Approval");
+    expect(wrapper.find(".runtime-gates").exists()).toBe(false);
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
+      .find((button) => button.text().includes("Настроить общий лимит"))!
       .trigger("click");
     expect(
-      wrapper.get('option[value="HARD"]').attributes("disabled"),
+      wrapper.get('input[type="radio"][value="HARD"]').attributes("disabled"),
     ).toBeDefined();
   });
 
@@ -398,7 +458,7 @@ describe("allowance admin panels", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
+      .find((button) => button.text().includes("Настроить общий лимит"))!
       .trigger("click");
     expect(
       (wrapper.get("#show-end-user-exact-usd").element as HTMLInputElement)
@@ -423,241 +483,6 @@ describe("allowance admin panels", () => {
       }),
       expect.any(String),
     );
-  });
-
-  it("saves project warning and exhausted messages with exact balance visibility", async () => {
-    mocks.projectPolicy.mockResolvedValue({
-      ...policy,
-      localization: {
-        defaultLocale: "es",
-        supportedLocales: ["es", "ru", "en"],
-      },
-    });
-    const wrapper = mount(AiAllowanceLimitsPanel, {
-      props: {
-        projectId: "project-1",
-        canRead: true,
-        canManage: true,
-        canReconcile: false,
-      },
-      global: {
-        stubs: {
-          Dialog: {
-            props: ["visible"],
-            template: "<div v-if='visible'><slot /></div>",
-          },
-        },
-      },
-    });
-    await flushPromises();
-    await wrapper
-      .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
-      .trigger("click");
-
-    await wrapper
-      .get("#allowance-warning-fallback")
-      .setValue("Fallback warning");
-    await wrapper
-      .get("#allowance-warning-ru")
-      .setValue("Квота почти исчерпана");
-    await wrapper
-      .get("#allowance-warning-en")
-      .setValue("Allowance is nearly exhausted");
-    await wrapper
-      .get("#allowance-warning-es")
-      .setValue("El presupuesto casi se ha agotado");
-    await wrapper
-      .get("#allowance-exhausted-fallback")
-      .setValue("Fallback exhausted");
-    await wrapper.get("#allowance-exhausted-ru").setValue("Квота исчерпана");
-    await wrapper
-      .get("#allowance-exhausted-en")
-      .setValue("Allowance is exhausted");
-    await wrapper
-      .get("#allowance-exhausted-es")
-      .setValue("El presupuesto se ha agotado");
-    await wrapper.get("#show-end-user-exact-usd").setValue(true);
-    const voiceRule = wrapper
-      .findAll("fieldset.category-grid label")
-      .find((label) => label.text().includes("VOICE"))!;
-    await voiceRule.find("input").setValue("1.25");
-    await wrapper
-      .findAll("textarea")
-      .at(-1)!
-      .setValue("Configure customer allowance messages");
-    await wrapper.get("form.allowance-form").trigger("submit");
-    await flushPromises();
-
-    expect(mocks.putDefaultPlan).toHaveBeenCalledWith(
-      "project-1",
-      expect.objectContaining({
-        warningContent: {
-          message: "Fallback warning",
-          ru: "Квота почти исчерпана",
-          en: "Allowance is nearly exhausted",
-          variants: { es: "El presupuesto casi se ha agotado" },
-        },
-        exhaustedContent: {
-          message: "Fallback exhausted",
-          ru: "Квота исчерпана",
-          en: "Allowance is exhausted",
-          variants: { es: "El presupuesto se ha agotado" },
-        },
-        showEndUserExactUsd: true,
-        categoryRules: expect.arrayContaining([
-          {
-            category: "VOICE",
-            responsibility: "END_USER_ALLOWANCE",
-            capUsd: "1.25",
-          },
-        ]),
-      }),
-      expect.any(String),
-    );
-  });
-
-  it("explicitly resets configured allowance messages to backend defaults", async () => {
-    mocks.projectPolicy.mockResolvedValue({
-      ...policy,
-      policy: {
-        ...policy.policy,
-        warningContent: { ru: "Старое предупреждение" },
-        exhaustedContent: { ru: "Старый отказ" },
-      },
-    });
-    const wrapper = mount(AiAllowanceLimitsPanel, {
-      props: {
-        projectId: "project-1",
-        canRead: true,
-        canManage: true,
-        canReconcile: false,
-      },
-      global: {
-        stubs: {
-          Dialog: {
-            props: ["visible"],
-            template: "<div v-if='visible'><slot /></div>",
-          },
-        },
-      },
-    });
-    await flushPromises();
-    await wrapper
-      .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
-      .trigger("click");
-    await wrapper.get("#allowance-clear-warning-content").setValue(true);
-    await wrapper.get("#allowance-clear-exhausted-content").setValue(true);
-    await wrapper
-      .findAll("textarea")
-      .at(-1)!
-      .setValue("Restore system allowance messages");
-    await wrapper.get("form.allowance-form").trigger("submit");
-    await flushPromises();
-
-    expect(mocks.putDefaultPlan).toHaveBeenCalledWith(
-      "project-1",
-      expect.objectContaining({
-        clearWarningContent: true,
-        clearExhaustedContent: true,
-      }),
-      expect.any(String),
-    );
-    const payload = mocks.putDefaultPlan.mock.calls[0]?.[1];
-    expect(payload).not.toHaveProperty("warningContent");
-    expect(payload).not.toHaveProperty("exhaustedContent");
-  });
-
-  it("rejects a zero category cap before calling the backend", async () => {
-    const wrapper = mount(AiAllowanceLimitsPanel, {
-      props: {
-        projectId: "project-1",
-        canRead: true,
-        canManage: true,
-        canReconcile: false,
-      },
-      global: {
-        stubs: {
-          Dialog: {
-            props: ["visible"],
-            template: "<div v-if='visible'><slot /></div>",
-          },
-        },
-      },
-    });
-    await flushPromises();
-    await wrapper
-      .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
-      .trigger("click");
-    const voiceRule = wrapper
-      .findAll("fieldset.category-grid label")
-      .find((label) => label.text().includes("VOICE"))!;
-    await voiceRule.find("input").setValue("0");
-    await wrapper
-      .findAll("textarea")
-      .at(-1)!
-      .setValue("Reject a zero category cap");
-    await wrapper.get("form.allowance-form").trigger("submit");
-    await flushPromises();
-
-    expect(mocks.putDefaultPlan).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain(
-      "Cap категории должен быть больше 0 USD или оставаться пустым.",
-    );
-  });
-
-  it("shows the active allowance messages and exact balance policy without editing", async () => {
-    mocks.projectPolicy.mockResolvedValue({
-      ...policy,
-      policy: {
-        ...policy.policy,
-        warningContent: { ru: "Осталось мало квоты" },
-        exhaustedContent: { message: "Обратитесь в поддержку" },
-        showEndUserExactUsd: true,
-      },
-      plans: [
-        {
-          ...policy.plans[0]!,
-          revisions: [
-            {
-              ...policy.plans[0]!.revisions[0]!,
-              categoryRules: [
-                {
-                  category: "VOICE",
-                  responsibility: "PROJECT_SPONSORED",
-                  capUsd: "2.500000000000",
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-    const wrapper = mount(AiAllowanceLimitsPanel, {
-      props: {
-        projectId: "project-1",
-        canRead: true,
-        canManage: false,
-        canReconcile: false,
-      },
-    });
-    await flushPromises();
-
-    expect(
-      wrapper.get('[data-testid="allowance-warning-summary"]').text(),
-    ).toBe("RU: Осталось мало квоты");
-    expect(
-      wrapper.get('[data-testid="allowance-exhausted-summary"]').text(),
-    ).toBe("Fallback: Обратитесь в поддержку");
-    expect(
-      wrapper.get('[data-testid="allowance-exact-visibility-summary"]').text(),
-    ).toBe("Разрешён проектом");
-    expect(wrapper.text()).toContain("Категории базового плана");
-    expect(wrapper.text()).toContain("VOICE");
-    expect(wrapper.text()).toContain("Оплачивает проект");
-    expect(wrapper.text()).toContain("2,50 $");
   });
 
   it("loads the assigned DEFAULT directly when it is outside the plans page", async () => {
@@ -694,7 +519,8 @@ describe("allowance admin panels", () => {
       limit: 1,
     });
     expect(wrapper.text()).toContain("5,00 $");
-    expect(wrapper.text()).toContain("Project default · project-default");
+    expect(wrapper.text()).toContain("Общий лимит проекта");
+    expect(wrapper.text()).toContain("project-default");
   });
 
   it("saves a configurable LOW threshold and rejects an invalid percentage", async () => {
@@ -717,7 +543,7 @@ describe("allowance admin panels", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
+      .find((button) => button.text().includes("Настроить общий лимит"))!
       .trigger("click");
 
     await wrapper.get("#allowance-low-threshold-value").setValue("101");
@@ -726,7 +552,7 @@ describe("allowance admin panels", () => {
       .at(-1)!
       .setValue("Configure warning threshold");
     await wrapper.get("form.allowance-form").trigger("submit");
-    expect(wrapper.text()).toContain("не больше 100 процентов");
+    expect(wrapper.text()).toContain("процент от 0,01 до 100");
     expect(mocks.putDefaultPlan).not.toHaveBeenCalled();
 
     await wrapper.get("#allowance-low-threshold-mode").setValue("ABSOLUTE_USD");
@@ -739,6 +565,480 @@ describe("allowance admin panels", () => {
       expect.objectContaining({
         lowThresholdMode: "ABSOLUTE_USD",
         lowThresholdValue: "1.25",
+      }),
+      expect.any(String),
+    );
+  });
+
+  it("shows a compact, Russian-language base plan form with advanced settings collapsed", async () => {
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Настроить общий лимит"))!
+      .trigger("click");
+
+    const form = wrapper.get("form.allowance-form");
+    expect(form.get('[data-testid="primary-limit-card"]')).toBeTruthy();
+    expect(form.text()).not.toContain("Главная настройка");
+    expect(
+      form
+        .findAll(".help-tip")
+        .every((tip) => tip.find(".pi-question-circle").exists()),
+    ).toBe(true);
+    expect(form.get(".settings-grid").findAll(":scope > label")).toHaveLength(
+      4,
+    );
+    expect(form.text()).toContain("Часовой пояс");
+    expect(form.text()).toContain("Порог предупреждения");
+    expect(form.text()).toContain("Что делать после исчерпания лимита");
+    expect(form.text()).not.toContain("Timezone");
+    expect(form.text()).not.toContain("LOW");
+    expect(form.text()).not.toContain("Idempotency-Key");
+    expect(
+      (form.get("#allowance-low-threshold-value").element as HTMLInputElement)
+        .value,
+    ).toBe("10");
+    expect(form.get('[data-testid="allowance-timezone-select"]')).toBeTruthy();
+    expect(form.get('[data-testid="allowance-period-select"]')).toBeTruthy();
+    expect(
+      form.get('[data-testid="allowance-threshold-mode-select"]'),
+    ).toBeTruthy();
+    expect(form.get(".mode-options")).toBeTruthy();
+    expect(
+      form.get('button[aria-label="Подсказка о значении порога"]'),
+    ).toBeTruthy();
+    expect(form.text()).not.toContain(
+      "От 0,01 до 100, не более двух знаков после запятой.",
+    );
+    expect(form.get('[data-testid="allowance-amount-suffix"]').text()).toBe(
+      "$",
+    );
+    expect(
+      form.get('[data-testid="allowance-warning-content"]').attributes("open"),
+    ).toBeUndefined();
+    expect(
+      form
+        .get('[data-testid="allowance-exhausted-content"]')
+        .attributes("open"),
+    ).toBeUndefined();
+  });
+
+  it("lets an operator add no more than two category exceptions", async () => {
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Создать вариант"))!
+      .trigger("click");
+
+    const form = wrapper.get("form.allowance-form");
+    const addButton = form.get('[data-testid="add-category-rule"]');
+    expect(form.findAll('[data-testid="category-rule"]')).toHaveLength(0);
+
+    await addButton.trigger("click");
+    await addButton.trigger("click");
+
+    expect(form.findAll('[data-testid="category-rule"]')).toHaveLength(2);
+    expect(addButton.attributes("disabled")).toBeDefined();
+    expect(form.text()).toContain("Не более двух исключений");
+    expect(form.text()).toContain("обычного текстового диалога");
+    expect(form.text()).not.toContain("cap USD");
+    expect(form.text()).not.toContain("AI_REVIEW");
+  });
+
+  it("preserves legacy category exceptions beyond the two visible editor slots", async () => {
+    mocks.projectPolicy.mockResolvedValue({
+      ...policy,
+      plans: [
+        {
+          ...policy.plans[0],
+          revisions: [
+            {
+              ...policy.plans[0].revisions[0],
+              categoryRules: [
+                {
+                  category: "CHAT",
+                  responsibility: "PROJECT_SPONSORED",
+                  capUsd: null,
+                },
+                {
+                  category: "VOICE",
+                  responsibility: "PROJECT_SPONSORED",
+                  capUsd: "2.000000000000",
+                },
+                {
+                  category: "MEMORY",
+                  responsibility: "PROJECT_SPONSORED",
+                  capUsd: "1.000000000000",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Изменить вариант"))!
+      .trigger("click");
+
+    const form = wrapper.get("form.allowance-form");
+    expect(form.findAll('[data-testid="category-rule"]')).toHaveLength(2);
+    expect(form.text()).toContain("Старые исключения (1) сохранятся");
+    await form.get("textarea").setValue("Сохраняем старые исключения");
+    await form.trigger("submit");
+    await flushPromises();
+
+    expect(mocks.putPlan).toHaveBeenCalledWith(
+      "project-1",
+      "PROJECT-DEFAULT",
+      expect.objectContaining({
+        categoryRules: expect.arrayContaining([
+          expect.objectContaining({ category: "CHAT" }),
+          expect.objectContaining({ category: "VOICE" }),
+          expect.objectContaining({ category: "MEMORY" }),
+        ]),
+      }),
+      expect.any(String),
+    );
+    expect(mocks.putPlan.mock.calls[0]?.[2]?.categoryRules).toHaveLength(3);
+  });
+
+  it("round-trips backend-owned standard messages as SYSTEM", async () => {
+    mocks.projectPolicy.mockResolvedValue({
+      ...policy,
+      policy: {
+        ...policy.policy,
+        warningContent: { mode: "SYSTEM" },
+        exhaustedContent: { mode: "SYSTEM" },
+      },
+    });
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Настроить общий лимит"))!
+      .trigger("click");
+
+    const form = wrapper.get("form.allowance-form");
+    expect(
+      (
+        form.get('[data-testid="use-system-warning"]')
+          .element as HTMLInputElement
+      ).checked,
+    ).toBe(true);
+    expect(
+      (
+        form.get('[data-testid="use-system-exhausted"]')
+          .element as HTMLInputElement
+      ).checked,
+    ).toBe(true);
+    await form.get("textarea").setValue("Проверка стандартных сообщений");
+    await form.trigger("submit");
+    await flushPromises();
+
+    expect(mocks.putDefaultPlan).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        warningContent: { mode: "SYSTEM" },
+        exhaustedContent: { mode: "SYSTEM" },
+      }),
+      expect.any(String),
+    );
+  });
+
+  it("recovers a pending translation only after the matching draft is hydrated", async () => {
+    const sourceText = "Особое предупреждение проекта.";
+    sessionStorage.setItem(
+      "lola:translation-jobs:project-1:allowance-policy",
+      JSON.stringify([
+        {
+          jobId: "translation-job-1",
+          fieldPath: "allowance.warning",
+          sourceLocale: "ru-RU",
+          sourceText,
+          unitKeys: ["allowance.warning"],
+          targets: ["en-US"],
+          targetValues: { "en-US": "" },
+          startedAt: "2026-08-03T10:00:00.000Z",
+        },
+      ]),
+    );
+    mocks.projectPolicy.mockResolvedValue({
+      ...policy,
+      policy: {
+        ...policy.policy,
+        warningContent: {
+          mode: "CUSTOM",
+          defaultLocale: "ru-RU",
+          translations: { "ru-RU": sourceText },
+        },
+      },
+    });
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    expect(mocks.translationGet).not.toHaveBeenCalled();
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Настроить общий лимит"))!
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.translationGet).toHaveBeenCalledWith(
+      "project-1",
+      "translation-job-1",
+    );
+    await wrapper
+      .get('[data-field-path="allowance.warning"] [data-coverage-trigger]')
+      .trigger("click");
+    expect(
+      (
+        wrapper.get('textarea[aria-label*="перевод en-US"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("Your AI allowance is almost exhausted.");
+  });
+
+  it("translates both custom messages to every project locale in one AI job", async () => {
+    mocks.projectPolicy.mockResolvedValue({
+      ...policy,
+      policy: {
+        ...policy.policy,
+        warningContent: {
+          mode: "CUSTOM",
+          defaultLocale: "ru-RU",
+          translations: {
+            "ru-RU": "В проекте почти закончился AI-бюджет.",
+          },
+        },
+        exhaustedContent: {
+          mode: "CUSTOM",
+          defaultLocale: "ru-RU",
+          translations: {
+            "ru-RU": "AI-бюджет проекта исчерпан.",
+          },
+        },
+      },
+    });
+    mocks.translationGet.mockResolvedValue({
+      jobId: "translation-job-1",
+      status: "COMPLETED",
+      sourceHash: "source-hash",
+      createdAt: "2026-08-03T10:00:00.000Z",
+      sourceLocale: "ru-RU",
+      targets: [
+        {
+          targetLocale: "en-US",
+          status: "SUCCESS",
+          outputUnits: [
+            {
+              key: "allowance.warning",
+              text: "The project's AI budget is almost exhausted.",
+            },
+            {
+              key: "allowance.exhausted",
+              text: "The project's AI budget is exhausted.",
+            },
+          ],
+          errorCode: null,
+        },
+        {
+          targetLocale: "es-ES",
+          status: "SUCCESS",
+          outputUnits: [
+            {
+              key: "allowance.warning",
+              text: "El presupuesto de IA del proyecto está casi agotado.",
+            },
+            {
+              key: "allowance.exhausted",
+              text: "El presupuesto de IA del proyecto está agotado.",
+            },
+          ],
+          errorCode: null,
+        },
+      ],
+    });
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReconcile: false,
+      },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Настроить общий лимит"))!
+      .trigger("click");
+
+    await wrapper
+      .get('[data-testid="translate-allowance-content"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.translationCreate).toHaveBeenCalledWith(
+      "project-1",
+      {
+        sourceLocale: "ru-RU",
+        targetLocales: ["en-US", "es-ES"],
+        units: [
+          {
+            key: "allowance.warning",
+            text: "В проекте почти закончился AI-бюджет.",
+          },
+          {
+            key: "allowance.exhausted",
+            text: "AI-бюджет проекта исчерпан.",
+          },
+        ],
+      },
+      { idempotencyKey: expect.any(String) },
+    );
+    await wrapper
+      .get('[data-field-path="allowance.warning"] [data-coverage-trigger]')
+      .trigger("click");
+    expect(
+      (
+        wrapper.get('textarea[aria-label*="перевод en-US"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("The project's AI budget is almost exhausted.");
+    expect(
+      (
+        wrapper.get('textarea[aria-label*="перевод es-ES"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("El presupuesto de IA del proyecto está casi agotado.");
+    const exhaustedField = wrapper.get(
+      '[data-field-path="allowance.exhausted"]',
+    );
+    await exhaustedField.get("[data-coverage-trigger]").trigger("click");
+    expect(
+      (
+        exhaustedField.get('textarea[aria-label*="перевод en-US"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("The project's AI budget is exhausted.");
+
+    const form = wrapper.get("form.allowance-form");
+    await form
+      .get(
+        'textarea[placeholder="Например: увеличили лимит для нового тарифа"]',
+      )
+      .setValue("Добавили переводы предупреждения");
+    await form.trigger("submit");
+    await flushPromises();
+
+    expect(mocks.putDefaultPlan).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        warningContent: {
+          mode: "CUSTOM",
+          defaultLocale: "ru-RU",
+          translations: {
+            "ru-RU": "В проекте почти закончился AI-бюджет.",
+            "en-US": "The project's AI budget is almost exhausted.",
+            "es-ES": "El presupuesto de IA del proyecto está casi agotado.",
+          },
+        },
+        exhaustedContent: {
+          mode: "CUSTOM",
+          defaultLocale: "ru-RU",
+          translations: {
+            "ru-RU": "AI-бюджет проекта исчерпан.",
+            "en-US": "The project's AI budget is exhausted.",
+            "es-ES": "El presupuesto de IA del proyecto está agotado.",
+          },
+        },
       }),
       expect.any(String),
     );
@@ -773,7 +1073,7 @@ describe("allowance admin panels", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
+      .find((button) => button.text().includes("Настроить общий лимит"))!
       .trigger("click");
     const form = wrapper.get("form.allowance-form");
     await form.findAll("textarea").at(-1)!.setValue("Keep policy draft");
@@ -837,7 +1137,7 @@ describe("allowance admin panels", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Показать остальные планы"))!
+      .find((button) => button.text().includes("Показать остальные варианты"))!
       .trigger("click");
 
     await wrapper.setProps({ projectId: "project-2" });
@@ -871,7 +1171,7 @@ describe("allowance admin panels", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Изменить базовый план"))!
+      .find((button) => button.text().includes("Настроить общий лимит"))!
       .trigger("click");
     expect(wrapper.find("form.allowance-form").exists()).toBe(true);
 
@@ -901,7 +1201,7 @@ describe("allowance admin panels", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Назначить когорте"))!
+      .find((button) => button.text().includes("Назначить группе"))!
       .trigger("click");
     const form = wrapper.get("form.allowance-form");
     await form

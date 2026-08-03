@@ -17,6 +17,22 @@ describe("AiAllowanceDirectGrantPanel", () => {
     vi.clearAllMocks();
   });
 
+  it("explains the operation and labels the form in Russian", () => {
+    const wrapper = mount(AiAllowanceDirectGrantPanel, {
+      props: { projectId: "project-1" },
+    });
+
+    expect(wrapper.text()).toContain("Начислить дополнительный лимит");
+    expect(wrapper.text()).toContain("Операция сохраняется в истории");
+    expect(wrapper.text()).toContain("ID пользователя");
+    expect(wrapper.text()).not.toContain("Audited");
+    expect(wrapper.text()).not.toContain("End User");
+    expect(
+      wrapper.get('input[autocomplete="off"]').attributes("placeholder"),
+    ).toBeTruthy();
+    expect(wrapper.get("textarea").attributes("placeholder")).toBeTruthy();
+  });
+
   it("reuses the command idempotency key when the same grant is retried", async () => {
     mocks.createGrant
       .mockRejectedValueOnce(new Error("Response lost"))
