@@ -1,3 +1,8 @@
+# GitLab pipeline for Lola CMS — build & push a container image.
+# Deployment is GitOps: Flux image-automation on k3s-prod picks up the newest
+# `main-<ts>-<sha>` tag and rolls out the nginx/SPA image. (Cloudflare Pages deploy
+# has been replaced by the container build.)
+
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -7,16 +12,21 @@ workflow:
 
 stages:
   - verify
-  - build
-  - deploy
+  - image
 
 variables:
-  npm_config_cache: "$CI_PROJECT_DIR/.npm"
-  VITE_DATA_MODE: "api"
-  WRANGLER_VERSION: "4.115.0"
+  NODE_IMAGE: 'node:22-alpine'
+  BUILDKIT_IMAGE: 'moby/buildkit:v0.30.0-rootless'
+  npm_config_cache: '$CI_PROJECT_DIR/.npm'
+  VITE_DATA_MODE: 'api'
+  APP_IMAGE_TAG: '$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA'
+  BUILDKIT_CACHE_REF: '$CI_REGISTRY_IMAGE/cache:buildkit-$CI_COMMIT_REF_SLUG'
+  BUILDKIT_DEFAULT_CACHE_REF: '$CI_REGISTRY_IMAGE/cache:buildkit-$CI_DEFAULT_BRANCH'
 
-.node_job:
-  image: node:22-alpine
+quality:
+  stage: verify
+  image: '$NODE_IMAGE'
+  interruptible: true
   cache:
     key:
       files:
@@ -26,72 +36,61 @@ variables:
   before_script:
     - apk add --no-cache git
     - npm ci --prefer-offline --no-audit
-
-quality:
-  extends: .node_job
-  stage: verify
-  interruptible: true
   script:
     - npm run lint
     - npm run typecheck
+    # Catch OpenAPI/generated-client drift here (fast) rather than only in build:image.
+    - npm run api:check
     - npm test
     - npm run test:scripts
 
-build:
-  extends: .node_job
-  stage: build
+build:image:
+  stage: image
+  image:
+    name: '$BUILDKIT_IMAGE'
+    entrypoint: ['']
   interruptible: true
-  script:
-    - |
-      if [ -z "${VITE_API_BASE_URL:-}" ]; then
-        echo "VITE_API_BASE_URL must be configured in GitLab CI/CD variables."
-        exit 1
-      fi
-    - npm run build
-  artifacts:
-    name: "lola-cms-${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"
-    paths:
-      - dist/
-    expire_in: 7 days
-
-.cloudflare_pages_deploy:
-  image: node:22-alpine
-  stage: deploy
+  timeout: 30m
+  variables:
+    BUILDKITD_FLAGS: '--oci-worker-no-process-sandbox'
+    # Job-scoped: must NOT be a top-level var — it would land in the test job's
+    # env, flip import.meta.env.VITE_API_BASE_URL to /api/v1, and break the
+    # realtime-client test (which expects the http://localhost:3000 default).
+    VITE_API_BASE_URL: '/api/v1'
   needs:
-    - job: build
-      artifacts: true
-  cache:
-    key: "wrangler-$WRANGLER_VERSION"
-    paths:
-      - .npm/
+    - job: quality
+      artifacts: false
   before_script:
-    - test -n "$CLOUDFLARE_ACCOUNT_ID"
-    - test -n "$CLOUDFLARE_PAGES_PROJECT_NAME"
-    - test -n "$CLOUDFLARE_API_TOKEN"
+    - umask 077
+    - mkdir -p "$HOME/.docker"
+    - |
+      printf '{"auths":{"%s":{"username":"%s","password":"%s"}}}\n' \
+        "$CI_REGISTRY" "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" \
+        > "$HOME/.docker/config.json"
   script:
-    - >
-      npx --yes "wrangler@$WRANGLER_VERSION" pages deploy dist
-      --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME"
-      --branch "$CLOUDFLARE_PAGES_BRANCH"
-      --commit-hash "$CI_COMMIT_SHA"
-      --commit-message "$CI_COMMIT_TITLE"
-
-deploy_preview:
-  extends: .cloudflare_pages_deploy
-  variables:
-    CLOUDFLARE_API_TOKEN: "$CLOUDFLARE_PREVIEW_API_TOKEN"
-    CLOUDFLARE_PAGES_BRANCH: "$CI_COMMIT_REF_SLUG"
-  environment:
-    name: "cloudflare/preview/$CI_COMMIT_REF_SLUG"
+    # Push only on the default branch (main); MRs/branches build to validate.
+    - PUSH=false
+    - if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then PUSH=true; fi
+    - FLUX_TAG="main-$(date -u +%Y%m%d%H%M%S)-${CI_COMMIT_SHORT_SHA}"
+    - FLUX_IMAGE="$CI_REGISTRY_IMAGE:$FLUX_TAG"
+    - echo "PUSH=$PUSH building $APP_IMAGE_TAG and $FLUX_IMAGE"
+    - |
+      buildctl-daemonless.sh build \
+        --frontend dockerfile.v0 \
+        --local context=. \
+        --local dockerfile=. \
+        --opt filename=Dockerfile \
+        --opt target=production \
+        --opt "build-arg:NODE_IMAGE=$NODE_IMAGE" \
+        --opt "build-arg:VITE_API_BASE_URL=$VITE_API_BASE_URL" \
+        --opt "build-arg:VITE_DATA_MODE=$VITE_DATA_MODE" \
+        --import-cache "type=registry,ref=$BUILDKIT_DEFAULT_CACHE_REF" \
+        --import-cache "type=registry,ref=$BUILDKIT_CACHE_REF" \
+        --export-cache "type=registry,ref=$BUILDKIT_CACHE_REF,mode=max" \
+        --output "type=image,\"name=$APP_IMAGE_TAG,$FLUX_IMAGE\",push=$PUSH"
+  # MR pipelines build to validate (push=false, automatic). On main the image is
+  # built + pushed only when you click ▶️ (or Run Pipeline) — the manual deploy gate.
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == $CI_PROJECT_PATH'
-
-deploy_production:
-  extends: .cloudflare_pages_deploy
-  resource_group: cloudflare-pages-production
-  variables:
-    CLOUDFLARE_PAGES_BRANCH: "$CI_DEFAULT_BRANCH"
-  environment:
-    name: production
-  rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "main"'  # auto build+push after quality (deploy-by-commit)
