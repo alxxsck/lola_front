@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type IntegrationConnectionResponseDtoProvider =
-  (typeof IntegrationConnectionResponseDtoProvider)[keyof typeof IntegrationConnectionResponseDtoProvider];
+export type IntegrationDispatchMetricSeriesDtoProvider =
+  (typeof IntegrationDispatchMetricSeriesDtoProvider)[keyof typeof IntegrationDispatchMetricSeriesDtoProvider];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const IntegrationConnectionResponseDtoProvider = {
+export const IntegrationDispatchMetricSeriesDtoProvider = {
   AMPLITUDE: "AMPLITUDE",
   CUSTOMER_IO: "CUSTOMER_IO",
 } as const;

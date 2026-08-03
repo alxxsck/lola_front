@@ -7,20 +7,27 @@ import {
   ref,
   watch,
 } from "vue";
-import type {
-  CreateAmplitudeConnectionDto,
-  IntegrationConnectionResponseDto,
-  IntegrationConnectionTestResponseDto,
-  RotateAmplitudeCredentialDto,
-} from "@/shared/api/generated/models";
+import type { IntegrationConnectionTestResponseDto } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 import { integrationConnectionsApi } from "./integration-connections.api";
+import {
+  outboundProviderUi,
+  type OutboundIntegrationProvider,
+  type ProviderConnection,
+  type ProviderCreateConnectionInput,
+  type ProviderRotateCredentialInput,
+} from "@/features/integrations/provider-ui";
 
-const props = defineProps<{
-  projectId: string;
-  canRead: boolean;
-  canManage: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectId: string;
+    canRead: boolean;
+    canManage: boolean;
+    provider?: OutboundIntegrationProvider;
+  }>(),
+  { provider: "AMPLITUDE" },
+);
+const providerUi = computed(() => outboundProviderUi[props.provider]);
 
 type Operation = { projectId: string; epoch: number };
 type MetadataDraft = { displayName: string; remoteProjectLabel: string };
@@ -41,33 +48,48 @@ type PollingTestReceipt = {
   testId: string;
 };
 type PendingTestReceipt = RequestingTestReceipt | PollingTestReceipt;
-type UnresolvedSecretMarker = {
+type UnresolvedSecretMarkerBase = {
   projectId: string;
-  operation: "CREATE" | "ROTATE";
-  connectionId?: string;
   idempotencyKey: string;
   createdAt: string;
 };
+type UnresolvedSecretMarker =
+  | (UnresolvedSecretMarkerBase & {
+      operation: "CREATE";
+      displayName: string;
+      region: "US" | "EU";
+      remoteProjectLabel?: string;
+    })
+  | (UnresolvedSecretMarkerBase & {
+      operation: "ROTATE";
+      connectionId: string;
+      expectedVersion: number;
+    });
 const SAFE_ID_PATTERN = /^[a-z0-9-]{1,100}$/iu;
 
-const connections = ref<IntegrationConnectionResponseDto[]>([]);
+const connections = ref<ProviderConnection[]>([]);
 const loading = ref(true);
 const pendingConnectionId = ref<string | null>(null);
 const creating = ref(false);
 const loadError = ref("");
 const actionError = ref("");
 const success = ref("");
-const displayName = ref("Основная Amplitude");
+const displayName = ref(providerUi.value.defaultDisplayName);
 const region = ref<"US" | "EU">("EU");
 const remoteProjectLabel = ref("");
-const projectApiKey = ref("");
+const credentialSecret = ref("");
 const metadataDrafts = reactive<Record<string, MetadataDraft>>({});
 const rotationKeys = reactive<Record<string, string>>({});
 const pendingTests = reactive<Record<string, PendingTestReceipt>>({});
 const commandKeys = new Map<string, string>();
-const createRetry = ref<SecretRetry<CreateAmplitudeConnectionDto> | null>(null);
+const createRetry = ref<SecretRetry<ProviderCreateConnectionInput> | null>(
+  null,
+);
 const rotateRetry = ref<
-  (SecretRetry<RotateAmplitudeCredentialDto> & { connectionId: string }) | null
+  | (SecretRetry<ProviderRotateCredentialInput> & {
+      connectionId: string;
+    })
+  | null
 >(null);
 const unresolvedSecretMarker = ref<UnresolvedSecretMarker | null>(null);
 let epoch = 0;
@@ -102,7 +124,7 @@ function clearFeedback(): void {
 }
 
 function resetSensitiveState(): void {
-  projectApiKey.value = "";
+  credentialSecret.value = "";
   createRetry.value = null;
   rotateRetry.value = null;
   for (const key of Object.keys(rotationKeys)) delete rotationKeys[key];
@@ -115,11 +137,11 @@ function clearPendingTestsView(): void {
 }
 
 function pendingTestsStorageKey(projectId: string): string {
-  return `lola:amplitude-pending-tests:${projectId}`;
+  return `lola:${providerUi.value.slug}-pending-tests:${projectId}`;
 }
 
 function unresolvedSecretStorageKey(projectId: string): string {
-  return `lola:amplitude-unresolved-secret:${projectId}`;
+  return `lola:${providerUi.value.slug}-unresolved-secret:${projectId}`;
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -251,28 +273,75 @@ function restoreUnresolvedSecret(projectId: string): void {
       "projectId" in value &&
       value.projectId === projectId &&
       "operation" in value &&
-      (value.operation === "CREATE" || value.operation === "ROTATE") &&
       "idempotencyKey" in value &&
       typeof value.idempotencyKey === "string" &&
       SAFE_ID_PATTERN.test(value.idempotencyKey) &&
       "createdAt" in value &&
       typeof value.createdAt === "string" &&
-      !Number.isNaN(Date.parse(value.createdAt)) &&
-      (!("connectionId" in value) ||
-        (typeof value.connectionId === "string" &&
-          SAFE_ID_PATTERN.test(value.connectionId)))
+      !Number.isNaN(Date.parse(value.createdAt))
     ) {
-      const connectionId =
-        "connectionId" in value && typeof value.connectionId === "string"
-          ? value.connectionId
-          : undefined;
-      unresolvedSecretMarker.value = {
-        projectId,
-        operation: value.operation,
-        idempotencyKey: value.idempotencyKey,
-        createdAt: value.createdAt,
-        ...(connectionId ? { connectionId } : {}),
-      };
+      if (
+        value.operation === "CREATE" &&
+        "displayName" in value &&
+        typeof value.displayName === "string" &&
+        value.displayName.length >= 1 &&
+        value.displayName.length <= 120 &&
+        "region" in value &&
+        (value.region === "US" || value.region === "EU") &&
+        (!("remoteProjectLabel" in value) ||
+          (typeof value.remoteProjectLabel === "string" &&
+            value.remoteProjectLabel.length <= 120))
+      ) {
+        const remoteProjectLabel =
+          "remoteProjectLabel" in value &&
+          typeof value.remoteProjectLabel === "string" &&
+          value.remoteProjectLabel
+            ? value.remoteProjectLabel
+            : undefined;
+        const marker: UnresolvedSecretMarker = {
+          projectId,
+          operation: "CREATE",
+          idempotencyKey: value.idempotencyKey,
+          createdAt: value.createdAt,
+          displayName: value.displayName,
+          region: value.region,
+          ...(remoteProjectLabel ? { remoteProjectLabel } : {}),
+        };
+        unresolvedSecretMarker.value = marker;
+        createRetry.value = {
+          idempotencyKey: marker.idempotencyKey,
+          input: providerUi.value.createInput({
+            displayName: marker.displayName,
+            region: marker.region,
+            secret: "",
+            ...(marker.remoteProjectLabel
+              ? { remoteProjectLabel: marker.remoteProjectLabel }
+              : {}),
+          }),
+        };
+      } else if (
+        value.operation === "ROTATE" &&
+        "connectionId" in value &&
+        typeof value.connectionId === "string" &&
+        SAFE_ID_PATTERN.test(value.connectionId) &&
+        "expectedVersion" in value &&
+        isPositiveInteger(value.expectedVersion)
+      ) {
+        const marker: UnresolvedSecretMarker = {
+          projectId,
+          operation: "ROTATE",
+          idempotencyKey: value.idempotencyKey,
+          createdAt: value.createdAt,
+          connectionId: value.connectionId,
+          expectedVersion: value.expectedVersion,
+        };
+        unresolvedSecretMarker.value = marker;
+        rotateRetry.value = {
+          connectionId: marker.connectionId,
+          idempotencyKey: marker.idempotencyKey,
+          input: providerUi.value.rotateInput(marker.expectedVersion, ""),
+        };
+      }
     }
   } catch {
     // Invalid or unavailable storage is treated as an empty durable marker.
@@ -329,7 +398,7 @@ function terminalTest(test: IntegrationConnectionTestResponseDto): boolean {
   );
 }
 
-function initializeDraft(connection: IntegrationConnectionResponseDto): void {
+function initializeDraft(connection: ProviderConnection): void {
   metadataDrafts[connection.id] = {
     displayName: connection.displayName,
     remoteProjectLabel: connection.remoteProjectLabel ?? "",
@@ -353,17 +422,17 @@ async function load(): Promise<boolean> {
   try {
     const response = await integrationConnectionsApi.list(operation.projectId);
     if (request !== loadRequest || !isCurrent(operation)) return false;
-    connections.value = response.items.filter(
+    connections.value = (response.items as ProviderConnection[]).filter(
       (connection) =>
         connection.projectId === operation.projectId &&
-        connection.provider === "AMPLITUDE",
+        connection.provider === props.provider,
     );
     for (const connection of connections.value) initializeDraft(connection);
     return true;
   } catch {
     if (request === loadRequest && isCurrent(operation)) {
       connections.value = [];
-      loadError.value = "Не удалось загрузить подключения Amplitude.";
+      loadError.value = providerUi.value.connectionLoadError;
     }
     return false;
   } finally {
@@ -373,7 +442,7 @@ async function load(): Promise<boolean> {
 
 async function awaitTest(
   operation: Operation,
-  connection: IntegrationConnectionResponseDto,
+  connection: ProviderConnection,
 ): Promise<IntegrationConnectionTestResponseDto | null> {
   let receipt: PendingTestReceipt | undefined = pendingTests[connection.id];
   if (
@@ -472,8 +541,7 @@ function testMessage(test: IntegrationConnectionTestResponseDto): {
   switch (test.status) {
     case "SUCCEEDED":
       return {
-        message:
-          "Amplitude приняла тестовое событие. Подключение можно активировать.",
+        message: providerUi.value.connectionTestSucceeded,
         error: false,
       };
     case "PENDING":
@@ -497,19 +565,19 @@ function testMessage(test: IntegrationConnectionTestResponseDto): {
     case "FAILED":
       return {
         message:
-          test.errorCode === "AMPLITUDE_PROJECT_API_KEY_REJECTED"
-            ? "Amplitude отклонила Project API Key. Проверьте ключ и регион."
-            : "Amplitude отклонила проверку подключения.",
+          test.errorCode !== null &&
+          providerUi.value.credentialRejectedCodes.has(test.errorCode)
+            ? providerUi.value.connectionTestCredentialRejected
+            : providerUi.value.connectionTestRejected,
         error: true,
       };
   }
 }
 
-async function testConnection(
-  connection: IntegrationConnectionResponseDto,
-): Promise<void> {
+async function testConnection(connection: ProviderConnection): Promise<void> {
   const operation = beginOperation();
   if (!operation || !props.canManage || pendingConnectionId.value) return;
+  if (!window.confirm(providerUi.value.testSideEffectConfirmation)) return;
   clearFeedback();
   pendingConnectionId.value = connection.id;
   try {
@@ -528,10 +596,10 @@ async function testConnection(
 
 async function performCreate(
   operation: Operation,
-  retry: SecretRetry<CreateAmplitudeConnectionDto>,
+  retry: SecretRetry<ProviderCreateConnectionInput>,
 ): Promise<void> {
   try {
-    const created = await integrationConnectionsApi.createAmplitude(
+    const created = await providerUi.value.createConnection(
       operation.projectId,
       retry.input,
       retry.idempotencyKey,
@@ -549,19 +617,36 @@ async function performCreate(
     await load();
   } catch (cause) {
     if (!isCurrent(operation)) return;
-    if (!isAmbiguous(cause)) {
+    if (!isAmbiguous(cause) && !isIdempotencyConflict(cause)) {
       createRetry.value = null;
       clearUnresolvedSecret(operation.projectId);
+    } else if (createRetry.value) {
+      createRetry.value = {
+        ...createRetry.value,
+        input: providerUi.value.withCreateCredential(
+          createRetry.value.input,
+          "",
+        ),
+      };
     }
     setActionFailure(cause, createRetry.value !== null);
   } finally {
+    if (createRetry.value?.idempotencyKey === retry.idempotencyKey) {
+      createRetry.value = {
+        ...createRetry.value,
+        input: providerUi.value.withCreateCredential(
+          createRetry.value.input,
+          "",
+        ),
+      };
+    }
     if (isCurrent(operation)) creating.value = false;
   }
 }
 
 async function create(): Promise<void> {
   const operation = beginOperation();
-  const key = projectApiKey.value.trim();
+  const key = credentialSecret.value.trim();
   const name = displayName.value.trim();
   if (
     !operation ||
@@ -575,32 +660,37 @@ async function create(): Promise<void> {
       "Сначала повторите или отмените предыдущий неподтверждённый запрос с credential.";
     return;
   }
-  if (!name || !/^[a-f0-9]{32}$/iu.test(key)) {
-    actionError.value =
-      "Укажите название и 32-символьный Amplitude Project API Key.";
+  if (!name || !providerUi.value.credentialValid(key)) {
+    actionError.value = `Укажите название и корректный ${providerUi.value.credentialLabel}.`;
     return;
   }
+  if (!window.confirm(providerUi.value.testSideEffectConfirmation)) return;
   clearFeedback();
   creating.value = true;
   const retry = {
-    input: {
+    input: providerUi.value.createInput({
       displayName: name,
       region: region.value,
-      projectApiKey: key,
+      secret: key,
       ...(remoteProjectLabel.value.trim()
         ? { remoteProjectLabel: remoteProjectLabel.value.trim() }
         : {}),
-    },
+    }),
     idempotencyKey: crypto.randomUUID(),
-  } satisfies SecretRetry<CreateAmplitudeConnectionDto>;
+  } satisfies SecretRetry<ProviderCreateConnectionInput>;
   createRetry.value = retry;
   rememberUnresolvedSecret({
     projectId: operation.projectId,
     operation: "CREATE",
     idempotencyKey: retry.idempotencyKey,
     createdAt: new Date().toISOString(),
+    displayName: name,
+    region: region.value,
+    ...(remoteProjectLabel.value.trim()
+      ? { remoteProjectLabel: remoteProjectLabel.value.trim() }
+      : {}),
   });
-  projectApiKey.value = "";
+  credentialSecret.value = "";
   await performCreate(operation, retry);
 }
 
@@ -609,9 +699,20 @@ async function retryCreate(): Promise<void> {
   const retry = createRetry.value;
   if (!operation || !retry || creating.value || pendingConnectionId.value)
     return;
+  const key = credentialSecret.value.trim();
+  if (!providerUi.value.credentialValid(key)) {
+    actionError.value = `Повторно укажите корректный ${providerUi.value.credentialLabel}.`;
+    return;
+  }
+  const retryWithSecret = {
+    ...retry,
+    input: providerUi.value.withCreateCredential(retry.input, key),
+  };
+  createRetry.value = retryWithSecret;
+  credentialSecret.value = "";
   clearFeedback();
   creating.value = true;
-  await performCreate(operation, retry);
+  await performCreate(operation, retryWithSecret);
 }
 
 async function reconcileUnresolvedSecret(): Promise<void> {
@@ -644,9 +745,7 @@ async function discardCreateRetry(): Promise<void> {
   await reconcileUnresolvedSecret();
 }
 
-async function updateMetadata(
-  connection: IntegrationConnectionResponseDto,
-): Promise<void> {
+async function updateMetadata(connection: ProviderConnection): Promise<void> {
   const operation = beginOperation();
   const draft = metadataDrafts[connection.id];
   if (!operation || !draft || !props.canManage || pendingConnectionId.value)
@@ -660,7 +759,7 @@ async function updateMetadata(
   pendingConnectionId.value = connection.id;
   const signature = `update:${connection.id}:${connection.version}:${name}:${draft.remoteProjectLabel.trim()}`;
   try {
-    const updated = await integrationConnectionsApi.updateAmplitude(
+    const updated = await providerUi.value.updateConnection(
       operation.projectId,
       connection.id,
       {
@@ -676,7 +775,7 @@ async function updateMetadata(
     if (!isCurrent(operation) || updated.projectId !== operation.projectId)
       return;
     replaceConnection(updated);
-    success.value = "Настройки Amplitude обновлены.";
+    success.value = providerUi.value.connectionUpdated;
   } catch (cause) {
     if (isCurrent(operation)) setActionFailure(cause);
   } finally {
@@ -686,11 +785,13 @@ async function updateMetadata(
 
 async function performRotate(
   operation: Operation,
-  connection: IntegrationConnectionResponseDto,
-  retry: SecretRetry<RotateAmplitudeCredentialDto> & { connectionId: string },
+  connection: ProviderConnection,
+  retry: SecretRetry<ProviderRotateCredentialInput> & {
+    connectionId: string;
+  },
 ): Promise<void> {
   try {
-    const rotated = await integrationConnectionsApi.rotate(
+    const rotated = await providerUi.value.rotateCredential(
       operation.projectId,
       connection.id,
       retry.input,
@@ -705,25 +806,38 @@ async function performRotate(
     if (!result || !isCurrent(operation)) return;
     const feedback = testMessage(result);
     if (feedback.error) actionError.value = feedback.message;
-    else
-      success.value =
-        "Новый Project API Key сохранён и проверен. Активируйте подключение.";
+    else success.value = providerUi.value.rotatedAndTested;
     await load();
   } catch (cause) {
     if (!isCurrent(operation)) return;
-    if (!isAmbiguous(cause)) {
+    if (!isAmbiguous(cause) && !isIdempotencyConflict(cause)) {
       rotateRetry.value = null;
       clearUnresolvedSecret(operation.projectId);
+    } else if (rotateRetry.value) {
+      rotateRetry.value = {
+        ...rotateRetry.value,
+        input: providerUi.value.withRotateCredential(
+          rotateRetry.value.input,
+          "",
+        ),
+      };
     }
     setActionFailure(cause, rotateRetry.value !== null);
   } finally {
+    if (rotateRetry.value?.idempotencyKey === retry.idempotencyKey) {
+      rotateRetry.value = {
+        ...rotateRetry.value,
+        input: providerUi.value.withRotateCredential(
+          rotateRetry.value.input,
+          "",
+        ),
+      };
+    }
     if (isCurrent(operation)) pendingConnectionId.value = null;
   }
 }
 
-async function rotate(
-  connection: IntegrationConnectionResponseDto,
-): Promise<void> {
+async function rotate(connection: ProviderConnection): Promise<void> {
   const operation = beginOperation();
   const key = rotationKeys[connection.id]?.trim() ?? "";
   if (!operation || !props.canManage || pendingConnectionId.value) return;
@@ -732,22 +846,23 @@ async function rotate(
       "Сначала повторите или отмените предыдущий неподтверждённый запрос с credential.";
     return;
   }
-  if (!/^[a-f0-9]{32}$/iu.test(key)) {
-    actionError.value =
-      "Project API Key должен состоять из 32 hexadecimal symbols.";
+  if (!providerUi.value.credentialValid(key)) {
+    actionError.value = `${providerUi.value.credentialLabel} имеет неверный формат.`;
     return;
   }
   if (
-    !window.confirm(`Заменить Project API Key для «${connection.displayName}»?`)
+    !window.confirm(
+      `Заменить ${providerUi.value.credentialShortLabel} для «${connection.displayName}»? ${providerUi.value.testSideEffectConfirmation}`,
+    )
   )
     return;
   clearFeedback();
   pendingConnectionId.value = connection.id;
   const retry = {
     connectionId: connection.id,
-    input: { expectedVersion: connection.version, projectApiKey: key },
+    input: providerUi.value.rotateInput(connection.version, key),
     idempotencyKey: crypto.randomUUID(),
-  } satisfies SecretRetry<RotateAmplitudeCredentialDto> & {
+  } satisfies SecretRetry<ProviderRotateCredentialInput> & {
     connectionId: string;
   };
   rotateRetry.value = retry;
@@ -757,14 +872,13 @@ async function rotate(
     connectionId: connection.id,
     idempotencyKey: retry.idempotencyKey,
     createdAt: new Date().toISOString(),
+    expectedVersion: connection.version,
   });
   rotationKeys[connection.id] = "";
   await performRotate(operation, connection, retry);
 }
 
-async function retryRotate(
-  connection: IntegrationConnectionResponseDto,
-): Promise<void> {
+async function retryRotate(connection: ProviderConnection): Promise<void> {
   const operation = beginOperation();
   const retry = rotateRetry.value;
   if (
@@ -774,9 +888,20 @@ async function retryRotate(
     pendingConnectionId.value
   )
     return;
+  const key = rotationKeys[connection.id]?.trim() ?? "";
+  if (!providerUi.value.credentialValid(key)) {
+    actionError.value = `Повторно укажите корректный ${providerUi.value.credentialLabel}.`;
+    return;
+  }
+  const retryWithSecret = {
+    ...retry,
+    input: providerUi.value.withRotateCredential(retry.input, key),
+  };
+  rotateRetry.value = retryWithSecret;
+  rotationKeys[connection.id] = "";
   clearFeedback();
   pendingConnectionId.value = connection.id;
-  await performRotate(operation, connection, retry);
+  await performRotate(operation, connection, retryWithSecret);
 }
 
 async function discardRotateRetry(): Promise<void> {
@@ -784,15 +909,21 @@ async function discardRotateRetry(): Promise<void> {
 }
 
 async function changeLifecycle(
-  connection: IntegrationConnectionResponseDto,
+  connection: ProviderConnection,
   desired: "ACTIVE" | "PAUSED",
 ): Promise<void> {
   const operation = beginOperation();
   if (!operation || !props.canManage || pendingConnectionId.value) return;
   if (
+    desired === "ACTIVE" &&
+    providerUi.value.activationConfirmation &&
+    !window.confirm(providerUi.value.activationConfirmation)
+  )
+    return;
+  if (
     desired === "PAUSED" &&
     !window.confirm(
-      `Отключить Amplitude-подключение «${connection.displayName}»?`,
+      `Отключить ${providerUi.value.title}-подключение «${connection.displayName}»?`,
     )
   )
     return;
@@ -820,8 +951,8 @@ async function changeLifecycle(
     replaceConnection(updated);
     success.value =
       desired === "ACTIVE"
-        ? "Отправка событий в Amplitude включена."
-        : "Отправка событий в Amplitude приостановлена.";
+        ? providerUi.value.enabled
+        : providerUi.value.disabled;
   } catch (cause) {
     if (isCurrent(operation)) setActionFailure(cause);
   } finally {
@@ -829,7 +960,7 @@ async function changeLifecycle(
   }
 }
 
-function replaceConnection(updated: IntegrationConnectionResponseDto): void {
+function replaceConnection(updated: ProviderConnection): void {
   const existing = connections.value.some(
     (connection) => connection.id === updated.id,
   );
@@ -841,9 +972,7 @@ function replaceConnection(updated: IntegrationConnectionResponseDto): void {
   initializeDraft(updated);
 }
 
-function readyToActivate(
-  connection: IntegrationConnectionResponseDto,
-): boolean {
+function readyToActivate(connection: ProviderConnection): boolean {
   return (
     connection.lifecycle !== "ARCHIVED" &&
     connection.health === "HEALTHY" &&
@@ -852,7 +981,7 @@ function readyToActivate(
   );
 }
 
-function statusLabel(connection: IntegrationConnectionResponseDto): string {
+function statusLabel(connection: ProviderConnection): string {
   if (connection.lifecycle === "ARCHIVED") return "В архиве";
   if (connection.outboundCircuitPermanent)
     return "Ключ отклонён — нужна проверка";
@@ -868,13 +997,13 @@ function statusLabel(connection: IntegrationConnectionResponseDto): string {
   return connection.health === "HEALTHY" ? "Проверено" : "Черновик";
 }
 
-function circuitLabel(connection: IntegrationConnectionResponseDto): string {
+function circuitLabel(connection: ProviderConnection): string {
   if (connection.outboundCircuitPermanent) return "Открыт до проверки ключа";
   if (!connection.outboundCircuitOpenUntil) return "Закрыт";
   return `До ${formatTimestamp(connection.outboundCircuitOpenUntil)}`;
 }
 
-function statusTone(connection: IntegrationConnectionResponseDto): string {
+function statusTone(connection: ProviderConnection): string {
   if (connection.health === "FAILING" || connection.health === "DEGRADED")
     return "INVALID";
   return connection.lifecycle;
@@ -893,6 +1022,11 @@ function isAmbiguous(cause: unknown): boolean {
   return error.status === 0 || error.status >= 500;
 }
 
+function isIdempotencyConflict(cause: unknown): boolean {
+  const error = normalizeApiError(cause);
+  return error.status === 409 && error.code === "IDEMPOTENCY_KEY_CONFLICT";
+}
+
 function setActionFailure(cause: unknown, retryAvailable = false): void {
   const error = normalizeApiError(cause);
   if (error.code === "INTEGRATION_CONNECTION_VERSION_CONFLICT") {
@@ -901,12 +1035,12 @@ function setActionFailure(cause: unknown, retryAvailable = false): void {
       "Подключение уже изменилось в другой вкладке. Данные обновлены — повторите действие.";
     return;
   }
-  if (error.code === "AMPLITUDE_PROJECT_API_KEY_INVALID") {
-    actionError.value = "Amplitude Project API Key имеет неверный формат.";
+  if (error.code === providerUi.value.credentialInvalidCode) {
+    actionError.value = `${providerUi.value.credentialLabel} имеет неверный формат.`;
     return;
   }
   if (error.code === "INTEGRATION_CONNECTION_CURRENT_CREDENTIAL_UNTESTED") {
-    actionError.value = "Сначала успешно проверьте текущий Project API Key.";
+    actionError.value = `Сначала успешно проверьте текущий ${providerUi.value.credentialShortLabel}.`;
     return;
   }
   if (error.code === "FORBIDDEN" || error.status === 403) {
@@ -915,11 +1049,12 @@ function setActionFailure(cause: unknown, retryAvailable = false): void {
   }
   actionError.value = retryAvailable
     ? "Сервер не подтвердил результат. Повторите запрос — Lola использует тот же безопасный ключ повтора."
-    : "Не удалось изменить подключение Amplitude. Повторите попытку.";
+    : providerUi.value.connectionMutationError;
 }
 
 watch(
-  () => [props.projectId, props.canRead, props.canManage] as const,
+  () =>
+    [props.projectId, props.canRead, props.canManage, props.provider] as const,
   () => {
     epoch += 1;
     loadRequest += 1;
@@ -928,6 +1063,7 @@ watch(
     loading.value = true;
     pendingConnectionId.value = null;
     creating.value = false;
+    displayName.value = providerUi.value.defaultDisplayName;
     commandKeys.clear();
     resetSensitiveState();
     clearPendingTestsView();
@@ -961,16 +1097,20 @@ onBeforeUnmount(() => {
 <template>
   <section
     class="integration-card"
-    data-integration="amplitude"
-    aria-labelledby="amplitude-title"
+    :data-integration="providerUi.slug"
+    :aria-labelledby="`${providerUi.slug}-title`"
   >
     <div class="card-heading">
-      <div class="provider-mark provider-mark--amplitude" aria-hidden="true">
-        A
+      <div
+        class="provider-mark"
+        :class="`provider-mark--${providerUi.slug}`"
+        aria-hidden="true"
+      >
+        {{ providerUi.mark }}
       </div>
       <div class="card-title">
-        <h2 id="amplitude-title">Amplitude</h2>
-        <p>Передаёт разрешённые события проекта в Amplitude от имени Lola.</p>
+        <h2 :id="`${providerUi.slug}-title`">{{ providerUi.title }}</h2>
+        <p>{{ providerUi.description }}</p>
       </div>
       <span class="status" :data-status="hasConnections ? 'ACTIVE' : 'EMPTY'">
         {{
@@ -1003,7 +1143,7 @@ onBeforeUnmount(() => {
       </p>
       <button
         type="button"
-        data-action="reconcile-secret-amplitude"
+        :data-action="`reconcile-secret-${providerUi.slug}`"
         :disabled="loading || creating || pendingConnectionId !== null"
         @click="reconcileUnresolvedSecret"
       >
@@ -1012,17 +1152,17 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="loading" class="skeleton" aria-live="polite">
-      Загружаем Amplitude…
+      Загружаем {{ providerUi.title }}…
     </div>
 
-    <div v-else class="amplitude-connections">
+    <div v-else class="provider-connections">
       <article
         v-for="connection in connections"
         :key="connection.id"
-        class="amplitude-connection"
+        class="provider-connection"
         :data-connection-id="connection.id"
       >
-        <div class="amplitude-connection__heading">
+        <div class="provider-connection__heading">
           <div>
             <h3>{{ connection.displayName }}</h3>
             <p>
@@ -1080,7 +1220,7 @@ onBeforeUnmount(() => {
         >
           <button
             type="button"
-            data-action="test-amplitude"
+            :data-action="`test-${providerUi.slug}`"
             :disabled="pendingConnectionId !== null || creating"
             @click="testConnection(connection)"
           >
@@ -1089,7 +1229,7 @@ onBeforeUnmount(() => {
           <button
             v-if="readyToActivate(connection)"
             type="button"
-            data-action="activate-amplitude"
+            :data-action="`activate-${providerUi.slug}`"
             :disabled="pendingConnectionId !== null || creating"
             @click="changeLifecycle(connection, 'ACTIVE')"
           >
@@ -1099,7 +1239,7 @@ onBeforeUnmount(() => {
             v-if="connection.lifecycle === 'ACTIVE'"
             type="button"
             class="secondary"
-            data-action="disable-amplitude"
+            :data-action="`disable-${providerUi.slug}`"
             :disabled="pendingConnectionId !== null || creating"
             @click="changeLifecycle(connection, 'PAUSED')"
           >
@@ -1114,7 +1254,7 @@ onBeforeUnmount(() => {
             metadataDrafts[connection.id]
           "
           class="secret-form"
-          data-form="update-amplitude"
+          :data-form="`update-${providerUi.slug}`"
           @submit.prevent="updateMetadata(connection)"
         >
           <label class="integration-field">
@@ -1125,7 +1265,7 @@ onBeforeUnmount(() => {
             />
           </label>
           <label class="integration-field">
-            <span>Подпись проекта в Amplitude</span>
+            <span>Подпись проекта в {{ providerUi.title }}</span>
             <input
               v-model="metadataDrafts[connection.id]!.remoteProjectLabel"
               maxlength="120"
@@ -1145,19 +1285,22 @@ onBeforeUnmount(() => {
         <form
           v-if="canManage && connection.lifecycle !== 'ARCHIVED'"
           class="secret-form secret-form--single"
-          data-form="rotate-amplitude"
+          :data-form="`rotate-${providerUi.slug}`"
           @submit.prevent="rotate(connection)"
         >
           <label class="integration-field">
-            <span>Новый Project API Key</span>
+            <span>Новый {{ providerUi.credentialShortLabel }}</span>
             <input
               v-model="rotationKeys[connection.id]"
-              name="amplitudeRotationKey"
+              :name="`${providerUi.formNamePrefix}RotationKey`"
               type="password"
               autocomplete="off"
-              maxlength="32"
-              placeholder="32 hexadecimal symbols"
-              :disabled="secretRetryPending"
+              :maxlength="providerUi.credentialMaxLength"
+              :placeholder="providerUi.credentialPlaceholder"
+              :disabled="
+                secretRetryPending &&
+                rotateRetry?.connectionId !== connection.id
+              "
             />
           </label>
           <small
@@ -1181,8 +1324,12 @@ onBeforeUnmount(() => {
               v-if="rotateRetry?.connectionId === connection.id"
               type="button"
               class="secondary"
-              data-action="retry-rotate-amplitude"
-              :disabled="pendingConnectionId !== null || creating"
+              :data-action="`retry-rotate-${providerUi.slug}`"
+              :disabled="
+                pendingConnectionId !== null ||
+                creating ||
+                !rotationKeys[connection.id]
+              "
               @click="retryRotate(connection)"
             >
               Повторить неподтверждённый запрос
@@ -1191,7 +1338,7 @@ onBeforeUnmount(() => {
               v-if="rotateRetry?.connectionId === connection.id"
               type="button"
               class="secondary"
-              data-action="discard-rotate-amplitude"
+              :data-action="`discard-rotate-${providerUi.slug}`"
               :disabled="pendingConnectionId !== null || creating"
               @click="discardRotateRetry"
             >
@@ -1211,49 +1358,46 @@ onBeforeUnmount(() => {
 
     <form
       v-if="canManage"
-      class="secret-form amplitude-create-form"
-      data-form="create-amplitude"
+      class="secret-form provider-create-form"
+      :data-form="`create-${providerUi.slug}`"
       @submit.prevent="create"
     >
       <label class="integration-field">
         <span>Название подключения</span>
         <input
           v-model="displayName"
-          name="amplitudeDisplayName"
+          :name="`${providerUi.formNamePrefix}DisplayName`"
           maxlength="120"
         />
       </label>
       <label class="integration-field">
         <span>Регион данных</span>
-        <select v-model="region" name="amplitudeRegion">
+        <select v-model="region" :name="`${providerUi.formNamePrefix}Region`">
           <option value="EU">EU</option>
           <option value="US">US</option>
         </select>
       </label>
       <label class="integration-field">
-        <span>Подпись проекта в Amplitude</span>
+        <span>Подпись проекта в {{ providerUi.title }}</span>
         <input
           v-model="remoteProjectLabel"
-          name="amplitudeRemoteProjectLabel"
+          :name="`${providerUi.formNamePrefix}RemoteProjectLabel`"
           maxlength="120"
         />
       </label>
       <label class="integration-field">
-        <span>Project API Key</span>
+        <span>{{ providerUi.credentialShortLabel }}</span>
         <input
-          v-model="projectApiKey"
-          name="amplitudeProjectApiKey"
+          v-model="credentialSecret"
+          :name="`${providerUi.formNamePrefix}${providerUi.credentialName[0]!.toUpperCase()}${providerUi.credentialName.slice(1)}`"
           type="password"
           autocomplete="off"
-          maxlength="32"
-          placeholder="32 hexadecimal symbols"
-          :disabled="secretRetryPending"
+          :maxlength="providerUi.credentialMaxLength"
+          :placeholder="providerUi.credentialPlaceholder"
+          :disabled="secretRetryPending && !createRetry"
         />
       </label>
-      <small
-        >Создаётся черновик, затем Lola отправляет событие [Lola] Integration
-        Test — оно появится в Amplitude. Ключ не возвращается API.</small
-      >
+      <small>{{ providerUi.credentialHelp }}</small>
       <div class="form-actions">
         <button
           type="submit"
@@ -1267,8 +1411,10 @@ onBeforeUnmount(() => {
           v-if="createRetry"
           type="button"
           class="secondary"
-          data-action="retry-create-amplitude"
-          :disabled="creating || pendingConnectionId !== null"
+          :data-action="`retry-create-${providerUi.slug}`"
+          :disabled="
+            creating || pendingConnectionId !== null || !credentialSecret
+          "
           @click="retryCreate"
         >
           Повторить неподтверждённый запрос
@@ -1277,7 +1423,7 @@ onBeforeUnmount(() => {
           v-if="createRetry"
           type="button"
           class="secondary"
-          data-action="discard-create-amplitude"
+          :data-action="`discard-create-${providerUi.slug}`"
           :disabled="creating || pendingConnectionId !== null"
           @click="discardCreateRetry"
         >
@@ -1294,13 +1440,17 @@ onBeforeUnmount(() => {
   color: var(--status-warning-text);
   font-weight: 800;
 }
+.provider-mark--customer-io {
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
 
-.amplitude-connections {
+.provider-connections {
   display: grid;
   gap: 16px;
 }
 
-.amplitude-connection {
+.provider-connection {
   display: grid;
   gap: 16px;
   padding: 18px;
@@ -1308,19 +1458,19 @@ onBeforeUnmount(() => {
   border-radius: 14px;
 }
 
-.amplitude-connection__heading {
+.provider-connection__heading {
   display: flex;
   align-items: start;
   justify-content: space-between;
   gap: 14px;
 }
 
-.amplitude-connection__heading h3,
-.amplitude-connection__heading p {
+.provider-connection__heading h3,
+.provider-connection__heading p {
   margin: 0;
 }
 
-.amplitude-connection__heading p {
+.provider-connection__heading p {
   margin-top: 4px;
   color: var(--text-secondary);
   font-size: var(--font-size-body-small);
@@ -1336,12 +1486,12 @@ onBeforeUnmount(() => {
   color: var(--text-primary);
 }
 
-.amplitude-create-form {
+.provider-create-form {
   border-style: dashed;
 }
 
 @media (max-width: 760px) {
-  .amplitude-connection__heading {
+  .provider-connection__heading {
     align-items: stretch;
     flex-direction: column;
   }

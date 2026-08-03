@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { IntegrationDispatchActivityItemDto } from "./integrationDispatchActivityItemDto";
+import type { IntegrationDispatchMetricsResponseDto } from "./integrationDispatchMetricsResponseDto";
 
 export interface IntegrationDispatchActivityListResponseDto {
   items: IntegrationDispatchActivityItemDto[];
+  metrics: IntegrationDispatchMetricsResponseDto;
 }

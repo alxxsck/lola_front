@@ -2,6 +2,7 @@ import {
   eventCatalogList,
   integrationEventRouteActivityList,
   integrationEventRouteCreateAmplitude,
+  integrationEventRouteCreateCustomerIo,
   integrationEventRouteDisable,
   integrationEventRouteEnable,
   integrationEventRouteList,
@@ -9,9 +10,12 @@ import {
 } from "@/shared/api/generated/lola-backend";
 import type {
   CreateAmplitudeOutboundRouteDto,
+  CreateCustomerIoOutboundRouteDto,
   IntegrationEventRouteVersionDto,
   PublishIntegrationEventRouteDto,
 } from "@/shared/api/generated/models";
+
+export type { CreateCustomerIoOutboundRouteDto };
 
 const commandOptions = (idempotencyKey: string) => ({
   headers: { "Idempotency-Key": idempotencyKey },
@@ -26,8 +30,8 @@ export const integrationEventRoutesApi = {
     return eventCatalogList(projectId, { lifecycle: "ACTIVE" });
   },
 
-  listActivity(projectId: string) {
-    return integrationEventRouteActivityList(projectId);
+  listActivity(projectId: string, provider: "AMPLITUDE" | "CUSTOMER_IO") {
+    return integrationEventRouteActivityList(projectId, { provider });
   },
 
   createAmplitude(
@@ -36,6 +40,18 @@ export const integrationEventRoutesApi = {
     idempotencyKey: string,
   ) {
     return integrationEventRouteCreateAmplitude(
+      projectId,
+      input,
+      commandOptions(idempotencyKey),
+    );
+  },
+
+  createCustomerIo(
+    projectId: string,
+    input: CreateCustomerIoOutboundRouteDto,
+    idempotencyKey: string,
+  ) {
+    return integrationEventRouteCreateCustomerIo(
       projectId,
       input,
       commandOptions(idempotencyKey),

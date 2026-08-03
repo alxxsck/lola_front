@@ -1,19 +1,31 @@
 import {
   integrationConnectionActivate,
   integrationConnectionCreateAmplitude,
+  integrationConnectionCreateCustomerIo,
   integrationConnectionDisable,
   integrationConnectionGetTest,
   integrationConnectionList,
-  integrationConnectionRotate,
+  integrationConnectionRotateAmplitude,
+  integrationConnectionRotateCustomerIo,
   integrationConnectionTest,
   integrationConnectionUpdateAmplitude,
+  integrationConnectionUpdateCustomerIo,
 } from "@/shared/api/generated/lola-backend";
 import type {
   CreateAmplitudeConnectionDto,
+  CreateCustomerIoConnectionDto,
   IntegrationConnectionVersionDto,
   RotateAmplitudeCredentialDto,
+  RotateCustomerIoCredentialDto,
   UpdateAmplitudeConnectionDto,
+  UpdateCustomerIoConnectionDto,
 } from "@/shared/api/generated/models";
+
+export type {
+  CreateCustomerIoConnectionDto,
+  RotateCustomerIoCredentialDto,
+  UpdateCustomerIoConnectionDto,
+};
 
 const commandOptions = (idempotencyKey: string) => ({
   headers: { "Idempotency-Key": idempotencyKey },
@@ -50,13 +62,53 @@ export const integrationConnectionsApi = {
     );
   },
 
-  rotate(
+  createCustomerIo(
+    projectId: string,
+    input: CreateCustomerIoConnectionDto,
+    idempotencyKey: string,
+  ) {
+    return integrationConnectionCreateCustomerIo(
+      projectId,
+      input,
+      commandOptions(idempotencyKey),
+    );
+  },
+
+  updateCustomerIo(
+    projectId: string,
+    connectionId: string,
+    input: UpdateCustomerIoConnectionDto,
+    idempotencyKey: string,
+  ) {
+    return integrationConnectionUpdateCustomerIo(
+      projectId,
+      connectionId,
+      input,
+      commandOptions(idempotencyKey),
+    );
+  },
+
+  rotateAmplitude(
     projectId: string,
     connectionId: string,
     input: RotateAmplitudeCredentialDto,
     idempotencyKey: string,
   ) {
-    return integrationConnectionRotate(
+    return integrationConnectionRotateAmplitude(
+      projectId,
+      connectionId,
+      input,
+      commandOptions(idempotencyKey),
+    );
+  },
+
+  rotateCustomerIo(
+    projectId: string,
+    connectionId: string,
+    input: RotateCustomerIoCredentialDto,
+    idempotencyKey: string,
+  ) {
+    return integrationConnectionRotateCustomerIo(
       projectId,
       connectionId,
       input,

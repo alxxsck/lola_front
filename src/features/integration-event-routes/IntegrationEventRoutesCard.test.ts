@@ -1,12 +1,13 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import AmplitudeEventRoutesCard from "./AmplitudeEventRoutesCard.vue";
+import IntegrationEventRoutesCard from "./IntegrationEventRoutesCard.vue";
 
 const mocks = vi.hoisted(() => ({
   listRoutes: vi.fn(),
   listDefinitions: vi.fn(),
   listActivity: vi.fn(),
   create: vi.fn(),
+  createCustomerIo: vi.fn(),
   publish: vi.fn(),
   enable: vi.fn(),
   disable: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock("./integration-event-routes.api", () => ({
     listEventDefinitions: mocks.listDefinitions,
     listActivity: mocks.listActivity,
     createAmplitude: mocks.create,
+    createCustomerIo: mocks.createCustomerIo,
     publish: mocks.publish,
     enable: mocks.enable,
     disable: mocks.disable,
@@ -65,7 +67,7 @@ const route = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-describe("AmplitudeEventRoutesCard", () => {
+describe("IntegrationEventRoutesCard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
@@ -207,7 +209,7 @@ describe("AmplitudeEventRoutesCard", () => {
   });
 
   it("shows safe delivery activity but no mutation controls to a reader", async () => {
-    const wrapper = mount(AmplitudeEventRoutesCard, {
+    const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
         projectId: "project-1",
         canRead: true,
@@ -223,8 +225,136 @@ describe("AmplitudeEventRoutesCard", () => {
     expect(wrapper.text()).not.toContain("Опубликовать");
   });
 
+  it("shows only Customer.io routes and activity and ignores Amplitude retry receipts", async () => {
+    const customerRevision = {
+      ...route().draftRevision,
+      id: "customer-revision-1",
+      provider: "CUSTOMER_IO",
+      providerEventName: "customer_deposit",
+    };
+    mocks.listRoutes.mockResolvedValue({
+      items: [
+        route(),
+        route({
+          id: "customer-route-1",
+          name: "Customer deposits",
+          connectionId: "customer-connection-1",
+          draftRevision: customerRevision,
+        }),
+      ],
+    });
+    mocks.listConnections.mockResolvedValue({
+      items: [
+        {
+          id: "customer-connection-1",
+          projectId: "project-1",
+          provider: "CUSTOMER_IO",
+          displayName: "Customer journeys",
+          region: "EU",
+          remoteProjectLabel: null,
+          inboundEnabled: false,
+          outboundEnabled: true,
+          lifecycle: "ACTIVE",
+          health: "HEALTHY",
+          credential: {
+            fingerprint: "fedcba0987654321",
+            revision: 1,
+            testedRevision: 1,
+            rotatedAt: "2026-08-03T12:00:00.000Z",
+          },
+          lastSuccessfulTestAt: "2026-08-03T12:00:00.000Z",
+          lastTestErrorCode: null,
+          version: 1,
+          updatedAt: "2026-08-03T12:00:00.000Z",
+        },
+      ],
+    });
+    mocks.listActivity.mockResolvedValue({
+      items: [
+        {
+          id: "customer-dispatch",
+          provider: "CUSTOMER_IO",
+          providerEventName: "customer_deposit",
+          status: "DELIVERED",
+          attemptCount: 1,
+          createdAt: "2026-08-03T12:00:00.000Z",
+        },
+      ],
+    });
+    window.sessionStorage.setItem(
+      "lola:amplitude-pending-route-create:project-1",
+      JSON.stringify({
+        projectId: "project-1",
+        idempotencyKey: "amplitude-route-command",
+        input: {},
+      }),
+    );
+
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReadActivity: true,
+        provider: "CUSTOMER_IO",
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Маршруты событий Customer.io");
+    expect(wrapper.text()).toContain("Customer deposits");
+    expect(wrapper.text()).toContain("customer_deposit");
+    expect(wrapper.text()).toContain("Принято Pipelines");
+    expect(wrapper.text()).not.toContain("Доставлено");
+    expect(wrapper.text()).not.toContain("Депозиты");
+    expect(wrapper.text()).not.toContain("amplitude_deposit");
+    expect(mocks.listActivity).toHaveBeenCalledWith("project-1", "CUSTOMER_IO");
+    expect(mocks.createCustomerIo).not.toHaveBeenCalled();
+  });
+
+  it("requires a Customer.io workspace canary acknowledgement before route activation", async () => {
+    const published = {
+      ...route().draftRevision,
+      state: "PUBLISHED",
+      provider: "CUSTOMER_IO",
+      publishedAt: "2026-08-03T12:01:00.000Z",
+    };
+    mocks.listRoutes.mockResolvedValue({
+      items: [
+        route({
+          id: "customer-route-1",
+          connectionId: "customer-connection-1",
+          draftRevision: null,
+          publishedRevision: published,
+        }),
+      ],
+    });
+    mocks.listConnections.mockResolvedValue({ items: [] });
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReadActivity: false,
+        provider: "CUSTOMER_IO",
+      },
+    });
+    await flushPromises();
+
+    await wrapper.get(".route-actions button").trigger("click");
+
+    expect(window.confirm).toHaveBeenCalledWith(
+      expect.stringContaining("нужном Customer.io workspace"),
+    );
+    expect(mocks.enable).not.toHaveBeenCalled();
+  });
+
   it("creates an explicit allowlist mapping and publishes a draft", async () => {
-    const wrapper = mount(AmplitudeEventRoutesCard, {
+    const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
         projectId: "project-1",
         canRead: true,
@@ -318,6 +448,70 @@ describe("AmplitudeEventRoutesCard", () => {
     );
   });
 
+  it("creates a Customer.io allowlist through the Customer.io adapter", async () => {
+    mocks.listRoutes.mockResolvedValue({ items: [] });
+    mocks.listConnections.mockResolvedValue({
+      items: [
+        {
+          id: "customer-connection-1",
+          projectId: "project-1",
+          provider: "CUSTOMER_IO",
+          displayName: "Customer journeys",
+          region: "EU",
+          lifecycle: "ACTIVE",
+          health: "HEALTHY",
+          credential: {
+            fingerprint: "fedcba0987654321",
+            revision: 1,
+            testedRevision: 1,
+            rotatedAt: "2026-08-03T12:00:00.000Z",
+          },
+          version: 1,
+        },
+      ],
+    });
+    mocks.createCustomerIo.mockResolvedValue(
+      route({
+        id: "customer-route-1",
+        connectionId: "customer-connection-1",
+      }),
+    );
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReadActivity: false,
+        provider: "CUSTOMER_IO",
+      },
+    });
+    await flushPromises();
+
+    await wrapper.get("button").trigger("click");
+    await wrapper.findAll("select")[1]!.setValue("event-key-1");
+    await flushPromises();
+    const textInputs = wrapper.findAll('input:not([type="checkbox"])');
+    await textInputs[0]!.setValue("Customer deposit route");
+    await textInputs[1]!.setValue("deposit_completed");
+    await wrapper.findAll('input[type="checkbox"]')[0]!.setValue(true);
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(mocks.createCustomerIo).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        connectionId: "customer-connection-1",
+        name: "Customer deposit route",
+        providerEventName: "deposit_completed",
+        propertyBindings: [
+          { sourcePath: ["amount"], targetKey: "amount", required: false },
+        ],
+      }),
+      "command-key",
+    );
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
   it("caps the property allowlist at the API limit of 32 bindings", async () => {
     const properties = Object.fromEntries(
       Array.from({ length: 33 }, (_, index) => [
@@ -347,7 +541,7 @@ describe("AmplitudeEventRoutesCard", () => {
         },
       },
     ]);
-    const wrapper = mount(AmplitudeEventRoutesCard, {
+    const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
         projectId: "project-1",
         canRead: true,
@@ -378,7 +572,7 @@ describe("AmplitudeEventRoutesCard", () => {
 
   it("clears Project data before a tenant switch finishes loading", async () => {
     let resolveRoutes: ((value: { items: unknown[] }) => void) | undefined;
-    const wrapper = mount(AmplitudeEventRoutesCard, {
+    const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
         projectId: "project-1",
         canRead: true,
@@ -405,7 +599,7 @@ describe("AmplitudeEventRoutesCard", () => {
 
   it("retries an ambiguous create after remount with the same durable key", async () => {
     mocks.create.mockRejectedValueOnce(new Error("network unavailable"));
-    const first = mount(AmplitudeEventRoutesCard, {
+    const first = mount(IntegrationEventRoutesCard, {
       props: {
         projectId: "project-1",
         canRead: true,
@@ -432,7 +626,7 @@ describe("AmplitudeEventRoutesCard", () => {
     first.unmount();
 
     mocks.create.mockResolvedValueOnce(route());
-    const second = mount(AmplitudeEventRoutesCard, {
+    const second = mount(IntegrationEventRoutesCard, {
       props: {
         projectId: "project-1",
         canRead: true,

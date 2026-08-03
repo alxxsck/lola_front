@@ -74,13 +74,13 @@ vi.mock(
 );
 
 vi.mock(
-  "@/features/integration-connections/AmplitudeConnectionsCard.vue",
+  "@/features/integration-connections/IntegrationConnectionsCard.vue",
   () => ({
     default: {
-      props: ["projectId", "canRead", "canManage"],
+      props: ["projectId", "canRead", "canManage", "provider"],
       template: `
         <section
-          data-testid="amplitude-connections-card-stub"
+          :data-testid="provider + '-connections-card-stub'"
           :data-project-id="projectId"
           :data-can-read="String(canRead)"
           :data-can-manage="String(canManage)"
@@ -91,13 +91,13 @@ vi.mock(
 );
 
 vi.mock(
-  "@/features/integration-event-routes/AmplitudeEventRoutesCard.vue",
+  "@/features/integration-event-routes/IntegrationEventRoutesCard.vue",
   () => ({
     default: {
-      props: ["projectId", "canRead", "canManage", "canReadActivity"],
+      props: ["projectId", "canRead", "canManage", "canReadActivity", "provider"],
       template: `
         <section
-          data-testid="amplitude-routes-card-stub"
+          :data-testid="provider + '-routes-card-stub'"
           :data-project-id="projectId"
           :data-can-read="String(canRead)"
           :data-can-manage="String(canManage)"
@@ -209,13 +209,19 @@ describe("ProjectIntegrationsPage", () => {
     });
     expect(
       wrapper
-        .get('[data-testid="amplitude-connections-card-stub"]')
+        .get('[data-testid="AMPLITUDE-connections-card-stub"]')
         .attributes(),
     ).toMatchObject({
       "data-project-id": "project-1",
       "data-can-read": "true",
       "data-can-manage": "true",
     });
+    expect(
+      wrapper.get('[data-testid="CUSTOMER_IO-connections-card-stub"]'),
+    ).toBeTruthy();
+    expect(
+      wrapper.get('[data-testid="CUSTOMER_IO-routes-card-stub"]'),
+    ).toBeTruthy();
   });
 
   it("uses the existing logout redirect flow for product Telegram step-up", async () => {

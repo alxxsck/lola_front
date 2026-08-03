@@ -3,20 +3,29 @@ import { computed, onMounted, ref, watch } from "vue";
 import type {
   CreateAmplitudeOutboundRouteDto,
   EventDefinitionCatalogResponseDto,
-  IntegrationConnectionResponseDto,
   IntegrationDispatchActivityItemDto,
   IntegrationEventRouteResponseDto,
 } from "@/shared/api/generated/models";
 import { integrationConnectionsApi } from "@/features/integration-connections/integration-connections.api";
+import {
+  outboundProviderUi,
+  type OutboundIntegrationProvider,
+  type ProviderConnection,
+} from "@/features/integrations/provider-ui";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 import { integrationEventRoutesApi } from "./integration-event-routes.api";
 
-const props = defineProps<{
-  projectId: string;
-  canRead: boolean;
-  canManage: boolean;
-  canReadActivity: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectId: string;
+    canRead: boolean;
+    canManage: boolean;
+    canReadActivity: boolean;
+    provider?: OutboundIntegrationProvider;
+  }>(),
+  { provider: "AMPLITUDE" },
+);
+const providerUi = computed(() => outboundProviderUi[props.provider]);
 
 type PendingCreate = {
   projectId: string;
@@ -25,7 +34,7 @@ type PendingCreate = {
 };
 
 const routes = ref<IntegrationEventRouteResponseDto[]>([]);
-const connections = ref<IntegrationConnectionResponseDto[]>([]);
+const connections = ref<ProviderConnection[]>([]);
 const definitions = ref<EventDefinitionCatalogResponseDto[]>([]);
 const activity = ref<IntegrationDispatchActivityItemDto[]>([]);
 const loading = ref(false);
@@ -48,10 +57,10 @@ const commandKeys = new Map<string, string>();
 let pendingCreate: PendingCreate | null = null;
 let loadEpoch = 0;
 
-const amplitudeConnections = computed(() =>
+const providerConnections = computed(() =>
   connections.value.filter(
     (connection) =>
-      connection.provider === "AMPLITUDE" &&
+      connection.provider === props.provider &&
       connection.lifecycle !== "ARCHIVED",
   ),
 );
@@ -68,14 +77,6 @@ type SchemaField = {
 type SchemaFieldCandidate = Omit<SchemaField, "defaultTargetKey">;
 
 const MAX_PROPERTY_BINDINGS = 32;
-const reservedAmplitudeKeys = new Set([
-  "user_id",
-  "device_id",
-  "event_type",
-  "event_properties",
-  "time",
-  "insert_id",
-]);
 const sourcePathSegmentPattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 const unsafeSourcePathSegments = new Set([
   "__proto__",
@@ -103,13 +104,14 @@ function stableKeySuffix(value: string): string {
   return (hash >>> 0).toString(36).padStart(7, "0").slice(-7);
 }
 
-function amplitudeTargetKey(path: string[]): string {
+function providerTargetKey(path: string[]): string {
   const normalized = path.join("_").replace(/[^A-Za-z0-9_]/g, "_");
   const prefixed = /^[A-Za-z_]/.test(normalized)
     ? normalized
     : `field_${normalized}`;
   const safe =
-    reservedAmplitudeKeys.has(prefixed) || prefixed.startsWith("lola_")
+    providerUi.value.reservedTargetKeys.has(prefixed) ||
+    prefixed.startsWith("lola_")
       ? `event_${prefixed}`
       : prefixed;
   return safe.slice(0, 64);
@@ -122,7 +124,7 @@ function assignDefaultTargetKeys(
   return [...candidates]
     .sort((left, right) => left.key.localeCompare(right.key))
     .map((field) => {
-      const base = amplitudeTargetKey(field.path);
+      const base = providerTargetKey(field.path);
       let target = base;
       if (used.has(target)) {
         const suffix = `_${stableKeySuffix(field.key)}`;
@@ -204,14 +206,14 @@ watch(definitionId, () => {
 });
 
 watch(
-  () => props.projectId,
+  () => [props.projectId, props.provider] as const,
   () => void switchProject(),
 );
 
 onMounted(() => void switchProject());
 
 function pendingCreateStorageKey(projectId: string): string {
-  return `lola:amplitude-pending-route-create:${projectId}`;
+  return `lola:${providerUi.value.slug}-pending-route-create:${projectId}`;
 }
 
 function rememberPendingCreate(command: PendingCreate): void {
@@ -310,19 +312,24 @@ async function load(): Promise<void> {
         integrationConnectionsApi.list(props.projectId),
         integrationEventRoutesApi.listEventDefinitions(props.projectId),
         props.canReadActivity
-          ? integrationEventRoutesApi.listActivity(props.projectId)
+          ? integrationEventRoutesApi.listActivity(
+              props.projectId,
+              props.provider,
+            )
           : Promise.resolve({ items: [] }),
       ]);
     if (epoch !== loadEpoch) return;
-    routes.value = routeResult.items;
-    connections.value = connectionResult.items;
+    routes.value = routeResult.items.filter((route) => {
+      const revision = route.draftRevision ?? route.publishedRevision;
+      return revision?.provider === props.provider;
+    });
+    connections.value = connectionResult.items as ProviderConnection[];
     definitions.value = definitionResult;
     activity.value = activityResult.items;
     if (!connectionId.value)
-      connectionId.value = amplitudeConnections.value[0]?.id ?? "";
+      connectionId.value = providerConnections.value[0]?.id ?? "";
   } catch {
-    if (epoch === loadEpoch)
-      error.value = "Не удалось загрузить маршруты Amplitude.";
+    if (epoch === loadEpoch) error.value = providerUi.value.routeLoadError;
   } finally {
     if (epoch === loadEpoch) loading.value = false;
   }
@@ -379,7 +386,7 @@ async function submitCreate(
   error.value = "";
   notice.value = "";
   try {
-    await integrationEventRoutesApi.createAmplitude(
+    await providerUi.value.createRoute(
       command.projectId,
       command.input,
       command.idempotencyKey,
@@ -423,6 +430,12 @@ async function publish(route: IntegrationEventRouteResponseDto): Promise<void> {
 }
 
 async function toggle(route: IntegrationEventRouteResponseDto): Promise<void> {
+  if (
+    !route.enabled &&
+    providerUi.value.activationConfirmation &&
+    !window.confirm(providerUi.value.activationConfirmation)
+  )
+    return;
   const projectId = props.projectId;
   const signature = `${route.enabled ? "disable" : "enable"}:${route.id}:${route.version}`;
   await mutate(
@@ -497,7 +510,7 @@ function dispatchStatus(status: string): string {
     {
       PENDING: "В очереди",
       PROCESSING: "Отправляется",
-      DELIVERED: "Доставлено",
+      DELIVERED: providerUi.value.deliveredStatusLabel,
       RETRY_WAIT: "Повтор",
       FAILED_PERMANENT: "Ошибка",
       OUTCOME_UNKNOWN: "Результат неизвестен",
@@ -509,12 +522,15 @@ function dispatchStatus(status: string): string {
 
 <template>
   <section
-    class="integration-card event-routes-card"
-    aria-labelledby="amplitude-routes-title"
+    class="integration-card event-routes-card provider-event-routes-card"
+    :data-integration-routes="providerUi.slug"
+    :aria-labelledby="`${providerUi.slug}-routes-title`"
   >
     <div class="card-heading">
       <div>
-        <h2 id="amplitude-routes-title">Маршруты событий Amplitude</h2>
+        <h2 :id="`${providerUi.slug}-routes-title`">
+          Маршруты событий {{ providerUi.title }}
+        </h2>
         <p>Только опубликованные и включённые маршруты экспортируют события.</p>
       </div>
       <button
@@ -541,7 +557,7 @@ function dispatchStatus(status: string): string {
         <select v-model="connectionId" required :disabled="pending">
           <option value="" disabled>Выберите подключение</option>
           <option
-            v-for="connection in amplitudeConnections"
+            v-for="connection in providerConnections"
             :key="connection.id"
             :value="connection.id"
           >
@@ -573,7 +589,7 @@ function dispatchStatus(status: string): string {
         />
       </label>
       <label>
-        <span>Название события в Amplitude</span>
+        <span>{{ providerUi.eventNameLabel }}</span>
         <input
           v-model="providerEventName"
           maxlength="120"
@@ -604,7 +620,7 @@ function dispatchStatus(status: string): string {
             pattern="[A-Za-z][A-Za-z0-9_.-]{0,63}"
             :placeholder="field.defaultTargetKey"
             :disabled="pending || field.sensitive || !selectedFields[field.key]"
-            :aria-label="`Поле Amplitude для ${field.key}`"
+            :aria-label="`Поле ${providerUi.title} для ${field.key}`"
           />
           <label class="required-toggle">
             <input

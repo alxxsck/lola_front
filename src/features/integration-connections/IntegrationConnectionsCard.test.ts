@@ -1,13 +1,16 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api/http/api-error";
-import AmplitudeConnectionsCard from "./AmplitudeConnectionsCard.vue";
+import IntegrationConnectionsCard from "./IntegrationConnectionsCard.vue";
 
 const api = vi.hoisted(() => ({
   list: vi.fn(),
   createAmplitude: vi.fn(),
+  createCustomerIo: vi.fn(),
   updateAmplitude: vi.fn(),
-  rotate: vi.fn(),
+  updateCustomerIo: vi.fn(),
+  rotateAmplitude: vi.fn(),
+  rotateCustomerIo: vi.fn(),
   requestTest: vi.fn(),
   getTest: vi.fn(),
   activate: vi.fn(),
@@ -45,6 +48,15 @@ const connection = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+const customerIoConnection = (overrides: Record<string, unknown> = {}) =>
+  connection({
+    id: "customer-connection-1",
+    provider: "CUSTOMER_IO",
+    displayName: "Customer journeys",
+    remoteProjectLabel: "Journeys EU",
+    ...overrides,
+  });
+
 const testResult = (overrides: Record<string, unknown> = {}) => ({
   id: "test-1",
   projectId: "project-1",
@@ -65,9 +77,10 @@ function mountCard(
     projectId: string;
     canRead: boolean;
     canManage: boolean;
+    provider: "AMPLITUDE" | "CUSTOMER_IO";
   }> = {},
 ) {
-  return mount(AmplitudeConnectionsCard, {
+  return mount(IntegrationConnectionsCard, {
     props: {
       projectId: "project-1",
       canRead: true,
@@ -77,7 +90,7 @@ function mountCard(
   });
 }
 
-describe("AmplitudeConnectionsCard", () => {
+describe("IntegrationConnectionsCard", () => {
   beforeEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
@@ -121,7 +134,7 @@ describe("AmplitudeConnectionsCard", () => {
     const wrapper = mountCard({ canManage: false });
     await flushPromises();
 
-    expect(wrapper.findAll(".amplitude-connection")).toHaveLength(2);
+    expect(wrapper.findAll(".provider-connection")).toHaveLength(2);
     expect(wrapper.text()).toContain("Amplitude production");
     expect(wrapper.text()).toContain("Amplitude sandbox");
     expect(wrapper.find('input[name="amplitudeProjectApiKey"]').exists()).toBe(
@@ -192,6 +205,44 @@ describe("AmplitudeConnectionsCard", () => {
     expect(wrapper.html()).not.toContain(secret);
   });
 
+  it("requires acknowledgement before a Customer.io test can create remote data", async () => {
+    api.list.mockResolvedValue({ items: [customerIoConnection()] });
+    vi.mocked(window.confirm).mockReturnValueOnce(false);
+    const wrapper = mountCard({ provider: "CUSTOMER_IO" });
+    await flushPromises();
+
+    await wrapper.get('[data-action="test-customer-io"]').trigger("click");
+
+    expect(window.confirm).toHaveBeenCalledWith(
+      expect.stringContaining("может создать профиль в Customer.io"),
+    );
+    expect(api.requestTest).not.toHaveBeenCalled();
+  });
+
+  it("requires a Customer.io workspace canary acknowledgement before activation", async () => {
+    api.list.mockResolvedValue({
+      items: [
+        customerIoConnection({
+          health: "HEALTHY",
+          credential: {
+            ...customerIoConnection().credential,
+            testedRevision: 1,
+          },
+        }),
+      ],
+    });
+    vi.mocked(window.confirm).mockReturnValueOnce(false);
+    const wrapper = mountCard({ provider: "CUSTOMER_IO" });
+    await flushPromises();
+
+    await wrapper.get('[data-action="activate-customer-io"]').trigger("click");
+
+    expect(window.confirm).toHaveBeenCalledWith(
+      expect.stringContaining("нужном Customer.io workspace"),
+    );
+    expect(api.activate).not.toHaveBeenCalled();
+  });
+
   it("retries an ambiguous credential rotation with the same payload and idempotency key", async () => {
     const current = connection({
       lifecycle: "ACTIVE",
@@ -205,7 +256,7 @@ describe("AmplitudeConnectionsCard", () => {
       credential: { ...current.credential, revision: 2, testedRevision: null },
     });
     api.list.mockResolvedValue({ items: [current] });
-    api.rotate
+    api.rotateAmplitude
       .mockRejectedValueOnce(new ApiError(0, "network outcome unknown"))
       .mockResolvedValueOnce(rotated);
     api.requestTest.mockResolvedValue(testResult({ credentialRevision: 2 }));
@@ -233,15 +284,16 @@ describe("AmplitudeConnectionsCard", () => {
     expect(
       wrapper.find('[data-action="discard-rotate-amplitude"]').exists(),
     ).toBe(true);
-    const firstCall = api.rotate.mock.calls[0];
+    const firstCall = api.rotateAmplitude.mock.calls[0];
 
+    await wrapper.get('input[name="amplitudeRotationKey"]').setValue(secret);
     await wrapper
       .get('[data-action="retry-rotate-amplitude"]')
       .trigger("click");
     await flushPromises();
 
-    expect(api.rotate).toHaveBeenCalledTimes(2);
-    expect(api.rotate.mock.calls[1]).toEqual(firstCall);
+    expect(api.rotateAmplitude).toHaveBeenCalledTimes(2);
+    expect(api.rotateAmplitude.mock.calls[1]).toEqual(firstCall);
     expect(api.requestTest).toHaveBeenCalledWith(
       "project-1",
       "connection-1",
@@ -251,6 +303,117 @@ describe("AmplitudeConnectionsCard", () => {
     expect(wrapper.text()).toContain(
       "Новый Project API Key сохранён и проверен",
     );
+  });
+
+  it("keeps the credential receipt after an idempotency conflict", async () => {
+    const originalSecret = "d".repeat(32);
+    api.createAmplitude
+      .mockRejectedValueOnce(new ApiError(0, "create outcome unknown"))
+      .mockRejectedValueOnce(
+        new ApiError(
+          409,
+          "conflict",
+          undefined,
+          undefined,
+          "IDEMPOTENCY_KEY_CONFLICT",
+        ),
+      )
+      .mockResolvedValueOnce(connection());
+    api.requestTest.mockResolvedValue(testResult());
+    const wrapper = mountCard();
+    await flushPromises();
+
+    await wrapper
+      .get('input[name="amplitudeProjectApiKey"]')
+      .setValue(originalSecret);
+    await wrapper.get('form[data-form="create-amplitude"]').trigger("submit");
+    await flushPromises();
+    const firstCall = api.createAmplitude.mock.calls[0];
+
+    await wrapper
+      .get('input[name="amplitudeProjectApiKey"]')
+      .setValue("e".repeat(32));
+    await wrapper
+      .get('[data-action="retry-create-amplitude"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(
+      wrapper.find('[data-action="retry-create-amplitude"]').exists(),
+    ).toBe(true);
+    expect(
+      window.sessionStorage.getItem(
+        "lola:amplitude-unresolved-secret:project-1",
+      ),
+    ).not.toBeNull();
+
+    await wrapper
+      .get('input[name="amplitudeProjectApiKey"]')
+      .setValue(originalSecret);
+    await wrapper
+      .get('[data-action="retry-create-amplitude"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(api.createAmplitude.mock.calls[2]).toEqual(firstCall);
+    expect(
+      window.sessionStorage.getItem(
+        "lola:amplitude-unresolved-secret:project-1",
+      ),
+    ).toBeNull();
+  });
+
+  it("isolates Customer.io connections, credentials, and retry receipts from Amplitude", async () => {
+    api.list.mockResolvedValue({
+      items: [connection(), customerIoConnection()],
+    });
+    api.createCustomerIo.mockRejectedValue(
+      new ApiError(0, "network outcome unknown"),
+    );
+    window.sessionStorage.setItem(
+      "lola:amplitude-unresolved-secret:project-1",
+      JSON.stringify({
+        projectId: "project-1",
+        operation: "CREATE",
+        idempotencyKey: "amplitude-command",
+        createdAt: "2026-08-03T10:00:00.000Z",
+      }),
+    );
+
+    const wrapper = mountCard({ provider: "CUSTOMER_IO" } as never);
+    await flushPromises();
+
+    expect(wrapper.findAll(".provider-connection")).toHaveLength(1);
+    expect(wrapper.text()).toContain("Customer journeys");
+    expect(wrapper.text()).not.toContain("Amplitude production");
+    expect(wrapper.find('[data-integration="customer-io"]').exists()).toBe(
+      true,
+    );
+    const secret = wrapper.get('input[name="customerIoSourceApiKey"]');
+    await secret.setValue("customer-source-key");
+    await wrapper.get('form[data-form="create-customer-io"]').trigger("submit");
+    await flushPromises();
+
+    expect(api.createCustomerIo).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        displayName: "Основной Customer.io",
+        region: "EU",
+        sourceApiKey: "customer-source-key",
+      }),
+      expect.any(String),
+    );
+    expect((secret.element as HTMLInputElement).value).toBe("");
+    expect(
+      window.sessionStorage.getItem(
+        "lola:customer-io-unresolved-secret:project-1",
+      ),
+    ).not.toBeNull();
+    expect(
+      window.sessionStorage.getItem(
+        "lola:amplitude-unresolved-secret:project-1",
+      ),
+    ).not.toBeNull();
   });
 
   it("resumes a persisted durable test with GET after polling failed", async () => {
@@ -373,9 +536,10 @@ describe("AmplitudeConnectionsCard", () => {
   });
 
   it("keeps a nonsensitive credential guard after remount until reconciliation", async () => {
-    api.createAmplitude.mockRejectedValue(
-      new ApiError(0, "create outcome unknown"),
-    );
+    api.createAmplitude
+      .mockRejectedValueOnce(new ApiError(0, "create outcome unknown"))
+      .mockResolvedValueOnce(connection());
+    api.requestTest.mockResolvedValue(testResult());
     const first = mountCard();
     await flushPromises();
 
@@ -391,59 +555,37 @@ describe("AmplitudeConnectionsCard", () => {
       ),
     ).not.toContain("c".repeat(32));
     expect(api.createAmplitude).toHaveBeenCalledOnce();
+    const firstCall = api.createAmplitude.mock.calls[0];
     first.unmount();
 
     const resumed = mountCard();
     await flushPromises();
 
-    expect(resumed.text()).toContain(
-      "Предыдущий запрос с credential не был подтверждён",
-    );
     expect(
-      resumed
-        .get('input[name="amplitudeProjectApiKey"]')
-        .attributes("disabled"),
-    ).toBeDefined();
-    expect(api.createAmplitude).toHaveBeenCalledOnce();
-
-    vi.mocked(window.confirm).mockReturnValueOnce(false);
-    await resumed
-      .get('[data-action="reconcile-secret-amplitude"]')
-      .trigger("click");
-    await flushPromises();
-
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "принимаете риск повторного создания или ротации",
-      ),
-    );
-    expect(
-      window.sessionStorage.getItem(
-        "lola:amplitude-unresolved-secret:project-1",
-      ),
-    ).not.toBeNull();
-    expect(
-      resumed
-        .get('input[name="amplitudeProjectApiKey"]')
-        .attributes("disabled"),
-    ).toBeDefined();
-
-    vi.mocked(window.confirm).mockReturnValueOnce(true);
-    await resumed
-      .get('[data-action="reconcile-secret-amplitude"]')
-      .trigger("click");
-    await flushPromises();
-
-    expect(
-      window.sessionStorage.getItem(
-        "lola:amplitude-unresolved-secret:project-1",
-      ),
-    ).toBeNull();
+      resumed.find('[data-action="retry-create-amplitude"]').exists(),
+    ).toBe(true);
     expect(
       resumed
         .get('input[name="amplitudeProjectApiKey"]')
         .attributes("disabled"),
     ).toBeUndefined();
+    expect(api.createAmplitude).toHaveBeenCalledOnce();
+
+    await resumed
+      .get('input[name="amplitudeProjectApiKey"]')
+      .setValue("c".repeat(32));
+    await resumed
+      .get('[data-action="retry-create-amplitude"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(api.createAmplitude).toHaveBeenCalledTimes(2);
+    expect(api.createAmplitude.mock.calls[1]).toEqual(firstCall);
+    expect(
+      window.sessionStorage.getItem(
+        "lola:amplitude-unresolved-secret:project-1",
+      ),
+    ).toBeNull();
   });
 
   it("renders archived connections as read-only terminal state", async () => {

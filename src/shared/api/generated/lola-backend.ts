@@ -145,6 +145,8 @@ import type {
   CreateConversationDto,
   CreateConversationMessageTranslationsDto,
   CreateCustomerDto,
+  CreateCustomerIoConnectionDto,
+  CreateCustomerIoOutboundRouteDto,
   CreateEventCatalogDefinitionDto,
   CreateEventSchemaSuccessorDto,
   CreateGuestSessionDto,
@@ -262,6 +264,7 @@ import type {
   IntegrationConnectionTestResponseDto,
   IntegrationConnectionVersionDto,
   IntegrationDispatchActivityListResponseDto,
+  IntegrationEventRouteActivityListParams,
   IntegrationEventRouteListResponseDto,
   IntegrationEventRouteResponseDto,
   IntegrationEventRouteVersionDto,
@@ -365,6 +368,7 @@ import type {
   RevokeCmsUserSessionDto,
   RollbackScenarioDto,
   RotateAmplitudeCredentialDto,
+  RotateCustomerIoCredentialDto,
   RotateServerKeyResponseDto,
   RotateTelegramChannelDto,
   SaveAttributeContractDraftDto,
@@ -442,6 +446,7 @@ import type {
   UpdateAmplitudeConnectionDto,
   UpdateCmsUserProfileDto,
   UpdateConversationTranslationPreferenceDto,
+  UpdateCustomerIoConnectionDto,
   UpdateEmailCaseEscalationPreferenceDto,
   UpdateEndUserCaseWorkflowDto,
   UpdateEventDefinitionMetadataDto,
@@ -3239,7 +3244,24 @@ export const integrationConnectionUpdateAmplitude = (
   );
 };
 
-export const integrationConnectionRotate = (
+export const integrationConnectionRotateAmplitude = (
+  projectId: string,
+  connectionId: string,
+  rotateAmplitudeCredentialDto: BodyType<RotateAmplitudeCredentialDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/amplitude/credentials/rotate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rotateAmplitudeCredentialDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionRotateAmplitudeCompatibility = (
   projectId: string,
   connectionId: string,
   rotateAmplitudeCredentialDto: BodyType<RotateAmplitudeCredentialDto>,
@@ -3251,6 +3273,40 @@ export const integrationConnectionRotate = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: rotateAmplitudeCredentialDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionUpdateCustomerIo = (
+  projectId: string,
+  connectionId: string,
+  updateCustomerIoConnectionDto: BodyType<UpdateCustomerIoConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/customer-io`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateCustomerIoConnectionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionRotateCustomerIo = (
+  projectId: string,
+  connectionId: string,
+  rotateCustomerIoCredentialDto: BodyType<RotateCustomerIoCredentialDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/customer-io/credentials/rotate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rotateCustomerIoCredentialDto,
     },
     options,
   );
@@ -3325,6 +3381,22 @@ export const integrationConnectionCreateAmplitude = (
   );
 };
 
+export const integrationConnectionCreateCustomerIo = (
+  projectId: string,
+  createCustomerIoConnectionDto: BodyType<CreateCustomerIoConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/customer-io`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createCustomerIoConnectionDto,
+    },
+    options,
+  );
+};
+
 export const integrationEventRouteList = (
   projectId: string,
   options?: SecondParameter<
@@ -3393,6 +3465,7 @@ export const integrationEventRoutePublish = (
 
 export const integrationEventRouteActivityList = (
   projectId: string,
+  params?: IntegrationEventRouteActivityListParams,
   options?: SecondParameter<
     typeof request<IntegrationDispatchActivityListResponseDto>
   >,
@@ -3401,6 +3474,7 @@ export const integrationEventRouteActivityList = (
     {
       url: `/api/v1/admin/projects/${projectId}/integration-event-routes/activity/outbound`,
       method: "GET",
+      params,
     },
     options,
   );
@@ -3417,6 +3491,22 @@ export const integrationEventRouteCreateAmplitude = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createAmplitudeOutboundRouteDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteCreateCustomerIo = (
+  projectId: string,
+  createCustomerIoOutboundRouteDto: BodyType<CreateCustomerIoOutboundRouteDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/customer-io`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createCustomerIoOutboundRouteDto,
     },
     options,
   );
@@ -7144,8 +7234,20 @@ export type IntegrationConnectionActivateResult = NonNullable<
 export type IntegrationConnectionUpdateAmplitudeResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionUpdateAmplitude>>
 >;
-export type IntegrationConnectionRotateResult = NonNullable<
-  Awaited<ReturnType<typeof integrationConnectionRotate>>
+export type IntegrationConnectionRotateAmplitudeResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionRotateAmplitude>>
+>;
+export type IntegrationConnectionRotateAmplitudeCompatibilityResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof integrationConnectionRotateAmplitudeCompatibility>
+    >
+  >;
+export type IntegrationConnectionUpdateCustomerIoResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionUpdateCustomerIo>>
+>;
+export type IntegrationConnectionRotateCustomerIoResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionRotateCustomerIo>>
 >;
 export type IntegrationConnectionDisableResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionDisable>>
@@ -7158,6 +7260,9 @@ export type IntegrationConnectionGetTestResult = NonNullable<
 >;
 export type IntegrationConnectionCreateAmplitudeResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionCreateAmplitude>>
+>;
+export type IntegrationConnectionCreateCustomerIoResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionCreateCustomerIo>>
 >;
 export type IntegrationEventRouteListResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteList>>
@@ -7176,6 +7281,9 @@ export type IntegrationEventRouteActivityListResult = NonNullable<
 >;
 export type IntegrationEventRouteCreateAmplitudeResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteCreateAmplitude>>
+>;
+export type IntegrationEventRouteCreateCustomerIoResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteCreateCustomerIo>>
 >;
 export type KnowledgeListResult = NonNullable<
   Awaited<ReturnType<typeof knowledgeList>>
