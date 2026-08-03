@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AiAllowanceRuntimeGatesDto {
-  emergencyDisabled: boolean;
-  hardEnforcementApproved: boolean;
+export interface IntegrationConnectionVersionDto {
+  /** @minimum 1 */
+  expectedVersion: number;
 }

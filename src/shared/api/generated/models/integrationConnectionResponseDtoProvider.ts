@@ -6,12 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type EventSource = (typeof EventSource)[keyof typeof EventSource];
+export type IntegrationConnectionResponseDtoProvider =
+  (typeof IntegrationConnectionResponseDtoProvider)[keyof typeof IntegrationConnectionResponseDtoProvider];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const EventSource = {
-  SERVER: "SERVER",
-  FRONTEND: "FRONTEND",
-  INTERNAL: "INTERNAL",
-  INTEGRATION: "INTEGRATION",
+export const IntegrationConnectionResponseDtoProvider = {
+  AMPLITUDE: "AMPLITUDE",
 } as const;

@@ -5,6 +5,7 @@ import Dialog from "primevue/dialog";
 import Message from "primevue/message";
 import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
+import SegmentSelect from "@/features/scenario-audience/ui/SegmentSelect.vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
   ScenarioLocalizationCatalogResponseDto,
@@ -923,7 +924,7 @@ async function saveCohort(): Promise<void> {
   if (!validCohortId)
     return fail(
       cohortScope.value === "SEGMENT"
-        ? "Для SEGMENT укажите UUID опубликованного сегмента."
+        ? "Выберите опубликованный сегмент."
         : "Некорректный ID уровня.",
     );
   if (
@@ -2081,21 +2082,19 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           >Группа<select v-model="cohortScope">
             <option value="SEGMENT">Сегмент</option>
             <option value="LEVEL">Уровень</option>
-          </select></label
-        ><label
-          >ID группы<input
+          </select></label>
+        <SegmentSelect
+          v-if="cohortScope === 'SEGMENT'"
+          v-model="cohortId"
+          :project-id="projectId"
+          :disabled="saving"
+        />
+        <label v-else
+          >Уровень<input
             v-model="cohortId"
             maxlength="100"
-            :placeholder="
-              cohortScope === 'SEGMENT'
-                ? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-                : 'gold'
-            "
-          /><small>{{
-            cohortScope === "SEGMENT"
-              ? "ID опубликованного сегмента"
-              : "Постоянный ID уровня"
-          }}</small></label
+            placeholder="gold"
+          /><small>Постоянный ID уровня</small></label
         >
       </div>
       <label
@@ -2128,10 +2127,6 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
       </div>
       <label
         >Причина<textarea v-model="reason" rows="3" maxlength="500" /></label
-      ><label
-        >Idempotency-Key<input
-          v-model="idempotencyKey"
-          maxlength="128" /></label
       ><small v-if="formError" class="field-error" role="alert">{{
         formError
       }}</small>

@@ -37,7 +37,12 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const toast = useToast();
-const sourceValues: EventLog["source"][] = ["SERVER", "FRONTEND", "INTERNAL"];
+const sourceValues: EventLog["source"][] = [
+  "SERVER",
+  "FRONTEND",
+  "INTERNAL",
+  "INTEGRATION",
+];
 const statusValues: EventLog["status"][] = ["PROCESSED", "FAILED", "RECEIVED"];
 const eventDefinitions = ref<EventDefinition[]>([]);
 const logs = ref<EventLog[]>([]);
@@ -91,6 +96,7 @@ const sourceOptions = [
   { label: "Backend", value: "SERVER" },
   { label: "Frontend", value: "FRONTEND" },
   { label: "Внутренние", value: "INTERNAL" },
+  { label: "Интеграции", value: "INTEGRATION" },
 ];
 const statusOptions = [
   { label: "Обработано", value: "PROCESSED" },
@@ -416,9 +422,12 @@ function statusLabel(status: EventLog["status"]) {
 }
 
 function sourceLabel(source: EventLog["source"]) {
-  return { SERVER: "Backend", FRONTEND: "Frontend", INTERNAL: "Internal" }[
-    source
-  ];
+  return {
+    SERVER: "Backend",
+    FRONTEND: "Frontend",
+    INTERNAL: "Internal",
+    INTEGRATION: "Интеграция",
+  }[source];
 }
 
 function json(value: unknown) {

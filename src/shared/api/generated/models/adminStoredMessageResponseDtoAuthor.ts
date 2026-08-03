@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiAllowanceProjectPolicyDto } from "./aiAllowanceProjectPolicyDto";
+import type { AdminMessageAuthorResponseDto } from "./adminMessageAuthorResponseDto";
 
 /**
  * @nullable
  */
-export type AiAllowanceProjectPolicyResponseDtoPolicy =
-  AiAllowanceProjectPolicyDto | null;
+export type AdminStoredMessageResponseDtoAuthor =
+  AdminMessageAuthorResponseDto | null;

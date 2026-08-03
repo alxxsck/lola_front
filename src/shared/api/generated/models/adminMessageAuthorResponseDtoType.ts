@@ -6,10 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AiAllowanceProjectPolicyDtoWarningContentOneOfMode =
-  (typeof AiAllowanceProjectPolicyDtoWarningContentOneOfMode)[keyof typeof AiAllowanceProjectPolicyDtoWarningContentOneOfMode];
+export type AdminMessageAuthorResponseDtoType =
+  (typeof AdminMessageAuthorResponseDtoType)[keyof typeof AdminMessageAuthorResponseDtoType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AiAllowanceProjectPolicyDtoWarningContentOneOfMode = {
+export const AdminMessageAuthorResponseDtoType = {
+  CMS_USER: "CMS_USER",
   SYSTEM: "SYSTEM",
+  BREAK_GLASS: "BREAK_GLASS",
+  UNKNOWN: "UNKNOWN",
 } as const;

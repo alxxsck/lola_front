@@ -15,7 +15,7 @@ import Skeleton from "primevue/skeleton";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { projectAIOperationsRepository } from "@/features/project-ai-operations/api/project-ai-operations-repository";
-import AIOperationCard from "@/features/project-ai-operations/ui/AIOperationCard.vue";
+import AIOperationTable from "@/features/project-ai-operations/ui/AIOperationTable.vue";
 import AIOperationDetailPanel from "@/features/project-ai-operations/ui/AIOperationDetailPanel.vue";
 import AIOperationFilters, {
   type AIOperationFiltersModel,
@@ -617,11 +617,11 @@ function withBoundedDefaultPeriod(
   <main class="page operations-page">
     <header class="page-header">
       <div>
-        <div class="eyebrow">AI operations ledger</div>
+        <div class="eyebrow">Контроль работы AI</div>
         <h1>Журнал AI-операций</h1>
         <p class="subtitle">
-          Кто запустил AI, чей лимит или бюджет использован, какие данные
-          читались, что выполнили модели и tools и сколько это стоило.
+          Кто запустил операцию, что было сделано, чем она завершилась и сколько
+          ресурсов потребовала.
         </p>
       </div>
       <Button
@@ -663,25 +663,29 @@ function withBoundedDefaultPeriod(
 
     <div class="operations-layout">
       <section class="operation-list" aria-label="Список AI-операций">
+        <div v-if="items.length || listLoading" class="list-heading">
+          <div>
+            <h2>Операции</h2>
+            <span v-if="!listLoading">Показано: {{ items.length }}</span>
+          </div>
+          <span>Новые сверху</span>
+        </div>
         <template v-if="listLoading">
-          <Skeleton v-for="index in 4" :key="index" height="14rem" />
+          <Skeleton v-for="index in 8" :key="index" height="3.5rem" />
         </template>
         <div v-else-if="items.length === 0" class="empty-state">
           <span><i class="pi pi-history" /></span>
           <h2>Операций за выбранный период нет</h2>
           <p>
-            Здесь появятся AI-анализы, chat/voice вызовы и будущие
-            capability-действия с полной атрибуцией.
+            Здесь появятся анализы, ответы помощника, обработка памяти и другие
+            операции AI.
           </p>
         </div>
-        <AIOperationCard
-          v-for="item in items"
-          v-else
-          :key="item.operationId"
-          :item="item"
+        <AIOperationTable
+          v-else-if="items.length"
+          :items="items"
           :project-id="projectId ?? ''"
           :can-read-cost="canReadCost"
-          :can-read-cms-users="canReadCmsUsers"
         />
         <Button
           v-if="pageInfo.hasMore"
@@ -779,6 +783,21 @@ h1 {
   align-content: start;
   gap: 16px;
   min-width: 0;
+}
+.list-heading,
+.list-heading > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.list-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.list-heading span {
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 .empty-state {
   display: grid;

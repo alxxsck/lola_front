@@ -4,6 +4,8 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
+import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
+import EndUserSelect from "@/features/end-user-profile/ui/EndUserSelect.vue";
 import {
   formatDecimalMoney,
   type DecimalString,
@@ -27,6 +29,7 @@ const props = defineProps<{
   endUserId: string;
   cursor: string;
   embedded?: boolean;
+  canSearchUsers?: boolean;
 }>();
 const emit = defineEmits<{
   selectUser: [id: string];
@@ -49,6 +52,7 @@ const correctionReason = ref("");
 const correctionIdempotencyKey = ref("");
 const correctionAccountVersion = ref("");
 const correcting = ref(false);
+const selectingUser = ref(false);
 const correctionError = ref("");
 const reauthenticationRequired = ref(false);
 let generation = 0;
@@ -129,7 +133,7 @@ async function load(): Promise<void> {
       else if (balanceResult?.cause)
         balanceError.value = message(
           balanceResult.cause,
-          "Не удалось загрузить версию allowance account",
+          "Не удалось загрузить актуальную версию баланса",
         );
       loadedContextKey.value = requestContextKey;
     }
@@ -152,13 +156,34 @@ function invalidatePage(): void {
   correctionTarget.value = null;
   correcting.value = false;
 }
-function select(): void {
+async function select(): Promise<void> {
   const value = input.value.trim();
   if (!value || value.length > 160) {
-    error.value = "Укажите корректный End User ID.";
+    error.value = "Укажите корректный ID пользователя.";
     return;
   }
-  emit("selectUser", value);
+  if (uuid(value)) {
+    emit("selectUser", value);
+    return;
+  }
+  selectingUser.value = true;
+  error.value = "";
+  try {
+    const user = await endUserProfileRepository.resolveIdentity(
+      props.projectId,
+      value,
+    );
+    if (!user) {
+      error.value = "Пользователь с таким ID не найден.";
+      return;
+    }
+    emit("selectUser", user.endUserId);
+  } catch (cause) {
+    error.value =
+      cause instanceof Error ? cause.message : "Не удалось найти пользователя";
+  } finally {
+    selectingUser.value = false;
+  }
 }
 function openCorrection(item: AiAllowanceJournalEntry): void {
   if (
@@ -183,16 +208,16 @@ async function submitCorrection(): Promise<void> {
     return correctionFail("Операция больше недоступна.");
   if (!exact || /^-?0(?:\.0+)?$/.test(exact))
     return correctionFail(
-      "Дельта должна быть ненулевой точной decimal-строкой до 12 знаков.",
+      "Укажите ненулевое число, не более 12 знаков после запятой.",
     );
   const positive = !exact.startsWith("-");
   const expiresAt = positive ? iso(correctionExpiresAt.value) : undefined;
   if (positive && (!expiresAt || new Date(expiresAt) <= new Date()))
     return correctionFail(
-      "Для положительной корректировки укажите будущий expiresAt.",
+      "Для положительной корректировки укажите будущий срок действия.",
     );
   if (!/^(?:0|[1-9]\d{0,19})$/.test(correctionAccountVersion.value))
-    return correctionFail("Версия allowance account устарела или некорректна.");
+    return correctionFail("Версия баланса устарела или некорректна.");
   if (
     correctionReason.value.trim().length < 3 ||
     correctionReason.value.trim().length > 500
@@ -202,7 +227,7 @@ async function submitCorrection(): Promise<void> {
     !correctionIdempotencyKey.value.trim() ||
     correctionIdempotencyKey.value.length > 128
   )
-    return correctionFail("Некорректный Idempotency-Key.");
+    return correctionFail("Некорректный ключ защиты от повторной отправки.");
 
   const requestContextKey = contextKey.value;
   const requestProjectId = props.projectId;
@@ -231,8 +256,7 @@ async function submitCorrection(): Promise<void> {
     )
       return;
     correctionTarget.value = null;
-    notice.value =
-      "Корректировка записана. Баланс и журнал перечитаны с backend.";
+    notice.value = "Корректировка записана. Баланс и история обновлены.";
     await load();
     emit("changed");
   } catch (cause) {
@@ -261,6 +285,42 @@ function date(value: string): string {
     dateStyle: "short",
     timeStyle: "medium",
   }).format(new Date(value));
+}
+function uuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+function entryTypeLabel(value: AiAllowanceJournalEntry["entryType"]): string {
+  return (
+    {
+      PLAN_ALLOCATED: "Начислен периодический лимит",
+      GRANT_ALLOCATED: "Начислен дополнительный лимит",
+      RESERVED: "Средства зарезервированы",
+      RELEASED: "Резерв освобождён",
+      SETTLED: "Расход подтверждён",
+      UNKNOWN_HELD: "Сумма ожидает уточнения",
+      EXPIRED: "Начисление истекло",
+      CORRECTION: "Ручная корректировка",
+    }[value] ?? value
+  );
+}
+function qualityLabel(value: AiAllowanceJournalEntry["costQuality"]): string {
+  if (!value) return "стоимость не указана";
+  return {
+    EXACT_PROVIDER_COST: "точная стоимость провайдера",
+    EXACT_PROVIDER_UNITS: "расчёт по единицам провайдера",
+    MEASURED_ESTIMATE: "расчётная стоимость",
+    RESERVED_ESTIMATE: "предварительная оценка",
+    UNKNOWN: "стоимость уточняется",
+  }[value];
+}
+function actorLabel(value: string): string {
+  return (
+    { SYSTEM: "Система", USER: "Пользователь", CMS_USER: "Сотрудник" }[
+      value
+    ] ?? value
+  );
 }
 function iso(value: string): string | undefined {
   const result = new Date(value);
@@ -315,28 +375,38 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
     <template v-else>
       <header>
         <div>
-          <span class="eyebrow">Immutable allowance ledger</span>
-          <h2>Журнал квоты пользователя</h2>
+          <h2>История лимита пользователя</h2>
           <p>
-            Backend публикует журнал только в контексте End User. Дельты
-            показаны без округления в расчётах.
+            Здесь видно, когда лимит начислялся, резервировался и списывался.
+            Суммы показаны с точностью, которую использует система.
           </p>
         </div>
       </header>
       <form v-if="!embedded" class="user-selector" @submit.prevent="select">
-        <label for="allowance-user-id">End User ID</label
-        ><input
-          id="allowance-user-id"
+        <EndUserSelect
+          v-if="canSearchUsers"
           v-model="input"
-          autocomplete="off"
-          placeholder="UUID пользователя"
-          maxlength="160"
-        /><Button label="Открыть журнал" type="submit" />
+          :project-id="projectId"
+          :disabled="selectingUser"
+        />
+        <label v-else for="allowance-user-id"
+          >ID пользователя в вашем продукте или UUID<input
+            id="allowance-user-id"
+            v-model="input"
+            autocomplete="off"
+            placeholder="Например: user-123"
+            maxlength="160"
+        /></label>
+        <Button
+          label="Открыть историю"
+          type="submit"
+          :loading="selectingUser"
+        />
       </form>
       <Message v-if="canReconcile" severity="warn" :closable="false"
-        >Корректировка — audited break-glass mutation. Она всегда ссылается на
-        существующую запись журнала и использует текущую версию
-        account.</Message
+        >Корректировка — служебная операция для исключительных случаев. Она
+        всегда привязывается к существующей записи и проверяет, что баланс не
+        изменился с момента открытия.</Message
       >
       <Message v-if="notice" severity="success" :closable="false">{{
         notice
@@ -369,27 +439,27 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
       <div v-else-if="visiblePage?.items.length" class="journal-table">
         <table>
           <caption>
-            Immutable журнал изменений AI allowance пользователя
+            История изменений лимита пользователя
           </caption>
           <thead>
             <tr>
-              <th>Время / тип</th>
+              <th>Время и операция</th>
               <th>Доступно</th>
               <th>Резерв</th>
               <th>Потрачено</th>
-              <th>Unknown</th>
+              <th>Уточняется</th>
               <th>Перерасход</th>
-              <th class="provenance-cell">Причина / provenance</th>
+              <th class="provenance-cell">Причина и источник</th>
               <th v-if="canReconcile">Действие</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in visiblePage.items" :key="item.id">
               <td>
-                <strong>{{ item.entryType }}</strong
+                <span>{{ entryTypeLabel(item.entryType) }}</span
                 ><small
                   >{{ date(item.occurredAt) }} ·
-                  {{ item.costQuality ?? "N/A" }}</small
+                  {{ qualityLabel(item.costQuality) }}</small
                 >
               </td>
               <td>{{ delta(item.deltaAvailableUsd) }}</td>
@@ -398,9 +468,9 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
               <td>{{ delta(item.deltaUnknownUsd) }}</td>
               <td>{{ delta(item.deltaOverageUsd) }}</td>
               <td class="provenance-cell">
-                <strong>{{ item.reason }}</strong
+                <span>{{ item.reason }}</span
                 ><small
-                  >{{ item.actorType }}:{{ item.actorId }} ·
+                  >{{ actorLabel(item.actorType) }}: {{ item.actorId }} ·
                   {{ provenance(item) }}</small
                 >
               </td>
@@ -425,8 +495,8 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
         <i class="pi pi-user" aria-hidden="true" />
         <h3>Выберите пользователя</h3>
         <p>
-          Можно открыть журнал кнопкой из таблицы пользователей или вставить
-          точный End User ID.
+          Найдите пользователя по ID из вашего продукта или откройте историю из
+          таблицы пользователей.
         </p>
       </div>
       <footer v-if="visiblePage" class="journal-footer">
@@ -448,22 +518,21 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
   <Dialog
     :visible="Boolean(correctionTarget)"
     modal
-    header="Корректировка AI allowance"
+    header="Корректировка лимита AI"
     :style="{ width: 'min(680px, 94vw)' }"
     @update:visible="!$event && (correctionTarget = null)"
   >
     <form class="correction-form" @submit.prevent="submitCorrection">
       <Message severity="warn" :closable="false">
-        Новая immutable запись исправит выбранную запись журнала. Это квота AI,
-        не денежный перевод пользователю.
+        Новая запись исправит выбранное изменение лимита. Это не денежный
+        перевод пользователю.
       </Message>
       <p v-if="correctionTarget">
-        Исправляется <strong>{{ correctionTarget.id }}</strong> · account v{{
-          correctionAccountVersion
-        }}
+        Исправляется запись <strong>{{ correctionTarget.id }}</strong> · версия
+        баланса {{ correctionAccountVersion }}
       </p>
       <label for="correction-delta">
-        Дельта доступной квоты, USD
+        Изменение доступного лимита, USD
         <input
           id="correction-delta"
           v-model="correctionDelta"
@@ -484,7 +553,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
         />
       </label>
       <Message v-else severity="info" :closable="false">
-        Для отрицательной дельты expiresAt не отправляется.
+        Для уменьшения лимита срок действия не нужен.
       </Message>
       <label for="correction-reason">
         Причина / доказательство
@@ -496,7 +565,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
         />
       </label>
       <label for="correction-idempotency">
-        Idempotency-Key
+        Ключ защиты от повторной отправки
         <input
           id="correction-idempotency"
           :value="correctionIdempotencyKey"
@@ -544,16 +613,9 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
   margin: 7px 0 0;
   color: var(--text-secondary);
 }
-.eyebrow {
-  color: var(--text-small-muted);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
 .user-selector {
   display: grid;
-  grid-template-columns: auto minmax(220px, 1fr) auto;
+  grid-template-columns: minmax(220px, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 14px;
@@ -608,7 +670,7 @@ td:first-child,
 .provenance-cell {
   text-align: left;
 }
-td strong,
+td > span,
 td small {
   display: block;
 }

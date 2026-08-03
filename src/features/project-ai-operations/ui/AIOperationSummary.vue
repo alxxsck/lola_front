@@ -28,24 +28,22 @@ function statusLabel(key: string): string {
     </template>
     <template v-else-if="summary">
       <article class="metric primary">
-        <span>Операции</span>
+        <span>Операций</span>
         <strong>{{ summary.operations }}</strong>
-        <small>{{ summary.rootOperations }} корневых intent</small>
       </article>
       <article class="metric">
-        <span>AI-вызовы</span>
+        <span>Обращений к моделям</span>
         <strong>{{ summary.usageRecords }}</strong>
-        <small>provider attempts без двойного учёта</small>
       </article>
       <article class="metric">
-        <span>Работа с данными</span>
+        <span>Нагрузка на базу данных</span>
         <strong v-if="canReadCost && summary.dbWorkUnits != null">{{
           summary.dbWorkUnits
         }}</strong>
         <strong v-else class="restricted"
           ><i class="pi pi-lock" /> Скрыта</strong
         >
-        <small>DB work units отдельно от AI-стоимости</small>
+        <small>условных единиц обработки</small>
       </article>
       <article class="metric">
         <span>Стоимость</span>
@@ -55,10 +53,10 @@ function statusLabel(key: string): string {
         <strong v-else class="restricted"
           ><i class="pi pi-lock" /> Скрыта</strong
         >
-        <small>списывается один раз с владельца расхода</small>
+        <small>за выбранный период</small>
       </article>
       <article class="breakdown status-breakdown">
-        <span class="breakdown-title">Состояния</span>
+        <span class="breakdown-title">По статусам</span>
         <div class="breakdown-items">
           <span v-for="item in summary.byStatus" :key="item.key">
             {{ statusLabel(item.key) }}
@@ -67,7 +65,7 @@ function statusLabel(key: string): string {
         </div>
       </article>
       <article class="breakdown admins-breakdown">
-        <span class="breakdown-title">Ответственные администраторы</span>
+        <span class="breakdown-title">По ответственным</span>
         <div
           v-if="canReadCost && summary.byResponsibleCmsUser.length"
           class="breakdown-items"
@@ -81,9 +79,9 @@ function statusLabel(key: string): string {
           </span>
         </div>
         <small v-else-if="canReadCost"
-          >Нет расходов, атрибутированных администраторам</small
+          >Нет операций с назначенным ответственным</small
         >
-        <small v-else>Требуется доступ к финансовой детализации</small>
+        <small v-else>Нет доступа к детализации</small>
         <small
           v-if="
             canReadCost && summary.breakdownLimits.responsibleCmsUsersTruncated
@@ -101,31 +99,24 @@ function statusLabel(key: string): string {
 .summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface-card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
 }
 .metric,
 .breakdown {
-  padding: 19px;
-  background: var(--surface-card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px
-    color-mix(in srgb, var(--surface-emphasis) 4%, transparent);
+  padding: 10px 12px;
+  background: var(--surface-subtle);
+  border-radius: 10px;
 }
 .metric {
-  display: grid;
-  align-content: start;
-  min-height: 126px;
-  gap: 7px;
-}
-.metric.primary {
-  background:
-    radial-gradient(
-      circle at 85% 10%,
-      color-mix(in srgb, var(--brand) 18%, transparent),
-      transparent 45%
-    ),
-    var(--surface-card);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 52px;
+  gap: 8px;
 }
 .metric > span,
 .breakdown-title {
@@ -134,7 +125,7 @@ function statusLabel(key: string): string {
   font-weight: 750;
 }
 .metric > strong {
-  font-size: clamp(1.35rem, 2vw, 1.65rem);
+  font-size: 1.05rem;
   letter-spacing: -0.03em;
 }
 .metric small,
@@ -153,13 +144,13 @@ function statusLabel(key: string): string {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-  margin-top: 10px;
+  margin-top: 7px;
 }
 .breakdown-items span {
   display: inline-flex;
   gap: 8px;
-  padding: 7px 10px;
-  background: var(--surface-subtle);
+  padding: 5px 8px;
+  background: var(--surface-card);
   border-radius: 9px;
   font-size: 0.75rem;
 }
@@ -170,10 +161,15 @@ function statusLabel(key: string): string {
 }
 @media (max-width: 560px) {
   .summary {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metric {
+    align-items: flex-start;
+    flex-direction: column;
+    min-height: 70px;
   }
   .breakdown {
-    grid-column: auto;
+    grid-column: 1 / -1;
   }
 }
 </style>

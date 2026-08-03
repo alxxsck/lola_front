@@ -439,7 +439,7 @@ export interface EventLog {
   ingestionPolicySnapshot: Record<string, unknown>;
   userId: string;
   userExternalId: string;
-  source: "SERVER" | "FRONTEND" | "INTERNAL";
+  source: "SERVER" | "FRONTEND" | "INTERNAL" | "INTEGRATION";
   status: EventLogStatus;
   externalEventId?: string;
   message?: string;

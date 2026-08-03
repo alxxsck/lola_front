@@ -474,6 +474,15 @@
       },
       "AdminConversationMessageResponseDto": {
         "properties": {
+          "author": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminMessageAuthorResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -481,6 +490,10 @@
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "ordinal": {
+            "minimum": 1,
+            "type": "integer"
           },
           "role": {
             "allOf": [
@@ -517,6 +530,8 @@
           "role",
           "status",
           "text",
+          "ordinal",
+          "author",
           "createdAt",
           "updatedAt"
         ],
@@ -774,6 +789,38 @@
         ],
         "type": "object"
       },
+      "AdminMessageAuthorResponseDto": {
+        "properties": {
+          "avatarUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "cmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CMS_USER",
+              "SYSTEM",
+              "BREAK_GLASS",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "cmsUserId",
+          "displayName",
+          "avatarUrl"
+        ],
+        "type": "object"
+      },
       "AdminMessageDeliveryResponseDto": {
         "properties": {
           "commandIds": {
@@ -888,7 +935,8 @@
               "REPLY_TRANSLATION_DRAFT_CASE_CONTEXT_MISMATCH",
               "REPLY_TRANSLATION_DRAFT_NOT_READY",
               "REPLY_TRANSLATION_DRAFT_CONSUME_CONFLICT",
-              "TRANSLATION_ACTOR_INVALID"
+              "TRANSLATION_ACTOR_INVALID",
+              "ADMIN_MESSAGE_AUTHOR_NOT_FOUND"
             ],
             "type": "string"
           },
@@ -1013,6 +1061,15 @@
       },
       "AdminStoredMessageResponseDto": {
         "properties": {
+          "author": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminMessageAuthorResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "clientMessageId": {
             "nullable": true,
             "type": "string"
@@ -1050,6 +1107,10 @@
           "model": {
             "nullable": true,
             "type": "string"
+          },
+          "ordinal": {
+            "minimum": 1,
+            "type": "integer"
           },
           "outputTokens": {
             "nullable": true,
@@ -1096,6 +1157,8 @@
           "text",
           "commands",
           "metadata",
+          "ordinal",
+          "author",
           "createdAt",
           "updatedAt",
           "thread"
@@ -1181,271 +1244,6 @@
         },
         "required": [
           "data"
-        ],
-        "type": "object"
-      },
-      "AiAllowanceLocalizationCatalogDto": {
-        "properties": {
-          "defaultLocale": {
-            "maxLength": 64,
-            "type": "string"
-          },
-          "supportedLocales": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 20,
-            "type": "array"
-          },
-          "translationSupportedLocales": {
-            "description": "Project locales accepted by the existing translation-jobs API as source/target locales.",
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 20,
-            "type": "array"
-          }
-        },
-        "required": [
-          "defaultLocale",
-          "supportedLocales",
-          "translationSupportedLocales"
-        ],
-        "type": "object"
-      },
-      "AiAllowanceProjectPolicyDto": {
-        "properties": {
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "enforcementMode": {
-            "enum": [
-              "DISABLED",
-              "SHADOW",
-              "SOFT",
-              "HARD"
-            ],
-            "type": "string"
-          },
-          "exhaustedContent": {
-            "discriminator": {
-              "propertyName": "mode"
-            },
-            "oneOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "mode": {
-                    "enum": [
-                      "SYSTEM"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "mode"
-                ],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "defaultLocale": {
-                    "example": "pt-BR",
-                    "maxLength": 64,
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "mode": {
-                    "enum": [
-                      "CUSTOM"
-                    ],
-                    "type": "string"
-                  },
-                  "translations": {
-                    "additionalProperties": {
-                      "maxLength": 2000,
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
-                    "maxProperties": 50,
-                    "minProperties": 1,
-                    "type": "object"
-                  }
-                },
-                "required": [
-                  "mode",
-                  "defaultLocale",
-                  "translations"
-                ],
-                "type": "object"
-              }
-            ]
-          },
-          "lowThresholdMode": {
-            "enum": [
-              "PERCENT",
-              "ABSOLUTE_USD"
-            ],
-            "type": "string"
-          },
-          "lowThresholdValue": {
-            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
-            "type": "string"
-          },
-          "projectId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "showEndUserExactUsd": {
-            "type": "boolean"
-          },
-          "timezone": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "pattern": "^(?:0|[1-9]\\d{0,19})$",
-            "type": "string"
-          },
-          "warningContent": {
-            "discriminator": {
-              "propertyName": "mode"
-            },
-            "oneOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "mode": {
-                    "enum": [
-                      "SYSTEM"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "mode"
-                ],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "defaultLocale": {
-                    "example": "pt-BR",
-                    "maxLength": 64,
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "mode": {
-                    "enum": [
-                      "CUSTOM"
-                    ],
-                    "type": "string"
-                  },
-                  "translations": {
-                    "additionalProperties": {
-                      "maxLength": 2000,
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
-                    "maxProperties": 50,
-                    "minProperties": 1,
-                    "type": "object"
-                  }
-                },
-                "required": [
-                  "mode",
-                  "defaultLocale",
-                  "translations"
-                ],
-                "type": "object"
-              }
-            ]
-          }
-        },
-        "required": [
-          "projectId",
-          "enforcementMode",
-          "timezone",
-          "warningContent",
-          "lowThresholdMode",
-          "lowThresholdValue",
-          "exhaustedContent",
-          "showEndUserExactUsd",
-          "version",
-          "createdAt",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "AiAllowanceProjectPolicyResponseDto": {
-        "properties": {
-          "defaultAssignment": {
-            "additionalProperties": true,
-            "nullable": true,
-            "type": "object"
-          },
-          "localization": {
-            "$ref": "#/components/schemas/AiAllowanceLocalizationCatalogDto"
-          },
-          "plans": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "plansPageInfo": {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          "policy": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AiAllowanceProjectPolicyDto"
-              }
-            ],
-            "nullable": true,
-            "type": "object"
-          },
-          "projectPolicyVersion": {
-            "pattern": "^(?:0|[1-9]\\d{0,19})$",
-            "type": "string"
-          },
-          "runtimeGates": {
-            "$ref": "#/components/schemas/AiAllowanceRuntimeGatesDto"
-          }
-        },
-        "required": [
-          "projectPolicyVersion",
-          "localization",
-          "policy",
-          "plans",
-          "plansPageInfo",
-          "defaultAssignment",
-          "runtimeGates"
-        ],
-        "type": "object"
-      },
-      "AiAllowanceRuntimeGatesDto": {
-        "properties": {
-          "emergencyDisabled": {
-            "type": "boolean"
-          },
-          "hardEnforcementApproved": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "hardEnforcementApproved",
-          "emergencyDisabled"
         ],
         "type": "object"
       },
@@ -4632,6 +4430,23 @@
         "required": [
           "eventQuery"
         ],
+        "type": "object"
+      },
+      "AllowanceLocalizedContentDto": {
+        "properties": {
+          "en": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "ru": {
+            "maxLength": 2000,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "AllRuleExplanationResponseDto": {
@@ -11579,6 +11394,41 @@
         ],
         "type": "object"
       },
+      "CreateAmplitudeConnectionDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "projectApiKey": {
+            "description": "Write-only Amplitude Project API Key. It is encrypted and never returned.",
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[a-fA-F0-9]{32}$",
+            "type": "string",
+            "writeOnly": true
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "remoteProjectLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "region",
+          "projectApiKey"
+        ],
+        "type": "object"
+      },
       "CreateConversationDto": {
         "properties": {
           "title": {
@@ -17331,7 +17181,8 @@
         "enum": [
           "SERVER",
           "FRONTEND",
-          "INTERNAL"
+          "INTERNAL",
+          "INTEGRATION"
         ],
         "type": "string"
       },
@@ -18593,6 +18444,228 @@
           "fields",
           "examples",
           "admission"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionCredentialResponseDto": {
+        "properties": {
+          "fingerprint": {
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "rotatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "testedRevision": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "fingerprint",
+          "revision",
+          "testedRevision",
+          "rotatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionResponseDto": {
+        "properties": {
+          "credential": {
+            "$ref": "#/components/schemas/IntegrationConnectionCredentialResponseDto"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "health": {
+            "enum": [
+              "UNKNOWN",
+              "HEALTHY",
+              "DEGRADED",
+              "FAILING"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inboundEnabled": {
+            "type": "boolean"
+          },
+          "lastSuccessfulTestAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastTestErrorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "outboundEnabled": {
+            "type": "boolean"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE"
+            ],
+            "type": "string"
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "remoteProjectLabel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "provider",
+          "displayName",
+          "region",
+          "remoteProjectLabel",
+          "inboundEnabled",
+          "outboundEnabled",
+          "lifecycle",
+          "health",
+          "credential",
+          "lastSuccessfulTestAt",
+          "lastTestErrorCode",
+          "version",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionTestResponseDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connectionResultVersion": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "credentialRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "RETRY_WAIT",
+              "SUCCEEDED",
+              "FAILED",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "connectionId",
+          "credentialRevision",
+          "status",
+          "attemptCount",
+          "errorCode",
+          "connectionResultVersion",
+          "createdAt",
+          "startedAt",
+          "finishedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionVersionDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion"
         ],
         "type": "object"
       },
@@ -24526,7 +24599,8 @@
               "enum": [
                 "SERVER",
                 "FRONTEND",
-                "INTERNAL"
+                "INTERNAL",
+                "INTEGRATION"
               ],
               "type": "string"
             },
@@ -24736,20 +24810,6 @@
             "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
             "type": "string"
           },
-          "categoryRules": {
-            "items": {
-              "$ref": "#/components/schemas/PutAllowancePlanCategoryRuleDto"
-            },
-            "type": "array"
-          },
-          "clearExhaustedContent": {
-            "description": "Explicitly restore the built-in exhausted allowance copy.",
-            "type": "boolean"
-          },
-          "clearWarningContent": {
-            "description": "Explicitly restore the built-in LOW warning copy.",
-            "type": "boolean"
-          },
           "enforcementMode": {
             "enum": [
               "DISABLED",
@@ -24760,61 +24820,7 @@
             "type": "string"
           },
           "exhaustedContent": {
-            "description": "SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map.",
-            "discriminator": {
-              "propertyName": "mode"
-            },
-            "oneOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "mode": {
-                    "enum": [
-                      "SYSTEM"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "mode"
-                ],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "defaultLocale": {
-                    "example": "pt-BR",
-                    "maxLength": 64,
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "mode": {
-                    "enum": [
-                      "CUSTOM"
-                    ],
-                    "type": "string"
-                  },
-                  "translations": {
-                    "additionalProperties": {
-                      "maxLength": 2000,
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
-                    "maxProperties": 50,
-                    "minProperties": 1,
-                    "type": "object"
-                  }
-                },
-                "required": [
-                  "mode",
-                  "defaultLocale",
-                  "translations"
-                ],
-                "type": "object"
-              }
-            ]
+            "$ref": "#/components/schemas/AllowanceLocalizedContentDto"
           },
           "expectedProjectPolicyVersion": {
             "description": "Project-wide allowance configuration generation returned by the latest allowance read.",
@@ -24855,61 +24861,7 @@
             "type": "string"
           },
           "warningContent": {
-            "description": "SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map.",
-            "discriminator": {
-              "propertyName": "mode"
-            },
-            "oneOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "mode": {
-                    "enum": [
-                      "SYSTEM"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "mode"
-                ],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "defaultLocale": {
-                    "example": "pt-BR",
-                    "maxLength": 64,
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "mode": {
-                    "enum": [
-                      "CUSTOM"
-                    ],
-                    "type": "string"
-                  },
-                  "translations": {
-                    "additionalProperties": {
-                      "maxLength": 2000,
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
-                    "maxProperties": 50,
-                    "minProperties": 1,
-                    "type": "object"
-                  }
-                },
-                "required": [
-                  "mode",
-                  "defaultLocale",
-                  "translations"
-                ],
-                "type": "object"
-              }
-            ]
+            "$ref": "#/components/schemas/AllowanceLocalizedContentDto"
           }
         },
         "required": [
@@ -24918,9 +24870,7 @@
           "period",
           "timezone",
           "enforcementMode",
-          "reason",
-          "showEndUserExactUsd",
-          "categoryRules"
+          "reason"
         ],
         "type": "object"
       },
@@ -25494,6 +25444,26 @@
         },
         "required": [
           "expectedCurrentRevisionId"
+        ],
+        "type": "object"
+      },
+      "RotateAmplitudeCredentialDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "projectApiKey": {
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[a-fA-F0-9]{32}$",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "projectApiKey"
         ],
         "type": "object"
       },
@@ -27968,7 +27938,8 @@
             "enum": [
               "SERVER",
               "FRONTEND",
-              "INTERNAL"
+              "INTERNAL",
+              "INTEGRATION"
             ],
             "type": "string"
           }
@@ -32256,6 +32227,29 @@
           "expectedVersion",
           "enabled",
           "dailyRunLimit"
+        ],
+        "type": "object"
+      },
+      "UpdateAmplitudeConnectionDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "remoteProjectLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "displayName"
         ],
         "type": "object"
       },
@@ -36669,7 +36663,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AiAllowanceProjectPolicyResponseDto"
+                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
                 }
               }
             },
@@ -46500,6 +46494,556 @@
         ],
         "x-iam-permission": {
           "code": "project.integration_message_content.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections": {
+      "get": {
+        "operationId": "IntegrationConnection_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}": {
+      "get": {
+        "operationId": "IntegrationConnection_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/activate": {
+      "post": {
+        "operationId": "IntegrationConnection_activate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationConnectionVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/amplitude": {
+      "patch": {
+        "operationId": "IntegrationConnection_updateAmplitude",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAmplitudeConnectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/credentials/rotate": {
+      "post": {
+        "operationId": "IntegrationConnection_rotate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateAmplitudeCredentialDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/disable": {
+      "post": {
+        "operationId": "IntegrationConnection_disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationConnectionVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/tests": {
+      "post": {
+        "operationId": "IntegrationConnection_test",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationConnectionVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/tests/{testId}": {
+      "get": {
+        "operationId": "IntegrationConnection_getTest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "testId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/amplitude": {
+      "post": {
+        "operationId": "IntegrationConnection_createAmplitude",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmplitudeConnectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
           "scope": "PROJECT"
         }
       }

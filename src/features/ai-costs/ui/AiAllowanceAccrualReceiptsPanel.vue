@@ -96,11 +96,14 @@ function date(value: string): string {
 function statusLabel(value: "GRANTED" | "REJECTED"): string {
   return value === "GRANTED" ? "Начислено" : "Отклонено";
 }
-function sourceLabel(value: "SERVER" | "FRONTEND" | "INTERNAL"): string {
+function sourceLabel(
+  value: "SERVER" | "FRONTEND" | "INTERNAL" | "INTEGRATION",
+): string {
   return {
     SERVER: "Сервер",
     FRONTEND: "Интерфейс",
     INTERNAL: "Внутренняя операция",
+    INTEGRATION: "Интеграция",
   }[value];
 }
 </script>

@@ -38,6 +38,77 @@ export function aiOperationCategoryLabel(
   return values[category];
 }
 
+export function aiOperationTitleLabel(
+  title: string,
+  category: AiOperationListItemDtoCategory,
+): string {
+  const values: Record<string, string> = {
+    "project ai analysis": "Анализ проекта",
+    "cms agent request": "Запрос AI-агенту CMS",
+    "user memory extraction": "Извлечение фактов из диалога",
+    "interactive assist response": "Ответ AI-помощника",
+    "case routing": "Маршрутизация обращения",
+    "case update": "Обновление обращения",
+  };
+  return (
+    values[title.trim().toLowerCase()] ||
+    title.trim() ||
+    aiOperationCategoryLabel(category)
+  );
+}
+
+export function aiOperationSourceLabel(sourceKind: string): string {
+  const values: Record<string, string> = {
+    AI_ANALYSIS_RUN: "Запуск анализа проекта",
+    CONVERSATION_TURN: "Ответ в диалоге",
+    CMS_AGENT_REQUEST: "Запрос к AI-агенту CMS",
+    CMS_AGENT_CAPABILITY_EXECUTION: "Действие AI-агента CMS",
+    INTERACTIVE_ASSIST_RESPONSE: "Ответ AI-помощника",
+    USER_MEMORY_EXTRACTION: "Обновление памяти пользователя",
+    CASE_ROUTING: "Маршрутизация обращения",
+    CASE_UPDATE: "Обновление обращения",
+  };
+  return values[sourceKind] ?? "Системный запуск";
+}
+
+export function aiOperationDescriptionLabel(value: string): string {
+  return value
+    .replace(/bounded data access/gi, "ограниченным доступом к данным")
+    .replace(/read-only режиме/gi, "режиме только для чтения")
+    .replace(/read-only/gi, "только для чтения")
+    .replace(/background[- ]run/gi, "фоновый запуск")
+    .replace(/provider attempts?/gi, "обращения к модели")
+    .replace(/DB work units?/gi, "единицы нагрузки на базу данных")
+    .replace(/root intents?/gi, "самостоятельные запуски");
+}
+
+export function aiOperationOutcomeLabel(
+  code: string | null | undefined,
+  status?: AiOperationListItemDtoStatus,
+): string {
+  const values: Record<string, string> = {
+    CLARIFICATION_REQUIRED: "Нужно уточнение",
+    COMPLETED: "Выполнено",
+    SUCCESS: "Выполнено",
+    ERROR: "Ошибка",
+    PARTIAL: "Частичный результат",
+    NO_RESULT: "Результат не получен",
+    SUCCEEDED: "Выполнено",
+    FAILED: "Завершено с ошибкой",
+    CANCELLED: "Отменено",
+    RUNNING: "Выполняется",
+    STARTED: "Запущено",
+    TIMEOUT: "Превышено время ожидания",
+    RATE_LIMITED: "Превышен лимит запросов",
+    BUDGET_EXCEEDED: "Недостаточно бюджета",
+    ALLOWANCE_EXCEEDED: "Исчерпан AI-лимит пользователя",
+  };
+  if (code) return values[code] ?? `Код результата: ${code}`;
+  if (status)
+    return values[status] ?? aiOperationStatusPresentation(status).label;
+  return "Результат не указан";
+}
+
 export function aiOperationChargedAccountLabel(
   account: AiOperationListItemDtoChargedAccount,
 ): string {

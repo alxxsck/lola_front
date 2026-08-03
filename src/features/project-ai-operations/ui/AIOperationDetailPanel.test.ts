@@ -82,6 +82,60 @@ const detail = {
 };
 
 describe("AIOperationDetailPanel", () => {
+  it("starts with the requested work and its human-readable result", () => {
+    const wrapper = shallowMount(AIOperationDetailPanel, {
+      props: {
+        projectId: "project-1",
+        detail: {
+          ...detail,
+          title: "Project AI Analysis",
+          purpose: "Проверить динамику депозитов за неделю",
+          status: "FAILED",
+          outcomeCode: "CLARIFICATION_REQUIRED",
+          timeline: [
+            ...detail.timeline,
+            {
+              sequence: "2",
+              kind: "RESULT",
+              occurredAt: "2026-07-31T08:00:02.000Z",
+              eventType: "OPERATION_FAILED",
+              actor: { type: "SYSTEM" },
+              status: "FAILED",
+              errorCode: "CLARIFICATION_REQUIRED",
+              summary: "Не указан период сравнения",
+              modelAttempt: null,
+              toolCall: null,
+              dataAccess: null,
+            },
+          ],
+        },
+        subjects: null,
+        accessHistory: null,
+        loading: false,
+        timelineLoading: false,
+        usageLoading: false,
+        subjectsLoading: false,
+        accessLoading: false,
+        error: "",
+        canReadCost: true,
+        canReadSubjects: false,
+        canReadAudit: false,
+        canReadAnalysisResult: true,
+        canReadCaseResult: false,
+        canReadConversationResult: false,
+      },
+      global: { stubs: renderedPrimeStubs },
+    });
+
+    expect(wrapper.text()).toContain("Что запросили");
+    expect(wrapper.text()).toContain("Проверить динамику депозитов за неделю");
+    expect(wrapper.text()).toContain("Что получили");
+    expect(wrapper.text()).toContain("Нужно уточнение");
+    expect(wrapper.text()).toContain("Не указан период сравнения");
+    expect(wrapper.text()).not.toContain("Project AI Analysis");
+    expect(wrapper.text()).not.toContain("Outcome:");
+  });
+
   it("labels analysis participation independently from user charges", () => {
     const wrapper = shallowMount(AIOperationDetailPanel, {
       props: {
@@ -147,8 +201,8 @@ describe("AIOperationDetailPanel", () => {
 
     expect(wrapper.text()).toContain("данные участвовали");
     expect(wrapper.text()).toContain("Не списано с пользователя");
-    expect(wrapper.text()).toContain("PROJECT_ANALYSIS_QUERY");
-    expect(wrapper.text()).toContain("Открыть AI_ANALYSIS");
+    expect(wrapper.text()).toContain("Данные проекта для анализа");
+    expect(wrapper.text()).toContain("Открыть анализ");
     expect(wrapper.text()).toContain("$0.25");
     expect(wrapper.text()).toContain("admin-audit-1");
     expect(wrapper.text()).toContain("project.ai_operations.subjects.read");

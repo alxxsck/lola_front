@@ -434,6 +434,8 @@ describe("repository domain mappers", () => {
       mapConversationMessage({
         id: "message-1",
         threadId: "conversation-1",
+        author: null,
+        ordinal: 1,
         role: "ASSISTANT",
         status: "COMPLETED",
         text: "Hello",
@@ -451,6 +453,8 @@ describe("repository domain mappers", () => {
       mapConversationMessage({
         id: "message-2",
         threadId: "conversation-1",
+        author: null,
+        ordinal: 2,
         role: "ASSISTANT",
         status: "CANCELLED",
         text: "Незавершённый ответ",

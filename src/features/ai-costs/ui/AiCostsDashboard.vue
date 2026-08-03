@@ -683,6 +683,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       :project-id="projectId"
       :can-read="canReadAllowance"
       :can-reconcile="canReconcileAllowance"
+      :can-search-users="canReadProfiles"
       :end-user-id="state.allowanceUser"
       :cursor="state.allowanceCursor"
       @select-user="selectJournalUser"

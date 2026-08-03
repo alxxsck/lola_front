@@ -173,7 +173,10 @@ function parseRevision(
     !Array.isArray(s.allowedSources) ||
     s.allowedSources.some(
       (source) =>
-        source !== "SERVER" && source !== "FRONTEND" && source !== "INTERNAL",
+        source !== "SERVER" &&
+        source !== "FRONTEND" &&
+        source !== "INTERNAL" &&
+        source !== "INTEGRATION",
     ) ||
     !text(s.timezone) ||
     !rewardUsd ||

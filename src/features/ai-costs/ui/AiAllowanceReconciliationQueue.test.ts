@@ -107,14 +107,14 @@ describe("AiAllowanceReconciliationQueue", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Разрешить"))!
+      .find((button) => button.text().includes("Завершить"))!
       .trigger("click");
     await wrapper
       .find("textarea")
       .setValue("Verified provider outcome evidence");
     const key = wrapper.find("input[readonly]").element.getAttribute("value");
     await wrapper.find("form.resolve-form").trigger("submit");
-    expect(wrapper.text()).toContain("Подтвердите проверку evidence");
+    expect(wrapper.text()).toContain("Подтвердите проверку данных");
     expect(mocks.resolve).not.toHaveBeenCalled();
 
     await wrapper.get('input[type="checkbox"]').setValue(true);
@@ -149,9 +149,9 @@ describe("AiAllowanceReconciliationQueue", () => {
   it("does not query or render operator controls without reconcile permission", async () => {
     const wrapper = mountQueue({ canReconcile: false });
     await flushPromises();
-    expect(wrapper.text()).toContain("project.ai_allowance.reconcile");
+    expect(wrapper.text()).toContain("Нет доступа к сверке");
     expect(mocks.queue).not.toHaveBeenCalled();
-    expect(wrapper.text()).not.toContain("Разрешить");
+    expect(wrapper.text()).not.toContain("Завершить");
   });
 
   it("requires a fresh login for resolve without replaying the break-glass command", async () => {
@@ -168,7 +168,7 @@ describe("AiAllowanceReconciliationQueue", () => {
     await flushPromises();
     await wrapper
       .findAll("button")
-      .find((button) => button.text().includes("Разрешить"))!
+      .find((button) => button.text().includes("Завершить"))!
       .trigger("click");
     await wrapper.find("textarea").setValue("Verified provider evidence");
     await wrapper.get('input[type="checkbox"]').setValue(true);
