@@ -271,6 +271,28 @@ describe("allowance admin panels", () => {
     );
   });
 
+  it("never hides the universal limit workspace when its policy request fails", async () => {
+    mocks.projectPolicy.mockRejectedValueOnce(
+      new Error("Политика временно недоступна"),
+    );
+    const wrapper = mount(AiAllowanceLimitsPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canGrant: true,
+        canReconcile: false,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Общий лимит для всех пользователей");
+    expect(wrapper.text()).toContain("Политика временно недоступна");
+    expect(wrapper.text().indexOf("Общий лимит для всех пользователей")).toBeLessThan(
+      wrapper.text().indexOf("Ручное начисление квоты"),
+    );
+  });
+
   it("blocks HARD submission until the explicit risk confirmation", async () => {
     mocks.putDefaultPlan.mockResolvedValue({
       projectPolicyVersion: "5",

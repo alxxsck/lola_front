@@ -898,7 +898,45 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         />
       </div>
     </div>
-    <template>
+    <div v-if="canRead" class="allowance-heading">
+      <div>
+        <span class="eyebrow">Project allowance policy</span>
+        <h2>Общий лимит для всех пользователей</h2>
+        <p>
+          Лимиты расходов задают базовую AI-квоту в USD каждому пользователю
+          проекта. Это внутренняя квота на потребление, не денежный кошелёк и
+          не доступные к выводу средства.
+        </p>
+      </div>
+      <div class="heading-actions">
+        <Button
+          v-if="canManage"
+          :label="
+            latestDefaultRevision
+              ? 'Изменить базовый план'
+              : 'Настроить общий лимит'
+          "
+          icon="pi pi-pencil"
+          :disabled="!policyReady"
+          @click="openEditor"
+        /><Button
+          v-if="canManage"
+          label="Новый план"
+          outlined
+          icon="pi pi-plus"
+          :disabled="!policyReady"
+          @click="openNamedEditor()"
+        /><Button
+          v-if="canManage"
+          label="Назначить когорте"
+          outlined
+          icon="pi pi-users"
+          :disabled="!policyReady"
+          @click="openCohortEditor"
+        />
+      </div>
+    </div>
+    <template v-if="canRead">
       <div v-if="loading && !policy" class="allowance-loading">
         <Skeleton height="150px" /><Skeleton height="150px" />
       </div>
@@ -907,41 +945,6 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         ><Button label="Повторить" text size="small" @click="load"
       /></Message>
       <template v-if="policy">
-        <div class="allowance-heading">
-          <div>
-            <span class="eyebrow">Project allowance policy</span>
-            <h2>Общий лимит для всех пользователей</h2>
-            <p>
-              Лимиты расходов задают базовую AI-квоту в USD каждому
-              пользователю проекта. Это внутренняя квота на потребление, не
-              денежный кошелёк и не доступные к выводу средства.
-            </p>
-          </div>
-          <div class="heading-actions">
-            <Button
-              v-if="canManage"
-              :label="
-                latestDefaultRevision
-                  ? 'Изменить базовый план'
-                  : 'Настроить общий лимит'
-              "
-              icon="pi pi-pencil"
-              @click="openEditor"
-            /><Button
-              v-if="canManage"
-              label="Новый план"
-              outlined
-              icon="pi pi-plus"
-              @click="openNamedEditor()"
-            /><Button
-              v-if="canManage"
-              label="Назначить когорте"
-              outlined
-              icon="pi pi-users"
-              @click="openCohortEditor"
-            />
-          </div>
-        </div>
         <Message
           v-if="policy.policy?.enforcementMode === 'HARD'"
           severity="error"
@@ -1217,12 +1220,15 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         >
       </div>
       <label for="allowance-enforcement"
-        >Enforcement<select id="allowance-enforcement" v-model="enforcement">
-          <option value="DISABLED">DISABLED — только учёт</option>
-          <option value="SHADOW">SHADOW — теневая проверка</option>
-          <option value="SOFT">SOFT — предупреждение</option>
+        >Что делать при исчерпании<select
+          id="allowance-enforcement"
+          v-model="enforcement"
+        >
+          <option value="DISABLED">Только учитывать расходы</option>
+          <option value="SHADOW">Проверять без предупреждения и блокировки</option>
+          <option value="SOFT">Предупреждать, но не блокировать AI</option>
           <option value="HARD" :disabled="!canActivateHard">
-            HARD — блокировка
+            Блокировать новые AI-запросы
           </option>
         </select></label
       >
