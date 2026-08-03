@@ -22,6 +22,11 @@ export interface IntegrationConnectionResponseDto {
   /** @nullable */
   lastTestErrorCode: string | null;
   lifecycle: IntegrationConnectionResponseDtoLifecycle;
+  /** @nullable */
+  outboundCircuitOpenUntil: string | null;
+  outboundCircuitPermanent: boolean;
+  /** @nullable */
+  outboundCircuitReason: string | null;
   outboundEnabled: boolean;
   projectId: string;
   provider: IntegrationConnectionResponseDtoProvider;

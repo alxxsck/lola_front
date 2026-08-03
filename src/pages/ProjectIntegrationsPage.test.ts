@@ -90,6 +90,24 @@ vi.mock(
   }),
 );
 
+vi.mock(
+  "@/features/integration-event-routes/AmplitudeEventRoutesCard.vue",
+  () => ({
+    default: {
+      props: ["projectId", "canRead", "canManage", "canReadActivity"],
+      template: `
+        <section
+          data-testid="amplitude-routes-card-stub"
+          :data-project-id="projectId"
+          :data-can-read="String(canRead)"
+          :data-can-manage="String(canManage)"
+          :data-can-read-activity="String(canReadActivity)"
+        />
+      `,
+    },
+  }),
+);
+
 const destination = (overrides: Record<string, unknown> = {}) => ({
   id: "destination-1",
   projectId: "project-1",

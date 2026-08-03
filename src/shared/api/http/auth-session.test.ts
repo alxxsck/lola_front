@@ -60,6 +60,10 @@ describe("auth session", () => {
       "lola:amplitude-unresolved-secret:project-2",
       '{"operation":"ROTATE"}',
     );
+    sessionStorage.setItem(
+      "lola:amplitude-pending-route-create:project-2",
+      '{"idempotencyKey":"actor-scoped-receipt"}',
+    );
 
     clearAuthSession();
 
@@ -74,6 +78,10 @@ describe("auth session", () => {
     sessionStorage.setItem(
       "lola:amplitude-unresolved-secret:project-2",
       '{"operation":"CREATE"}',
+    );
+    sessionStorage.setItem(
+      "lola:amplitude-pending-route-create:project-2",
+      '{"idempotencyKey":"actor-scoped-receipt"}',
     );
 
     clearLocalAuthSession();

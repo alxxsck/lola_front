@@ -5,6 +5,7 @@ import "@/app/styles/project-integrations.css";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import AmplitudeConnectionsCard from "@/features/integration-connections/AmplitudeConnectionsCard.vue";
+import AmplitudeEventRoutesCard from "@/features/integration-event-routes/AmplitudeEventRoutesCard.vue";
 import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
 import OperationalTelegramCard from "@/features/notification-destinations/OperationalTelegramCard.vue";
 import ProductTelegramCard from "@/features/telegram-product-installations/ProductTelegramCard.vue";
@@ -29,6 +30,9 @@ const canReadProductTelegram = computed(() =>
 );
 const canManageProductTelegram = computed(() =>
   hasProjectPermission(permissions.value, "project.integrations.manage"),
+);
+const canReadIntegrationActivity = computed(() =>
+  hasProjectPermission(permissions.value, "project.integration_activity.read"),
 );
 const destination = ref<NotificationDestinationResponseDto | null>(null);
 const loading = ref(true);
@@ -660,6 +664,13 @@ onMounted(load);
       :project-id="projectId"
       :can-read="canReadProductTelegram"
       :can-manage="canManageProductTelegram"
+    />
+    <AmplitudeEventRoutesCard
+      v-if="canReadProductTelegram"
+      :project-id="projectId"
+      :can-read="canReadProductTelegram"
+      :can-manage="canManageProductTelegram"
+      :can-read-activity="canReadIntegrationActivity"
     />
   </main>
 </template>

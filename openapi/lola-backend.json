@@ -11429,6 +11429,53 @@
         ],
         "type": "object"
       },
+      "CreateAmplitudeOutboundRouteDto": {
+        "properties": {
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "propertyBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventPropertyBindingDto"
+            },
+            "maxItems": 32,
+            "type": "array"
+          },
+          "providerEventName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "connectionId",
+          "name",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionId",
+          "providerEventName",
+          "propertyBindings"
+        ],
+        "type": "object"
+      },
       "CreateConversationDto": {
         "properties": {
           "title": {
@@ -18532,6 +18579,18 @@
             ],
             "type": "string"
           },
+          "outboundCircuitOpenUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "outboundCircuitPermanent": {
+            "type": "boolean"
+          },
+          "outboundCircuitReason": {
+            "nullable": true,
+            "type": "string"
+          },
           "outboundEnabled": {
             "type": "boolean"
           },
@@ -18576,6 +18635,9 @@
           "outboundEnabled",
           "lifecycle",
           "health",
+          "outboundCircuitOpenUntil",
+          "outboundCircuitPermanent",
+          "outboundCircuitReason",
           "credential",
           "lastSuccessfulTestAt",
           "lastTestErrorCode",
@@ -18666,6 +18728,332 @@
         },
         "required": [
           "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "IntegrationDispatchActivityItemDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE"
+            ],
+            "type": "string"
+          },
+          "providerEventName": {
+            "type": "string"
+          },
+          "providerIdempotencyId": {
+            "type": "string"
+          },
+          "routeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "routeRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "DELIVERED",
+              "RETRY_WAIT",
+              "FAILED_PERMANENT",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "connectionId",
+          "routeId",
+          "routeRevisionId",
+          "eventId",
+          "provider",
+          "providerEventName",
+          "providerIdempotencyId",
+          "occurredAt",
+          "status",
+          "attemptCount",
+          "errorCode",
+          "createdAt",
+          "finishedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationDispatchActivityListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationDispatchActivityItemDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventPropertyBindingDto": {
+        "properties": {
+          "required": {
+            "type": "boolean"
+          },
+          "sourcePath": {
+            "items": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array"
+          },
+          "targetKey": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourcePath",
+          "targetKey",
+          "required"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteResponseDto": {
+        "properties": {
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "draftRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationEventRouteRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "enablementVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationEventRouteRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "connectionId",
+          "direction",
+          "name",
+          "description",
+          "lifecycle",
+          "enabled",
+          "enablementVersion",
+          "version",
+          "draftRevision",
+          "publishedRevision",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteRevisionResponseDto": {
+        "properties": {
+          "compiledHash": {
+            "type": "string"
+          },
+          "compilerVersion": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "propertyBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventPropertyBindingDto"
+            },
+            "type": "array"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE"
+            ],
+            "type": "string"
+          },
+          "providerEventName": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "state",
+          "provider",
+          "region",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionId",
+          "providerEventName",
+          "propertyBindings",
+          "compiledHash",
+          "compilerVersion",
+          "createdAt",
+          "publishedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteVersionDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "reason"
         ],
         "type": "object"
       },
@@ -24402,6 +24790,24 @@
         "required": [
           "expectedDraftVersion",
           "expectedBaseRevisionId",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "PublishIntegrationEventRouteDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
           "reason"
         ],
         "type": "object"
@@ -47041,6 +47447,353 @@
         ],
         "tags": [
           "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes": {
+      "get": {
+        "operationId": "IntegrationEventRoute_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/{routeId}/disable": {
+      "post": {
+        "operationId": "IntegrationEventRoute_disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationEventRouteVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/{routeId}/enable": {
+      "post": {
+        "operationId": "IntegrationEventRoute_enable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationEventRouteVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/{routeId}/publish": {
+      "post": {
+        "operationId": "IntegrationEventRoute_publish",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishIntegrationEventRouteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/activity/outbound": {
+      "get": {
+        "operationId": "IntegrationEventRoute_activityList",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDispatchActivityListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_activity.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/amplitude": {
+      "post": {
+        "operationId": "IntegrationEventRoute_createAmplitude",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmplitudeOutboundRouteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
         ],
         "x-iam-permission": {
           "code": "project.integrations.manage",

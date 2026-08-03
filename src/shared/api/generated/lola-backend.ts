@@ -141,6 +141,7 @@ import type {
   ConversationTranslationResponseDto,
   CorrectAiAllowanceDto,
   CreateAmplitudeConnectionDto,
+  CreateAmplitudeOutboundRouteDto,
   CreateConversationDto,
   CreateConversationMessageTranslationsDto,
   CreateCustomerDto,
@@ -260,6 +261,10 @@ import type {
   IntegrationConnectionResponseDto,
   IntegrationConnectionTestResponseDto,
   IntegrationConnectionVersionDto,
+  IntegrationDispatchActivityListResponseDto,
+  IntegrationEventRouteListResponseDto,
+  IntegrationEventRouteResponseDto,
+  IntegrationEventRouteVersionDto,
   InteractionSessionResponseDto,
   KnowledgeDocumentDetailResponseDto,
   KnowledgeDocumentListResponseDto,
@@ -336,6 +341,7 @@ import type {
   PublishEventQueryPolicyDto,
   PublishEventQueryPolicyItemDto,
   PublishEventSchemaDraftDto,
+  PublishIntegrationEventRouteDto,
   PublishScenarioDto,
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
@@ -3314,6 +3320,103 @@ export const integrationConnectionCreateAmplitude = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createAmplitudeConnectionDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteList = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationEventRouteListResponseDto>
+  >,
+) => {
+  return request<IntegrationEventRouteListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteDisable = (
+  projectId: string,
+  routeId: string,
+  integrationEventRouteVersionDto: BodyType<IntegrationEventRouteVersionDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/disable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationEventRouteVersionDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteEnable = (
+  projectId: string,
+  routeId: string,
+  integrationEventRouteVersionDto: BodyType<IntegrationEventRouteVersionDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/enable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationEventRouteVersionDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRoutePublish = (
+  projectId: string,
+  routeId: string,
+  publishIntegrationEventRouteDto: BodyType<PublishIntegrationEventRouteDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishIntegrationEventRouteDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteActivityList = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationDispatchActivityListResponseDto>
+  >,
+) => {
+  return request<IntegrationDispatchActivityListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/activity/outbound`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteCreateAmplitude = (
+  projectId: string,
+  createAmplitudeOutboundRouteDto: BodyType<CreateAmplitudeOutboundRouteDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/amplitude`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createAmplitudeOutboundRouteDto,
     },
     options,
   );
@@ -7055,6 +7158,24 @@ export type IntegrationConnectionGetTestResult = NonNullable<
 >;
 export type IntegrationConnectionCreateAmplitudeResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionCreateAmplitude>>
+>;
+export type IntegrationEventRouteListResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteList>>
+>;
+export type IntegrationEventRouteDisableResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteDisable>>
+>;
+export type IntegrationEventRouteEnableResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteEnable>>
+>;
+export type IntegrationEventRoutePublishResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRoutePublish>>
+>;
+export type IntegrationEventRouteActivityListResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteActivityList>>
+>;
+export type IntegrationEventRouteCreateAmplitudeResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteCreateAmplitude>>
 >;
 export type KnowledgeListResult = NonNullable<
   Awaited<ReturnType<typeof knowledgeList>>

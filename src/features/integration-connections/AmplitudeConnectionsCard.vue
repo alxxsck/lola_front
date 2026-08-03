@@ -854,11 +854,24 @@ function readyToActivate(
 
 function statusLabel(connection: IntegrationConnectionResponseDto): string {
   if (connection.lifecycle === "ARCHIVED") return "В архиве";
+  if (connection.outboundCircuitPermanent)
+    return "Ключ отклонён — нужна проверка";
+  if (
+    connection.outboundCircuitOpenUntil &&
+    Date.parse(connection.outboundCircuitOpenUntil) > Date.now()
+  )
+    return "Отправка временно приостановлена";
   if (connection.health === "FAILING") return "Требует внимания";
   if (connection.health === "DEGRADED") return "Результат не подтверждён";
   if (connection.lifecycle === "ACTIVE") return "Активно";
   if (connection.lifecycle === "PAUSED") return "Отключено";
   return connection.health === "HEALTHY" ? "Проверено" : "Черновик";
+}
+
+function circuitLabel(connection: IntegrationConnectionResponseDto): string {
+  if (connection.outboundCircuitPermanent) return "Открыт до проверки ключа";
+  if (!connection.outboundCircuitOpenUntil) return "Закрыт";
+  return `До ${formatTimestamp(connection.outboundCircuitOpenUntil)}`;
 }
 
 function statusTone(connection: IntegrationConnectionResponseDto): string {
@@ -1050,6 +1063,14 @@ onBeforeUnmount(() => {
           <div>
             <dt>Последняя ошибка</dt>
             <dd>{{ connection.lastTestErrorCode ?? "Нет" }}</dd>
+          </div>
+          <div>
+            <dt>Контур отправки</dt>
+            <dd>{{ circuitLabel(connection) }}</dd>
+          </div>
+          <div v-if="connection.outboundCircuitReason">
+            <dt>Причина остановки</dt>
+            <dd>{{ connection.outboundCircuitReason }}</dd>
           </div>
         </dl>
 

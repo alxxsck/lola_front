@@ -29,6 +29,9 @@ const connection = (overrides: Record<string, unknown> = {}) => ({
   outboundEnabled: true,
   lifecycle: "DRAFT",
   health: "UNKNOWN",
+  outboundCircuitOpenUntil: null,
+  outboundCircuitPermanent: false,
+  outboundCircuitReason: null,
   credential: {
     fingerprint: "a1b2c3d4e5f60708",
     revision: 1,
@@ -84,6 +87,27 @@ describe("AmplitudeConnectionsCard", () => {
       "confirm",
       vi.fn(() => true),
     );
+  });
+
+  it("shows a permanent outbound credential circuit and its recovery cue", async () => {
+    api.list.mockResolvedValue({
+      items: [
+        connection({
+          lifecycle: "ACTIVE",
+          health: "FAILING",
+          outboundCircuitOpenUntil: "9999-12-31T23:59:59.000Z",
+          outboundCircuitPermanent: true,
+          outboundCircuitReason: "AMPLITUDE_DELIVERY_CREDENTIAL_REJECTED",
+        }),
+      ],
+    });
+
+    const wrapper = mountCard();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Ключ отклонён — нужна проверка");
+    expect(wrapper.text()).toContain("Открыт до проверки ключа");
+    expect(wrapper.text()).toContain("AMPLITUDE_DELIVERY_CREDENTIAL_REJECTED");
   });
 
   it("renders multiple project-scoped connections read-only without secret controls", async () => {
