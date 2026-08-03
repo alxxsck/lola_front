@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminStoredMessageResponseDtoAuthor } from "./adminStoredMessageResponseDtoAuthor";
 import type { AdminStoredMessageResponseDtoContent } from "./adminStoredMessageResponseDtoContent";
 import type { AdminStoredMessageResponseDtoMetadata } from "./adminStoredMessageResponseDtoMetadata";
 import type { MessageRole } from "./messageRole";
@@ -12,6 +13,8 @@ import type { MessageStatus } from "./messageStatus";
 import type { AdminMessageThreadResponseDto } from "./adminMessageThreadResponseDto";
 
 export interface AdminStoredMessageResponseDto {
+  /** @nullable */
+  author: AdminStoredMessageResponseDtoAuthor;
   /** @nullable */
   clientMessageId?: string | null;
   commands: unknown[];
@@ -29,6 +32,8 @@ export interface AdminStoredMessageResponseDto {
   metadata: AdminStoredMessageResponseDtoMetadata;
   /** @nullable */
   model?: string | null;
+  /** @minimum 1 */
+  ordinal: number;
   /** @nullable */
   outputTokens?: number | null;
   /** @nullable */

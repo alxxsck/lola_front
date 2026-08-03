@@ -73,6 +73,23 @@ vi.mock(
   }),
 );
 
+vi.mock(
+  "@/features/integration-connections/AmplitudeConnectionsCard.vue",
+  () => ({
+    default: {
+      props: ["projectId", "canRead", "canManage"],
+      template: `
+        <section
+          data-testid="amplitude-connections-card-stub"
+          :data-project-id="projectId"
+          :data-can-read="String(canRead)"
+          :data-can-manage="String(canManage)"
+        />
+      `,
+    },
+  }),
+);
+
 const destination = (overrides: Record<string, unknown> = {}) => ({
   id: "destination-1",
   projectId: "project-1",
@@ -167,6 +184,15 @@ describe("ProjectIntegrationsPage", () => {
     expect(wrapper.text()).not.toContain("Slack");
     expect(
       wrapper.get('[data-testid="product-telegram-card-stub"]').attributes(),
+    ).toMatchObject({
+      "data-project-id": "project-1",
+      "data-can-read": "true",
+      "data-can-manage": "true",
+    });
+    expect(
+      wrapper
+        .get('[data-testid="amplitude-connections-card-stub"]')
+        .attributes(),
     ).toMatchObject({
       "data-project-id": "project-1",
       "data-can-read": "true",

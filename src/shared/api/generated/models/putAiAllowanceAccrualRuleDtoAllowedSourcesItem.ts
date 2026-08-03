@@ -14,4 +14,5 @@ export const PutAiAllowanceAccrualRuleDtoAllowedSourcesItem = {
   SERVER: "SERVER",
   FRONTEND: "FRONTEND",
   INTERNAL: "INTERNAL",
+  INTEGRATION: "INTEGRATION",
 } as const;

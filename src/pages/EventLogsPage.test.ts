@@ -220,6 +220,11 @@ describe("EventLogsPage", () => {
     expect(
       wrapper.find("multi-select-stub#source-filter").attributes("placeholder"),
     ).toBe("Все источники");
+    expect(
+      wrapper
+        .find("multi-select-stub#source-filter")
+        .attributes("selection-limit"),
+    ).toBe("4");
 
     updateModel(wrapper, "multi-select-stub#event-filter", [
       "deposit",
@@ -232,6 +237,7 @@ describe("EventLogsPage", () => {
     updateModel(wrapper, "multi-select-stub#source-filter", [
       "SERVER",
       "FRONTEND",
+      "INTEGRATION",
     ]);
     await button(wrapper, "Применить").trigger("click");
     await flushPromises();
@@ -239,14 +245,14 @@ describe("EventLogsPage", () => {
     expect(mocks.getEventLogPage).toHaveBeenLastCalledWith("project-1", {
       eventCode: ["deposit", "purchase"],
       status: ["FAILED", "PROCESSED"],
-      source: ["SERVER", "FRONTEND"],
+      source: ["SERVER", "FRONTEND", "INTEGRATION"],
       limit: 25,
     });
     expect(mocks.replace).toHaveBeenCalledWith({
       query: {
         eventCode: ["deposit", "purchase"],
         status: ["FAILED", "PROCESSED"],
-        source: ["SERVER", "FRONTEND"],
+        source: ["SERVER", "FRONTEND", "INTEGRATION"],
       },
     });
   });

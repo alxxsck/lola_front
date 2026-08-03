@@ -24,7 +24,7 @@ describe("aiAllowanceAccrualRepository", () => {
                 name: "Deposit reward",
                 lifecycle: "ACTIVE",
                 eventDefinitionKeyId: "11111111-1111-4111-8111-111111111111",
-                allowedSources: ["SERVER"],
+                allowedSources: ["INTEGRATION"],
                 timezone: "Europe/Madrid",
                 rewardUsd: "1.000000000001",
                 perEndUserDailyCapUsd: "3.000000000000",
@@ -113,7 +113,7 @@ describe("aiAllowanceAccrualRepository", () => {
             },
             eventLog: {
               id: "66666666-6666-4666-8666-666666666666",
-              source: "SERVER",
+              source: "INTEGRATION",
               occurredAt: "2026-08-02T10:00:00.000Z",
               eventDefinitionKey: {
                 code: "deposit.completed",
@@ -141,7 +141,7 @@ describe("aiAllowanceAccrualRepository", () => {
     expect(result.items[0]).toMatchObject({
       rewardUsd: "1.000000000001",
       grantId: "55555555-5555-4555-8555-555555555555",
-      eventLog: { source: "SERVER" },
+      eventLog: { source: "INTEGRATION" },
     });
     expect(axiosInstance.get).toHaveBeenCalledWith(
       "/api/v1/admin/projects/project-1/ai-allowance/accrual-receipts",

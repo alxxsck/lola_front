@@ -881,6 +881,8 @@ describe("api repository adapter", () => {
         {
           id: "message-1",
           threadId: "conversation-1",
+          ordinal: 1,
+          author: null,
           role: "USER",
           status: "COMPLETED",
           text: "Hello",

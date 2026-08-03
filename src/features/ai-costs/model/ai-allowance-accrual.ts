@@ -1,7 +1,17 @@
 import type { DecimalString } from "@/shared/lib/decimal-money";
 
 export type AccrualLifecycle = "ACTIVE" | "PAUSED" | "ARCHIVED";
-export type AccrualSource = "SERVER" | "FRONTEND" | "INTERNAL";
+export const ACCRUAL_SOURCES = [
+  "SERVER",
+  "FRONTEND",
+  "INTERNAL",
+  "INTEGRATION",
+] as const;
+export type AccrualSource = (typeof ACCRUAL_SOURCES)[number];
+
+export function isAccrualSource(value: unknown): value is AccrualSource {
+  return ACCRUAL_SOURCES.some((source) => source === value);
+}
 export interface AiAllowanceAccrualRevision {
   id: string;
   revisionNumber: number;

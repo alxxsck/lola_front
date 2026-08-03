@@ -21,6 +21,8 @@ import type {
   AdminEndUserProfilesHistoryParams,
   AdminEndUserProfilesListParams,
   AdminEventLogsListParams,
+  AdminProjectConversationsListParams,
+  AdminProjectConversationsPageResponseDto,
   AiAllowanceAccrualAdminListReceiptsParams,
   AiAllowanceAccrualAdminListRulesParams,
   AiAllowanceAccrualAdminResponseDto,
@@ -138,6 +140,7 @@ import type {
   ConversationTranslationPutParams,
   ConversationTranslationResponseDto,
   CorrectAiAllowanceDto,
+  CreateAmplitudeConnectionDto,
   CreateConversationDto,
   CreateConversationMessageTranslationsDto,
   CreateCustomerDto,
@@ -253,6 +256,10 @@ import type {
   IntegrationActivityListParams,
   IntegrationActivityListResponseDto,
   IntegrationAttributeContractResponseDto,
+  IntegrationConnectionListResponseDto,
+  IntegrationConnectionResponseDto,
+  IntegrationConnectionTestResponseDto,
+  IntegrationConnectionVersionDto,
   InteractionSessionResponseDto,
   KnowledgeDocumentDetailResponseDto,
   KnowledgeDocumentListResponseDto,
@@ -351,6 +358,7 @@ import type {
   ResumeConversationAIDto,
   RevokeCmsUserSessionDto,
   RollbackScenarioDto,
+  RotateAmplitudeCredentialDto,
   RotateServerKeyResponseDto,
   RotateTelegramChannelDto,
   SaveAttributeContractDraftDto,
@@ -425,6 +433,7 @@ import type {
   UpdateAIReviewSettingsDto,
   UpdateActivitySettingsDto,
   UpdateAiModelSettingsDto,
+  UpdateAmplitudeConnectionDto,
   UpdateCmsUserProfileDto,
   UpdateConversationTranslationPreferenceDto,
   UpdateEmailCaseEscalationPreferenceDto,
@@ -3161,6 +3170,155 @@ export const integrationActivityContent = (
   );
 };
 
+export const integrationConnectionList = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationConnectionListResponseDto>
+  >,
+) => {
+  return request<IntegrationConnectionListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationConnectionGet = (
+  projectId: string,
+  connectionId: string,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationConnectionActivate = (
+  projectId: string,
+  connectionId: string,
+  integrationConnectionVersionDto: BodyType<IntegrationConnectionVersionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/activate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationConnectionVersionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionUpdateAmplitude = (
+  projectId: string,
+  connectionId: string,
+  updateAmplitudeConnectionDto: BodyType<UpdateAmplitudeConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/amplitude`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateAmplitudeConnectionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionRotate = (
+  projectId: string,
+  connectionId: string,
+  rotateAmplitudeCredentialDto: BodyType<RotateAmplitudeCredentialDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/credentials/rotate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rotateAmplitudeCredentialDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionDisable = (
+  projectId: string,
+  connectionId: string,
+  integrationConnectionVersionDto: BodyType<IntegrationConnectionVersionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/disable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationConnectionVersionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionTest = (
+  projectId: string,
+  connectionId: string,
+  integrationConnectionVersionDto: BodyType<IntegrationConnectionVersionDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationConnectionTestResponseDto>
+  >,
+) => {
+  return request<IntegrationConnectionTestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/tests`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationConnectionVersionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionGetTest = (
+  projectId: string,
+  connectionId: string,
+  testId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationConnectionTestResponseDto>
+  >,
+) => {
+  return request<IntegrationConnectionTestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/tests/${testId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationConnectionCreateAmplitude = (
+  projectId: string,
+  createAmplitudeConnectionDto: BodyType<CreateAmplitudeConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/amplitude`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createAmplitudeConnectionDto,
+    },
+    options,
+  );
+};
+
 export const knowledgeList = (
   projectId: string,
   params?: KnowledgeListParams,
@@ -4268,6 +4426,23 @@ export const platformOperationsUpdateProjectSettings = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateProjectSettingsDto,
+    },
+    options,
+  );
+};
+
+export const adminProjectConversationsList = (
+  projectId: string,
+  params?: AdminProjectConversationsListParams,
+  options?: SecondParameter<
+    typeof request<AdminProjectConversationsPageResponseDto>
+  >,
+) => {
+  return request<AdminProjectConversationsPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/conversations`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -6854,6 +7029,33 @@ export type IntegrationActivityGetResult = NonNullable<
 export type IntegrationActivityContentResult = NonNullable<
   Awaited<ReturnType<typeof integrationActivityContent>>
 >;
+export type IntegrationConnectionListResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionList>>
+>;
+export type IntegrationConnectionGetResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionGet>>
+>;
+export type IntegrationConnectionActivateResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionActivate>>
+>;
+export type IntegrationConnectionUpdateAmplitudeResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionUpdateAmplitude>>
+>;
+export type IntegrationConnectionRotateResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionRotate>>
+>;
+export type IntegrationConnectionDisableResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionDisable>>
+>;
+export type IntegrationConnectionTestResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionTest>>
+>;
+export type IntegrationConnectionGetTestResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionGetTest>>
+>;
+export type IntegrationConnectionCreateAmplitudeResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionCreateAmplitude>>
+>;
 export type KnowledgeListResult = NonNullable<
   Awaited<ReturnType<typeof knowledgeList>>
 >;
@@ -7066,6 +7268,9 @@ export type PlatformOperationsProjectSettingsResult = NonNullable<
 >;
 export type PlatformOperationsUpdateProjectSettingsResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsUpdateProjectSettings>>
+>;
+export type AdminProjectConversationsListResult = NonNullable<
+  Awaited<ReturnType<typeof adminProjectConversationsList>>
 >;
 export type TelegramBroadcastListResult = NonNullable<
   Awaited<ReturnType<typeof telegramBroadcastList>>

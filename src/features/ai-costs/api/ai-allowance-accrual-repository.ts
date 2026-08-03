@@ -5,6 +5,7 @@ import type {
   AiAllowanceAccrualReceiptPage,
   PutAiAllowanceAccrualRuleInput,
 } from "../model/ai-allowance-accrual";
+import { isAccrualSource } from "../model/ai-allowance-accrual";
 
 export const aiAllowanceAccrualRepository = {
   async listRules(
@@ -96,9 +97,7 @@ function parseReceiptPage(value: unknown): AiAllowanceAccrualReceiptPage {
       text(rule.name) &&
       eventLog &&
       text(eventLog.id) &&
-      (eventLog.source === "SERVER" ||
-        eventLog.source === "FRONTEND" ||
-        eventLog.source === "INTERNAL") &&
+      isAccrualSource(eventLog.source) &&
       iso(eventLog.occurredAt) &&
       eventKey &&
       text(eventKey.code) &&
@@ -171,10 +170,7 @@ function parseRevision(
     !lifecycle(s.lifecycle) ||
     !text(s.eventDefinitionKeyId) ||
     !Array.isArray(s.allowedSources) ||
-    s.allowedSources.some(
-      (source) =>
-        source !== "SERVER" && source !== "FRONTEND" && source !== "INTERNAL",
-    ) ||
+    s.allowedSources.some((source) => !isAccrualSource(source)) ||
     !text(s.timezone) ||
     !rewardUsd ||
     !userCap ||

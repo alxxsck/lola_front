@@ -10,6 +10,7 @@ import {
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceAccrualRepository } from "../api/ai-allowance-accrual-repository";
 import { parseAllowanceUsd } from "../model/ai-allowance";
+import { ACCRUAL_SOURCES } from "../model/ai-allowance-accrual";
 import type {
   AccrualLifecycle,
   AccrualSource,
@@ -377,9 +378,7 @@ function validTimezone(value: string): boolean {
       </label>
       <fieldset>
         <legend>Источники</legend>
-        <label
-          v-for="source in ['SERVER', 'FRONTEND', 'INTERNAL'] as const"
-          :key="source"
+        <label v-for="source in ACCRUAL_SOURCES" :key="source"
           ><input v-model="sources" type="checkbox" :value="source" />
           {{ source }}</label
         >

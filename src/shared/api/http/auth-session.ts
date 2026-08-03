@@ -7,6 +7,8 @@ import {
 const PROJECT_KEY = "lola-cms-selected-project-v1";
 const TRANSLATION_JOB_PREFIX = "lola:translation-jobs:";
 const REPLY_TRANSLATION_DRAFT_PREFIX = "lola:reply-translation-draft:";
+const AMPLITUDE_PENDING_TEST_PREFIX = "lola:amplitude-pending-tests:";
+const AMPLITUDE_UNRESOLVED_SECRET_PREFIX = "lola:amplitude-unresolved-secret:";
 const AUTH_CHANNEL_NAME = "lola-cms-auth-session-v1";
 
 function browserChannel(): AccessTokenChannel | undefined {
@@ -67,7 +69,9 @@ function clearTabSessionStorage(): void {
     const key = sessionStorage.key(index);
     if (
       key?.startsWith(TRANSLATION_JOB_PREFIX) ||
-      key?.startsWith(REPLY_TRANSLATION_DRAFT_PREFIX)
+      key?.startsWith(REPLY_TRANSLATION_DRAFT_PREFIX) ||
+      key?.startsWith(AMPLITUDE_PENDING_TEST_PREFIX) ||
+      key?.startsWith(AMPLITUDE_UNRESOLVED_SECRET_PREFIX)
     ) {
       sessionStorage.removeItem(key);
     }

@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import "@/app/styles/project-integrations.css";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
+import AmplitudeConnectionsCard from "@/features/integration-connections/AmplitudeConnectionsCard.vue";
 import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
 import OperationalTelegramCard from "@/features/notification-destinations/OperationalTelegramCard.vue";
 import ProductTelegramCard from "@/features/telegram-product-installations/ProductTelegramCard.vue";
@@ -653,6 +654,12 @@ onMounted(load);
       :can-read="canReadProductTelegram"
       :can-manage="canManageProductTelegram"
       @fresh-login-requested="requireFreshProductTelegramLogin"
+    />
+    <AmplitudeConnectionsCard
+      v-if="canReadProductTelegram"
+      :project-id="projectId"
+      :can-read="canReadProductTelegram"
+      :can-manage="canManageProductTelegram"
     />
   </main>
 </template>

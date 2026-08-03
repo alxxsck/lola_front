@@ -5,13 +5,18 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminConversationMessageResponseDtoAuthor } from "./adminConversationMessageResponseDtoAuthor";
 import type { MessageRole } from "./messageRole";
 import type { MessageStatus } from "./messageStatus";
 import type { AdminConversationMessageTranslationResponseDto } from "./adminConversationMessageTranslationResponseDto";
 
 export interface AdminConversationMessageResponseDto {
+  /** @nullable */
+  author: AdminConversationMessageResponseDtoAuthor;
   createdAt: string;
   id: string;
+  /** @minimum 1 */
+  ordinal: number;
   role: MessageRole;
   status: MessageStatus;
   text: string;

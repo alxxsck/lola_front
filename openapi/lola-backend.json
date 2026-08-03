@@ -474,6 +474,15 @@
       },
       "AdminConversationMessageResponseDto": {
         "properties": {
+          "author": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminMessageAuthorResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -481,6 +490,10 @@
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "ordinal": {
+            "minimum": 1,
+            "type": "integer"
           },
           "role": {
             "allOf": [
@@ -517,6 +530,8 @@
           "role",
           "status",
           "text",
+          "ordinal",
+          "author",
           "createdAt",
           "updatedAt"
         ],
@@ -774,6 +789,38 @@
         ],
         "type": "object"
       },
+      "AdminMessageAuthorResponseDto": {
+        "properties": {
+          "avatarUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "cmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CMS_USER",
+              "SYSTEM",
+              "BREAK_GLASS",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "cmsUserId",
+          "displayName",
+          "avatarUrl"
+        ],
+        "type": "object"
+      },
       "AdminMessageDeliveryResponseDto": {
         "properties": {
           "commandIds": {
@@ -888,7 +935,8 @@
               "REPLY_TRANSLATION_DRAFT_CASE_CONTEXT_MISMATCH",
               "REPLY_TRANSLATION_DRAFT_NOT_READY",
               "REPLY_TRANSLATION_DRAFT_CONSUME_CONFLICT",
-              "TRANSLATION_ACTOR_INVALID"
+              "TRANSLATION_ACTOR_INVALID",
+              "ADMIN_MESSAGE_AUTHOR_NOT_FOUND"
             ],
             "type": "string"
           },
@@ -904,8 +952,124 @@
         ],
         "type": "object"
       },
+      "AdminProjectConversationEndUserResponseDto": {
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "externalId"
+        ],
+        "type": "object"
+      },
+      "AdminProjectConversationResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currentInteractionSessionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/AdminProjectConversationEndUserResponseDto"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "lastMessage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminConversationPreviewMessageResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "messageCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ThreadStatus"
+              }
+            ]
+          },
+          "title": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "endUserId",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "endUser",
+          "messageCount",
+          "lastMessage",
+          "isCurrent",
+          "currentInteractionSessionCount"
+        ],
+        "type": "object"
+      },
+      "AdminProjectConversationsPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminProjectConversationResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "AdminStoredMessageResponseDto": {
         "properties": {
+          "author": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminMessageAuthorResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "clientMessageId": {
             "nullable": true,
             "type": "string"
@@ -943,6 +1107,10 @@
           "model": {
             "nullable": true,
             "type": "string"
+          },
+          "ordinal": {
+            "minimum": 1,
+            "type": "integer"
           },
           "outputTokens": {
             "nullable": true,
@@ -989,6 +1157,8 @@
           "text",
           "commands",
           "metadata",
+          "ordinal",
+          "author",
           "createdAt",
           "updatedAt",
           "thread"
@@ -11224,6 +11394,41 @@
         ],
         "type": "object"
       },
+      "CreateAmplitudeConnectionDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "projectApiKey": {
+            "description": "Write-only Amplitude Project API Key. It is encrypted and never returned.",
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[a-fA-F0-9]{32}$",
+            "type": "string",
+            "writeOnly": true
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "remoteProjectLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "region",
+          "projectApiKey"
+        ],
+        "type": "object"
+      },
       "CreateConversationDto": {
         "properties": {
           "title": {
@@ -16976,7 +17181,8 @@
         "enum": [
           "SERVER",
           "FRONTEND",
-          "INTERNAL"
+          "INTERNAL",
+          "INTEGRATION"
         ],
         "type": "string"
       },
@@ -18238,6 +18444,228 @@
           "fields",
           "examples",
           "admission"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionCredentialResponseDto": {
+        "properties": {
+          "fingerprint": {
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "rotatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "testedRevision": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "fingerprint",
+          "revision",
+          "testedRevision",
+          "rotatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionResponseDto": {
+        "properties": {
+          "credential": {
+            "$ref": "#/components/schemas/IntegrationConnectionCredentialResponseDto"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "health": {
+            "enum": [
+              "UNKNOWN",
+              "HEALTHY",
+              "DEGRADED",
+              "FAILING"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inboundEnabled": {
+            "type": "boolean"
+          },
+          "lastSuccessfulTestAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastTestErrorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "outboundEnabled": {
+            "type": "boolean"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE"
+            ],
+            "type": "string"
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "remoteProjectLabel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "provider",
+          "displayName",
+          "region",
+          "remoteProjectLabel",
+          "inboundEnabled",
+          "outboundEnabled",
+          "lifecycle",
+          "health",
+          "credential",
+          "lastSuccessfulTestAt",
+          "lastTestErrorCode",
+          "version",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionTestResponseDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connectionResultVersion": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "credentialRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "RETRY_WAIT",
+              "SUCCEEDED",
+              "FAILED",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "connectionId",
+          "credentialRevision",
+          "status",
+          "attemptCount",
+          "errorCode",
+          "connectionResultVersion",
+          "createdAt",
+          "startedAt",
+          "finishedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationConnectionVersionDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion"
         ],
         "type": "object"
       },
@@ -24171,7 +24599,8 @@
               "enum": [
                 "SERVER",
                 "FRONTEND",
-                "INTERNAL"
+                "INTERNAL",
+                "INTEGRATION"
               ],
               "type": "string"
             },
@@ -25015,6 +25444,26 @@
         },
         "required": [
           "expectedCurrentRevisionId"
+        ],
+        "type": "object"
+      },
+      "RotateAmplitudeCredentialDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "projectApiKey": {
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[a-fA-F0-9]{32}$",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "projectApiKey"
         ],
         "type": "object"
       },
@@ -27489,7 +27938,8 @@
             "enum": [
               "SERVER",
               "FRONTEND",
-              "INTERNAL"
+              "INTERNAL",
+              "INTEGRATION"
             ],
             "type": "string"
           }
@@ -31777,6 +32227,29 @@
           "expectedVersion",
           "enabled",
           "dailyRunLimit"
+        ],
+        "type": "object"
+      },
+      "UpdateAmplitudeConnectionDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "remoteProjectLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "displayName"
         ],
         "type": "object"
       },
@@ -46025,6 +46498,556 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/integration-connections": {
+      "get": {
+        "operationId": "IntegrationConnection_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}": {
+      "get": {
+        "operationId": "IntegrationConnection_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/activate": {
+      "post": {
+        "operationId": "IntegrationConnection_activate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationConnectionVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/amplitude": {
+      "patch": {
+        "operationId": "IntegrationConnection_updateAmplitude",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAmplitudeConnectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/credentials/rotate": {
+      "post": {
+        "operationId": "IntegrationConnection_rotate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateAmplitudeCredentialDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/disable": {
+      "post": {
+        "operationId": "IntegrationConnection_disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationConnectionVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/tests": {
+      "post": {
+        "operationId": "IntegrationConnection_test",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationConnectionVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/tests/{testId}": {
+      "get": {
+        "operationId": "IntegrationConnection_getTest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "testId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionTestResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/amplitude": {
+      "post": {
+        "operationId": "IntegrationConnection_createAmplitude",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmplitudeConnectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/knowledge/documents": {
       "get": {
         "operationId": "Knowledge_list",
@@ -50758,6 +51781,85 @@
         ],
         "x-iam-permission": {
           "code": "project.settings.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/conversations": {
+      "get": {
+        "operationId": "AdminProjectConversations_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ConversationStatus"
+            }
+          },
+          {
+            "description": "Opaque cursor returned by the previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 1024,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Optional internal End User id filter.",
+            "in": "query",
+            "name": "endUserId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProjectConversationsPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin support conversations"
+        ],
+        "x-iam-permission": {
+          "code": "project.conversations.read",
           "scope": "PROJECT"
         }
       }
