@@ -12,6 +12,12 @@ export interface PagedSearchPage {
   nextCursor: string | null;
 }
 
+export interface PagedSearchRequest {
+  query: string;
+  cursor?: string;
+  limit: number;
+}
+
 const props = withDefaults(
   defineProps<{
     modelValue: string;
@@ -22,11 +28,7 @@ const props = withDefaults(
     disabled?: boolean;
     reloadKey?: string;
     selectedOption?: PagedSearchOption;
-    load: (input: {
-      query: string;
-      cursor?: string;
-      limit: number;
-    }) => Promise<PagedSearchPage>;
+    load: (input: PagedSearchRequest) => Promise<PagedSearchPage>;
   }>(),
   {
     searchPlaceholder: "Поиск по названию или коду",
@@ -45,6 +47,7 @@ const emit = defineEmits<{
 const open = ref(false);
 const query = ref("");
 const options = ref<PagedSearchOption[]>([]);
+const chosenOption = ref<PagedSearchOption>();
 const nextCursor = ref<string | null>(null);
 const loading = ref(false);
 const error = ref("");
@@ -55,9 +58,19 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined;
 const selected = computed(
   () =>
     options.value.find((option) => option.value === props.modelValue) ??
+    (chosenOption.value?.value === props.modelValue
+      ? chosenOption.value
+      : undefined) ??
     (props.selectedOption?.value === props.modelValue
       ? props.selectedOption
       : undefined),
+);
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (chosenOption.value?.value !== value) chosenOption.value = undefined;
+  },
 );
 
 watch(
@@ -68,6 +81,7 @@ watch(
     open.value = false;
     query.value = "";
     options.value = [];
+    chosenOption.value = undefined;
     nextCursor.value = null;
     loading.value = false;
     error.value = "";
@@ -87,6 +101,8 @@ function toggle(): void {
 }
 
 function scheduleSearch(): void {
+  requestGeneration += 1;
+  loading.value = false;
   clearSearchTimer();
   searchTimer = setTimeout(() => void loadPage(false), 250);
 }
@@ -130,6 +146,7 @@ async function loadPage(append: boolean): Promise<void> {
 }
 
 function choose(option: PagedSearchOption): void {
+  chosenOption.value = option;
   emit("update:modelValue", option.value);
   emit("select", option);
   open.value = false;

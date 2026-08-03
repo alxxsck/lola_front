@@ -11,6 +11,7 @@ import {
   type DecimalString,
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import { allowanceCostQualityLabel } from "../model/ai-allowance-presentation";
 import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
 import AiAllowanceReconciliationQueue from "./AiAllowanceReconciliationQueue.vue";
 import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
@@ -305,21 +306,10 @@ function entryTypeLabel(value: AiAllowanceJournalEntry["entryType"]): string {
     }[value] ?? value
   );
 }
-function qualityLabel(value: AiAllowanceJournalEntry["costQuality"]): string {
-  if (!value) return "стоимость не указана";
-  return {
-    EXACT_PROVIDER_COST: "точная стоимость провайдера",
-    EXACT_PROVIDER_UNITS: "расчёт по единицам провайдера",
-    MEASURED_ESTIMATE: "расчётная стоимость",
-    RESERVED_ESTIMATE: "предварительная оценка",
-    UNKNOWN: "стоимость уточняется",
-  }[value];
-}
 function actorLabel(value: string): string {
   return (
-    { SYSTEM: "Система", USER: "Пользователь", CMS_USER: "Сотрудник" }[
-      value
-    ] ?? value
+    { SYSTEM: "Система", USER: "Пользователь", CMS_USER: "Сотрудник" }[value] ??
+    "Служебный источник"
   );
 }
 function iso(value: string): string | undefined {
@@ -343,15 +333,15 @@ function message(cause: unknown, fallback: string): string {
 }
 function provenance(item: AiAllowanceJournalPage["items"][number]): string {
   return item.usageRecordId
-    ? `usage ${item.usageRecordId}`
+    ? `расход ${item.usageRecordId}`
     : item.reservationId
-      ? `reservation ${item.reservationId}`
+      ? `резерв ${item.reservationId}`
       : item.grantId
-        ? `grant ${item.grantId}`
+        ? `начисление ${item.grantId}`
         : item.periodId
-          ? `period ${item.periodId}`
+          ? `расчётный период ${item.periodId}`
           : item.correctsEntryId
-            ? `corrects ${item.correctsEntryId}`
+            ? `исправляет запись ${item.correctsEntryId}`
             : "—";
 }
 </script>
@@ -370,7 +360,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
       @fresh-login="emit('fresh-login')"
     />
     <Message v-if="!canRead" severity="warn" :closable="false"
-      >Нет права <code>project.ai_allowance.read</code>. Журнал скрыт.</Message
+      >У вас нет доступа к истории лимита.</Message
     >
     <template v-else>
       <header>
@@ -390,7 +380,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
           :disabled="selectingUser"
         />
         <label v-else for="allowance-user-id"
-          >ID пользователя в вашем продукте или UUID<input
+          >ID пользователя в вашем продукте<input
             id="allowance-user-id"
             v-model="input"
             autocomplete="off"
@@ -459,7 +449,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
                 <span>{{ entryTypeLabel(item.entryType) }}</span
                 ><small
                   >{{ date(item.occurredAt) }} ·
-                  {{ qualityLabel(item.costQuality) }}</small
+                  {{ allowanceCostQualityLabel(item.costQuality) }}</small
                 >
               </td>
               <td>{{ delta(item.deltaAvailableUsd) }}</td>
@@ -528,8 +518,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
         перевод пользователю.
       </Message>
       <p v-if="correctionTarget">
-        Исправляется запись <strong>{{ correctionTarget.id }}</strong> · версия
-        баланса {{ correctionAccountVersion }}
+        Выбрана запись от {{ date(correctionTarget.occurredAt) }}.
       </p>
       <label for="correction-delta">
         Изменение доступного лимита, USD
@@ -545,7 +534,7 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
         v-if="!correctionDelta.trim().startsWith('-')"
         for="correction-expiry"
       >
-        Положительная дельта истекает
+        Срок действия добавленного лимита
         <input
           id="correction-expiry"
           v-model="correctionExpiresAt"
@@ -563,15 +552,6 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
           rows="4"
           maxlength="500"
         />
-      </label>
-      <label for="correction-idempotency">
-        Ключ защиты от повторной отправки
-        <input
-          id="correction-idempotency"
-          :value="correctionIdempotencyKey"
-          readonly
-        />
-        <small>Ключ сохраняется для безопасного повтора команды.</small>
       </label>
       <small v-if="correctionError" class="reconcile-error" role="alert">{{
         correctionError

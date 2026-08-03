@@ -93,4 +93,38 @@ describe("PagedSearchSelect", () => {
     expect(wrapper.text()).toContain("Новый результат");
     expect(wrapper.text()).not.toContain("Устаревший результат");
   });
+
+  it("keeps the selected label when a later search returns other options", async () => {
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce({
+        items: [{ value: "event-1", label: "Пополнение" }],
+        nextCursor: null,
+      })
+      .mockResolvedValueOnce({
+        items: [{ value: "event-2", label: "Регистрация" }],
+        nextCursor: null,
+      });
+    const wrapper = mount(PagedSearchSelect, {
+      props: {
+        modelValue: "",
+        label: "Событие",
+        placeholder: "Выберите событие",
+        load,
+      },
+    });
+
+    await wrapper.get('[data-testid="paged-search-trigger"]').trigger("click");
+    await flushPromises();
+    await wrapper.get('[role="option"]').trigger("click");
+    await wrapper.setProps({ modelValue: "event-1" });
+    await wrapper.get('[data-testid="paged-search-trigger"]').trigger("click");
+    await wrapper.get('input[type="search"]').setValue("регистрация");
+    await vi.advanceTimersByTimeAsync(250);
+    await flushPromises();
+
+    expect(
+      wrapper.get('[data-testid="paged-search-trigger"]').text(),
+    ).toContain("Пополнение");
+  });
 });

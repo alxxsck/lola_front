@@ -1359,9 +1359,9 @@ describe("allowance admin panels", () => {
     const form = wrapper.get("form.allowance-form");
 
     expect(form.findComponent({ name: "SegmentSelect" }).exists()).toBe(true);
-    expect(
-      form.find('input[placeholder*="xxxxxxxx-xxxx"]').exists(),
-    ).toBe(false);
+    expect(form.find('input[placeholder*="xxxxxxxx-xxxx"]').exists()).toBe(
+      false,
+    );
     expect(wrapper.text()).toContain("Выберите опубликованный сегмент");
   });
 
@@ -1481,7 +1481,7 @@ describe("allowance admin panels", () => {
 
     await form.get('input[inputmode="decimal"]').setValue("1.000000000001");
     await form.get('input[type="datetime-local"]').setValue("2099-08-03T10:00");
-    const key = form.get("input[readonly]").element.getAttribute("value");
+    expect(form.find("input[readonly]").exists()).toBe(false);
     await form.trigger("submit");
     await flushPromises();
     expect(mocks.correct).toHaveBeenCalledWith(
@@ -1494,7 +1494,7 @@ describe("allowance admin panels", () => {
         expiresAt: new Date("2099-08-03T10:00").toISOString(),
         reason: "Correct audited allowance entry",
       },
-      key,
+      expect.any(String),
     );
     expect(wrapper.emitted("changed")).toEqual([[]]);
   });

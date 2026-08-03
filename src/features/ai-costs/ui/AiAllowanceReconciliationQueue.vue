@@ -6,6 +6,10 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { formatDecimalMoney } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import {
+  allowanceCategoryLabel,
+  allowanceCostQualityLabel,
+} from "../model/ai-allowance-presentation";
 import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
 import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 import type {
@@ -203,20 +207,6 @@ function statusLabel(value: AiAllowanceReconciliationItem["status"]): string {
     : "Сумма ожидает уточнения";
 }
 
-function qualityLabel(
-  value: AiAllowanceReconciliationItem["costQuality"],
-): string {
-  return (
-    {
-      EXACT_PROVIDER_COST: "точная стоимость провайдера",
-      EXACT_PROVIDER_UNITS: "расчёт по единицам провайдера",
-      MEASURED_ESTIMATE: "расчётная стоимость",
-      RESERVED_ESTIMATE: "предварительная оценка",
-      UNKNOWN: "стоимость уточняется",
-    } as Record<string, string>
-  )[value] ?? value;
-}
-
 function commandKey(): string {
   return globalThis.crypto?.randomUUID?.() ?? `attempt-resolve-${Date.now()}`;
 }
@@ -279,7 +269,7 @@ function message(cause: unknown, fallback: string): string {
       <div v-else-if="visiblePage?.items.length" class="queue-table">
         <table>
           <caption>
-            Незавершённые попытки — сначала самые старые
+            Незавершённые операции — сначала самые старые
           </caption>
           <thead>
             <tr>
@@ -298,18 +288,17 @@ function message(cause: unknown, fallback: string): string {
               </td>
               <td>
                 <span>{{ item.endUserId }}</span
-                ><small>{{ item.category }}</small>
+                ><small>{{ allowanceCategoryLabel(item.category) }}</small>
               </td>
               <td>
                 <span>{{ money(item.reservedUsd) }}</span>
                 <small>уточняется {{ money(item.unknownHeldUsd) }}</small>
               </td>
               <td>
-                <span>{{ item.outcomeReason ?? "Причина пока не указана" }}</span>
-                <small
-                  >{{ qualityLabel(item.costQuality) }} ·
-                  {{ item.modelAttemptId }}</small
-                >
+                <span>{{
+                  item.outcomeReason ?? "Причина пока не указана"
+                }}</span>
+                <small>{{ allowanceCostQualityLabel(item.costQuality) }}</small>
               </td>
               <td>
                 <Button
@@ -363,10 +352,7 @@ function message(cause: unknown, fallback: string): string {
         Служебная операция изменит баланс пользователя. Завершить можно только
         операцию из этой очереди.
       </Message>
-      <p v-if="selected">
-        <strong>{{ selected.modelAttemptId }}</strong> ·
-        {{ selected.endUserId }}
-      </p>
+      <p v-if="selected">Пользователь: {{ selected.endUserId }}</p>
       <label for="attempt-resolution"
         >Результат
         <select id="attempt-resolution" v-model="resolution">
@@ -395,10 +381,6 @@ function message(cause: unknown, fallback: string): string {
             ? "Подтверждаю, что списание не требуется"
             : "Подтверждаю проверку данных об использовании и стоимости"
         }}
-      </label>
-      <label for="attempt-idempotency"
-        >Ключ защиты от повторной отправки
-        <input id="attempt-idempotency" :value="idempotencyKey" readonly />
       </label>
       <small v-if="formError" class="form-error" role="alert">{{
         formError

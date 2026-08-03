@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import PagedSearchSelect, {
   type PagedSearchPage,
+  type PagedSearchRequest,
 } from "@/shared/ui/PagedSearchSelect.vue";
 import { scenarioAuthoringRepository } from "@/shared/api/repository/scenario-authoring/scenario-authoring-repository";
 
@@ -14,11 +15,7 @@ const emit = defineEmits<{
   "update:modelValue": [value: string];
 }>();
 
-async function load(input: {
-  query: string;
-  cursor?: string;
-  limit: number;
-}): Promise<PagedSearchPage> {
+async function load(input: PagedSearchRequest): Promise<PagedSearchPage> {
   const response = await scenarioAuthoringRepository.searchSegments(
     props.projectId,
     {
@@ -29,11 +26,13 @@ async function load(input: {
     },
   );
   return {
-    items: response.items.map((segment) => ({
-      value: segment.segmentId,
-      label: segment.name,
-      description: segment.key,
-    })),
+    items: response.items
+      .filter((segment) => segment.currentRevision !== null)
+      .map((segment) => ({
+        value: segment.segmentId,
+        label: segment.name,
+        description: segment.key,
+      })),
     nextCursor: response.nextCursor ?? null,
   };
 }

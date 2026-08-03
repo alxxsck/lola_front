@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { ref, watch } from "vue";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import { repository } from "@/shared/api/repository";
 import { isMockMode } from "@/shared/config/data-mode";
+import { paginateByCursor } from "@/shared/lib/paged-search";
 import PagedSearchSelect, {
+  type PagedSearchOption,
   type PagedSearchPage,
+  type PagedSearchRequest,
 } from "@/shared/ui/PagedSearchSelect.vue";
 
 const props = defineProps<{
@@ -15,12 +19,25 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:modelValue": [value: string];
 }>();
+const selectedOption = ref<PagedSearchOption>();
 
-async function load(input: {
-  query: string;
-  cursor?: string;
-  limit: number;
-}): Promise<PagedSearchPage> {
+watch(
+  () => [props.projectId, props.modelValue] as const,
+  async ([projectId, modelValue]) => {
+    selectedOption.value = undefined;
+    if (!projectId || !modelValue) return;
+    try {
+      const option = await loadSelectedOption(projectId, modelValue);
+      if (projectId === props.projectId && modelValue === props.modelValue)
+        selectedOption.value = option;
+    } catch {
+      // The selected user can still be changed through the searchable list.
+    }
+  },
+  { immediate: true },
+);
+
+async function load(input: PagedSearchRequest): Promise<PagedSearchPage> {
   if (isMockMode) return loadMock(input);
   const response = await endUserProfileRepository.list(props.projectId, {
     limit: input.limit,
@@ -37,11 +54,7 @@ async function load(input: {
   };
 }
 
-async function loadMock(input: {
-  query: string;
-  cursor?: string;
-  limit: number;
-}): Promise<PagedSearchPage> {
+async function loadMock(input: PagedSearchRequest): Promise<PagedSearchPage> {
   const response = await repository.getUsersPage(props.projectId, {
     limit: 100,
   });
@@ -50,22 +63,37 @@ async function loadMock(input: {
     (user) =>
       !query || user.externalId.toLocaleLowerCase("ru-RU").includes(query),
   );
-  const offset = cursorOffset(input.cursor);
-  const page = filtered.slice(offset, offset + input.limit);
-  const nextOffset = offset + page.length;
+  const page = paginateByCursor(filtered, input.cursor, input.limit);
   return {
-    items: page.map((user) => ({
+    items: page.items.map((user) => ({
       value: user.id,
       label: user.externalId,
       description: user.locale ?? undefined,
     })),
-    nextCursor: nextOffset < filtered.length ? String(nextOffset) : null,
+    nextCursor: page.nextCursor,
   };
 }
 
-function cursorOffset(cursor: string | undefined): number {
-  const offset = Number(cursor);
-  return Number.isSafeInteger(offset) && offset >= 0 ? offset : 0;
+async function loadSelectedOption(
+  projectId: string,
+  endUserId: string,
+): Promise<PagedSearchOption | undefined> {
+  if (isMockMode) {
+    const response = await repository.getUsersPage(projectId, { limit: 100 });
+    const user = response.items.find((candidate) => candidate.id === endUserId);
+    return user
+      ? {
+          value: user.id,
+          label: user.externalId,
+          description: user.locale ?? undefined,
+        }
+      : undefined;
+  }
+  const user = await endUserProfileRepository.profile(projectId, endUserId);
+  return {
+    value: endUserId,
+    label: user.externalUserId,
+  };
 }
 </script>
 
@@ -74,6 +102,7 @@ function cursorOffset(cursor: string | undefined): number {
     :model-value="modelValue"
     :reload-key="projectId"
     :load="load"
+    :selected-option="selectedOption"
     :disabled="disabled"
     label="ID пользователя в вашем продукте"
     placeholder="Найдите и выберите пользователя"

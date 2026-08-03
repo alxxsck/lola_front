@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { eventCatalogRepository } from "@/shared/api/repository/event-catalog";
 import type { EventCatalogDefinition } from "@/shared/api/repository/event-catalog";
+import { paginateByCursor } from "@/shared/lib/paged-search";
 import PagedSearchSelect, {
   type PagedSearchOption,
   type PagedSearchPage,
+  type PagedSearchRequest,
 } from "@/shared/ui/PagedSearchSelect.vue";
 
 export interface EventDefinitionSelection {
@@ -26,37 +28,73 @@ const emit = defineEmits<{
 }>();
 
 const definitions = ref<EventCatalogDefinition[] | null>(null);
+const selectedOption = ref<PagedSearchOption>();
 let loadedProjectId = "";
+let loadPromise: Promise<EventCatalogDefinition[]> | null = null;
 
-async function load(input: {
-  query: string;
-  cursor?: string;
-  limit: number;
-}): Promise<PagedSearchPage> {
-  if (!definitions.value || loadedProjectId !== props.projectId) {
-    loadedProjectId = props.projectId;
-    definitions.value = await eventCatalogRepository.listDefinitions(
-      props.projectId,
-      "ACTIVE",
-    );
-  }
+watch(
+  () => [props.projectId, props.modelValue] as const,
+  async ([projectId, modelValue]) => {
+    selectedOption.value = undefined;
+    if (!projectId || !modelValue) return;
+    try {
+      const events = await ensureDefinitions(projectId);
+      if (projectId !== props.projectId || modelValue !== props.modelValue)
+        return;
+      const event = events.find(
+        (candidate) => candidate.definitionKeyId === modelValue,
+      );
+      if (event) selectedOption.value = toOption(event);
+    } catch {
+      // The selected event can still be recovered by reopening the list.
+    }
+  },
+  { immediate: true },
+);
+
+async function load(input: PagedSearchRequest): Promise<PagedSearchPage> {
+  const events = await ensureDefinitions(props.projectId);
   const query = input.query.toLocaleLowerCase("ru-RU");
-  const filtered = definitions.value.filter(
+  const filtered = events.filter(
     (event) =>
       !query ||
       event.metadata.name.toLocaleLowerCase("ru-RU").includes(query) ||
       event.code.toLocaleLowerCase("ru-RU").includes(query),
   );
-  const offset = cursorOffset(input.cursor);
-  const page = filtered.slice(offset, offset + input.limit);
-  const nextOffset = offset + page.length;
+  const page = paginateByCursor(filtered, input.cursor, input.limit);
   return {
-    items: page.map((event) => ({
-      value: event.definitionKeyId,
-      label: event.metadata.name,
-      description: event.code,
-    })),
-    nextCursor: nextOffset < filtered.length ? String(nextOffset) : null,
+    items: page.items.map(toOption),
+    nextCursor: page.nextCursor,
+  };
+}
+
+async function ensureDefinitions(
+  projectId: string,
+): Promise<EventCatalogDefinition[]> {
+  if (loadedProjectId !== projectId) {
+    loadedProjectId = projectId;
+    definitions.value = null;
+    loadPromise = eventCatalogRepository.listDefinitions(projectId, "ACTIVE");
+  }
+  if (!definitions.value) {
+    loadPromise ??= eventCatalogRepository.listDefinitions(projectId, "ACTIVE");
+    const request = loadPromise;
+    try {
+      const events = await request;
+      if (loadedProjectId === projectId) definitions.value = events;
+      return events;
+    } finally {
+      if (loadPromise === request) loadPromise = null;
+    }
+  }
+  return definitions.value;
+}
+
+function toOption(event: EventCatalogDefinition): PagedSearchOption {
+  return {
+    value: event.definitionKeyId,
+    label: event.metadata.name,
+    description: event.code,
   };
 }
 
@@ -72,11 +110,6 @@ function select(option: PagedSearchOption): void {
     code: event.code,
   });
 }
-
-function cursorOffset(cursor: string | undefined): number {
-  const offset = Number(cursor);
-  return Number.isSafeInteger(offset) && offset >= 0 ? offset : 0;
-}
 </script>
 
 <template>
@@ -84,6 +117,7 @@ function cursorOffset(cursor: string | undefined): number {
     :model-value="modelValue"
     :reload-key="projectId"
     :load="load"
+    :selected-option="selectedOption"
     :disabled="disabled"
     label="Событие"
     placeholder="Выберите событие"

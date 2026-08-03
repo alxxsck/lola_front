@@ -112,7 +112,7 @@ describe("AiAllowanceReconciliationQueue", () => {
     await wrapper
       .find("textarea")
       .setValue("Verified provider outcome evidence");
-    const key = wrapper.find("input[readonly]").element.getAttribute("value");
+    expect(wrapper.find("input[readonly]").exists()).toBe(false);
     await wrapper.find("form.resolve-form").trigger("submit");
     expect(wrapper.text()).toContain("Подтвердите проверку данных");
     expect(mocks.resolve).not.toHaveBeenCalled();
@@ -127,7 +127,7 @@ describe("AiAllowanceReconciliationQueue", () => {
         resolution: "SETTLE_FROM_USAGE",
         reason: "Verified provider outcome evidence",
       },
-      key,
+      expect.any(String),
     );
   });
 

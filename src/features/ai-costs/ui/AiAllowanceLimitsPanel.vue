@@ -26,6 +26,7 @@ import {
   type DecimalString,
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import { allowanceCategoryLabel } from "../model/ai-allowance-presentation";
 import AiAllowanceAccrualRulesPanel from "./AiAllowanceAccrualRulesPanel.vue";
 import AiAllowanceAccrualReceiptsPanel from "./AiAllowanceAccrualReceiptsPanel.vue";
 import AiAllowanceDirectGrantPanel from "./AiAllowanceDirectGrantPanel.vue";
@@ -51,17 +52,6 @@ const SPONSORED_CATEGORIES = new Set<AiAllowanceCategory>([
   "CMS_AGENT",
   "PROJECT_OVERHEAD",
 ]);
-const CATEGORY_LABELS: Record<AiAllowanceCategory, string> = {
-  CHAT: "Чат с Lola",
-  VOICE: "Голосовой чат",
-  SPEECH: "Озвучивание текста",
-  MEMORY: "Память Lola",
-  AI_REVIEW: "Проверка сообщений",
-  AI_ANALYSIS: "AI-анализ",
-  CMS_AGENT: "AI-агент CMS",
-  CASE_INTELLIGENCE: "Анализ обращений",
-  PROJECT_OVERHEAD: "Системные AI-операции",
-};
 const CATEGORY_DESCRIPTIONS: Record<AiAllowanceCategory, string> = {
   CHAT: "Расходы обычного текстового диалога с Lola.",
   VOICE: "Работа голосового режима разговора с Lola.",
@@ -335,7 +325,7 @@ const categoryOptions = computed(() =>
           (rule) => rule.category === category,
         ),
     )
-    .map((value) => ({ value, label: CATEGORY_LABELS[value] })),
+    .map((value) => ({ value, label: allowanceCategoryLabel(value) })),
 );
 const hardUnavailableReason = computed(() =>
   policy.value?.runtimeGates.emergencyDisabled
@@ -1971,7 +1961,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
                 :options="[
                   {
                     value: rule.category,
-                    label: CATEGORY_LABELS[rule.category],
+                    label: allowanceCategoryLabel(rule.category),
                   },
                   ...categoryOptions,
                 ]"
@@ -2082,7 +2072,8 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           >Группа<select v-model="cohortScope">
             <option value="SEGMENT">Сегмент</option>
             <option value="LEVEL">Уровень</option>
-          </select></label>
+          </select></label
+        >
         <SegmentSelect
           v-if="cohortScope === 'SEGMENT'"
           v-model="cohortId"
