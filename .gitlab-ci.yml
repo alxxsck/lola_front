@@ -19,8 +19,6 @@ variables:
   BUILDKIT_IMAGE: 'moby/buildkit:v0.30.0-rootless'
   npm_config_cache: '$CI_PROJECT_DIR/.npm'
   VITE_DATA_MODE: 'api'
-  # Same-origin: relative API base, no absolute backend URL baked in.
-  VITE_API_BASE_URL: '/api/v1'
   APP_IMAGE_TAG: '$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA'
   BUILDKIT_CACHE_REF: '$CI_REGISTRY_IMAGE/cache:buildkit-$CI_COMMIT_REF_SLUG'
   BUILDKIT_DEFAULT_CACHE_REF: '$CI_REGISTRY_IMAGE/cache:buildkit-$CI_DEFAULT_BRANCH'
@@ -55,6 +53,10 @@ build:image:
   timeout: 30m
   variables:
     BUILDKITD_FLAGS: '--oci-worker-no-process-sandbox'
+    # Job-scoped: must NOT be a top-level var — it would land in the test job's
+    # env, flip import.meta.env.VITE_API_BASE_URL to /api/v1, and break the
+    # realtime-client test (which expects the http://localhost:3000 default).
+    VITE_API_BASE_URL: '/api/v1'
   needs:
     - job: quality
       artifacts: false
