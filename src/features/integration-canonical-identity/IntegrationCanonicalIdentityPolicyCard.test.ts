@@ -142,11 +142,13 @@ describe("IntegrationCanonicalIdentityPolicyCard", () => {
     const wrapper = mountCard({ canManage: false });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Canonical identity policy");
-    expect(wrapper.text()).toContain("Ревизия 4");
-    expect(wrapper.text()).toContain("Активна в runtime");
+    expect(wrapper.text()).toContain("Объединение одинаковых событий");
+    expect(wrapper.text()).toContain("версия 4");
+    expect(wrapper.text()).toContain("Правило действует");
     expect(wrapper.text()).toContain("transaction_id");
-    expect(wrapper.text()).toContain("trim + lowercase");
+    expect(wrapper.text()).toContain(
+      "пробелы удаляются, сравнение в нижнем регистре",
+    );
     expect(
       wrapper.find('button[data-action="preview-canonical-policy"]').exists(),
     ).toBe(false);
@@ -192,10 +194,10 @@ describe("IntegrationCanonicalIdentityPolicyCard", () => {
       ],
     });
     expect(wrapper.text()).toContain(
-      "Одинаковый ключ с разным payload будет конфликтом",
+      "Lola зафиксирует конфликт и не станет объединять события автоматически",
     );
     expect(wrapper.text()).toContain(
-      "Повтор одного canonical key будет принят только один раз",
+      "Одинаковый идентификатор и одинаковые данные будут приняты один раз",
     );
 
     await wrapper
@@ -250,7 +252,7 @@ describe("IntegrationCanonicalIdentityPolicyCard", () => {
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toContain(
-      "Не удалось загрузить canonical identity policies",
+      "Не удалось загрузить правила объединения событий",
     );
     expect(wrapper.text()).not.toContain("secret upstream trace");
 
@@ -261,7 +263,7 @@ describe("IntegrationCanonicalIdentityPolicyCard", () => {
     await flushPromises();
 
     expect(api.listDefinitions).toHaveBeenCalledTimes(2);
-    expect(wrapper.text()).toContain("Ревизия 4");
+    expect(wrapper.text()).toContain("версия 4");
   });
 
   it("translates OCC conflicts without rendering backend error details", async () => {
@@ -292,7 +294,7 @@ describe("IntegrationCanonicalIdentityPolicyCard", () => {
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toContain(
-      "Policy уже изменилась",
+      "Правило уже изменилось",
     );
     expect(wrapper.text()).not.toContain("database relation");
   });

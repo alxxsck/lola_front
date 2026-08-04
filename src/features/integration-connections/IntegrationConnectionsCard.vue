@@ -7,6 +7,7 @@ import {
   ref,
   watch,
 } from "vue";
+import Select from "primevue/select";
 import type {
   IntegrationConnectionResponseDto,
   IntegrationConnectionTestResponseDto,
@@ -14,6 +15,7 @@ import type {
 import { normalizeApiError } from "@/shared/api/http/api-error";
 import { integrationConnectionsApi } from "./integration-connections.api";
 import {
+  integrationRegionOptions,
   outboundProviderUi,
   type OutboundIntegrationProvider,
   type ProviderConnection,
@@ -1134,8 +1136,12 @@ onBeforeUnmount(() => {
         {{ providerUi.mark }}
       </div>
       <div class="card-title">
-        <h2 :id="`${providerUi.slug}-title`">{{ providerUi.title }}</h2>
-        <p>{{ providerUi.description }}</p>
+        <h2 :id="`${providerUi.slug}-title`">
+          Подключение к {{ providerUi.title }}
+        </h2>
+        <p>
+          Шаг 1. Укажите проект и ключ доступа, затем проверьте подключение.
+        </p>
       </div>
       <span class="status" :data-status="hasConnections ? 'ACTIVE' : 'EMPTY'">
         {{
@@ -1208,17 +1214,17 @@ onBeforeUnmount(() => {
             <dd>{{ connection.region }}</dd>
           </div>
           <div>
-            <dt>Credential</dt>
+            <dt>Идентификатор ключа</dt>
             <dd>
               <code>{{ connection.credential.fingerprint }}</code>
             </dd>
           </div>
           <div>
-            <dt>Ревизия</dt>
+            <dt>Версия ключа</dt>
             <dd>{{ connection.credential.revision }}</dd>
           </div>
           <div>
-            <dt>Проверенная ревизия</dt>
+            <dt>Проверенная версия</dt>
             <dd>{{ connection.credential.testedRevision ?? "—" }}</dd>
           </div>
           <div>
@@ -1283,18 +1289,23 @@ onBeforeUnmount(() => {
           @submit.prevent="updateMetadata(connection)"
         >
           <label class="integration-field">
-            <span>Название подключения</span>
+            <span>Название в Lola</span>
             <input
               v-model="metadataDrafts[connection.id]!.displayName"
               maxlength="120"
             />
+            <small>Помогает отличать несколько подключений внутри Lola.</small>
           </label>
           <label class="integration-field">
-            <span>Подпись проекта в {{ providerUi.title }}</span>
+            <span>Проект в {{ providerUi.title }} (необязательно)</span>
             <input
               v-model="metadataDrafts[connection.id]!.remoteProjectLabel"
               maxlength="120"
             />
+            <small>
+              Понятная подпись для внешнего проекта или рабочего пространства.
+              На передачу данных не влияет.
+            </small>
           </label>
           <div class="form-actions">
             <button
@@ -1387,28 +1398,51 @@ onBeforeUnmount(() => {
       :data-form="`create-${providerUi.slug}`"
       @submit.prevent="create"
     >
+      <div class="form-intro">
+        <span class="setup-step">Шаг 1</span>
+        <div>
+          <h3>Новое подключение</h3>
+          <p>
+            Lola сохранит ключ в зашифрованном виде и сразу выполнит тестовую
+            отправку.
+          </p>
+        </div>
+      </div>
       <label class="integration-field">
-        <span>Название подключения</span>
+        <span>Название в Lola</span>
         <input
           v-model="displayName"
           :name="`${providerUi.formNamePrefix}DisplayName`"
           maxlength="120"
         />
+        <small>Например, «Основной проект» или «Продакшен».</small>
       </label>
       <label class="integration-field">
-        <span>Регион данных</span>
-        <select v-model="region" :name="`${providerUi.formNamePrefix}Region`">
-          <option value="EU">EU</option>
-          <option value="US">US</option>
-        </select>
+        <span>Где хранятся данные</span>
+        <Select
+          v-model="region"
+          :name="`${providerUi.formNamePrefix}Region`"
+          :options="integrationRegionOptions"
+          option-label="label"
+          option-value="value"
+          fluid
+        />
+        <small>
+          Выберите регион внешнего проекта. От него зависит адрес API, в который
+          Lola отправляет события.
+        </small>
       </label>
       <label class="integration-field">
-        <span>Подпись проекта в {{ providerUi.title }}</span>
+        <span>Проект в {{ providerUi.title }} (необязательно)</span>
         <input
           v-model="remoteProjectLabel"
           :name="`${providerUi.formNamePrefix}RemoteProjectLabel`"
           maxlength="120"
         />
+        <small>
+          Любая понятная подпись внешнего проекта или рабочего пространства. Это
+          справочное поле.
+        </small>
       </label>
       <label class="integration-field">
         <span>{{ providerUi.credentialShortLabel }}</span>
@@ -1499,16 +1533,6 @@ onBeforeUnmount(() => {
   margin-top: 4px;
   color: var(--text-secondary);
   font-size: var(--font-size-body-small);
-}
-
-.integration-field select {
-  width: 100%;
-  height: var(--control-height);
-  padding: 0 13px;
-  border: 1px solid var(--input-border);
-  border-radius: 12px;
-  background: var(--input-background);
-  color: var(--text-primary);
 }
 
 .provider-create-form {

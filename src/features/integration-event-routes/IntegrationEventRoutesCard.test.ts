@@ -2,6 +2,27 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import IntegrationEventRoutesCard from "./IntegrationEventRoutesCard.vue";
 
+vi.mock("primevue/select", () => ({
+  default: {
+    props: ["modelValue", "options", "optionLabel", "optionValue", "name"],
+    emits: ["update:modelValue"],
+    template: `<select :name="name" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
+      <option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option>
+    </select>`,
+  },
+}));
+
+vi.mock("@/features/events/EventDefinitionSelect.vue", () => ({
+  default: {
+    name: "EventDefinitionSelect",
+    props: ["modelValue"],
+    emits: ["update:modelValue"],
+    template: `<select name="eventDefinition" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
+      <option value="event-key-1">Депозит завершён</option>
+    </select>`,
+  },
+}));
+
 const mocks = vi.hoisted(() => ({
   listRoutes: vi.fn(),
   listDefinitions: vi.fn(),
@@ -327,7 +348,7 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Маршруты событий Customer.io");
+    expect(wrapper.text()).toContain("Передача событий в Customer.io");
     expect(wrapper.text()).toContain("Customer deposits");
     expect(wrapper.text()).toContain("customer_deposit");
     expect(wrapper.text()).toContain("Принято Pipelines");
@@ -374,7 +395,7 @@ describe("IntegrationEventRoutesCard", () => {
     await wrapper.get(".route-actions button").trigger("click");
 
     expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining("нужном Customer.io workspace"),
+      expect.stringContaining("нужном проекте Customer.io"),
     );
     expect(mocks.enable).not.toHaveBeenCalled();
   });
@@ -395,8 +416,7 @@ describe("IntegrationEventRoutesCard", () => {
     await selects[1]!.setValue("event-key-1");
     await flushPromises();
     const textInputs = wrapper.findAll('input:not([type="checkbox"])');
-    await textInputs[0]!.setValue("Новый маршрут");
-    await textInputs[1]!.setValue("deposit_completed");
+    await textInputs[0]!.setValue("deposit_completed");
     const checkboxes = wrapper.findAll('input[type="checkbox"]');
     expect(checkboxes[1]!.attributes("disabled")).toBeDefined();
     expect(wrapper.text()).toContain("Не экспортируется");
@@ -442,7 +462,7 @@ describe("IntegrationEventRoutesCard", () => {
       "project-1",
       {
         connectionId: "connection-1",
-        name: "Новый маршрут",
+        name: "Депозит завершён → Amplitude",
         eventDefinitionKeyId: "event-key-1",
         eventDefinitionRevisionId: "event-revision-1",
         providerEventName: "deposit_completed",
@@ -518,8 +538,7 @@ describe("IntegrationEventRoutesCard", () => {
     await wrapper.findAll("select")[1]!.setValue("event-key-1");
     await flushPromises();
     const textInputs = wrapper.findAll('input:not([type="checkbox"])');
-    await textInputs[0]!.setValue("Customer deposit route");
-    await textInputs[1]!.setValue("deposit_completed");
+    await textInputs[0]!.setValue("deposit_completed");
     await wrapper.findAll('input[type="checkbox"]')[0]!.setValue(true);
     await wrapper.get("form").trigger("submit");
     await flushPromises();
@@ -528,7 +547,7 @@ describe("IntegrationEventRoutesCard", () => {
       "project-1",
       expect.objectContaining({
         connectionId: "customer-connection-1",
-        name: "Customer deposit route",
+        name: "Депозит завершён → Customer.io",
         providerEventName: "deposit_completed",
         propertyBindings: [
           { sourcePath: ["amount"], targetKey: "amount", required: false },
@@ -640,8 +659,7 @@ describe("IntegrationEventRoutesCard", () => {
     await selects[1]!.setValue("event-key-1");
     await flushPromises();
     const textInputs = first.findAll('input:not([type="checkbox"])');
-    await textInputs[0]!.setValue("Новый маршрут");
-    await textInputs[1]!.setValue("deposit_completed");
+    await textInputs[0]!.setValue("deposit_completed");
     await first.findAll('input[type="checkbox"]')[0]!.setValue(true);
     await first.get("form").trigger("submit");
     await flushPromises();
@@ -664,7 +682,7 @@ describe("IntegrationEventRoutesCard", () => {
     await flushPromises();
     expect(mocks.create).toHaveBeenLastCalledWith(
       "project-1",
-      expect.objectContaining({ name: "Новый маршрут" }),
+      expect.objectContaining({ name: "Депозит завершён → Amplitude" }),
       "command-key",
     );
     expect(

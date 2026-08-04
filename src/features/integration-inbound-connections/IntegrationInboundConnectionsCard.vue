@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import Select from "primevue/select";
 import type { IntegrationConnectionResponseDto } from "@/shared/api/generated/models";
+import { integrationRegionOptions } from "@/features/integrations/provider-ui";
 import {
   integrationInboundConnectionsApi,
   type InboundIntegrationProvider,
@@ -55,6 +57,18 @@ const inboundConnections = computed(() =>
       connection.lifecycle !== "ARCHIVED",
   ),
 );
+
+function lifecycleLabel(value: string): string {
+  return (
+    {
+      DRAFT: "Черновик",
+      PENDING_TEST: "Ожидает проверки",
+      ACTIVE: "Активно",
+      PAUSED: "Приостановлено",
+      ARCHIVED: "В архиве",
+    }[value] ?? value
+  );
+}
 
 function oneTimeSecret(receipt: InboundSetupReceipt): string | null {
   return "secret" in receipt && receipt.replayed === false
@@ -188,8 +202,8 @@ async function configure(
     oneTimeReceipt.value = receipt;
     commandKeys.delete(signature);
     notice.value = oneTimeSecret(receipt)
-      ? "Сохраните secret сейчас: после закрытия он больше не отображается."
-      : "Команда уже была выполнена. Secret не возвращается при повторе; при утрате выполните новую ротацию.";
+      ? "Сохраните секрет сейчас: после закрытия он больше не отображается."
+      : "Команда уже была выполнена. Секрет не возвращается при повторе; при утрате замените его ещё раз.";
     await load();
   } catch {
     if (projectId === props.projectId)
@@ -234,7 +248,8 @@ async function activate(
 }
 
 watch(
-  () => [props.projectId, props.provider, props.canRead, props.canManage] as const,
+  () =>
+    [props.projectId, props.provider, props.canRead, props.canManage] as const,
   () => {
     mutationEpoch += 1;
     oneTimeReceipt.value = null;
@@ -253,8 +268,11 @@ onMounted(() => void load());
   >
     <div class="card-heading">
       <div>
-        <h2>Входящие подключения {{ providerUi.title }}</h2>
-        <p>{{ providerUi.warning }}</p>
+        <h2>Приём событий из {{ providerUi.title }}</h2>
+        <p>
+          Шаг 1. Создайте защищённую точку приёма, затем перенесите выданные
+          настройки в {{ providerUi.title }}.
+        </p>
       </div>
       <span
         class="status"
@@ -268,6 +286,8 @@ onMounted(() => void load());
       </span>
     </div>
 
+    <p class="field-help">{{ providerUi.warning }}</p>
+
     <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
     <p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
 
@@ -279,19 +299,19 @@ onMounted(() => void load());
       <h3>Одноразовые настройки webhook</h3>
       <dl class="integration-facts">
         <div v-if="endpointPath(oneTimeReceipt)">
-          <dt>Endpoint</dt>
+          <dt>Адрес приёма</dt>
           <dd>
             <code>{{ endpointPath(oneTimeReceipt) }}</code>
           </dd>
         </div>
         <div>
-          <dt>Header</dt>
+          <dt>Заголовок запроса</dt>
           <dd>
             <code>{{ headerName(oneTimeReceipt) }}</code>
           </dd>
         </div>
         <div v-if="oneTimeSecret(oneTimeReceipt)">
-          <dt>Secret</dt>
+          <dt>Секрет</dt>
           <dd>
             <code data-testid="inbound-one-time-secret">{{
               oneTimeSecret(oneTimeReceipt)
@@ -299,7 +319,7 @@ onMounted(() => void load());
           </dd>
         </div>
         <div>
-          <dt>Fingerprint</dt>
+          <dt>Идентификатор секрета</dt>
           <dd>
             <code>{{ oneTimeReceipt.credentialFingerprint }}</code>
           </dd>
@@ -312,7 +332,7 @@ onMounted(() => void load());
         </div>
       </dl>
       <div v-if="payloadTemplate(oneTimeReceipt)" class="payload-template">
-        <h4>Рекомендуемый payload template</h4>
+        <h4>Рекомендуемый шаблон тела запроса</h4>
         <pre><code>{{ JSON.stringify(payloadTemplate(oneTimeReceipt), null, 2) }}</code></pre>
       </div>
       <button type="button" class="secondary" @click="oneTimeReceipt = null">
@@ -331,7 +351,7 @@ onMounted(() => void load());
         <div class="provider-connection__heading">
           <h3>{{ connection.displayName }}</h3>
           <span class="status" :data-status="connection.lifecycle">{{
-            connection.lifecycle
+            lifecycleLabel(connection.lifecycle)
           }}</span>
         </div>
         <dl class="integration-facts">
@@ -350,23 +370,23 @@ onMounted(() => void load());
             </dd>
           </div>
           <div>
-            <dt>Admission</dt>
+            <dt>Готовность к приёму</dt>
             <dd>
               {{ connection.inbound.admissionReady ? "Готов" : "Не готов" }}
             </dd>
           </div>
           <div>
-            <dt>Fingerprint</dt>
+            <dt>Идентификатор секрета</dt>
             <dd>
               <code>{{ connection.inbound.credentialFingerprint ?? "—" }}</code>
             </dd>
           </div>
           <div>
-            <dt>Ревизия</dt>
+            <dt>Версия секрета</dt>
             <dd>{{ connection.inbound.credentialRevision ?? "—" }}</dd>
           </div>
           <div>
-            <dt>Overlap до</dt>
+            <dt>Старый секрет действует до</dt>
             <dd>{{ connection.inbound.overlapEndsAt ?? "—" }}</dd>
           </div>
         </dl>
@@ -388,10 +408,10 @@ onMounted(() => void load());
             :disabled="pending"
             @click="configure(connection, 'ROTATE')"
           >
-            Ротировать secret
+            Заменить секрет
           </button>
           <label v-if="connection.inbound.configured" class="overlap-field">
-            <span>Overlap, секунд</span>
+            <span>Переходный период, секунд</span>
             <input
               v-model.number="overlapSeconds"
               type="number"
@@ -419,29 +439,53 @@ onMounted(() => void load());
       :data-form="`create-inbound-${providerUi.slug}`"
       @submit.prevent="create"
     >
+      <div class="form-intro">
+        <span class="setup-step">Шаг 1</span>
+        <div>
+          <h3>Новое входящее подключение</h3>
+          <p>
+            После создания Lola покажет адрес webhook и секрет только один раз.
+            Сохраните их сразу.
+          </p>
+        </div>
+      </div>
       <label class="integration-field">
-        <span>Название подключения</span>
+        <span>Название в Lola</span>
         <input
           v-model="displayName"
           name="inboundDisplayName"
           maxlength="120"
           required
         />
+        <small>Например, «Customer.io — продакшен».</small>
       </label>
       <label class="integration-field">
-        <span>Регион данных</span>
-        <select v-model="region">
-          <option value="EU">EU</option>
-          <option value="US">US</option>
-        </select>
+        <span>Где хранятся данные</span>
+        <Select
+          v-model="region"
+          :options="integrationRegionOptions"
+          option-label="label"
+          option-value="value"
+          fluid
+        />
+        <small>
+          Выберите регион проекта {{ providerUi.title }}, из которого будут
+          приходить события.
+        </small>
       </label>
       <label class="integration-field">
-        <span>Подпись внешнего проекта</span>
+        <span>Проект в {{ providerUi.title }} (необязательно)</span>
         <input v-model="remoteProjectLabel" maxlength="120" />
+        <small>
+          Справочная подпись внешнего проекта или рабочего пространства. На
+          обработку не влияет.
+        </small>
       </label>
-      <button type="submit" :disabled="pending || !displayName.trim()">
-        Создать черновик
-      </button>
+      <div class="form-actions">
+        <button type="submit" :disabled="pending || !displayName.trim()">
+          Создать черновик
+        </button>
+      </div>
     </form>
   </section>
 </template>

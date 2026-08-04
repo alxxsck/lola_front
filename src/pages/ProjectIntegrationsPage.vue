@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import "@/app/styles/project-integrations.css";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import IntegrationCanonicalIdentityPolicyCard from "@/features/integration-canonical-identity/IntegrationCanonicalIdentityPolicyCard.vue";
-import IntegrationConnectionsCard from "@/features/integration-connections/IntegrationConnectionsCard.vue";
-import IntegrationEventRoutesCard from "@/features/integration-event-routes/IntegrationEventRoutesCard.vue";
-import IntegrationInboundActivityCard from "@/features/integration-inbound-activity/IntegrationInboundActivityCard.vue";
-import IntegrationInboundConnectionsCard from "@/features/integration-inbound-connections/IntegrationInboundConnectionsCard.vue";
-import IntegrationInboundRoutesCard from "@/features/integration-inbound-routes/IntegrationInboundRoutesCard.vue";
 import IntegrationRecoveryOperationsCard from "@/features/integration-recovery/IntegrationRecoveryOperationsCard.vue";
+import IntegrationProviderWorkspace from "@/features/integrations/IntegrationProviderWorkspace.vue";
 import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
 import OperationalTelegramCard from "@/features/notification-destinations/OperationalTelegramCard.vue";
 import ProductTelegramCard from "@/features/telegram-product-installations/ProductTelegramCard.vue";
@@ -40,6 +36,77 @@ const canManageIntegrations = computed(() =>
 const canReadIntegrationActivity = computed(() =>
   hasProjectPermission(permissions.value, "project.integration_activity.read"),
 );
+const hasOperationsSection = computed(
+  () =>
+    (canonicalIdentityPolicyEnabled && canReadIntegrations.value) ||
+    canReadIntegrationActivity.value,
+);
+type IntegrationSection =
+  "team" | "users" | "CUSTOMER_IO" | "AMPLITUDE" | "operations";
+
+const activeSection = ref<IntegrationSection>("team");
+const integrationSections = computed<
+  Array<{ id: IntegrationSection; label: string; icon: string }>
+>(() => [
+  ...(canRead.value
+    ? [{ id: "team" as const, label: "Для команды", icon: "pi-users" }]
+    : []),
+  ...(canReadIntegrations.value
+    ? [
+        {
+          id: "users" as const,
+          label: "Для пользователей",
+          icon: "pi-comments",
+        },
+        {
+          id: "CUSTOMER_IO" as const,
+          label: "Customer.io",
+          icon: "pi-megaphone",
+        },
+        {
+          id: "AMPLITUDE" as const,
+          label: "Amplitude",
+          icon: "pi-chart-line",
+        },
+      ]
+    : []),
+  ...(hasOperationsSection.value
+    ? [
+        {
+          id: "operations" as const,
+          label: "Общие правила",
+          icon: "pi-wrench",
+        },
+      ]
+    : []),
+]);
+
+function handleSectionKeydown(event: KeyboardEvent): void {
+  const sections = integrationSections.value;
+  const currentIndex = sections.findIndex(
+    ({ id }) => id === activeSection.value,
+  );
+  if (currentIndex < 0) return;
+  let nextIndex = currentIndex;
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    nextIndex = (currentIndex + 1) % sections.length;
+  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    nextIndex = (currentIndex - 1 + sections.length) % sections.length;
+  } else if (event.key === "Home") {
+    nextIndex = 0;
+  } else if (event.key === "End") {
+    nextIndex = sections.length - 1;
+  } else {
+    return;
+  }
+  event.preventDefault();
+  const nextSection = sections[nextIndex];
+  if (!nextSection) return;
+  activeSection.value = nextSection.id;
+  void nextTick(() =>
+    document.getElementById(`integration-tab-${nextSection.id}`)?.focus(),
+  );
+}
 const destination = ref<NotificationDestinationResponseDto | null>(null);
 const loading = ref(true);
 const pending = ref(false);
@@ -438,6 +505,16 @@ watch([projectId, canRead, canManage], () => {
   else loading.value = false;
 });
 
+watch(
+  integrationSections,
+  (sections) => {
+    if (!sections.some(({ id }) => id === activeSection.value)) {
+      activeSection.value = sections[0]?.id ?? "team";
+    }
+  },
+  { immediate: true },
+);
+
 onMounted(load);
 </script>
 
@@ -448,139 +525,228 @@ onMounted(load);
         <div class="eyebrow">Проект</div>
         <h1>Интеграции</h1>
         <p class="subtitle">
-          Настройте каналы для команды и пользователей. Токены и webhook
-          хранятся зашифрованными и не отображаются после сохранения.
+          Настройте оповещения, пользовательские каналы и обмен событиями с
+          внешними платформами. Секреты хранятся зашифрованными и не
+          отображаются после сохранения.
         </p>
       </div>
     </header>
 
-    <p v-if="loadError" class="feedback error" role="alert">
-      {{ loadError }}
-      <button type="button" @click="load">Повторить</button>
-    </p>
-    <p v-if="actionError" class="feedback error" role="alert">
-      {{ actionError }}
-    </p>
-    <p
-      v-if="actionSuccess"
-      class="feedback success"
-      role="status"
-      aria-live="polite"
+    <nav
+      v-if="integrationSections.length"
+      class="integration-tabs"
+      aria-label="Разделы интеграций"
+      role="tablist"
     >
-      {{ actionSuccess }}
-    </p>
+      <button
+        v-for="section in integrationSections"
+        :id="`integration-tab-${section.id}`"
+        :key="section.id"
+        type="button"
+        role="tab"
+        :data-section="section.id"
+        :aria-selected="activeSection === section.id"
+        :aria-controls="`integration-panel-${section.id}`"
+        :tabindex="activeSection === section.id ? 0 : -1"
+        @click="activeSection = section.id"
+        @keydown="handleSectionKeydown"
+      >
+        <i class="pi" :class="section.icon" aria-hidden="true" />
+        <span>{{ section.label }}</span>
+      </button>
+    </nav>
 
     <section
       v-if="canRead"
-      class="integration-card"
-      data-integration="slack"
-      aria-labelledby="slack-title"
+      id="integration-panel-team"
+      class="integration-tab-panel"
+      :class="{ 'is-active': activeSection === 'team' }"
+      data-integration-section="team"
+      role="tabpanel"
+      aria-labelledby="integration-tab-team"
     >
-      <div class="card-heading">
-        <div class="provider-mark provider-mark--slack" aria-hidden="true">
-          <i class="pi pi-slack" />
+      <header class="integration-section-intro">
+        <div>
+          <span class="integration-section-intro__eyebrow">Оповещения</span>
+          <h2>Каналы для команды</h2>
+          <p>
+            Сюда Lola отправляет операционные уведомления и эскалации для
+            сотрудников проекта.
+          </p>
         </div>
-        <div class="card-title">
-          <h2 id="slack-title">Slack для команды</h2>
-          <p>Отправляет эскалации обращений в выбранный канал команды.</p>
+      </header>
+
+      <p v-if="loadError" class="feedback error" role="alert">
+        {{ loadError }}
+        <button type="button" @click="load">Повторить</button>
+      </p>
+      <p v-if="actionError" class="feedback error" role="alert">
+        {{ actionError }}
+      </p>
+      <p
+        v-if="actionSuccess"
+        class="feedback success"
+        role="status"
+        aria-live="polite"
+      >
+        {{ actionSuccess }}
+      </p>
+
+      <section
+        v-if="canRead"
+        class="integration-card"
+        data-integration="slack"
+        aria-labelledby="slack-title"
+      >
+        <div class="card-heading">
+          <div class="provider-mark provider-mark--slack" aria-hidden="true">
+            <i class="pi pi-slack" />
+          </div>
+          <div class="card-title">
+            <h2 id="slack-title">Slack для команды</h2>
+            <p>Отправляет эскалации обращений в выбранный канал команды.</p>
+          </div>
+          <span class="status" :data-status="destination?.status ?? 'EMPTY'">
+            {{ statusLabel }}
+          </span>
         </div>
-        <span class="status" :data-status="destination?.status ?? 'EMPTY'">
-          {{ statusLabel }}
-        </span>
-      </div>
 
-      <div v-if="loading" class="skeleton" aria-live="polite">
-        Загружаем интеграцию…
-      </div>
-
-      <template v-else-if="destination">
-        <dl class="integration-facts">
-          <div>
-            <dt>Название</dt>
-            <dd>{{ destination.displayName }}</dd>
-          </div>
-          <div>
-            <dt>Идентификатор секрета</dt>
-            <dd>
-              <code>{{ destination.credentialFingerprint }}</code>
-            </dd>
-          </div>
-          <div>
-            <dt>Последняя успешная проверка</dt>
-            <dd>
-              {{
-                destination.lastSuccessfulTestAt
-                  ? new Date(destination.lastSuccessfulTestAt).toLocaleString(
-                      "ru-RU",
-                    )
-                  : "Ещё не выполнялась"
-              }}
-            </dd>
-          </div>
-          <div>
-            <dt>Последняя ошибка</dt>
-            <dd>{{ destination.lastFailureCategory ?? "Нет" }}</dd>
-          </div>
-          <div>
-            <dt>Последнее изменение</dt>
-            <dd>
-              {{ new Date(destination.updatedAt).toLocaleString("ru-RU") }}
-            </dd>
-          </div>
-          <div>
-            <dt>Изменил</dt>
-            <dd>
-              {{
-                formatAuditActor(
-                  destination.updatedByActorType,
-                  destination.updatedByActorId,
-                )
-              }}
-            </dd>
-          </div>
-        </dl>
-
-        <div v-if="canManage" class="actions">
-          <button
-            v-if="!readyToActivate"
-            type="button"
-            data-action="test"
-            :disabled="pending"
-            @click="testCurrent"
-          >
-            Проверить подключение
-          </button>
-          <button
-            v-if="readyToActivate"
-            type="button"
-            data-action="activate"
-            :disabled="pending"
-            @click="activate"
-          >
-            Активировать
-          </button>
-          <button
-            v-if="destination.status === 'ACTIVE'"
-            type="button"
-            class="secondary"
-            data-action="disable"
-            :disabled="pending"
-            @click="disable"
-          >
-            Отключить
-          </button>
+        <div v-if="loading" class="skeleton" aria-live="polite">
+          Загружаем интеграцию…
         </div>
+
+        <template v-else-if="destination">
+          <dl class="integration-facts">
+            <div>
+              <dt>Название</dt>
+              <dd>{{ destination.displayName }}</dd>
+            </div>
+            <div>
+              <dt>Идентификатор секрета</dt>
+              <dd>
+                <code>{{ destination.credentialFingerprint }}</code>
+              </dd>
+            </div>
+            <div>
+              <dt>Последняя успешная проверка</dt>
+              <dd>
+                {{
+                  destination.lastSuccessfulTestAt
+                    ? new Date(destination.lastSuccessfulTestAt).toLocaleString(
+                        "ru-RU",
+                      )
+                    : "Ещё не выполнялась"
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt>Последняя ошибка</dt>
+              <dd>{{ destination.lastFailureCategory ?? "Нет" }}</dd>
+            </div>
+            <div>
+              <dt>Последнее изменение</dt>
+              <dd>
+                {{ new Date(destination.updatedAt).toLocaleString("ru-RU") }}
+              </dd>
+            </div>
+            <div>
+              <dt>Изменил</dt>
+              <dd>
+                {{
+                  formatAuditActor(
+                    destination.updatedByActorType,
+                    destination.updatedByActorId,
+                  )
+                }}
+              </dd>
+            </div>
+          </dl>
+
+          <div v-if="canManage" class="actions">
+            <button
+              v-if="!readyToActivate"
+              type="button"
+              data-action="test"
+              :disabled="pending"
+              @click="testCurrent"
+            >
+              Проверить подключение
+            </button>
+            <button
+              v-if="readyToActivate"
+              type="button"
+              data-action="activate"
+              :disabled="pending"
+              @click="activate"
+            >
+              Активировать
+            </button>
+            <button
+              v-if="destination.status === 'ACTIVE'"
+              type="button"
+              class="secondary"
+              data-action="disable"
+              :disabled="pending"
+              @click="disable"
+            >
+              Отключить
+            </button>
+          </div>
+
+          <form
+            v-if="canManage"
+            class="secret-form secret-form--single"
+            data-form="rotate-slack"
+            @submit.prevent="rotateAndTest"
+          >
+            <label class="integration-field" for="slack-webhook-rotate">
+              <span>Новый webhook URL</span>
+              <input
+                id="slack-webhook-rotate"
+                v-model="webhookUrl"
+                name="webhookUrl"
+                type="password"
+                autocomplete="off"
+                placeholder="https://hooks.slack.com/services/…"
+                :disabled="pending"
+              />
+            </label>
+            <small
+              >После замены Lola проверит подключение. URL очистится сразу после
+              отправки.</small
+            >
+            <div class="form-actions">
+              <button
+                type="submit"
+                class="secondary"
+                :disabled="pending || !webhookUrl.trim()"
+              >
+                Заменить и проверить
+              </button>
+            </div>
+          </form>
+        </template>
 
         <form
-          v-if="canManage"
-          class="secret-form secret-form--single"
-          data-form="rotate-slack"
-          @submit.prevent="rotateAndTest"
+          v-else-if="canManage"
+          class="secret-form"
+          data-form="create-slack"
+          @submit.prevent="createAndTest"
         >
-          <label class="integration-field" for="slack-webhook-rotate">
-            <span>Новый webhook URL</span>
+          <label class="integration-field" for="slack-name">
+            <span>Название подключения</span>
             <input
-              id="slack-webhook-rotate"
+              id="slack-name"
+              v-model="displayName"
+              name="displayName"
+              maxlength="120"
+              placeholder="Например, эскалации обращений"
+            />
+          </label>
+          <label class="integration-field" for="slack-webhook-create">
+            <span>Webhook URL</span>
+            <input
+              id="slack-webhook-create"
               v-model="webhookUrl"
               name="webhookUrl"
               type="password"
@@ -590,163 +756,128 @@ onMounted(load);
             />
           </label>
           <small
-            >После замены Lola проверит подключение. URL очистится сразу после
-            отправки.</small
+            >Создайте Incoming Webhook в Slack и вставьте URL. После сохранения
+            Lola сразу проверит подключение.</small
           >
           <div class="form-actions">
             <button
               type="submit"
-              class="secondary"
-              :disabled="pending || !webhookUrl.trim()"
+              :disabled="pending || !displayName.trim() || !webhookUrl.trim()"
             >
-              Заменить и проверить
+              Сохранить и проверить
             </button>
           </div>
         </form>
-      </template>
 
-      <form
-        v-else-if="canManage"
-        class="secret-form"
-        data-form="create-slack"
-        @submit.prevent="createAndTest"
-      >
-        <label class="integration-field" for="slack-name">
-          <span>Название подключения</span>
-          <input
-            id="slack-name"
-            v-model="displayName"
-            name="displayName"
-            maxlength="120"
-            placeholder="Например, эскалации обращений"
-          />
-        </label>
-        <label class="integration-field" for="slack-webhook-create">
-          <span>Webhook URL</span>
-          <input
-            id="slack-webhook-create"
-            v-model="webhookUrl"
-            name="webhookUrl"
-            type="password"
-            autocomplete="off"
-            placeholder="https://hooks.slack.com/services/…"
-            :disabled="pending"
-          />
-        </label>
-        <small
-          >Создайте Incoming Webhook в Slack и вставьте URL. После сохранения
-          Lola сразу проверит подключение.</small
-        >
-        <div class="form-actions">
-          <button
-            type="submit"
-            :disabled="pending || !displayName.trim() || !webhookUrl.trim()"
-          >
-            Сохранить и проверить
-          </button>
-        </div>
-      </form>
+        <p v-else class="read-only-note">
+          У вас есть доступ только для просмотра интеграций.
+        </p>
+      </section>
 
-      <p v-else class="read-only-note">
-        У вас есть доступ только для просмотра интеграций.
-      </p>
+      <OperationalTelegramCard
+        :project-id="projectId"
+        :can-read="canRead"
+        :can-manage="canManage"
+      />
     </section>
 
-    <OperationalTelegramCard
-      v-if="canRead"
-      :project-id="projectId"
-      :can-read="canRead"
-      :can-manage="canManage"
-    />
-    <ProductTelegramCard
+    <section
       v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      @fresh-login-requested="requireFreshProductTelegramLogin"
-    />
-    <IntegrationConnectionsCard
+      id="integration-panel-users"
+      class="integration-tab-panel"
+      :class="{ 'is-active': activeSection === 'users' }"
+      data-integration-section="users"
+      role="tabpanel"
+      aria-labelledby="integration-tab-users"
+    >
+      <header class="integration-section-intro">
+        <div>
+          <span class="integration-section-intro__eyebrow">Мессенджеры</span>
+          <h2>Каналы для пользователей</h2>
+          <p>
+            Подключения, через которые пользователи взаимодействуют с продуктом
+            Lola.
+          </p>
+        </div>
+      </header>
+      <ProductTelegramCard
+        :project-id="projectId"
+        :can-read="canReadIntegrations"
+        :can-manage="canManageIntegrations"
+        @fresh-login-requested="requireFreshProductTelegramLogin"
+      />
+    </section>
+
+    <section
       v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      provider="AMPLITUDE"
-    />
-    <IntegrationEventRoutesCard
+      id="integration-panel-AMPLITUDE"
+      class="integration-tab-panel"
+      :class="{ 'is-active': activeSection === 'AMPLITUDE' }"
+      data-integration-section="AMPLITUDE"
+      role="tabpanel"
+      aria-labelledby="integration-tab-AMPLITUDE"
+    >
+      <IntegrationProviderWorkspace
+        :project-id="projectId"
+        :can-read="canReadIntegrations"
+        :can-manage="canManageIntegrations"
+        :can-read-activity="canReadIntegrationActivity"
+        provider="AMPLITUDE"
+      />
+    </section>
+
+    <section
       v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      :can-read-activity="canReadIntegrationActivity"
-      provider="AMPLITUDE"
-    />
-    <IntegrationInboundConnectionsCard
-      v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      provider="AMPLITUDE"
-    />
-    <IntegrationInboundRoutesCard
-      v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      provider="AMPLITUDE"
-    />
-    <IntegrationInboundActivityCard
-      v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read-activity="canReadIntegrationActivity"
-      provider="AMPLITUDE"
-    />
-    <IntegrationConnectionsCard
-      v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      provider="CUSTOMER_IO"
-    />
-    <IntegrationEventRoutesCard
-      v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      :can-read-activity="canReadIntegrationActivity"
-      provider="CUSTOMER_IO"
-    />
-    <IntegrationInboundConnectionsCard
-      v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      provider="CUSTOMER_IO"
-    />
-    <IntegrationInboundRoutesCard
-      v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-      provider="CUSTOMER_IO"
-    />
-    <IntegrationInboundActivityCard
-      v-if="canReadIntegrations"
-      :project-id="projectId"
-      :can-read-activity="canReadIntegrationActivity"
-      provider="CUSTOMER_IO"
-    />
-    <IntegrationCanonicalIdentityPolicyCard
-      v-if="canonicalIdentityPolicyEnabled && canReadIntegrations"
-      :project-id="projectId"
-      :can-read="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-    />
-    <IntegrationRecoveryOperationsCard
-      v-if="canReadIntegrationActivity"
-      :project-id="projectId"
-      :can-read-activity="canReadIntegrationActivity"
-      :can-read-integrations="canReadIntegrations"
-      :can-manage="canManageIntegrations"
-    />
+      id="integration-panel-CUSTOMER_IO"
+      class="integration-tab-panel"
+      :class="{ 'is-active': activeSection === 'CUSTOMER_IO' }"
+      data-integration-section="CUSTOMER_IO"
+      role="tabpanel"
+      aria-labelledby="integration-tab-CUSTOMER_IO"
+    >
+      <IntegrationProviderWorkspace
+        :project-id="projectId"
+        :can-read="canReadIntegrations"
+        :can-manage="canManageIntegrations"
+        :can-read-activity="canReadIntegrationActivity"
+        provider="CUSTOMER_IO"
+      />
+    </section>
+
+    <section
+      v-if="hasOperationsSection"
+      id="integration-panel-operations"
+      class="integration-tab-panel"
+      :class="{ 'is-active': activeSection === 'operations' }"
+      data-integration-section="operations"
+      role="tabpanel"
+      aria-labelledby="integration-tab-operations"
+    >
+      <header class="integration-section-intro">
+        <div>
+          <span class="integration-section-intro__eyebrow"
+            >Общие настройки</span
+          >
+          <h2>Правила для нескольких источников</h2>
+          <p>
+            Настройте объединение одинаковых событий и восстановление проблемных
+            операций независимо от конкретного провайдера.
+          </p>
+        </div>
+      </header>
+      <IntegrationCanonicalIdentityPolicyCard
+        v-if="canonicalIdentityPolicyEnabled && canReadIntegrations"
+        :project-id="projectId"
+        :can-read="canReadIntegrations"
+        :can-manage="canManageIntegrations"
+      />
+      <IntegrationRecoveryOperationsCard
+        v-if="canReadIntegrationActivity"
+        :project-id="projectId"
+        :can-read-activity="canReadIntegrationActivity"
+        :can-read-integrations="canReadIntegrations"
+        :can-manage="canManageIntegrations"
+      />
+    </section>
   </main>
 </template>

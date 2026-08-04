@@ -96,10 +96,10 @@ describe("IntegrationInboundActivityCard", () => {
 
     expect(api.list).toHaveBeenCalledWith("project-1", "CUSTOMER_IO");
     expect(api.health).toHaveBeenCalledWith("project-1", "CUSTOMER_IO");
-    expect(wrapper.text()).toContain("DEGRADED");
-    expect(wrapper.text()).toContain("BACKLOG_SLO_BREACHED");
+    expect(wrapper.text()).toContain("Требует внимания");
+    expect(wrapper.text()).toContain("Очередь обрабатывается дольше нормы");
     expect(wrapper.text()).toContain("deposit");
-    expect(wrapper.text()).toContain("ACCEPTED");
+    expect(wrapper.text()).toContain("Принято");
     expect(wrapper.html()).not.toContain("rawBody");
   });
 });

@@ -3,6 +3,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api/http/api-error";
 import IntegrationInboundRoutesCard from "./IntegrationInboundRoutesCard.vue";
 
+vi.mock("primevue/select", () => ({
+  default: {
+    props: ["modelValue", "options", "optionLabel", "optionValue", "name"],
+    emits: ["update:modelValue"],
+    template: `<select :name="name" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
+      <option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option>
+    </select>`,
+  },
+}));
+
+vi.mock("@/features/events/EventDefinitionSelect.vue", () => ({
+  default: {
+    name: "EventDefinitionSelect",
+    props: ["modelValue"],
+    emits: ["update:modelValue"],
+    template: `<select name="inboundEventDefinition" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
+      <option value="event-1">Deposit</option>
+    </select>`,
+  },
+}));
+
 const mocks = vi.hoisted(() => ({
   listRoutes: vi.fn(),
   listDefinitions: vi.fn(),
@@ -86,9 +107,6 @@ describe("IntegrationInboundRoutesCard", () => {
       .get('select[name="inboundEventDefinition"]')
       .setValue("event-1");
     await wrapper
-      .get('input[name="inboundRouteName"]')
-      .setValue("Deposit inbound");
-    await wrapper
       .get('input[name="inboundProviderEventName"]')
       .setValue("deposit");
     await wrapper
@@ -113,7 +131,7 @@ describe("IntegrationInboundRoutesCard", () => {
       "project-1",
       {
         connectionId: "connection-1",
-        name: "Deposit inbound",
+        name: "Amplitude → Deposit",
         eventDefinitionKeyId: "event-1",
         eventDefinitionRevisionId: "revision-1",
         providerEventName: "deposit",
@@ -159,9 +177,11 @@ describe("IntegrationInboundRoutesCard", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain(
-      "Перед публикацией или включением отправьте signed track canary с messageId под текущим signing secret",
+      "Перед включением отправьте контрольное событие track с уникальным messageId",
     );
-    expect(wrapper.text()).toContain("После rotation повторите canary");
+    expect(wrapper.text()).toContain(
+      "После замены секрета проверку нужно повторить",
+    );
   });
 
   it("shows a safe actionable error when Customer.io delivery ID evidence is absent", async () => {
@@ -207,7 +227,7 @@ describe("IntegrationInboundRoutesCard", () => {
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toBe(
-      "Customer.io ещё не подтвердил messageId для текущего signing secret. Отправьте signed track canary и повторите операцию.",
+      "Customer.io ещё не подтвердил messageId для текущего секрета подписи. Отправьте подписанное контрольное событие track и повторите операцию.",
     );
     expect(wrapper.text()).not.toContain("internal provider contract detail");
   });

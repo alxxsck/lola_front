@@ -40,7 +40,6 @@ export type OutboundProviderUi = {
   title: string;
   mark: string;
   formNamePrefix: "amplitude" | "customerIo";
-  description: string;
   defaultDisplayName: string;
   credentialName: "projectApiKey" | "sourceApiKey";
   credentialLabel: string;
@@ -124,6 +123,11 @@ const customerIoReservedTargetKeys = new Set([
   "lola_export",
 ]);
 
+export const integrationRegionOptions = [
+  { label: "Европейский союз (EU)", value: "EU" },
+  { label: "США (US)", value: "US" },
+];
+
 export const outboundProviderUi: Record<
   OutboundIntegrationProvider,
   OutboundProviderUi
@@ -134,8 +138,6 @@ export const outboundProviderUi: Record<
     title: "Amplitude",
     mark: "A",
     formNamePrefix: "amplitude",
-    description:
-      "Передаёт разрешённые события проекта в Amplitude от имени Lola.",
     defaultDisplayName: "Основная Amplitude",
     credentialName: "projectApiKey",
     credentialLabel: "Amplitude Project API Key",
@@ -146,7 +148,7 @@ export const outboundProviderUi: Record<
       "Проверка отправит реальное служебное событие в Amplitude. Продолжить?",
     credentialAutocomplete: "off",
     credentialMaxLength: 32,
-    credentialPlaceholder: "32 hexadecimal symbols",
+    credentialPlaceholder: "32 шестнадцатеричных символа",
     credentialValid: (value) => /^[a-f0-9]{32}$/iu.test(value),
     credentialInvalidCode: "AMPLITUDE_PROJECT_API_KEY_INVALID",
     credentialRejectedCodes: new Set(["AMPLITUDE_PROJECT_API_KEY_REJECTED"]),
@@ -216,8 +218,6 @@ export const outboundProviderUi: Record<
     title: "Customer.io",
     mark: "C",
     formNamePrefix: "customerIo",
-    description:
-      "Передаёт разрешённые события проекта в Customer.io Pipelines от имени Lola.",
     defaultDisplayName: "Основной Customer.io",
     credentialName: "sourceApiKey",
     credentialLabel: "Customer.io Pipelines Source API Key",
@@ -228,7 +228,7 @@ export const outboundProviderUi: Record<
       "Проверка отправит реальное служебное событие и может создать профиль в Customer.io. Продолжить?",
     credentialAutocomplete: "off",
     credentialMaxLength: 512,
-    credentialPlaceholder: "Pipelines source key",
+    credentialPlaceholder: "Ключ источника Pipelines",
     credentialValid: (value) => /^[^\s:]{8,512}$/u.test(value),
     credentialInvalidCode: "CUSTOMER_IO_SOURCE_API_KEY_INVALID",
     credentialRejectedCodes: new Set([
@@ -240,12 +240,12 @@ export const outboundProviderUi: Record<
       "Не удалось изменить подключение Customer.io. Повторите попытку.",
     connectionUpdated: "Настройки Customer.io обновлены.",
     connectionTestSucceeded:
-      "Customer.io Pipelines принял тестовый call. Перед активацией вручную подтвердите профиль и событие в целевом workspace.",
+      "Customer.io Pipelines принял тестовое событие. Перед активацией вручную подтвердите профиль и событие в нужном проекте Customer.io.",
     connectionTestRejected: "Customer.io отклонил проверку подключения.",
     connectionTestCredentialRejected:
       "Customer.io отклонил Source API Key. Проверьте ключ и регион.",
     activationConfirmation:
-      "Вы вручную подтвердили служебный профиль и событие в нужном Customer.io workspace? Ответ Pipelines 200 сам по себе не доказывает выполнение Journeys Action.",
+      "Вы вручную подтвердили служебный профиль и событие в нужном проекте Customer.io? Ответ Pipelines 200 подтверждает приём, но не выполнение действия в Journeys.",
     deliveredStatusLabel: "Принято Pipelines",
     rotatedAndTested: "Новый Source API Key сохранён и проверен.",
     enabled: "Отправка событий в Customer.io включена.",

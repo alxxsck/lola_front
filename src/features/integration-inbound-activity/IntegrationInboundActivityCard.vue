@@ -18,6 +18,43 @@ const loading = ref(false);
 const error = ref("");
 let epoch = 0;
 
+function healthLabel(value: string): string {
+  return (
+    {
+      HEALTHY: "Работает нормально",
+      DEGRADED: "Требует внимания",
+      UNHEALTHY: "Есть ошибки",
+      UNKNOWN: "Нет данных",
+    }[value] ?? value
+  );
+}
+
+function activityStatusLabel(value: string): string {
+  return (
+    {
+      RECEIVED: "Получено",
+      PROCESSING: "Обрабатывается",
+      ACCEPTED: "Принято",
+      RETRY_WAIT: "Ожидает повтора",
+      QUARANTINED: "Изолировано",
+      FAILED_PERMANENT: "Ошибка",
+      DUPLICATE: "Дубликат",
+    }[value] ?? value
+  );
+}
+
+function reasonLabel(value: string): string {
+  return (
+    {
+      BACKLOG_SLO_BREACHED: "Очередь обрабатывается дольше нормы",
+      RECENT_PROCESSING_ERRORS: "Недавние ошибки обработки",
+      CREDENTIAL_COMPROMISED: "Секрет подключения скомпрометирован",
+      CREDENTIAL_UNAVAILABLE: "Секрет подключения недоступен",
+      CANONICAL_CONFLICTS: "Конфликты одинаковых событий",
+    }[value] ?? value
+  );
+}
+
 async function load(): Promise<void> {
   const current = ++epoch;
   health.value = null;
@@ -59,21 +96,18 @@ onMounted(() => void load());
           Входящая активность
           {{ provider === "AMPLITUDE" ? "Amplitude" : "Customer.io" }}
         </h2>
-        <p>
-          Только безопасные метаданные: payload, подписи и delivery key не
-          показываются.
-        </p>
+        <p>Статистика приёма без содержимого событий, подписей и секретов.</p>
       </div>
-      <span v-if="health" class="status" :data-status="health.health">{{
-        health.health
-      }}</span>
+      <span v-if="health" class="status" :data-status="health.health">
+        {{ healthLabel(health.health) }}
+      </span>
     </div>
     <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
     <p v-if="loading" class="empty-state">Загружаем активность…</p>
     <template v-else>
       <dl v-if="health" class="integration-facts health-facts">
         <div>
-          <dt>Backlog</dt>
+          <dt>В очереди</dt>
           <dd>{{ health.backlog.count }}</dd>
         </div>
         <div>
@@ -86,7 +120,7 @@ onMounted(() => void load());
         </div>
         <div>
           <dt>Причины</dt>
-          <dd>{{ health.reasons.join(", ") || "Нет" }}</dd>
+          <dd>{{ health.reasons.map(reasonLabel).join(", ") || "Нет" }}</dd>
         </div>
       </dl>
       <div v-if="activity.length" class="activity-table-wrap">
@@ -106,7 +140,7 @@ onMounted(() => void load());
                 <code>{{ item.providerEventName }}</code>
               </td>
               <td>
-                {{ item.status
+                {{ activityStatusLabel(item.status)
                 }}<small v-if="item.failureCode">
                   · {{ item.failureCode }}</small
                 >

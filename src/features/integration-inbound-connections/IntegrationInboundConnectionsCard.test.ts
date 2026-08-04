@@ -2,6 +2,16 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import IntegrationInboundConnectionsCard from "./IntegrationInboundConnectionsCard.vue";
 
+vi.mock("primevue/select", () => ({
+  default: {
+    props: ["modelValue", "options", "optionLabel", "optionValue", "name"],
+    emits: ["update:modelValue"],
+    template: `<select :name="name" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
+      <option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option>
+    </select>`,
+  },
+}));
+
 const api = vi.hoisted(() => ({
   list: vi.fn(),
   create: vi.fn(),

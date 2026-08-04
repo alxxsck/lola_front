@@ -16,11 +16,19 @@ export interface EventDefinitionSelection {
   code: string;
 }
 
-const props = defineProps<{
-  projectId: string;
-  modelValue: string;
-  disabled?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectId: string;
+    modelValue: string;
+    disabled?: boolean;
+    label?: string;
+    placeholder?: string;
+  }>(),
+  {
+    label: "Событие",
+    placeholder: "Выберите событие",
+  },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: string];
@@ -119,8 +127,8 @@ function select(option: PagedSearchOption): void {
     :load="load"
     :selected-option="selectedOption"
     :disabled="disabled"
-    label="Событие"
-    placeholder="Выберите событие"
+    :label="label"
+    :placeholder="placeholder"
     search-placeholder="Название или код события"
     empty-text="События не найдены"
     @update:model-value="emit('update:modelValue', $event)"

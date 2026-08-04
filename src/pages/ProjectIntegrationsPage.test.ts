@@ -264,7 +264,7 @@ describe("ProjectIntegrationsPage", () => {
     ).not.toBeNull();
   });
 
-  it("renders the product Telegram card from its own integration permissions", async () => {
+  it("separates communication channels and providers into persistent tabs", async () => {
     mocks.permissions = [
       "project.integrations.read",
       "project.integrations.manage",
@@ -279,6 +279,13 @@ describe("ProjectIntegrationsPage", () => {
       false,
     );
     expect(wrapper.text()).not.toContain("Slack");
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(4);
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toBe(
+      "Для пользователей",
+    );
+    expect(wrapper.get('[data-integration-section="users"]').isVisible()).toBe(
+      true,
+    );
     expect(
       wrapper.get('[data-testid="product-telegram-card-stub"]').attributes(),
     ).toMatchObject({
@@ -286,6 +293,28 @@ describe("ProjectIntegrationsPage", () => {
       "data-can-read": "true",
       "data-can-manage": "true",
     });
+
+    await wrapper
+      .get('[role="tab"][data-section="CUSTOMER_IO"]')
+      .trigger("click");
+
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toBe(
+      "Customer.io",
+    );
+    expect(
+      wrapper.get('[data-integration-section="CUSTOMER_IO"]').classes(),
+    ).toContain("is-active");
+    expect(
+      wrapper.get('[data-integration-section="users"]').classes(),
+    ).not.toContain("is-active");
+
+    await wrapper
+      .get('[role="tab"][data-section="CUSTOMER_IO"]')
+      .trigger("keydown", { key: "ArrowRight" });
+
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toBe(
+      "Amplitude",
+    );
     expect(
       wrapper
         .get('[data-testid="AMPLITUDE-connections-card-stub"]')
@@ -369,6 +398,29 @@ describe("ProjectIntegrationsPage", () => {
       "data-can-read-integrations": "true",
       "data-can-manage": "true",
     });
+  });
+
+  it("keeps recovery available to activity readers without integrations access", async () => {
+    mocks.permissions = ["project.integration_activity.read"];
+    mocks.auth.project.effectivePermissionCodes = [...mocks.permissions];
+
+    const wrapper = mount(ProjectIntegrationsPage);
+    await flushPromises();
+
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(1);
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toBe(
+      "Общие правила",
+    );
+    expect(
+      wrapper.get('[data-testid="integration-recovery-stub"]').attributes(),
+    ).toMatchObject({
+      "data-can-read-activity": "true",
+      "data-can-read-integrations": "false",
+      "data-can-manage": "false",
+    });
+    expect(
+      wrapper.find('[data-testid="canonical-identity-policy-stub"]').exists(),
+    ).toBe(false);
   });
 
   it("creates and tests a destination, then clears the write-only webhook input", async () => {

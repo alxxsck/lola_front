@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
 import type {
   CanonicalIdentityPolicyPreviewResponseDto,
   CanonicalIdentityPolicyResponseDto,
@@ -88,11 +89,11 @@ function resetDraft(): void {
 function normalizationLabel(value: string): string {
   switch (value) {
     case "TRIM":
-      return "trim";
+      return "пробелы по краям удаляются";
     case "LOWERCASE":
-      return "lowercase";
+      return "сравнение в нижнем регистре";
     case "TRIM_LOWERCASE":
-      return "trim + lowercase";
+      return "пробелы удаляются, сравнение в нижнем регистре";
     default:
       return "без нормализации";
   }
@@ -103,7 +104,9 @@ function providerLabel(value: string): string {
 }
 
 function activationLabel(value: string): string {
-  return value === "ACTIVE" ? "Активна в runtime" : "Ожидает worker cutover";
+  return value === "ACTIVE"
+    ? "Правило действует"
+    : "Ожидает включения обработчика";
 }
 
 function routeName(routeId: string): string {
@@ -113,18 +116,18 @@ function routeName(routeId: string): string {
 function policyError(cause: unknown): string {
   switch (normalizeApiError(cause).code) {
     case "INTEGRATION_IDENTITY_POLICY_VERSION_CONFLICT":
-      return "Policy уже изменилась. Обновите данные и повторите preview.";
+      return "Правило уже изменилось. Обновите данные и повторите проверку.";
     case "INTEGRATION_IDENTITY_POLICY_PARTICIPANTS_INCOMPLETE":
       return "Выберите все активные входящие маршруты этого события.";
     case "INTEGRATION_IDENTITY_POLICY_PROVIDERS_NOT_DISTINCT":
-      return "Canonical policy требует маршруты минимум двух разных провайдеров.";
+      return "Для объединения нужны правила приёма минимум двух разных провайдеров.";
     case "INTEGRATION_IDENTITY_POLICY_PARTICIPANT_NOT_ELIGIBLE":
     case "INTEGRATION_IDENTITY_POLICY_TARGET_REVISION_MISMATCH":
       return "Один из маршрутов больше не совместим с текущей ревизией события.";
     case "IDEMPOTENCY_KEY_CONFLICT":
-      return "Повтор команды не совпал с исходной публикацией. Обновите preview.";
+      return "Повтор команды не совпал с исходной публикацией. Обновите данные и снова проверьте правило.";
     default:
-      return "Операция canonical policy отклонена. Обновите данные и повторите preview.";
+      return "Правило уже изменилось. Обновите данные и повторите проверку.";
   }
 }
 
@@ -189,7 +192,7 @@ async function load(): Promise<void> {
       );
   } catch {
     if (requestEpoch === epoch && selectedProjectId === props.projectId)
-      loadError.value = "Не удалось загрузить canonical identity policies.";
+      loadError.value = "Не удалось загрузить правила объединения событий.";
   } finally {
     if (requestEpoch === epoch && selectedProjectId === props.projectId)
       loading.value = false;
@@ -211,7 +214,7 @@ async function selectEvent(): Promise<void> {
     await loadCurrent(selectedProjectId, selectedEventId, requestEpoch);
   } catch {
     if (requestEpoch === epoch)
-      loadError.value = "Не удалось загрузить policy выбранного события.";
+      loadError.value = "Не удалось загрузить правило выбранного события.";
   } finally {
     if (requestEpoch === epoch) loading.value = false;
   }
@@ -220,7 +223,7 @@ async function selectEvent(): Promise<void> {
 async function runPreview(): Promise<void> {
   if (!canPreview.value) {
     actionError.value =
-      "Выберите минимум два маршрута разных провайдеров со стабильным canonical key.";
+      "Выберите минимум два правила приёма разных провайдеров со стабильным идентификатором.";
     return;
   }
   const selectedProjectId = props.projectId;
@@ -294,7 +297,7 @@ async function publish(): Promise<void> {
     publishRetry = null;
     preview.value = null;
     await loadCurrent(selectedProjectId, selectedEventId, epoch);
-    notice.value = "Canonical identity policy опубликована.";
+    notice.value = "Правило объединения событий опубликовано.";
   } catch (cause) {
     if (selectedProjectId === props.projectId)
       actionError.value = policyError(cause);
@@ -315,10 +318,10 @@ onMounted(() => void load());
   <section v-if="canRead" class="integration-card canonical-policy-card">
     <div class="card-heading">
       <div>
-        <h2>Canonical identity policy</h2>
+        <h2>Объединение одинаковых событий</h2>
         <p>
-          Объединяет одинаковое бизнес-событие от разных провайдеров по
-          стабильному ключу.
+          Не создаёт дубль, когда одно бизнес-событие приходит из Customer.io и
+          Amplitude с одинаковым стабильным идентификатором.
         </p>
       </div>
       <button
@@ -336,45 +339,38 @@ onMounted(() => void load());
       {{ actionError }}
     </p>
     <p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
-    <p v-if="loading" class="empty-state">Загружаем canonical policy…</p>
+    <p v-if="loading" class="empty-state">Загружаем правило…</p>
 
-    <label v-if="definitions.length" class="integration-field">
-      <span>Событие Lola</span>
-      <select
-        v-model="eventDefinitionKeyId"
-        name="canonicalEventDefinition"
-        @change="selectEvent"
-      >
-        <option
-          v-for="definition in definitions"
-          :key="definition.id"
-          :value="definition.id"
-        >
-          {{ definition.name }} · {{ definition.code }}
-        </option>
-      </select>
-    </label>
+    <EventDefinitionSelect
+      v-if="definitions.length"
+      v-model="eventDefinitionKeyId"
+      :project-id="projectId"
+      label="Событие Lola"
+      placeholder="Найдите событие по названию или коду"
+      :disabled="loading || pending"
+      @select="selectEvent"
+    />
 
     <p v-if="!loading && !definitions.length && !loadError" class="empty-state">
-      Нет опубликованных событий для canonical policy.
+      Нет опубликованных событий, для которых можно настроить объединение.
     </p>
 
     <template v-if="currentPolicy">
       <div class="card-heading policy-revision-heading">
-        <h3>Текущая policy · Ревизия {{ currentPolicy.revision }}</h3>
+        <h3>Текущее правило · версия {{ currentPolicy.revision }}</h3>
         <span class="status-pill" :data-state="currentPolicy.runtimeActivation">
           {{ activationLabel(currentPolicy.runtimeActivation) }}
         </span>
       </div>
       <dl class="integration-metadata">
         <div>
-          <dt>Canonical key</dt>
+          <dt>Название стабильного ключа</dt>
           <dd>
             <code>{{ currentPolicy.canonicalKeyName }}</code>
           </dd>
         </div>
         <div>
-          <dt>Revision ID</dt>
+          <dt>Идентификатор версии</dt>
           <dd>
             <code>{{ currentPolicy.policyRevisionId }}</code>
           </dd>
@@ -403,21 +399,35 @@ onMounted(() => void load());
       data-form="canonical-policy"
       @submit.prevent="runPreview"
     >
-      <h3>{{ currentPolicy ? "Новая ревизия policy" : "Новая policy" }}</h3>
+      <div class="form-intro">
+        <span class="setup-step">Необязательно</span>
+        <div>
+          <h3>
+            {{ currentPolicy ? "Новая версия правила" : "Новое правило" }}
+          </h3>
+          <p>
+            Используйте только для события, которое реально приходит из двух
+            разных источников.
+          </p>
+        </div>
+      </div>
       <label>
-        <span>Имя canonical key</span>
+        <span>Название стабильного ключа</span>
         <input
           v-model="canonicalKeyName"
           name="canonicalKeyName"
           maxlength="64"
           required
         />
+        <small>
+          Понятное техническое имя, например <code>transaction_id</code>.
+        </small>
       </label>
       <fieldset class="mapping-fields">
-        <legend>Участники — минимум два разных провайдера</legend>
+        <legend>Источники события — минимум два разных провайдера</legend>
         <small
-          >Показываются только маршруты, закреплённые за текущей ревизией
-          события.</small
+          >Показываются только включённые правила приёма для текущей версии
+          события Lola.</small
         >
         <label
           v-for="route in eligibleRoutes"
@@ -449,26 +459,30 @@ onMounted(() => void load());
           </span>
         </label>
         <p v-if="!eligibleRoutes.length" class="empty-state">
-          Сначала опубликуйте входящие маршруты с canonical key extractor.
+          Сначала опубликуйте правила приёма и укажите в них путь к стабильному
+          идентификатору.
         </p>
       </fieldset>
       <p class="read-only-note">
-        Повтор одного canonical key будет принят только один раз. Одинаковый
-        ключ с разным payload будет конфликтом, а не автоматическим merge.
+        Одинаковый идентификатор и одинаковые данные будут приняты один раз.
+        Если идентификатор совпадает, а данные различаются, Lola зафиксирует
+        конфликт и не станет объединять события автоматически.
       </p>
-      <button
-        type="submit"
-        data-action="preview-canonical-policy"
-        :disabled="!canPreview"
-      >
-        Проверить policy
-      </button>
+      <div class="form-actions">
+        <button
+          type="submit"
+          data-action="preview-canonical-policy"
+          :disabled="!canPreview"
+        >
+          Проверить правило
+        </button>
+      </div>
     </form>
 
     <section v-if="preview" class="route-form" data-preview="canonical-policy">
-      <h3>Preview перед публикацией</h3>
+      <h3>Проверка перед публикацией</h3>
       <p>
-        Version {{ preview.expectedVersion }} · key
+        Версия {{ preview.expectedVersion }} · стабильный ключ
         <code>{{ preview.canonicalKeyName }}</code>
       </p>
       <p>{{ activationLabel(preview.runtimeActivation) }}</p>
@@ -484,15 +498,16 @@ onMounted(() => void load());
           >
         </li>
       </ul>
-      <button
-        v-if="canManage"
-        type="button"
-        data-action="publish-canonical-policy"
-        :disabled="pending || !preview.publishable"
-        @click="publish"
-      >
-        Опубликовать атомарно
-      </button>
+      <div v-if="canManage" class="form-actions">
+        <button
+          type="button"
+          data-action="publish-canonical-policy"
+          :disabled="pending || !preview.publishable"
+          @click="publish"
+        >
+          Опубликовать правило
+        </button>
+      </div>
     </section>
   </section>
 </template>

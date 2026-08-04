@@ -3,6 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api/http/api-error";
 import IntegrationConnectionsCard from "./IntegrationConnectionsCard.vue";
 
+vi.mock("primevue/select", () => ({
+  default: {
+    props: ["modelValue", "options", "optionLabel", "optionValue", "name"],
+    emits: ["update:modelValue"],
+    template: `<select :name="name" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
+      <option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option>
+    </select>`,
+  },
+}));
+
 const api = vi.hoisted(() => ({
   list: vi.fn(),
   createAmplitude: vi.fn(),
@@ -263,7 +273,7 @@ describe("IntegrationConnectionsCard", () => {
     await wrapper.get('[data-action="activate-customer-io"]').trigger("click");
 
     expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining("нужном Customer.io workspace"),
+      expect.stringContaining("нужном проекте Customer.io"),
     );
     expect(api.activate).not.toHaveBeenCalled();
   });

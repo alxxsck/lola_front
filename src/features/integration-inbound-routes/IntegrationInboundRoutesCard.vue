@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import Select from "primevue/select";
+import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
 import type {
   EventDefinitionCatalogResponseDto,
   IntegrationConnectionResponseDto,
@@ -54,6 +56,22 @@ const providerConnections = computed(() =>
       connection.lifecycle !== "ARCHIVED",
   ),
 );
+const connectionOptions = computed(() =>
+  providerConnections.value.map((connection) => ({
+    label: connection.displayName,
+    description: connection.region,
+    value: connection.id,
+  })),
+);
+const normalizationOptions = [
+  { label: "Не изменять значение", value: "NONE" },
+  { label: "Убрать пробелы по краям", value: "TRIM" },
+  { label: "Привести к нижнему регистру", value: "LOWERCASE" },
+  {
+    label: "Убрать пробелы и привести к нижнему регистру",
+    value: "TRIM_LOWERCASE",
+  },
+];
 const selectedDefinition = computed(() =>
   definitions.value.find((definition) => definition.id === definitionId.value),
 );
@@ -72,9 +90,10 @@ watch(definitionId, () => {
   for (const field of schemaFields.value) {
     sourcePaths[field.key] = field.key;
   }
-  if (!routeName.value) routeName.value = selectedDefinition.value?.name ?? "";
-  if (!providerEventName.value)
-    providerEventName.value = selectedDefinition.value?.code ?? "";
+  routeName.value = selectedDefinition.value
+    ? `${title.value} → ${selectedDefinition.value.name}`
+    : "";
+  providerEventName.value = selectedDefinition.value?.code ?? "";
 });
 
 function parseSourcePath(value: string): string[] | null {
@@ -153,7 +172,7 @@ async function create(): Promise<void> {
     bindings.some((binding) => binding.sourcePath === null) ||
     (canonicalKeySourcePath.value.trim().length > 0 && !canonicalSourcePath)
   ) {
-    error.value = "Проверьте подключение, событие и пути mapping.";
+    error.value = "Проверьте подключение, событие и пути к свойствам.";
     return;
   }
   const projectId = props.projectId;
@@ -194,7 +213,7 @@ async function create(): Promise<void> {
   } catch {
     if (projectId === props.projectId)
       error.value =
-        "Не удалось создать входящий маршрут. Проверьте mapping и схему события.";
+        "Не удалось создать правило приёма. Проверьте пути и схему события.";
   } finally {
     pending.value = false;
   }
@@ -252,8 +271,8 @@ async function mutate(
     error.value =
       cause instanceof ApiError &&
       cause.code === "CUSTOMER_IO_INBOUND_DELIVERY_ID_NOT_VERIFIED"
-        ? "Customer.io ещё не подтвердил messageId для текущего signing secret. Отправьте signed track canary и повторите операцию."
-        : "Изменение отклонено. Для SINGLE_SOURCE у события Lola может быть только один включённый входящий источник.";
+        ? "Customer.io ещё не подтвердил messageId для текущего секрета подписи. Отправьте подписанное контрольное событие track и повторите операцию."
+        : "Изменение отклонено: без объединения дублей у события Lola может быть только один включённый входящий источник.";
   } finally {
     pending.value = false;
   }
@@ -276,11 +295,16 @@ onMounted(() => void load());
   >
     <div class="card-heading">
       <div>
-        <h2>Входящие маршруты {{ title }}</h2>
-        <p>SINGLE_SOURCE: один включённый источник на событие Lola.</p>
+        <h2>Правила приёма событий из {{ title }}</h2>
+        <p>
+          Шаг 2. Укажите, какое внешнее событие должно превратиться в выбранное
+          событие Lola.
+        </p>
         <p v-if="provider === 'CUSTOMER_IO'">
-          Перед публикацией или включением отправьте signed track canary с
-          messageId под текущим signing secret. После rotation повторите canary.
+          Перед включением отправьте контрольное событие <code>track</code> с
+          уникальным <code>messageId</code>, подписанное текущим секретом. Lola
+          проверит подпись и только после этого разрешит принимать рабочие
+          события. После замены секрета проверку нужно повторить.
         </p>
       </div>
       <button
@@ -290,7 +314,7 @@ onMounted(() => void load());
         :disabled="pending"
         @click="showCreate = !showCreate"
       >
-        {{ showCreate ? "Закрыть" : "Создать маршрут" }}
+        {{ showCreate ? "Закрыть" : "Добавить правило" }}
       </button>
     </div>
     <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
@@ -303,79 +327,62 @@ onMounted(() => void load());
       :data-form="`create-inbound-route-${slug}`"
       @submit.prevent="create"
     >
-      <label
-        ><span>Входящее подключение</span
-        ><select v-model="connectionId" required>
-          <option value="" disabled>Выберите подключение</option>
-          <option
-            v-for="connection in providerConnections"
-            :key="connection.id"
-            :value="connection.id"
-          >
-            {{ connection.displayName }} · {{ connection.region }}
-          </option>
-        </select></label
-      >
-      <label
-        ><span>Событие Lola</span
-        ><select v-model="definitionId" name="inboundEventDefinition" required>
-          <option value="" disabled>Выберите событие</option>
-          <option
-            v-for="definition in definitions"
-            :key="definition.id"
-            :value="definition.id"
-            :disabled="!definition.currentRevision"
-          >
-            {{ definition.name }} · {{ definition.code }}
-          </option>
-        </select></label
-      >
-      <label
-        ><span>Название маршрута</span
-        ><input
-          v-model="routeName"
-          name="inboundRouteName"
-          maxlength="120"
-          required
-      /></label>
-      <label
-        ><span>Название события у провайдера</span
-        ><input
+      <div class="form-intro">
+        <span class="setup-step">Шаг 2</span>
+        <div>
+          <h3>Новое правило приёма</h3>
+          <p>
+            Правило связывает название события у провайдера с опубликованным
+            событием Lola. Название самого правила Lola сформирует
+            автоматически.
+          </p>
+        </div>
+      </div>
+      <label>
+        <span>1. Входящее подключение</span>
+        <Select
+          v-model="connectionId"
+          :options="connectionOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Выберите подключение"
+          :disabled="pending"
+          fluid
+        >
+          <template #option="slotProps">
+            <div class="select-option">
+              <strong>{{ slotProps.option.label }}</strong>
+              <small>{{ slotProps.option.description }}</small>
+            </div>
+          </template>
+        </Select>
+        <small>Webhook и регион берутся из выбранного подключения.</small>
+      </label>
+      <EventDefinitionSelect
+        v-model="definitionId"
+        :project-id="projectId"
+        label="2. Событие Lola"
+        placeholder="Найдите событие по названию или коду"
+        :disabled="pending"
+      />
+      <label>
+        <span>3. Название события в {{ title }}</span>
+        <input
           v-model="providerEventName"
           name="inboundProviderEventName"
           maxlength="120"
           required
-      /></label>
-      <fieldset class="mapping-fields">
-        <legend>Canonical key extractor (для multi-provider dedup)</legend>
-        <label class="mapping-row">
-          <span>Путь стабильного бизнес-ключа</span>
-          <input
-            v-model="canonicalKeySourcePath"
-            name="canonicalKeySourcePath"
-            maxlength="520"
-            placeholder="transaction_id"
-          />
-        </label>
-        <label class="mapping-row">
-          <span>Нормализация</span>
-          <select
-            v-model="canonicalKeyNormalization"
-            name="canonicalKeyNormalization"
-          >
-            <option value="NONE">Без нормализации</option>
-            <option value="TRIM">Trim</option>
-            <option value="LOWERCASE">Lowercase</option>
-            <option value="TRIM_LOWERCASE">Trim + lowercase</option>
-          </select>
-        </label>
+        />
         <small>
-          Оставьте путь пустым для SINGLE_SOURCE. Временные окна и эвристики не
-          используются.
+          Lola будет принимать только события с этим точным названием.
         </small>
-      </fieldset>
+      </label>
       <fieldset v-if="schemaFields.length" class="mapping-fields">
-        <legend>Mapping provider payload → Lola payload</legend>
+        <legend>4. Откуда брать свойства события Lola</legend>
+        <p class="field-help">
+          Для каждого свойства укажите путь в JSON, который присылает
+          {{ title }}. Пример: <code>properties.transaction_id</code>.
+        </p>
         <label
           v-for="field in schemaFields"
           :key="field.key"
@@ -389,12 +396,48 @@ onMounted(() => void load());
             v-model="sourcePaths[field.key]"
             :name="`sourcePath-${field.key}`"
             maxlength="520"
-            placeholder="field or nested.field"
+            placeholder="properties.field"
             required
           />
         </label>
       </fieldset>
-      <button type="submit" :disabled="pending">Создать черновик</button>
+      <details class="advanced-settings">
+        <summary>Объединение дублей из нескольких источников</summary>
+        <p>
+          Заполняйте этот блок, только если одно бизнес-событие может прийти и
+          из Customer.io, и из Amplitude. Lola сравнит стабильный идентификатор,
+          например <code>transaction_id</code>, и не создаст дубль.
+        </p>
+        <div class="advanced-settings__grid">
+          <label class="mapping-row">
+            <span>Путь к стабильному идентификатору</span>
+            <input
+              v-model="canonicalKeySourcePath"
+              name="canonicalKeySourcePath"
+              maxlength="520"
+              placeholder="properties.transaction_id"
+            />
+            <small
+              >Оставьте пустым, если событие приходит только из одного
+              источника.</small
+            >
+          </label>
+          <label class="mapping-row">
+            <span>Как сравнивать значения</span>
+            <Select
+              v-model="canonicalKeyNormalization"
+              name="canonicalKeyNormalization"
+              :options="normalizationOptions"
+              option-label="label"
+              option-value="value"
+              fluid
+            />
+          </label>
+        </div>
+      </details>
+      <div class="form-actions">
+        <button type="submit" :disabled="pending">Создать черновик</button>
+      </div>
     </form>
 
     <div v-if="!loading && routes.length" class="route-list">
@@ -437,7 +480,7 @@ onMounted(() => void load());
       </article>
     </div>
     <p v-else-if="!loading" class="empty-state">
-      Входящие маршруты ещё не настроены.
+      Правила приёма ещё не настроены.
     </p>
   </section>
 </template>

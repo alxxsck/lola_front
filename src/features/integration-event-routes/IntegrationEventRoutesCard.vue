@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import Select from "primevue/select";
+import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
 import type {
   CreateAmplitudeOutboundRouteDto,
   EventDefinitionCatalogResponseDto,
@@ -66,6 +68,13 @@ const providerConnections = computed(() =>
       connection.credential !== null &&
       connection.lifecycle !== "ARCHIVED",
   ),
+);
+const connectionOptions = computed(() =>
+  providerConnections.value.map((connection) => ({
+    label: connection.displayName,
+    description: connection.region,
+    value: connection.id,
+  })),
 );
 const selectedDefinition = computed(() =>
   definitions.value.find((definition) => definition.id === definitionId.value),
@@ -204,8 +213,9 @@ watch(definitionId, () => {
   targetKeys.value = emptyFieldMap();
   requiredFields.value = emptyFieldMap();
   providerEventName.value = selectedDefinition.value?.code ?? "";
-  if (!routeName.value.trim())
-    routeName.value = selectedDefinition.value?.name ?? "";
+  routeName.value = selectedDefinition.value
+    ? `${selectedDefinition.value.name} → ${providerUi.value.title}`
+    : "";
 });
 
 watch(
@@ -534,9 +544,12 @@ function dispatchStatus(status: string): string {
     <div class="card-heading">
       <div>
         <h2 :id="`${providerUi.slug}-routes-title`">
-          Маршруты событий {{ providerUi.title }}
+          Передача событий в {{ providerUi.title }}
         </h2>
-        <p>Только опубликованные и включённые маршруты экспортируют события.</p>
+        <p>
+          Шаг 2. Свяжите событие Lola с названием события в
+          {{ providerUi.title }} и выберите разрешённые свойства.
+        </p>
       </div>
       <button
         v-if="canManage"
@@ -544,7 +557,7 @@ function dispatchStatus(status: string): string {
         :disabled="pending"
         @click="showCreate = !showCreate"
       >
-        {{ showCreate ? "Закрыть" : "Создать маршрут" }}
+        {{ showCreate ? "Закрыть" : "Добавить правило" }}
       </button>
     </div>
 
@@ -557,54 +570,63 @@ function dispatchStatus(status: string): string {
       class="route-form"
       @submit.prevent="createRoute"
     >
+      <div class="form-intro">
+        <span class="setup-step">Шаг 2</span>
+        <div>
+          <h3>Новое правило передачи</h3>
+          <p>
+            Правило определяет, какое событие Lola отправлять, как оно будет
+            называться у провайдера и какие свойства можно передавать.
+          </p>
+        </div>
+      </div>
       <label>
-        <span>Подключение</span>
-        <select v-model="connectionId" required :disabled="pending">
-          <option value="" disabled>Выберите подключение</option>
-          <option
-            v-for="connection in providerConnections"
-            :key="connection.id"
-            :value="connection.id"
-          >
-            {{ connection.displayName }} · {{ connection.region }}
-          </option>
-        </select>
-      </label>
-      <label>
-        <span>Событие Lola</span>
-        <select v-model="definitionId" required :disabled="pending">
-          <option value="" disabled>Выберите событие</option>
-          <option
-            v-for="definition in definitions"
-            :key="definition.id"
-            :value="definition.id"
-            :disabled="!definition.currentRevision"
-          >
-            {{ definition.name }} · {{ definition.code }}
-          </option>
-        </select>
-      </label>
-      <label>
-        <span>Название маршрута</span>
-        <input
-          v-model="routeName"
-          maxlength="120"
-          required
+        <span>1. Подключение</span>
+        <Select
+          v-model="connectionId"
+          :options="connectionOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Выберите подключение"
           :disabled="pending"
-        />
+          fluid
+        >
+          <template #option="slotProps">
+            <div class="select-option">
+              <strong>{{ slotProps.option.label }}</strong>
+              <small>{{ slotProps.option.description }}</small>
+            </div>
+          </template>
+        </Select>
+        <small>Ключ и регион берутся из выбранного подключения.</small>
       </label>
+      <EventDefinitionSelect
+        v-model="definitionId"
+        :project-id="projectId"
+        label="2. Событие Lola"
+        placeholder="Найдите событие по названию или коду"
+        :disabled="pending"
+      />
       <label>
-        <span>{{ providerUi.eventNameLabel }}</span>
+        <span>3. {{ providerUi.eventNameLabel }}</span>
         <input
           v-model="providerEventName"
           maxlength="120"
           required
           :disabled="pending"
         />
+        <small>
+          Такое имя появится в {{ providerUi.title }}. По умолчанию используется
+          технический код события Lola.
+        </small>
       </label>
 
       <fieldset v-if="schemaFields.length" class="mapping-fields">
-        <legend>Разрешённые свойства</legend>
+        <legend>4. Какие свойства передавать</legend>
+        <p class="field-help">
+          Отметьте только необходимые поля. Чувствительные свойства Lola
+          блокирует автоматически.
+        </p>
         <div v-for="field in schemaFields" :key="field.key" class="mapping-row">
           <label class="mapping-toggle">
             <input
@@ -642,9 +664,11 @@ function dispatchStatus(status: string): string {
       <p v-else-if="definitionId" class="empty-state">
         В текущей схеме нет доступных верхнеуровневых свойств.
       </p>
-      <button type="submit" :disabled="pending || !canSubmit">
-        Создать черновик
-      </button>
+      <div class="form-actions">
+        <button type="submit" :disabled="pending || !canSubmit">
+          Создать черновик
+        </button>
+      </div>
     </form>
 
     <div v-if="!loading && routes.length" class="route-list">
@@ -685,7 +709,7 @@ function dispatchStatus(status: string): string {
       </article>
     </div>
     <p v-else-if="!loading && !routes.length" class="empty-state">
-      Маршруты ещё не настроены.
+      Правила передачи ещё не настроены.
     </p>
 
     <div v-if="canReadActivity" class="delivery-activity">
