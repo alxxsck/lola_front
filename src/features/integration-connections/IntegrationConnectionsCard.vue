@@ -32,6 +32,9 @@ const props = withDefaults(
   }>(),
   { provider: "AMPLITUDE" },
 );
+const emit = defineEmits<{
+  connectionsChanged: [];
+}>();
 const providerUi = computed(() => outboundProviderUi[props.provider]);
 
 type Operation = { projectId: string; epoch: number };
@@ -76,6 +79,7 @@ const connections = ref<ProviderConnection[]>([]);
 const loading = ref(true);
 const pendingConnectionId = ref<string | null>(null);
 const creating = ref(false);
+const showCreate = ref(false);
 const loadError = ref("");
 const actionError = ref("");
 const success = ref("");
@@ -443,6 +447,7 @@ async function load(): Promise<boolean> {
         isOutboundConnection(connection),
     );
     for (const connection of connections.value) initializeDraft(connection);
+    if (!connections.value.length && props.canManage) showCreate.value = true;
     return true;
   } catch {
     if (request === loadRequest && isCurrent(operation)) {
@@ -624,6 +629,7 @@ async function performCreate(
     createRetry.value = null;
     clearUnresolvedSecret(operation.projectId);
     replaceConnection(created);
+    showCreate.value = false;
     const result = await awaitTest(operation, created);
     if (!result || !isCurrent(operation)) return;
     const feedback = testMessage(result);
@@ -997,6 +1003,7 @@ function replaceConnection(updated: ProviderConnection): void {
       )
     : [...connections.value, updated];
   initializeDraft(updated);
+  emit("connectionsChanged");
 }
 
 function readyToActivate(connection: ProviderConnection): boolean {
@@ -1033,6 +1040,9 @@ function circuitLabel(connection: ProviderConnection): string {
 function statusTone(connection: ProviderConnection): string {
   if (connection.health === "FAILING" || connection.health === "DEGRADED")
     return "INVALID";
+  if (connection.lifecycle === "ACTIVE") return "ACTIVE";
+  if (connection.health === "HEALTHY" && connection.lifecycle === "DRAFT")
+    return "HEALTHY";
   return connection.lifecycle;
 }
 
@@ -1090,6 +1100,7 @@ watch(
     loading.value = true;
     pendingConnectionId.value = null;
     creating.value = false;
+    showCreate.value = false;
     displayName.value = providerUi.value.defaultDisplayName;
     commandKeys.clear();
     resetSensitiveState();
@@ -1140,7 +1151,7 @@ onBeforeUnmount(() => {
           Подключение к {{ providerUi.title }}
         </h2>
         <p>
-          Шаг 1. Укажите проект и ключ доступа, затем проверьте подключение.
+          Подключайте проекты, проверяйте доступ и управляйте отправкой событий.
         </p>
       </div>
       <span class="status" :data-status="hasConnections ? 'ACTIVE' : 'EMPTY'">
@@ -1186,7 +1197,22 @@ onBeforeUnmount(() => {
       Загружаем {{ providerUi.title }}…
     </div>
 
-    <div v-else class="provider-connections">
+    <button
+      v-if="!loading && canManage && hasConnections"
+      type="button"
+      class="secondary provider-create-toggle"
+      :aria-expanded="showCreate"
+      :aria-controls="`${providerUi.slug}-create-connection`"
+      @click="showCreate = !showCreate"
+    >
+      <i
+        :class="showCreate ? 'pi pi-times' : 'pi pi-plus'"
+        aria-hidden="true"
+      />
+      {{ showCreate ? "Закрыть форму" : "Подключить ещё проект" }}
+    </button>
+
+    <div v-if="!loading" class="provider-connections">
       <article
         v-for="connection in connections"
         :key="connection.id"
@@ -1278,110 +1304,126 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <form
+        <details
           v-if="
             canManage &&
             connection.lifecycle !== 'ARCHIVED' &&
             metadataDrafts[connection.id]
           "
-          class="secret-form"
-          :data-form="`update-${providerUi.slug}`"
-          @submit.prevent="updateMetadata(connection)"
+          class="connection-settings"
         >
-          <label class="integration-field">
-            <span>Название в Lola</span>
-            <input
-              v-model="metadataDrafts[connection.id]!.displayName"
-              maxlength="120"
-            />
-            <small>Помогает отличать несколько подключений внутри Lola.</small>
-          </label>
-          <label class="integration-field">
-            <span>Проект в {{ providerUi.title }} (необязательно)</span>
-            <input
-              v-model="metadataDrafts[connection.id]!.remoteProjectLabel"
-              maxlength="120"
-            />
-            <small>
-              Понятная подпись для внешнего проекта или рабочего пространства.
-              На передачу данных не влияет.
-            </small>
-          </label>
-          <div class="form-actions">
-            <button
-              type="submit"
-              class="secondary"
-              :disabled="pendingConnectionId !== null || creating"
+          <summary>
+            <span
+              ><i class="pi pi-cog" aria-hidden="true" />Настройки
+              подключения</span
             >
-              Сохранить настройки
-            </button>
-          </div>
-        </form>
+            <small>Название, внешний проект и ключ доступа</small>
+          </summary>
+          <div class="connection-settings__content">
+            <form
+              class="secret-form"
+              :data-form="`update-${providerUi.slug}`"
+              @submit.prevent="updateMetadata(connection)"
+            >
+              <div class="settings-section-heading">
+                <h4>Название и проект</h4>
+                <p>
+                  Эти подписи помогают отличать подключения и не влияют на
+                  передачу данных.
+                </p>
+              </div>
+              <label class="integration-field">
+                <span>Название в Lola</span>
+                <input
+                  v-model="metadataDrafts[connection.id]!.displayName"
+                  maxlength="120"
+                />
+              </label>
+              <label class="integration-field">
+                <span>Проект в {{ providerUi.title }} (необязательно)</span>
+                <input
+                  v-model="metadataDrafts[connection.id]!.remoteProjectLabel"
+                  maxlength="120"
+                />
+              </label>
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  class="secondary"
+                  :disabled="pendingConnectionId !== null || creating"
+                >
+                  Сохранить настройки
+                </button>
+              </div>
+            </form>
 
-        <form
-          v-if="canManage && connection.lifecycle !== 'ARCHIVED'"
-          class="secret-form secret-form--single"
-          :data-form="`rotate-${providerUi.slug}`"
-          @submit.prevent="rotate(connection)"
-        >
-          <label class="integration-field">
-            <span>Новый {{ providerUi.credentialShortLabel }}</span>
-            <input
-              v-model="rotationKeys[connection.id]"
-              :name="`${providerUi.formNamePrefix}RotationKey`"
-              type="password"
-              autocomplete="off"
-              :maxlength="providerUi.credentialMaxLength"
-              :placeholder="providerUi.credentialPlaceholder"
-              :disabled="
-                secretRetryPending &&
-                rotateRetry?.connectionId !== connection.id
-              "
-            />
-          </label>
-          <small
-            >Ключ очистится сразу после отправки. Текущий ключ никогда не
-            отображается.</small
-          >
-          <div class="form-actions">
-            <button
-              type="submit"
-              class="secondary"
-              :disabled="
-                pendingConnectionId !== null ||
-                creating ||
-                secretRetryPending ||
-                !rotationKeys[connection.id]
-              "
+            <form
+              class="secret-form secret-form--single"
+              :data-form="`rotate-${providerUi.slug}`"
+              @submit.prevent="rotate(connection)"
             >
-              Заменить и проверить
-            </button>
-            <button
-              v-if="rotateRetry?.connectionId === connection.id"
-              type="button"
-              class="secondary"
-              :data-action="`retry-rotate-${providerUi.slug}`"
-              :disabled="
-                pendingConnectionId !== null ||
-                creating ||
-                !rotationKeys[connection.id]
-              "
-              @click="retryRotate(connection)"
-            >
-              Повторить неподтверждённый запрос
-            </button>
-            <button
-              v-if="rotateRetry?.connectionId === connection.id"
-              type="button"
-              class="secondary"
-              :data-action="`discard-rotate-${providerUi.slug}`"
-              :disabled="pendingConnectionId !== null || creating"
-              @click="discardRotateRetry"
-            >
-              Отменить безопасный повтор
-            </button>
+              <div class="settings-section-heading">
+                <h4>Заменить ключ доступа</h4>
+                <p>
+                  Текущий ключ не отображается. Новый ключ будет сразу проверен.
+                </p>
+              </div>
+              <label class="integration-field">
+                <span>Новый {{ providerUi.credentialShortLabel }}</span>
+                <input
+                  v-model="rotationKeys[connection.id]"
+                  :name="`${providerUi.formNamePrefix}RotationKey`"
+                  type="password"
+                  autocomplete="off"
+                  :maxlength="providerUi.credentialMaxLength"
+                  :placeholder="providerUi.credentialPlaceholder"
+                  :disabled="
+                    secretRetryPending &&
+                    rotateRetry?.connectionId !== connection.id
+                  "
+                />
+              </label>
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  class="secondary"
+                  :disabled="
+                    pendingConnectionId !== null ||
+                    creating ||
+                    secretRetryPending ||
+                    !rotationKeys[connection.id]
+                  "
+                >
+                  Заменить и проверить
+                </button>
+                <button
+                  v-if="rotateRetry?.connectionId === connection.id"
+                  type="button"
+                  class="secondary"
+                  :data-action="`retry-rotate-${providerUi.slug}`"
+                  :disabled="
+                    pendingConnectionId !== null ||
+                    creating ||
+                    !rotationKeys[connection.id]
+                  "
+                  @click="retryRotate(connection)"
+                >
+                  Повторить неподтверждённый запрос
+                </button>
+                <button
+                  v-if="rotateRetry?.connectionId === connection.id"
+                  type="button"
+                  class="secondary"
+                  :data-action="`discard-rotate-${providerUi.slug}`"
+                  :disabled="pendingConnectionId !== null || creating"
+                  @click="discardRotateRetry"
+                >
+                  Отменить безопасный повтор
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </details>
         <p v-if="connection.lifecycle === 'ARCHIVED'" class="read-only-note">
           Архивное подключение доступно только для просмотра.
         </p>
@@ -1393,15 +1435,22 @@ onBeforeUnmount(() => {
     </div>
 
     <form
-      v-if="canManage"
+      v-if="canManage && (!hasConnections || showCreate)"
+      :id="`${providerUi.slug}-create-connection`"
       class="secret-form provider-create-form"
       :data-form="`create-${providerUi.slug}`"
       @submit.prevent="create"
     >
       <div class="form-intro">
-        <span class="setup-step">Шаг 1</span>
+        <span class="setup-step"
+          ><i class="pi pi-plus" aria-hidden="true"
+        /></span>
         <div>
-          <h3>Новое подключение</h3>
+          <h3>
+            {{
+              hasConnections ? "Новое подключение" : "Подключите первый проект"
+            }}
+          </h3>
           <p>
             Lola сохранит ключ в зашифрованном виде и сразу выполнит тестовую
             отправку.
@@ -1537,6 +1586,80 @@ onBeforeUnmount(() => {
 
 .provider-create-form {
   border-style: dashed;
+}
+
+.provider-create-toggle {
+  justify-self: start;
+  gap: 8px;
+}
+
+.connection-settings {
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+
+.connection-settings > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.connection-settings > summary::-webkit-details-marker {
+  display: none;
+}
+
+.connection-settings > summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.connection-settings > summary > small {
+  color: var(--text-secondary);
+}
+
+.connection-settings > summary::after {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  color: var(--text-secondary);
+  content: "";
+  transform: rotate(45deg);
+  transition: transform 0.16s ease;
+}
+
+.connection-settings[open] > summary::after {
+  transform: rotate(225deg);
+}
+
+.connection-settings__content {
+  display: grid;
+  gap: 14px;
+  padding: 0 14px 14px;
+}
+
+.settings-section-heading {
+  grid-column: 1 / -1;
+}
+
+.settings-section-heading h4,
+.settings-section-heading p {
+  margin: 0;
+}
+
+.settings-section-heading p {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
 }
 
 @media (max-width: 760px) {

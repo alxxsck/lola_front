@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import type {
   IntegrationIngressActivityItemDto,
   IntegrationIngressHealthResponseDto,
 } from "@/shared/api/generated/models";
 import type { InboundIntegrationProvider } from "@/features/integration-inbound-connections/integration-inbound-connections.api";
 import { integrationInboundActivityApi } from "./integration-inbound-activity.api";
+import TablePagination from "@/shared/ui/TablePagination.vue";
 
 const props = defineProps<{
   projectId: string;
@@ -16,7 +17,23 @@ const health = ref<IntegrationIngressHealthResponseDto | null>(null);
 const activity = ref<IntegrationIngressActivityItemDto[]>([]);
 const loading = ref(false);
 const error = ref("");
+const activityPage = ref(1);
 let epoch = 0;
+const PAGE_SIZE = 10;
+const visibleActivity = computed(() => {
+  const start = (activityPage.value - 1) * PAGE_SIZE;
+  return activity.value.slice(start, start + PAGE_SIZE);
+});
+
+watch(
+  () => activity.value.length,
+  (total) => {
+    activityPage.value = Math.min(
+      activityPage.value,
+      Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    );
+  },
+);
 
 function healthLabel(value: string): string {
   return (
@@ -59,6 +76,7 @@ async function load(): Promise<void> {
   const current = ++epoch;
   health.value = null;
   activity.value = [];
+  activityPage.value = 1;
   if (!props.projectId || !props.canReadActivity) return;
   loading.value = true;
   error.value = "";
@@ -123,35 +141,61 @@ onMounted(() => void load());
           <dd>{{ health.reasons.map(reasonLabel).join(", ") || "Нет" }}</dd>
         </div>
       </dl>
-      <div v-if="activity.length" class="activity-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Событие</th>
-              <th>Статус</th>
-              <th>Попытки</th>
-              <th>Дубликаты</th>
-              <th>Получено</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in activity" :key="item.id">
-              <td>
-                <code>{{ item.providerEventName }}</code>
-              </td>
-              <td>
-                {{ activityStatusLabel(item.status)
-                }}<small v-if="item.failureCode">
-                  · {{ item.failureCode }}</small
-                >
-              </td>
-              <td>{{ item.attemptCount }}</td>
-              <td>{{ item.duplicateCount }}</td>
-              <td>{{ new Date(item.receivedAt).toLocaleString("ru-RU") }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <section v-if="activity.length" class="integration-records">
+        <div class="integration-records__header">
+          <div>
+            <h3>Последние принятые события</h3>
+            <p>
+              {{
+                activity.length === 100
+                  ? "Последние 100 записей"
+                  : `${activity.length} записей`
+              }}
+              · по 10 на странице
+            </p>
+          </div>
+        </div>
+        <div class="integration-table-wrap">
+          <table class="integration-table">
+            <thead>
+              <tr>
+                <th>Событие</th>
+                <th>Статус</th>
+                <th>Попытки</th>
+                <th>Дубликаты</th>
+                <th>Получено</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="item in visibleActivity"
+                :key="item.id"
+                data-activity-row
+              >
+                <td>
+                  <code>{{ item.providerEventName }}</code>
+                </td>
+                <td>
+                  {{ activityStatusLabel(item.status)
+                  }}<small v-if="item.failureCode">
+                    · {{ item.failureCode }}</small
+                  >
+                </td>
+                <td>{{ item.attemptCount }}</td>
+                <td>{{ item.duplicateCount }}</td>
+                <td>{{ new Date(item.receivedAt).toLocaleString("ru-RU") }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <TablePagination
+          v-model:page="activityPage"
+          :total="activity.length"
+          :page-size="PAGE_SIZE"
+          previous-label="Предыдущая страница входящих событий"
+          next-label="Следующая страница входящих событий"
+        />
+      </section>
       <p v-else class="empty-state">Входящих событий пока нет.</p>
     </template>
   </section>

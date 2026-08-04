@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import Select from "primevue/select";
 import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
+import TablePagination from "@/shared/ui/TablePagination.vue";
 import type {
   EventDefinitionCatalogResponseDto,
   IntegrationConnectionResponseDto,
@@ -34,6 +35,8 @@ const definitions = ref<EventDefinitionCatalogResponseDto[]>([]);
 const loading = ref(false);
 const pending = ref(false);
 const showCreate = ref(false);
+const routeQuery = ref("");
+const routePage = ref(1);
 const error = ref("");
 const notice = ref("");
 const connectionId = ref("");
@@ -47,6 +50,59 @@ const canonicalKeyNormalization = ref<
 const sourcePaths = reactive<Record<string, string>>({});
 const commandKeys = new Map<string, string>();
 let epoch = 0;
+const PAGE_SIZE = 10;
+
+function routeProviderEventName(
+  route: IntegrationEventRouteResponseDto,
+): string {
+  return (
+    route.draftRevision?.providerEventName ??
+    route.publishedRevision?.providerEventName ??
+    ""
+  );
+}
+
+function statusLabel(route: IntegrationEventRouteResponseDto): string {
+  if (route.enabled) return "Активен";
+  if (route.draftRevision) return "Черновик";
+  return "Приостановлен";
+}
+
+function rulesCountLabel(count: number): string {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  if (mod100 >= 11 && mod100 <= 14) return `${count} правил`;
+  if (mod10 === 1) return `${count} правило`;
+  if (mod10 >= 2 && mod10 <= 4) return `${count} правила`;
+  return `${count} правил`;
+}
+
+const filteredRoutes = computed(() => {
+  const query = routeQuery.value.trim().toLocaleLowerCase("ru-RU");
+  if (!query) return routes.value;
+  return routes.value.filter((route) =>
+    `${route.name} ${routeProviderEventName(route)}`
+      .toLocaleLowerCase("ru-RU")
+      .includes(query),
+  );
+});
+const visibleRoutes = computed(() => {
+  const start = (routePage.value - 1) * PAGE_SIZE;
+  return filteredRoutes.value.slice(start, start + PAGE_SIZE);
+});
+
+watch(routeQuery, () => {
+  routePage.value = 1;
+});
+watch(
+  () => filteredRoutes.value.length,
+  (total) => {
+    routePage.value = Math.min(
+      routePage.value,
+      Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    );
+  },
+);
 
 const providerConnections = computed(() =>
   connections.value.filter(
@@ -121,6 +177,7 @@ function commandKey(signature: string): string {
 async function load(): Promise<void> {
   const current = ++epoch;
   routes.value = [];
+  routePage.value = 1;
   if (!props.projectId || !props.canRead) return;
   loading.value = true;
   error.value = "";
@@ -444,45 +501,79 @@ onMounted(() => void load());
       </div>
     </form>
 
-    <div v-if="!loading && routes.length" class="route-list">
-      <article v-for="route in routes" :key="route.id" class="route-row">
+    <section v-if="!loading && routes.length" class="integration-records">
+      <div class="integration-records__header">
         <div>
-          <strong>{{ route.name }}</strong>
-          <p>
-            <code>{{
-              route.draftRevision?.providerEventName ??
-              route.publishedRevision?.providerEventName
-            }}</code>
-            ·
-            {{
-              route.enabled
-                ? "Включён"
-                : route.draftRevision
-                  ? "Черновик"
-                  : "Остановлен"
-            }}
-          </p>
+          <h3>Правила приёма</h3>
+          <p>{{ rulesCountLabel(routes.length) }} · по 10 на странице</p>
         </div>
-        <div v-if="canManage" class="actions">
-          <button
-            v-if="route.draftRevision"
-            type="button"
-            :disabled="pending"
-            @click="mutate(route, 'PUBLISH')"
-          >
-            Опубликовать
-          </button>
-          <button
-            v-else
-            type="button"
-            :disabled="pending"
-            @click="mutate(route, route.enabled ? 'DISABLE' : 'ENABLE')"
-          >
-            {{ route.enabled ? "Остановить" : "Включить" }}
-          </button>
-        </div>
-      </article>
-    </div>
+        <label class="integration-records__search">
+          <span class="sr-only">Поиск по правилам приёма</span>
+          <input
+            v-model="routeQuery"
+            type="search"
+            placeholder="Найти правило или событие"
+          />
+        </label>
+      </div>
+      <div v-if="filteredRoutes.length" class="integration-table-wrap">
+        <table class="integration-table">
+          <thead>
+            <tr>
+              <th>Правило</th>
+              <th>Событие в {{ title }}</th>
+              <th>Статус</th>
+              <th v-if="canManage" class="integration-table__action">
+                Действие
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="route in visibleRoutes" :key="route.id" data-route-row>
+              <td>
+                <strong>{{ route.name }}</strong>
+              </td>
+              <td>
+                <code>{{ routeProviderEventName(route) }}</code>
+              </td>
+              <td>
+                <span
+                  class="status-chip"
+                  :data-status="route.enabled ? 'active' : 'idle'"
+                  >{{ statusLabel(route) }}</span
+                >
+              </td>
+              <td v-if="canManage" class="integration-table__action actions">
+                <button
+                  v-if="route.draftRevision"
+                  type="button"
+                  :disabled="pending"
+                  @click="mutate(route, 'PUBLISH')"
+                >
+                  Опубликовать
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  :disabled="pending"
+                  @click="mutate(route, route.enabled ? 'DISABLE' : 'ENABLE')"
+                >
+                  {{ route.enabled ? "Остановить" : "Включить" }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="empty-state">По этому запросу правил нет.</p>
+      <TablePagination
+        v-model:page="routePage"
+        :total="filteredRoutes.length"
+        :page-size="PAGE_SIZE"
+        previous-label="Предыдущая страница входящих правил"
+        next-label="Следующая страница входящих правил"
+      />
+    </section>
     <p v-else-if="!loading" class="empty-state">
       Правила приёма ещё не настроены.
     </p>
@@ -491,14 +582,25 @@ onMounted(() => void load());
 
 <style scoped>
 .inbound-routes-card,
-.route-list,
 .route-form,
 .mapping-fields {
   display: grid;
   gap: 14px;
 }
+.status-chip {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.status-chip[data-status="active"] {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
 .card-heading,
-.route-row,
 .actions {
   display: flex;
   align-items: center;
@@ -524,7 +626,6 @@ onMounted(() => void load());
     grid-template-columns: 1fr;
   }
   .card-heading,
-  .route-row,
   .actions {
     align-items: stretch;
     flex-direction: column;

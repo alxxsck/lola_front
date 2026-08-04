@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import IntegrationConnectionsCard from "@/features/integration-connections/IntegrationConnectionsCard.vue";
 import IntegrationEventRoutesCard from "@/features/integration-event-routes/IntegrationEventRoutesCard.vue";
 import IntegrationInboundActivityCard from "@/features/integration-inbound-activity/IntegrationInboundActivityCard.vue";
@@ -14,6 +14,7 @@ const props = defineProps<{
   canManage: boolean;
   canReadActivity: boolean;
 }>();
+const connectionsRevision = ref(0);
 
 const provider = computed(() =>
   props.provider === "CUSTOMER_IO"
@@ -76,9 +77,10 @@ const provider = computed(() =>
       :provider="props.provider"
     />
 
-    <div class="provider-workspace__direction">
+    <div class="provider-workspace__direction" data-direction="outbound">
       <span class="provider-workspace__direction-icon pi pi-arrow-up-right" />
       <div>
+        <span class="provider-workspace__direction-label">Исходящий поток</span>
         <h3>{{ provider.outboundTitle }}</h3>
         <p>{{ provider.outboundDescription }}</p>
       </div>
@@ -88,6 +90,7 @@ const provider = computed(() =>
       :can-read="canRead"
       :can-manage="canManage"
       :provider="props.provider"
+      @connections-changed="connectionsRevision += 1"
     />
     <IntegrationEventRoutesCard
       :project-id="projectId"
@@ -95,11 +98,13 @@ const provider = computed(() =>
       :can-manage="canManage"
       :can-read-activity="canReadActivity"
       :provider="props.provider"
+      :connections-revision="connectionsRevision"
     />
 
-    <div class="provider-workspace__direction">
+    <div class="provider-workspace__direction" data-direction="inbound">
       <span class="provider-workspace__direction-icon pi pi-arrow-down-left" />
       <div>
+        <span class="provider-workspace__direction-label">Входящий поток</span>
         <h3>{{ provider.inboundTitle }}</h3>
         <p>{{ provider.inboundDescription }}</p>
       </div>

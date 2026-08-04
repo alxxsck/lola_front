@@ -181,6 +181,37 @@ describe("IntegrationConnectionsCard", () => {
     expect(wrapper.html()).not.toContain("projectApiKey");
   });
 
+  it("keeps verified connections compact and opens creation explicitly", async () => {
+    api.list.mockResolvedValue({
+      items: [
+        connection({
+          health: "HEALTHY",
+          credential: {
+            ...connection().credential,
+            testedRevision: 1,
+          },
+        }),
+      ],
+    });
+    const wrapper = mountCard();
+    await flushPromises();
+
+    expect(wrapper.get('[data-status="HEALTHY"]').text()).toBe("Проверено");
+    expect(
+      wrapper.get("details.connection-settings").attributes("open"),
+    ).toBeUndefined();
+    expect(wrapper.find('form[data-form="create-amplitude"]').exists()).toBe(
+      false,
+    );
+
+    await wrapper.get(".provider-create-toggle").trigger("click");
+
+    expect(wrapper.get('form[data-form="create-amplitude"]').isVisible()).toBe(
+      true,
+    );
+    expect(wrapper.text()).toContain("Новое подключение");
+  });
+
   it("creates once, clears the write-only key immediately and polls the durable test with GET", async () => {
     vi.useFakeTimers();
     const created = connection();
@@ -210,11 +241,8 @@ describe("IntegrationConnectionsCard", () => {
     await flushPromises();
 
     expect(
-      (
-        wrapper.get('input[name="amplitudeProjectApiKey"]')
-          .element as HTMLInputElement
-      ).value,
-    ).toBe("");
+      wrapper.find('input[name="amplitudeProjectApiKey"]').exists(),
+    ).toBe(false);
     expect(api.createAmplitude).toHaveBeenCalledWith(
       "project-1",
       expect.objectContaining({
@@ -238,6 +266,7 @@ describe("IntegrationConnectionsCard", () => {
     );
     expect(wrapper.text()).toContain("Amplitude приняла тестовое событие");
     expect(wrapper.html()).not.toContain(secret);
+    expect(wrapper.emitted("connectionsChanged")).toBeTruthy();
   });
 
   it("requires acknowledgement before a Customer.io test can create remote data", async () => {
@@ -311,6 +340,7 @@ describe("IntegrationConnectionsCard", () => {
     ).toBe("");
     expect(wrapper.text()).toContain("Сервер не подтвердил результат");
     expect(wrapper.html()).not.toContain(secret);
+    await wrapper.get(".provider-create-toggle").trigger("click");
     expect(
       wrapper
         .get('input[name="amplitudeProjectApiKey"]')
@@ -424,6 +454,7 @@ describe("IntegrationConnectionsCard", () => {
     expect(wrapper.find('[data-integration="customer-io"]').exists()).toBe(
       true,
     );
+    await wrapper.get(".provider-create-toggle").trigger("click");
     const secret = wrapper.get('input[name="customerIoSourceApiKey"]');
     await secret.setValue("customer-source-key");
     await wrapper.get('form[data-form="create-customer-io"]').trigger("submit");
@@ -438,7 +469,7 @@ describe("IntegrationConnectionsCard", () => {
       }),
       expect.any(String),
     );
-    expect((secret.element as HTMLInputElement).value).toBe("");
+    expect(wrapper.html()).not.toContain("customer-source-key");
     expect(
       window.sessionStorage.getItem(
         "lola:customer-io-unresolved-secret:project-1",

@@ -133,7 +133,7 @@ describe("IntegrationEventRoutesCard", () => {
         metadataUpdatedAt: "2026-08-03T12:00:00.000Z",
         origin: "CUSTOM",
         readOnly: false,
-        policy: {},
+        policy: { enabled: true },
         currentRevision: {
           id: "event-revision-1",
           number: 1,
@@ -226,6 +226,46 @@ describe("IntegrationEventRoutesCard", () => {
     mocks.create.mockResolvedValue(route());
     mocks.publish.mockResolvedValue(
       route({ draftRevision: null, lifecycle: "ACTIVE", version: 2 }),
+    );
+  });
+
+  it("refreshes connection options when a connection is created above", async () => {
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReadActivity: false,
+      },
+    });
+    await flushPromises();
+
+    mocks.listConnections.mockResolvedValue({
+      items: [
+        {
+          id: "connection-2",
+          projectId: "project-1",
+          provider: "AMPLITUDE",
+          displayName: "Только что созданный проект",
+          region: "EU",
+          inboundEnabled: false,
+          outboundEnabled: true,
+          lifecycle: "ACTIVE",
+          health: "HEALTHY",
+          credential: { revision: 1 },
+        },
+      ],
+    });
+
+    await wrapper.setProps({ connectionsRevision: 1 });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Добавить правило")!
+      .trigger("click");
+
+    expect(wrapper.findAll("select")[0]!.text()).toContain(
+      "Только что созданный проект",
     );
   });
 
@@ -578,7 +618,7 @@ describe("IntegrationEventRoutesCard", () => {
         metadataUpdatedAt: "2026-08-03T12:00:00.000Z",
         origin: "CUSTOM",
         readOnly: false,
-        policy: {},
+        policy: { enabled: true },
         currentRevision: {
           id: "event-revision-1",
           number: 1,
@@ -691,5 +731,74 @@ describe("IntegrationEventRoutesCard", () => {
       ),
     ).toBeNull();
     second.unmount();
+  });
+
+  it("shows routes and delivery activity in separate ten-row pages", async () => {
+    mocks.listRoutes.mockResolvedValue({
+      items: Array.from({ length: 24 }, (_, index) =>
+        route({ id: `route-${index + 1}`, name: `Правило ${index + 1}` }),
+      ),
+    });
+    mocks.listActivity.mockResolvedValue({
+      items: Array.from({ length: 23 }, (_, index) => ({
+        id: `dispatch-${index + 1}`,
+        providerEventName: `event_${index + 1}`,
+        status: "DELIVERED",
+        attemptCount: 1,
+        createdAt: "2026-08-03T12:00:00.000Z",
+      })),
+    });
+
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: false,
+        canReadActivity: true,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.findAll("[data-route-row]")).toHaveLength(10);
+    expect(wrapper.findAll("[data-activity-row]")).toHaveLength(10);
+    expect(wrapper.text()).toContain("1–10 из 24");
+    expect(wrapper.text()).toContain("1–10 из 23");
+
+    await wrapper
+      .get('button[aria-label="Следующая страница правил"]')
+      .trigger("click");
+    expect(wrapper.text()).toContain("Правило 11");
+    expect(wrapper.text()).not.toContain("Правило 1\n");
+  });
+
+  it("filters routes by rule and provider event name", async () => {
+    mocks.listRoutes.mockResolvedValue({
+      items: [
+        route({ id: "route-a", name: "Регистрация" }),
+        route({
+          id: "route-b",
+          name: "Первый депозит",
+          draftRevision: {
+            ...route().draftRevision,
+            providerEventName: "first_deposit",
+          },
+        }),
+      ],
+    });
+
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: false,
+        canReadActivity: false,
+      },
+    });
+    await flushPromises();
+    await wrapper.get('input[type="search"]').setValue("first_deposit");
+
+    expect(wrapper.findAll("[data-route-row]")).toHaveLength(1);
+    expect(wrapper.text()).toContain("Первый депозит");
+    expect(wrapper.text()).not.toContain("Регистрация");
   });
 });

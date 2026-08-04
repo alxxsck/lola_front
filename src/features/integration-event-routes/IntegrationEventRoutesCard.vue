@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import Select from "primevue/select";
 import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
+import TablePagination from "@/shared/ui/TablePagination.vue";
 import type {
   CreateAmplitudeOutboundRouteDto,
   EventDefinitionCatalogResponseDto,
@@ -25,8 +26,9 @@ const props = withDefaults(
     canManage: boolean;
     canReadActivity: boolean;
     provider?: OutboundIntegrationProvider;
+    connectionsRevision?: number;
   }>(),
-  { provider: "AMPLITUDE" },
+  { provider: "AMPLITUDE", connectionsRevision: 0 },
 );
 const providerUi = computed(() => outboundProviderUi[props.provider]);
 
@@ -45,6 +47,9 @@ const pending = ref(false);
 const error = ref("");
 const notice = ref("");
 const showCreate = ref(false);
+const routeQuery = ref("");
+const routePage = ref(1);
+const activityPage = ref(1);
 const connectionId = ref("");
 const definitionId = ref("");
 const routeName = ref("");
@@ -59,6 +64,58 @@ const requiredFields = ref<Record<string, boolean>>(emptyFieldMap());
 const commandKeys = new Map<string, string>();
 let pendingCreate: PendingCreate | null = null;
 let loadEpoch = 0;
+let connectionsLoadEpoch = 0;
+const PAGE_SIZE = 10;
+
+function routeProviderEventName(
+  route: IntegrationEventRouteResponseDto,
+): string {
+  return (
+    route.draftRevision?.providerEventName ??
+    route.publishedRevision?.providerEventName ??
+    ""
+  );
+}
+
+const filteredRoutes = computed(() => {
+  const query = routeQuery.value.trim().toLocaleLowerCase("ru-RU");
+  if (!query) return routes.value;
+  return routes.value.filter((route) =>
+    `${route.name} ${routeProviderEventName(route)}`
+      .toLocaleLowerCase("ru-RU")
+      .includes(query),
+  );
+});
+const visibleRoutes = computed(() => {
+  const start = (routePage.value - 1) * PAGE_SIZE;
+  return filteredRoutes.value.slice(start, start + PAGE_SIZE);
+});
+const visibleActivity = computed(() => {
+  const start = (activityPage.value - 1) * PAGE_SIZE;
+  return activity.value.slice(start, start + PAGE_SIZE);
+});
+
+watch(routeQuery, () => {
+  routePage.value = 1;
+});
+watch(
+  () => filteredRoutes.value.length,
+  (total) => {
+    routePage.value = Math.min(
+      routePage.value,
+      Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    );
+  },
+);
+watch(
+  () => activity.value.length,
+  (total) => {
+    activityPage.value = Math.min(
+      activityPage.value,
+      Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    );
+  },
+);
 
 const providerConnections = computed(() =>
   connections.value.filter(
@@ -223,6 +280,11 @@ watch(
   () => void switchProject(),
 );
 
+watch(
+  () => props.connectionsRevision,
+  () => void refreshConnections(),
+);
+
 onMounted(() => void switchProject());
 
 function pendingCreateStorageKey(projectId: string): string {
@@ -298,6 +360,9 @@ async function switchProject(): Promise<void> {
   requiredFields.value = emptyFieldMap();
   error.value = "";
   notice.value = "";
+  routeQuery.value = "";
+  routePage.value = 1;
+  activityPage.value = 1;
   restorePendingCreate(props.projectId);
   await load();
   const command = pendingCreate as PendingCreate | null;
@@ -308,6 +373,7 @@ async function switchProject(): Promise<void> {
 
 async function load(): Promise<void> {
   const epoch = ++loadEpoch;
+  const connectionEpoch = ++connectionsLoadEpoch;
   routes.value = [];
   connections.value = [];
   definitions.value = [];
@@ -338,8 +404,13 @@ async function load(): Promise<void> {
         route.direction === "OUTBOUND" && revision?.provider === props.provider
       );
     });
-    connections.value = connectionResult.items;
-    definitions.value = definitionResult;
+    if (connectionEpoch === connectionsLoadEpoch) {
+      connections.value = connectionResult.items;
+    }
+    definitions.value = definitionResult.filter(
+      (definition) =>
+        definition.lifecycle === "ACTIVE" && definition.policy.enabled,
+    );
     activity.value = activityResult.items;
     if (!connectionId.value)
       connectionId.value = providerConnections.value[0]?.id ?? "";
@@ -347,6 +418,26 @@ async function load(): Promise<void> {
     if (epoch === loadEpoch) error.value = providerUi.value.routeLoadError;
   } finally {
     if (epoch === loadEpoch) loading.value = false;
+  }
+}
+
+async function refreshConnections(): Promise<void> {
+  const projectId = props.projectId;
+  const epoch = ++connectionsLoadEpoch;
+  if (!projectId || !props.canRead) return;
+  try {
+    const result = await integrationConnectionsApi.list(projectId);
+    if (epoch !== connectionsLoadEpoch || projectId !== props.projectId) return;
+    connections.value = result.items;
+    if (
+      !providerConnections.value.some(({ id }) => id === connectionId.value)
+    ) {
+      connectionId.value = providerConnections.value[0]?.id ?? "";
+    }
+  } catch {
+    if (epoch === connectionsLoadEpoch && projectId === props.projectId) {
+      error.value = providerUi.value.routeLoadError;
+    }
   }
 }
 
@@ -533,6 +624,15 @@ function dispatchStatus(status: string): string {
     }[status] ?? status
   );
 }
+
+function rulesCountLabel(count: number): string {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  if (mod100 >= 11 && mod100 <= 14) return `${count} правил`;
+  if (mod10 === 1) return `${count} правило`;
+  if (mod10 >= 2 && mod10 <= 4) return `${count} правила`;
+  return `${count} правил`;
+}
 </script>
 
 <template>
@@ -672,51 +772,107 @@ function dispatchStatus(status: string): string {
       </div>
     </form>
 
-    <div v-if="!loading && routes.length" class="route-list">
-      <article v-for="route in routes" :key="route.id" class="route-row">
+    <section v-if="!loading && routes.length" class="integration-records">
+      <div class="integration-records__header">
         <div>
-          <strong>{{ route.name }}</strong>
-          <span
-            class="status-chip"
-            :data-status="route.enabled ? 'active' : 'idle'"
-            >{{ statusLabel(route) }}</span
-          >
-          <p>
-            <code>{{
-              route.draftRevision?.providerEventName ??
-              route.publishedRevision?.providerEventName
-            }}</code>
-            · {{ mappingCount(route) }} свойств
-          </p>
+          <h3>Правила передачи</h3>
+          <p>{{ rulesCountLabel(routes.length) }} · по 10 на странице</p>
         </div>
-        <div v-if="canManage" class="route-actions">
-          <button
-            v-if="route.draftRevision"
-            type="button"
-            :disabled="pending"
-            @click="publish(route)"
-          >
-            Опубликовать
-          </button>
-          <button
-            v-else
-            type="button"
-            :disabled="pending"
-            @click="toggle(route)"
-          >
-            {{ route.enabled ? "Остановить" : "Включить" }}
-          </button>
-        </div>
-      </article>
-    </div>
+        <label class="integration-records__search">
+          <span class="sr-only">Поиск по правилам передачи</span>
+          <input
+            v-model="routeQuery"
+            type="search"
+            placeholder="Найти правило или событие"
+          />
+        </label>
+      </div>
+      <div v-if="filteredRoutes.length" class="integration-table-wrap">
+        <table class="integration-table">
+          <thead>
+            <tr>
+              <th>Правило</th>
+              <th>Событие в {{ providerUi.title }}</th>
+              <th>Статус</th>
+              <th>Свойства</th>
+              <th v-if="canManage" class="integration-table__action">
+                Действие
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="route in visibleRoutes" :key="route.id" data-route-row>
+              <td>
+                <strong>{{ route.name }}</strong>
+              </td>
+              <td>
+                <code>{{ routeProviderEventName(route) }}</code>
+              </td>
+              <td>
+                <span
+                  class="status-chip"
+                  :data-status="route.enabled ? 'active' : 'idle'"
+                  >{{ statusLabel(route) }}</span
+                >
+              </td>
+              <td>{{ mappingCount(route) }}</td>
+              <td
+                v-if="canManage"
+                class="integration-table__action route-actions"
+              >
+                <button
+                  v-if="route.draftRevision"
+                  type="button"
+                  :disabled="pending"
+                  @click="publish(route)"
+                >
+                  Опубликовать
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  :disabled="pending"
+                  @click="toggle(route)"
+                >
+                  {{ route.enabled ? "Остановить" : "Включить" }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="empty-state">По этому запросу правил нет.</p>
+      <TablePagination
+        v-model:page="routePage"
+        :total="filteredRoutes.length"
+        :page-size="PAGE_SIZE"
+        previous-label="Предыдущая страница правил"
+        next-label="Следующая страница правил"
+      />
+    </section>
     <p v-else-if="!loading && !routes.length" class="empty-state">
       Правила передачи ещё не настроены.
     </p>
 
-    <div v-if="canReadActivity" class="delivery-activity">
-      <h3>Последние доставки</h3>
-      <div v-if="activity.length" class="activity-table-wrap">
-        <table>
+    <section
+      v-if="canReadActivity"
+      class="integration-records delivery-activity"
+    >
+      <div class="integration-records__header">
+        <div>
+          <h3>Последние доставки</h3>
+          <p>
+            {{
+              activity.length === 100
+                ? "Последние 100 записей"
+                : `${activity.length} записей`
+            }}
+            · по 10 на странице
+          </p>
+        </div>
+      </div>
+      <div v-if="activity.length" class="integration-table-wrap">
+        <table class="integration-table">
           <thead>
             <tr>
               <th>Событие</th>
@@ -726,7 +882,11 @@ function dispatchStatus(status: string): string {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in activity" :key="item.id">
+            <tr
+              v-for="item in visibleActivity"
+              :key="item.id"
+              data-activity-row
+            >
               <td>
                 <code>{{ item.providerEventName }}</code>
               </td>
@@ -736,9 +896,16 @@ function dispatchStatus(status: string): string {
             </tr>
           </tbody>
         </table>
+        <TablePagination
+          v-model:page="activityPage"
+          :total="activity.length"
+          :page-size="PAGE_SIZE"
+          previous-label="Предыдущая страница доставок"
+          next-label="Следующая страница доставок"
+        />
       </div>
       <p v-else class="empty-state">Доставок пока нет.</p>
-    </div>
+    </section>
   </section>
 </template>
 
@@ -806,15 +973,6 @@ function dispatchStatus(status: string): string {
   width: auto;
   min-height: auto;
 }
-.route-list {
-  display: grid;
-  gap: 10px;
-}
-.route-row {
-  padding: 14px;
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-}
 .status-chip {
   margin-left: 8px;
   padding: 2px 8px;
@@ -835,19 +993,6 @@ function dispatchStatus(status: string): string {
 }
 .feedback.success {
   color: var(--status-success-text);
-}
-.activity-table-wrap {
-  overflow-x: auto;
-}
-.delivery-activity table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.delivery-activity th,
-.delivery-activity td {
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid var(--border-default);
 }
 @media (max-width: 720px) {
   .route-form {

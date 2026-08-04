@@ -334,16 +334,17 @@ button.paged-search-select__trigger:focus-visible {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 .paged-search-select__search > input.paged-search-select__search-input {
+  appearance: none;
   min-width: 0;
   width: 100%;
   height: calc(var(--control-height) - 2px);
   min-height: 0;
   padding: 0;
-  border: 0;
+  border: 0 !important;
   border-radius: 0;
   outline: 0;
-  background: transparent;
-  box-shadow: none;
+  background: transparent !important;
+  box-shadow: none !important;
   color: var(--text-primary);
   font-size: var(--font-size-control);
   font-weight: 400;
@@ -409,14 +410,22 @@ button.paged-search-select__trigger:focus-visible {
   color: var(--danger-color);
 }
 .paged-search-select__error button,
-.paged-search-select__more {
+button.paged-search-select__more {
   border: 0;
   background: transparent;
-  color: var(--primary-color);
+  color: var(--action-primary);
   font-weight: 600;
 }
-.paged-search-select__more {
+button.paged-search-select__more {
+  width: 100%;
   padding: 9px;
+  border-radius: 9px;
+  background: var(--surface-hover);
+}
+button.paged-search-select__more:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--surface-active);
+  color: var(--action-primary);
 }
 .sr-only {
   position: absolute;

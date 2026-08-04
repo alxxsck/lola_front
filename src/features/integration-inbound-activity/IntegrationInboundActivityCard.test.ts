@@ -102,4 +102,34 @@ describe("IntegrationInboundActivityCard", () => {
     expect(wrapper.text()).toContain("Принято");
     expect(wrapper.html()).not.toContain("rawBody");
   });
+
+  it("limits the visible inbound journal to ten rows per page", async () => {
+    api.list.mockResolvedValue({
+      items: Array.from({ length: 21 }, (_, index) => ({
+        id: `item-${index + 1}`,
+        providerEventName: `event_${index + 1}`,
+        status: "ACCEPTED",
+        failureCode: null,
+        attemptCount: 1,
+        duplicateCount: 0,
+        receivedAt: "2026-08-04T10:00:00.000Z",
+      })),
+    });
+
+    const wrapper = mount(IntegrationInboundActivityCard, {
+      props: {
+        projectId: "project-1",
+        provider: "CUSTOMER_IO",
+        canReadActivity: true,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.findAll("[data-activity-row]")).toHaveLength(10);
+    expect(wrapper.text()).toContain("1–10 из 21");
+    await wrapper
+      .get('button[aria-label="Следующая страница входящих событий"]')
+      .trigger("click");
+    expect(wrapper.text()).toContain("event_11");
+  });
 });

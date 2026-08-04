@@ -15,6 +15,8 @@ describe("EventDefinitionSelect", () => {
       {
         definitionKeyId: "event-1",
         code: "PAYMENT_COMPLETED",
+        lifecycle: "ACTIVE",
+        policy: { enabled: true },
         metadata: { name: "Оплата завершена" },
         currentSchema: { revisionId: "revision-7" },
       },
@@ -54,6 +56,8 @@ describe("EventDefinitionSelect", () => {
         {
           definitionKeyId: "event-1",
           code: "PAYMENT_COMPLETED",
+          lifecycle: "ACTIVE",
+          policy: { enabled: true },
           metadata: { name: "Оплата завершена" },
           currentSchema: { revisionId: "revision-7" },
         },
@@ -88,5 +92,45 @@ describe("EventDefinitionSelect", () => {
     expect(option.classes()).toContain("paged-search-select__option");
     expect(option.find("strong").exists()).toBe(false);
     expect(search.classes()).toContain("paged-search-select__search-input");
+  });
+
+  it("shows only enabled, non-archived events", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      {
+        definitionKeyId: "active-event",
+        code: "ACTIVE_EVENT",
+        lifecycle: "ACTIVE",
+        policy: { enabled: true },
+        metadata: { name: "Активное событие" },
+        currentSchema: { revisionId: "revision-1" },
+      },
+      {
+        definitionKeyId: "disabled-event",
+        code: "DISABLED_EVENT",
+        lifecycle: "ACTIVE",
+        policy: { enabled: false },
+        metadata: { name: "Выключенное событие" },
+        currentSchema: { revisionId: "revision-2" },
+      },
+      {
+        definitionKeyId: "archived-event",
+        code: "ARCHIVED_EVENT",
+        lifecycle: "ARCHIVED",
+        policy: { enabled: true },
+        metadata: { name: "Архивное событие" },
+        currentSchema: { revisionId: "revision-3" },
+      },
+    ]);
+    const wrapper = mount(EventDefinitionSelect, {
+      props: { projectId: "project-1", modelValue: "" },
+    });
+
+    await wrapper.get('[data-testid="paged-search-trigger"]').trigger("click");
+    await flushPromises();
+
+    expect(mocks.listDefinitions).toHaveBeenCalledWith("project-1", "ACTIVE");
+    expect(wrapper.text()).toContain("Активное событие");
+    expect(wrapper.text()).not.toContain("Выключенное событие");
+    expect(wrapper.text()).not.toContain("Архивное событие");
   });
 });

@@ -88,7 +88,9 @@ async function ensureDefinitions(
     loadPromise ??= eventCatalogRepository.listDefinitions(projectId, "ACTIVE");
     const request = loadPromise;
     try {
-      const events = await request;
+      const events = (await request).filter(
+        (event) => event.lifecycle === "ACTIVE" && event.policy.enabled,
+      );
       if (loadedProjectId === projectId) definitions.value = events;
       return events;
     } finally {

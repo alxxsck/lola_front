@@ -257,12 +257,49 @@ describe("IntegrationInboundRoutesCard", () => {
       },
     });
     await flushPromises();
-    await wrapper.get("article.route-row button").trigger("click");
+    await wrapper.get("[data-route-row] button").trigger("click");
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toBe(
       "Customer.io ещё не подтвердил messageId для текущего секрета подписи. Отправьте подписанное контрольное событие track и повторите операцию.",
     );
     expect(wrapper.text()).not.toContain("internal provider contract detail");
+  });
+
+  it("shows inbound rules in searchable ten-row pages", async () => {
+    mocks.listRoutes.mockResolvedValue({
+      items: Array.from({ length: 22 }, (_, index) => ({
+        id: `route-${index + 1}`,
+        projectId: "project-1",
+        connectionId: "connection-1",
+        direction: "INBOUND",
+        name: `Входящее правило ${index + 1}`,
+        lifecycle: "ACTIVE",
+        enabled: true,
+        version: 1,
+        draftRevision: null,
+        publishedRevision: {
+          provider: "AMPLITUDE",
+          providerEventName: `external_${index + 1}`,
+          propertyBindings: [],
+        },
+      })),
+    });
+
+    const wrapper = mount(IntegrationInboundRoutesCard, {
+      props: {
+        projectId: "project-1",
+        provider: "AMPLITUDE",
+        canRead: true,
+        canManage: false,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.findAll("[data-route-row]")).toHaveLength(10);
+    expect(wrapper.text()).toContain("1–10 из 22");
+    await wrapper.get('input[type="search"]').setValue("external_22");
+    expect(wrapper.findAll("[data-route-row]")).toHaveLength(1);
+    expect(wrapper.text()).toContain("Входящее правило 22");
   });
 });
