@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api/http/api-error";
 import AiAllowanceReconciliationQueue from "./AiAllowanceReconciliationQueue.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -151,5 +152,33 @@ describe("AiAllowanceReconciliationQueue", () => {
     expect(wrapper.text()).toContain("project.ai_allowance.reconcile");
     expect(mocks.queue).not.toHaveBeenCalled();
     expect(wrapper.text()).not.toContain("Разрешить");
+  });
+
+  it("requires a fresh login for resolve without replaying the break-glass command", async () => {
+    mocks.resolve.mockRejectedValue(
+      new ApiError(
+        428,
+        "unsafe backend text",
+        undefined,
+        "step-up-request",
+        "REAUTHENTICATION_REQUIRED",
+      ),
+    );
+    const wrapper = mountQueue();
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Разрешить"))!
+      .trigger("click");
+    await wrapper.find("textarea").setValue("Verified provider evidence");
+    await wrapper.get('input[type="checkbox"]').setValue(true);
+    await wrapper.find("form.resolve-form").trigger("submit");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("не будут повторены автоматически");
+    expect(wrapper.text()).not.toContain("unsafe backend text");
+    await wrapper.get('[data-testid="allowance-fresh-login"]').trigger("click");
+    expect(wrapper.emitted("fresh-login")).toEqual([[]]);
+    expect(mocks.resolve).toHaveBeenCalledOnce();
   });
 });

@@ -16,10 +16,17 @@ export const AI_ALLOWANCE_CATEGORIES = [
   "PROJECT_OVERHEAD",
 ] as const;
 export type AiAllowanceCategory = (typeof AI_ALLOWANCE_CATEGORIES)[number];
-export interface AiAllowanceLocalizedContent {
-  message?: string;
-  ru?: string;
-  en?: string;
+export type AiAllowanceLocalizedContent =
+  | { mode: "SYSTEM" }
+  | {
+      mode: "CUSTOM";
+      defaultLocale: string;
+      translations: Record<string, string>;
+    };
+export interface AiAllowanceLocalizationCatalog {
+  defaultLocale: string;
+  supportedLocales: string[];
+  translationSupportedLocales: string[];
 }
 export type SignedDecimalString = string & {
   readonly __signedDecimal: unique symbol;
@@ -89,6 +96,7 @@ export interface AiAllowanceAssignment {
 
 export interface AiAllowanceProjectPolicyView {
   projectPolicyVersion: string;
+  localization: AiAllowanceLocalizationCatalog;
   policy: AiAllowancePolicy | null;
   plans: AiAllowancePlan[];
   plansPageInfo: AiAllowanceCursorPageInfo;
@@ -120,7 +128,7 @@ export interface AiAllowancePeriod {
   endsAt: string;
   baseAllocatedUsd: DecimalString;
   status: "OPEN" | "CLOSED";
-  planRevision: AiAllowancePlanRevisionSummary;
+  planRevision: AiAllowancePlanRevision | null;
 }
 
 export interface AiAllowanceGrant {
@@ -206,14 +214,21 @@ export interface AiAllowanceJournalPage {
 export interface PutDefaultAllowancePlanInput {
   expectedProjectPolicyVersion: string;
   amountUsd: DecimalString;
+  categoryRules: Array<{
+    category: AiAllowanceCategory;
+    responsibility: "END_USER_ALLOWANCE" | "PROJECT_SPONSORED";
+    capUsd?: DecimalString;
+  }>;
   period: AiAllowancePeriodKind;
   timezone: string;
   enforcementMode: AiAllowanceEnforcementMode;
   reason: string;
   warningContent?: AiAllowanceLocalizedContent;
+  clearWarningContent?: boolean;
   lowThresholdMode: AiAllowanceLowThresholdMode;
   lowThresholdValue: DecimalString;
   exhaustedContent?: AiAllowanceLocalizedContent;
+  clearExhaustedContent?: boolean;
   showEndUserExactUsd: boolean;
 }
 

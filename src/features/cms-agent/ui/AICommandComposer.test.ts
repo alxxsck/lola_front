@@ -194,6 +194,50 @@ describe("AICommandComposer", () => {
     expect(wrapper.text()).toContain("Анализ поставлен в очередь");
   });
 
+  it("retries a terminal planner failure as a fresh Agent request", async () => {
+    repository.submit
+      .mockResolvedValueOnce({ requestId: "request-terminal-failure" })
+      .mockResolvedValueOnce({ requestId: "request-fresh-retry" });
+    repository.execute
+      .mockResolvedValueOnce({
+        kind: "FAILED",
+        code: "CMS_AGENT_PLANNER_USAGE_INVALID",
+      })
+      .mockResolvedValueOnce({
+        kind: "ANALYSIS_QUEUED",
+        analysisId: "analysis-fresh-retry",
+        runId: "run-fresh-retry",
+        status: "QUEUED",
+      });
+    const wrapper = mountComposer();
+
+    await wrapper.get("textarea").setValue("Покажи регистрации за вчера");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    const initialIdempotencyKey = repository.submit.mock.calls[0]?.[1].idempotencyKey;
+    expect(wrapper.text()).toContain("Повторить новым запросом");
+    await wrapper.get('[data-testid="ai-command-retry"]').trigger("click");
+    await flushPromises();
+
+    expect(repository.estimate).toHaveBeenCalledTimes(2);
+    expect(repository.submit).toHaveBeenCalledTimes(2);
+    expect(repository.submit.mock.calls[1]?.[1]).toEqual(
+      expect.objectContaining({
+        text: "Покажи регистрации за вчера",
+        idempotencyKey: expect.any(String),
+      }),
+    );
+    expect(repository.submit.mock.calls[1]?.[1].idempotencyKey).not.toBe(
+      initialIdempotencyKey,
+    );
+    expect(repository.execute.mock.calls).toEqual([
+      ["project-1", "request-terminal-failure"],
+      ["project-1", "request-fresh-retry"],
+    ]);
+    expect(wrapper.text()).toContain("Анализ поставлен в очередь");
+  });
+
   it("retries an ambiguous submit with the same immutable command identity", async () => {
     repository.submit
       .mockRejectedValueOnce(new Error("Сетевой таймаут"))

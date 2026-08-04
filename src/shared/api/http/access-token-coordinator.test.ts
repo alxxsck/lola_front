@@ -112,6 +112,59 @@ describe("access token coordination", () => {
     expect(second.get()).toBe("rotated-access");
   });
 
+  it("serializes session replacement with an in-flight refresh", async () => {
+    const coordinator = createAccessTokenCoordinator();
+    let releaseRefresh!: () => void;
+    const order: string[] = [];
+    const refresh = coordinator.refresh(async () => {
+      order.push("refresh:start");
+      await new Promise<void>((resolve) => {
+        releaseRefresh = resolve;
+      });
+      order.push("refresh:end");
+    });
+    await vi.waitFor(() => expect(releaseRefresh).toBeTypeOf("function"));
+    const replacement = coordinator.runExclusive(async () => {
+      order.push("replacement");
+    });
+
+    expect(order).toEqual(["refresh:start"]);
+    releaseRefresh();
+    await Promise.all([refresh, replacement]);
+
+    expect(order).toEqual(["refresh:start", "refresh:end", "replacement"]);
+  });
+
+  it("fails closed for session replacement when a cross-context lock is required but unavailable", async () => {
+    const hub = new ChannelHub();
+    const coordinator = createAccessTokenCoordinator({
+      channel: hub.create(),
+      requireCrossContextLock: true,
+    });
+    const operation = vi.fn(async () => {});
+
+    await expect(
+      coordinator.runSessionReplacement(operation),
+    ).rejects.toMatchObject({ name: "CrossContextAuthLockUnavailableError" });
+    expect(operation).not.toHaveBeenCalled();
+  });
+
+  it("keeps cleared peer tabs closed when a different account logs in", () => {
+    const hub = new ChannelHub();
+    const first = createAccessTokenCoordinator({ channel: hub.create() });
+    const second = createAccessTokenCoordinator({ channel: hub.create() });
+    const peerCleared = vi.fn();
+    second.onRemoteClear(peerCleared);
+    first.store({ accessToken: "account-a", expiresIn: 60 });
+
+    first.clear();
+    first.store({ accessToken: "account-b", expiresIn: 60 });
+
+    expect(first.get()).toBe("account-b");
+    expect(second.get()).toBeNull();
+    expect(peerCleared).toHaveBeenCalledOnce();
+  });
+
   it("clears every tab without persisting auth data", () => {
     const hub = new ChannelHub();
     const lock = serialLock();
@@ -136,6 +189,24 @@ describe("access token coordination", () => {
     expect(cleared).toHaveBeenCalledOnce();
     expect(Object.values(localStorage)).toEqual([]);
     expect(Object.values(sessionStorage)).toEqual([]);
+  });
+
+  it("rejects a late shared token after a cross-tab session clear", () => {
+    const hub = new ChannelHub();
+    const first = createAccessTokenCoordinator({ channel: hub.create() });
+    const second = createAccessTokenCoordinator({ channel: hub.create() });
+    first.store({ accessToken: "before-clear", expiresIn: 60 });
+
+    first.clear();
+    hub.broadcast({
+      type: "ACCESS_TOKEN",
+      accessToken: "late-refresh",
+      expiresAt: Date.now() + 60_000,
+      issuedAt: Date.now() + 1,
+    });
+
+    expect(first.get()).toBeNull();
+    expect(second.get()).toBeNull();
   });
 
   it("keeps other tabs authenticated when one tab clears only local state", () => {

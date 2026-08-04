@@ -3,6 +3,29 @@ import { describe, expect, it } from "vitest";
 import AIAnalysisResultView from "./AIAnalysisResultView.vue";
 
 describe("AIAnalysisResultView", () => {
+  it("shows the clarification question and published candidates", () => {
+    const wrapper = mount(AIAnalysisResultView, {
+      props: {
+        result: {
+          kind: "CLARIFICATION_REQUIRED",
+          clarification: {
+            question: "Какое опубликованное событие использовать?",
+            candidates: ["deposit.completed", "deposit.accepted"],
+          },
+          completeness: "UNKNOWN",
+          limitations: [],
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain(
+      "Какое опубликованное событие использовать?",
+    );
+    expect(wrapper.text()).toContain("deposit.completed");
+    expect(wrapper.text()).toContain("deposit.accepted");
+    expect(wrapper.text()).toContain("Новые запросы Lola");
+  });
+
   it("renders a validated answer, table and limitations", () => {
     const wrapper = mount(AIAnalysisResultView, {
       props: {

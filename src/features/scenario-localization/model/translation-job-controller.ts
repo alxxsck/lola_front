@@ -22,11 +22,14 @@ interface Repository {
 interface StoredJob {
   jobId: string;
   fieldPath: string;
+  fieldPaths?: string[];
   sourceLocale: string;
   sourceText: string;
+  sourceTexts?: Record<string, string>;
   unitKeys: string[];
   targets: string[];
   targetValues: Record<string, string>;
+  targetValuesByField?: Record<string, Record<string, string>>;
   startedAt: string;
 }
 
@@ -39,12 +42,9 @@ interface ActiveJob extends StoredJob {
 }
 
 function terminal(status: string) {
-  return [
-    "COMPLETED",
-    "COMPLETED_WITH_ERRORS",
-    "FAILED",
-    "CANCELLED",
-  ].includes(status);
+  return ["COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED", "CANCELLED"].includes(
+    status,
+  );
 }
 
 export function createTranslationJobController(options: {
@@ -73,11 +73,14 @@ export function createTranslationJobController(options: {
     const serializable: StoredJob[] = [...jobs.values()].map((job) => ({
       jobId: job.jobId,
       fieldPath: job.fieldPath,
+      fieldPaths: job.fieldPaths,
       sourceLocale: job.sourceLocale,
       sourceText: job.sourceText,
+      sourceTexts: job.sourceTexts,
       unitKeys: job.unitKeys,
       targets: job.targets,
       targetValues: job.targetValues,
+      targetValuesByField: job.targetValuesByField,
       startedAt: job.startedAt,
     }));
     if (serializable.length)
@@ -90,17 +93,28 @@ export function createTranslationJobController(options: {
     const normal = [500, 1_000, 2_000];
     const delay = job.networkFailures
       ? Math.min(10_000, 2_000 * 2 ** (job.networkFailures - 1))
-      : normal[job.pollIndex] ?? 2_000;
+      : (normal[job.pollIndex] ?? 2_000);
     job.pollIndex += 1;
     job.timer = setTimeout(() => void poll(job), delay);
   }
 
-  function snapshot(job: ActiveJob, locale: string): TranslationValueSnapshot {
+  function fieldPaths(job: StoredJob): string[] {
+    return job.fieldPaths?.length ? job.fieldPaths : [job.fieldPath];
+  }
+
+  function snapshot(
+    job: ActiveJob,
+    fieldPath: string,
+    locale: string,
+  ): TranslationValueSnapshot {
     return {
       sourceLocale: job.sourceLocale,
-      sourceText: job.sourceText,
+      sourceText: job.sourceTexts?.[fieldPath] ?? job.sourceText,
       targetLocale: locale,
-      targetText: job.targetValues[locale] ?? "",
+      targetText:
+        job.targetValuesByField?.[fieldPath]?.[locale] ??
+        job.targetValues[locale] ??
+        "",
     };
   }
 
@@ -111,35 +125,47 @@ export function createTranslationJobController(options: {
     for (const target of response.targets) {
       if (job.settledTargets.has(target.targetLocale)) continue;
       if (target.status === "PENDING" || target.status === "RUNNING") {
-        options.state(job.fieldPath, target.targetLocale, target.status);
+        const pendingState = target.status;
+        fieldPaths(job).forEach((fieldPath) =>
+          options.state(fieldPath, target.targetLocale, pendingState),
+        );
         unresolved = true;
         continue;
       }
       if (target.status === "SUCCESS") {
-        const output = target.outputUnits?.find(
-          (unit) => unit.key === job.fieldPath,
-        );
-        if (!output) {
-          options.state(job.fieldPath, target.targetLocale, "ERROR");
-          continue;
+        let missingOutput = false;
+        for (const fieldPath of fieldPaths(job)) {
+          const output = target.outputUnits?.find(
+            (unit) => unit.key === fieldPath,
+          );
+          if (!output) {
+            options.state(fieldPath, target.targetLocale, "ERROR");
+            missingOutput = true;
+            continue;
+          }
+          const outcome = options.apply(
+            fieldPath,
+            target.targetLocale,
+            output.text,
+            snapshot(job, fieldPath, target.targetLocale),
+          );
+          options.state(
+            fieldPath,
+            target.targetLocale,
+            outcome === "APPLIED" ? "MACHINE_UNSAVED" : outcome,
+          );
         }
-        const outcome = options.apply(
-          job.fieldPath,
-          target.targetLocale,
-          output.text,
-          snapshot(job, target.targetLocale),
-        );
-        options.state(
-          job.fieldPath,
-          target.targetLocale,
-          outcome === "APPLIED" ? "MACHINE_UNSAVED" : outcome,
-        );
-        job.settledTargets.add(target.targetLocale);
+        retryable ||= missingOutput;
+        if (!missingOutput) job.settledTargets.add(target.targetLocale);
       } else if (target.status === "CANCELLED") {
-        options.state(job.fieldPath, target.targetLocale, "CANCELLED");
+        fieldPaths(job).forEach((fieldPath) =>
+          options.state(fieldPath, target.targetLocale, "CANCELLED"),
+        );
         job.settledTargets.add(target.targetLocale);
       } else {
-        options.state(job.fieldPath, target.targetLocale, "ERROR");
+        fieldPaths(job).forEach((fieldPath) =>
+          options.state(fieldPath, target.targetLocale, "ERROR"),
+        );
         retryable = true;
       }
     }
@@ -153,7 +179,10 @@ export function createTranslationJobController(options: {
 
   async function poll(job: ActiveJob) {
     if (disposed || !jobs.has(job.jobId)) return;
-    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+    if (
+      typeof document !== "undefined" &&
+      document.visibilityState === "hidden"
+    ) {
       schedule(job);
       return;
     }
@@ -173,25 +202,54 @@ export function createTranslationJobController(options: {
     sourceLocale: string;
     targets: string[];
   }) {
+    return startBatch({
+      fieldPaths: [input.fieldPath],
+      sourceLocale: input.sourceLocale,
+      targets: input.targets,
+    });
+  }
+
+  async function startBatch(input: {
+    fieldPaths: string[];
+    sourceLocale: string;
+    targets: string[];
+  }) {
     const { projectId } = options.context();
-    const value = options.getValue(input.fieldPath);
-    const sourceText = value[input.sourceLocale] ?? "";
-    const submittedText = sourceText.trim();
-    if (!submittedText || !input.targets.length) return;
+    const sourceValues = Object.fromEntries(
+      [...new Set(input.fieldPaths)].map((fieldPath) => [
+        fieldPath,
+        options.getValue(fieldPath),
+      ]),
+    );
+    const units = Object.entries(sourceValues)
+      .map(([fieldPath, value]) => ({
+        key: fieldPath,
+        sourceText: value[input.sourceLocale] ?? "",
+      }))
+      .filter(({ sourceText }) => sourceText.trim())
+      .map(({ key, sourceText }) => ({ key, text: sourceText.trim() }));
+    if (!units.length || !input.targets.length) return;
+    const jobFieldPaths = units.map(({ key }) => key);
+    const firstFieldPath = jobFieldPaths[0]!;
+    const firstValue = sourceValues[firstFieldPath]!;
     const request = {
       sourceLocale: input.sourceLocale,
       targetLocales: input.targets,
-      units: [{ key: input.fieldPath, text: submittedText }],
+      units,
     };
     const idempotencyKey =
       globalThis.crypto?.randomUUID?.() ??
       `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    input.targets.forEach((locale) =>
-      options.state(input.fieldPath, locale, "PENDING"),
+    jobFieldPaths.forEach((fieldPath) =>
+      input.targets.forEach((locale) =>
+        options.state(fieldPath, locale, "PENDING"),
+      ),
     );
     let accepted;
     try {
-      accepted = await repository.create(projectId, request, { idempotencyKey });
+      accepted = await repository.create(projectId, request, {
+        idempotencyKey,
+      });
     } catch (cause) {
       if (
         cause &&
@@ -199,23 +257,45 @@ export function createTranslationJobController(options: {
         "status" in cause &&
         cause.status === 0
       ) {
-        accepted = await repository.create(projectId, request, { idempotencyKey });
+        accepted = await repository.create(projectId, request, {
+          idempotencyKey,
+        });
       } else {
-        input.targets.forEach((locale) =>
-          options.state(input.fieldPath, locale, "ERROR"),
+        jobFieldPaths.forEach((fieldPath) =>
+          input.targets.forEach((locale) =>
+            options.state(fieldPath, locale, "ERROR"),
+          ),
         );
         throw cause;
       }
     }
     const job: ActiveJob = {
       jobId: accepted.jobId,
-      fieldPath: input.fieldPath,
+      fieldPath: firstFieldPath,
+      fieldPaths: jobFieldPaths,
       sourceLocale: input.sourceLocale,
-      sourceText,
-      unitKeys: [input.fieldPath],
+      sourceText: firstValue[input.sourceLocale] ?? "",
+      sourceTexts: Object.fromEntries(
+        jobFieldPaths.map((fieldPath) => [
+          fieldPath,
+          sourceValues[fieldPath]![input.sourceLocale] ?? "",
+        ]),
+      ),
+      unitKeys: jobFieldPaths,
       targets: input.targets,
       targetValues: Object.fromEntries(
-        input.targets.map((locale) => [locale, value[locale] ?? ""]),
+        input.targets.map((locale) => [locale, firstValue[locale] ?? ""]),
+      ),
+      targetValuesByField: Object.fromEntries(
+        jobFieldPaths.map((fieldPath) => [
+          fieldPath,
+          Object.fromEntries(
+            input.targets.map((locale) => [
+              locale,
+              sourceValues[fieldPath]![locale] ?? "",
+            ]),
+          ),
+        ]),
       ),
       startedAt: accepted.createdAt,
       pollIndex: 0,
@@ -241,8 +321,10 @@ export function createTranslationJobController(options: {
           settledTargets: new Set(),
         };
         jobs.set(job.jobId, job);
-        value.targets.forEach((locale) =>
-          options.state(value.fieldPath, locale, "PENDING"),
+        fieldPaths(value).forEach((fieldPath) =>
+          value.targets.forEach((locale) =>
+            options.state(fieldPath, locale, "PENDING"),
+          ),
         );
         void poll(job);
       }
@@ -252,14 +334,21 @@ export function createTranslationJobController(options: {
   }
 
   async function cancel(fieldPath: string) {
-    const job = [...jobs.values()].find((candidate) => candidate.fieldPath === fieldPath);
+    const job = [...jobs.values()].find((candidate) =>
+      fieldPaths(candidate).includes(fieldPath),
+    );
     if (!job || (job.status && job.status !== "PENDING")) return;
-    const response = await repository.cancel(options.context().projectId, job.jobId);
+    const response = await repository.cancel(
+      options.context().projectId,
+      job.jobId,
+    );
     await consume(job, response);
   }
 
   async function retry(fieldPath: string, locale: string) {
-    const job = [...jobs.values()].find((candidate) => candidate.fieldPath === fieldPath);
+    const job = [...jobs.values()].find((candidate) =>
+      fieldPaths(candidate).includes(fieldPath),
+    );
     if (!job || !terminal(job.status ?? "")) return;
     options.state(fieldPath, locale, "PENDING");
     const response = await repository.retryTarget(
@@ -275,5 +364,5 @@ export function createTranslationJobController(options: {
     jobs.forEach((job) => clearTimeout(job.timer));
   }
 
-  return { start, recover, cancel, retry, dispose };
+  return { start, startBatch, recover, cancel, retry, dispose };
 }

@@ -10,17 +10,37 @@ import {
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceAccrualRepository } from "../api/ai-allowance-accrual-repository";
 import { parseAllowanceUsd } from "../model/ai-allowance";
-import { ACCRUAL_SOURCES } from "../model/ai-allowance-accrual";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 import type {
   AccrualLifecycle,
   AccrualSource,
   AiAllowanceAccrualRule,
 } from "../model/ai-allowance-accrual";
+
+const LIFECYCLE_OPTIONS: ReadonlyArray<{
+  value: AccrualLifecycle;
+  label: string;
+}> = [
+  { value: "ACTIVE", label: "Активно" },
+  { value: "PAUSED", label: "Приостановлено" },
+  { value: "ARCHIVED", label: "В архиве" },
+];
+const SOURCE_OPTIONS: ReadonlyArray<{
+  value: AccrualSource;
+  label: string;
+}> = [
+  { value: "SERVER", label: "Сервер" },
+  { value: "FRONTEND", label: "Интерфейс" },
+  { value: "INTERNAL", label: "Внутренняя операция" },
+  { value: "INTEGRATION", label: "Интеграция" },
+];
 const props = defineProps<{
   projectId: string;
   canRead: boolean;
   canManage: boolean;
 }>();
+const emit = defineEmits<{ "fresh-login": [] }>();
 const rules = ref<AiAllowanceAccrualRule[]>([]);
 const pageInfo = ref<{ hasMore: boolean; nextCursor: string | null }>({
   hasMore: false,
@@ -34,6 +54,7 @@ const saving = ref(false);
 const error = ref("");
 const dialog = ref(false);
 const formError = ref("");
+const reauthenticationRequired = ref(false);
 const key = ref("");
 const name = ref("");
 const lifecycle = ref<AccrualLifecycle>("ACTIVE");
@@ -51,10 +72,12 @@ const until = ref("");
 const reason = ref("");
 const idem = ref("");
 let generation = 0;
+let mutationGeneration = 0;
 watch(
   () => [props.projectId, props.canRead] as const,
   ([, read]) => {
     generation += 1;
+    mutationGeneration += 1;
     rules.value = [];
     loadedProjectId.value = "";
     loadingMore.value = false;
@@ -67,6 +90,7 @@ watch(
   () => props.canManage,
   (canManage) => {
     if (canManage) return;
+    mutationGeneration += 1;
     dialog.value = false;
     saving.value = false;
   },
@@ -159,6 +183,7 @@ function open(rule?: AiAllowanceAccrualRule) {
   reason.value = "";
   idem.value = globalThis.crypto?.randomUUID?.() ?? `accrual-${Date.now()}`;
   formError.value = "";
+  reauthenticationRequired.value = false;
   dialog.value = true;
 }
 async function save() {
@@ -189,7 +214,7 @@ async function save() {
     compareDecimalStrings(projectDailyCapUsd, perEndUserDailyCapUsd) < 0
   )
     return fail(
-      "Reward должен быть положительным, user cap ≥ reward, project cap ≥ user cap.",
+      "Сумма начисления должна быть больше нуля. Дневной лимит пользователя не может быть меньше начисления, а дневной лимит проекта — меньше лимита пользователя.",
     );
   const effectiveFrom = validInstant(from.value);
   const effectiveUntil = until.value ? validInstant(until.value) : undefined;
@@ -210,9 +235,10 @@ async function save() {
       (!effectiveUntil || effectiveFrom >= effectiveUntil))
   )
     return fail("Заполните обязательные поля и причину.");
-  const requestGeneration = generation;
+  const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   saving.value = true;
+  reauthenticationRequired.value = false;
   try {
     await aiAllowanceAccrualRepository.putRule(
       requestProjectId,
@@ -236,7 +262,7 @@ async function save() {
       idem.value,
     );
     if (
-      requestGeneration !== generation ||
+      requestGeneration !== mutationGeneration ||
       requestProjectId !== props.projectId ||
       !props.canManage
     )
@@ -246,14 +272,20 @@ async function save() {
     await load();
   } catch (cause) {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
-    )
-      formError.value =
-        cause instanceof Error ? cause.message : "Не удалось сохранить";
+    ) {
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      formError.value = reauthenticationRequired.value
+        ? ""
+        : cause instanceof Error
+          ? cause.message
+          : "Не удалось сохранить";
+    }
   } finally {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId
     )
       saving.value = false;
@@ -261,6 +293,11 @@ async function save() {
 }
 function fail(value: string) {
   formError.value = value;
+}
+function lifecycleLabel(value: AccrualLifecycle): string {
+  return (
+    LIFECYCLE_OPTIONS.find((option) => option.value === value)?.label ?? value
+  );
 }
 function localInput(value: Date) {
   const local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
@@ -285,17 +322,17 @@ function validTimezone(value: string): boolean {
   <section class="loyalty">
     <header>
       <div>
-        <h3>Правила лояльности</h3>
+        <h3>Автоматические начисления</h3>
         <p>
-          Событие начисляет временную USD-квоту с cap, cooldown и
-          immutable-ревизией.
+          Начисляют пользователю временный дополнительный лимит после выбранного
+          события. Для каждого правила задаются сумма, срок действия и дневные
+          ограничения.
         </p>
       </div>
       <Button
         v-if="canManage"
-        label="Новое правило"
+        label="Создать правило"
         icon="pi pi-plus"
-        outlined
         @click="open()"
       />
     </header>
@@ -311,23 +348,23 @@ function validTimezone(value: string): boolean {
       <article v-for="rule in rules" :key="rule.id">
         <div>
           <strong>{{ rule.name }}</strong
-          ><small>{{ rule.key }} · {{ rule.lifecycle }}</small>
+          ><small>{{ rule.key }} · {{ lifecycleLabel(rule.lifecycle) }}</small>
         </div>
         <div v-if="rule.revisions[0]">
           <strong
             >{{ formatDecimalMoney(rule.revisions[0].rewardUsd, "USD") }} /
             событие</strong
           ><small
-            >user cap
+            >максимум пользователю в день:
             {{
               formatDecimalMoney(rule.revisions[0].perEndUserDailyCapUsd, "USD")
             }}
-            · rev {{ rule.revisions[0].revisionNumber }}</small
+            · версия {{ rule.revisions[0].revisionNumber }}</small
           >
         </div>
         <Button
           v-if="canManage && rule.lifecycle !== 'ARCHIVED'"
-          label="Новая ревизия"
+          label="Изменить правило"
           text
           @click="open(rule)"
         />
@@ -340,7 +377,7 @@ function validTimezone(value: string): boolean {
         :closable="false"
       >
         Для каждого правила показаны последние
-        {{ revisionHistoryLimit }} ревизий.
+        {{ revisionHistoryLimit }} версий.
       </Message>
       <Button
         v-if="pageInfo.hasMore"
@@ -355,49 +392,76 @@ function validTimezone(value: string): boolean {
   <Dialog
     v-model:visible="dialog"
     modal
-    header="Правило начисления"
+    header="Автоматическое начисление"
     :style="{ width: 'min(820px,96vw)' }"
     ><form class="form" @submit.prevent="save">
       <div class="row">
-        <label>Ключ<input v-model="key" maxlength="100" /></label
-        ><label>Название<input v-model="name" maxlength="160" /></label
+        <label
+          >Системный ключ<input
+            v-model="key"
+            maxlength="100"
+            placeholder="Например: WELCOME_BONUS" /></label
+        ><label
+          >Название<input
+            v-model="name"
+            maxlength="160"
+            placeholder="Например: Бонус после регистрации" /></label
         ><label
           >Статус<select v-model="lifecycle">
-            <option>ACTIVE</option>
-            <option>PAUSED</option>
-            <option>ARCHIVED</option>
+            <option
+              v-for="option in LIFECYCLE_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
           </select></label
         >
       </div>
-      <label>Event Definition Key UUID<input v-model="eventKeyId" /></label
-      ><label
-        >Разрешённые Event Revision UUID (по одному в строке)<textarea
+      <label
+        >ID типа события<input
+          v-model="eventKeyId"
+          placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+      /></label>
+      <label
+        >ID разрешённых версий события, по одному в строке<textarea
           v-model="revisionIds"
           rows="3"
+          placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
         />
       </label>
       <fieldset>
-        <legend>Источники</legend>
-        <label v-for="source in ACCRUAL_SOURCES" :key="source"
-          ><input v-model="sources" type="checkbox" :value="source" />
-          {{ source }}</label
+        <legend>Источники события</legend>
+        <label v-for="option in SOURCE_OPTIONS" :key="option.value"
+          ><input v-model="sources" type="checkbox" :value="option.value" />
+          {{ option.label }}</label
         >
       </fieldset>
       <div class="row">
-        <label>Reward USD<input v-model="reward" /></label
-        ><label>User daily cap<input v-model="userCap" /></label
-        ><label>Project daily cap<input v-model="projectCap" /></label>
+        <label
+          >Сумма начисления, USD<input v-model="reward" placeholder="0,00"
+        /></label>
+        <label
+          >Максимум пользователю в день<input
+            v-model="userCap"
+            placeholder="0,00"
+        /></label>
+        <label
+          >Максимум по проекту в день<input
+            v-model="projectCap"
+            placeholder="0,00"
+        /></label>
       </div>
       <div class="row">
-        <label>Timezone<input v-model="timezone" /></label
+        <label>Часовой пояс<input v-model="timezone" /></label
         ><label
-          >TTL, sec<input
+          >Срок действия, сек.<input
             v-model.number="ttl"
             type="number"
             min="60"
             max="31622400" /></label
         ><label
-          >Cooldown, sec<input
+          >Пауза между начислениями, сек.<input
             v-model.number="cooldown"
             type="number"
             min="0"
@@ -405,15 +469,28 @@ function validTimezone(value: string): boolean {
         /></label>
       </div>
       <div class="row">
-        <label>С<input v-model="from" type="datetime-local" /></label
-        ><label>До<input v-model="until" type="datetime-local" /></label>
+        <label
+          >Начало действия<input v-model="from" type="datetime-local"
+        /></label>
+        <label
+          >Дата окончания<input v-model="until" type="datetime-local"
+        /></label>
       </div>
       <label
-        >Причина<textarea v-model="reason" rows="2" maxlength="500" /></label
-      ><label>Idempotency-Key<input v-model="idem" readonly /></label
+        >Причина изменения<textarea
+          v-model="reason"
+          rows="2"
+          maxlength="500"
+          placeholder="Например: добавили приветственный бонус"
+        />
+      </label>
       ><small v-if="formError" class="error" role="alert">{{
         formError
       }}</small>
+      <AiAllowanceReauthenticationAction
+        :required="reauthenticationRequired"
+        @fresh-login="emit('fresh-login')"
+      />
       <footer>
         <Button
           label="Отмена"
@@ -432,7 +509,7 @@ function validTimezone(value: string): boolean {
   gap: 14px;
 }
 .loyalty {
-  padding: 20px;
+  padding: 24px;
   border: 1px solid var(--border-default);
   border-radius: 14px;
   background: var(--surface-card);
@@ -449,9 +526,17 @@ h3,
 p {
   margin: 0;
 }
+h3 {
+  font-weight: 600;
+}
 p,
 small {
   color: var(--text-small-muted);
+}
+header p {
+  max-width: 760px;
+  margin-top: 6px;
+  line-height: 1.45;
 }
 .rules article {
   padding-top: 10px;
@@ -461,20 +546,43 @@ small {
   display: grid;
   gap: 4px;
 }
+.rules article strong {
+  font-weight: 600;
+}
 .form label {
   display: grid;
-  gap: 5px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 400;
 }
 .form input,
 .form select,
 .form textarea {
-  padding: 9px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-card);
   color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+.form textarea {
+  min-height: 72px;
+  padding-block: 10px;
+  line-height: 1.4;
+}
+.form fieldset label {
+  display: flex;
+  align-items: center;
+}
+.form fieldset input {
+  width: auto;
+  min-height: auto;
 }
 .row {
   display: grid;
@@ -496,6 +604,9 @@ fieldset {
   }
   .row {
     grid-template-columns: 1fr;
+  }
+  .loyalty {
+    padding: 18px;
   }
 }
 </style>

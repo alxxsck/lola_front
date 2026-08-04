@@ -1,6 +1,13 @@
-import { flushPromises, mount } from "@vue/test-utils";
+import {
+  flushPromises,
+  mount,
+  type ComponentMountingOptions,
+} from "@vue/test-utils";
+import PrimeVue from "primevue/config";
+import DatePicker from "primevue/datepicker";
 import { nextTick, reactive } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { primeVueRussianLocale } from "@/app/primevue-ru";
 import AiCostsDashboard from "./AiCostsDashboard.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -8,8 +15,12 @@ const mocks = vi.hoisted(() => ({
   users: vi.fn(),
   cmsUsers: vi.fn(),
   replace: vi.fn(),
-  route: { query: {} as Record<string, string> },
+  route: {
+    query: {} as Record<string, string>,
+    fullPath: "/ai-costs?period=7d&tab=overview",
+  },
   auth: {
+    logout: vi.fn(),
     project: {
       id: "project-1",
       effectivePermissionCodes: [
@@ -90,10 +101,34 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+function mountDashboard(
+  options: ComponentMountingOptions<typeof AiCostsDashboard> = {},
+) {
+  const plugins = options.global?.plugins ?? [];
+  return mount(AiCostsDashboard, {
+    ...options,
+    global: {
+      ...options.global,
+      plugins: [[PrimeVue, { locale: primeVueRussianLocale }], ...plugins],
+    },
+  });
+}
+
 describe("AiCostsDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      })),
+    );
     mocks.route.query = reactive({ period: "7d", tab: "overview" });
+    mocks.route.fullPath = "/ai-costs?period=7d&tab=overview";
     mocks.auth.project = reactive({
       id: "project-1",
       effectivePermissionCodes: [
@@ -144,7 +179,7 @@ describe("AiCostsDashboard", () => {
   });
 
   it("renders exact cost KPIs, completeness and Project-timezone charts", async () => {
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
     await flushPromises();
 
     expect(mocks.overview).toHaveBeenCalledWith(
@@ -162,7 +197,7 @@ describe("AiCostsDashboard", () => {
   });
 
   it("exposes chart bars as decorative when the adjacent text carries the value", async () => {
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
     await flushPromises();
 
     const chartBars = wrapper.findAll(".bar-track");
@@ -212,7 +247,7 @@ describe("AiCostsDashboard", () => {
       },
     });
 
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
     await flushPromises();
 
     expect(mocks.users).toHaveBeenCalledWith(
@@ -254,7 +289,7 @@ describe("AiCostsDashboard", () => {
       },
     });
 
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
     await flushPromises();
 
     expect(mocks.cmsUsers).toHaveBeenCalledWith(
@@ -267,7 +302,7 @@ describe("AiCostsDashboard", () => {
   });
 
   it("writes tab changes back to the URL query", async () => {
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
     await flushPromises();
 
     await wrapper
@@ -280,9 +315,54 @@ describe("AiCostsDashboard", () => {
     });
   });
 
+  it("keeps the global tabs above the period filter", async () => {
+    const wrapper = mountDashboard();
+    await flushPromises();
+
+    const tabs = wrapper.get(".cost-tabs").element;
+    const periodFilter = wrapper.get(".period-panel").element;
+    expect(
+      tabs.compareDocumentPosition(periodFilter) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("uses localized date controls without browser-dependent native placeholders", async () => {
+    const wrapper = mountDashboard();
+    await flushPromises();
+
+    const periodFilter = wrapper.get(".period-panel");
+    expect(periodFilter.findAll('input[type="date"]')).toHaveLength(0);
+    expect(
+      periodFilter.findAll('input[placeholder="Выбрать даты"]'),
+    ).toHaveLength(1);
+    expect(periodFilter.get(".custom-period").attributes("aria-label")).toBe(
+      "Произвольный период",
+    );
+    expect(periodFilter.find(".period-note").exists()).toBe(false);
+  });
+
+  it("writes a selected calendar range to the URL as local calendar dates", async () => {
+    const wrapper = mountDashboard();
+    await flushPromises();
+
+    await wrapper
+      .getComponent(DatePicker)
+      .setValue([new Date(2026, 6, 3), new Date(2026, 6, 9)]);
+    await wrapper.get(".custom-period button").trigger("click");
+
+    expect(mocks.replace).toHaveBeenCalledWith({
+      query: expect.objectContaining({
+        period: "custom",
+        from: "2026-07-03",
+        to: "2026-07-09",
+      }),
+    });
+  });
+
   it("keeps future Limits and Journal tabs explicit instead of inventing data", async () => {
     mocks.route.query = { period: "7d", tab: "limits" };
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
     await flushPromises();
 
     expect(wrapper.text()).toContain("project.ai_allowance.read");
@@ -290,10 +370,159 @@ describe("AiCostsDashboard", () => {
     expect(mocks.cmsUsers).not.toHaveBeenCalled();
   });
 
+  it("starts a fresh login for an allowance step-up without replaying the mutation", async () => {
+    mocks.route.query = { period: "7d", tab: "limits" };
+    mocks.route.fullPath = "/ai-costs?period=7d&tab=limits";
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_costs.read",
+      "project.ai_allowance.read",
+      "project.ai_allowance.manage",
+    ];
+    const logout = deferred<void>();
+    mocks.auth.logout.mockReturnValue(logout.promise);
+    const wrapper = mountDashboard({
+      global: {
+        stubs: {
+          AiAllowanceLimitsPanel: {
+            emits: ["fresh-login"],
+            template:
+              '<button data-testid="request-allowance-step-up" @click="$emit(\'fresh-login\')">Войти заново</button>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    const button = wrapper.get('[data-testid="request-allowance-step-up"]');
+    await button.trigger("click");
+    await button.trigger("click");
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
+    expect(mocks.replace).not.toHaveBeenCalled();
+
+    mocks.route.fullPath = "/ai-costs?period=7d&tab=journal";
+    logout.resolve();
+    await flushPromises();
+
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: { redirect: "/ai-costs?period=7d&tab=limits" },
+    });
+  });
+
+  it("still leaves the protected workspace when remote logout fails", async () => {
+    mocks.route.query = { period: "7d", tab: "limits" };
+    mocks.route.fullPath = "/ai-costs?period=7d&tab=limits";
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_costs.read",
+      "project.ai_allowance.read",
+      "project.ai_allowance.manage",
+    ];
+    mocks.auth.logout.mockRejectedValue(new Error("network unavailable"));
+    const wrapper = mountDashboard({
+      global: {
+        stubs: {
+          AiAllowanceLimitsPanel: {
+            emits: ["fresh-login"],
+            template:
+              '<button data-testid="request-allowance-step-up" @click="$emit(\'fresh-login\')">Войти заново</button>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    await wrapper
+      .get('[data-testid="request-allowance-step-up"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: { redirect: "/ai-costs?period=7d&tab=limits" },
+    });
+  });
+
+  it("returns a journal correction to the same journal and user context", async () => {
+    mocks.route.query = {
+      period: "7d",
+      tab: "journal",
+      allowanceUser: "end-user-7",
+    };
+    mocks.route.fullPath =
+      "/ai-costs?period=7d&tab=journal&allowanceUser=end-user-7";
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_costs.read",
+      "project.ai_allowance.read",
+      "project.ai_allowance.reconcile",
+    ];
+    const wrapper = mountDashboard({
+      global: {
+        stubs: {
+          AiAllowanceJournalPanel: {
+            emits: ["fresh-login"],
+            template:
+              '<button data-testid="request-journal-step-up" @click="$emit(\'fresh-login\')">Войти заново</button>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    await wrapper
+      .get('[data-testid="request-journal-step-up"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: {
+        redirect: "/ai-costs?period=7d&tab=journal&allowanceUser=end-user-7",
+      },
+    });
+  });
+
+  it("returns a user allowance mutation to the same user dialog context", async () => {
+    mocks.route.query = reactive({ period: "7d", tab: "users" });
+    mocks.route.fullPath =
+      "/ai-costs?period=7d&tab=users&allowanceUser=id-user-dialog";
+    mocks.auth.project.effectivePermissionCodes = [
+      "project.ai_costs.read",
+      "project.profiles.read",
+      "project.ai_allowance.read",
+      "project.ai_allowance.manage",
+    ];
+    mocks.users.mockResolvedValueOnce(userPage("user-dialog"));
+    const wrapper = mountDashboard({
+      global: {
+        stubs: {
+          AiAllowanceUserDialog: {
+            props: ["visible"],
+            emits: ["fresh-login"],
+            template:
+              '<button data-testid="request-user-step-up" @click="$emit(\'fresh-login\')">Войти заново</button>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper.get('button[aria-label="Баланс"]').trigger("click");
+    await wrapper.get('[data-testid="request-user-step-up"]').trigger("click");
+    await flushPromises();
+
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "login",
+      query: {
+        redirect: "/ai-costs?period=7d&tab=users&allowanceUser=id-user-dialog",
+      },
+    });
+  });
+
   it("does not restore a previous query page after the replacement query fails", async () => {
     mocks.route.query = reactive({ period: "7d", tab: "users" });
     mocks.users.mockResolvedValueOnce(userPage("previous-query-user"));
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
     await flushPromises();
     expect(wrapper.text()).toContain("previous-query-user");
 
@@ -311,7 +540,7 @@ describe("AiCostsDashboard", () => {
   it("never exposes rows from another Project after a failed reload or permission revocation", async () => {
     mocks.route.query = reactive({ period: "7d", tab: "users" });
     mocks.users.mockResolvedValueOnce(userPage("tenant-one-user"));
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
     await flushPromises();
     expect(wrapper.text()).toContain("tenant-one-user");
 
@@ -341,7 +570,7 @@ describe("AiCostsDashboard", () => {
       "project.ai_allowance.read",
     ];
     mocks.users.mockResolvedValueOnce(userPage("allowance-user"));
-    const wrapper = mount(AiCostsDashboard, {
+    const wrapper = mountDashboard({
       global: {
         stubs: {
           AiAllowanceUserDialog: {
@@ -380,7 +609,7 @@ describe("AiCostsDashboard", () => {
     mocks.users
       .mockReturnValueOnce(previous.promise)
       .mockResolvedValueOnce(userPage("current-tenant-user"));
-    const wrapper = mount(AiCostsDashboard);
+    const wrapper = mountDashboard();
 
     mocks.auth.project.id = "project-2";
     await nextTick();

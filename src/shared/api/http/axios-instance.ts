@@ -1,4 +1,8 @@
-import axios, { AxiosHeaders, type InternalAxiosRequestConfig } from "axios";
+import axios, {
+  AxiosHeaders,
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from "axios";
 
 import { normalizeApiError } from "./api-error";
 import { clearAuthSession, getAccessToken } from "./auth-session";
@@ -21,6 +25,10 @@ export const axiosInstance = axios.create({
 
 interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _authRetry?: boolean;
+}
+
+interface AuthTeardownRequestConfig extends AxiosRequestConfig {
+  _authTeardownAccessToken: string;
 }
 
 type RefreshHandler = () => Promise<void>;
@@ -91,10 +99,21 @@ export function endAuthTeardown(): void {
   authTeardown = false;
 }
 
+export function authTeardownRequestOptions(
+  accessToken: string,
+): AuthTeardownRequestConfig {
+  return { _authTeardownAccessToken: accessToken };
+}
+
 axiosInstance.interceptors.request.use((config) => {
   const headers = AxiosHeaders.from(config.headers);
   if (!headers.has("x-request-id")) headers.set("x-request-id", requestId());
-  const token = getAccessToken();
+  const teardownToken = (config as AuthTeardownRequestConfig)
+    ._authTeardownAccessToken;
+  delete (config as Partial<AuthTeardownRequestConfig>)
+    ._authTeardownAccessToken;
+  const token =
+    authTeardown && teardownToken ? teardownToken : getAccessToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
   else headers.delete("Authorization");
   config.headers = headers;
@@ -142,10 +161,7 @@ axiosInstance.interceptors.response.use(
         const requestAuthorization = AxiosHeaders.from(config.headers).get(
           "Authorization",
         );
-        if (
-          !currentToken ||
-          requestAuthorization === `Bearer ${currentToken}`
-        )
+        if (!currentToken || requestAuthorization === `Bearer ${currentToken}`)
           await refreshAccessToken();
         return await axiosInstance.request(config);
       } catch (refreshCause) {

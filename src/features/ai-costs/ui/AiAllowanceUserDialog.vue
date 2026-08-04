@@ -12,12 +12,13 @@ import {
   type DecimalString,
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 import {
   parseAllowanceUsd,
   type AiAllowanceAssignment,
   type AiAllowancePlan,
   type AiAllowancePlanRevision,
-  type AiAllowanceProjectPolicyView,
   type AiAllowanceUserBalance,
 } from "../model/ai-allowance";
 
@@ -37,6 +38,7 @@ const emit = defineEmits<{
   "update:visible": [value: boolean];
   openJournal: [endUserId: string];
   changed: [];
+  "fresh-login": [];
 }>();
 const balance = ref<AiAllowanceUserBalance | null>(null);
 const loadedContext = ref("");
@@ -64,9 +66,9 @@ const plansLoading = ref(false);
 const projectPolicyVersion = ref("");
 const defaultAssignment = ref<AiAllowanceAssignment | null>(null);
 const configurationConflict = ref(false);
+const reauthenticationRequired = ref(false);
 const projectTimezone = ref("UTC");
 const pinnedPlanRevision = ref<AiAllowancePlanRevision | null>(null);
-const planRevisionError = ref("");
 interface GrantReceipt {
   id: string;
   amountUsd: DecimalString;
@@ -81,13 +83,14 @@ interface GrantReceipt {
 const grantReceipt = ref<GrantReceipt | null>(null);
 let initialModeApplied = false;
 let generation = 0;
+let mutationGeneration = 0;
 const activePlans = computed(() =>
   (loadedPlans.value.length ? loadedPlans.value : (props.plans ?? [])).filter(
     (plan) => plan.status === "ACTIVE",
   ),
 );
 const currentPlanRevision = computed(() => {
-  const revisionId = balance.value?.currentPeriod?.planRevision.id;
+  const revisionId = balance.value?.currentPeriod?.planRevision?.id;
   if (!revisionId) return null;
   if (pinnedPlanRevision.value?.id === revisionId)
     return pinnedPlanRevision.value;
@@ -111,6 +114,7 @@ watch(
     [props.visible, props.projectId, props.endUserId, props.canRead] as const,
   ([visible, , , canRead]) => {
     generation += 1;
+    mutationGeneration += 1;
     balance.value = null;
     loadedPlans.value = [];
     plansPageInfo.value = { hasMore: false, nextCursor: null };
@@ -119,8 +123,8 @@ watch(
     projectPolicyVersion.value = "";
     defaultAssignment.value = null;
     configurationConflict.value = false;
+    reauthenticationRequired.value = false;
     pinnedPlanRevision.value = null;
-    planRevisionError.value = "";
     grantReceipt.value = null;
     projectTimezone.value = "UTC";
     initialModeApplied = false;
@@ -156,7 +160,7 @@ watch(
       (mode.value === "grant" && !canGrant) ||
       (mode.value === "assignment" && !canManage)
     ) {
-      generation += 1;
+      mutationGeneration += 1;
       mutationLoading.value = false;
       formError.value = "";
       mode.value = "summary";
@@ -171,7 +175,6 @@ async function load(): Promise<boolean> {
   loadedContext.value = "";
   projectPolicyVersion.value = "";
   pinnedPlanRevision.value = null;
-  planRevisionError.value = "";
   loading.value = true;
   error.value = "";
   try {
@@ -206,19 +209,7 @@ async function load(): Promise<boolean> {
     loadedContext.value = `${requestProjectId}:${requestEndUserId}`;
     loadedPlans.value = projectPolicy.plans;
     plansPageInfo.value = projectPolicy.plansPageInfo;
-    try {
-      pinnedPlanRevision.value = await findPinnedPlanRevision(
-        nextBalance,
-        projectPolicy,
-        requestGeneration,
-      );
-    } catch (cause) {
-      if (requestGeneration === generation)
-        planRevisionError.value = text(
-          cause,
-          "Не удалось загрузить правила текущей ревизии",
-        );
-    }
+    pinnedPlanRevision.value = nextBalance.currentPeriod?.planRevision ?? null;
     if (requestGeneration !== generation) return false;
     applyInitialMode();
     return true;
@@ -229,61 +220,6 @@ async function load(): Promise<boolean> {
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
-}
-async function findPinnedPlanRevision(
-  nextBalance: AiAllowanceUserBalance,
-  initialPolicy: AiAllowanceProjectPolicyView,
-  requestGeneration: number,
-): Promise<AiAllowancePlanRevision | null> {
-  const target = nextBalance.currentPeriod?.planRevision;
-  if (!target) return null;
-  let page = initialPolicy;
-  let plan = page.plans.find((item) => item.id === target.planId);
-  for (
-    let pageCount = 0;
-    !plan && page.plansPageInfo.nextCursor && pageCount < 20;
-    pageCount += 1
-  ) {
-    page = await aiAllowanceRepository.projectPolicy(props.projectId, {
-      planCursor: page.plansPageInfo.nextCursor,
-      planLimit: 50,
-      revisionLimit: 5,
-    });
-    assertPinnedRevisionContext(requestGeneration, initialPolicy, page);
-    plan = page.plans.find((item) => item.id === target.planId);
-  }
-  if (!plan) return null;
-  const included = plan.revisions.find((item) => item.id === target.id);
-  if (included) return included;
-
-  let cursor = plan.revisionsPageInfo.nextCursor;
-  for (let pageCount = 0; cursor && pageCount < 20; pageCount += 1) {
-    const revisions = await aiAllowanceRepository.planRevisions(
-      props.projectId,
-      plan.key,
-      { limit: 50, cursor },
-    );
-    if (
-      requestGeneration !== generation ||
-      revisions.projectPolicyVersion !== initialPolicy.projectPolicyVersion
-    )
-      throw new Error("Конфигурация планов изменилась во время загрузки.");
-    const found = revisions.revisions.find((item) => item.id === target.id);
-    if (found) return found;
-    cursor = revisions.pageInfo.nextCursor;
-  }
-  return null;
-}
-function assertPinnedRevisionContext(
-  requestGeneration: number,
-  initialPolicy: AiAllowanceProjectPolicyView,
-  nextPolicy: AiAllowanceProjectPolicyView,
-): void {
-  if (
-    requestGeneration !== generation ||
-    nextPolicy.projectPolicyVersion !== initialPolicy.projectPolicyVersion
-  )
-    throw new Error("Конфигурация планов изменилась во время загрузки.");
 }
 function applyInitialMode(): void {
   if (initialModeApplied) return;
@@ -374,13 +310,23 @@ async function loadMoreGrants(): Promise<void> {
       requestProjectId === props.projectId &&
       requestEndUserId === props.endUserId &&
       loadedContext.value === `${requestProjectId}:${requestEndUserId}` &&
-      balance.value === current
+      balance.value === current &&
+      next.account.projectId === requestProjectId &&
+      next.account.endUserId === requestEndUserId &&
+      next.projectPolicyVersion === current.projectPolicyVersion
     ) {
       balance.value = {
         ...current,
         activeGrants: [...current.activeGrants, ...next.activeGrants],
         grantsPageInfo: next.grantsPageInfo,
       };
+    } else if (
+      requestGeneration === generation &&
+      requestProjectId === props.projectId &&
+      requestEndUserId === props.endUserId
+    ) {
+      grantsLoading.value = false;
+      await load();
     }
   } catch (cause) {
     if (
@@ -413,6 +359,7 @@ function beginGrant(): void {
   idempotencyKey.value = key();
   formError.value = "";
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
 }
 function beginAssignment(): void {
   if (!props.canRead || !props.canManage) return;
@@ -427,6 +374,7 @@ function beginAssignment(): void {
   idempotencyKey.value = key();
   formError.value = "";
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
 }
 async function submitGrant(): Promise<void> {
   if (!props.canRead || !props.canGrant)
@@ -509,16 +457,17 @@ async function mutate<T>(
   action: () => Promise<T>,
   acceptResult?: (result: T) => void,
 ): Promise<void> {
-  const requestGeneration = generation;
+  const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   const requestEndUserId = props.endUserId;
   mutationLoading.value = true;
   formError.value = "";
   configurationConflict.value = false;
+  reauthenticationRequired.value = false;
   try {
     const result = await action();
     if (
-      requestGeneration !== generation ||
+      requestGeneration !== mutationGeneration ||
       requestProjectId !== props.projectId ||
       requestEndUserId !== props.endUserId
     )
@@ -530,16 +479,20 @@ async function mutate<T>(
     emit("changed");
   } catch (cause) {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId &&
       requestEndUserId === props.endUserId
     ) {
       configurationConflict.value = isConfigurationConflict(cause);
-      formError.value = mutationMessage(cause, "Операция не выполнена");
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      formError.value = reauthenticationRequired.value
+        ? ""
+        : mutationMessage(cause, "Операция не выполнена");
     }
   } finally {
     if (
-      requestGeneration === generation &&
+      requestGeneration === mutationGeneration &&
       requestProjectId === props.projectId &&
       requestEndUserId === props.endUserId
     )
@@ -857,10 +810,8 @@ async function refreshAssignmentDraft(): Promise<void> {
         >
           <h3>Правила категорий текущего периода</h3>
           <p>
-            {{
-              planRevisionError ||
-              "Точная закреплённая ревизия не найдена в admin API."
-            }}
+            Наблюдательный период работает без закреплённого плана; правила
+            категорий появятся после назначения совместимого плана.
           </p>
         </section>
         <footer>
@@ -950,6 +901,10 @@ async function refreshAssignmentDraft(): Promise<void> {
         ><small v-if="formError" class="error" role="alert">{{
           formError
         }}</small>
+        <AiAllowanceReauthenticationAction
+          :required="reauthenticationRequired"
+          @fresh-login="emit('fresh-login')"
+        />
         <footer>
           <Button
             label="Назад"
@@ -1014,6 +969,10 @@ async function refreshAssignmentDraft(): Promise<void> {
         ><small v-if="formError" class="error" role="alert">{{
           formError
         }}</small>
+        <AiAllowanceReauthenticationAction
+          :required="reauthenticationRequired"
+          @fresh-login="emit('fresh-login')"
+        />
         <Button
           v-if="configurationConflict"
           label="Загрузить актуальную версию"

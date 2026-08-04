@@ -14,6 +14,7 @@ import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import { useToast } from "primevue/usetoast";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { useAdminConversationConsole } from "@/features/admin-conversations/model/use-admin-conversation-console";
@@ -88,6 +89,8 @@ const emit = defineEmits<{
 }>();
 const visible = defineModel<boolean>("visible", { required: true });
 const auth = useAuthStore();
+const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 const suspensionStore = useConversationAISuspensionStore();
 const detail = ref<ProfileProjectionResponseDto | null>(null);
@@ -110,6 +113,7 @@ const allowanceDialogMode = ref<"summary" | "grant" | "assignment">("summary");
 const allowanceJournalVisible = ref(false);
 const allowanceJournalCursor = ref("");
 const allowanceRefreshKey = ref(0);
+const allowanceFreshLoginPending = ref(false);
 const liveMessageIds = ref<string[]>([]);
 const telegramDraftDirty = ref(false);
 const sendWithoutTranslationVisible = ref(false);
@@ -748,6 +752,20 @@ function openAllowanceJournal(): void {
 
 function refreshAllowance(): void {
   allowanceRefreshKey.value += 1;
+}
+
+async function requireFreshAllowanceLogin(): Promise<void> {
+  if (allowanceFreshLoginPending.value) return;
+  allowanceFreshLoginPending.value = true;
+  const redirect = route.fullPath;
+  allowanceDialogVisible.value = false;
+  allowanceJournalVisible.value = false;
+  try {
+    await auth.logout();
+  } catch {
+    // logout() removes local authority in finally; a network failure must not keep protected UI open.
+  }
+  await router.replace({ name: "login", query: { redirect } });
 }
 
 function messageFromEvent(
@@ -2125,6 +2143,7 @@ function displayField(
       @update:visible="allowanceDialogVisible = $event"
       @open-journal="openAllowanceJournal"
       @changed="refreshAllowance"
+      @fresh-login="requireFreshAllowanceLogin"
     />
 
     <Dialog
@@ -2143,6 +2162,7 @@ function displayField(
         embedded
         @next-cursor="allowanceJournalCursor = $event"
         @changed="refreshAllowance"
+        @fresh-login="requireFreshAllowanceLogin"
       />
     </Dialog>
 

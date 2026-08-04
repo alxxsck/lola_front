@@ -14,6 +14,7 @@ import type {
   AiAllowancePlanSummary,
   AiAllowancePolicy,
   AiAllowanceProjectPolicyView,
+  AiAllowanceLocalizationCatalog,
   AiAllowanceUserBalance,
   ManualAllowanceGrantInput,
   PutDefaultAllowancePlanInput,
@@ -300,7 +301,9 @@ function reconciliationPage(value: unknown): AiAllowanceReconciliationPage {
 function policyView(value: unknown): AiAllowanceProjectPolicyView {
   const source = object(value);
   const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
-  const policy = source?.policy === null ? null : parsePolicy(source?.policy);
+  const localization = parseLocalizationCatalog(source?.localization);
+  const policy =
+    source?.policy === null ? null : parsePolicy(source?.policy, localization);
   const assignment =
     source?.defaultAssignment === null
       ? null
@@ -310,6 +313,7 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
   if (
     !source ||
     !projectPolicyVersion ||
+    !localization ||
     (!policy && source.policy !== null) ||
     (!assignment && source.defaultAssignment !== null) ||
     !Array.isArray(source.plans) ||
@@ -324,6 +328,7 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
   if (plans.some((item) => !item)) invalid();
   return {
     projectPolicyVersion,
+    localization,
     policy,
     plans: plans as AiAllowancePlan[],
     plansPageInfo,
@@ -473,7 +478,10 @@ function journalPage(value: unknown): AiAllowanceJournalPage {
   };
 }
 
-function parsePolicy(value: unknown): AiAllowancePolicy | null {
+function parsePolicy(
+  value: unknown,
+  localization: AiAllowanceLocalizationCatalog | undefined,
+): AiAllowancePolicy | null {
   const s = object(value);
   const mode = enumValue(s?.enforcementMode, [
     "DISABLED",
@@ -481,7 +489,7 @@ function parsePolicy(value: unknown): AiAllowancePolicy | null {
     "SOFT",
     "HARD",
   ] as const);
-  const warningContent = localizedContent(s?.warningContent);
+  const warningContent = localizedContent(s?.warningContent, localization);
   const lowThresholdMode = enumValue(s?.lowThresholdMode, [
     "PERCENT",
     "ABSOLUTE_USD",
@@ -493,7 +501,7 @@ function parsePolicy(value: unknown): AiAllowancePolicy | null {
     compareDecimalStrings(lowThresholdValue, "0") > 0 &&
     (lowThresholdMode === "ABSOLUTE_USD" ||
       compareDecimalStrings(lowThresholdValue, "100") <= 0);
-  const exhaustedContent = localizedContent(s?.exhaustedContent);
+  const exhaustedContent = localizedContent(s?.exhaustedContent, localization);
   return s &&
     text(s.projectId) &&
     mode &&
@@ -714,7 +722,8 @@ function parsePeriod(value: unknown): AiAllowancePeriod | null {
   const kind = enumValue(s?.kind, ["DAY", "MONTH"] as const);
   const status = enumValue(s?.status, ["OPEN", "CLOSED"] as const);
   const amount = parseAllowanceUsd(s?.baseAllocatedUsd);
-  const revision = parseRevision(s?.planRevision, false);
+  const revision =
+    s?.planRevision === null ? null : parseRevision(s?.planRevision, true);
   return s &&
     text(s.id) &&
     kind &&
@@ -723,7 +732,7 @@ function parsePeriod(value: unknown): AiAllowancePeriod | null {
     iso(s.endsAt) &&
     amount &&
     status &&
-    revision
+    (revision !== null || s.planRevision === null)
     ? {
         id: s.id,
         kind,
@@ -863,18 +872,81 @@ function parsePageInfo(
 }
 function localizedContent(
   value: unknown,
+  localization: AiAllowanceLocalizationCatalog | undefined,
 ): AiAllowancePolicy["warningContent"] | undefined {
   const s = object(value);
-  if (!s) return undefined;
-  const keys = ["message", "ru", "en"] as const;
+  if (!s || !localization) return undefined;
+  if (s.mode === "SYSTEM" && Object.keys(s).length === 1)
+    return { mode: "SYSTEM" };
+  const translations = object(s.translations);
   if (
+    s.mode !== "CUSTOM" ||
+    !localeCode(s.defaultLocale) ||
+    !localization.supportedLocales.includes(s.defaultLocale) ||
+    !translations ||
     Object.keys(s).some(
-      (key) => !keys.includes(key as (typeof keys)[number]),
+      (key) => !["mode", "defaultLocale", "translations"].includes(key),
     ) ||
-    keys.some((key) => s[key] !== undefined && !text(s[key], 1, 2000))
+    Object.keys(translations).length < 1 ||
+    Object.keys(translations).length > 50 ||
+    !text(translations[s.defaultLocale], 1, 2000) ||
+    Object.entries(translations).some(
+      ([locale, content]) =>
+        !localeCode(locale) ||
+        !localization.supportedLocales.includes(locale) ||
+        !text(content, 1, 2000),
+    )
   )
     return undefined;
-  return s as AiAllowancePolicy["warningContent"];
+  return {
+    mode: "CUSTOM",
+    defaultLocale: s.defaultLocale,
+    translations: translations as Record<string, string>,
+  };
+}
+
+function parseLocalizationCatalog(
+  value: unknown,
+): AiAllowanceLocalizationCatalog | undefined {
+  const source = object(value);
+  const supportedLocales = source?.supportedLocales;
+  const translationSupportedLocales = source?.translationSupportedLocales;
+  if (
+    !source ||
+    !localeCode(source.defaultLocale) ||
+    !localeList(supportedLocales) ||
+    !localeList(translationSupportedLocales) ||
+    !supportedLocales.includes(source.defaultLocale) ||
+    translationSupportedLocales.some(
+      (locale) => !supportedLocales.includes(locale),
+    )
+  )
+    return undefined;
+  return {
+    defaultLocale: source.defaultLocale,
+    supportedLocales: [...supportedLocales],
+    translationSupportedLocales: [...translationSupportedLocales],
+  };
+}
+
+function localeList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.length <= 20 &&
+    new Set(value).size === value.length &&
+    value.every(localeCode)
+  );
+}
+
+function localeCode(value: unknown): value is string {
+  if (typeof value !== "string" || value.length < 1 || value.length > 64)
+    return false;
+  try {
+    return Intl.getCanonicalLocales(value)[0] === value;
+  } catch {
+    return false;
+  }
 }
 function text(value: unknown, min = 1, max = 500): value is string {
   return (

@@ -7,6 +7,21 @@ import {
 } from "./project-ai-analysis-presentation";
 
 describe("project AI analysis presentation", () => {
+  it("keeps a bounded clarification question and candidates", () => {
+    expect(
+      presentAnalysisResult({
+        kind: "CLARIFICATION_REQUIRED",
+        clarification: {
+          question: "Какое определение использовать?",
+          candidates: ["deposit.completed", "deposit.completed", 42],
+        },
+      }).clarification,
+    ).toEqual({
+      question: "Какое определение использовать?",
+      candidates: ["deposit.completed"],
+    });
+  });
+
   it("formats integer USD ticks without losing bigint precision", () => {
     expect(formatUsdTicks("12500000000")).toBe("$1.25");
     expect(formatUsdTicks("90071992547409930000")).toBe("$9007199254.740993");

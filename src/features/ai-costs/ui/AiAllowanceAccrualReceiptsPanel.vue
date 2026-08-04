@@ -43,7 +43,7 @@ async function load(): Promise<void> {
       error.value =
         cause instanceof Error
           ? cause.message
-          : "Не удалось загрузить receipts";
+          : "Не удалось загрузить историю начислений";
   } finally {
     if (current === generation) loading.value = false;
   }
@@ -74,7 +74,7 @@ async function loadMore(): Promise<void> {
       error.value =
         cause instanceof Error
           ? cause.message
-          : "Не удалось загрузить остальные receipts";
+          : "Не удалось загрузить остальные начисления";
   } finally {
     if (requestGeneration === generation && projectId === props.projectId)
       loadingMore.value = false;
@@ -93,28 +93,45 @@ function date(value: string): string {
     timeStyle: "medium",
   }).format(new Date(value));
 }
+function statusLabel(value: "GRANTED" | "REJECTED"): string {
+  return value === "GRANTED" ? "Начислено" : "Отклонено";
+}
+function sourceLabel(
+  value: "SERVER" | "FRONTEND" | "INTERNAL" | "INTEGRATION",
+): string {
+  return {
+    SERVER: "Сервер",
+    FRONTEND: "Интерфейс",
+    INTERNAL: "Внутренняя операция",
+    INTEGRATION: "Интеграция",
+  }[value];
+}
 </script>
 
 <template>
   <section class="receipts card">
     <header>
       <div>
-        <h3>Receipts начислений</h3>
+        <h3>История автоматических начислений</h3>
         <p>
-          Решение правила, событие-источник и созданный grant для аудита
-          лояльности.
+          Показывает, какое правило сработало, по какому событию и какой лимит
+          получил пользователь.
         </p>
       </div>
     </header>
     <form @submit.prevent="load">
-      <label>End User ID<input v-model="endUserId" maxlength="160" /></label
+      <label
+        >ID пользователя<input
+          v-model="endUserId"
+          maxlength="160"
+          placeholder="Оставьте пустым, чтобы показать всех" /></label
       ><label
         >Результат<select v-model="status">
-          <option value="">Все</option>
-          <option value="GRANTED">GRANTED</option>
-          <option value="REJECTED">REJECTED</option>
+          <option value="">Все результаты</option>
+          <option value="GRANTED">Начислено</option>
+          <option value="REJECTED">Отклонено</option>
         </select></label
-      ><Button label="Применить" type="submit" outlined />
+      ><Button label="Показать" type="submit" outlined />
     </form>
     <Skeleton v-if="loading && !page" height="100px" />
     <Message v-if="error" severity="error" :closable="false">{{
@@ -128,7 +145,7 @@ function date(value: string): string {
             <th>Правило</th>
             <th>Событие</th>
             <th>Результат</th>
-            <th>Квота</th>
+            <th>Сумма</th>
           </tr>
         </thead>
         <tbody>
@@ -140,7 +157,7 @@ function date(value: string): string {
             <td>
               <strong>{{ item.ruleRevision.rule.name }}</strong
               ><small
-                >{{ item.ruleRevision.rule.key }} · rev
+                >{{ item.ruleRevision.rule.key }} · версия
                 {{ item.ruleRevision.revisionNumber }}</small
               >
             </td>
@@ -148,15 +165,17 @@ function date(value: string): string {
               <strong>{{ item.eventLog.eventDefinitionKey.name }}</strong
               ><small
                 >{{ item.eventLog.eventDefinitionKey.code }} ·
-                {{ item.eventLog.source }} · {{ item.eventLog.id }}</small
+                {{ sourceLabel(item.eventLog.source) }} ·
+                {{ item.eventLog.id }}</small
               >
             </td>
             <td>
               <strong
                 :class="item.status === 'REJECTED' ? 'rejected' : 'granted'"
-                >{{ item.status }}</strong
+                >{{ statusLabel(item.status) }}</strong
               ><small>{{
-                item.rejectionReason ?? `grant ${item.grantId}`
+                item.rejectionReason ??
+                `Начисление ${item.grantId ?? "создано"}`
               }}</small>
             </td>
             <td>{{ formatDecimalMoney(item.rewardUsd, "USD") }}</td>
@@ -164,12 +183,10 @@ function date(value: string): string {
         </tbody>
       </table>
     </div>
-    <p v-else-if="page && !loading">
-      Receipts по выбранному фильтру отсутствуют.
-    </p>
+    <p v-else-if="page && !loading">По выбранным фильтрам начислений нет.</p>
     <Button
       v-if="page?.pageInfo.hasMore"
-      label="Показать остальные receipts"
+      label="Показать ещё"
       outlined
       :loading="loadingMore"
       @click="loadMore"
@@ -180,17 +197,25 @@ function date(value: string): string {
 <style scoped>
 .receipts {
   display: grid;
-  gap: 14px;
-  padding: 20px;
+  gap: 20px;
+  padding: 24px;
 }
 .receipts h3,
 .receipts p {
   margin: 0;
 }
+.receipts h3 {
+  font-weight: 600;
+}
 .receipts header p,
 .receipts > p,
 small {
   color: var(--text-small-muted);
+}
+.receipts header p {
+  max-width: 760px;
+  margin-top: 6px;
+  line-height: 1.45;
 }
 form {
   display: flex;
@@ -200,18 +225,28 @@ form {
 }
 label {
   display: grid;
-  gap: 5px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 400;
 }
 input,
 select {
+  box-sizing: border-box;
   min-width: 210px;
-  padding: 9px;
+  min-height: 44px;
+  padding: 0 12px;
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-card);
   color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+form :deep(.p-button) {
+  min-height: 44px;
+  background: var(--surface-card);
 }
 .table {
   overflow-x: auto;
@@ -248,5 +283,20 @@ td small {
 }
 .rejected {
   color: var(--status-danger-text);
+}
+@media (max-width: 560px) {
+  .receipts {
+    padding: 18px;
+  }
+  form,
+  form label,
+  form :deep(.p-button) {
+    width: 100%;
+  }
+  input,
+  select {
+    min-width: 0;
+    width: 100%;
+  }
 }
 </style>

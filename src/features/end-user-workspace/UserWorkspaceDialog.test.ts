@@ -25,6 +25,9 @@ const mocks = vi.hoisted(() => ({
   stateHandler: undefined as ((value: string) => void) | undefined,
   reconcileHandler: undefined as (() => Promise<void>) | undefined,
   toastAdd: vi.fn(),
+  logout: vi.fn(),
+  replace: vi.fn(),
+  route: { fullPath: "/users?userId=user-1" },
   permissions: [
     "project.profiles.read",
     "project.end_users.read",
@@ -37,10 +40,15 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => ({
+    logout: mocks.logout,
     project: {
       effectivePermissionCodes: mocks.permissions,
     },
   }),
+}));
+vi.mock("vue-router", () => ({
+  useRoute: () => mocks.route,
+  useRouter: () => ({ replace: mocks.replace }),
 }));
 vi.mock("@/features/end-user-profile/api/end-user-profile-repository", () => ({
   endUserProfileRepository: { profile: mocks.profile },
@@ -173,6 +181,7 @@ describe("единое рабочее пространство пользова�
       return vi.fn();
     });
     mocks.activateProject.mockResolvedValue(undefined);
+    mocks.logout.mockResolvedValue(undefined);
     mocks.profile.mockResolvedValue({
       endUserId: "user-1",
       externalUserId: "customer-1",
@@ -318,15 +327,15 @@ describe("единое рабочее пространство пользова�
               "canManage",
               "canReconcile",
             ],
-            emits: ["update:visible", "open-journal", "changed"],
+            emits: ["update:visible", "open-journal", "changed", "fresh-login"],
             template:
-              '<div v-if="visible && canRead" data-testid="ai-allowance-user-dialog" :data-project-id="projectId" :data-end-user-id="endUserId" :data-identity="identity" :data-initial-mode="initialMode" :data-can-grant="String(canGrant)" :data-can-manage="String(canManage)" :data-can-reconcile="String(canReconcile)"><button data-action="allowance-changed" @click="$emit(\'changed\')">changed</button></div>',
+              '<div v-if="visible && canRead" data-testid="ai-allowance-user-dialog" :data-project-id="projectId" :data-end-user-id="endUserId" :data-identity="identity" :data-initial-mode="initialMode" :data-can-grant="String(canGrant)" :data-can-manage="String(canManage)" :data-can-reconcile="String(canReconcile)"><button data-action="allowance-changed" @click="$emit(\'changed\')">changed</button><button data-action="allowance-fresh-login" @click="$emit(\'fresh-login\')">fresh login</button></div>',
           },
           AiAllowanceJournalPanel: {
             props: ["projectId", "endUserId", "cursor", "embedded"],
-            emits: ["next-cursor", "changed"],
+            emits: ["next-cursor", "changed", "fresh-login"],
             template:
-              '<div data-testid="ai-allowance-journal" :data-project-id="projectId" :data-end-user-id="endUserId" :data-cursor="cursor" :data-embedded="String(embedded)" />',
+              '<div data-testid="ai-allowance-journal" :data-project-id="projectId" :data-end-user-id="endUserId" :data-cursor="cursor" :data-embedded="String(embedded)"><button data-action="journal-fresh-login" @click="$emit(\'fresh-login\')">fresh login</button></div>',
           },
           AIReviewDialog: true,
         },
@@ -436,6 +445,38 @@ describe("единое рабочее пространство пользова�
       wrapper.find('[data-testid="ai-allowance-user-dialog"]').exists(),
     ).toBe(false);
   });
+
+  it.each([
+    [
+      "user allowance dialog",
+      "open-allowance-details",
+      "allowance-fresh-login",
+    ],
+    ["allowance journal", "open-allowance-journal", "journal-fresh-login"],
+  ])(
+    "starts one fresh login from %s and preserves the workspace route",
+    async (_surface, openAction, freshLoginAction) => {
+      mocks.permissions.push(
+        "project.ai_allowance.read",
+        "project.ai_allowance.manage",
+      );
+      const wrapper = mountWorkspace();
+      await flushPromises();
+
+      await wrapper.get(`[data-action="${openAction}"]`).trigger("click");
+      const action = wrapper.get(`[data-action="${freshLoginAction}"]`);
+      await action.trigger("click");
+      await action.trigger("click");
+      await flushPromises();
+
+      expect(mocks.logout).toHaveBeenCalledOnce();
+      expect(mocks.replace).toHaveBeenCalledOnce();
+      expect(mocks.replace).toHaveBeenCalledWith({
+        name: "login",
+        query: { redirect: "/users?userId=user-1" },
+      });
+    },
+  );
 
   it("фильтрует список диалогов по названию без перезагрузки истории", async () => {
     mocks.getConversations.mockResolvedValue({

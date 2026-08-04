@@ -44,6 +44,7 @@ const submittedText = ref<string | null>(null);
 const estimate = ref<ProjectAIAnalysisEstimateResponseDto | null>(null);
 const createdAnalysisId = ref<string | null>(null);
 const requestGeneration = ref(0);
+const freshRequestRequired = ref(false);
 
 const trimmedText = computed(() => text.value.trim());
 const busy = computed(
@@ -105,6 +106,7 @@ function formatUsdTicks(value: string): string {
 }
 
 function applyExecution(result: CmsAgentExecution): void {
+  freshRequestRequired.value = result.kind === "FAILED";
   if (result.kind === "ANALYSIS_QUEUED") {
     phase.value = "SUCCEEDED";
     createdAnalysisId.value = result.analysisId;
@@ -146,6 +148,7 @@ async function executePending(
       props.projectId !== projectId
     )
       return;
+    freshRequestRequired.value = false;
     phase.value = "FAILED";
     error.value =
       cause instanceof Error ? cause.message : "Не удалось запустить запрос";
@@ -229,6 +232,12 @@ function confirmHighCost(): void {
   void submit();
 }
 
+async function retryFailed(): Promise<void> {
+  if (phase.value !== "FAILED" || busy.value) return;
+  if (freshRequestRequired.value) resetRequest();
+  await submit();
+}
+
 function startAnother(): void {
   text.value = "";
   resetRequest();
@@ -247,6 +256,7 @@ function resetRequest(): void {
   submittedText.value = null;
   estimate.value = null;
   createdAnalysisId.value = null;
+  freshRequestRequired.value = false;
 }
 
 watch(
@@ -484,10 +494,10 @@ function handleShortcut(event: KeyboardEvent): void {
           <span>{{ error || "Запрос не удалось выполнить." }}</span>
           <Button
             data-testid="ai-command-retry"
-            label="Повторить"
+            :label="freshRequestRequired ? 'Повторить новым запросом' : 'Повторить'"
             size="small"
             text
-            @click="submit"
+            @click="retryFailed"
           />
           <Button
             v-if="submitRetryLocked"

@@ -32,7 +32,10 @@ test("CI checks the committed artifact against an explicitly configured backend 
 
   assert.match(workflow, /repository: alxxsck\/lola_back/u);
   assert.match(workflow, /LOLA_BACKEND_REF/u);
-  assert.match(workflow, /vars\.LOLA_BACKEND_REF \|\| 'main'/u);
+  assert.match(workflow, /LOLA_BACKEND_REF: \$\{\{ vars\.LOLA_BACKEND_REF \}\}/u);
+  assert.match(workflow, /Require immutable backend revision/u);
+  assert.match(workflow, /test "\$\{#LOLA_BACKEND_REF\}" -eq 40/u);
+  assert.doesNotMatch(workflow, /LOLA_BACKEND_REF \|\| 'main'/u);
   assert.match(workflow, /secrets\.LOLA_BACKEND_READ_TOKEN/u);
   assert.match(workflow, /test -n "\$LOLA_BACKEND_READ_TOKEN"/u);
   assert.match(workflow, /LOLA_BACKEND_DIR/u);

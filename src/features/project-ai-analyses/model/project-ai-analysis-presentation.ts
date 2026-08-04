@@ -1,6 +1,10 @@
 import { aiLimitationMessage } from "@/features/ai-errors/model/ai-error-message";
 
 export interface PresentedAnalysisResult {
+  clarification: {
+    question: string;
+    candidates: string[];
+  } | null;
   title: string | null;
   answer: string | null;
   scope: string | null;
@@ -97,6 +101,7 @@ export function presentAnalysisResult(value: unknown): PresentedAnalysisResult {
   const interpretedTime = record(source.interpretedTime);
   const limitations = presentLimitations(source.limitations);
   return {
+    clarification: presentClarification(source.kind, source.clarification),
     title: text(source.title, 500),
     answer: presentAnswer(text(source.answer, 20_000), limitations),
     scope: text(interpretedScope.description, 1_000),
@@ -120,6 +125,25 @@ export function presentAnalysisResult(value: unknown): PresentedAnalysisResult {
     actors: presentActors(source.actors),
     provenance: presentProvenance(source.provenance),
   };
+}
+
+function presentClarification(
+  kind: unknown,
+  value: unknown,
+): PresentedAnalysisResult["clarification"] {
+  if (kind !== "CLARIFICATION_REQUIRED") return null;
+  const source = record(value);
+  const question = text(source.question, 2_000);
+  if (!question || !Array.isArray(source.candidates)) return null;
+  const candidates = [
+    ...new Set(
+      source.candidates.slice(0, 20).flatMap((candidate) => {
+        const value = text(candidate, 500);
+        return value ? [value] : [];
+      }),
+    ),
+  ];
+  return candidates.length ? { question, candidates } : null;
 }
 
 function presentAnswer(

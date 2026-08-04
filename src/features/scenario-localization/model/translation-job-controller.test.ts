@@ -30,7 +30,14 @@ describe("translation job controller", () => {
         sourceHash: "hash",
         createdAt: "2026-07-19T00:00:00.000Z",
         sourceLocale: "en",
-        targets: [{ targetLocale: "es", status: "RUNNING", outputUnits: null, errorCode: null }],
+        targets: [
+          {
+            targetLocale: "es",
+            status: "RUNNING",
+            outputUnits: null,
+            errorCode: null,
+          },
+        ],
       })
       .mockResolvedValueOnce({
         jobId: "job-1",
@@ -38,12 +45,16 @@ describe("translation job controller", () => {
         sourceHash: "hash",
         createdAt: "2026-07-19T00:00:00.000Z",
         sourceLocale: "en",
-        targets: [{
-          targetLocale: "es",
-          status: "SUCCESS",
-          outputUnits: [{ key: "graph.actions.welcome.config.text", text: "Hola" }],
-          errorCode: null,
-        }],
+        targets: [
+          {
+            targetLocale: "es",
+            status: "SUCCESS",
+            outputUnits: [
+              { key: "graph.actions.welcome.config.text", text: "Hola" },
+            ],
+            errorCode: null,
+          },
+        ],
       });
     const value = { en: "Hello", es: "" };
     const apply = vi.fn((_: string, locale: string, text: string) => {
@@ -125,9 +136,14 @@ describe("translation job controller", () => {
     });
     const value = { ru: "Приветик как дела ", it: "", de: "" };
     const apply = vi.fn(
-      (_: string, locale: string, text: string, snapshot: Parameters<
-        Parameters<typeof createTranslationJobController>[0]["apply"]
-      >[3]) => {
+      (
+        _: string,
+        locale: string,
+        text: string,
+        snapshot: Parameters<
+          Parameters<typeof createTranslationJobController>[0]["apply"]
+        >[3],
+      ) => {
         if (value.ru !== snapshot.sourceText) return "STALE_SOURCE" as const;
         value[locale as "it" | "de"] = text;
         return "APPLIED" as const;
@@ -164,14 +180,26 @@ describe("translation job controller", () => {
   });
 
   it("keeps a source race stale instead of applying it", async () => {
-    repo.create.mockResolvedValue({ jobId: "job-2", status: "PENDING", sourceHash: "hash", createdAt: "now" });
+    repo.create.mockResolvedValue({
+      jobId: "job-2",
+      status: "PENDING",
+      sourceHash: "hash",
+      createdAt: "now",
+    });
     repo.get.mockResolvedValue({
       jobId: "job-2",
       status: "COMPLETED",
       sourceHash: "hash",
       createdAt: "now",
       sourceLocale: "en",
-      targets: [{ targetLocale: "es", status: "SUCCESS", outputUnits: [{ key: "field", text: "Hola" }], errorCode: null }],
+      targets: [
+        {
+          targetLocale: "es",
+          status: "SUCCESS",
+          outputUnits: [{ key: "field", text: "Hola" }],
+          errorCode: null,
+        },
+      ],
     });
     const apply = vi.fn(() => "STALE_SOURCE" as const);
     const state = vi.fn();
@@ -182,13 +210,22 @@ describe("translation job controller", () => {
       apply,
       state,
     });
-    await controller.start({ fieldPath: "field", sourceLocale: "en", targets: ["es"] });
+    await controller.start({
+      fieldPath: "field",
+      sourceLocale: "en",
+      targets: ["es"],
+    });
     expect(state).toHaveBeenLastCalledWith("field", "es", "STALE_SOURCE");
     controller.dispose();
   });
 
   it("applies successful targets from a partial job and retries only the failed locale", async () => {
-    repo.create.mockResolvedValue({ jobId: "job-3", status: "PENDING", sourceHash: "hash", createdAt: "now" });
+    repo.create.mockResolvedValue({
+      jobId: "job-3",
+      status: "PENDING",
+      sourceHash: "hash",
+      createdAt: "now",
+    });
     repo.get.mockResolvedValue({
       jobId: "job-3",
       status: "COMPLETED_WITH_ERRORS",
@@ -196,8 +233,18 @@ describe("translation job controller", () => {
       createdAt: "now",
       sourceLocale: "en",
       targets: [
-        { targetLocale: "es", status: "SUCCESS", outputUnits: [{ key: "field", text: "Hola" }], errorCode: null },
-        { targetLocale: "de", status: "ERROR", outputUnits: null, errorCode: "PROVIDER_TIMEOUT" },
+        {
+          targetLocale: "es",
+          status: "SUCCESS",
+          outputUnits: [{ key: "field", text: "Hola" }],
+          errorCode: null,
+        },
+        {
+          targetLocale: "de",
+          status: "ERROR",
+          outputUnits: null,
+          errorCode: "PROVIDER_TIMEOUT",
+        },
       ],
     });
     repo.retryTarget.mockResolvedValue({
@@ -207,8 +254,18 @@ describe("translation job controller", () => {
       createdAt: "now",
       sourceLocale: "en",
       targets: [
-        { targetLocale: "es", status: "SUCCESS", outputUnits: [{ key: "field", text: "Hola" }], errorCode: null },
-        { targetLocale: "de", status: "SUCCESS", outputUnits: [{ key: "field", text: "Hallo" }], errorCode: null },
+        {
+          targetLocale: "es",
+          status: "SUCCESS",
+          outputUnits: [{ key: "field", text: "Hola" }],
+          errorCode: null,
+        },
+        {
+          targetLocale: "de",
+          status: "SUCCESS",
+          outputUnits: [{ key: "field", text: "Hallo" }],
+          errorCode: null,
+        },
       ],
     });
     const state = vi.fn();
@@ -221,14 +278,143 @@ describe("translation job controller", () => {
       state,
     });
 
-    await controller.start({ fieldPath: "field", sourceLocale: "en", targets: ["es", "de"] });
+    await controller.start({
+      fieldPath: "field",
+      sourceLocale: "en",
+      targets: ["es", "de"],
+    });
     expect(state).toHaveBeenCalledWith("field", "de", "ERROR");
     expect(sessionStorage.length).toBe(1);
 
     await controller.retry("field", "de");
     expect(repo.retryTarget).toHaveBeenCalledWith("p", "job-3", "de");
-    expect(apply).toHaveBeenCalledWith("field", "de", "Hallo", expect.any(Object));
+    expect(apply).toHaveBeenCalledWith(
+      "field",
+      "de",
+      "Hallo",
+      expect.any(Object),
+    );
     expect(sessionStorage.length).toBe(0);
+    controller.dispose();
+  });
+
+  it("submits and applies multiple localized fields in one batch job", async () => {
+    repo.create.mockResolvedValue({
+      jobId: "job-batch",
+      status: "PENDING",
+      sourceHash: "hash",
+      createdAt: "now",
+    });
+    repo.get.mockResolvedValue({
+      jobId: "job-batch",
+      status: "COMPLETED",
+      sourceHash: "hash",
+      createdAt: "now",
+      sourceLocale: "ru",
+      targets: [
+        {
+          targetLocale: "en",
+          status: "SUCCESS",
+          outputUnits: [
+            { key: "allowance.warning", text: "Almost exhausted" },
+            { key: "allowance.exhausted", text: "Exhausted" },
+          ],
+          errorCode: null,
+        },
+      ],
+    });
+    const values: Record<string, Record<string, string>> = {
+      "allowance.warning": { ru: "Почти исчерпан", en: "" },
+      "allowance.exhausted": { ru: "Исчерпан", en: "" },
+    };
+    const apply = vi.fn((fieldPath: string, locale: string, text: string) => {
+      values[fieldPath]![locale] = text;
+      return "APPLIED" as const;
+    });
+    const controller = createTranslationJobController({
+      repository: repo,
+      context: () => ({ projectId: "p", scenarioId: "allowance-policy" }),
+      getValue: (fieldPath) => ({ ...values[fieldPath] }),
+      apply,
+      state: vi.fn(),
+    });
+
+    await controller.startBatch({
+      fieldPaths: ["allowance.warning", "allowance.exhausted"],
+      sourceLocale: "ru",
+      targets: ["en"],
+    });
+
+    expect(repo.create).toHaveBeenCalledWith(
+      "p",
+      {
+        sourceLocale: "ru",
+        targetLocales: ["en"],
+        units: [
+          { key: "allowance.warning", text: "Почти исчерпан" },
+          { key: "allowance.exhausted", text: "Исчерпан" },
+        ],
+      },
+      { idempotencyKey: expect.any(String) },
+    );
+    expect(values["allowance.warning"]?.en).toBe("Almost exhausted");
+    expect(values["allowance.exhausted"]?.en).toBe("Exhausted");
+    controller.dispose();
+  });
+
+  it("restores pending state for every field in a recovered batch job", async () => {
+    sessionStorage.setItem(
+      "lola:translation-jobs:p:allowance-policy",
+      JSON.stringify([
+        {
+          jobId: "job-batch-recovered",
+          fieldPath: "allowance.warning",
+          fieldPaths: ["allowance.warning", "allowance.exhausted"],
+          sourceLocale: "ru",
+          sourceText: "Почти исчерпан",
+          sourceTexts: {
+            "allowance.warning": "Почти исчерпан",
+            "allowance.exhausted": "Исчерпан",
+          },
+          unitKeys: ["allowance.warning", "allowance.exhausted"],
+          targets: ["en"],
+          targetValues: { en: "" },
+          targetValuesByField: {
+            "allowance.warning": { en: "" },
+            "allowance.exhausted": { en: "" },
+          },
+          startedAt: "now",
+        },
+      ]),
+    );
+    repo.get.mockResolvedValue({
+      jobId: "job-batch-recovered",
+      status: "RUNNING",
+      sourceHash: "hash",
+      createdAt: "now",
+      sourceLocale: "ru",
+      targets: [
+        {
+          targetLocale: "en",
+          status: "RUNNING",
+          outputUnits: null,
+          errorCode: null,
+        },
+      ],
+    });
+    const state = vi.fn();
+    const controller = createTranslationJobController({
+      repository: repo,
+      context: () => ({ projectId: "p", scenarioId: "allowance-policy" }),
+      getValue: () => ({}),
+      apply: vi.fn(() => "APPLIED" as const),
+      state,
+    });
+
+    await controller.recover();
+
+    expect(state).toHaveBeenCalledWith("allowance.warning", "en", "PENDING");
+    expect(state).toHaveBeenCalledWith("allowance.exhausted", "en", "PENDING");
     controller.dispose();
   });
 
@@ -254,7 +440,14 @@ describe("translation job controller", () => {
       sourceHash: "hash",
       createdAt: "now",
       sourceLocale: "en",
-      targets: [{ targetLocale: "es", status: "SUCCESS", outputUnits: [{ key: "field", text: "Hola" }], errorCode: null }],
+      targets: [
+        {
+          targetLocale: "es",
+          status: "SUCCESS",
+          outputUnits: [{ key: "field", text: "Hola" }],
+          errorCode: null,
+        },
+      ],
     });
     const apply = vi.fn(() => "APPLIED" as const);
     const controller = createTranslationJobController({

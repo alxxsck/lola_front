@@ -5,8 +5,11 @@ import Message from "primevue/message";
 import { compareDecimalStrings } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
 import { parseAllowanceUsd } from "../model/ai-allowance";
+import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
+import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 
 const props = defineProps<{ projectId: string }>();
+const emit = defineEmits<{ "fresh-login": [] }>();
 const endUserId = ref("");
 const amount = ref("");
 const validFrom = ref(localInput(new Date()));
@@ -15,6 +18,7 @@ const reason = ref("");
 const saving = ref(false);
 const error = ref("");
 const notice = ref("");
+const reauthenticationRequired = ref(false);
 const commandFingerprint = ref("");
 const commandIdempotencyKey = ref("");
 let generation = 0;
@@ -28,6 +32,7 @@ watch(
     reason.value = "";
     error.value = "";
     notice.value = "";
+    reauthenticationRequired.value = false;
     saving.value = false;
     resetCommand();
     validFrom.value = localInput(new Date());
@@ -44,7 +49,7 @@ async function submit(): Promise<void> {
   const from = instant(validFrom.value);
   const until = instant(expiresAt.value);
   if (!requestEndUserId || requestEndUserId.length > 160)
-    return fail("Укажите корректный End User ID.");
+    return fail("Укажите корректный ID пользователя.");
   if (!amountUsd || compareDecimalStrings(amountUsd, "0") <= 0)
     return fail("Сумма должна быть больше нуля.");
   if (!from || !until || from >= until)
@@ -72,6 +77,7 @@ async function submit(): Promise<void> {
   saving.value = true;
   error.value = "";
   notice.value = "";
+  reauthenticationRequired.value = false;
   try {
     await aiAllowanceRepository.createGrant(
       requestProjectId,
@@ -84,7 +90,7 @@ async function submit(): Promise<void> {
       requestProjectId !== props.projectId
     )
       return;
-    notice.value = "Начисление создано и записано в allowance ledger.";
+    notice.value = "Дополнительный лимит начислен и сохранён в истории.";
     amount.value = "";
     reason.value = "";
     resetCommand();
@@ -92,11 +98,15 @@ async function submit(): Promise<void> {
     if (
       requestGeneration === generation &&
       requestProjectId === props.projectId
-    )
-      error.value =
-        cause instanceof Error
+    ) {
+      reauthenticationRequired.value =
+        isAllowanceReauthenticationRequired(cause);
+      error.value = reauthenticationRequired.value
+        ? ""
+        : cause instanceof Error
           ? cause.message
           : "Не удалось создать начисление";
+    }
   } finally {
     if (
       requestGeneration === generation &&
@@ -132,35 +142,63 @@ function localInput(value: Date): string {
   <section class="direct-grant card">
     <header>
       <div>
-        <h3>Ручное начисление квоты</h3>
-        <p>Audited операция доступна отдельно от чтения баланса.</p>
+        <h3>Начислить дополнительный лимит</h3>
+        <p>
+          Добавляет пользователю временную сумму сверх обычного лимита. Операция
+          сохраняется в истории.
+        </p>
       </div>
     </header>
     <form @submit.prevent="submit">
-      <label
-        >End User ID<input
-          v-model="endUserId"
-          maxlength="160"
-          autocomplete="off"
-      /></label>
-      <label
-        >Сумма, USD<input
-          v-model="amount"
-          inputmode="decimal"
-          autocomplete="off"
-      /></label>
-      <label
-        >Действует с<input v-model="validFrom" type="datetime-local"
-      /></label>
-      <label>Истекает<input v-model="expiresAt" type="datetime-local" /></label>
+      <div class="grant-grid">
+        <label
+          ><span>ID пользователя</span
+          ><input
+            v-model="endUserId"
+            maxlength="160"
+            autocomplete="off"
+            placeholder="Например: 8f4b2c..."
+        /></label>
+        <label
+          ><span>Сумма</span
+          ><span class="input-with-suffix"
+            ><input
+              v-model="amount"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="0,00"
+            /><span>$</span></span
+          ></label
+        >
+        <label
+          ><span>Начало действия</span
+          ><input v-model="validFrom" type="datetime-local"
+        /></label>
+        <label
+          ><span>Дата окончания</span
+          ><input v-model="expiresAt" type="datetime-local"
+        /></label>
+      </div>
       <label class="reason"
-        >Причина<textarea v-model="reason" rows="2" maxlength="500" />
+        ><span>Причина начисления</span
+        ><textarea
+          v-model="reason"
+          rows="2"
+          maxlength="500"
+          placeholder="Например: компенсация за недоступность сервиса"
+        />
       </label>
-      <Button label="Начислить" type="submit" :loading="saving" />
+      <div class="form-actions">
+        <Button label="Начислить лимит" type="submit" :loading="saving" />
+      </div>
     </form>
     <Message v-if="error" severity="error" :closable="false">{{
       error
     }}</Message>
+    <AiAllowanceReauthenticationAction
+      :required="reauthenticationRequired"
+      @fresh-login="emit('fresh-login')"
+    />
     <Message v-if="notice" severity="success" :closable="false">{{
       notice
     }}</Message>
@@ -170,50 +208,91 @@ function localInput(value: Date): string {
 <style scoped>
 .direct-grant {
   display: grid;
-  gap: 14px;
-  padding: 20px;
+  gap: 20px;
+  padding: 24px;
 }
 .direct-grant h3,
 .direct-grant p {
   margin: 0;
 }
 .direct-grant p {
-  margin-top: 5px;
+  max-width: 720px;
+  margin-top: 6px;
   color: var(--text-small-muted);
+  line-height: 1.45;
 }
 form {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr auto;
-  align-items: end;
-  gap: 10px;
+  gap: 16px;
+}
+.grant-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 0.8fr 1fr 1fr;
+  gap: 12px;
 }
 label {
   display: grid;
-  gap: 5px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  align-content: start;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 400;
 }
 input,
 textarea {
+  box-sizing: border-box;
   width: 100%;
-  padding: 9px;
+  min-height: 44px;
+  padding: 0 12px;
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-card);
   color: var(--text-primary);
-  font: inherit;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
 }
-.reason {
-  grid-column: 1/-1;
+textarea {
+  min-height: 72px;
+  padding-block: 10px;
+  line-height: 1.4;
+  resize: vertical;
+}
+.input-with-suffix {
+  display: flex;
+  height: 44px;
+}
+.input-with-suffix input {
+  border-radius: 10px 0 0 10px;
+}
+.input-with-suffix > span {
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  border: 1px solid var(--border-default);
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
 }
 @media (max-width: 900px) {
-  form {
+  .grant-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
 @media (max-width: 560px) {
-  form {
+  .direct-grant {
+    padding: 18px;
+  }
+  .grant-grid {
     grid-template-columns: 1fr;
+  }
+  .form-actions :deep(.p-button) {
+    width: 100%;
   }
 }
 </style>

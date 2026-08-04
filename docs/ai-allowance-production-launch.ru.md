@@ -130,6 +130,23 @@ project.ai_allowance.reconcile
 5. Начать с режима `SHADOW`.
 6. Проверить тексты предупреждения и исчерпания лимита.
 
+В той же форме `Изменить базовый план` настраиваются:
+
+- `Предупреждение (<locale>)` — событие LOW после пересечения порога для каждой локали из
+  `supportedLocales` проекта;
+- `Лимит исчерпан (<locale>)` — текст HARD-отказа до вызова AI provider для каждой проектной
+  локали;
+- `Fallback` — нейтральный текст, если для locale пользователя нет отдельной версии;
+- `Сбросить ... на системный текст` — явное удаление сохранённой настройки;
+- `Показывать End User точную оставшуюся квоту в USD` — проектная половина
+  двухключевого privacy gate.
+
+Backend сначала определяет Delivery Locale по опубликованному внутреннему профилю End User, затем
+по legacy locale и только потом по default locale проекта. Для текста он ищет точную BCP-47
+локаль, вариант того же основного языка и project default. Если ни один локализованный вариант не
+подошёл, используется `Fallback`; если проектный текст сброшен или не задан — встроенный системный
+текст. Выбранная локаль, источник и причина fallback сохраняются в журнале для аудита.
+
 Без подходящего назначения новый период пользователя не получает базовое начисление. В карточке
 будет `0,00 $`. Если policy выключена, пользователь при этом может продолжать пользоваться AI;
 карточка прямо показывает, что блокировка не действует.
@@ -137,7 +154,7 @@ project.ai_allowance.reconcile
 Период создаётся лениво при первой операции, которая списывается с End User allowance. До этого
 карточка показывает ожидаемое начисление и сообщение `Период ещё не создан`.
 
-## 6. Настроить frontend
+## 6. Настроить frontend в Vercel
 
 Production frontend запускается только в API-режиме:
 
@@ -150,8 +167,61 @@ VITE_API_BASE_URL=https://api.example.com
 для новых окружений лучше хранить только origin. Backend CORS и cookie settings должны разрешать
 production-домен CMS.
 
-Перед публикацией артефакта выполнить `npm run build`. Эта команда проверяет OpenAPI drift,
-TypeScript и production bundle. Публикуется только каталог `dist/`.
+В Vercel открыть `Project Settings → Environment Variables` и добавить оба значения минимум для
+`Production` (обычно также для `Preview`). После изменения выполнить redeploy: переменные Vite
+встраиваются в bundle во время build и не меняются в уже опубликованном артефакте.
+
+Vercel выполняет `npm run build` из `vercel.json`. На Vercel эта команда fail-closed: сборка
+остановится, если `VITE_DATA_MODE` не равен `api`, API URL отсутствует, использует HTTP или указывает
+на localhost. Команда также проверяет OpenAPI drift, TypeScript и production bundle; публикуется
+только каталог `dist/`.
+
+Публичный production alias CMS — `https://lola-front.vercel.app`. Уникальный deployment URL может
+быть закрыт Vercel Authentication; это не означает, что production alias недоступен.
+
+### Как показать лимит самому End User
+
+Одновременно нужны два разрешения:
+
+1. Backend env `AI_ALLOWANCE_END_USER_EXACT_USD_VISIBLE=true` с последующим redeploy backend.
+2. В CMS `Расходы AI → Лимиты → Изменить базовый план` включить
+   `Показывать End User точную оставшуюся квоту в USD` и сохранить новую ревизию.
+
+Клиентский widget/приложение End User читает `GET /api/v1/users/me/ai-allowance`. Endpoint всегда
+возвращает `status`, `resetAt` и `exactUsdVisible`; денежные поля `availableUsd`, `usedUsd`,
+`reservedUsd`, `unknownHeldUsd` появляются только при обоих разрешениях. CMS не является
+End User widget: карточка в профиле оператора и self endpoint — разные интерфейсы.
+
+Если точные суммы не нужны, оставьте deployment gate `false`: пользователь всё равно получит
+статус `AVAILABLE/LOW/EXHAUSTED` и настроенное сообщение, но не увидит внутреннюю USD-квоту.
+
+### Обязательный GitHub Actions secret
+
+Workflow сверяет frontend с конкретным backend checkout. В GitHub открыть
+`Settings → Secrets and variables → Actions` и создать repository secret
+`LOLA_BACKEND_READ_TOKEN`: fine-grained token с read-only `Contents` к `alxxsck/lola_back`.
+Repository variable `LOLA_BACKEND_REF` должна содержать 40-символьный SHA backend-релиза, а не
+плавающий branch. После изменения перезапустить workflow `OpenAPI contract`.
+
+### Обязательная защита production promotion в Vercel
+
+Одного успешного Vercel build недостаточно: production alias должен назначаться только после
+GitHub-проверок того же commit. В `Project Settings → Build and Deployment → Deployment Checks`
+нажать `Add Checks`, выбрать GitHub checks и сделать обязательными для `Production`:
+
+```text
+OpenAPI contract / frontend-quality
+OpenAPI contract / verify
+```
+
+Проект должен быть подключён через Vercel for GitHub, а automatic production aliasing — включён.
+После сохранения создать новый production deployment: до завершения обоих checks он остаётся
+готовым, но не получает production domain. `Force Promote` допустим только как журналируемое
+аварийное исключение. Если имя job в workflow меняется, соответствующий Deployment Check нужно
+обновить; одинаковые имена jobs в разных workflows использовать нельзя.
+
+Источник: актуальная документация Vercel `Deployment Checks` —
+https://vercel.com/docs/deployment-checks.
 
 ## 7. Smoke-проверка после deploy
 
