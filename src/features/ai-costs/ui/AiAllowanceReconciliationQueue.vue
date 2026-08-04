@@ -6,6 +6,10 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { formatDecimalMoney } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import {
+  allowanceCategoryLabel,
+  allowanceCostQualityLabel,
+} from "../model/ai-allowance-presentation";
 import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
 import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
 import type {
@@ -143,9 +147,9 @@ async function submitResolve(): Promise<void> {
   if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
     return fail("Причина должна содержать от 3 до 500 символов.");
   if (!idempotencyKey.value || idempotencyKey.value.length > 128)
-    return fail("Некорректный Idempotency-Key.");
+    return fail("Некорректный ключ защиты от повторной отправки.");
   if (!confirmed.value)
-    return fail("Подтвердите проверку evidence и выбранного результата.");
+    return fail("Подтвердите проверку данных и выбранного результата.");
 
   const requestContextKey = contextKey.value;
   const requestProjectId = props.projectId;
@@ -166,7 +170,7 @@ async function submitResolve(): Promise<void> {
     )
       return;
     selected.value = null;
-    notice.value = "Attempt разрешён. Очередь перечитана с backend.";
+    notice.value = "Операция завершена. Очередь обновлена.";
     if (cursor.value) cursor.value = "";
     else await load();
   } catch (cause) {
@@ -175,7 +179,7 @@ async function submitResolve(): Promise<void> {
         isAllowanceReauthenticationRequired(cause);
       formError.value = reauthenticationRequired.value
         ? ""
-        : message(cause, "Не удалось разрешить attempt");
+        : message(cause, "Не удалось завершить операцию");
     }
   } finally {
     if (requestContextKey === contextKey.value) resolving.value = false;
@@ -197,6 +201,12 @@ function date(value: string): string {
   }).format(new Date(value));
 }
 
+function statusLabel(value: AiAllowanceReconciliationItem["status"]): string {
+  return value === "RESERVED"
+    ? "Средства зарезервированы"
+    : "Сумма ожидает уточнения";
+}
+
 function commandKey(): string {
   return globalThis.crypto?.randomUUID?.() ?? `attempt-resolve-${Date.now()}`;
 }
@@ -213,10 +223,10 @@ function message(cause: unknown, fallback: string): string {
   >
     <header>
       <div>
-        <span class="eyebrow">Oldest-first operator queue</span>
-        <h2 id="reconciliation-heading">Очередь незавершённых AI attempts</h2>
+        <h2 id="reconciliation-heading">Незавершённые операции AI</h2>
         <p>
-          До 50 записей на страницу. Порядок и keyset cursor задаёт backend.
+          Здесь собраны операции, для которых итоговое списание ещё не
+          определено. Сначала показаны самые старые.
         </p>
       </div>
       <label for="reconciliation-status"
@@ -228,15 +238,14 @@ function message(cause: unknown, fallback: string): string {
           @change="resetPagination"
         >
           <option value="">Все незавершённые</option>
-          <option value="RESERVED">RESERVED</option>
-          <option value="UNKNOWN_HELD">UNKNOWN_HELD</option>
+          <option value="RESERVED">Средства зарезервированы</option>
+          <option value="UNKNOWN_HELD">Сумма ожидает уточнения</option>
         </select></label
       >
     </header>
 
     <Message v-if="!canReconcile" severity="warn" :closable="false">
-      Нет права <code>project.ai_allowance.reconcile</code>. Operator queue
-      скрыта.
+      Нет доступа к сверке незавершённых операций.
     </Message>
     <template v-else>
       <Message
@@ -260,42 +269,40 @@ function message(cause: unknown, fallback: string): string {
       <div v-else-if="visiblePage?.items.length" class="queue-table">
         <table>
           <caption>
-            Незавершённые попытки — сначала самые старые
+            Незавершённые операции — сначала самые старые
           </caption>
           <thead>
             <tr>
-              <th>Создан / статус</th>
-              <th>Пользователь / категория</th>
-              <th>Резерв / unknown</th>
-              <th>Evidence</th>
+              <th>Создана и статус</th>
+              <th>Пользователь и категория</th>
+              <th>Зарезервировано и уточняется</th>
+              <th>Основание</th>
               <th>Действие</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in visiblePage.items" :key="item.id">
               <td>
-                <strong>{{ date(item.reservedAt) }}</strong
-                ><small>{{ item.status }}</small>
+                <span>{{ date(item.reservedAt) }}</span
+                ><small>{{ statusLabel(item.status) }}</small>
               </td>
               <td>
-                <strong>{{ item.endUserId }}</strong
-                ><small>{{ item.category }}</small>
+                <span>{{ item.endUserId }}</span
+                ><small>{{ allowanceCategoryLabel(item.category) }}</small>
               </td>
               <td>
-                <strong>{{ money(item.reservedUsd) }}</strong>
-                <small>unknown {{ money(item.unknownHeldUsd) }}</small>
+                <span>{{ money(item.reservedUsd) }}</span>
+                <small>уточняется {{ money(item.unknownHeldUsd) }}</small>
               </td>
               <td>
-                <strong>{{
-                  item.outcomeReason ?? "Нет outcome reason"
-                }}</strong>
-                <small
-                  >{{ item.costQuality }} · {{ item.modelAttemptId }}</small
-                >
+                <span>{{
+                  item.outcomeReason ?? "Причина пока не указана"
+                }}</span>
+                <small>{{ allowanceCostQualityLabel(item.costQuality) }}</small>
               </td>
               <td>
                 <Button
-                  label="Разрешить"
+                  label="Завершить"
                   size="small"
                   severity="warn"
                   @click="openResolve(item)"
@@ -306,7 +313,7 @@ function message(cause: unknown, fallback: string): string {
         </table>
       </div>
       <p v-else-if="visiblePage" class="empty-state" role="status">
-        В выбранном статусе незавершённых attempts нет.
+        В выбранном статусе незавершённых операций нет.
       </p>
       <footer v-if="visiblePage" class="queue-footer">
         <Button
@@ -336,33 +343,30 @@ function message(cause: unknown, fallback: string): string {
   <Dialog
     :visible="Boolean(selected)"
     modal
-    header="Разрешить AI attempt"
+    header="Завершить операцию AI"
     :style="{ width: 'min(680px, 94vw)' }"
     @update:visible="!$event && (selected = null)"
   >
     <form class="resolve-form" @submit.prevent="submitResolve">
       <Message severity="warn" :closable="false">
-        Audited break-glass операция изменит allowance ledger. Attempt
-        выбирается только из server-side очереди.
+        Служебная операция изменит баланс пользователя. Завершить можно только
+        операцию из этой очереди.
       </Message>
-      <p v-if="selected">
-        <strong>{{ selected.modelAttemptId }}</strong> ·
-        {{ selected.endUserId }}
-      </p>
+      <p v-if="selected">Пользователь: {{ selected.endUserId }}</p>
       <label for="attempt-resolution"
         >Результат
         <select id="attempt-resolution" v-model="resolution">
           <option value="SETTLE_FROM_USAGE">
-            Списать по terminal AI Usage
+            Списать подтверждённую стоимость
           </option>
-          <option value="HOLD_UNKNOWN">Оставить в unknown hold</option>
+          <option value="HOLD_UNKNOWN">Оставить сумму на уточнении</option>
           <option value="RELEASE_PROVEN_NON_BILLABLE">
-            Освободить non-billable резерв
+            Освободить резерв без списания
           </option>
         </select></label
       >
       <label for="attempt-reason"
-        >Причина / evidence
+        >Причина и подтверждающие данные
         <textarea
           id="attempt-reason"
           v-model="reason"
@@ -374,13 +378,9 @@ function message(cause: unknown, fallback: string): string {
         <input v-model="confirmed" type="checkbox" />
         {{
           resolution === "RELEASE_PROVEN_NON_BILLABLE"
-            ? "Подтверждаю доказанный non-billable результат"
-            : "Подтверждаю проверку usage и provider evidence"
+            ? "Подтверждаю, что списание не требуется"
+            : "Подтверждаю проверку данных об использовании и стоимости"
         }}
-      </label>
-      <label for="attempt-idempotency"
-        >Idempotency-Key
-        <input id="attempt-idempotency" :value="idempotencyKey" readonly />
       </label>
       <small v-if="formError" class="form-error" role="alert">{{
         formError
@@ -433,13 +433,6 @@ h2,
 p {
   margin: 4px 0;
 }
-.eyebrow {
-  color: var(--text-small-muted);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
 label {
   display: grid;
   gap: 6px;
@@ -476,7 +469,7 @@ td {
   text-align: left;
   vertical-align: top;
 }
-td strong,
+td > span,
 td small {
   display: block;
 }

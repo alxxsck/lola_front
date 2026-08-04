@@ -1,7 +1,7 @@
 import { flushPromises, shallowMount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AIOperationDetailPanel from "@/features/project-ai-operations/ui/AIOperationDetailPanel.vue";
-import AIOperationCard from "@/features/project-ai-operations/ui/AIOperationCard.vue";
+import AIOperationTable from "@/features/project-ai-operations/ui/AIOperationTable.vue";
 import AIOperationFilters from "@/features/project-ai-operations/ui/AIOperationFilters.vue";
 import AIOperationSummary from "@/features/project-ai-operations/ui/AIOperationSummary.vue";
 import AIOperationsPage from "./AIOperationsPage.vue";
@@ -528,12 +528,14 @@ describe("AIOperationsPage", () => {
     });
     const wrapper = mountPage();
     await flushPromises();
-    expect(wrapper.findAllComponents(AIOperationCard)).toHaveLength(1);
+    expect(wrapper.findComponent(AIOperationTable).props("items")).toHaveLength(
+      1,
+    );
 
     mocks.activeAuth!.project.effectivePermissionCodes = [];
     await flushPromises();
 
-    expect(wrapper.findAllComponents(AIOperationCard)).toHaveLength(0);
+    expect(wrapper.findComponent(AIOperationTable).exists()).toBe(false);
     expect(wrapper.findComponent(AIOperationDetailPanel).exists()).toBe(false);
     expect(mocks.push).toHaveBeenCalledWith({ name: "overview" });
   });

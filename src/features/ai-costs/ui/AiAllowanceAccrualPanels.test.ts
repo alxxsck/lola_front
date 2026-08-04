@@ -45,6 +45,33 @@ describe("allowance accrual panels", () => {
     expect(wrapper.text()).not.toContain("immutable");
   });
 
+  it("selects an event instead of asking for event and revision UUIDs", async () => {
+    const wrapper = mount(AiAllowanceAccrualRulesPanel, {
+      props: { projectId: "project-1", canRead: true, canManage: true },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Создать правило"))!
+      .trigger("click");
+
+    const form = wrapper.get("form.form");
+    expect(
+      form.findComponent({ name: "EventDefinitionSelect" }).exists(),
+    ).toBe(true);
+    expect(form.text()).not.toContain("ID типа события");
+    expect(form.text()).not.toContain("ID разрешённых версий");
+    expect(form.text()).toContain("текущая опубликованная версия");
+  });
+
   it("labels the accrual history and its filters in Russian", async () => {
     const wrapper = mount(AiAllowanceAccrualReceiptsPanel, {
       props: { projectId: "project-1" },
@@ -235,12 +262,13 @@ async function openValidRule(wrapper: ReturnType<typeof mount>) {
   const inputs = form.findAll("input");
   await inputs[0]!.setValue("WELCOME_BONUS");
   await inputs[1]!.setValue("Welcome bonus");
-  await form
-    .get('input[placeholder^="xxxxxxxx"]')
-    .setValue("11111111-1111-4111-8111-111111111111");
-  await form
-    .findAll("textarea")[0]!
-    .setValue("22222222-2222-4222-8222-222222222222");
+  form.findComponent({ name: "EventDefinitionSelect" }).vm.$emit("select", {
+    definitionKeyId: "11111111-1111-4111-8111-111111111111",
+    currentRevisionId: "22222222-2222-4222-8222-222222222222",
+    name: "Welcome bonus",
+    code: "WELCOME_BONUS",
+  });
+  await flushPromises();
   const moneyInputs = form.findAll('input[placeholder="0,00"]');
   await moneyInputs[0]!.setValue("1");
   await moneyInputs[1]!.setValue("2");

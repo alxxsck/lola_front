@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
@@ -16,10 +17,13 @@ import {
   aiOperationChargedAccountLabel,
   aiOperationCostLabel,
   aiOperationDateLabel,
+  aiOperationDescriptionLabel,
+  aiOperationOutcomeLabel,
   aiOperationStatusPresentation,
+  aiOperationTitleLabel,
 } from "../model/project-ai-operation-presentation";
 
-defineProps<{
+const props = defineProps<{
   projectId: string;
   detail: AiOperationDetailResponseDto | null;
   subjects: AiOperationSubjectPageResponseDto | null;
@@ -56,6 +60,96 @@ function timelineIcon(kind: string): string {
   return "pi pi-circle-fill";
 }
 
+function timelineLabel(
+  kind: string,
+  eventType: string,
+  name?: string | null,
+): string {
+  const labels: Record<string, string> = {
+    DATA_ACCESS_COMPLETED: "Данные прочитаны",
+    OPERATION_FAILED: "Операция завершилась ошибкой",
+    OPERATION_COMPLETED: "Операция завершена",
+    MODEL_ATTEMPT_STARTED: "Отправлен запрос модели",
+    MODEL_ATTEMPT_COMPLETED: "Получен ответ модели",
+    TOOL_CALL_STARTED: "Запущен инструмент",
+    TOOL_CALL_COMPLETED: "Инструмент завершил работу",
+  };
+  if (labels[eventType]) return labels[eventType];
+  if (name && !/^[A-Z0-9_]+$/.test(name)) return name;
+  const byKind: Record<string, string> = {
+    MODEL_ATTEMPT: "Обращение к модели",
+    TOOL_CALL: "Выполнение действия",
+    DATA_ACCESS: "Работа с данными",
+    RESULT: "Результат операции",
+  };
+  return byKind[kind] ?? "Этап операции";
+}
+
+function eventStatusLabel(status?: string | null): string {
+  const labels: Record<string, string> = {
+    STARTED: "Запущено",
+    RUNNING: "Выполняется",
+    SUCCEEDED: "Завершено",
+    FAILED: "Ошибка",
+    CANCELLED: "Отменено",
+  };
+  return status ? (labels[status] ?? status) : "";
+}
+
+function dataSourceLabel(sourceType: string): string {
+  const labels: Record<string, string> = {
+    PROJECT_ANALYSIS_QUERY: "Данные проекта для анализа",
+    CONVERSATION: "Диалог с пользователем",
+    USER_MEMORY: "Память пользователя",
+    END_USER_CASE: "Обращение пользователя",
+  };
+  return labels[sourceType] ?? "Источник данных";
+}
+
+function resultReferenceLabel(kind: string): string {
+  const labels: Record<string, string> = {
+    AI_ANALYSIS: "анализ",
+    END_USER_CASE: "обращение",
+    CONVERSATION: "диалог",
+  };
+  return labels[kind] ?? "результат";
+}
+
+function countLabel(
+  count: number,
+  one: string,
+  few: string,
+  many: string,
+): string {
+  const modulo100 = count % 100;
+  const modulo10 = count % 10;
+  const form =
+    modulo100 >= 11 && modulo100 <= 14
+      ? many
+      : modulo10 === 1
+        ? one
+        : modulo10 >= 2 && modulo10 <= 4
+          ? few
+          : many;
+  return `${count} ${form}`;
+}
+
+const resultSummary = computed(() => {
+  const timeline = props.detail?.timeline ?? [];
+  return (
+    [...timeline]
+      .reverse()
+      .find((event) => event.summary?.trim())
+      ?.summary?.trim() ?? null
+  );
+});
+
+const hasStoredPayload = computed(() =>
+  (props.detail?.timeline ?? []).some(
+    (event) => event.inputHash || event.outputHash,
+  ),
+);
+
 function roleLabel(role: string): string {
   const labels: Record<string, string> = {
     SCOPE_MEMBER: "в области",
@@ -69,7 +163,7 @@ function accessKindLabel(kind: string): string {
   const labels: Record<string, string> = {
     METADATA: "Метаданные операции",
     RESULT: "Результат операции",
-    COST: "Стоимость и DB work",
+    COST: "Стоимость и нагрузка на базу данных",
     SENSITIVE_DETAIL: "Детали операции",
     SUBJECT_MANIFEST: "Список участников",
     ACCESS_HISTORY: "История доступа",
@@ -131,7 +225,7 @@ function resultRoute(
     aria-label="Детали AI-операции"
   >
     <div class="detail-toolbar">
-      <span>Прозрачная история выполнения</span>
+      <span>Операция AI</span>
       <Button
         class="detail-close"
         label="Назад"
@@ -159,8 +253,7 @@ function resultRoute(
         <span class="category">{{
           aiOperationCategoryLabel(detail.category)
         }}</span>
-        <h2>{{ detail.title }}</h2>
-        <p>{{ detail.purpose }}</p>
+        <h2>{{ aiOperationTitleLabel(detail.title, detail.category) }}</h2>
       </header>
 
       <Message
@@ -171,6 +264,65 @@ function resultRoute(
         Часть данных недоступна:
         {{ detail.restrictedSections.join(", ") }}
       </Message>
+
+      <section class="request-result" aria-label="Запрос и результат операции">
+        <article>
+          <span class="request-result-label">Что запросили</span>
+          <p>
+            {{
+              detail.purpose
+                ? aiOperationDescriptionLabel(detail.purpose)
+                : "Описание запроса не передано в журнал."
+            }}
+          </p>
+        </article>
+        <article :class="{ failed: detail.status === 'FAILED' }">
+          <div class="result-heading">
+            <span class="request-result-label">Что получили</span>
+            <strong>{{
+              aiOperationOutcomeLabel(detail.outcomeCode, detail.status)
+            }}</strong>
+          </div>
+          <p>
+            {{
+              (resultSummary
+                ? aiOperationDescriptionLabel(resultSummary)
+                : null) ||
+              (detail.resultReference
+                ? "Результат сохранён и доступен в соответствующем разделе."
+                : "Краткое содержание результата не передано в журнал.")
+            }}
+          </p>
+          <RouterLink
+            v-if="
+              detail.resultReference &&
+              resultRoute(
+                projectId,
+                detail,
+                canReadAnalysisResult,
+                canReadCaseResult,
+                canReadConversationResult,
+              )
+            "
+            :to="
+              resultRoute(
+                projectId,
+                detail,
+                canReadAnalysisResult,
+                canReadCaseResult,
+                canReadConversationResult,
+              )!
+            "
+            class="result-link"
+          >
+            Открыть {{ resultReferenceLabel(detail.resultReference.kind) }}
+          </RouterLink>
+        </article>
+        <small v-if="hasStoredPayload" class="payload-note">
+          Полный текст запроса и ответа в журнале не хранится; доступны
+          безопасные сводки и контрольные отпечатки.
+        </small>
+      </section>
 
       <section class="section">
         <h3>Ответственность и расходы</h3>
@@ -196,7 +348,7 @@ function resultRoute(
             </dd>
           </div>
           <div>
-            <dt>Авторизовал background-run</dt>
+            <dt>Разрешил фоновый запуск</dt>
             <dd>
               {{
                 detail.authorizedByCmsUserDisplayName ||
@@ -208,17 +360,22 @@ function resultRoute(
         </dl>
         <div class="cost-line">
           <template v-if="canReadCost && detail.cost">
-            <span>Итоговая AI-стоимость</span>
+            <span>Итоговая стоимость</span>
             <strong>{{
               aiOperationCostLabel(detail.cost.effectiveCost)
             }}</strong>
             <small>
-              состояние: {{ detail.cost.state }} · неизвестных записей:
-              {{ detail.cost.unknownUsageRecords }} · резерв:
-              {{ detail.cost.reservedCostUsdTicks }} ticks · provider:
-              {{ aiOperationCostLabel(detail.cost.providerReportedCost) }} ·
-              fallback:
-              {{ aiOperationCostLabel(detail.cost.estimatedFallbackCost) }}
+              {{
+                countLabel(
+                  detail.usageRecords,
+                  "обращение к модели",
+                  "обращения к моделям",
+                  "обращений к моделям",
+                )
+              }}
+              <template v-if="detail.dbWorkUnits != null">
+                · нагрузка на базу данных: {{ detail.dbWorkUnits }} усл. ед.
+              </template>
             </small>
           </template>
           <template v-else-if="canReadCost">
@@ -227,55 +384,9 @@ function resultRoute(
           </template>
           <template v-else>
             <i class="pi pi-lock" />
-            Денежная стоимость доступна только с отдельным permission
+            Для просмотра стоимости нужен отдельный доступ
           </template>
         </div>
-      </section>
-
-      <section class="section source-section">
-        <h3>Источник и результат</h3>
-        <dl>
-          <div>
-            <dt>Источник</dt>
-            <dd>{{ detail.sourceKind }}</dd>
-          </div>
-          <div v-if="detail.resultReference">
-            <dt>Domain result</dt>
-            <dd>
-              <RouterLink
-                v-if="
-                  resultRoute(
-                    projectId,
-                    detail,
-                    canReadAnalysisResult,
-                    canReadCaseResult,
-                    canReadConversationResult,
-                  )
-                "
-                :to="
-                  resultRoute(
-                    projectId,
-                    detail,
-                    canReadAnalysisResult,
-                    canReadCaseResult,
-                    canReadConversationResult,
-                  )!
-                "
-                class="result-link"
-              >
-                Открыть {{ detail.resultReference.kind }}
-              </RouterLink>
-              <span v-else>{{ detail.resultReference.kind }}</span>
-            </dd>
-          </div>
-          <div>
-            <dt>Время</dt>
-            <dd>
-              {{ aiOperationDateLabel(detail.startedAt) }} →
-              {{ aiOperationDateLabel(detail.completedAt) }}
-            </dd>
-          </div>
-        </dl>
       </section>
 
       <details class="technical-section">
@@ -291,6 +402,10 @@ function resultRoute(
           <TechnicalIdentifier
             label="Root correlation"
             :value="detail.rootCorrelationId"
+          />
+          <TechnicalIdentifier
+            label="Тип источника"
+            :value="detail.sourceKind"
           />
           <TechnicalIdentifier label="Источник" :value="detail.sourceId" />
           <TechnicalIdentifier
@@ -335,7 +450,7 @@ function resultRoute(
           />
           <TechnicalIdentifier
             v-if="detail.authorizedByCmsUserId"
-            label="Авторизовал background-run"
+            label="Разрешил фоновый запуск"
             :value="detail.authorizedByCmsUserId"
             :to="
               cmsUserDetailRoute(
@@ -346,7 +461,7 @@ function resultRoute(
           />
           <TechnicalIdentifier
             v-if="detail.resultReference"
-            label="Domain result"
+            label="ID результата"
             :value="detail.resultReference.id"
             :to="
               resultRoute(
@@ -364,7 +479,9 @@ function resultRoute(
       <section class="section">
         <div class="section-heading">
           <h3>Хронология</h3>
-          <span>{{ detail.timeline.length }} событий</span>
+          <span>{{
+            countLabel(detail.timeline.length, "событие", "события", "событий")
+          }}</span>
         </div>
         <ol class="timeline">
           <li v-for="event in detail.timeline" :key="event.sequence">
@@ -373,19 +490,27 @@ function resultRoute(
             /></span>
             <div class="timeline-body">
               <div class="timeline-title">
-                <strong>{{ event.name || event.eventType }}</strong>
+                <strong>{{
+                  timelineLabel(event.kind, event.eventType, event.name)
+                }}</strong>
                 <time>{{ aiOperationDateLabel(event.occurredAt) }}</time>
               </div>
-              <p v-if="event.summary">{{ event.summary }}</p>
+              <p v-if="event.summary">
+                {{ aiOperationDescriptionLabel(event.summary) }}
+              </p>
               <div class="timeline-meta">
                 <span>{{ aiOperationActorLabel(event.actor) }}</span>
-                <span v-if="event.status">{{ event.status }}</span>
-                <span v-if="event.errorCode">{{ event.errorCode }}</span>
+                <span v-if="event.status">{{
+                  eventStatusLabel(event.status)
+                }}</span>
+                <span v-if="event.errorCode">{{
+                  aiOperationOutcomeLabel(event.errorCode)
+                }}</span>
               </div>
               <dl v-if="event.dataAccess" class="data-access">
                 <div>
                   <dt>Источник</dt>
-                  <dd>{{ event.dataAccess.sourceType }}</dd>
+                  <dd>{{ dataSourceLabel(event.dataAccess.sourceType) }}</dd>
                 </div>
                 <div>
                   <dt>Строки / группы</dt>
@@ -395,7 +520,7 @@ function resultRoute(
                   </dd>
                 </div>
                 <div v-if="canReadCost">
-                  <dt>DB work</dt>
+                  <dt>Нагрузка на БД</dt>
                   <dd>{{ event.dataAccess.workUnits ?? "неизвестно" }}</dd>
                 </div>
                 <div>
@@ -410,15 +535,17 @@ function resultRoute(
                 </div>
               </dl>
               <div v-if="event.toolCall" class="safe-box">
-                {{ event.toolCall.capabilityName }}@{{
-                  event.toolCall.capabilityVersion
+                {{
+                  event.toolCall.normalizedSummary
+                    ? aiOperationDescriptionLabel(
+                        event.toolCall.normalizedSummary,
+                      )
+                    : "Действие выполнено"
                 }}
-                · {{ event.toolCall.normalizedSummary }}
               </div>
               <div v-if="event.modelAttempt" class="safe-box">
-                {{ event.modelAttempt.provider }} /
-                {{ event.modelAttempt.model }} ·
-                {{ event.modelAttempt.zeroDataRetentionObserved }}
+                Модель: {{ event.modelAttempt.provider }} /
+                {{ event.modelAttempt.model }}
               </div>
             </div>
           </li>
@@ -436,8 +563,10 @@ function resultRoute(
 
       <section class="section">
         <div class="section-heading">
-          <h3>Provider usage</h3>
-          <span>{{ detail.usageRecords }} записей</span>
+          <h3>Обращения к моделям</h3>
+          <span>{{
+            countLabel(detail.usageRecords, "запись", "записи", "записей")
+          }}</span>
         </div>
         <div v-if="detail.usage.attempts.length" class="usage-list">
           <article v-for="attempt in detail.usage.attempts" :key="attempt.id">
@@ -446,7 +575,7 @@ function resultRoute(
             >
             <span>{{ attempt.operation }} · {{ attempt.costStatus }}</span>
             <small>
-              {{ attempt.totalTokens }} tokens ·
+              {{ attempt.totalTokens }} токенов ·
               {{
                 attemptCostLabel(
                   canReadCost,
@@ -457,7 +586,9 @@ function resultRoute(
             </small>
           </article>
         </div>
-        <p v-else class="empty-inline">Provider attempts отсутствуют.</p>
+        <p v-else class="empty-inline">
+          Подробные записи об обращениях не переданы в журнал.
+        </p>
         <Button
           v-if="detail.usage.pageInfo.hasMore"
           label="Ещё AI-вызовы"
@@ -486,7 +617,7 @@ function resultRoute(
           />
         </div>
         <Message v-if="!canReadSubjects" severity="secondary" :closable="false">
-          Требуется permission на точный список участников.
+          Для просмотра точного списка участников нужен отдельный доступ.
         </Message>
         <template v-else-if="subjects">
           <Message
@@ -494,7 +625,7 @@ function resultRoute(
             severity="warn"
             :closable="false"
           >
-            Exact manifest для этой операции не материализован.
+            Точный список участников для этой операции не был сохранён.
           </Message>
           <div v-else class="subject-list">
             <article
@@ -547,7 +678,7 @@ function resultRoute(
           />
         </div>
         <Message v-if="!canReadAudit" severity="secondary" :closable="false">
-          История доступа ограничена отдельным audit permission.
+          Для просмотра истории доступа нужен отдельный доступ.
         </Message>
         <div v-else-if="accessHistory" class="access-list">
           <article
@@ -592,10 +723,6 @@ function resultRoute(
           />
         </div>
       </section>
-
-      <footer class="technical-footer">
-        <span>Outcome: {{ detail.outcomeCode || "—" }}</span>
-      </footer>
     </template>
   </aside>
 </template>
@@ -664,6 +791,46 @@ h2 {
   color: var(--muted);
   font-size: 0.8rem;
   line-height: 1.5;
+}
+.request-result {
+  display: grid;
+  gap: 10px;
+}
+.request-result article {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  background: var(--surface-subtle);
+  border-left: 3px solid var(--brand);
+  border-radius: 10px;
+}
+.request-result article.failed {
+  border-left-color: var(--status-danger);
+}
+.request-result-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+.request-result p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+.result-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.result-heading strong {
+  font-size: 0.78rem;
+}
+.payload-note {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
 }
 .section {
   display: grid;

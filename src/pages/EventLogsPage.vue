@@ -426,7 +426,7 @@ function sourceLabel(source: EventLog["source"]) {
     SERVER: "Backend",
     FRONTEND: "Frontend",
     INTERNAL: "Internal",
-    INTEGRATION: "Integration",
+    INTEGRATION: "Интеграция",
   }[source];
 }
 

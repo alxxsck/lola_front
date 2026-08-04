@@ -4,7 +4,11 @@ import {
   aiOperationCategoryLabel,
   aiOperationChargedAccountLabel,
   aiOperationCostLabel,
+  aiOperationDescriptionLabel,
+  aiOperationOutcomeLabel,
+  aiOperationSourceLabel,
   aiOperationStatusPresentation,
+  aiOperationTitleLabel,
 } from "./project-ai-operation-presentation";
 
 describe("project AI operation presentation", () => {
@@ -39,5 +43,20 @@ describe("project AI operation presentation", () => {
     expect(aiOperationCategoryLabel("AI_ANALYSIS")).toBe("AI-анализ");
     expect(aiOperationCategoryLabel("CMS_AGENT")).toBe("AI-агент CMS");
     expect(aiOperationCostLabel("0.0245")).toContain("$0.0245");
+  });
+
+  it("turns known technical operation labels into readable Russian copy", () => {
+    expect(aiOperationTitleLabel("User memory extraction", "MEMORY")).toBe(
+      "Извлечение фактов из диалога",
+    );
+    expect(aiOperationSourceLabel("CONVERSATION_TURN")).toBe("Ответ в диалоге");
+    expect(aiOperationOutcomeLabel("COMPLETED")).toBe("Выполнено");
+    expect(
+      aiOperationDescriptionLabel(
+        "Ответить с bounded data access в read-only режиме",
+      ),
+    ).toBe(
+      "Ответить с ограниченным доступом к данным в режиме только для чтения",
+    );
   });
 });

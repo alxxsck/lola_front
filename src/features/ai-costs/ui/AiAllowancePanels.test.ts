@@ -1145,9 +1145,13 @@ describe("allowance admin panels", () => {
         await inputs[2]!.setValue("10");
       }
       if (mutation === "cohort") {
-        await form
-          .get('input[placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"]')
-          .setValue("33333333-3333-4333-8333-333333333333");
+        form
+          .findComponent({ name: "SegmentSelect" })
+          .vm.$emit(
+            "update:modelValue",
+            "33333333-3333-4333-8333-333333333333",
+          );
+        await flushPromises();
       }
       await form
         .findAll("textarea")
@@ -1330,7 +1334,7 @@ describe("allowance admin panels", () => {
     expect(wrapper.text()).toContain("Настроить общий лимит");
   });
 
-  it("requires a published Segment UUID for a SEGMENT assignment", async () => {
+  it("selects a published segment instead of asking for its UUID", async () => {
     const wrapper = mount(AiAllowanceLimitsPanel, {
       props: {
         projectId: "project-1",
@@ -1353,14 +1357,12 @@ describe("allowance admin panels", () => {
       .find((button) => button.text().includes("Назначить группе"))!
       .trigger("click");
     const form = wrapper.get("form.allowance-form");
-    await form
-      .get('input[placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"]')
-      .setValue("vip");
-    await form.get("textarea").setValue("Assign published segment");
-    await form.trigger("submit");
 
-    expect(wrapper.text()).toContain("UUID опубликованного сегмента");
-    expect(mocks.putCohortAssignment).not.toHaveBeenCalled();
+    expect(form.findComponent({ name: "SegmentSelect" }).exists()).toBe(true);
+    expect(form.find('input[placeholder*="xxxxxxxx-xxxx"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.text()).toContain("Выберите опубликованный сегмент");
   });
 
   it("loads a user-scoped cursor page and never calls a global journal", async () => {
@@ -1378,6 +1380,30 @@ describe("allowance admin panels", () => {
       limit: 50,
       cursor: "cursor-1",
     });
+  });
+
+  it("searches users by product ID and explains the journal in Russian", async () => {
+    const wrapper = mount(AiAllowanceJournalPanel, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canReconcile: true,
+        canSearchUsers: true,
+        endUserId: "",
+        cursor: "",
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.findComponent({ name: "EndUserSelect" }).exists()).toBe(
+      true,
+    );
+    expect(wrapper.text()).toContain("ID пользователя в вашем продукте");
+    expect(wrapper.text()).not.toContain("End User");
+    expect(wrapper.text()).not.toContain("Immutable");
+    expect(wrapper.text()).not.toContain("attempts");
+    expect(wrapper.text()).not.toContain("Evidence");
+    expect(wrapper.text()).not.toContain("break-glass");
   });
 
   it("does not load account version or expose corrections without reconcile permission", async () => {
@@ -1450,12 +1476,12 @@ describe("allowance admin panels", () => {
     await form.get('input[inputmode="decimal"]').setValue("0.1234567890123");
     await form.get("textarea").setValue("Correct audited allowance entry");
     await form.trigger("submit");
-    expect(wrapper.text()).toContain("точной decimal-строкой");
+    expect(wrapper.text()).toContain("не более 12 знаков после запятой");
     expect(mocks.correct).not.toHaveBeenCalled();
 
     await form.get('input[inputmode="decimal"]').setValue("1.000000000001");
     await form.get('input[type="datetime-local"]').setValue("2099-08-03T10:00");
-    const key = form.get("input[readonly]").element.getAttribute("value");
+    expect(form.find("input[readonly]").exists()).toBe(false);
     await form.trigger("submit");
     await flushPromises();
     expect(mocks.correct).toHaveBeenCalledWith(
@@ -1468,7 +1494,7 @@ describe("allowance admin panels", () => {
         expiresAt: new Date("2099-08-03T10:00").toISOString(),
         reason: "Correct audited allowance entry",
       },
-      key,
+      expect.any(String),
     );
     expect(wrapper.emitted("changed")).toEqual([[]]);
   });

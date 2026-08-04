@@ -4,6 +4,9 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
+import EventDefinitionSelect, {
+  type EventDefinitionSelection,
+} from "@/features/events/EventDefinitionSelect.vue";
 import {
   compareDecimalStrings,
   formatDecimalMoney,
@@ -294,6 +297,10 @@ async function save() {
 function fail(value: string) {
   formError.value = value;
 }
+function selectEvent(event: EventDefinitionSelection): void {
+  eventKeyId.value = event.definitionKeyId;
+  revisionIds.value = event.currentRevisionId;
+}
 function lifecycleLabel(value: AccrualLifecycle): string {
   return (
     LIFECYCLE_OPTIONS.find((option) => option.value === value)?.label ?? value
@@ -418,18 +425,17 @@ function validTimezone(value: string): boolean {
           </select></label
         >
       </div>
-      <label
-        >ID типа события<input
-          v-model="eventKeyId"
-          placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-      /></label>
-      <label
-        >ID разрешённых версий события, по одному в строке<textarea
-          v-model="revisionIds"
-          rows="3"
-          placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-        />
-      </label>
+      <EventDefinitionSelect
+        v-model="eventKeyId"
+        :project-id="projectId"
+        :disabled="saving"
+        @select="selectEvent"
+      />
+      <small class="field-note">
+        Для нового правила используется текущая опубликованная версия события.
+        При редактировании сохранённые привязки не меняются, пока вы не
+        выберете другое событие.
+      </small>
       <fieldset>
         <legend>Источники события</legend>
         <label v-for="option in SOURCE_OPTIONS" :key="option.value"
@@ -484,7 +490,7 @@ function validTimezone(value: string): boolean {
           placeholder="Например: добавили приветственный бонус"
         />
       </label>
-      ><small v-if="formError" class="error" role="alert">{{
+      <small v-if="formError" class="error" role="alert">{{
         formError
       }}</small>
       <AiAllowanceReauthenticationAction

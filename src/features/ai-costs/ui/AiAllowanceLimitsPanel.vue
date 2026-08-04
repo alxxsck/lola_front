@@ -5,6 +5,7 @@ import Dialog from "primevue/dialog";
 import Message from "primevue/message";
 import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
+import SegmentSelect from "@/features/scenario-audience/ui/SegmentSelect.vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
   ScenarioLocalizationCatalogResponseDto,
@@ -25,6 +26,7 @@ import {
   type DecimalString,
 } from "@/shared/lib/decimal-money";
 import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import { allowanceCategoryLabel } from "../model/ai-allowance-presentation";
 import AiAllowanceAccrualRulesPanel from "./AiAllowanceAccrualRulesPanel.vue";
 import AiAllowanceAccrualReceiptsPanel from "./AiAllowanceAccrualReceiptsPanel.vue";
 import AiAllowanceDirectGrantPanel from "./AiAllowanceDirectGrantPanel.vue";
@@ -50,17 +52,6 @@ const SPONSORED_CATEGORIES = new Set<AiAllowanceCategory>([
   "CMS_AGENT",
   "PROJECT_OVERHEAD",
 ]);
-const CATEGORY_LABELS: Record<AiAllowanceCategory, string> = {
-  CHAT: "Чат с Lola",
-  VOICE: "Голосовой чат",
-  SPEECH: "Озвучивание текста",
-  MEMORY: "Память Lola",
-  AI_REVIEW: "Проверка сообщений",
-  AI_ANALYSIS: "AI-анализ",
-  CMS_AGENT: "AI-агент CMS",
-  CASE_INTELLIGENCE: "Анализ обращений",
-  PROJECT_OVERHEAD: "Системные AI-операции",
-};
 const CATEGORY_DESCRIPTIONS: Record<AiAllowanceCategory, string> = {
   CHAT: "Расходы обычного текстового диалога с Lola.",
   VOICE: "Работа голосового режима разговора с Lola.",
@@ -334,7 +325,7 @@ const categoryOptions = computed(() =>
           (rule) => rule.category === category,
         ),
     )
-    .map((value) => ({ value, label: CATEGORY_LABELS[value] })),
+    .map((value) => ({ value, label: allowanceCategoryLabel(value) })),
 );
 const hardUnavailableReason = computed(() =>
   policy.value?.runtimeGates.emergencyDisabled
@@ -923,7 +914,7 @@ async function saveCohort(): Promise<void> {
   if (!validCohortId)
     return fail(
       cohortScope.value === "SEGMENT"
-        ? "Для SEGMENT укажите UUID опубликованного сегмента."
+        ? "Выберите опубликованный сегмент."
         : "Некорректный ID уровня.",
     );
   if (
@@ -1970,7 +1961,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
                 :options="[
                   {
                     value: rule.category,
-                    label: CATEGORY_LABELS[rule.category],
+                    label: allowanceCategoryLabel(rule.category),
                   },
                   ...categoryOptions,
                 ]"
@@ -2082,20 +2073,19 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             <option value="SEGMENT">Сегмент</option>
             <option value="LEVEL">Уровень</option>
           </select></label
-        ><label
-          >ID группы<input
+        >
+        <SegmentSelect
+          v-if="cohortScope === 'SEGMENT'"
+          v-model="cohortId"
+          :project-id="projectId"
+          :disabled="saving"
+        />
+        <label v-else
+          >Уровень<input
             v-model="cohortId"
             maxlength="100"
-            :placeholder="
-              cohortScope === 'SEGMENT'
-                ? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-                : 'gold'
-            "
-          /><small>{{
-            cohortScope === "SEGMENT"
-              ? "ID опубликованного сегмента"
-              : "Постоянный ID уровня"
-          }}</small></label
+            placeholder="gold"
+          /><small>Постоянный ID уровня</small></label
         >
       </div>
       <label
@@ -2128,10 +2118,6 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
       </div>
       <label
         >Причина<textarea v-model="reason" rows="3" maxlength="500" /></label
-      ><label
-        >Idempotency-Key<input
-          v-model="idempotencyKey"
-          maxlength="128" /></label
       ><small v-if="formError" class="field-error" role="alert">{{
         formError
       }}</small>
