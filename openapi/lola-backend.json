@@ -1247,6 +1247,271 @@
         ],
         "type": "object"
       },
+      "AiAllowanceLocalizationCatalogDto": {
+        "properties": {
+          "defaultLocale": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "supportedLocales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "translationSupportedLocales": {
+            "description": "Project locales accepted by the existing translation-jobs API as source/target locales.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "defaultLocale",
+          "supportedLocales",
+          "translationSupportedLocales"
+        ],
+        "type": "object"
+      },
+      "AiAllowanceProjectPolicyDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "enforcementMode": {
+            "enum": [
+              "DISABLED",
+              "SHADOW",
+              "SOFT",
+              "HARD"
+            ],
+            "type": "string"
+          },
+          "exhaustedContent": {
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "SYSTEM"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "defaultLocale": {
+                    "example": "pt-BR",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "CUSTOM"
+                    ],
+                    "type": "string"
+                  },
+                  "translations": {
+                    "additionalProperties": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
+                    "maxProperties": 50,
+                    "minProperties": 1,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "defaultLocale",
+                  "translations"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "lowThresholdMode": {
+            "enum": [
+              "PERCENT",
+              "ABSOLUTE_USD"
+            ],
+            "type": "string"
+          },
+          "lowThresholdValue": {
+            "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "showEndUserExactUsd": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "warningContent": {
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "SYSTEM"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "defaultLocale": {
+                    "example": "pt-BR",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "CUSTOM"
+                    ],
+                    "type": "string"
+                  },
+                  "translations": {
+                    "additionalProperties": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
+                    "maxProperties": 50,
+                    "minProperties": 1,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "defaultLocale",
+                  "translations"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "projectId",
+          "enforcementMode",
+          "timezone",
+          "warningContent",
+          "lowThresholdMode",
+          "lowThresholdValue",
+          "exhaustedContent",
+          "showEndUserExactUsd",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AiAllowanceProjectPolicyResponseDto": {
+        "properties": {
+          "defaultAssignment": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "localization": {
+            "$ref": "#/components/schemas/AiAllowanceLocalizationCatalogDto"
+          },
+          "plans": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "plansPageInfo": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "policy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiAllowanceProjectPolicyDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "projectPolicyVersion": {
+            "pattern": "^(?:0|[1-9]\\d{0,19})$",
+            "type": "string"
+          },
+          "runtimeGates": {
+            "$ref": "#/components/schemas/AiAllowanceRuntimeGatesDto"
+          }
+        },
+        "required": [
+          "projectPolicyVersion",
+          "localization",
+          "policy",
+          "plans",
+          "plansPageInfo",
+          "defaultAssignment",
+          "runtimeGates"
+        ],
+        "type": "object"
+      },
+      "AiAllowanceRuntimeGatesDto": {
+        "properties": {
+          "emergencyDisabled": {
+            "type": "boolean"
+          },
+          "hardEnforcementApproved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hardEnforcementApproved",
+          "emergencyDisabled"
+        ],
+        "type": "object"
+      },
       "AiCapabilityIssueResponseDto": {
         "properties": {
           "code": {
@@ -2222,6 +2487,11 @@
           },
           "rootCorrelationId": {
             "format": "uuid",
+            "type": "string"
+          },
+          "safeSummary": {
+            "description": "Safe administrator-facing explanation without protected prompt or result data.",
+            "nullable": true,
             "type": "string"
           },
           "sourceId": {
@@ -4432,23 +4702,6 @@
         ],
         "type": "object"
       },
-      "AllowanceLocalizedContentDto": {
-        "properties": {
-          "en": {
-            "maxLength": 2000,
-            "type": "string"
-          },
-          "message": {
-            "maxLength": 2000,
-            "type": "string"
-          },
-          "ru": {
-            "maxLength": 2000,
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "AllRuleExplanationResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -4543,6 +4796,161 @@
         "required": [
           "kind",
           "children"
+        ],
+        "type": "object"
+      },
+      "AmplitudeInboundEventDto": {
+        "properties": {
+          "deviceId": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "eventCode": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "externalUserId": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "sourceEventId": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "sourceInsertId": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceEventId",
+          "externalUserId",
+          "eventCode",
+          "occurredAt",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "AmplitudeInboundSetupReplayResponseDto": {
+        "properties": {
+          "admissionReady": {
+            "type": "boolean"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connectionVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "credentialFingerprint": {
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "credentialRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "overlapEndsAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "replayed": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "replayed",
+          "connectionId",
+          "connectionVersion",
+          "credentialRevision",
+          "credentialFingerprint",
+          "admissionReady",
+          "overlapEndsAt"
+        ],
+        "type": "object"
+      },
+      "AmplitudeInboundSetupResponseDto": {
+        "properties": {
+          "admissionReady": {
+            "type": "boolean"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connectionVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "credentialFingerprint": {
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "credentialRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "endpointPath": {
+            "type": "string"
+          },
+          "headerName": {
+            "enum": [
+              "x-lola-amplitude-secret"
+            ],
+            "type": "string"
+          },
+          "overlapEndsAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "payloadTemplate": {
+            "type": "object"
+          },
+          "replayed": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "secret": {
+            "description": "Shown only in this response.",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "replayed",
+          "connectionId",
+          "connectionVersion",
+          "endpointPath",
+          "headerName",
+          "secret",
+          "credentialRevision",
+          "credentialFingerprint",
+          "admissionReady",
+          "overlapEndsAt",
+          "payloadTemplate"
         ],
         "type": "object"
       },
@@ -8001,6 +8409,200 @@
         ],
         "type": "object"
       },
+      "CancelIntegrationDispatchDto": {
+        "properties": {
+          "expectedOperationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedState": {
+            "enum": [
+              "PENDING",
+              "RETRY_WAIT"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedOperationsVersion",
+          "expectedState",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "CanonicalIdentityPolicyParticipantDto": {
+        "properties": {
+          "routeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "routeRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "routeId",
+          "routeRevisionId"
+        ],
+        "type": "object"
+      },
+      "CanonicalIdentityPolicyParticipantResponseDto": {
+        "properties": {
+          "normalization": {
+            "enum": [
+              "NONE",
+              "TRIM",
+              "LOWERCASE",
+              "TRIM_LOWERCASE"
+            ],
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "routeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "routeRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourcePath": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "routeId",
+          "routeRevisionId",
+          "provider",
+          "sourcePath",
+          "normalization"
+        ],
+        "type": "object"
+      },
+      "CanonicalIdentityPolicyPreviewResponseDto": {
+        "properties": {
+          "canonicalKeyName": {
+            "type": "string"
+          },
+          "currentPolicyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "mode": {
+            "enum": [
+              "CANONICAL_KEY"
+            ],
+            "type": "string"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/CanonicalIdentityPolicyParticipantResponseDto"
+            },
+            "type": "array"
+          },
+          "publishable": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "runtimeActivation": {
+            "enum": [
+              "PENDING_WORKER_CUTOVER",
+              "ACTIVE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "canonicalKeyName",
+          "expectedVersion",
+          "currentPolicyRevisionId",
+          "participants",
+          "publishable",
+          "runtimeActivation"
+        ],
+        "type": "object"
+      },
+      "CanonicalIdentityPolicyResponseDto": {
+        "properties": {
+          "canonicalKeyName": {
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "CANONICAL_KEY"
+            ],
+            "type": "string"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/CanonicalIdentityPolicyParticipantResponseDto"
+            },
+            "type": "array"
+          },
+          "policyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "runtimeActivation": {
+            "enum": [
+              "PENDING_WORKER_CUTOVER",
+              "ACTIVE"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "mode",
+          "policyId",
+          "policyRevisionId",
+          "revision",
+          "version",
+          "eventDefinitionKeyId",
+          "canonicalKeyName",
+          "participants",
+          "runtimeActivation"
+        ],
+        "type": "object"
+      },
       "CaseVerificationEstimateResponseDto": {
         "properties": {
           "complete": {
@@ -8196,6 +8798,28 @@
           "caseChanged",
           "caseStatus",
           "caseVersion"
+        ],
+        "type": "object"
+      },
+      "ChangeIntegrationDirectionPauseDto": {
+        "properties": {
+          "expectedPaused": {
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "expectedPaused",
+          "reason"
         ],
         "type": "object"
       },
@@ -11429,6 +12053,129 @@
         ],
         "type": "object"
       },
+      "CreateAmplitudeInboundConnectionDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "remoteProjectLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "region"
+        ],
+        "type": "object"
+      },
+      "CreateAmplitudeInboundRouteDto": {
+        "properties": {
+          "canonicalKeyExtractor": {
+            "$ref": "#/components/schemas/IntegrationCanonicalKeyExtractorDto"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "propertyBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventPropertyBindingDto"
+            },
+            "maxItems": 32,
+            "type": "array"
+          },
+          "providerEventName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "connectionId",
+          "name",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionId",
+          "providerEventName",
+          "propertyBindings"
+        ],
+        "type": "object"
+      },
+      "CreateAmplitudeOutboundRouteDto": {
+        "properties": {
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "propertyBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventPropertyBindingDto"
+            },
+            "maxItems": 32,
+            "type": "array"
+          },
+          "providerEventName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "connectionId",
+          "name",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionId",
+          "providerEventName",
+          "propertyBindings"
+        ],
+        "type": "object"
+      },
       "CreateConversationDto": {
         "properties": {
           "title": {
@@ -11464,6 +12211,164 @@
       },
       "CreateCustomerDto": {
         "properties": {},
+        "type": "object"
+      },
+      "CreateCustomerIoConnectionDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "remoteProjectLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "sourceApiKey": {
+            "description": "Write-only Customer.io Pipelines source API key.",
+            "maxLength": 512,
+            "minLength": 8,
+            "pattern": "^[^\\s:]{8,512}$",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "displayName",
+          "region",
+          "sourceApiKey"
+        ],
+        "type": "object"
+      },
+      "CreateCustomerIoInboundConnectionDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "remoteProjectLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "region"
+        ],
+        "type": "object"
+      },
+      "CreateCustomerIoInboundRouteDto": {
+        "properties": {
+          "canonicalKeyExtractor": {
+            "$ref": "#/components/schemas/IntegrationCanonicalKeyExtractorDto"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "propertyBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventPropertyBindingDto"
+            },
+            "maxItems": 32,
+            "type": "array"
+          },
+          "providerEventName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "connectionId",
+          "name",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionId",
+          "providerEventName",
+          "propertyBindings"
+        ],
+        "type": "object"
+      },
+      "CreateCustomerIoOutboundRouteDto": {
+        "properties": {
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "propertyBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventPropertyBindingDto"
+            },
+            "maxItems": 32,
+            "type": "array"
+          },
+          "providerEventName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "connectionId",
+          "name",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionId",
+          "providerEventName",
+          "propertyBindings"
+        ],
         "type": "object"
       },
       "CreateEventCatalogDefinitionDto": {
@@ -12265,6 +13170,161 @@
           "code",
           "name",
           "kind"
+        ],
+        "type": "object"
+      },
+      "CustomerIoInboundBatchReceiptDto": {
+        "properties": {
+          "duplicateCount": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "itemCount": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "quarantinedCount": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "receiptId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RECEIVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiptId",
+          "status",
+          "itemCount",
+          "duplicateCount",
+          "quarantinedCount"
+        ],
+        "type": "object"
+      },
+      "CustomerIoInboundSetupReplayResponseDto": {
+        "properties": {
+          "admissionReady": {
+            "type": "boolean"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connectionVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "credentialFingerprint": {
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "credentialRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "overlapEndsAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "replayed": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "replayed",
+          "connectionId",
+          "connectionVersion",
+          "credentialRevision",
+          "credentialFingerprint",
+          "admissionReady",
+          "overlapEndsAt"
+        ],
+        "type": "object"
+      },
+      "CustomerIoInboundSetupResponseDto": {
+        "properties": {
+          "admissionReady": {
+            "type": "boolean"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connectionVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "credentialFingerprint": {
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "credentialRevision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "endpointPath": {
+            "type": "string"
+          },
+          "headerName": {
+            "enum": [
+              "X-Signature"
+            ],
+            "type": "string"
+          },
+          "overlapEndsAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "payloadTemplate": {
+            "type": "object"
+          },
+          "replayed": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "secret": {
+            "description": "Shown only in this response.",
+            "type": "string",
+            "writeOnly": true
+          },
+          "signatureAlgorithm": {
+            "enum": [
+              "HMAC-SHA1"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "replayed",
+          "connectionId",
+          "connectionVersion",
+          "endpointPath",
+          "headerName",
+          "secret",
+          "credentialRevision",
+          "credentialFingerprint",
+          "admissionReady",
+          "overlapEndsAt",
+          "payloadTemplate",
+          "signatureAlgorithm"
         ],
         "type": "object"
       },
@@ -18447,6 +19507,33 @@
         ],
         "type": "object"
       },
+      "IntegrationCanonicalKeyExtractorDto": {
+        "properties": {
+          "normalization": {
+            "enum": [
+              "NONE",
+              "TRIM",
+              "LOWERCASE",
+              "TRIM_LOWERCASE"
+            ],
+            "type": "string"
+          },
+          "sourcePath": {
+            "items": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "sourcePath",
+          "normalization"
+        ],
+        "type": "object"
+      },
       "IntegrationConnectionCredentialResponseDto": {
         "properties": {
           "fingerprint": {
@@ -18493,7 +19580,13 @@
       "IntegrationConnectionResponseDto": {
         "properties": {
           "credential": {
-            "$ref": "#/components/schemas/IntegrationConnectionCredentialResponseDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationConnectionCredentialResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "displayName": {
             "type": "string"
@@ -18511,7 +19604,14 @@
             "format": "uuid",
             "type": "string"
           },
+          "inbound": {
+            "description": "Safe inbound setup projection. It never exposes the secret or public routing key.",
+            "type": "object"
+          },
           "inboundEnabled": {
+            "type": "boolean"
+          },
+          "inboundPaused": {
             "type": "boolean"
           },
           "lastSuccessfulTestAt": {
@@ -18532,7 +19632,22 @@
             ],
             "type": "string"
           },
+          "outboundCircuitOpenUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "outboundCircuitPermanent": {
+            "type": "boolean"
+          },
+          "outboundCircuitReason": {
+            "nullable": true,
+            "type": "string"
+          },
           "outboundEnabled": {
+            "type": "boolean"
+          },
+          "outboundPaused": {
             "type": "boolean"
           },
           "projectId": {
@@ -18541,7 +19656,8 @@
           },
           "provider": {
             "enum": [
-              "AMPLITUDE"
+              "AMPLITUDE",
+              "CUSTOMER_IO"
             ],
             "type": "string"
           },
@@ -18573,9 +19689,15 @@
           "region",
           "remoteProjectLabel",
           "inboundEnabled",
+          "inboundPaused",
+          "inbound",
           "outboundEnabled",
+          "outboundPaused",
           "lifecycle",
           "health",
+          "outboundCircuitOpenUntil",
+          "outboundCircuitPermanent",
+          "outboundCircuitReason",
           "credential",
           "lastSuccessfulTestAt",
           "lastTestErrorCode",
@@ -18666,6 +19788,1595 @@
         },
         "required": [
           "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "IntegrationDispatchActivityItemDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "providerEventName": {
+            "type": "string"
+          },
+          "providerIdempotencyId": {
+            "type": "string"
+          },
+          "routeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "routeRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "DELIVERED",
+              "RETRY_WAIT",
+              "FAILED_PERMANENT",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "connectionId",
+          "routeId",
+          "routeRevisionId",
+          "eventId",
+          "provider",
+          "providerEventName",
+          "providerIdempotencyId",
+          "occurredAt",
+          "status",
+          "attemptCount",
+          "errorCode",
+          "createdAt",
+          "finishedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationDispatchActivityListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationDispatchActivityItemDto"
+            },
+            "type": "array"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/IntegrationDispatchMetricsResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "metrics"
+        ],
+        "type": "object"
+      },
+      "IntegrationDispatchMetricsBacklogDto": {
+        "properties": {
+          "count": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "oldestCreatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "oldestCreatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationDispatchMetricSeriesDto": {
+        "properties": {
+          "attempts": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "backlog": {
+            "$ref": "#/components/schemas/IntegrationDispatchMetricsBacklogDto"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "delivered": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "duplicates": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxProviderLatencyMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxQueueLatencyMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "permanentFailures": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "retried": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "throttled": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalProviderLatencyMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalQueueLatencyMs": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "provider",
+          "connectionId",
+          "attempts",
+          "delivered",
+          "retried",
+          "permanentFailures",
+          "throttled",
+          "duplicates",
+          "totalProviderLatencyMs",
+          "maxProviderLatencyMs",
+          "totalQueueLatencyMs",
+          "maxQueueLatencyMs",
+          "backlog"
+        ],
+        "type": "object"
+      },
+      "IntegrationDispatchMetricsResponseDto": {
+        "properties": {
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationDispatchMetricSeriesDto"
+            },
+            "type": "array"
+          },
+          "seriesLimit": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "seriesLimit",
+          "truncated",
+          "series"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventPropertyBindingDto": {
+        "properties": {
+          "required": {
+            "type": "boolean"
+          },
+          "sourcePath": {
+            "items": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array"
+          },
+          "targetKey": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourcePath",
+          "targetKey",
+          "required"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteResponseDto": {
+        "properties": {
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "INBOUND",
+              "OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "draftRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationEventRouteRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "enablementVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedRevision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationEventRouteRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "connectionId",
+          "direction",
+          "name",
+          "description",
+          "lifecycle",
+          "enabled",
+          "enablementVersion",
+          "version",
+          "draftRevision",
+          "publishedRevision",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteRevisionResponseDto": {
+        "properties": {
+          "canonicalKeyExtractor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationCanonicalKeyExtractorDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "compiledHash": {
+            "type": "string"
+          },
+          "compilerVersion": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "propertyBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventPropertyBindingDto"
+            },
+            "type": "array"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "providerCallType": {
+            "enum": [
+              "EVENT",
+              "TRACK"
+            ],
+            "type": "string"
+          },
+          "providerEventName": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "region": {
+            "enum": [
+              "US",
+              "EU"
+            ],
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "state",
+          "provider",
+          "region",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionId",
+          "providerEventName",
+          "providerCallType",
+          "propertyBindings",
+          "compiledHash",
+          "compilerVersion",
+          "createdAt",
+          "publishedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteSummaryItemDto": {
+        "properties": {
+          "connectionDisplayName": {
+            "type": "string"
+          },
+          "connectionHealth": {
+            "enum": [
+              "UNKNOWN",
+              "HEALTHY",
+              "DEGRADED",
+              "FAILING"
+            ],
+            "type": "string"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connectionLifecycle": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "INBOUND",
+              "OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "publishedRevision": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "routeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "routeLifecycle": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "schemaCompatibility": {
+            "enum": [
+              "CURRENT",
+              "REQUIRES_REPUBLISH",
+              "NOT_PUBLISHED"
+            ],
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "enum": [
+                "CONNECTION_NOT_ACTIVE",
+                "CONNECTION_UNHEALTHY",
+                "ROUTE_NOT_ACTIVE",
+                "ROUTE_NOT_PUBLISHED",
+                "ROUTE_DISABLED",
+                "EVENT_SCHEMA_REVISION_STALE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "routeId",
+          "connectionId",
+          "direction",
+          "provider",
+          "connectionDisplayName",
+          "connectionLifecycle",
+          "connectionHealth",
+          "routeLifecycle",
+          "enabled",
+          "publishedRevision",
+          "schemaCompatibility",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteSummaryManageTargetDto": {
+        "properties": {
+          "workspace": {
+            "enum": [
+              "PROJECT_INTEGRATIONS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteSummaryPolicyDto": {
+        "properties": {
+          "authoritativeRouteId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "NONE",
+              "SINGLE_SOURCE",
+              "CANONICAL_KEY"
+            ],
+            "type": "string"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "authoritativeRouteId",
+          "policyRevisionId"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteSummaryResponseDto": {
+        "properties": {
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ingressPolicy": {
+            "$ref": "#/components/schemas/IntegrationEventRouteSummaryPolicyDto"
+          },
+          "manageTarget": {
+            "$ref": "#/components/schemas/IntegrationEventRouteSummaryManageTargetDto"
+          },
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventRouteSummaryItemDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "eventDefinitionKeyId",
+          "ingressPolicy",
+          "routes",
+          "manageTarget"
+        ],
+        "type": "object"
+      },
+      "IntegrationEventRouteVersionDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "IntegrationInboundReceiptDto": {
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "receiptId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RECEIVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiptId",
+          "status",
+          "duplicate"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressActivityItemDto": {
+        "properties": {
+          "acceptedEventId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "deliveryIdConflict": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationIngressDeliveryIdConflictDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "duplicateCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "failureCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "identityPolicyRevision": {
+            "nullable": true,
+            "type": "number"
+          },
+          "nextAttemptAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "processedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "providerCallType": {
+            "enum": [
+              "EVENT",
+              "TRACK"
+            ],
+            "type": "string"
+          },
+          "providerEventName": {
+            "type": "string"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "routeId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "routeRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "suppressedDispatchId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "connectionId",
+          "provider",
+          "providerCallType",
+          "providerEventName",
+          "status",
+          "routeId",
+          "routeRevisionId",
+          "identityPolicyRevision",
+          "acceptedEventId",
+          "suppressedDispatchId",
+          "failureCode",
+          "attemptCount",
+          "duplicateCount",
+          "occurredAt",
+          "receivedAt",
+          "processedAt",
+          "nextAttemptAt",
+          "deliveryIdConflict"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressActivityListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationIngressActivityItemDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressBacklogMetricsDto": {
+        "properties": {
+          "byStatus": {
+            "$ref": "#/components/schemas/IntegrationIngressStatusMetricsDto"
+          },
+          "count": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "oldestAgeSeconds": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "oldestReceivedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "oldestReceivedAt",
+          "oldestAgeSeconds",
+          "byStatus"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressCanonicalMetricsDto": {
+        "properties": {
+          "conflicts": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "duplicates": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "recoveries": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "supported": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "supported",
+          "duplicates",
+          "conflicts",
+          "recoveries"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressConnectionHealthMetricsDto": {
+        "properties": {
+          "active": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "compromisedCredentials": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "ingressEnabled": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "unavailableCredentials": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "active",
+          "ingressEnabled",
+          "compromisedCredentials",
+          "unavailableCredentials"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressDeliveryIdConflictDto": {
+        "properties": {
+          "count": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "firstDetectedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastDetectedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "firstDetectedAt",
+          "lastDetectedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressHealthResponseDto": {
+        "properties": {
+          "backlog": {
+            "$ref": "#/components/schemas/IntegrationIngressBacklogMetricsDto"
+          },
+          "canonical": {
+            "$ref": "#/components/schemas/IntegrationIngressCanonicalMetricsDto"
+          },
+          "connections": {
+            "$ref": "#/components/schemas/IntegrationIngressConnectionHealthMetricsDto"
+          },
+          "direction": {
+            "enum": [
+              "INBOUND"
+            ],
+            "type": "string"
+          },
+          "health": {
+            "enum": [
+              "HEALTHY",
+              "DEGRADED",
+              "FAILING"
+            ],
+            "type": "string"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "processing": {
+            "$ref": "#/components/schemas/IntegrationIngressProcessingMetricsDto"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "enum": [
+                "CREDENTIAL_COMPROMISED",
+                "CREDENTIAL_UNAVAILABLE",
+                "EXPIRED_LEASE",
+                "MISSING_FENCE",
+                "RETENTION_OVERDUE",
+                "BACKLOG_SLO_BREACHED",
+                "PROCESSING_ERRORS",
+                "USAGE_DRIFT"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "retainedEvidence": {
+            "$ref": "#/components/schemas/IntegrationIngressRetainedEvidenceMetricsDto"
+          },
+          "retention": {
+            "$ref": "#/components/schemas/IntegrationIngressRetentionMetricsDto"
+          },
+          "storage": {
+            "$ref": "#/components/schemas/IntegrationIngressStorageMetricsDto"
+          }
+        },
+        "required": [
+          "provider",
+          "direction",
+          "health",
+          "reasons",
+          "observedAt",
+          "connections",
+          "retainedEvidence",
+          "backlog",
+          "processing",
+          "retention",
+          "storage",
+          "canonical"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressProcessingMetricsDto": {
+        "properties": {
+          "activeLeases": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "attempts": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "expiredLeases": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "missingFences": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "recentErrors": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "attempts",
+          "recentErrors",
+          "activeLeases",
+          "expiredLeases",
+          "missingFences"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressRetainedEvidenceMetricsDto": {
+        "properties": {
+          "batches": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "deliveryIdConflicts": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "duplicates": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "envelopes": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "recordedBodyBytes": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "recordedItems": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "envelopes",
+          "recordedBodyBytes",
+          "recordedItems",
+          "batches",
+          "duplicates",
+          "deliveryIdConflicts"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressRetentionMetricsDto": {
+        "properties": {
+          "envelopeContentOverdue": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "metadataOverdue": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "payloadOverdue": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "envelopeContentOverdue",
+          "payloadOverdue",
+          "metadataOverdue"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressStatusMetricsDto": {
+        "properties": {
+          "ACCEPTED": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "FAILED_PERMANENT": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "LOOP_SUPPRESSED": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "PROCESSING": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "QUARANTINED": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "RECEIVED": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "RETRY_WAIT": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "SCHEMA_INVALID": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "STALE": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "UNMAPPED": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "RECEIVED",
+          "RETRY_WAIT",
+          "PROCESSING",
+          "ACCEPTED",
+          "UNMAPPED",
+          "QUARANTINED",
+          "SCHEMA_INVALID",
+          "STALE",
+          "LOOP_SUPPRESSED",
+          "FAILED_PERMANENT"
+        ],
+        "type": "object"
+      },
+      "IntegrationIngressStorageMetricsDto": {
+        "properties": {
+          "retainedBytes": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "retainedItems": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "usageUpdatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "retainedItems",
+          "retainedBytes",
+          "usageUpdatedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationReconciliationRepairDto": {
+        "properties": {
+          "afterOperationsVersion": {
+            "minimum": 2,
+            "type": "number"
+          },
+          "afterStatus": {
+            "type": "string"
+          },
+          "beforeOperationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "beforeStatus": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "repairCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "repairCode",
+          "beforeStatus",
+          "afterStatus",
+          "beforeOperationsVersion",
+          "afterOperationsVersion",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationRecoveryAttemptDto": {
+        "properties": {
+          "ambiguous": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "attemptNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "outcome": {
+            "nullable": true,
+            "type": "string"
+          },
+          "recovered": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptNumber",
+          "startedAt",
+          "finishedAt",
+          "outcome",
+          "errorCode",
+          "ambiguous",
+          "recovered"
+        ],
+        "type": "object"
+      },
+      "IntegrationRecoveryCommandReceiptDto": {
+        "properties": {
+          "commandType": {
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expectedOperationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "resultOperationsVersion": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "commandType",
+          "status",
+          "expectedOperationsVersion",
+          "resultOperationsVersion",
+          "createdAt",
+          "completedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationRecoveryCommandResultDto": {
+        "properties": {
+          "commandType": {
+            "enum": [
+              "CANCEL_DISPATCH",
+              "REPLAY_DISPATCH",
+              "REPLAY_INGRESS",
+              "QUARANTINE_INGRESS",
+              "PAUSE_INBOUND",
+              "RESUME_INBOUND",
+              "PAUSE_OUTBOUND",
+              "RESUME_OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "INBOUND",
+              "OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "operationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "operationKind": {
+            "enum": [
+              "INGRESS",
+              "DISPATCH",
+              "CONNECTION"
+            ],
+            "type": "string"
+          },
+          "operationsVersion": {
+            "minimum": 2,
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "CANCELLED",
+              "PENDING",
+              "RECEIVED",
+              "QUARANTINED",
+              "PAUSED",
+              "ACTIVE"
+            ],
+            "type": "string"
+          },
+          "targetId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operationId",
+          "operationKind",
+          "targetId",
+          "commandType",
+          "status",
+          "operationsVersion",
+          "completedAt"
+        ],
+        "type": "object"
+      },
+      "IntegrationRecoveryOperationDetailDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationRecoveryAttemptDto"
+            },
+            "type": "array"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "INBOUND",
+              "OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "failureCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastRecoveryOperationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "operationKind": {
+            "enum": [
+              "INGRESS",
+              "DISPATCH",
+              "CONNECTION"
+            ],
+            "type": "string"
+          },
+          "operationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "reconciliationRepairs": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationReconciliationRepairDto"
+            },
+            "type": "array"
+          },
+          "recoveryCommands": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationRecoveryCommandReceiptDto"
+            },
+            "type": "array"
+          },
+          "routeId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RECEIVED",
+              "PENDING",
+              "RETRY_WAIT",
+              "PROCESSING",
+              "ACCEPTED",
+              "DELIVERED",
+              "UNMAPPED",
+              "QUARANTINED",
+              "SCHEMA_INVALID",
+              "STALE",
+              "LOOP_SUPPRESSED",
+              "FAILED_PERMANENT",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED",
+              "PAUSED",
+              "ACTIVE"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "operationKind",
+          "direction",
+          "provider",
+          "connectionId",
+          "routeId",
+          "status",
+          "attemptCount",
+          "operationsVersion",
+          "failureCode",
+          "createdAt",
+          "updatedAt",
+          "finishedAt",
+          "lastRecoveryOperationId",
+          "attempts",
+          "recoveryCommands",
+          "reconciliationRepairs"
+        ],
+        "type": "object"
+      },
+      "IntegrationRecoveryOperationListItemDto": {
+        "properties": {
+          "attemptCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "connectionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "INBOUND",
+              "OUTBOUND"
+            ],
+            "type": "string"
+          },
+          "failureCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastRecoveryOperationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "operationKind": {
+            "enum": [
+              "INGRESS",
+              "DISPATCH",
+              "CONNECTION"
+            ],
+            "type": "string"
+          },
+          "operationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "provider": {
+            "enum": [
+              "AMPLITUDE",
+              "CUSTOMER_IO"
+            ],
+            "type": "string"
+          },
+          "routeId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RECEIVED",
+              "PENDING",
+              "RETRY_WAIT",
+              "PROCESSING",
+              "ACCEPTED",
+              "DELIVERED",
+              "UNMAPPED",
+              "QUARANTINED",
+              "SCHEMA_INVALID",
+              "STALE",
+              "LOOP_SUPPRESSED",
+              "FAILED_PERMANENT",
+              "OUTCOME_UNKNOWN",
+              "CANCELLED",
+              "PAUSED",
+              "ACTIVE"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "operationKind",
+          "direction",
+          "provider",
+          "connectionId",
+          "routeId",
+          "status",
+          "attemptCount",
+          "operationsVersion",
+          "failureCode",
+          "createdAt",
+          "updatedAt",
+          "finishedAt",
+          "lastRecoveryOperationId"
+        ],
+        "type": "object"
+      },
+      "IntegrationRecoveryOperationListResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationRecoveryOperationListItemDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
         ],
         "type": "object"
       },
@@ -20598,6 +23309,28 @@
           "assignedUserCountCapped",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "PreviewCanonicalIdentityPolicyDto": {
+        "properties": {
+          "canonicalKeyName": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/CanonicalIdentityPolicyParticipantDto"
+            },
+            "maxItems": 8,
+            "minItems": 2,
+            "type": "array"
+          }
+        },
+        "required": [
+          "canonicalKeyName",
+          "participants"
         ],
         "type": "object"
       },
@@ -24153,6 +26886,39 @@
         ],
         "type": "object"
       },
+      "PublishCanonicalIdentityPolicyDto": {
+        "properties": {
+          "canonicalKeyName": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/CanonicalIdentityPolicyParticipantDto"
+            },
+            "maxItems": 8,
+            "minItems": 2,
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "canonicalKeyName",
+          "participants",
+          "expectedVersion",
+          "reason"
+        ],
+        "type": "object"
+      },
       "PublishConflictMetadataResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -24402,6 +27168,24 @@
         "required": [
           "expectedDraftVersion",
           "expectedBaseRevisionId",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "PublishIntegrationEventRouteDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
           "reason"
         ],
         "type": "object"
@@ -24810,6 +27594,20 @@
             "pattern": "^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,12})?$",
             "type": "string"
           },
+          "categoryRules": {
+            "items": {
+              "$ref": "#/components/schemas/PutAllowancePlanCategoryRuleDto"
+            },
+            "type": "array"
+          },
+          "clearExhaustedContent": {
+            "description": "Explicitly restore the built-in exhausted allowance copy.",
+            "type": "boolean"
+          },
+          "clearWarningContent": {
+            "description": "Explicitly restore the built-in LOW warning copy.",
+            "type": "boolean"
+          },
           "enforcementMode": {
             "enum": [
               "DISABLED",
@@ -24820,7 +27618,61 @@
             "type": "string"
           },
           "exhaustedContent": {
-            "$ref": "#/components/schemas/AllowanceLocalizedContentDto"
+            "description": "SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map.",
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "SYSTEM"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "defaultLocale": {
+                    "example": "pt-BR",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "CUSTOM"
+                    ],
+                    "type": "string"
+                  },
+                  "translations": {
+                    "additionalProperties": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
+                    "maxProperties": 50,
+                    "minProperties": 1,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "defaultLocale",
+                  "translations"
+                ],
+                "type": "object"
+              }
+            ]
           },
           "expectedProjectPolicyVersion": {
             "description": "Project-wide allowance configuration generation returned by the latest allowance read.",
@@ -24861,7 +27713,61 @@
             "type": "string"
           },
           "warningContent": {
-            "$ref": "#/components/schemas/AllowanceLocalizedContentDto"
+            "description": "SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map.",
+            "discriminator": {
+              "propertyName": "mode"
+            },
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "SYSTEM"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "defaultLocale": {
+                    "example": "pt-BR",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "CUSTOM"
+                    ],
+                    "type": "string"
+                  },
+                  "translations": {
+                    "additionalProperties": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "description": "Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed.",
+                    "maxProperties": 50,
+                    "minProperties": 1,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "defaultLocale",
+                  "translations"
+                ],
+                "type": "object"
+              }
+            ]
           }
         },
         "required": [
@@ -24870,7 +27776,9 @@
           "period",
           "timezone",
           "enforcementMode",
-          "reason"
+          "reason",
+          "showEndUserExactUsd",
+          "categoryRules"
         ],
         "type": "object"
       },
@@ -24940,6 +27848,32 @@
         "required": [
           "operation",
           "expectedVersion",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "QuarantineIntegrationIngressDto": {
+        "properties": {
+          "expectedOperationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedStatus": {
+            "enum": [
+              "RECEIVED",
+              "RETRY_WAIT"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedOperationsVersion",
+          "expectedStatus",
           "reason"
         ],
         "type": "object"
@@ -25128,6 +28062,65 @@
         "required": [
           "version",
           "roleIds",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "ReplayIntegrationDispatchDto": {
+        "properties": {
+          "acknowledgeDuplicateRisk": {
+            "description": "Required when the prior outcome is unknown.",
+            "type": "boolean"
+          },
+          "expectedOperationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedState": {
+            "enum": [
+              "FAILED_PERMANENT",
+              "OUTCOME_UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedOperationsVersion",
+          "expectedState",
+          "acknowledgeDuplicateRisk",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "ReplayIntegrationIngressDto": {
+        "properties": {
+          "expectedOperationsVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "expectedStatus": {
+            "enum": [
+              "UNMAPPED",
+              "SCHEMA_INVALID",
+              "FAILED_PERMANENT",
+              "QUARANTINED"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedOperationsVersion",
+          "expectedStatus",
           "reason"
         ],
         "type": "object"
@@ -25464,6 +28457,45 @@
         "required": [
           "expectedVersion",
           "projectApiKey"
+        ],
+        "type": "object"
+      },
+      "RotateAmplitudeInboundCredentialDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "overlapSeconds": {
+            "default": 300,
+            "maximum": 3600,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "overlapSeconds"
+        ],
+        "type": "object"
+      },
+      "RotateCustomerIoCredentialDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "sourceApiKey": {
+            "maxLength": 512,
+            "minLength": 8,
+            "pattern": "^[^\\s:]{8,512}$",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "sourceApiKey"
         ],
         "type": "object"
       },
@@ -32307,6 +35339,29 @@
         ],
         "type": "object"
       },
+      "UpdateCustomerIoConnectionDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "remoteProjectLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "displayName"
+        ],
+        "type": "object"
+      },
       "UpdateEmailCaseEscalationPreferenceDto": {
         "properties": {
           "subscribed": {
@@ -36663,7 +39718,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AiAllowanceAdminResponseDto"
+                  "$ref": "#/components/schemas/AiAllowanceProjectPolicyResponseDto"
                 }
               }
             },
@@ -46724,9 +49779,9 @@
         }
       }
     },
-    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/credentials/rotate": {
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/amplitude/credentials/rotate": {
       "post": {
-        "operationId": "IntegrationConnection_rotate",
+        "operationId": "IntegrationConnection_rotateAmplitude",
         "parameters": [
           {
             "in": "path",
@@ -46773,6 +49828,513 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/amplitude/inbound/credentials/rotate": {
+      "post": {
+        "operationId": "IntegrationConnection_rotateAmplitudeInbound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateAmplitudeInboundCredentialDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AmplitudeInboundSetupResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AmplitudeInboundSetupReplayResponseDto"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/amplitude/inbound/setup": {
+      "post": {
+        "operationId": "IntegrationConnection_setupAmplitudeInbound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationConnectionVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AmplitudeInboundSetupResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AmplitudeInboundSetupReplayResponseDto"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/credentials/rotate": {
+      "post": {
+        "operationId": "IntegrationConnection_rotateAmplitudeCompatibility",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateAmplitudeCredentialDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/customer-io": {
+      "patch": {
+        "operationId": "IntegrationConnection_updateCustomerIo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerIoConnectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/customer-io/credentials/rotate": {
+      "post": {
+        "operationId": "IntegrationConnection_rotateCustomerIo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateCustomerIoCredentialDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/customer-io/inbound/credentials/rotate": {
+      "post": {
+        "operationId": "IntegrationConnection_rotateCustomerIoInbound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateAmplitudeInboundCredentialDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CustomerIoInboundSetupResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CustomerIoInboundSetupReplayResponseDto"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/{connectionId}/customer-io/inbound/setup": {
+      "post": {
+        "operationId": "IntegrationConnection_setupCustomerIoInbound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationConnectionVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CustomerIoInboundSetupResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CustomerIoInboundSetupReplayResponseDto"
+                    }
+                  ]
                 }
               }
             },
@@ -47046,6 +50608,1700 @@
           "code": "project.integrations.manage",
           "scope": "PROJECT"
         }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/amplitude/inbound": {
+      "post": {
+        "operationId": "IntegrationConnection_createAmplitudeInbound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmplitudeInboundConnectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/customer-io": {
+      "post": {
+        "operationId": "IntegrationConnection_createCustomerIo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerIoConnectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-connections/customer-io/inbound": {
+      "post": {
+        "operationId": "IntegrationConnection_createCustomerIoInbound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerIoInboundConnectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConnectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Connections"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes": {
+      "get": {
+        "operationId": "IntegrationEventRoute_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/{routeId}/disable": {
+      "post": {
+        "operationId": "IntegrationEventRoute_disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationEventRouteVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/{routeId}/enable": {
+      "post": {
+        "operationId": "IntegrationEventRoute_enable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationEventRouteVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/{routeId}/publish": {
+      "post": {
+        "operationId": "IntegrationEventRoute_publish",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishIntegrationEventRouteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/activity/inbound": {
+      "get": {
+        "operationId": "IntegrationEventRoute_inboundActivityList",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "enum": [
+                "AMPLITUDE",
+                "CUSTOMER_IO"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationIngressActivityListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_activity.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/activity/inbound/health": {
+      "get": {
+        "operationId": "IntegrationEventRoute_inboundHealthRead",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "enum": [
+                "AMPLITUDE",
+                "CUSTOMER_IO"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationIngressHealthResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_activity.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/activity/outbound": {
+      "get": {
+        "operationId": "IntegrationEventRoute_activityList",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "enum": [
+                "AMPLITUDE",
+                "CUSTOMER_IO"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDispatchActivityListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_activity.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/amplitude": {
+      "post": {
+        "operationId": "IntegrationEventRoute_createAmplitude",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmplitudeOutboundRouteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/amplitude/inbound": {
+      "post": {
+        "operationId": "IntegrationEventRoute_createAmplitudeInbound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmplitudeInboundRouteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/customer-io": {
+      "post": {
+        "operationId": "IntegrationEventRoute_createCustomerIo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerIoOutboundRouteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/customer-io/inbound": {
+      "post": {
+        "operationId": "IntegrationEventRoute_createCustomerIoInbound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerIoInboundRouteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/event-definitions/{eventDefinitionKeyId}/identity-policy/canonical/current": {
+      "get": {
+        "operationId": "IntegrationEventIdentityPolicy_current",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventDefinitionKeyId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CanonicalIdentityPolicyResponseDto"
+                    }
+                  ],
+                  "nullable": true
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "integration-event-identity-policies"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/event-definitions/{eventDefinitionKeyId}/identity-policy/canonical/preview": {
+      "post": {
+        "operationId": "IntegrationEventIdentityPolicy_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventDefinitionKeyId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewCanonicalIdentityPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanonicalIdentityPolicyPreviewResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "integration-event-identity-policies"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/event-definitions/{eventDefinitionKeyId}/identity-policy/canonical/publish": {
+      "post": {
+        "operationId": "IntegrationEventIdentityPolicy_publish",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventDefinitionKeyId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "8-200 characters; retries with the same request return the original result.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishCanonicalIdentityPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanonicalIdentityPolicyResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "integration-event-identity-policies"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/event-definitions/{eventDefinitionKeyId}/summary": {
+      "get": {
+        "operationId": "IntegrationEventRoute_eventDefinitionSummary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventDefinitionKeyId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteSummaryResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.event_catalog.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.integrations.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-operations": {
+      "get": {
+        "operationId": "IntegrationRecoveryOperations_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "operationKind",
+            "required": false,
+            "schema": {
+              "enum": [
+                "INGRESS",
+                "DISPATCH",
+                "CONNECTION"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "enum": [
+                "AMPLITUDE",
+                "CUSTOMER_IO"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "RECEIVED",
+                "PENDING",
+                "RETRY_WAIT",
+                "PROCESSING",
+                "ACCEPTED",
+                "DELIVERED",
+                "UNMAPPED",
+                "QUARANTINED",
+                "SCHEMA_INVALID",
+                "STALE",
+                "LOOP_SUPPRESSED",
+                "FAILED_PERMANENT",
+                "OUTCOME_UNKNOWN",
+                "CANCELLED",
+                "PAUSED",
+                "ACTIVE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationRecoveryOperationListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_activity.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-operations/{operationKind}/{operationId}": {
+      "get": {
+        "operationId": "IntegrationRecoveryOperations_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationKind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "INGRESS",
+                "DISPATCH",
+                "CONNECTION"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationRecoveryOperationDetailDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Operations"
+        ],
+        "x-iam-permission": {
+          "code": "project.integration_activity.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-operations/CONNECTION/{operationId}/{direction}/pause": {
+      "post": {
+        "operationId": "IntegrationRecoveryOperations_pauseDirection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "direction",
+            "required": true,
+            "schema": {
+              "enum": [
+                "INBOUND",
+                "OUTBOUND"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeIntegrationDirectionPauseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationRecoveryCommandResultDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Operations"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.integrations.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.integration_activity.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-operations/CONNECTION/{operationId}/{direction}/resume": {
+      "post": {
+        "operationId": "IntegrationRecoveryOperations_resumeDirection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "direction",
+            "required": true,
+            "schema": {
+              "enum": [
+                "INBOUND",
+                "OUTBOUND"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeIntegrationDirectionPauseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationRecoveryCommandResultDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Operations"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.integrations.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.integration_activity.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-operations/DISPATCH/{operationId}/cancel": {
+      "post": {
+        "operationId": "IntegrationRecoveryOperations_cancelDispatch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelIntegrationDispatchDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationRecoveryCommandResultDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Operations"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.integrations.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.integration_activity.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-operations/DISPATCH/{operationId}/replay": {
+      "post": {
+        "operationId": "IntegrationRecoveryOperations_replayDispatch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayIntegrationDispatchDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationRecoveryCommandResultDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Operations"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.integrations.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.integration_activity.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-operations/INGRESS/{operationId}/quarantine": {
+      "post": {
+        "operationId": "IntegrationRecoveryOperations_quarantineIngress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuarantineIntegrationIngressDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationRecoveryCommandResultDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Operations"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.integrations.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.integration_activity.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-operations/INGRESS/{operationId}/replay": {
+      "post": {
+        "operationId": "IntegrationRecoveryOperations_replayIngress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayIntegrationIngressDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationRecoveryCommandResultDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Operations"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.integrations.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.integration_activity.read",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/knowledge/documents": {
@@ -59643,6 +64899,172 @@
         },
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/integrations/inbound/amplitude/{publicConnectionKey}": {
+      "post": {
+        "operationId": "receiveAmplitudeIntegrationEvent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publicConnectionKey",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-lola-amplitude-secret",
+            "required": true,
+            "schema": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmplitudeInboundEventDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInboundReceiptDto"
+                }
+              }
+            },
+            "description": "Durably captured; Event Acceptance runs asynchronously."
+          },
+          "400": {
+            "description": "Malformed or structurally invalid event."
+          },
+          "401": {
+            "description": "Authentication or connection admission failed."
+          },
+          "409": {
+            "description": "Delivery ID was reused with different content."
+          },
+          "413": {
+            "description": "Request body exceeds 64 KiB."
+          },
+          "415": {
+            "description": "Content type is not application/json."
+          },
+          "429": {
+            "description": "Admission rate limit was exceeded."
+          },
+          "503": {
+            "description": "Ingress is disabled or temporarily unavailable."
+          }
+        },
+        "summary": "",
+        "tags": [
+          "integration-inbound"
+        ]
+      }
+    },
+    "/api/v1/integrations/inbound/customer-io/{publicConnectionKey}": {
+      "post": {
+        "operationId": "receiveCustomerIoIntegrationEvents",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publicConnectionKey",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Customer.io hex HMAC-SHA1 over the exact request bytes.",
+            "in": "header",
+            "name": "X-Signature",
+            "required": true,
+            "schema": {
+              "maxLength": 40,
+              "minLength": 40,
+              "pattern": "^[0-9a-fA-F]{40}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "items": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    "maxItems": 1000,
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerIoInboundBatchReceiptDto"
+                }
+              }
+            },
+            "description": "The authenticated batch was durably captured for asynchronous processing."
+          },
+          "400": {
+            "description": "Malformed JSON or invalid batch structure."
+          },
+          "401": {
+            "description": "Signature or connection admission failed."
+          },
+          "409": {
+            "description": "A delivery ID was reused with different content."
+          },
+          "413": {
+            "description": "Request body exceeds 1 MiB."
+          },
+          "415": {
+            "description": "Content type is not application/json."
+          },
+          "429": {
+            "description": "Admission rate limit was exceeded."
+          },
+          "503": {
+            "description": "Ingress is disabled or temporarily unavailable."
+          }
+        },
+        "summary": "",
+        "tags": [
+          "integration-inbound"
         ]
       }
     },

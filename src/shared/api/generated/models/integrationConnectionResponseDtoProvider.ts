@@ -12,4 +12,5 @@ export type IntegrationConnectionResponseDtoProvider =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const IntegrationConnectionResponseDtoProvider = {
   AMPLITUDE: "AMPLITUDE",
+  CUSTOMER_IO: "CUSTOMER_IO",
 } as const;

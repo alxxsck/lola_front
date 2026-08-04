@@ -5,16 +5,24 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { PutAllowancePlanCategoryRuleDto } from "./putAllowancePlanCategoryRuleDto";
 import type { PutDefaultAllowancePlanDtoEnforcementMode } from "./putDefaultAllowancePlanDtoEnforcementMode";
-import type { AllowanceLocalizedContentDto } from "./allowanceLocalizedContentDto";
+import type { PutDefaultAllowancePlanDtoExhaustedContent } from "./putDefaultAllowancePlanDtoExhaustedContent";
 import type { PutDefaultAllowancePlanDtoLowThresholdMode } from "./putDefaultAllowancePlanDtoLowThresholdMode";
 import type { PutDefaultAllowancePlanDtoPeriod } from "./putDefaultAllowancePlanDtoPeriod";
+import type { PutDefaultAllowancePlanDtoWarningContent } from "./putDefaultAllowancePlanDtoWarningContent";
 
 export interface PutDefaultAllowancePlanDto {
   /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
   amountUsd: string;
+  categoryRules: PutAllowancePlanCategoryRuleDto[];
+  /** Explicitly restore the built-in exhausted allowance copy. */
+  clearExhaustedContent?: boolean;
+  /** Explicitly restore the built-in LOW warning copy. */
+  clearWarningContent?: boolean;
   enforcementMode: PutDefaultAllowancePlanDtoEnforcementMode;
-  exhaustedContent?: AllowanceLocalizedContentDto;
+  /** SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map. */
+  exhaustedContent?: PutDefaultAllowancePlanDtoExhaustedContent;
   /**
    * Project-wide allowance configuration generation returned by the latest allowance read.
    * @pattern ^(?:0|[1-9]\d{0,19})$
@@ -29,7 +37,8 @@ export interface PutDefaultAllowancePlanDto {
   period: PutDefaultAllowancePlanDtoPeriod;
   /** @maxLength 500 */
   reason: string;
-  showEndUserExactUsd?: boolean;
+  showEndUserExactUsd: boolean;
   timezone: string;
-  warningContent?: AllowanceLocalizedContentDto;
+  /** SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map. */
+  warningContent?: PutDefaultAllowancePlanDtoWarningContent;
 }

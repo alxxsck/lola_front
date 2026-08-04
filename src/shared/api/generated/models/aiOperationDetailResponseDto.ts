@@ -58,6 +58,11 @@ export interface AiOperationDetailResponseDto {
    */
   resultReference?: AiOperationDetailResponseDtoResultReference;
   rootCorrelationId: string;
+  /**
+   * Safe administrator-facing explanation without protected prompt or result data.
+   * @nullable
+   */
+  safeSummary?: string | null;
   sourceId: string;
   sourceKind: string;
   startedAt: string;

@@ -5,24 +5,35 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationConnectionCredentialResponseDto } from "./integrationConnectionCredentialResponseDto";
+import type { IntegrationConnectionResponseDtoCredential } from "./integrationConnectionResponseDtoCredential";
 import type { IntegrationConnectionResponseDtoHealth } from "./integrationConnectionResponseDtoHealth";
+import type { IntegrationConnectionResponseDtoInbound } from "./integrationConnectionResponseDtoInbound";
 import type { IntegrationConnectionResponseDtoLifecycle } from "./integrationConnectionResponseDtoLifecycle";
 import type { IntegrationConnectionResponseDtoProvider } from "./integrationConnectionResponseDtoProvider";
 import type { IntegrationConnectionResponseDtoRegion } from "./integrationConnectionResponseDtoRegion";
 
 export interface IntegrationConnectionResponseDto {
-  credential: IntegrationConnectionCredentialResponseDto;
+  /** @nullable */
+  credential: IntegrationConnectionResponseDtoCredential;
   displayName: string;
   health: IntegrationConnectionResponseDtoHealth;
   id: string;
+  /** Safe inbound setup projection. It never exposes the secret or public routing key. */
+  inbound: IntegrationConnectionResponseDtoInbound;
   inboundEnabled: boolean;
+  inboundPaused: boolean;
   /** @nullable */
   lastSuccessfulTestAt: string | null;
   /** @nullable */
   lastTestErrorCode: string | null;
   lifecycle: IntegrationConnectionResponseDtoLifecycle;
+  /** @nullable */
+  outboundCircuitOpenUntil: string | null;
+  outboundCircuitPermanent: boolean;
+  /** @nullable */
+  outboundCircuitReason: string | null;
   outboundEnabled: boolean;
+  outboundPaused: boolean;
   projectId: string;
   provider: IntegrationConnectionResponseDtoProvider;
   region: IntegrationConnectionResponseDtoRegion;

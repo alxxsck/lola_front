@@ -4,11 +4,19 @@ import { useRouter } from "vue-router";
 import "@/app/styles/project-integrations.css";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
+import IntegrationCanonicalIdentityPolicyCard from "@/features/integration-canonical-identity/IntegrationCanonicalIdentityPolicyCard.vue";
+import IntegrationConnectionsCard from "@/features/integration-connections/IntegrationConnectionsCard.vue";
+import IntegrationEventRoutesCard from "@/features/integration-event-routes/IntegrationEventRoutesCard.vue";
+import IntegrationInboundActivityCard from "@/features/integration-inbound-activity/IntegrationInboundActivityCard.vue";
+import IntegrationInboundConnectionsCard from "@/features/integration-inbound-connections/IntegrationInboundConnectionsCard.vue";
+import IntegrationInboundRoutesCard from "@/features/integration-inbound-routes/IntegrationInboundRoutesCard.vue";
+import IntegrationRecoveryOperationsCard from "@/features/integration-recovery/IntegrationRecoveryOperationsCard.vue";
 import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
 import OperationalTelegramCard from "@/features/notification-destinations/OperationalTelegramCard.vue";
 import ProductTelegramCard from "@/features/telegram-product-installations/ProductTelegramCard.vue";
 import type { NotificationDestinationResponseDto } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
+import { canonicalIdentityPolicyEnabled } from "@/shared/config/features";
 import { formatAuditActor } from "@/shared/lib/format";
 
 const auth = useAuthStore();
@@ -23,11 +31,14 @@ const canRead = computed(() =>
 const canManage = computed(() =>
   hasProjectPermission(permissions.value, "project.notifications.manage"),
 );
-const canReadProductTelegram = computed(() =>
+const canReadIntegrations = computed(() =>
   hasProjectPermission(permissions.value, "project.integrations.read"),
 );
-const canManageProductTelegram = computed(() =>
+const canManageIntegrations = computed(() =>
   hasProjectPermission(permissions.value, "project.integrations.manage"),
+);
+const canReadIntegrationActivity = computed(() =>
+  hasProjectPermission(permissions.value, "project.integration_activity.read"),
 );
 const destination = ref<NotificationDestinationResponseDto | null>(null);
 const loading = ref(true);
@@ -648,11 +659,94 @@ onMounted(load);
       :can-manage="canManage"
     />
     <ProductTelegramCard
-      v-if="canReadProductTelegram"
+      v-if="canReadIntegrations"
       :project-id="projectId"
-      :can-read="canReadProductTelegram"
-      :can-manage="canManageProductTelegram"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
       @fresh-login-requested="requireFreshProductTelegramLogin"
+    />
+    <IntegrationConnectionsCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+      provider="AMPLITUDE"
+    />
+    <IntegrationEventRoutesCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+      :can-read-activity="canReadIntegrationActivity"
+      provider="AMPLITUDE"
+    />
+    <IntegrationInboundConnectionsCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+      provider="AMPLITUDE"
+    />
+    <IntegrationInboundRoutesCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+      provider="AMPLITUDE"
+    />
+    <IntegrationInboundActivityCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read-activity="canReadIntegrationActivity"
+      provider="AMPLITUDE"
+    />
+    <IntegrationConnectionsCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+      provider="CUSTOMER_IO"
+    />
+    <IntegrationEventRoutesCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+      :can-read-activity="canReadIntegrationActivity"
+      provider="CUSTOMER_IO"
+    />
+    <IntegrationInboundConnectionsCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+      provider="CUSTOMER_IO"
+    />
+    <IntegrationInboundRoutesCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+      provider="CUSTOMER_IO"
+    />
+    <IntegrationInboundActivityCard
+      v-if="canReadIntegrations"
+      :project-id="projectId"
+      :can-read-activity="canReadIntegrationActivity"
+      provider="CUSTOMER_IO"
+    />
+    <IntegrationCanonicalIdentityPolicyCard
+      v-if="canonicalIdentityPolicyEnabled && canReadIntegrations"
+      :project-id="projectId"
+      :can-read="canReadIntegrations"
+      :can-manage="canManageIntegrations"
+    />
+    <IntegrationRecoveryOperationsCard
+      v-if="canReadIntegrationActivity"
+      :project-id="projectId"
+      :can-read-activity="canReadIntegrationActivity"
+      :can-read-integrations="canReadIntegrations"
+      :can-manage="canManageIntegrations"
     />
   </main>
 </template>

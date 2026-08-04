@@ -36,6 +36,7 @@ const SOURCE_OPTIONS: ReadonlyArray<{
   { value: "SERVER", label: "Сервер" },
   { value: "FRONTEND", label: "Интерфейс" },
   { value: "INTERNAL", label: "Внутренняя операция" },
+  { value: "INTEGRATION", label: "Интеграция" },
 ];
 const props = defineProps<{
   projectId: string;

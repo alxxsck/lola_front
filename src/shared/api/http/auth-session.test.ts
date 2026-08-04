@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearAuthSession,
+  clearLocalAuthSession,
   getAccessToken,
   getSelectedProjectId,
   storeAccessToken,
@@ -51,8 +52,39 @@ describe("auth session", () => {
       "lola:reply-translation-draft:project-2:user-1:conversation-1",
       '{"draftId":"private-draft"}',
     );
+    sessionStorage.setItem(
+      "lola:amplitude-pending-tests:project-2",
+      '[{"state":"REQUESTING"}]',
+    );
+    sessionStorage.setItem(
+      "lola:amplitude-unresolved-secret:project-2",
+      '{"operation":"ROTATE"}',
+    );
+    sessionStorage.setItem(
+      "lola:amplitude-pending-route-create:project-2",
+      '{"idempotencyKey":"actor-scoped-receipt"}',
+    );
 
     clearAuthSession();
+
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it("also clears integration receipts on a local-only session reset", () => {
+    sessionStorage.setItem(
+      "lola:amplitude-pending-tests:project-2",
+      '[{"state":"POLLING"}]',
+    );
+    sessionStorage.setItem(
+      "lola:amplitude-unresolved-secret:project-2",
+      '{"operation":"CREATE"}',
+    );
+    sessionStorage.setItem(
+      "lola:amplitude-pending-route-create:project-2",
+      '{"idempotencyKey":"actor-scoped-receipt"}',
+    );
+
+    clearLocalAuthSession();
 
     expect(sessionStorage.length).toBe(0);
   });

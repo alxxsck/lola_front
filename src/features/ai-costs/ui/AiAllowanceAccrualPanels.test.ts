@@ -86,6 +86,54 @@ describe("allowance accrual panels", () => {
     expect(wrapper.get("input").attributes("placeholder")).toBeTruthy();
   });
 
+  it("shows integration events in accrual rules and history", async () => {
+    mocks.listReceipts.mockResolvedValue({
+      items: [
+        {
+          id: "receipt-1",
+          evaluatedAt: "2026-08-04T12:00:00.000Z",
+          endUserId: "user-1",
+          status: "GRANTED",
+          rewardUsd: "1.00",
+          rejectionReason: null,
+          grantId: "grant-1",
+          ruleRevision: {
+            rule: { name: "Бонус за событие", key: "EVENT_BONUS" },
+            revisionNumber: 1,
+          },
+          eventLog: {
+            id: "event-1",
+            source: "INTEGRATION",
+            eventDefinitionKey: { name: "Депозит", code: "DEPOSIT" },
+          },
+        },
+      ],
+      pageInfo: { hasMore: false, nextCursor: null },
+    });
+    const receipts = mount(AiAllowanceAccrualReceiptsPanel, {
+      props: { projectId: "project-1" },
+    });
+    const rules = mount(AiAllowanceAccrualRulesPanel, {
+      props: { projectId: "project-1", canRead: true, canManage: true },
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: "<div v-if='visible'><slot /></div>",
+          },
+        },
+      },
+    });
+    await flushPromises();
+    await rules
+      .findAll("button")
+      .find((button) => button.text().includes("Создать правило"))!
+      .trigger("click");
+
+    expect(receipts.text()).toContain("Интеграция");
+    expect(rules.text()).toContain("Интеграция");
+  });
+
   it("requires a fresh login for an accrual-rule revision without replaying it", async () => {
     mocks.putRule.mockRejectedValue(
       new ApiError(

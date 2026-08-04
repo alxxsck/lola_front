@@ -535,7 +535,7 @@ function json(value: unknown) {
               option-value="value"
               display="chip"
               placeholder="Все источники"
-              :selection-limit="3"
+              :selection-limit="4"
               :max-selected-labels="1"
               selected-items-label="{0} источника"
             />
