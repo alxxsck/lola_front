@@ -1,7 +1,8 @@
-# GitLab pipeline for Retenive CMS — build & push a container image.
-# Deployment is GitOps: Flux image-automation on k3s-prod picks up the newest
-# `main-<ts>-<sha>` tag and rolls out the nginx/SPA image. (Cloudflare Pages deploy
-# has been replaced by the container build.)
+# GitLab pipeline for Lola CMS — build & push a container image.
+# Deployment is GitOps: Flux image-automation picks up the newest tag and rolls it out.
+#   main    -> k3s-prod (prod), tag main-<ts>-<sha>
+#   develop -> eks-dev  (dev),  tag develop-<ts>-<sha>
+# (Cloudflare Pages deploy has been replaced by the container build.)
 
 workflow:
   rules:
@@ -68,10 +69,10 @@ build:image:
         "$CI_REGISTRY" "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" \
         > "$HOME/.docker/config.json"
   script:
-    # Push only on the default branch (main); MRs/branches build to validate.
+    # Push on main (-> k3s-prod) and develop (-> eks-dev); MRs/other branches build to validate.
     - PUSH=false
-    - if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then PUSH=true; fi
-    - FLUX_TAG="main-$(date -u +%Y%m%d%H%M%S)-${CI_COMMIT_SHORT_SHA}"
+    - case "$CI_COMMIT_BRANCH" in main|develop) PUSH=true ;; esac
+    - FLUX_TAG="${CI_COMMIT_BRANCH:-mr}-$(date -u +%Y%m%d%H%M%S)-${CI_COMMIT_SHORT_SHA}"
     - FLUX_IMAGE="$CI_REGISTRY_IMAGE:$FLUX_TAG"
     - echo "PUSH=$PUSH building $APP_IMAGE_TAG and $FLUX_IMAGE"
     - |
@@ -93,4 +94,5 @@ build:image:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
-    - if: '$CI_COMMIT_BRANCH == "main"'  # auto build+push after quality (deploy-by-commit)
+    - if: '$CI_COMMIT_BRANCH == "main"'     # -> k3s-prod (main-*)
+    - if: '$CI_COMMIT_BRANCH == "develop"'  # -> eks-dev (develop-*)
