@@ -6,11 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AllowanceLocalizedContentDto {
-  /** @maxLength 2000 */
-  en?: string;
-  /** @maxLength 2000 */
-  message?: string;
-  /** @maxLength 2000 */
-  ru?: string;
-}
+export type ReceiveCustomerIoIntegrationEventsBodyOneOfTwoItem = {
+  [key: string]: unknown;
+};

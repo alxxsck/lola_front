@@ -94,7 +94,13 @@ vi.mock(
   "@/features/integration-event-routes/IntegrationEventRoutesCard.vue",
   () => ({
     default: {
-      props: ["projectId", "canRead", "canManage", "canReadActivity", "provider"],
+      props: [
+        "projectId",
+        "canRead",
+        "canManage",
+        "canReadActivity",
+        "provider",
+      ],
       template: `
         <section
           :data-testid="provider + '-routes-card-stub'"
@@ -102,6 +108,79 @@ vi.mock(
           :data-can-read="String(canRead)"
           :data-can-manage="String(canManage)"
           :data-can-read-activity="String(canReadActivity)"
+        />
+      `,
+    },
+  }),
+);
+
+vi.mock(
+  "@/features/integration-inbound-connections/IntegrationInboundConnectionsCard.vue",
+  () => ({
+    default: {
+      props: ["projectId", "canRead", "canManage", "provider"],
+      template:
+        "<section :data-testid=\"provider + '-inbound-connections-stub'\" />",
+    },
+  }),
+);
+
+vi.mock(
+  "@/features/integration-inbound-routes/IntegrationInboundRoutesCard.vue",
+  () => ({
+    default: {
+      props: ["projectId", "canRead", "canManage", "provider"],
+      template:
+        "<section :data-testid=\"provider + '-inbound-routes-stub'\" />",
+    },
+  }),
+);
+
+vi.mock(
+  "@/features/integration-inbound-activity/IntegrationInboundActivityCard.vue",
+  () => ({
+    default: {
+      props: ["projectId", "canReadActivity", "provider"],
+      template:
+        '<section :data-testid="provider + \'-inbound-activity-stub\'" :data-can-read-activity="String(canReadActivity)" />',
+    },
+  }),
+);
+
+vi.mock(
+  "@/features/integration-canonical-identity/IntegrationCanonicalIdentityPolicyCard.vue",
+  () => ({
+    default: {
+      props: ["projectId", "canRead", "canManage"],
+      template: `
+        <section
+          data-testid="canonical-identity-policy-stub"
+          :data-project-id="projectId"
+          :data-can-read="String(canRead)"
+          :data-can-manage="String(canManage)"
+        />
+      `,
+    },
+  }),
+);
+
+vi.mock(
+  "@/features/integration-recovery/IntegrationRecoveryOperationsCard.vue",
+  () => ({
+    default: {
+      props: [
+        "projectId",
+        "canReadActivity",
+        "canReadIntegrations",
+        "canManage",
+      ],
+      template: `
+        <section
+          data-testid="integration-recovery-stub"
+          :data-project-id="projectId"
+          :data-can-read-activity="String(canReadActivity)"
+          :data-can-read-integrations="String(canReadIntegrations)"
+          :data-can-manage="String(canManage)"
         />
       `,
     },
@@ -222,6 +301,32 @@ describe("ProjectIntegrationsPage", () => {
     expect(
       wrapper.get('[data-testid="CUSTOMER_IO-routes-card-stub"]'),
     ).toBeTruthy();
+    expect(
+      wrapper.get('[data-testid="AMPLITUDE-inbound-connections-stub"]'),
+    ).toBeTruthy();
+    expect(
+      wrapper.get('[data-testid="AMPLITUDE-inbound-routes-stub"]'),
+    ).toBeTruthy();
+    expect(
+      wrapper.get('[data-testid="CUSTOMER_IO-inbound-connections-stub"]'),
+    ).toBeTruthy();
+    expect(
+      wrapper.get('[data-testid="CUSTOMER_IO-inbound-routes-stub"]'),
+    ).toBeTruthy();
+    expect(
+      wrapper
+        .get('[data-testid="CUSTOMER_IO-inbound-activity-stub"]')
+        .attributes("data-can-read-activity"),
+    ).toBe("false");
+    expect(
+      wrapper
+        .get('[data-testid="canonical-identity-policy-stub"]')
+        .attributes(),
+    ).toMatchObject({
+      "data-project-id": "project-1",
+      "data-can-read": "true",
+      "data-can-manage": "true",
+    });
   });
 
   it("uses the existing logout redirect flow for product Telegram step-up", async () => {
@@ -242,6 +347,27 @@ describe("ProjectIntegrationsPage", () => {
     expect(mocks.replace).toHaveBeenCalledWith({
       name: "login",
       query: { redirect: "/settings/integrations" },
+    });
+  });
+
+  it("mounts recovery operations only for integration activity readers", async () => {
+    mocks.permissions = [
+      "project.integrations.read",
+      "project.integrations.manage",
+      "project.integration_activity.read",
+    ];
+    mocks.auth.project.effectivePermissionCodes = [...mocks.permissions];
+
+    const wrapper = mount(ProjectIntegrationsPage);
+    await flushPromises();
+
+    expect(
+      wrapper.get('[data-testid="integration-recovery-stub"]').attributes(),
+    ).toMatchObject({
+      "data-project-id": "project-1",
+      "data-can-read-activity": "true",
+      "data-can-read-integrations": "true",
+      "data-can-manage": "true",
     });
   });
 

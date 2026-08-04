@@ -11,5 +11,6 @@ export type IntegrationEventRouteResponseDtoDirection =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const IntegrationEventRouteResponseDtoDirection = {
+  INBOUND: "INBOUND",
   OUTBOUND: "OUTBOUND",
 } as const;

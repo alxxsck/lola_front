@@ -32,6 +32,7 @@ import type {
   AiAllowanceAdminProjectPolicyParams,
   AiAllowanceAdminReconciliationQueueParams,
   AiAllowanceAdminResponseDto,
+  AiAllowanceProjectPolicyResponseDto,
   AiAllowancePublicRead200,
   AiCapabilityPreviewResponseDto,
   AiCostCmsUserPageResponseDto,
@@ -57,6 +58,7 @@ import type {
   AiPricingRevisionStateResponseDto,
   AiUsageReportParams,
   AiUsageReportResponseDto,
+  AmplitudeInboundEventDto,
   AnalyzeEventSchemaDraftDto,
   ApplyEventQueryPolicyItemDto,
   ApplyEventQueryProjectPolicyDto,
@@ -83,8 +85,12 @@ import type {
   BreakGlassLoginDto,
   BreakGlassLoginResponseDto,
   CancelEndUserCaseEscalationDto,
+  CancelIntegrationDispatchDto,
+  CanonicalIdentityPolicyPreviewResponseDto,
+  CanonicalIdentityPolicyResponseDto,
   CaseVerificationEstimateResponseDto,
   CaseVerificationRunResponseDto,
+  ChangeIntegrationDirectionPauseDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   ChatSend200,
@@ -141,11 +147,15 @@ import type {
   ConversationTranslationResponseDto,
   CorrectAiAllowanceDto,
   CreateAmplitudeConnectionDto,
+  CreateAmplitudeInboundConnectionDto,
+  CreateAmplitudeInboundRouteDto,
   CreateAmplitudeOutboundRouteDto,
   CreateConversationDto,
   CreateConversationMessageTranslationsDto,
   CreateCustomerDto,
   CreateCustomerIoConnectionDto,
+  CreateCustomerIoInboundConnectionDto,
+  CreateCustomerIoInboundRouteDto,
   CreateCustomerIoOutboundRouteDto,
   CreateEventCatalogDefinitionDto,
   CreateEventSchemaSuccessorDto,
@@ -166,6 +176,7 @@ import type {
   CreateTelegramBroadcastDto,
   CreateTranslationJobDto,
   CreateUiElementDto,
+  CustomerIoInboundBatchReceiptDto,
   DeleteKnowledgeDocumentResponseDto,
   DisableTelegramChannelDto,
   EditReplyTranslationDraftDto,
@@ -261,13 +272,28 @@ import type {
   IntegrationAttributeContractResponseDto,
   IntegrationConnectionListResponseDto,
   IntegrationConnectionResponseDto,
+  IntegrationConnectionRotateAmplitudeInbound201,
+  IntegrationConnectionRotateCustomerIoInbound201,
+  IntegrationConnectionSetupAmplitudeInbound201,
+  IntegrationConnectionSetupCustomerIoInbound201,
   IntegrationConnectionTestResponseDto,
   IntegrationConnectionVersionDto,
   IntegrationDispatchActivityListResponseDto,
+  IntegrationEventIdentityPolicyCurrent200,
   IntegrationEventRouteActivityListParams,
+  IntegrationEventRouteInboundActivityListParams,
+  IntegrationEventRouteInboundHealthReadParams,
   IntegrationEventRouteListResponseDto,
   IntegrationEventRouteResponseDto,
+  IntegrationEventRouteSummaryResponseDto,
   IntegrationEventRouteVersionDto,
+  IntegrationInboundReceiptDto,
+  IntegrationIngressActivityListResponseDto,
+  IntegrationIngressHealthResponseDto,
+  IntegrationRecoveryCommandResultDto,
+  IntegrationRecoveryOperationDetailDto,
+  IntegrationRecoveryOperationListResponseDto,
+  IntegrationRecoveryOperationsListParams,
   InteractionSessionResponseDto,
   KnowledgeDocumentDetailResponseDto,
   KnowledgeDocumentListResponseDto,
@@ -305,6 +331,7 @@ import type {
   PlatformRoleListResponseDto,
   PlatformRoleResponseDto,
   PlatformTranslationUsageUsageReportParams,
+  PreviewCanonicalIdentityPolicyDto,
   PreviewEndUserCasePolicyDto,
   PreviewEventQueryDto,
   PreviewScenarioGoalDto,
@@ -340,6 +367,7 @@ import type {
   PublishAiPricingRevisionDto,
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
+  PublishCanonicalIdentityPolicyDto,
   PublishEndUserCasePolicyDto,
   PublishEventQueryPolicyDto,
   PublishEventQueryPolicyItemDto,
@@ -355,11 +383,15 @@ import type {
   PutDefaultAllowancePlanDto,
   PutEndUserAllowanceAssignmentDto,
   PutEndUserOperationalAttributeDto,
+  QuarantineIntegrationIngressDto,
   ReassignProjectRoleDto,
+  ReceiveCustomerIoIntegrationEventsBody,
   ReconcileAiSpendReservationDto,
   RemoveProjectMembershipDto,
   RenameConversationDto,
   ReplaceCmsUserPlatformRolesDto,
+  ReplayIntegrationDispatchDto,
+  ReplayIntegrationIngressDto,
   ReplyTranslationDraftResponseDto,
   RequestEndUserCaseEscalationDto,
   ResolveAiSpendAttemptDto,
@@ -368,6 +400,7 @@ import type {
   RevokeCmsUserSessionDto,
   RollbackScenarioDto,
   RotateAmplitudeCredentialDto,
+  RotateAmplitudeInboundCredentialDto,
   RotateCustomerIoCredentialDto,
   RotateServerKeyResponseDto,
   RotateTelegramChannelDto,
@@ -1036,9 +1069,11 @@ export const cmsAgentRequestExecute = (
 export const aiAllowanceAdminProjectPolicy = (
   projectId: string,
   params?: AiAllowanceAdminProjectPolicyParams,
-  options?: SecondParameter<typeof request<AiAllowanceAdminResponseDto>>,
+  options?: SecondParameter<
+    typeof request<AiAllowanceProjectPolicyResponseDto>
+  >,
 ) => {
-  return request<AiAllowanceAdminResponseDto>(
+  return request<AiAllowanceProjectPolicyResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/ai-allowance`,
       method: "GET",
@@ -3261,6 +3296,44 @@ export const integrationConnectionRotateAmplitude = (
   );
 };
 
+export const integrationConnectionRotateAmplitudeInbound = (
+  projectId: string,
+  connectionId: string,
+  rotateAmplitudeInboundCredentialDto: BodyType<RotateAmplitudeInboundCredentialDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationConnectionRotateAmplitudeInbound201>
+  >,
+) => {
+  return request<IntegrationConnectionRotateAmplitudeInbound201>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/amplitude/inbound/credentials/rotate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rotateAmplitudeInboundCredentialDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionSetupAmplitudeInbound = (
+  projectId: string,
+  connectionId: string,
+  integrationConnectionVersionDto: BodyType<IntegrationConnectionVersionDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationConnectionSetupAmplitudeInbound201>
+  >,
+) => {
+  return request<IntegrationConnectionSetupAmplitudeInbound201>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/amplitude/inbound/setup`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationConnectionVersionDto,
+    },
+    options,
+  );
+};
+
 export const integrationConnectionRotateAmplitudeCompatibility = (
   projectId: string,
   connectionId: string,
@@ -3307,6 +3380,44 @@ export const integrationConnectionRotateCustomerIo = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: rotateCustomerIoCredentialDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionRotateCustomerIoInbound = (
+  projectId: string,
+  connectionId: string,
+  rotateAmplitudeInboundCredentialDto: BodyType<RotateAmplitudeInboundCredentialDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationConnectionRotateCustomerIoInbound201>
+  >,
+) => {
+  return request<IntegrationConnectionRotateCustomerIoInbound201>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/customer-io/inbound/credentials/rotate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rotateAmplitudeInboundCredentialDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionSetupCustomerIoInbound = (
+  projectId: string,
+  connectionId: string,
+  integrationConnectionVersionDto: BodyType<IntegrationConnectionVersionDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationConnectionSetupCustomerIoInbound201>
+  >,
+) => {
+  return request<IntegrationConnectionSetupCustomerIoInbound201>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/${connectionId}/customer-io/inbound/setup`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationConnectionVersionDto,
     },
     options,
   );
@@ -3381,6 +3492,22 @@ export const integrationConnectionCreateAmplitude = (
   );
 };
 
+export const integrationConnectionCreateAmplitudeInbound = (
+  projectId: string,
+  createAmplitudeInboundConnectionDto: BodyType<CreateAmplitudeInboundConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/amplitude/inbound`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createAmplitudeInboundConnectionDto,
+    },
+    options,
+  );
+};
+
 export const integrationConnectionCreateCustomerIo = (
   projectId: string,
   createCustomerIoConnectionDto: BodyType<CreateCustomerIoConnectionDto>,
@@ -3392,6 +3519,22 @@ export const integrationConnectionCreateCustomerIo = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createCustomerIoConnectionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionCreateCustomerIoInbound = (
+  projectId: string,
+  createCustomerIoInboundConnectionDto: BodyType<CreateCustomerIoInboundConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/customer-io/inbound`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createCustomerIoInboundConnectionDto,
     },
     options,
   );
@@ -3463,6 +3606,40 @@ export const integrationEventRoutePublish = (
   );
 };
 
+export const integrationEventRouteInboundActivityList = (
+  projectId: string,
+  params?: IntegrationEventRouteInboundActivityListParams,
+  options?: SecondParameter<
+    typeof request<IntegrationIngressActivityListResponseDto>
+  >,
+) => {
+  return request<IntegrationIngressActivityListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/activity/inbound`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteInboundHealthRead = (
+  projectId: string,
+  params?: IntegrationEventRouteInboundHealthReadParams,
+  options?: SecondParameter<
+    typeof request<IntegrationIngressHealthResponseDto>
+  >,
+) => {
+  return request<IntegrationIngressHealthResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/activity/inbound/health`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const integrationEventRouteActivityList = (
   projectId: string,
   params?: IntegrationEventRouteActivityListParams,
@@ -3496,6 +3673,22 @@ export const integrationEventRouteCreateAmplitude = (
   );
 };
 
+export const integrationEventRouteCreateAmplitudeInbound = (
+  projectId: string,
+  createAmplitudeInboundRouteDto: BodyType<CreateAmplitudeInboundRouteDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/amplitude/inbound`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createAmplitudeInboundRouteDto,
+    },
+    options,
+  );
+};
+
 export const integrationEventRouteCreateCustomerIo = (
   projectId: string,
   createCustomerIoOutboundRouteDto: BodyType<CreateCustomerIoOutboundRouteDto>,
@@ -3507,6 +3700,240 @@ export const integrationEventRouteCreateCustomerIo = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createCustomerIoOutboundRouteDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteCreateCustomerIoInbound = (
+  projectId: string,
+  createCustomerIoInboundRouteDto: BodyType<CreateCustomerIoInboundRouteDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/customer-io/inbound`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createCustomerIoInboundRouteDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventIdentityPolicyCurrent = (
+  projectId: string,
+  eventDefinitionKeyId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationEventIdentityPolicyCurrent200>
+  >,
+) => {
+  return request<IntegrationEventIdentityPolicyCurrent200>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/event-definitions/${eventDefinitionKeyId}/identity-policy/canonical/current`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationEventIdentityPolicyPreview = (
+  projectId: string,
+  eventDefinitionKeyId: string,
+  previewCanonicalIdentityPolicyDto: BodyType<PreviewCanonicalIdentityPolicyDto>,
+  options?: SecondParameter<
+    typeof request<CanonicalIdentityPolicyPreviewResponseDto>
+  >,
+) => {
+  return request<CanonicalIdentityPolicyPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/event-definitions/${eventDefinitionKeyId}/identity-policy/canonical/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: previewCanonicalIdentityPolicyDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventIdentityPolicyPublish = (
+  projectId: string,
+  eventDefinitionKeyId: string,
+  publishCanonicalIdentityPolicyDto: BodyType<PublishCanonicalIdentityPolicyDto>,
+  options?: SecondParameter<typeof request<CanonicalIdentityPolicyResponseDto>>,
+) => {
+  return request<CanonicalIdentityPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/event-definitions/${eventDefinitionKeyId}/identity-policy/canonical/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishCanonicalIdentityPolicyDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteEventDefinitionSummary = (
+  projectId: string,
+  eventDefinitionKeyId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationEventRouteSummaryResponseDto>
+  >,
+) => {
+  return request<IntegrationEventRouteSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/event-definitions/${eventDefinitionKeyId}/summary`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsList = (
+  projectId: string,
+  params?: IntegrationRecoveryOperationsListParams,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryOperationListResponseDto>
+  >,
+) => {
+  return request<IntegrationRecoveryOperationListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsDetail = (
+  projectId: string,
+  operationKind: "INGRESS" | "DISPATCH" | "CONNECTION",
+  operationId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryOperationDetailDto>
+  >,
+) => {
+  return request<IntegrationRecoveryOperationDetailDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations/${operationKind}/${operationId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsPauseDirection = (
+  projectId: string,
+  operationId: string,
+  direction: "INBOUND" | "OUTBOUND",
+  changeIntegrationDirectionPauseDto: BodyType<ChangeIntegrationDirectionPauseDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryCommandResultDto>
+  >,
+) => {
+  return request<IntegrationRecoveryCommandResultDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations/CONNECTION/${operationId}/${direction}/pause`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: changeIntegrationDirectionPauseDto,
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsResumeDirection = (
+  projectId: string,
+  operationId: string,
+  direction: "INBOUND" | "OUTBOUND",
+  changeIntegrationDirectionPauseDto: BodyType<ChangeIntegrationDirectionPauseDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryCommandResultDto>
+  >,
+) => {
+  return request<IntegrationRecoveryCommandResultDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations/CONNECTION/${operationId}/${direction}/resume`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: changeIntegrationDirectionPauseDto,
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsCancelDispatch = (
+  projectId: string,
+  operationId: string,
+  cancelIntegrationDispatchDto: BodyType<CancelIntegrationDispatchDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryCommandResultDto>
+  >,
+) => {
+  return request<IntegrationRecoveryCommandResultDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations/DISPATCH/${operationId}/cancel`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cancelIntegrationDispatchDto,
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsReplayDispatch = (
+  projectId: string,
+  operationId: string,
+  replayIntegrationDispatchDto: BodyType<ReplayIntegrationDispatchDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryCommandResultDto>
+  >,
+) => {
+  return request<IntegrationRecoveryCommandResultDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations/DISPATCH/${operationId}/replay`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: replayIntegrationDispatchDto,
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsQuarantineIngress = (
+  projectId: string,
+  operationId: string,
+  quarantineIntegrationIngressDto: BodyType<QuarantineIntegrationIngressDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryCommandResultDto>
+  >,
+) => {
+  return request<IntegrationRecoveryCommandResultDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations/INGRESS/${operationId}/quarantine`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: quarantineIntegrationIngressDto,
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsReplayIngress = (
+  projectId: string,
+  operationId: string,
+  replayIntegrationIngressDto: BodyType<ReplayIntegrationIngressDto>,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryCommandResultDto>
+  >,
+) => {
+  return request<IntegrationRecoveryCommandResultDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations/INGRESS/${operationId}/replay`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: replayIntegrationIngressDto,
     },
     options,
   );
@@ -6440,6 +6867,38 @@ export const appReadiness = (
   return request<void>({ url: `/api/v1/health/ready`, method: "GET" }, options);
 };
 
+export const receiveAmplitudeIntegrationEvent = (
+  publicConnectionKey: string,
+  amplitudeInboundEventDto: BodyType<AmplitudeInboundEventDto>,
+  options?: SecondParameter<typeof request<IntegrationInboundReceiptDto>>,
+) => {
+  return request<IntegrationInboundReceiptDto>(
+    {
+      url: `/api/v1/integrations/inbound/amplitude/${publicConnectionKey}`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: amplitudeInboundEventDto,
+    },
+    options,
+  );
+};
+
+export const receiveCustomerIoIntegrationEvents = (
+  publicConnectionKey: string,
+  receiveCustomerIoIntegrationEventsBody: BodyType<ReceiveCustomerIoIntegrationEventsBody>,
+  options?: SecondParameter<typeof request<CustomerIoInboundBatchReceiptDto>>,
+) => {
+  return request<CustomerIoInboundBatchReceiptDto>(
+    {
+      url: `/api/v1/integrations/inbound/customer-io/${publicConnectionKey}`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: receiveCustomerIoIntegrationEventsBody,
+    },
+    options,
+  );
+};
+
 export const interactionSessionsCreate = (
   createInteractionSessionDto: BodyType<CreateInteractionSessionDto>,
   options?: SecondParameter<typeof request<InteractionSessionResponseDto>>,
@@ -7237,6 +7696,12 @@ export type IntegrationConnectionUpdateAmplitudeResult = NonNullable<
 export type IntegrationConnectionRotateAmplitudeResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionRotateAmplitude>>
 >;
+export type IntegrationConnectionRotateAmplitudeInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionRotateAmplitudeInbound>>
+>;
+export type IntegrationConnectionSetupAmplitudeInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionSetupAmplitudeInbound>>
+>;
 export type IntegrationConnectionRotateAmplitudeCompatibilityResult =
   NonNullable<
     Awaited<
@@ -7248,6 +7713,12 @@ export type IntegrationConnectionUpdateCustomerIoResult = NonNullable<
 >;
 export type IntegrationConnectionRotateCustomerIoResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionRotateCustomerIo>>
+>;
+export type IntegrationConnectionRotateCustomerIoInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionRotateCustomerIoInbound>>
+>;
+export type IntegrationConnectionSetupCustomerIoInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionSetupCustomerIoInbound>>
 >;
 export type IntegrationConnectionDisableResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionDisable>>
@@ -7261,8 +7732,14 @@ export type IntegrationConnectionGetTestResult = NonNullable<
 export type IntegrationConnectionCreateAmplitudeResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionCreateAmplitude>>
 >;
+export type IntegrationConnectionCreateAmplitudeInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionCreateAmplitudeInbound>>
+>;
 export type IntegrationConnectionCreateCustomerIoResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionCreateCustomerIo>>
+>;
+export type IntegrationConnectionCreateCustomerIoInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionCreateCustomerIoInbound>>
 >;
 export type IntegrationEventRouteListResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteList>>
@@ -7276,14 +7753,62 @@ export type IntegrationEventRouteEnableResult = NonNullable<
 export type IntegrationEventRoutePublishResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRoutePublish>>
 >;
+export type IntegrationEventRouteInboundActivityListResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteInboundActivityList>>
+>;
+export type IntegrationEventRouteInboundHealthReadResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteInboundHealthRead>>
+>;
 export type IntegrationEventRouteActivityListResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteActivityList>>
 >;
 export type IntegrationEventRouteCreateAmplitudeResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteCreateAmplitude>>
 >;
+export type IntegrationEventRouteCreateAmplitudeInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteCreateAmplitudeInbound>>
+>;
 export type IntegrationEventRouteCreateCustomerIoResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteCreateCustomerIo>>
+>;
+export type IntegrationEventRouteCreateCustomerIoInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteCreateCustomerIoInbound>>
+>;
+export type IntegrationEventIdentityPolicyCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventIdentityPolicyCurrent>>
+>;
+export type IntegrationEventIdentityPolicyPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventIdentityPolicyPreview>>
+>;
+export type IntegrationEventIdentityPolicyPublishResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventIdentityPolicyPublish>>
+>;
+export type IntegrationEventRouteEventDefinitionSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteEventDefinitionSummary>>
+>;
+export type IntegrationRecoveryOperationsListResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsList>>
+>;
+export type IntegrationRecoveryOperationsDetailResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsDetail>>
+>;
+export type IntegrationRecoveryOperationsPauseDirectionResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsPauseDirection>>
+>;
+export type IntegrationRecoveryOperationsResumeDirectionResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsResumeDirection>>
+>;
+export type IntegrationRecoveryOperationsCancelDispatchResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsCancelDispatch>>
+>;
+export type IntegrationRecoveryOperationsReplayDispatchResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsReplayDispatch>>
+>;
+export type IntegrationRecoveryOperationsQuarantineIngressResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsQuarantineIngress>>
+>;
+export type IntegrationRecoveryOperationsReplayIngressResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsReplayIngress>>
 >;
 export type KnowledgeListResult = NonNullable<
   Awaited<ReturnType<typeof knowledgeList>>
@@ -7853,6 +8378,12 @@ export type AppLivenessResult = NonNullable<
 >;
 export type AppReadinessResult = NonNullable<
   Awaited<ReturnType<typeof appReadiness>>
+>;
+export type ReceiveAmplitudeIntegrationEventResult = NonNullable<
+  Awaited<ReturnType<typeof receiveAmplitudeIntegrationEvent>>
+>;
+export type ReceiveCustomerIoIntegrationEventsResult = NonNullable<
+  Awaited<ReturnType<typeof receiveCustomerIoIntegrationEvents>>
 >;
 export type InteractionSessionsCreateResult = NonNullable<
   Awaited<ReturnType<typeof interactionSessionsCreate>>

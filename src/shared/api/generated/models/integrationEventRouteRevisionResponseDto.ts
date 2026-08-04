@@ -5,12 +5,16 @@
  * CMS, integration, chat and realtime API for Lola AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { IntegrationEventRouteRevisionResponseDtoCanonicalKeyExtractor } from "./integrationEventRouteRevisionResponseDtoCanonicalKeyExtractor";
 import type { IntegrationEventPropertyBindingDto } from "./integrationEventPropertyBindingDto";
 import type { IntegrationEventRouteRevisionResponseDtoProvider } from "./integrationEventRouteRevisionResponseDtoProvider";
+import type { IntegrationEventRouteRevisionResponseDtoProviderCallType } from "./integrationEventRouteRevisionResponseDtoProviderCallType";
 import type { IntegrationEventRouteRevisionResponseDtoRegion } from "./integrationEventRouteRevisionResponseDtoRegion";
 import type { IntegrationEventRouteRevisionResponseDtoState } from "./integrationEventRouteRevisionResponseDtoState";
 
 export interface IntegrationEventRouteRevisionResponseDto {
+  /** @nullable */
+  canonicalKeyExtractor?: IntegrationEventRouteRevisionResponseDtoCanonicalKeyExtractor;
   compiledHash: string;
   compilerVersion: string;
   createdAt: string;
@@ -19,6 +23,7 @@ export interface IntegrationEventRouteRevisionResponseDto {
   id: string;
   propertyBindings: IntegrationEventPropertyBindingDto[];
   provider: IntegrationEventRouteRevisionResponseDtoProvider;
+  providerCallType: IntegrationEventRouteRevisionResponseDtoProviderCallType;
   providerEventName: string;
   /** @nullable */
   publishedAt: string | null;

@@ -16,8 +16,11 @@ import { integrationEventRoutesApi } from "@/features/integration-event-routes/i
 export type OutboundIntegrationProvider = "AMPLITUDE" | "CUSTOMER_IO";
 export type ProviderConnection = Omit<
   IntegrationConnectionResponseDto,
-  "provider"
-> & { provider: OutboundIntegrationProvider };
+  "provider" | "credential"
+> & {
+  provider: OutboundIntegrationProvider;
+  credential: NonNullable<IntegrationConnectionResponseDto["credential"]>;
+};
 export type ProviderRoute = IntegrationEventRouteResponseDto;
 export type ProviderCreateConnectionInput =
   CreateAmplitudeConnectionDto | CreateCustomerIoConnectionDto;

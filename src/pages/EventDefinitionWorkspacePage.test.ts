@@ -113,6 +113,11 @@ function mountWorkspace() {
           template:
             '<div data-test="event-query-access-section" :data-event-code="definition.code" />',
         },
+        IntegrationEventSummary: {
+          props: ["projectId", "eventDefinitionKeyId", "canRead"],
+          template:
+            '<section data-test="integration-event-summary-stub" :data-project-id="projectId" :data-definition-id="eventDefinitionKeyId" :data-can-read="String(canRead)" />',
+        },
       },
     },
   });
@@ -224,6 +229,34 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     );
     expect(wrapper.find('input[name="code"]').exists()).toBe(false);
     expect(wrapper.find('input[name="revision"]').exists()).toBe(false);
+  });
+
+  it("shows the read-only integration summary only with both required permissions", async () => {
+    mocks.auth!.project = {
+      id: "project-1",
+      effectivePermissionCodes: [
+        "project.event_catalog.read",
+        "project.integrations.read",
+      ],
+    };
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    expect(
+      wrapper.get('[data-test="integration-event-summary-stub"]').attributes(),
+    ).toMatchObject({
+      "data-project-id": "project-1",
+      "data-definition-id": "event-key-1",
+      "data-can-read": "true",
+    });
+
+    mocks.auth!.project.effectivePermissionCodes = [
+      "project.event_catalog.read",
+    ];
+    await wrapper.vm.$nextTick();
+    expect(
+      wrapper.find('[data-test="integration-event-summary-stub"]').exists(),
+    ).toBe(false);
   });
 
   it("uses Russian product copy and switches every visible workspace tab", async () => {

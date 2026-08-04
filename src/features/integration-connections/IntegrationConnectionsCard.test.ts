@@ -123,6 +123,31 @@ describe("IntegrationConnectionsCard", () => {
     expect(wrapper.text()).toContain("AMPLITUDE_DELIVERY_CREDENTIAL_REJECTED");
   });
 
+  it("ignores inbound-only connections without an outbound credential", async () => {
+    api.list.mockResolvedValue({
+      items: [
+        connection({
+          id: "inbound-only",
+          inboundEnabled: true,
+          outboundEnabled: false,
+          credential: null,
+        }),
+        connection({ id: "outbound-ready" }),
+      ],
+    });
+
+    const wrapper = mountCard();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Amplitude production");
+    expect(wrapper.find('[data-connection-id="inbound-only"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-connection-id="outbound-ready"]').exists()).toBe(
+      true,
+    );
+  });
+
   it("renders multiple project-scoped connections read-only without secret controls", async () => {
     api.list.mockResolvedValue({
       items: [

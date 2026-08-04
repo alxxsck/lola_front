@@ -8,6 +8,7 @@ import { hasProjectPermission } from "@/features/auth/permission-access";
 import EventDefinitionHistory from "@/features/events/EventDefinitionHistory.vue";
 import EventSchemaAuthoring from "@/features/events/EventSchemaAuthoring.vue";
 import EventQueryEventAccess from "@/features/event-query/ui/EventQueryEventAccess.vue";
+import IntegrationEventSummary from "@/features/integration-event-summary/IntegrationEventSummary.vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
   applyEventMetadataUpdate,
@@ -97,6 +98,13 @@ const canManageEventQueryPolicy = computed(() =>
     "project.event_query_policy.manage",
   ),
 );
+const canReadIntegrationSummary = computed(() => {
+  const permissions = auth.project?.effectivePermissionCodes ?? [];
+  return (
+    hasProjectPermission(permissions, "project.event_catalog.read") &&
+    hasProjectPermission(permissions, "project.integrations.read")
+  );
+});
 const canReadEventQueryPolicy = computed(
   () =>
     canManageEventQueryPolicy.value ||
@@ -1038,6 +1046,12 @@ function errorMessage(cause: unknown, fallback: string) {
             не передаётся сервером продукта.
           </p>
         </aside>
+        <IntegrationEventSummary
+          v-if="canReadIntegrationSummary"
+          :project-id="auth.project?.id ?? ''"
+          :event-definition-key-id="definition.definitionKeyId"
+          :can-read="canReadIntegrationSummary"
+        />
       </main>
 
       <section

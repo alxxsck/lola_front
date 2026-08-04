@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import type {
   CreateAmplitudeOutboundRouteDto,
   EventDefinitionCatalogResponseDto,
+  IntegrationConnectionResponseDto,
   IntegrationDispatchActivityItemDto,
   IntegrationEventRouteResponseDto,
 } from "@/shared/api/generated/models";
@@ -34,7 +35,7 @@ type PendingCreate = {
 };
 
 const routes = ref<IntegrationEventRouteResponseDto[]>([]);
-const connections = ref<ProviderConnection[]>([]);
+const connections = ref<IntegrationConnectionResponseDto[]>([]);
 const definitions = ref<EventDefinitionCatalogResponseDto[]>([]);
 const activity = ref<IntegrationDispatchActivityItemDto[]>([]);
 const loading = ref(false);
@@ -59,8 +60,10 @@ let loadEpoch = 0;
 
 const providerConnections = computed(() =>
   connections.value.filter(
-    (connection) =>
+    (connection): connection is ProviderConnection =>
       connection.provider === props.provider &&
+      connection.outboundEnabled &&
+      connection.credential !== null &&
       connection.lifecycle !== "ARCHIVED",
   ),
 );
@@ -321,9 +324,11 @@ async function load(): Promise<void> {
     if (epoch !== loadEpoch) return;
     routes.value = routeResult.items.filter((route) => {
       const revision = route.draftRevision ?? route.publishedRevision;
-      return revision?.provider === props.provider;
+      return (
+        route.direction === "OUTBOUND" && revision?.provider === props.provider
+      );
     });
-    connections.value = connectionResult.items as ProviderConnection[];
+    connections.value = connectionResult.items;
     definitions.value = definitionResult;
     activity.value = activityResult.items;
     if (!connectionId.value)

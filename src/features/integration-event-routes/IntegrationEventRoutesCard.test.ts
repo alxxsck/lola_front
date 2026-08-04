@@ -225,6 +225,32 @@ describe("IntegrationEventRoutesCard", () => {
     expect(wrapper.text()).not.toContain("Опубликовать");
   });
 
+  it("keeps inbound routes out of the outbound route card", async () => {
+    mocks.listRoutes.mockResolvedValue({
+      items: [
+        route({ id: "outbound-route" }),
+        route({
+          id: "inbound-route",
+          direction: "INBOUND",
+          name: "Inbound deposit",
+        }),
+      ],
+    });
+
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: false,
+        canReadActivity: false,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Депозиты");
+    expect(wrapper.text()).not.toContain("Inbound deposit");
+  });
+
   it("shows only Customer.io routes and activity and ignores Amplitude retry receipts", async () => {
     const customerRevision = {
       ...route().draftRevision,
@@ -458,6 +484,7 @@ describe("IntegrationEventRoutesCard", () => {
           provider: "CUSTOMER_IO",
           displayName: "Customer journeys",
           region: "EU",
+          outboundEnabled: true,
           lifecycle: "ACTIVE",
           health: "HEALTHY",
           credential: {

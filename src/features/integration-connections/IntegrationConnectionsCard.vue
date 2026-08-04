@@ -7,7 +7,10 @@ import {
   ref,
   watch,
 } from "vue";
-import type { IntegrationConnectionTestResponseDto } from "@/shared/api/generated/models";
+import type {
+  IntegrationConnectionResponseDto,
+  IntegrationConnectionTestResponseDto,
+} from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 import { integrationConnectionsApi } from "./integration-connections.api";
 import {
@@ -406,6 +409,16 @@ function initializeDraft(connection: ProviderConnection): void {
   rotationKeys[connection.id] = "";
 }
 
+function isOutboundConnection(
+  connection: IntegrationConnectionResponseDto,
+): connection is ProviderConnection {
+  return (
+    connection.provider === props.provider &&
+    connection.outboundEnabled &&
+    connection.credential !== null
+  );
+}
+
 async function load(): Promise<boolean> {
   const request = ++loadRequest;
   const operation = beginOperation();
@@ -422,10 +435,10 @@ async function load(): Promise<boolean> {
   try {
     const response = await integrationConnectionsApi.list(operation.projectId);
     if (request !== loadRequest || !isCurrent(operation)) return false;
-    connections.value = (response.items as ProviderConnection[]).filter(
-      (connection) =>
+    connections.value = response.items.filter(
+      (connection): connection is ProviderConnection =>
         connection.projectId === operation.projectId &&
-        connection.provider === props.provider,
+        isOutboundConnection(connection),
     );
     for (const connection of connections.value) initializeDraft(connection);
     return true;
@@ -774,6 +787,12 @@ async function updateMetadata(connection: ProviderConnection): Promise<void> {
     confirmCommand(signature);
     if (!isCurrent(operation) || updated.projectId !== operation.projectId)
       return;
+    if (!isOutboundConnection(updated)) {
+      actionError.value =
+        "Backend не вернул безопасное outbound-подключение. Обновите список.";
+      await load();
+      return;
+    }
     replaceConnection(updated);
     success.value = providerUi.value.connectionUpdated;
   } catch (cause) {
@@ -948,6 +967,12 @@ async function changeLifecycle(
     confirmCommand(signature);
     if (!isCurrent(operation) || updated.projectId !== operation.projectId)
       return;
+    if (!isOutboundConnection(updated)) {
+      actionError.value =
+        "Backend не вернул безопасное outbound-подключение. Обновите список.";
+      await load();
+      return;
+    }
     replaceConnection(updated);
     success.value =
       desired === "ACTIVE"
