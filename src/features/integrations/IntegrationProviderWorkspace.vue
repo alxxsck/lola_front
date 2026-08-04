@@ -29,7 +29,7 @@ const provider = computed(() =>
           "Выберите, какие события и свойства Lola отправляет в Customer.io.",
         inboundTitle: "Из Customer.io в Lola",
         inboundDescription:
-          "Создайте защищённый webhook и сопоставьте события Customer.io с событиями Lola.",
+          "Lola выдаст отдельный адрес webhook и секрет проверки — это защита входящих запросов, а не второе подключение аккаунта. Затем сопоставьте события Customer.io с событиями Lola.",
       }
     : {
         title: "Amplitude",
@@ -43,7 +43,7 @@ const provider = computed(() =>
           "Выберите, какие события и свойства Lola отправляет в Amplitude.",
         inboundTitle: "Из Amplitude в Lola",
         inboundDescription:
-          "Подготовьте защищённый приём и сопоставьте внешние события с Lola.",
+          "Lola выдаст отдельный адрес webhook и секрет проверки — исходящий API-ключ для приёма не используется. Затем сопоставьте внешние события с Lola.",
       },
 );
 </script>

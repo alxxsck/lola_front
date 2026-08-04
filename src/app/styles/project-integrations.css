@@ -414,6 +414,14 @@
   background: var(--surface-card);
 }
 
+.integration-page .route-form > label,
+.integration-page .route-form > .paged-search-select {
+  display: grid;
+  grid-template-rows: auto var(--control-height) auto;
+  align-self: start;
+  gap: 7px;
+}
+
 .integration-page .route-form label,
 .integration-page .route-form label > *,
 .integration-page .mapping-row,
@@ -487,7 +495,7 @@
 }
 
 .integration-page .mapping-fields {
-  padding: 16px;
+  padding: 18px;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--surface-subtle);
@@ -496,6 +504,10 @@
 .integration-page .mapping-fields legend {
   padding: 0 6px;
   font-weight: 700;
+}
+
+.integration-page .mapping-fields > .field-help {
+  margin-bottom: 4px;
 }
 
 .integration-page .field-help {

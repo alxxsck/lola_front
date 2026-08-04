@@ -73,4 +73,20 @@ describe("EventDefinitionSelect", () => {
     expect(wrapper.text()).toContain("Оплата завершена");
     expect(mocks.listDefinitions).toHaveBeenCalledTimes(2);
   });
+
+  it("renders a neutral option row and a single-border search field", async () => {
+    const wrapper = mount(EventDefinitionSelect, {
+      props: { projectId: "project-1", modelValue: "" },
+    });
+    await flushPromises();
+    await wrapper.get('[data-testid="paged-search-trigger"]').trigger("click");
+    await flushPromises();
+
+    const option = wrapper.get('[role="option"]');
+    const search = wrapper.get('input[type="search"]');
+
+    expect(option.classes()).toContain("paged-search-select__option");
+    expect(option.find("strong").exists()).toBe(false);
+    expect(search.classes()).toContain("paged-search-select__search-input");
+  });
 });

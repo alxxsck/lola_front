@@ -268,10 +268,11 @@ onMounted(() => void load());
   >
     <div class="card-heading">
       <div>
-        <h2>Приём событий из {{ providerUi.title }}</h2>
+        <h2>Защищённый приём из {{ providerUi.title }}</h2>
         <p>
-          Шаг 1. Создайте защищённую точку приёма, затем перенесите выданные
-          настройки в {{ providerUi.title }}.
+          Это не второй аккаунт {{ providerUi.title }} и не ещё один API-ключ.
+          Lola создаёт отдельный адрес webhook и секрет, чтобы проверять каждый
+          входящий запрос до обработки.
         </p>
       </div>
       <span
@@ -442,22 +443,22 @@ onMounted(() => void load());
       <div class="form-intro">
         <span class="setup-step">Шаг 1</span>
         <div>
-          <h3>Новое входящее подключение</h3>
+          <h3>Новый защищённый адрес</h3>
           <p>
-            После создания Lola покажет адрес webhook и секрет только один раз.
-            Сохраните их сразу.
+            Укажите его в {{ providerUi.title }} как получателя событий. После
+            создания Lola покажет адрес webhook и секрет только один раз.
           </p>
         </div>
       </div>
       <label class="integration-field">
-        <span>Название в Lola</span>
+        <span>Название адреса в Lola</span>
         <input
           v-model="displayName"
           name="inboundDisplayName"
           maxlength="120"
           required
         />
-        <small>Например, «Customer.io — продакшен».</small>
+        <small>Например, «Customer.io — продакшен webhook».</small>
       </label>
       <label class="integration-field">
         <span>Где хранятся данные</span>

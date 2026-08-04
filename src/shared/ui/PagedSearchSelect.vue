@@ -182,6 +182,7 @@ function closeOnEscape(): void {
         <i class="pi pi-search" aria-hidden="true" />
         <input
           v-model="query"
+          class="paged-search-select__search-input"
           type="search"
           :placeholder="searchPlaceholder"
           autocomplete="off"
@@ -194,6 +195,7 @@ function closeOnEscape(): void {
           v-for="option in options"
           :key="option.value"
           type="button"
+          class="paged-search-select__option"
           role="option"
           :aria-selected="option.value === modelValue"
           @click="choose(option)"
@@ -244,23 +246,42 @@ function closeOnEscape(): void {
   min-width: 0;
 }
 .paged-search-select__label {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-size: var(--font-size-body-small);
+  font-weight: 650;
+  line-height: 1.15;
 }
-.paged-search-select__trigger {
+button.paged-search-select__trigger {
   display: flex;
-  min-height: 48px;
+  width: 100%;
+  min-height: var(--control-height);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--border-default);
+  padding: 0 13px;
+  border: 1px solid var(--input-border);
   border-radius: 12px;
-  background: var(--surface-card);
+  background: var(--input-background);
   color: var(--text-primary);
+  font-size: var(--font-size-control);
+  font-weight: 400;
+  line-height: 1.25;
   text-align: left;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+button.paged-search-select__trigger:hover:not(:disabled) {
+  border-color: var(--input-border-hover);
+  background: var(--input-background);
+  color: var(--text-primary);
+}
+button.paged-search-select__trigger:focus-visible {
+  border-color: var(--focus-ring);
+  outline: 0;
+  background: var(--input-background);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 .paged-search-select__trigger > span,
 .paged-search-select__options span {
@@ -286,9 +307,7 @@ function closeOnEscape(): void {
   display: grid;
   gap: 8px;
   width: 100%;
-  max-height: 360px;
   padding: 10px;
-  overflow: auto;
   border: 1px solid var(--border-default);
   border-radius: 12px;
   background: var(--surface-card);
@@ -296,40 +315,89 @@ function closeOnEscape(): void {
 }
 .paged-search-select__search {
   display: flex;
+  min-height: var(--control-height);
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--input-border);
   border-radius: 10px;
+  background: var(--input-background);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
-.paged-search-select__search input {
+.paged-search-select__search:hover {
+  border-color: var(--input-border-hover);
+}
+.paged-search-select__search:focus-within {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+.paged-search-select__search > input.paged-search-select__search-input {
   min-width: 0;
   width: 100%;
-  padding: 11px 0;
+  height: calc(var(--control-height) - 2px);
+  min-height: 0;
+  padding: 0;
   border: 0;
+  border-radius: 0;
   outline: 0;
   background: transparent;
-  color: inherit;
+  box-shadow: none;
+  color: var(--text-primary);
+  font-size: var(--font-size-control);
+  font-weight: 400;
 }
 .paged-search-select__options {
   display: grid;
   gap: 3px;
+  max-height: 276px;
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-.paged-search-select__options button {
+.paged-search-select__options > button.paged-search-select__option {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  min-height: 42px;
   align-items: center;
   gap: 8px;
   padding: 9px 10px;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: inherit;
+  color: var(--text-primary);
+  font-size: var(--font-size-control);
+  font-weight: 400;
+  line-height: 1.25;
   text-align: left;
 }
-.paged-search-select__options button:hover,
-.paged-search-select__options button[aria-selected="true"] {
+.paged-search-select__options
+  > button.paged-search-select__option:hover:not(:disabled) {
+  border-color: var(--border-subtle);
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.paged-search-select__options
+  > button.paged-search-select__option[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--action-primary) 18%, transparent);
   background: var(--surface-active);
+  color: var(--text-primary);
+  box-shadow: inset 2px 0 0 var(--action-primary);
+}
+.paged-search-select__option > span {
+  overflow: hidden;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.paged-search-select__option > small {
+  grid-column: 2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.paged-search-select__option > i {
+  grid-column: 3;
+  color: var(--action-primary);
 }
 .paged-search-select__status,
 .paged-search-select__error {
@@ -360,5 +428,28 @@ function closeOnEscape(): void {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (max-width: 520px) {
+  .paged-search-select__options > button.paged-search-select__option {
+    grid-template-columns: minmax(0, 1fr) 18px;
+    gap: 3px 8px;
+    min-height: 52px;
+  }
+
+  .paged-search-select__option > span {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .paged-search-select__option > small {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .paged-search-select__option > i {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
 }
 </style>

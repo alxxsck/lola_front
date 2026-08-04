@@ -580,7 +580,7 @@ function dispatchStatus(status: string): string {
           </p>
         </div>
       </div>
-      <label>
+      <label class="integration-field">
         <span>1. Подключение</span>
         <Select
           v-model="connectionId"
@@ -602,12 +602,13 @@ function dispatchStatus(status: string): string {
       </label>
       <EventDefinitionSelect
         v-model="definitionId"
+        class="integration-field"
         :project-id="projectId"
         label="2. Событие Lola"
         placeholder="Найдите событие по названию или коду"
         :disabled="pending"
       />
-      <label>
+      <label class="integration-field">
         <span>3. {{ providerUi.eventNameLabel }}</span>
         <input
           v-model="providerEventName"
@@ -788,8 +789,6 @@ function dispatchStatus(status: string): string {
   grid-column: 1 / -1;
   display: grid;
   gap: 10px;
-  border: 0;
-  padding: 0;
 }
 .mapping-row {
   display: grid;

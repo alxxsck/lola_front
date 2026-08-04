@@ -184,6 +184,40 @@ describe("IntegrationInboundRoutesCard", () => {
     );
   });
 
+  it("names the inbound connection as a protected receiving address", async () => {
+    mocks.listConnections.mockResolvedValue({
+      items: [
+        {
+          id: "connection-1",
+          projectId: "project-1",
+          provider: "CUSTOMER_IO",
+          displayName: "Customer.io webhook",
+          inboundEnabled: true,
+          lifecycle: "ACTIVE",
+          region: "EU",
+        },
+      ],
+    });
+
+    const wrapper = mount(IntegrationInboundRoutesCard, {
+      props: {
+        projectId: "project-1",
+        provider: "CUSTOMER_IO",
+        canRead: true,
+        canManage: true,
+      },
+    });
+    await flushPromises();
+    await wrapper
+      .get('button[data-action="show-create-inbound-customer-io"]')
+      .trigger("click");
+
+    expect(wrapper.text()).toContain("1. Защищённый адрес приёма");
+    expect(wrapper.text()).toContain(
+      "Правило определяет, какое внешнее событие станет событием Lola",
+    );
+  });
+
   it("shows a safe actionable error when Customer.io delivery ID evidence is absent", async () => {
     mocks.listRoutes.mockResolvedValue({
       items: [

@@ -72,6 +72,23 @@ describe("IntegrationInboundConnectionsCard", () => {
     expect(wrapper.text()).not.toContain("Project API Key");
   });
 
+  it("explains that inbound protection is not a second provider account", async () => {
+    const wrapper = mount(IntegrationInboundConnectionsCard, {
+      props: {
+        projectId: "project-1",
+        provider: "CUSTOMER_IO",
+        canRead: true,
+        canManage: true,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(
+      "Это не второй аккаунт Customer.io и не ещё один API-ключ",
+    );
+    expect(wrapper.text()).toContain("отдельный адрес webhook и секрет");
+  });
+
   it("creates a draft first, then configures and displays the one-time secret", async () => {
     const draft = inboundConnection({ id: "connection-new", version: 1 });
     api.list

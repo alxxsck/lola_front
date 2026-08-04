@@ -332,20 +332,20 @@ onMounted(() => void load());
         <div>
           <h3>Новое правило приёма</h3>
           <p>
-            Правило связывает название события у провайдера с опубликованным
-            событием Lola. Название самого правила Lola сформирует
+            Правило определяет, какое внешнее событие станет событием Lola, и
+            откуда взять его свойства. Название правила Lola сформирует
             автоматически.
           </p>
         </div>
       </div>
-      <label>
-        <span>1. Входящее подключение</span>
+      <label class="integration-field">
+        <span>1. Защищённый адрес приёма</span>
         <Select
           v-model="connectionId"
           :options="connectionOptions"
           option-label="label"
           option-value="value"
-          placeholder="Выберите подключение"
+          placeholder="Выберите адрес"
           :disabled="pending"
           fluid
         >
@@ -356,16 +356,20 @@ onMounted(() => void load());
             </div>
           </template>
         </Select>
-        <small>Webhook и регион берутся из выбранного подключения.</small>
+        <small>
+          Это адрес webhook и секрет, созданные на предыдущем шаге. Исходящий
+          API-ключ здесь не используется.
+        </small>
       </label>
       <EventDefinitionSelect
         v-model="definitionId"
+        class="integration-field"
         :project-id="projectId"
         label="2. Событие Lola"
         placeholder="Найдите событие по названию или коду"
         :disabled="pending"
       />
-      <label>
+      <label class="integration-field">
         <span>3. Название события в {{ title }}</span>
         <input
           v-model="providerEventName"
@@ -514,8 +518,6 @@ onMounted(() => void load());
 }
 .mapping-fields {
   grid-column: 1 / -1;
-  border: 0;
-  padding: 0;
 }
 @media (max-width: 700px) {
   .route-form {
