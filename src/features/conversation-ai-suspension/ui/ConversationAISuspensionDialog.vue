@@ -227,7 +227,7 @@ fieldset { margin: 0; padding: 0; border: 0; }
 legend, .field > span { margin-bottom: 7px; color: var(--text-secondary); font-size: .72rem; font-weight: 800; }
 .choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 .choice-grid label { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--border-default); border-radius: 9px; font-size: .72rem; cursor: pointer; }
-.choice-grid label.selected { border-color: var(--action-primary); background: var(--status-violet-soft); }
+.choice-grid label.selected { border-color: var(--action-primary); background: var(--status-accent-soft); }
 .field { display: grid; }
 .field > span { display: flex; justify-content: space-between; }
 .field select { min-height: var(--control-height); padding: 0 11px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-background); color: var(--text-primary); }

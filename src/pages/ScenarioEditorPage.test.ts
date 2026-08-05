@@ -1696,7 +1696,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     const systemEvent = {
       ...event,
       id: "system-event-revision",
-      code: "lola.became_online",
+      code: "retenive.became_online",
       name: "User became online",
     };
     mocks.getScenarios.mockResolvedValue([
@@ -1719,7 +1719,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("Пользователь появился в сети");
-    expect(wrapper.text()).toContain("lola.became_online");
+    expect(wrapper.text()).toContain("retenive.became_online");
     expect(wrapper.text()).not.toContain("User became online");
   });
 });

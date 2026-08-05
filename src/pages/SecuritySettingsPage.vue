@@ -396,7 +396,7 @@ onBeforeUnmount(() => {
     <section class="security-card identity-card" aria-labelledby="identity-heading">
       <div class="section-heading">
         <i class="pi pi-envelope" />
-        <div><h2 id="identity-heading">Email и уведомления</h2><p>Адрес для входа, восстановления доступа и писем от Lola.</p></div>
+        <div><h2 id="identity-heading">Email и уведомления</h2><p>Адрес для входа, восстановления доступа и писем от Retenive.</p></div>
       </div>
 
       <div class="identity-summary">
@@ -744,8 +744,8 @@ onBeforeUnmount(() => {
   flex: 0 0 42px;
   place-items: center;
   border-radius: 12px;
-  background: var(--status-violet);
-  color: var(--on-status-violet);
+  background: var(--status-accent);
+  color: var(--on-status-accent);
 }
 
 .section-heading > div {
@@ -838,9 +838,9 @@ onBeforeUnmount(() => {
   gap: 20px;
   margin-top: 24px;
   padding: 16px;
-  border: 1px solid var(--status-violet);
+  border: 1px solid var(--status-accent);
   border-radius: 14px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 
 .pending-email > div:first-child {
@@ -854,7 +854,7 @@ onBeforeUnmount(() => {
 }
 
 .pending-email small {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: var(--font-size-caption);
   font-weight: 800;
   letter-spacing: .06em;
@@ -1049,7 +1049,7 @@ onBeforeUnmount(() => {
 
 .device-icon {
   background: var(--surface-card);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 
 .session-copy strong span {

@@ -8,8 +8,8 @@ import type {
 import type { ProjectActionsRepository } from './project-actions-repository'
 import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations'
 
-const STORAGE_KEY = 'lola-cms-demo-product-actions-v2'
-const DEMO_DATA_KEY = 'lola-cms-demo-data-v2'
+const STORAGE_KEY = 'retenive-cms-demo-product-actions-v2'
+const DEMO_DATA_KEY = 'retenive-cms-demo-data-v2'
 const now = '2026-07-19T12:00:00.000Z'
 
 interface DemoProductActionDefinition {
@@ -24,11 +24,11 @@ interface DemoProductActionDefinition {
 
 const curatedDefinitions: DemoProductActionDefinition[] = [
   {
-    code: 'SHOW_ASSISTANT', name: 'Показать Lola', description: 'Показывает или восстанавливает виджет Lola.',
+    code: 'SHOW_ASSISTANT', name: 'Показать Retenive', description: 'Показывает или восстанавливает виджет Retenive.',
     surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema(), uiSchema: { fields: [] }, ai: false,
   },
   {
-    code: 'PLAY_ANIMATION', name: 'Проиграть анимацию', description: 'Запускает поддерживаемую клиентом анимацию Lola.',
+    code: 'PLAY_ANIMATION', name: 'Проиграть анимацию', description: 'Запускает поддерживаемую клиентом анимацию Retenive.',
     surfaces: ['SCENARIO', 'AI'], inputSchema: closedSchema({ animation: { type: 'string', enum: [...ASSISTANT_ANIMATIONS] } }, ['animation']), uiSchema: { fields: [{ key: 'animation', label: 'Анимация', control: 'select', options: [...ASSISTANT_ANIMATIONS] }] }, ai: false,
   },
   {
@@ -140,7 +140,7 @@ export const mockProjectActionsRepository: ProjectActionsRepository = {
     return {
       tool: {
         type: 'function',
-        name: `lola_${action.code.toLowerCase()}`,
+        name: `retenive_${action.code.toLowerCase()}`,
         description: action.aiUsageDescription!,
         parameters,
         strict: true,

@@ -65,7 +65,7 @@ export function createTranslationJobController(options: {
 
   function storageKey() {
     const { projectId, scenarioId } = options.context();
-    return `lola:translation-jobs:${projectId}:${scenarioId}`;
+    return `retenive:translation-jobs:${projectId}:${scenarioId}`;
   }
 
   function persist() {

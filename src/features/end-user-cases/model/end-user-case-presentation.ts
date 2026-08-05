@@ -54,7 +54,7 @@ export const endUserCaseCapabilityLabel = (code: string): string =>
   ({
     check_deposit: "Проверка депозита",
     search_logs: "Проверка данных",
-  })[code] ?? "Инструмент Lola";
+  })[code] ?? "Инструмент Retenive";
 
 export const endUserCaseGroupLabel = (code: string): string =>
   ({

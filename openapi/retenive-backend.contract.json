@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "backend": {
+    "repository": "alxxsck/lola_back"
+  },
+  "artifact": "retenive-backend.json",
+  "contractRevision": "sha256:3914352c208d83a3db14bae0754af73dcb7c07b4315154054f131f11b9b9db25",
+  "sha256": "3914352c208d83a3db14bae0754af73dcb7c07b4315154054f131f11b9b9db25"
+}

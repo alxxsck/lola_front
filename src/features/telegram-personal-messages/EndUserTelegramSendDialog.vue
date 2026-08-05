@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
     <div class="telegram-send">
       <p class="target">
         Получатель: <strong>{{ targetLabel }}</strong
-        >. Адрес и product bot Lola определит на сервере.
+        >. Адрес и product bot Retenive определит на сервере.
       </p>
 
       <Message v-if="!canSend" severity="secondary" :closable="false">

@@ -64,8 +64,8 @@ It adds:
 
 ```bash
 cd /Users/alxxsck/Documents/Lola_backend
-git apply --check /Users/alxxsck/Documents/Lola_front/work/backend-contract.patch
-git apply /Users/alxxsck/Documents/Lola_front/work/backend-contract.patch
+git apply --check /Users/alxxsck/Documents/Retenive_front/work/backend-contract.patch
+git apply /Users/alxxsck/Documents/Retenive_front/work/backend-contract.patch
 npm run lint
 npm test
 npm run build

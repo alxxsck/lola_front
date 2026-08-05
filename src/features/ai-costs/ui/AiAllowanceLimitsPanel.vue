@@ -53,8 +53,8 @@ const SPONSORED_CATEGORIES = new Set<AiAllowanceCategory>([
   "PROJECT_OVERHEAD",
 ]);
 const CATEGORY_DESCRIPTIONS: Record<AiAllowanceCategory, string> = {
-  CHAT: "Расходы обычного текстового диалога с Lola.",
-  VOICE: "Работа голосового режима разговора с Lola.",
+  CHAT: "Расходы обычного текстового диалога с Retenive.",
+  VOICE: "Работа голосового режима разговора с Retenive.",
   SPEECH: "Преобразование готового текста в аудио.",
   MEMORY: "Создание и обновление краткой памяти о пользователе.",
   AI_REVIEW:
@@ -701,11 +701,11 @@ async function save(): Promise<void> {
     );
   if (!useSystemWarning.value && !customContent(warningTranslations.value))
     return fail(
-      `Заполните предупреждение на основном языке (${allowanceDefaultLocale.value}) или включите стандартный текст Lola.`,
+      `Заполните предупреждение на основном языке (${allowanceDefaultLocale.value}) или включите стандартный текст Retenive.`,
     );
   if (!useSystemExhausted.value && !customContent(exhaustedTranslations.value))
     return fail(
-      `Заполните сообщение об исчерпании на основном языке (${allowanceDefaultLocale.value}) или включите стандартный текст Lola.`,
+      `Заполните сообщение об исчерпании на основном языке (${allowanceDefaultLocale.value}) или включите стандартный текст Retenive.`,
     );
   if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
     return fail("Укажите причину изменения — от 3 до 500 символов.");
@@ -1708,9 +1708,9 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
               type="checkbox"
             />
             <span
-              ><strong>Использовать стандартный текст Lola</strong
+              ><strong>Использовать стандартный текст Retenive</strong
               ><small
-                >Lola покажет готовое предупреждение на языке
+                >Retenive покажет готовое предупреждение на языке
                 пользователя.</small
               ></span
             >
@@ -1753,9 +1753,9 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
               type="checkbox"
             />
             <span
-              ><strong>Использовать стандартный текст Lola</strong
+              ><strong>Использовать стандартный текст Retenive</strong
               ><small
-                >Lola покажет готовое сообщение на языке пользователя.</small
+                >Retenive покажет готовое сообщение на языке пользователя.</small
               ></span
             >
           </label>
@@ -1795,7 +1795,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         <span
           ><strong>AI-перевод сообщений</strong
           ><small
-            >Lola переведёт свои тексты на языки проекта одним запросом. Вы
+            >Retenive переведёт свои тексты на языки проекта одним запросом. Вы
             сможете проверить и изменить результат перед сохранением.</small
           ></span
         >

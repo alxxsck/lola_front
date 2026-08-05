@@ -243,7 +243,7 @@ function requestTargets(targets: string[]) {
       v-if="showTranslationActions && translation.enabled"
       class="translation-privacy"
     >
-      Для автоматического перевода Lola использует Grok от xAI. Передаётся
+      Для автоматического перевода Retenive использует Grok от xAI. Передаётся
       только статический текст поля — без данных пользователей и значений
       шаблонов.
     </small>
@@ -411,8 +411,8 @@ label {
   margin-left: 5px;
   padding: 2px 6px;
   border-radius: 999px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.62rem;
 }
 textarea,
@@ -447,8 +447,8 @@ input[type="search"] {
   flex: 0 0 auto;
   padding: 6px 9px;
   border-radius: 9px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -581,7 +581,7 @@ input[type="search"] {
   text-align: left;
 }
 .locale-list button.active {
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .locale-list small {
   color: var(--text-small-muted);

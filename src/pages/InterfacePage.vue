@@ -77,7 +77,7 @@ const kindOptions: Array<{
     value: 'MODAL',
     label: 'Модальные окна',
     icon: 'pi pi-window-maximize',
-    description: 'Окна, которые открывает Lola',
+    description: 'Окна, которые открывает Retenive',
   },
 ]
 
@@ -149,7 +149,7 @@ const fieldMeta = computed(() => {
   return {
     key: 'selector' as const,
     label: 'Признак элемента',
-    placeholder: "[data-lola='deposit']",
+    placeholder: "[data-retenive='deposit']",
     required: false,
   }
 })
@@ -568,7 +568,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
         <div class="eyebrow">Доступные элементы</div>
         <h1>Интерфейс продукта</h1>
         <p class="subtitle">
-          Зарегистрируйте безопасные цели, с которыми сценарии Lola могут
+          Зарегистрируйте безопасные цели, с которыми сценарии Retenive могут
           взаимодействовать.
         </p>
       </div>
@@ -661,7 +661,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
             severity="secondary"
           />
           <Tag
-            :value="item.aiEnabled ? 'Доступно Lola' : 'Для Lola выключено'"
+            :value="item.aiEnabled ? 'Доступно Retenive' : 'Для Retenive выключено'"
             :severity="item.aiEnabled ? 'success' : 'secondary'"
           />
           <span
@@ -764,7 +764,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
         >
           <summary>Подключение — заполняет разработчик</summary>
           <Message severity="info" size="small" :closable="false"
-            >Чтобы сценарий или Lola могли открыть этот элемент, передайте
+            >Чтобы сценарий или Retenive могли открыть этот элемент, передайте
             разработчику название карточки и попросите заполнить поля в этом
             блоке.</Message
           >
@@ -853,16 +853,16 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
         <section class="ai-exposure surface-soft">
           <div class="enabled-row ai-exposure-toggle">
             <div>
-              <strong><i class="pi pi-sparkles" /> Разрешить Lola</strong
+              <strong><i class="pi pi-sparkles" /> Разрешить Retenive</strong
               ><span
-                >Lola сможет выбирать этот элемент только по названию и
+                >Retenive сможет выбирать этот элемент только по названию и
                 описанию. Адреса страницы и служебные настройки ей не
                 передаются.</span
               >
             </div>
             <ToggleSwitch
               v-model="form.aiEnabled"
-              aria-label="Разрешить Lola"
+              aria-label="Разрешить Retenive"
               :disabled="!canManageAi || !form.enabled || !targetBound"
             />
           </div>
@@ -871,7 +871,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
             severity="info"
             size="small"
             :closable="false"
-            >Для изменения доступных Lola элементов требуется разрешение
+            >Для изменения доступных Retenive элементов требуется разрешение
             управления интерфейсом.</Message
           >
           <Message
@@ -887,7 +887,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
           >
             <div class="field">
               <label for="ai-target-description"
-                >Описание для Lola <span>20–1000 символов</span></label
+                >Описание для Retenive <span>20–1000 символов</span></label
               ><Textarea
                 id="ai-target-description"
                 v-model="form.aiDescription"
@@ -914,7 +914,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
             </div>
             <div v-if="requiresAiAuditReason" class="field">
               <label for="ai-target-audit-reason"
-                >Зачем Lola нужен доступ <span>обязательно</span></label
+                >Зачем Retenive нужен доступ <span>обязательно</span></label
               ><InputText
                 id="ai-target-audit-reason"
                 v-model="form.aiAuditReason"
@@ -990,7 +990,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
 
 <style scoped>
 .interface-page {
-  --kind-color: var(--status-violet-text);
+  --kind-color: var(--status-accent-text);
 }
 .kind-tabs {
   display: grid;
@@ -1017,11 +1017,11 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
   transform: translateY(-1px);
 }
 .kind-tabs > button.active {
-  border-color: var(--status-violet);
+  border-color: var(--status-accent);
   background: linear-gradient(
     145deg,
     var(--surface-card) 20%,
-    var(--status-violet-soft)
+    var(--status-accent-soft)
   );
 }
 .tab-icon,
@@ -1032,8 +1032,8 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
   height: 40px;
   flex: 0 0 auto;
   border-radius: 12px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .kind-tabs strong,
 .kind-tabs small {
@@ -1055,8 +1055,8 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
   font-size: 0.7rem;
 }
 .kind-tabs > button.active b {
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .toolbar {
   padding: 12px 15px;
@@ -1257,9 +1257,9 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
   font-size: 0.8rem;
 }
 .type-picker button.active {
-  background: var(--status-violet-soft);
-  border-color: var(--status-violet);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  border-color: var(--status-accent);
+  color: var(--status-accent-text);
   font-weight: 600;
 }
 .config-editor {
@@ -1306,14 +1306,14 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
   display: grid;
   gap: 12px;
   padding: 0 15px 15px;
-  border: 1px solid color-mix(in srgb, var(--status-violet) 35%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--status-accent) 35%, var(--line));
 }
 .ai-exposure-toggle {
   padding-inline: 0;
 }
 .ai-exposure-toggle strong i {
   margin-right: 5px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .ai-exposure :deep(textarea),
 .ai-exposure :deep(input) {
@@ -1336,8 +1336,8 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
   width: 36px;
   height: 36px;
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .integration-summary strong,
 .integration-summary span {

@@ -11,7 +11,7 @@ Workspace не смешивает независимые типы изменен
 - `name` и `description` сохраняются как metadata без повышения schema revision;
 - ingestion policy (`enabled`, source, `countsAsActivity`) применяется prospectively и не повышает
   schema revision;
-- payload JSON Schema и `x-lola-*` semantics меняются только через draft → impact → publish;
+- payload JSON Schema и `x-retenive-*` semantics меняются только через draft → impact → publish;
 - stable `code` и business meaning не редактируются; semantic break создаёт новую Event Definition;
 - archive/restore/delete остаются отдельными lifecycle-командами.
 
@@ -22,7 +22,7 @@ Workspace не смешивает независимые типы изменен
 1. Workspace загружает current head, usage и server-backed draft. Typed
    `EVENT_SCHEMA_DRAFT_NOT_FOUND` означает чистое состояние, а не ошибку экрана.
 2. Payload Studio выполняет lossless parse/edit/serialize JSON Schema. Визуальные controls сохраняют
-   `title`, `description`, type, required, enum, min/max, `additionalProperties`, Lola annotations и
+   `title`, `description`, type, required, enum, min/max, `additionalProperties`, Retenive annotations и
    неизвестные keywords; неподдерживаемые визуально конструкции остаются opaque.
 3. Save отправляет canonical schema и OCC evidence. Reload восстанавливает draft; discard требует
    expected draft version и причины.
@@ -36,7 +36,7 @@ Workspace не смешивает независимые типы изменен
    classification, lifecycle, managed status и OCC под lock; UI не собирает create+discard из двух
    независимых запросов.
 
-Stable `x-lola-field-key` не меняется автоматически при rename wire key. Изменение meaning/type/unit
+Stable `x-retenive-field-key` не меняется автоматически при rename wire key. Изменение meaning/type/unit
 требует нового field key или новой Event Definition согласно backend classification.
 
 ## 3. Связи с Scenario и Event Logs
@@ -53,7 +53,7 @@ Stable `x-lola-field-key` не меняется автоматически пр�
 - При конфликте local editor value сохраняется рядом с server value и доступен безопасный reload/retry.
 - Policy confirmation использует immutable command snapshot: изменения формы во время usage lookup или
   dialog не могут подменить подтверждённую команду.
-- Archived, Lola-managed и permission-denied definitions fail closed; mutation controls отключены с
+- Archived, Retenive-managed и permission-denied definitions fail closed; mutation controls отключены с
   объяснением причины.
 
 ## 5. UX, accessibility и responsive

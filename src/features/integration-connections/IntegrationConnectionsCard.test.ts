@@ -408,7 +408,7 @@ describe("IntegrationConnectionsCard", () => {
     ).toBe(true);
     expect(
       window.sessionStorage.getItem(
-        "lola:amplitude-unresolved-secret:project-1",
+        "retenive:amplitude-unresolved-secret:project-1",
       ),
     ).not.toBeNull();
 
@@ -423,7 +423,7 @@ describe("IntegrationConnectionsCard", () => {
     expect(api.createAmplitude.mock.calls[2]).toEqual(firstCall);
     expect(
       window.sessionStorage.getItem(
-        "lola:amplitude-unresolved-secret:project-1",
+        "retenive:amplitude-unresolved-secret:project-1",
       ),
     ).toBeNull();
   });
@@ -436,7 +436,7 @@ describe("IntegrationConnectionsCard", () => {
       new ApiError(0, "network outcome unknown"),
     );
     window.sessionStorage.setItem(
-      "lola:amplitude-unresolved-secret:project-1",
+      "retenive:amplitude-unresolved-secret:project-1",
       JSON.stringify({
         projectId: "project-1",
         operation: "CREATE",
@@ -472,12 +472,12 @@ describe("IntegrationConnectionsCard", () => {
     expect(wrapper.html()).not.toContain("customer-source-key");
     expect(
       window.sessionStorage.getItem(
-        "lola:customer-io-unresolved-secret:project-1",
+        "retenive:customer-io-unresolved-secret:project-1",
       ),
     ).not.toBeNull();
     expect(
       window.sessionStorage.getItem(
-        "lola:amplitude-unresolved-secret:project-1",
+        "retenive:amplitude-unresolved-secret:project-1",
       ),
     ).not.toBeNull();
   });
@@ -500,7 +500,7 @@ describe("IntegrationConnectionsCard", () => {
 
     expect(api.requestTest).toHaveBeenCalledOnce();
     expect(
-      window.sessionStorage.getItem("lola:amplitude-pending-tests:project-1"),
+      window.sessionStorage.getItem("retenive:amplitude-pending-tests:project-1"),
     ).toContain("test-1");
     first.unmount();
 
@@ -517,7 +517,7 @@ describe("IntegrationConnectionsCard", () => {
       "test-1",
     );
     expect(
-      window.sessionStorage.getItem("lola:amplitude-pending-tests:project-1"),
+      window.sessionStorage.getItem("retenive:amplitude-pending-tests:project-1"),
     ).toBeNull();
     expect(resumed.text()).toContain("Amplitude приняла тестовое событие");
   });
@@ -542,7 +542,7 @@ describe("IntegrationConnectionsCard", () => {
       expect.any(String),
     ]);
     expect(
-      window.sessionStorage.getItem("lola:amplitude-pending-tests:project-1"),
+      window.sessionStorage.getItem("retenive:amplitude-pending-tests:project-1"),
     ).toContain("REQUESTING");
     first.unmount();
 
@@ -556,7 +556,7 @@ describe("IntegrationConnectionsCard", () => {
     expect(api.requestTest.mock.calls[1]).toEqual(firstRequest);
     expect(api.getTest).not.toHaveBeenCalled();
     expect(
-      window.sessionStorage.getItem("lola:amplitude-pending-tests:project-1"),
+      window.sessionStorage.getItem("retenive:amplitude-pending-tests:project-1"),
     ).toBeNull();
   });
 
@@ -570,7 +570,7 @@ describe("IntegrationConnectionsCard", () => {
       },
     });
     window.sessionStorage.setItem(
-      "lola:amplitude-pending-tests:project-1",
+      "retenive:amplitude-pending-tests:project-1",
       JSON.stringify([
         {
           state: "POLLING",
@@ -617,7 +617,7 @@ describe("IntegrationConnectionsCard", () => {
 
     expect(
       window.sessionStorage.getItem(
-        "lola:amplitude-unresolved-secret:project-1",
+        "retenive:amplitude-unresolved-secret:project-1",
       ),
     ).not.toContain("c".repeat(32));
     expect(api.createAmplitude).toHaveBeenCalledOnce();
@@ -649,7 +649,7 @@ describe("IntegrationConnectionsCard", () => {
     expect(api.createAmplitude.mock.calls[1]).toEqual(firstCall);
     expect(
       window.sessionStorage.getItem(
-        "lola:amplitude-unresolved-secret:project-1",
+        "retenive:amplitude-unresolved-secret:project-1",
       ),
     ).toBeNull();
   });

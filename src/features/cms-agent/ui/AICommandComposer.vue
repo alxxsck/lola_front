@@ -80,8 +80,8 @@ const buttonLabel = computed(() =>
     : phase.value === "SUBMITTING"
       ? "Сохраняем запрос"
       : phase.value === "EXECUTING"
-        ? "Lola анализирует"
-        : "Спросить Lola",
+        ? "Retenive анализирует"
+        : "Спросить Retenive",
 );
 const estimateCost = computed(() =>
   estimate.value ? formatUsdTicks(estimate.value.reservedCostUsdTicks) : "—",
@@ -293,14 +293,14 @@ function handleShortcut(event: KeyboardEvent): void {
         <div class="ai-label"><i class="pi pi-circle-fill" /> AI workspace</div>
         <h2 id="ai-command-title">Что нужно узнать о проекте?</h2>
         <p>
-          Lola выберет только разрешённые источники, выполнит ограниченные
+          Retenive выберет только разрешённые источники, выполнит ограниченные
           read-only запросы и сохранит результат в журнале.
         </p>
       </div>
     </div>
 
     <form class="ai-command-form" :aria-busy="busy" @submit.prevent="submit">
-      <label class="composer-label" for="ai-command-input">Запрос к Lola</label>
+      <label class="composer-label" for="ai-command-input">Запрос к Retenive</label>
       <Textarea
         id="ai-command-input"
         v-model="text"
@@ -528,7 +528,7 @@ function handleShortcut(event: KeyboardEvent): void {
   background:
     radial-gradient(
       circle at 4% 8%,
-      color-mix(in srgb, var(--ai-aura-violet) 21%, transparent),
+      color-mix(in srgb, var(--ai-aura-blue) 21%, transparent),
       transparent 34%
     ),
     radial-gradient(
@@ -538,14 +538,14 @@ function handleShortcut(event: KeyboardEvent): void {
     ),
     linear-gradient(
       135deg,
-      color-mix(in srgb, var(--surface-card) 91%, var(--status-violet-soft)),
+      color-mix(in srgb, var(--surface-card) 91%, var(--status-accent-soft)),
       color-mix(in srgb, var(--surface-card) 92%, var(--brand-soft))
     );
   border: 1px solid
-    color-mix(in srgb, var(--status-violet) 24%, var(--border-default));
+    color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
   border-radius: 30px;
   box-shadow:
-    0 28px 72px color-mix(in srgb, var(--status-violet) 10%, transparent),
+    0 28px 72px color-mix(in srgb, var(--status-accent) 10%, transparent),
     0 12px 32px color-mix(in srgb, var(--brand) 7%, transparent),
     inset 0 1px color-mix(in srgb, var(--surface-card) 88%, transparent);
 }
@@ -562,7 +562,7 @@ function handleShortcut(event: KeyboardEvent): void {
     ),
     radial-gradient(
       circle at 80% 52%,
-      color-mix(in srgb, var(--ai-aura-violet) 26%, transparent),
+      color-mix(in srgb, var(--ai-aura-blue) 26%, transparent),
       transparent 34%
     );
   opacity: 0.34;
@@ -576,12 +576,12 @@ function handleShortcut(event: KeyboardEvent): void {
   bottom: -148px;
   width: 250px;
   height: 250px;
-  border: 1px solid color-mix(in srgb, var(--status-violet) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-accent) 22%, transparent);
   border-radius: 50%;
   content: "";
   box-shadow:
     0 0 0 38px color-mix(in srgb, var(--brand) 5%, transparent),
-    0 0 0 76px color-mix(in srgb, var(--status-violet) 4%, transparent);
+    0 0 0 76px color-mix(in srgb, var(--status-accent) 4%, transparent);
   opacity: 0.72;
   animation: ai-rings-breathe 9s ease-in-out infinite;
   pointer-events: none;
@@ -604,7 +604,7 @@ function handleShortcut(event: KeyboardEvent): void {
   background: linear-gradient(
     145deg,
     var(--ai-label),
-    color-mix(in srgb, var(--ai-label) 74%, var(--ai-aura-violet))
+    color-mix(in srgb, var(--ai-label) 74%, var(--ai-aura-blue))
   );
   border-radius: 17px;
   box-shadow:
@@ -617,7 +617,7 @@ function handleShortcut(event: KeyboardEvent): void {
   border: 1px solid color-mix(in srgb, var(--ai-border-start) 42%, transparent);
   border-radius: 22px;
   box-shadow:
-    0 0 18px color-mix(in srgb, var(--ai-aura-violet) 14%, transparent),
+    0 0 18px color-mix(in srgb, var(--ai-aura-blue) 14%, transparent),
     inset 0 0 12px color-mix(in srgb, var(--ai-aura-lime) 8%, transparent);
   content: "";
   animation: ai-orb-halo 4.8s ease-in-out infinite;
@@ -631,7 +631,7 @@ function handleShortcut(event: KeyboardEvent): void {
   align-items: center;
   gap: 7px;
   margin-bottom: 7px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -666,10 +666,10 @@ function handleShortcut(event: KeyboardEvent): void {
     var(--surface-card)
   );
   border: 1px solid
-    color-mix(in srgb, var(--status-violet) 18%, var(--border-default));
+    color-mix(in srgb, var(--status-accent) 18%, var(--border-default));
   border-radius: 24px;
   box-shadow:
-    0 22px 52px color-mix(in srgb, var(--status-violet) 10%, transparent),
+    0 22px 52px color-mix(in srgb, var(--status-accent) 10%, transparent),
     0 3px 12px color-mix(in srgb, var(--text-primary) 7%, transparent),
     inset 0 1px color-mix(in srgb, var(--surface-card) 86%, transparent);
   transition:
@@ -687,7 +687,7 @@ function handleShortcut(event: KeyboardEvent): void {
   background: linear-gradient(
     100deg,
     transparent,
-    color-mix(in srgb, var(--ai-aura-violet) 16%, transparent),
+    color-mix(in srgb, var(--ai-aura-blue) 16%, transparent),
     color-mix(in srgb, var(--ai-aura-lime) 18%, transparent),
     transparent
   );
@@ -701,7 +701,7 @@ function handleShortcut(event: KeyboardEvent): void {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--ai-focus) 68%, var(--border-default));
   box-shadow:
-    0 24px 58px color-mix(in srgb, var(--status-violet) 14%, transparent),
+    0 24px 58px color-mix(in srgb, var(--status-accent) 14%, transparent),
     0 0 0 4px color-mix(in srgb, var(--ai-focus) 20%, transparent),
     inset 0 1px color-mix(in srgb, var(--surface-card) 88%, transparent);
 }
@@ -805,7 +805,7 @@ function handleShortcut(event: KeyboardEvent): void {
   font: 650 0.64rem/1.2 var(--font-sans);
 }
 .composer-progress {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-weight: 750;
 }
 .composer-progress i {
@@ -931,12 +931,12 @@ function handleShortcut(event: KeyboardEvent): void {
   100% {
     border-color: color-mix(
       in srgb,
-      var(--status-violet) 28%,
+      var(--status-accent) 28%,
       var(--border-default)
     );
   }
   50% {
-    border-color: color-mix(in srgb, var(--brand) 54%, var(--status-violet));
+    border-color: color-mix(in srgb, var(--brand) 54%, var(--status-accent));
   }
 }
 @keyframes ai-orb-halo {

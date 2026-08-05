@@ -137,7 +137,7 @@ describe("End User AI consumption card", () => {
     expect(wrapper.text()).toContain("Расчёт по тарифу");
     expect(wrapper.text()).toContain("Операции AI и речи");
     expect(wrapper.text()).not.toContain("ElevenLabs");
-    expect(wrapper.text()).toContain("Чат с Lola");
+    expect(wrapper.text()).toContain("Чат с Retenive");
     expect(wrapper.text()).toContain("Озвучивание текста");
     expect(wrapper.text()).toContain("Анализ и проверка обращений");
     expect(wrapper.text()).toContain("Europe/Madrid");

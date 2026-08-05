@@ -63,11 +63,11 @@ describe('EventPayloadStudio', () => {
         amountMinor: {
           type: 'integer',
           title: 'Сумма',
-          'x-lola-field-key': initialFieldKey,
-          'x-lola-semantic-type': 'money',
-          'x-lola-unit': 'minor',
-          'x-lola-display-scale': 0.001,
-          'x-lola-display-precision': 3,
+          'x-retenive-field-key': initialFieldKey,
+          'x-retenive-semantic-type': 'money',
+          'x-retenive-unit': 'minor',
+          'x-retenive-display-scale': 0.001,
+          'x-retenive-display-precision': 3,
         },
       },
       required: ['amountMinor'],
@@ -101,7 +101,7 @@ describe('EventPayloadStudio', () => {
     }
     const wrapper = mountStudio({
       type: 'object',
-      properties: { currency: { type: 'string', 'x-lola-field-key': 'deposit.currency' } },
+      properties: { currency: { type: 'string', 'x-retenive-field-key': 'deposit.currency' } },
     }, { event })
 
     expect(wrapper.text()).toContain('Событие запуска: можно сравнивать')
@@ -113,7 +113,7 @@ describe('EventPayloadStudio', () => {
         currency: {
           type: 'string',
           enum: ['EUR'],
-          'x-lola-field-key': 'deposit.currency',
+          'x-retenive-field-key': 'deposit.currency',
           'x-contract-extension': { owner: 'payments' },
         },
       },
@@ -129,7 +129,7 @@ describe('EventPayloadStudio', () => {
         currency: {
           type: 'string',
           enum: ['EUR'],
-          'x-lola-field-key': 'deposit.currency',
+          'x-retenive-field-key': 'deposit.currency',
           'x-contract-extension': { owner: 'payments' },
         },
       },

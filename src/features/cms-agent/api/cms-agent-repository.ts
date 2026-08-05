@@ -2,7 +2,7 @@ import {
   cmsAgentRequestExecute,
   cmsAgentRequestSubmit,
   projectAIAnalysisEstimate,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   CmsAgentRequestResponseDto,
   EstimateProjectAIAnalysisDto,

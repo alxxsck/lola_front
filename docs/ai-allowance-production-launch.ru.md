@@ -176,7 +176,7 @@ Vercel выполняет `npm run build` из `vercel.json`. На Vercel эта
 на localhost. Команда также проверяет OpenAPI drift, TypeScript и production bundle; публикуется
 только каталог `dist/`.
 
-Публичный production alias CMS — `https://lola-front.vercel.app`. Уникальный deployment URL может
+Публичный production alias CMS — `https://retenive-front.vercel.app`. Уникальный deployment URL может
 быть закрыт Vercel Authentication; это не означает, что production alias недоступен.
 
 ### Как показать лимит самому End User
@@ -199,8 +199,8 @@ End User widget: карточка в профиле оператора и self e
 
 Workflow сверяет frontend с конкретным backend checkout. В GitHub открыть
 `Settings → Secrets and variables → Actions` и создать repository secret
-`LOLA_BACKEND_READ_TOKEN`: fine-grained token с read-only `Contents` к `alxxsck/lola_back`.
-Repository variable `LOLA_BACKEND_REF` должна содержать 40-символьный SHA backend-релиза, а не
+`RETENIVE_BACKEND_READ_TOKEN`: fine-grained token с read-only `Contents` к `alxxsck/lola_back`.
+Repository variable `RETENIVE_BACKEND_REF` должна содержать 40-символьный SHA backend-релиза, а не
 плавающий branch. После изменения перезапустить workflow `OpenAPI contract`.
 
 ### Обязательная защита production promotion в Vercel

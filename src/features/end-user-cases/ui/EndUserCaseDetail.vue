@@ -112,7 +112,7 @@ const resolutionLabel = (assessment: string): string =>
   })[assessment] ?? "Статус решения неизвестен";
 
 const roleLabel = (role: string): string =>
-  ({ USER: "Пользователь", ASSISTANT: "Lola", ADMIN: "Администратор" })[role] ??
+  ({ USER: "Пользователь", ASSISTANT: "Retenive", ADMIN: "Администратор" })[role] ??
   role;
 
 const messageChannel = (message: {
@@ -311,7 +311,7 @@ const hasMessageGap = (
               </div>
             </div>
             <p v-else class="empty-copy">
-              Инструменты Lola ещё не использовались.
+              Инструменты Retenive ещё не использовались.
             </p>
             <p
               v-if="
@@ -664,8 +664,8 @@ const hasMessageGap = (
   color: var(--status-warning-text);
 }
 .badge.status {
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .card-divider {
   height: 1px;

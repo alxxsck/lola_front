@@ -18,7 +18,7 @@ import {
   eventCatalogUpdateMetadata,
   eventCatalogUpdatePolicy,
   eventCatalogUsage,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import {
   toEventCatalogDefinition,
   type ArchiveEventDefinitionCommand,

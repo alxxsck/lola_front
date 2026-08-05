@@ -66,7 +66,7 @@ onBeforeRouteLeave(() => {
 <template>
   <main class="setup-page">
     <section class="setup-card">
-      <div class="brand"><span>Lo</span><strong>Lola</strong></div>
+      <div class="brand"><span>R</span><strong>Retenive</strong></div>
       <div>
         <div class="eyebrow">Защита учётной записи</div>
         <h1>Создайте постоянный пароль</h1>

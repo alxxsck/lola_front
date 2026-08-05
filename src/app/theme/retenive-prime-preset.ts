@@ -24,9 +24,9 @@ const primary = {
 }
 
 const highlight = {
-  background: 'var(--status-violet-soft)',
+  background: 'var(--status-accent-soft)',
   focusBackground: 'var(--surface-active)',
-  color: 'var(--status-violet-text)',
+  color: 'var(--status-accent-text)',
   focusColor: 'var(--text-primary)',
 }
 
@@ -74,35 +74,35 @@ const toast = {
   },
 }
 
-export const LolaPrimePreset = definePreset(Aura, {
+export const RetenivePrimePreset = definePreset(Aura, {
   primitive: {
-    violet: {
-      50: 'var(--palette-violet-50)',
-      100: 'var(--palette-violet-100)',
-      200: 'var(--palette-violet-200)',
-      300: 'var(--palette-violet-300)',
-      400: 'var(--palette-violet-400)',
-      500: 'var(--palette-violet-500)',
-      600: 'var(--palette-violet-600)',
-      700: 'var(--palette-violet-700)',
-      800: 'var(--palette-violet-800)',
-      900: 'var(--palette-violet-900)',
-      950: 'var(--palette-violet-950)',
+    blue: {
+      50: 'var(--palette-blue-50)',
+      100: 'var(--palette-blue-100)',
+      200: 'var(--palette-blue-200)',
+      300: 'var(--palette-blue-300)',
+      400: 'var(--palette-blue-400)',
+      500: 'var(--palette-blue-500)',
+      600: 'var(--palette-blue-600)',
+      700: 'var(--palette-blue-700)',
+      800: 'var(--palette-blue-800)',
+      900: 'var(--palette-blue-900)',
+      950: 'var(--palette-blue-950)',
     },
   },
   semantic: {
     primary: {
-      50: '{violet.50}',
-      100: '{violet.100}',
-      200: '{violet.200}',
-      300: '{violet.300}',
-      400: '{violet.400}',
-      500: '{violet.500}',
-      600: '{violet.600}',
-      700: '{violet.700}',
-      800: '{violet.800}',
-      900: '{violet.900}',
-      950: '{violet.950}',
+      50: '{blue.50}',
+      100: '{blue.100}',
+      200: '{blue.200}',
+      300: '{blue.300}',
+      400: '{blue.400}',
+      500: '{blue.500}',
+      600: '{blue.600}',
+      700: '{blue.700}',
+      800: '{blue.800}',
+      900: '{blue.900}',
+      950: '{blue.950}',
     },
     focusRing: {
       color: 'var(--focus-ring)',

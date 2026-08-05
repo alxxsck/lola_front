@@ -12,14 +12,14 @@ const repositoryRoot = path.resolve(
 );
 
 function parseArguments(argv) {
-  let snapshot = path.join(repositoryRoot, "openapi/lola-backend.json");
+  let snapshot = path.join(repositoryRoot, "openapi/retenive-backend.json");
   let metadata = path.join(
     repositoryRoot,
-    "openapi/lola-backend.contract.json",
+    "openapi/retenive-backend.contract.json",
   );
   let backendDocument;
-  let backendDirectory = process.env.LOLA_BACKEND_DIR
-    ? path.resolve(process.env.LOLA_BACKEND_DIR)
+  let backendDirectory = process.env.RETENIVE_BACKEND_DIR
+    ? path.resolve(process.env.RETENIVE_BACKEND_DIR)
     : undefined;
   let backendRef;
   let write = false;
@@ -44,12 +44,12 @@ function parseArguments(argv) {
 
   if (backendDocument && backendDirectory) {
     throw new Error(
-      "Use either --backend-document or --backend-directory/LOLA_BACKEND_DIR, not both",
+      "Use either --backend-document or --backend-directory/RETENIVE_BACKEND_DIR, not both",
     );
   }
   if (write && !backendDocument && !backendDirectory) {
     throw new Error(
-      "--write requires an explicit --backend-document or --backend-directory/LOLA_BACKEND_DIR",
+      "--write requires an explicit --backend-document or --backend-directory/RETENIVE_BACKEND_DIR",
     );
   }
   if (backendRef && !/^[0-9a-f]{40}$/u.test(backendRef)) {
@@ -59,7 +59,7 @@ function parseArguments(argv) {
   }
   if (backendRef && !backendDirectory) {
     throw new Error(
-      "--backend-ref requires --backend-directory/LOLA_BACKEND_DIR so the commit SHA can be verified",
+      "--backend-ref requires --backend-directory/RETENIVE_BACKEND_DIR so the commit SHA can be verified",
     );
   }
   return {
@@ -256,11 +256,11 @@ async function main() {
   await assertArtifactDigest(options.snapshot, metadata);
 
   const temporaryDirectory = await mkdtemp(
-    path.join(tmpdir(), "lola-current-openapi-"),
+    path.join(tmpdir(), "retenive-current-openapi-"),
   );
   const exportedDocumentPath =
     options.backendDocument ??
-    path.join(temporaryDirectory, "lola-backend.json");
+    path.join(temporaryDirectory, "retenive-backend.json");
   let backendSourceRevision;
 
   try {

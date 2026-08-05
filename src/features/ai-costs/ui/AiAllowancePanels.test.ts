@@ -813,7 +813,7 @@ describe("allowance admin panels", () => {
   it("recovers a pending translation only after the matching draft is hydrated", async () => {
     const sourceText = "Особое предупреждение проекта.";
     sessionStorage.setItem(
-      "lola:translation-jobs:project-1:allowance-policy",
+      "retenive:translation-jobs:project-1:allowance-policy",
       JSON.stringify([
         {
           jobId: "translation-job-1",

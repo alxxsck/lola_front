@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
 
 const projectRoot = process.cwd();
-const outputDirectory = mkdtempSync(join(tmpdir(), "lola-static-shell-"));
+const outputDirectory = mkdtempSync(join(tmpdir(), "retenive-static-shell-"));
 const automaticallyLoadedExternalAsset =
   /<(?:iframe|img|link|script|source|video)\b[^>]*\b(?:href|src)=["']https?:\/\//i;
 const remoteStylesheetDependency =

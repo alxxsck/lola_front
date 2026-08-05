@@ -21,7 +21,7 @@ const generated = vi.hoisted(() => ({
   test: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   telegramBroadcastList: generated.list,
   telegramBroadcastCreate: generated.create,
   telegramBroadcastGet: generated.get,

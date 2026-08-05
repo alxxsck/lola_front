@@ -210,7 +210,7 @@ describe('ActionConfigFields', () => {
         required: ['text'],
       },
       uiSchema: {
-        fields: [{ key: 'text', label: 'Сообщение от Lola', control: 'textarea' }],
+        fields: [{ key: 'text', label: 'Сообщение от Retenive', control: 'textarea' }],
       },
     }
     const wrapper = shallowMount(ActionConfigFields, {
@@ -246,7 +246,7 @@ describe('ActionConfigFields', () => {
         required: ['text'],
       },
       uiSchema: {
-        fields: [{ key: 'text', label: 'Сообщение от Lola', control: 'textarea' }],
+        fields: [{ key: 'text', label: 'Сообщение от Retenive', control: 'textarea' }],
       },
     }
     const wrapper = shallowMount(ActionConfigFields, {

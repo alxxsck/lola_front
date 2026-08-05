@@ -9,10 +9,10 @@ describe('DocumentationPage', () => {
       global: { stubs: { RouterLink: { props: ['to'], template: '<a :data-route="to.name"><slot /></a>' } } },
     })
 
-    expect(wrapper.get('h1').text()).toBe('Документация Lola')
+    expect(wrapper.get('h1').text()).toBe('Документация Retenive')
     expect(wrapper.findAll('.guide-card')).toHaveLength(3)
     expect(wrapper.get('.guide-card').attributes('data-route')).toBe('scenario-guide')
-    expect(wrapper.text()).toContain('Как работают сценарии Lola')
+    expect(wrapper.text()).toContain('Как работают сценарии Retenive')
     expect(wrapper.text()).toContain('Поля профиля пользователей')
     expect(wrapper.text()).toContain('Сегменты пользователей')
   })

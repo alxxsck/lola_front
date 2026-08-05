@@ -22,7 +22,7 @@ import {
   scenarioAuthoringValidate,
   scenarioAuthoringValidateScenarioDraft,
   scenarioRunsExplain,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   AudienceRuleDto,
   CreateScenarioAuthoringDto,

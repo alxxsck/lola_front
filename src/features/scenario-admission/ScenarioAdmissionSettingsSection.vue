@@ -180,9 +180,9 @@ async function save(acknowledge = false) {
     <ProjectSettingsSectionHeader
       v-model:expanded="expanded"
       title="Частота и тихие часы"
-      description="Общие ограничения запусков Lola для одного игрока во всех сценариях."
+      description="Общие ограничения запусков Retenive для одного игрока во всех сценариях."
       icon="pi pi-stopwatch"
-      tone="violet"
+      tone="accent"
       content-id="scenario-admission-settings"
     />
     <div
@@ -454,8 +454,8 @@ async function save(acknowledge = false) {
   flex: 0 0 34px;
   height: 34px;
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .card-icon.moon {
   background: var(--status-info-soft);
@@ -569,8 +569,8 @@ async function save(acknowledge = false) {
   align-self: flex-start;
   padding: 8px 10px;
   border-radius: 9px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.7rem;
   font-weight: 700;
   text-decoration: none;

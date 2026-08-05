@@ -36,7 +36,7 @@ const telegramDestination = (
   updatedByActorType: "CMS_USER",
   updatedByActorId: "operator-1",
   updatedAt: "2026-07-23T12:00:00.000Z",
-  botUsername: "LolaOpsBot",
+  botUsername: "ReteniveOpsBot",
   telegramBotId: "10001",
   destinationChatId: null,
   destinationTitle: null,
@@ -106,7 +106,7 @@ describe("OperationalTelegramCard", () => {
       id: "challenge-1",
       command: "/connect AbCdEf1234567890abcd",
       expiresAt: "2026-07-23T12:05:00.000Z",
-      botUsername: "LolaOpsBot",
+      botUsername: "ReteniveOpsBot",
     });
     mocks.list
       .mockResolvedValueOnce({ items: [] })
@@ -190,7 +190,7 @@ describe("OperationalTelegramCard", () => {
       id: "old-challenge",
       command: "/connect old-invalid-command",
       expiresAt: "2026-07-23T12:05:00.000Z",
-      botUsername: "LolaOpsBot",
+      botUsername: "ReteniveOpsBot",
     });
     mocks.updateOperationalTelegram.mockResolvedValue(rotated);
     const wrapper = mount(OperationalTelegramCard, {
@@ -229,7 +229,7 @@ describe("OperationalTelegramCard", () => {
       routingRevision: 2,
       version: 2,
       destinationChatId: "-100123",
-      destinationTitle: "Lola Ops",
+      destinationTitle: "Retenive Ops",
       telegramInstallationStatus: "BOUND",
     });
     const tested = telegramDestination({
@@ -286,7 +286,7 @@ describe("OperationalTelegramCard", () => {
         telegramDestination({
           status: "ACTIVE",
           destinationChatId: "-100123",
-          destinationTitle: "Lola Ops",
+          destinationTitle: "Retenive Ops",
           telegramInstallationStatus: "BOUND",
         }),
       ],
@@ -296,7 +296,7 @@ describe("OperationalTelegramCard", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Lola Ops");
+    expect(wrapper.text()).toContain("Retenive Ops");
     expect(wrapper.find('input[name="telegramBotToken"]').exists()).toBe(false);
     expect(
       wrapper.find('button[data-action="telegram-disable"]').exists(),
@@ -357,7 +357,7 @@ describe("OperationalTelegramCard", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("Не подключено");
-    expect(wrapper.text()).not.toContain("@LolaOpsBot");
+    expect(wrapper.text()).not.toContain("@ReteniveOpsBot");
   });
 
   it("drops a late binding challenge after the selected Project changes", async () => {
@@ -389,13 +389,13 @@ describe("OperationalTelegramCard", () => {
       id: "late-challenge",
       command: "/connect late-project-one-command",
       expiresAt: "2026-07-23T12:05:00.000Z",
-      botUsername: "LolaOpsBot",
+      botUsername: "ReteniveOpsBot",
     });
     await flushPromises();
 
     expect(wrapper.text()).toContain("Не подключено");
     expect(wrapper.text()).not.toContain("late-project-one-command");
-    expect(wrapper.text()).not.toContain("@LolaOpsBot");
+    expect(wrapper.text()).not.toContain("@ReteniveOpsBot");
   });
 
   it("drops a late destination update after the selected Project changes", async () => {

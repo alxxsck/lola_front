@@ -67,7 +67,7 @@ describe("CMS User authentication state", () => {
     expect(auth.user).toBeNull();
     expect(auth.postAuthenticationRedirect).toBeNull();
     expect(auth.project).toBeNull();
-    expect(sessionStorage.getItem("lola-cms-auth-v1")).toBeNull();
+    expect(sessionStorage.getItem("retenive-cms-auth-v1")).toBeNull();
     expect(JSON.stringify(storageWrite.mock.calls)).not.toContain(
       "lps_setup-secret",
     );
@@ -294,7 +294,7 @@ describe("CMS User authentication state", () => {
           publicKey: "public",
           defaultLocale: "ru",
           supportedLocales: ["ru"],
-          assistantName: "Lola",
+          assistantName: "Retenive",
           systemPrompt: "",
           voiceInstructions: "",
           settings: {},
@@ -309,7 +309,7 @@ describe("CMS User authentication state", () => {
         publicKey: "public",
         defaultLocale: "ru",
         supportedLocales: ["ru"],
-        assistantName: "Lola",
+        assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
         settings: {},
@@ -346,7 +346,7 @@ describe("CMS User authentication state", () => {
     expect(auth.user).toBeNull();
     expect(auth.project).toBeNull();
     expect(getAccessToken()).toBeNull();
-    expect(sessionStorage.getItem("lola-cms-selected-project-v1")).toBeNull();
+    expect(sessionStorage.getItem("retenive-cms-selected-project-v1")).toBeNull();
   });
 
   it("does not restore cached authority when context refresh completes after logout", async () => {
@@ -390,7 +390,7 @@ describe("CMS User authentication state", () => {
       publicKey: "public",
       defaultLocale: "ru",
       supportedLocales: ["ru"],
-      assistantName: "Lola",
+      assistantName: "Retenive",
       systemPrompt: "",
       voiceInstructions: "",
       settings: {},

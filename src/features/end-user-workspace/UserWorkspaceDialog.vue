@@ -1152,7 +1152,7 @@ function authorLabel(author: ConversationMessage["author"]): string {
   return {
     USER: "Пользователь",
     ADMIN: "Оператор",
-    ASSISTANT: "Lola · AI",
+    ASSISTANT: "Retenive · AI",
     SCENARIO: "Сценарий · CMS",
     SYSTEM: "Система",
   }[author];
@@ -2357,8 +2357,8 @@ function displayField(
   width: 40px;
   height: 40px;
   border-radius: 13px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-weight: 800;
 }
 .eyebrow {
@@ -2825,7 +2825,7 @@ function displayField(
   background:
     radial-gradient(
       circle at 100% 0,
-      color-mix(in srgb, var(--status-violet-soft) 22%, transparent),
+      color-mix(in srgb, var(--status-accent-soft) 22%, transparent),
       transparent 34%
     ),
     color-mix(in srgb, var(--surface-subtle) 34%, var(--surface-card));
@@ -2862,7 +2862,7 @@ function displayField(
   border-radius: 15px 15px 4px 15px;
   background: color-mix(
     in srgb,
-    var(--status-violet-soft) 78%,
+    var(--status-accent-soft) 78%,
     var(--surface-card)
   );
   color: var(--text-primary);
@@ -3015,7 +3015,7 @@ function displayField(
   background: var(--surface-subtle);
 }
 .composer-action-menu__panel button > i {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .composer-action-menu__panel button > span {
   display: grid;
@@ -3356,7 +3356,7 @@ function displayField(
   transform: none;
 }
 .conversation-list button.selected {
-  border: 1px solid var(--palette-violet-200);
+  border: 1px solid var(--palette-blue-200);
   border-left: 3px solid var(--action-primary);
   background: var(--surface-card);
 }
@@ -3384,7 +3384,7 @@ function displayField(
   font-weight: 600;
 }
 .conversation-badge.accent {
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
   color: var(--action-primary);
 }
 .conversation-badge.warning {
@@ -3599,7 +3599,7 @@ function displayField(
   font-weight: 700;
 }
 .message-bubble.assistant strong {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .message-bubble.admin strong {
   color: var(--status-success-text);
@@ -3621,9 +3621,9 @@ function displayField(
   color: var(--text-primary);
 }
 .message-bubble.assistant .message-bubble__surface {
-  border-color: var(--palette-violet-200);
+  border-color: var(--palette-blue-200);
   border-radius: 14px 4px 14px 14px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .message-bubble.admin .message-bubble__surface {
   border-color: var(--palette-green-200);
@@ -3677,10 +3677,10 @@ function displayField(
   display: grid;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid var(--palette-violet-200);
+  border: 1px solid var(--palette-blue-200);
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .bulk-translation-progress > div {
   display: flex;
@@ -3705,7 +3705,7 @@ function displayField(
   height: 4px;
   overflow: hidden;
   border-radius: 3px;
-  background: var(--palette-violet-100);
+  background: var(--palette-blue-100);
 }
 .bulk-translation-progress__track i {
   display: block;
@@ -3836,9 +3836,9 @@ function displayField(
   justify-content: space-between;
   gap: 12px;
   padding: 7px 9px 7px 11px;
-  border: 1px solid var(--palette-violet-200);
+  border: 1px solid var(--palette-blue-200);
   border-radius: 10px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .composer-assist > div {
   display: grid;
@@ -3935,8 +3935,8 @@ function displayField(
   border-radius: 10px;
 }
 .composer-action-menu__panel button.highlighted {
-  border: 1px solid var(--palette-violet-200);
-  background: var(--status-violet-soft);
+  border: 1px solid var(--palette-blue-200);
+  background: var(--status-accent-soft);
 }
 .composer-action-menu__panel button:disabled {
   opacity: 0.5;
@@ -4029,8 +4029,8 @@ function displayField(
     transform 0.16s ease;
 }
 .template-gallery__grid > button:hover {
-  border-color: var(--palette-violet-200);
-  background: var(--status-violet-soft);
+  border-color: var(--palette-blue-200);
+  background: var(--status-accent-soft);
   transform: translateY(-1px);
 }
 .template-gallery__grid span,

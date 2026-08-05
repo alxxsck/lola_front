@@ -817,7 +817,7 @@ onBeforeUnmount(() => {
         />
       </label>
       <small>
-        Создайте отдельного бота через BotFather. Lola проверит и сохранит токен
+        Создайте отдельного бота через BotFather. Retenive проверит и сохранит токен
         зашифрованным.
       </small>
       <div class="form-actions">

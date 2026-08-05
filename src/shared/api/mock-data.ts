@@ -31,7 +31,7 @@ const automaticAISuspension = () => ({
 })
 
 export const demoProject: Project = {
-  id: 'prj_lola_demo',
+  id: 'prj_retenive_demo',
   version: 1,
   name: 'Lucky Stars',
   slug: 'lucky_stars',
@@ -39,15 +39,15 @@ export const demoProject: Project = {
   publicKey: 'lola_pub_demo_7f3b9',
   defaultLocale: 'ru',
   supportedLocales: ['ru', 'en'],
-  assistantName: 'Lola',
+  assistantName: 'Retenive',
   systemPrompt: 'Помогай пользователю коротко, дружелюбно и по существу.',
   voiceInstructions:
     'Говори мягко и уверенно, в спокойном темпе. Используй тёплую интонацию.',
   settings: {
     description: 'AI-ассистент для онбординга и поддержки пользователей',
     timezone: 'Europe/Madrid',
-    apiBaseUrl: 'https://api.lola.ai/api/v1',
-    wsUrl: 'wss://api.lola.ai/assistant',
+    apiBaseUrl: 'https://api.retenive.ai/api/v1',
+    wsUrl: 'wss://api.retenive.ai/assistant',
     allowedOrigins: ['https://luckystars.example'],
     voiceEnabled: false,
     voiceTranscriptEnabled: true,
@@ -162,7 +162,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
   ),
   demoScenarioActionCatalogItem(
     'SHOW_ASSISTANT',
-    'Показать Lola',
+    'Показать Retenive',
     'FRONTEND',
     {},
     [],
@@ -171,7 +171,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
   ),
   demoScenarioActionCatalogItem(
     'HIDE_ASSISTANT',
-    'Скрыть Lola',
+    'Скрыть Retenive',
     'FRONTEND',
     {},
     [],
@@ -189,7 +189,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
     [
       {
         key: 'text',
-        label: 'Сообщение от Lola',
+        label: 'Сообщение от Retenive',
         control: 'textarea',
         supportsTemplates: true,
       },
@@ -218,7 +218,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
           control: 'boolean',
         },
       ],
-      'Генерирует речь через xAI голосом Lola и может дождаться окончания воспроизведения.',
+      'Генерирует речь через xAI голосом Retenive и может дождаться окончания воспроизведения.',
     ),
   },
   demoScenarioActionCatalogItem(
@@ -234,7 +234,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
     [
       {
         key: 'text',
-        label: 'Первая голосовая реплика Lola',
+        label: 'Первая голосовая реплика Retenive',
         control: 'textarea',
         supportsTemplates: true,
       },
@@ -429,7 +429,7 @@ export const demoElements: UiElement[] = [
     code: 'deposit_button',
     name: 'Кнопка пополнения',
     kind: 'BUTTON',
-    selector: "[data-lola-action='deposit']",
+    selector: "[data-retenive-action='deposit']",
     config: { actions: ['highlight', 'scroll_to'] },
     enabled: true,
     aiEnabled: false,
@@ -442,7 +442,7 @@ export const demoElements: UiElement[] = [
     code: 'verification_button',
     name: 'Пройти верификацию',
     kind: 'ELEMENT',
-    selector: "[data-lola-action='verification']",
+    selector: "[data-retenive-action='verification']",
     config: {},
     enabled: true,
     aiEnabled: false,
@@ -483,7 +483,7 @@ export const demoElements: UiElement[] = [
     kind: 'MODAL',
     modalName: 'deposit',
     handler: 'openDepositModal',
-    config: { fallback: '/account?lola_modal=deposit' },
+    config: { fallback: '/account?retenive_modal=deposit' },
     enabled: true,
     aiEnabled: false,
     aiDescription: null,
@@ -691,7 +691,7 @@ export const demoActivity: ActivityItem[] = [
     id: 'log_3',
     userId: 'usr_1',
     type: 'MESSAGE',
-    title: 'Сообщение Lola',
+    title: 'Сообщение Retenive',
     description: 'Регистрация завершена. Давайте сделаем следующий шаг.',
     timestamp: isoAgo(6),
     status: 'delivered',
@@ -722,7 +722,7 @@ export const demoConversations: Conversation[] = [
   {
     id: 'conv_2',
     userId: 'usr_1',
-    title: 'Знакомство с Lola',
+    title: 'Знакомство с Retenive',
     status: 'ARCHIVED',
     lastMessageAt: isoAgo(1200),
     messageCount: 4,
@@ -780,7 +780,7 @@ export const demoMessages: ConversationMessage[] = [
     id: 'msg_5',
     conversationId: 'conv_2',
     author: 'ASSISTANT',
-    text: 'Привет! Я Lola и помогу быстро освоиться.',
+    text: 'Привет! Я Retenive и помогу быстро освоиться.',
     status: 'COMPLETED',
     createdAt: isoAgo(1200),
   },

@@ -24,7 +24,7 @@ export const profileFieldPresets: readonly ProfileFieldPreset[] = [
   {
     value: "CUSTOM",
     label: "Обычное поле",
-    hint: "Для любого значения без специальной роли в Lola.",
+    hint: "Для любого значения без специальной роли в Retenive.",
     icon: "pi-box",
   },
   {

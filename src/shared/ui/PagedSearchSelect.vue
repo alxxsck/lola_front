@@ -281,7 +281,7 @@ button.paged-search-select__trigger:focus-visible {
   border-color: var(--focus-ring);
   outline: 0;
   background: var(--input-background);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+  box-shadow: 0 0 0 3px var(--focus-ring-outer);
 }
 .paged-search-select__trigger > span,
 .paged-search-select__options span {
@@ -331,7 +331,7 @@ button.paged-search-select__trigger:focus-visible {
 }
 .paged-search-select__search:focus-within {
   border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+  box-shadow: 0 0 0 3px var(--focus-ring-outer);
 }
 .paged-search-select__search > input.paged-search-select__search-input {
   appearance: none;

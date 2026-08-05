@@ -65,14 +65,14 @@ describe("ProjectActionEditor", () => {
     const aiToggle = wrapper
       .findAllComponents(ToggleSwitch)
       .find(
-        (item) => item.attributes("aria-label") === "Разрешить помощнику Lola",
+        (item) => item.attributes("aria-label") === "Разрешить помощнику Retenive",
       )!;
     aiToggle.vm.$emit("update:modelValue", true);
     await wrapper.vm.$nextTick();
     await wrapper.get("form").trigger("submit");
 
     expect(wrapper.text()).toContain(
-      "Подсказка для Lola должна содержать от 20 до 2000 символов",
+      "Подсказка для Retenive должна содержать от 20 до 2000 символов",
     );
     expect(wrapper.emitted("save")).toBeUndefined();
 
@@ -140,7 +140,7 @@ describe("ProjectActionEditor", () => {
     const aiToggle = wrapper
       .findAllComponents(ToggleSwitch)
       .find(
-        (item) => item.attributes("aria-label") === "Разрешить помощнику Lola",
+        (item) => item.attributes("aria-label") === "Разрешить помощнику Retenive",
       )!;
 
     expect(scenarioToggle.attributes("disabled")).toBe("false");
@@ -153,7 +153,7 @@ describe("ProjectActionEditor", () => {
       true,
     );
     expect(wrapper.text()).toContain(
-      "Настройки доступа Lola может изменять только владелец проекта",
+      "Настройки доступа Retenive может изменять только владелец проекта",
     );
 
     scenarioToggle.vm.$emit("update:modelValue", true);

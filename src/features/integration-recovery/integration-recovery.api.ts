@@ -8,7 +8,7 @@ import {
   integrationRecoveryOperationsReplayDispatch,
   integrationRecoveryOperationsReplayIngress,
   integrationRecoveryOperationsResumeDirection,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   CancelIntegrationDispatchDto,
   ChangeIntegrationDirectionPauseDto,

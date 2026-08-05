@@ -43,8 +43,8 @@
   height: 38px;
   flex: 0 0 auto;
   border-radius: 13px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet);
+  background: var(--status-accent-soft);
+  color: var(--status-accent);
 }
 
 .ai-usage-slice .slice-summary {

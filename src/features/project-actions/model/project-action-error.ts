@@ -27,13 +27,13 @@ const messages: Readonly<Record<string, string>> = {
   ACTION_SURFACE_UNSUPPORTED:
     "Это действие нельзя использовать выбранным способом.",
   AI_ACTION_DESCRIPTION_INVALID:
-    "Подсказка для Lola должна содержать от 20 до 2000 символов.",
+    "Подсказка для Retenive должна содержать от 20 до 2000 символов.",
   AI_ACTION_DESCRIPTION_UNSAFE:
     "Уберите из подсказки адреса, ключи доступа и программный код.",
   PROJECT_ACTION_CONFIGURATION_INVALID:
     "Проверьте обязательные поля в настройках действия.",
   AI_ACTION_AUDIT_REASON_REQUIRED:
-    "Объясните, зачем Lola нужен доступ к этому действию.",
+    "Объясните, зачем Retenive нужен доступ к этому действию.",
   AI_ACTION_AUDIT_REASON_UNSAFE:
     "Уберите из причины адреса, ключи доступа и программный код.",
   AI_ACTION_TARGET_CATALOG_EMPTY:

@@ -4,7 +4,7 @@ import {
   cmsSecuritySettingsList,
   cmsSecuritySettingsRevoke,
   cmsSecuritySettingsRevokeOthers,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import {
   clearAuthSession,
   coordinateAccessTokenRefresh,
@@ -17,7 +17,7 @@ import {
 } from "@/features/auth/interactive-login-requirement";
 import { securitySettingsApi } from "./security-settings.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   cmsSecuritySettingsChangePassword: vi.fn(),
   cmsSecuritySettingsList: vi.fn(),
   cmsSecuritySettingsRevoke: vi.fn(),

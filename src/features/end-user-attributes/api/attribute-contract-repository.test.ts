@@ -6,9 +6,9 @@ const api = vi.hoisted(() => ({
   publication: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", async (importOriginal) => {
+vi.mock("@/shared/api/generated/retenive-backend", async (importOriginal) => {
   const original =
-    await importOriginal<typeof import("@/shared/api/generated/lola-backend")>();
+    await importOriginal<typeof import("@/shared/api/generated/retenive-backend")>();
   return {
     ...original,
     attributeContractPublications: api.publications,

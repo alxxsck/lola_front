@@ -68,13 +68,13 @@ function project(overrides: Partial<Project> = {}): Project {
   return {
     id: "project-1",
     version: 1,
-    name: "Lola",
-    slug: "lola",
+    name: "Retenive",
+    slug: "retenive",
     status: "ACTIVE",
     publicKey: "public",
     defaultLocale: "ru",
     supportedLocales: ["ru"],
-    assistantName: "Lola",
+    assistantName: "Retenive",
     systemPrompt: "Помогай пользователю.",
     voiceInstructions: "Говори спокойно.",
     settings: {
@@ -365,7 +365,7 @@ describe("ProjectPage voice instructions", () => {
     const review = form.getComponent({ name: "AIReviewSettingsSection" });
     const voiceSection = form
       .findAll("section")
-      .find((section) => section.text().includes("Голос Lola"))!;
+      .find((section) => section.text().includes("Голос Retenive"))!;
 
     expect(
       assistantSection.element.compareDocumentPosition(memory.element) &

@@ -4,14 +4,14 @@
 
 ## Задача и границы
 
-Этот документ уточняет только четвёртый шаг редактора Lola — «Действия». Общее исследование структуры всего редактора уже находится в [scenario-editor-workflow-ux.md](./scenario-editor-workflow-ux.md); здесь рассматриваются четыре более узких вопроса:
+Этот документ уточняет только четвёртый шаг редактора Retenive — «Действия». Общее исследование структуры всего редактора уже находится в [scenario-editor-workflow-ux.md](./scenario-editor-workflow-ux.md); здесь рассматриваются четыре более узких вопроса:
 
 1. как показывать уже добавленные действия и их полные названия;
 2. как добавлять действие из большого каталога;
 3. как дать достаточно места форме выбранного действия;
 4. как сохранить доступ к графу на desktop, tablet и mobile.
 
-Использованы только первичные источники: официальные справки Zapier, Node-RED и n8n, официальные документы Carbon, PatternFly и Android/Material, а также W3C. Предложения для Lola ниже — выводы из этих источников, а не попытка скопировать один продукт целиком.
+Использованы только первичные источники: официальные справки Zapier, Node-RED и n8n, официальные документы Carbon, PatternFly и Android/Material, а также W3C. Предложения для Retenive ниже — выводы из этих источников, а не попытка скопировать один продукт целиком.
 
 ## Короткое решение
 
@@ -28,19 +28,19 @@
 
 Текущая desktop-сетка задаёт `188px` для общей левой колонки и `360px` для инспектора выбранного действия. ([ScenarioEditorPage.vue](../../src/pages/ScenarioEditorPage.vue#L2527-L2532)) В каталоге названия и подписи принудительно помещаются в одну строку с `text-overflow: ellipsis`. ([ScenarioEditorPage.vue](../../src/pages/ScenarioEditorPage.vue#L2679-L2691)) При ширине контейнера до `1024px` постоянный каталог и Vue Flow скрываются, но инспектор становится отдельной полноэкранной областью только до `767px`. ([ScenarioEditorPage.vue](../../src/pages/ScenarioEditorPage.vue#L3338-L3384), [ScenarioEditorPage.vue](../../src/pages/ScenarioEditorPage.vue#L3454-L3472))
 
-Отсюда следует продуктовая проблема: между `768px` и `1024px` Lola уже убирает граф, но ещё оставляет форму в общем потоке страницы; на desktop два фиксированных sidebar конкурируют с графом и длинной формой. Рекомендация — переключать не отдельные CSS-элементы, а целую модель взаимодействия `list-detail-supporting pane`, сохраняя выбранное действие при смене ширины. Такой переход и сохранение выбранного элемента описаны в официальном list-detail паттерне Android/Material. ([Android canonical layouts: list-detail](https://developer.android.com/develop/adaptive-apps/guides/canonical-layouts#list-detail))
+Отсюда следует продуктовая проблема: между `768px` и `1024px` Retenive уже убирает граф, но ещё оставляет форму в общем потоке страницы; на desktop два фиксированных sidebar конкурируют с графом и длинной формой. Рекомендация — переключать не отдельные CSS-элементы, а целую модель взаимодействия `list-detail-supporting pane`, сохраняя выбранное действие при смене ширины. Такой переход и сохранение выбранного элемента описаны в официальном list-detail паттерне Android/Material. ([Android canonical layouts: list-detail](https://developer.android.com/develop/adaptive-apps/guides/canonical-layouts#list-detail))
 
 ## Что делают зрелые workflow-редакторы
 
-| Источник | Подтверждённый паттерн | Вывод для Lola |
+| Источник | Подтверждённый паттерн | Вывод для Retenive |
 | --- | --- | --- |
 | [Zapier: Visual Editor](https://help.zapier.com/hc/en-us/articles/16722578092429-Use-the-editor-to-build-and-view-your-Zap-workflows) | В центре находится схема всех шагов; выбранный шаг открывает правую панель Setup / Configure / Test; добавление и быстрый поиск находятся в отдельной нижней области; у графа есть zoom, fit-to-view и collapse/expand paths. | Не смешивать каталог и настройки в одном sidebar; у графа оставить компактный обзор и явные команды управления viewport. |
 | [Zapier: rationale](https://help.zapier.com/hc/en-us/articles/18164966455053-Visual-editor-now-generally-available) | Zapier прямо связывает понимание сложного workflow с видимостью всех шагов и одновременным редактированием детали в sidebar. | Не удалять граф из desktop-сценария, но не заставлять длинную форму постоянно жить в узкой колонке. |
 | [Node-RED: editor](https://nodered.org/docs/user-guide/editor/) и [sidebars](https://nodered.org/docs/user-guide/editor/sidebar/) | Canvas является основной рабочей областью; панели можно переносить, разделять, скрывать и изменять по ширине. | Если список, форма и граф показаны одновременно, разделители должны быть изменяемыми, а панели — закрываемыми. |
-| [Node-RED: palette](https://nodered.org/docs/user-guide/editor/palette/) | Большой каталог разбит на сворачиваемые категории и имеет фильтр. | Picker Lola должен иметь поиск и категории, а не одну длинную прокручиваемую ленту. |
+| [Node-RED: palette](https://nodered.org/docs/user-guide/editor/palette/) | Большой каталог разбит на сворачиваемые категории и имеет фильтр. | Picker Retenive должен иметь поиск и категории, а не одну длинную прокручиваемую ленту. |
 | [Node-RED: Quick Add](https://nodered.org/docs/user-guide/editor/workspace/nodes) | Узел можно добавить через фильтруемый Quick Add, не перетаскивая его из palette; вызов на wire вставляет новый узел в связь. | «Добавить действие» должно открываться рядом с выбранным местом вставки и не зависеть от drag-and-drop. |
-| [Node-RED: workspace](https://nodered.org/docs/user-guide/editor/workspace/) | Workspace имеет zoom-контролы и navigator с уменьшенным обзором всей схемы. | Свёрнутый граф Lola может служить обзором, а не вторым редактором в миниатюре. |
-| [n8n: keyboard controls](https://docs.n8n.io/keyboard-shortcuts/) | Node Panel открывается с клавиатуры, выбранный узел вставляется по `Enter`, панель закрывается по `Escape`; категории управляются стрелками; `1` выполняет zoom-to-fit; command bar даёт быстрый доступ к добавлению узлов. | Picker, вставка и graph controls Lola должны быть полностью доступны без мыши. |
+| [Node-RED: workspace](https://nodered.org/docs/user-guide/editor/workspace/) | Workspace имеет zoom-контролы и navigator с уменьшенным обзором всей схемы. | Свёрнутый граф Retenive может служить обзором, а не вторым редактором в миниатюре. |
+| [n8n: keyboard controls](https://docs.n8n.io/keyboard-shortcuts/) | Node Panel открывается с клавиатуры, выбранный узел вставляется по `Enter`, панель закрывается по `Escape`; категории управляются стрелками; `1` выполняет zoom-to-fit; command bar даёт быстрый доступ к добавлению узлов. | Picker, вставка и graph controls Retenive должны быть полностью доступны без мыши. |
 | [PatternFly: Drawer](https://www.patternfly.org/components/drawer/design-guidelines/) | Drawer бывает inline или overlay; splitter добавляется только когда пользователю действительно нужно перераспределять место между областями. | На широком desktop использовать inline/resizable режим, на меньшей ширине — overlay или отдельный экран, а не сжатие обеих областей. |
 | [PatternFly: Primary-detail](https://www.patternfly.org/patterns/primary-detail/design-guidelines/) | Выбранный объект должен иметь заметный selected state; на mobile остаётся только primary или detail, detail занимает всю ширину и имеет явный возврат. | На mobile использовать переход «Список действий → Настройка действия», а не складывать список, граф и форму вертикально. |
 | [Android/Material: supporting pane](https://developer.android.com/develop/adaptive-apps/guides/canonical-layouts#supporting-pane) | На expanded-экране основная область получает около 70%, supporting pane — около 30%; на compact supporting content переносится ниже или в sheet и открывается отдельной командой. | В режиме настройки форма является primary content, а граф — supporting pane с возможностью раскрытия. |
@@ -98,7 +98,7 @@ Picker не должен требовать перетаскивания: WCAG 2
 
 ## Адаптивное поведение
 
-| Доступная ширина | Режим Lola | Основание |
+| Доступная ширина | Режим Retenive | Основание |
 | --- | --- | --- |
 | Достаточно места для list + primary form + supporting graph | Список добавленных действий слева; широкая форма справа; граф снизу в изменяемой supporting pane. | [Android/Material supporting pane](https://developer.android.com/develop/adaptive-apps/guides/canonical-layouts#supporting-pane), [PatternFly Drawer](https://www.patternfly.org/components/drawer/design-guidelines/) |
 | Две области помещаются, три уже сжимают содержимое | Список + форма; граф свёрнут в строку «Схема · открыть обзор» или открывается overlay/fullscreen. | [PatternFly primary-detail](https://www.patternfly.org/patterns/primary-detail/design-guidelines/), [W3C Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html) |
@@ -138,4 +138,4 @@ Breakpoint следует выбирать по тому, помещается �
 
 ## Источники, намеренно не использованные как доказательство
 
-Маркетинговые галереи, Dribbble, Behance, Pinterest, сторонние UX-обзоры и пересказы продуктовых интерфейсов не использовались. Они могут дать визуальное настроение, но не являются первичным основанием для поведения редактора. Конкретные размеры, цвета и брейкпоинты Lola должны быть проверены прототипом и визуальными/E2E-тестами после выбора этой информационной архитектуры; сами источники подтверждают поведение областей, но не готовую сетку Lola.
+Маркетинговые галереи, Dribbble, Behance, Pinterest, сторонние UX-обзоры и пересказы продуктовых интерфейсов не использовались. Они могут дать визуальное настроение, но не являются первичным основанием для поведения редактора. Конкретные размеры, цвета и брейкпоинты Retenive должны быть проверены прототипом и визуальными/E2E-тестами после выбора этой информационной архитектуры; сами источники подтверждают поведение областей, но не готовую сетку Retenive.

@@ -62,7 +62,7 @@ async function save() {
 
 <template>
   <AISettingsSectionCard
-    title="Память Lola"
+    title="Память Retenive"
     description="Короткие пользовательские предпочтения между диалогами с ограниченным AI-бюджетом."
     :loading="loading"
     :error="error"

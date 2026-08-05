@@ -120,7 +120,7 @@ const customerIoReservedTargetKeys = new Set([
   "timestamp",
   "messageId",
   "integrations",
-  "lola_export",
+  "retenive_export",
 ]);
 
 export const integrationRegionOptions = [
@@ -143,7 +143,7 @@ export const outboundProviderUi: Record<
     credentialLabel: "Amplitude Project API Key",
     credentialShortLabel: "Project API Key",
     credentialHelp:
-      "Проверка отправляет реальное событие Lola Connection Test — оно появится в Amplitude. Ключ не возвращается API.",
+      "Проверка отправляет реальное событие Retenive Connection Test — оно появится в Amplitude. Ключ не возвращается API.",
     testSideEffectConfirmation:
       "Проверка отправит реальное служебное событие в Amplitude. Продолжить?",
     credentialAutocomplete: "off",

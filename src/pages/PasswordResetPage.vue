@@ -120,7 +120,7 @@ onBeforeRouteLeave(() => {
 <template>
   <main class="reset-page">
     <section class="reset-card" aria-live="polite">
-      <div class="brand"><span>L</span><strong>Lola CMS</strong></div>
+      <div class="brand"><span>R</span><strong>Retenive CMS</strong></div>
 
       <template v-if="state === 'MISSING' || state === 'INVALID'">
         <span class="eyebrow">Восстановление доступа</span>

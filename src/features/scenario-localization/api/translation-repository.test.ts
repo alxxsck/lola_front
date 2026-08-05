@@ -5,10 +5,10 @@ import {
   translationGet,
   translationRetryTarget,
   translationUsageReport,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import { translationRepository } from "./translation-repository";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   translationCreate: vi.fn(),
   translationGet: vi.fn(),
   translationCancel: vi.fn(),

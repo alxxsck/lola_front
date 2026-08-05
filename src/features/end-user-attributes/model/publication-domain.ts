@@ -24,7 +24,7 @@ export function publicationImpact(
       severity: "success",
       title: "Интеграция продукта не изменится",
       description:
-        "Настройки Lola применятся после публикации. Версия контракта и сохранённые профили останутся прежними.",
+        "Настройки Retenive применятся после публикации. Версия контракта и сохранённые профили останутся прежними.",
     };
   }
   if (changes.contractCompatibility === "INITIAL") {

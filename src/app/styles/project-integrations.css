@@ -290,8 +290,8 @@
 }
 
 .integration-page .provider-mark--slack {
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 
 .integration-page .provider-mark--telegram {
@@ -491,7 +491,7 @@
 .integration-page .route-form input:not([type="checkbox"]):focus-visible,
 .integration-page .mapping-fields input:not([type="checkbox"]):focus-visible {
   border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+  box-shadow: 0 0 0 3px var(--focus-ring-outer);
 }
 
 .integration-page .route-form .p-select,
@@ -596,7 +596,7 @@
 
 .integration-page .integration-field input:focus-visible {
   border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+  box-shadow: 0 0 0 3px var(--focus-ring-outer);
 }
 
 .integration-page .integration-field input:disabled {
@@ -656,7 +656,7 @@
 
 .integration-page .integration-records__search input:focus-visible {
   border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+  box-shadow: 0 0 0 3px var(--focus-ring-outer);
 }
 
 .integration-page .integration-table-wrap {
@@ -694,7 +694,9 @@
 }
 
 .integration-page .integration-table__action {
+  width: 1%;
   text-align: right !important;
+  white-space: nowrap;
 }
 
 .integration-page .integration-table__action button {
@@ -706,6 +708,55 @@
 .integration-page .integration-records > .table-pagination {
   padding: 12px 16px;
   border-top: 1px solid var(--border-subtle);
+}
+
+.integration-page .integration-loading {
+  display: grid;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-small);
+}
+
+.integration-page .integration-loading__rows {
+  display: grid;
+  gap: 8px;
+}
+
+.integration-page .integration-loading__rows i {
+  height: 42px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(
+    100deg,
+    var(--surface-subtle) 20%,
+    var(--surface-hover) 38%,
+    var(--surface-subtle) 56%
+  );
+  background-size: 220% 100%;
+  animation: integration-loading 1.2s ease-in-out infinite;
+}
+
+@keyframes integration-loading {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.integration-page .integration-reveal-enter-active,
+.integration-page .integration-reveal-leave-active {
+  transform-origin: top center;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.integration-page .integration-reveal-enter-from,
+.integration-page .integration-reveal-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.995);
 }
 
 @media (max-width: 700px) {

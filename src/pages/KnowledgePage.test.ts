@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   ] as string[],
   authProject: {
     id: "project-1",
-    name: "Lola",
+    name: "Retenive",
     supportedLocales: ["ru"],
     defaultLocale: "ru",
   } as object,
@@ -25,7 +25,7 @@ vi.mock("@/features/auth/auth.store", () => ({
         effectivePermissionCodes: mocks.permissions,
       };
     },
-    user: { id: "user-1", email: "owner@lola.ai" },
+    user: { id: "user-1", email: "owner@retenive.ai" },
   }),
 }));
 
@@ -69,7 +69,7 @@ describe("KnowledgePage states", () => {
     mocks.permissions = ["project.knowledge.read", "project.knowledge.write"];
     mocks.authProject = {
       id: "project-1",
-      name: "Lola",
+      name: "Retenive",
       supportedLocales: ["ru"],
       defaultLocale: "ru",
     };
@@ -130,7 +130,7 @@ describe("KnowledgePage states", () => {
   it("uses the bounded locale projection for a knowledge-only role", async () => {
     mocks.authProject = {
       id: "project-1",
-      name: "Lola",
+      name: "Retenive",
       supportedLocales: ["en", "es"],
       defaultLocale: "es",
     };
@@ -155,7 +155,7 @@ describe("KnowledgePage states", () => {
   });
 
   it("fails closed without a locale projection and never invents ru", async () => {
-    mocks.authProject = { id: "project-1", name: "Lola" };
+    mocks.authProject = { id: "project-1", name: "Retenive" };
     const wrapper = mountKnowledge();
     await flushPromises();
 

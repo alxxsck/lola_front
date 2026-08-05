@@ -1,7 +1,7 @@
 import {
   notificationPreferencesGetEmailCaseEscalations,
   notificationPreferencesSetEmailCaseEscalations,
-} from '@/shared/api/generated/lola-backend'
+} from '@/shared/api/generated/retenive-backend'
 import type { EmailCaseEscalationPreferenceResponseDto } from '@/shared/api/generated/models'
 
 export const notificationPreferencesApi = {

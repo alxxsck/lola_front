@@ -35,7 +35,7 @@ watch(
   >
     <div v-if="target" class="dialog-stack">
       <p>
-        Lola повторно проверит eligibility под lock. Business delivery, payload
+        Retenive повторно проверит eligibility под lock. Business delivery, payload
         hash и журнал попыток останутся прежними.
       </p>
       <dl>

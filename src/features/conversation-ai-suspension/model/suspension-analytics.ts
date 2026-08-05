@@ -25,7 +25,7 @@ export function reportSuspensionEvent(
         .filter((key) => value[key] !== undefined)
         .map((key) => [key, value[key]]),
     )
-    window.dispatchEvent(new CustomEvent('lola:analytics', { detail: { name, payload } }))
+    window.dispatchEvent(new CustomEvent('retenive:analytics', { detail: { name, payload } }))
   } catch {
     // Сбор статистики не должен влиять на управление AI.
   }

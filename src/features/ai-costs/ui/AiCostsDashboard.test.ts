@@ -193,7 +193,7 @@ describe("AiCostsDashboard", () => {
     expect(wrapper.get(".kpi-effective").text()).toContain("0,12 $");
     expect(wrapper.get('[role="alert"]').text()).toContain("1");
     expect(wrapper.get(".daily-chart").text()).toContain("01.08");
-    expect(wrapper.get(".category-chart").text()).toContain("Чат с Lola");
+    expect(wrapper.get(".category-chart").text()).toContain("Чат с Retenive");
   });
 
   it("exposes chart bars as decorative when the adjacent text carries the value", async () => {

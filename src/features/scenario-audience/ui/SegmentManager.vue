@@ -742,7 +742,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
               class="archive-note"
             >
               <i class="pi pi-info-circle" /> Сегмент пока нельзя архивировать:
-              Lola ещё не умеет проверять, используется ли он в сценариях.
+              Retenive ещё не умеет проверять, используется ли он в сценариях.
             </p>
           </div>
           <section>
@@ -876,7 +876,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
           <div>
             <strong>Проверить одного пользователя</strong
             ><small
-              >Lola покажет, подходит ли пользователь и насколько свежие данные
+              >Retenive покажет, подходит ли пользователь и насколько свежие данные
               использовались. Это не подсчёт всей аудитории.</small
             >
           </div>
@@ -922,9 +922,9 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  border: 1px solid var(--status-violet);
+  border: 1px solid var(--status-accent);
   border-radius: 16px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
   font-size: var(--font-size-body);
 }
 .segment-manager > header {
@@ -1030,8 +1030,8 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
   padding: 7px 10px;
   border: 0;
   border-radius: 7px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: var(--font-size-control);
   font-weight: 700;
 }
@@ -1147,7 +1147,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .detail > header span,
 .editor > header span {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: var(--font-size-caption);
   font-weight: 900;
   text-transform: uppercase;
@@ -1197,7 +1197,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .archive-note i {
   margin-top: 2px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .detail section {
   margin-top: 0;
@@ -1395,7 +1395,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
 }
 .evaluate-one > span {
   grid-column: 1/-1;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: var(--font-size-body-small);
   font-weight: 700;
 }

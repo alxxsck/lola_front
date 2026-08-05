@@ -1,4 +1,4 @@
-# Lola CMS
+# Retenive CMS
 
 Практическое руководство по CMS-пользователям, ролям, Initial Access Secret и IAM API находится в
 [документации backend](https://github.com/alxxsck/lola_back/blob/main/docs/cms-users-roles-access-guide.ru.md).
@@ -7,7 +7,7 @@
 
 Typed Audience, versioned Segments и snapshot/recheck semantics FE-V2-12/13 описаны в [docs/scenario-engine-v2-audience-unblock.ru.md](docs/scenario-engine-v2-audience-unblock.ru.md).
 
-Административная SaaS-панель для настройки Lola AI Assistant. Это отдельное Vue 3 приложение, которое работает поверх Lola Backend и не входит в пользовательский SDK.
+Административная SaaS-панель для настройки Retenive AI Assistant. Это отдельное Vue 3 приложение, которое работает поверх Retenive Backend и не входит в пользовательский SDK.
 
 ## Быстрый старт
 
@@ -47,8 +47,8 @@ GitLab CI и перенос production с Vercel на Cloudflare Pages опис�
 ## OpenAPI contract gate
 
 Production build не обращается к сети и не ищет backend в соседней директории. Его обязательный
-источник — committed `openapi/lola-backend.json`; файл
-`openapi/lola-backend.contract.json` фиксирует immutable content address
+источник — committed `openapi/retenive-backend.json`; файл
+`openapi/retenive-backend.contract.json` фиксирует immutable content address
 `contractRevision=sha256:<canonical OpenAPI digest>`. Удаление metadata, ручное изменение artifact
 без digest или устаревший generated client останавливают build. Этот content address является
 release-authority и не зависит от состояния backend Git worktree.
@@ -56,7 +56,7 @@ release-authority и не зависит от состояния backend Git wor
 Cross-repository GitHub workflow дополнительно checkout-ит `alxxsck/lola_back` и сравнивает его
 фактический экспорт с committed artifact. Backend ref задаётся repository variable
 `LOLA_BACKEND_REF`; без настройки используется существующая default branch `main`. Read-only token
-для checkout задаётся обязательным Actions secret `LOLA_BACKEND_READ_TOKEN`: workflow явно падает,
+для checkout задаётся обязательным Actions secret `RETENIVE_BACKEND_READ_TOKEN`: workflow явно падает,
 если secret отсутствует или checkout недоступен. Для release ref обязан быть immutable commit SHA.
 Optional `backendSourceRevision` добавляется в metadata только после backend commit и служит
 traceability, но не заменяет authoritative content-addressed `contractRevision`. Sentinel вроде
@@ -86,7 +86,7 @@ traceability, но не заменяет authoritative content-addressed `contra
 API-режим подключает авторизацию и существующие CRUD endpoints проектов, UI elements, event definitions, scenarios и users. Функции без backend-контракта остаются только в mock implementation и явно сообщают об отсутствии API.
 
 `SPEAK_TEXT` и голосовой чат используют xAI, один `XAI_API_KEY` на backend и общую Project-настройку
-«Голос Lola». Фактические расходы моделей и расчётные расходы Voice/Text-to-Speech показываются
+«Голос Retenive». Фактические расходы моделей и расчётные расходы Voice/Text-to-Speech показываются
 раздельно; история TTS фиксирует ставку в момент операции и не пересчитывается задним числом.
 Контракты, каталог голосов, consumption и append-only управление ставкой описаны в
 [docs/text-to-speech.ru.md](docs/text-to-speech.ru.md).

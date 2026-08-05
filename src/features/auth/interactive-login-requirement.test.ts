@@ -43,7 +43,7 @@ describe("interactive login requirement", () => {
     requirement.clearInteractiveLoginRequirement();
     expect(requirement.isInteractiveLoginRequired()).toBe(false);
 
-    localStorage.setItem("lola-cms-interactive-login-required-v1", "1");
+    localStorage.setItem("retenive-cms-interactive-login-required-v1", "1");
 
     expect(requirement.isInteractiveLoginRequired()).toBe(true);
   });

@@ -1,5 +1,5 @@
 import type { ConditionCatalogResponseDto } from '@/shared/api/generated/models'
-import { segmentCatalogCatalog } from '@/shared/api/generated/lola-backend'
+import { segmentCatalogCatalog } from '@/shared/api/generated/retenive-backend'
 import { normalizeApiError } from '@/shared/api/http/api-error'
 
 export const segmentCatalogRepository = {

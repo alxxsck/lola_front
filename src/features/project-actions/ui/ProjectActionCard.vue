@@ -118,7 +118,7 @@ const risk = computed(() =>
   transform: translateY(-2px);
 }
 .project-action-card:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--focus-ring) 35%, transparent);
+  outline: 3px solid var(--focus-ring-outer);
   outline-offset: 2px;
 }
 .project-action-card.archived {
@@ -135,8 +135,8 @@ const risk = computed(() =>
   place-items: center;
   width: 36px;
   height: 36px;
-  color: var(--status-violet-text);
-  background: var(--status-violet-soft);
+  color: var(--status-accent-text);
+  background: var(--status-accent-soft);
   border-radius: 11px;
 }
 .action-icon i,
@@ -178,8 +178,8 @@ const risk = computed(() =>
   border-radius: 999px;
 }
 .origin-tag {
-  color: var(--status-violet-text);
-  background: var(--status-violet-soft);
+  color: var(--status-accent-text);
+  background: var(--status-accent-soft);
 }
 .open-icon {
   display: grid;

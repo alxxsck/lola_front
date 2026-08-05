@@ -435,10 +435,10 @@ function fieldHint(field: ActionUiField) {
   gap: 10px;
   align-items: start;
   padding: 12px 13px;
-  border: 1px solid color-mix(in srgb, var(--status-violet) 48%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-accent) 48%, transparent);
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .localization-unavailable > i {
   margin-top: 2px;
@@ -458,7 +458,7 @@ function fieldHint(field: ActionUiField) {
 }
 .localization-unavailable a {
   justify-self: start;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.7rem;
   font-weight: 700;
   text-underline-offset: 3px;
@@ -508,9 +508,9 @@ function fieldHint(field: ActionUiField) {
   display: grid;
   gap: 2px;
   text-align: left;
-  border: 1px solid var(--status-violet);
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  border: 1px solid var(--status-accent);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   border-radius: 7px;
   padding: 5px 8px;
   cursor: pointer;
@@ -526,8 +526,8 @@ function fieldHint(field: ActionUiField) {
   font-size: 0.58rem;
 }
 .variable-pills button:hover {
-  background: var(--status-violet-soft);
-  border-color: var(--status-violet);
+  background: var(--status-accent-soft);
+  border-color: var(--status-accent);
 }
 .variable-pills button:disabled {
   cursor: not-allowed;

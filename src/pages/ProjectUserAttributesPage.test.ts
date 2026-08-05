@@ -226,7 +226,7 @@ describe("ProjectUserAttributesPage", () => {
 
     expect(wrapper.text()).toContain("Поля профиля");
     expect(wrapper.text()).toContain(
-      "какие данные о пользователе Lola получает от вашего продукта",
+      "какие данные о пользователе Retenive получает от вашего продукта",
     );
     expect(
       wrapper.find('button-stub[label="Как передавать данные"]').exists(),

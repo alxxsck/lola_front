@@ -6,7 +6,7 @@ describe("ProjectSettingsSectionHeader", () => {
   it("starts collapsed and emits expansion from the shared toggle", async () => {
     const wrapper = mount(ProjectSettingsSectionHeader, {
       props: {
-        title: "Память Lola",
+        title: "Память Retenive",
         description: "Настройки памяти",
         icon: "pi pi-book",
         contentId: "memory-settings",

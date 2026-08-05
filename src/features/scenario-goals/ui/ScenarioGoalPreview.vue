@@ -97,11 +97,11 @@ function actualLabel() {
 </template>
 
 <style scoped>
-.goal-preview { display: grid; gap: 9px; margin-top: 14px; padding: 12px; border: 1px solid var(--status-violet); border-radius: 12px; background: var(--status-violet-soft); }
+.goal-preview { display: grid; gap: 9px; margin-top: 14px; padding: 12px; border: 1px solid var(--status-accent); border-radius: 12px; background: var(--status-accent-soft); }
 .goal-preview header { display: grid; gap: 3px; }
 .goal-preview header strong { font-size: .72rem; }
 .goal-preview header small, .goal-preview-result { color: var(--muted); font-size: .66rem; line-height: 1.45; }
-.goal-preview-result { display: grid; gap: 7px; padding-top: 8px; border-top: 1px solid var(--status-violet); }
+.goal-preview-result { display: grid; gap: 7px; padding-top: 8px; border-top: 1px solid var(--status-accent); }
 .goal-preview-result > div { display: flex; align-items: center; gap: 8px; }
 .goal-preview-result p, .goal-preview-result ul { margin: 0; }
 .goal-preview-result code { overflow-wrap: anywhere; }

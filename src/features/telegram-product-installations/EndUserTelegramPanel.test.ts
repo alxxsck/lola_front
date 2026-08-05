@@ -14,15 +14,15 @@ const summary = (overrides: Record<string, unknown> = {}) => ({
   linked: true,
   status: "ACTIVE",
   effectiveStatus: "ACTIVE",
-  displayName: "Lola Customer",
-  username: "lola_customer",
+  displayName: "Retenive Customer",
+  username: "retenive_customer",
   linkedAt: "2026-07-23T12:00:00.000Z",
   revokedAt: null,
   activeLink: {
     status: "ACTIVE",
     linkedAt: "2026-07-23T12:00:00.000Z",
-    displayName: "Lola Customer",
-    username: "lola_customer",
+    displayName: "Retenive Customer",
+    username: "retenive_customer",
   },
   pendingCandidate: null,
   ...overrides,
@@ -118,7 +118,7 @@ describe("EndUserTelegramPanel", () => {
 
     await wrapper.setProps({ canRead: true });
     await flushPromises();
-    expect(wrapper.text()).toContain("Lola Customer");
+    expect(wrapper.text()).toContain("Retenive Customer");
     await wrapper.setProps({ canRead: false });
     expect(wrapper.find("section").exists()).toBe(false);
   });

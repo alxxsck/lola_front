@@ -1,4 +1,4 @@
-# AI-интерфейс Lola: иерархия, темы, glow-анимация и mobile
+# AI-интерфейс Retenive: иерархия, темы, glow-анимация и mobile
 
 Дата исследования: 1 августа 2026 года.
 
@@ -17,7 +17,7 @@
 
 Использованы только первичные источники: W3C/WAI, официальная документация
 Vue и MDN, Chrome/web.dev и IBM Carbon. Точные размеры, длительности и
-композиция Lola ниже — выводы для этого продукта, а не требования этих
+композиция Retenive ниже — выводы для этого продукта, а не требования этих
 источников.
 
 ## Короткий вывод
@@ -68,17 +68,17 @@ Vue и MDN, Chrome/web.dev и IBM Carbon. Точные размеры, длит�
 
 ## Рекомендуемая композиция
 
-### Блок вопроса к Lola
+### Блок вопроса к Retenive
 
 ```text
-┌ ИИ · LOLA ANALYSIS ───────────────────────────────────────────────┐
+┌ ИИ · RETENIVE ANALYSIS ───────────────────────────────────────────────┐
 │ Что нужно узнать о проекте?                                      │
-│ Lola использует только разрешённые источники…                    │
+│ Retenive использует только разрешённые источники…                    │
 │                                                                  │
 │ ┌ Запрос ──────────────────────────────────────────────────────┐ │
 │ │ Например: кто завершил депозит вчера…                       │ │
 │ │                                                             │ │
-│ │ 0 / 10 000                 Ctrl/⌘ + Enter  [Спросить Lola]  │ │
+│ │ 0 / 10 000                 Ctrl/⌘ + Enter  [Спросить Retenive]  │ │
 │ └─────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────┘
    ^ тонкая AI-border + ограниченная aura только по краям
@@ -97,7 +97,7 @@ Vue и MDN, Chrome/web.dev и IBM Carbon. Точные размеры, длит�
   точке, где он может оказаться; движущийся фон делает такую гарантию хрупкой
   ([Carbon accessibility: color](https://v10.carbondesignsystem.com/guidelines/accessibility/color/)).
 - При `busy` менять не всю геометрию карточки, а статус: подпись
-  «Lola анализирует», `aria-busy`, live-status и небольшой индикатор рядом с
+  «Retenive анализирует», `aria-busy`, live-status и небольшой индикатор рядом с
   label. Завершение и ошибка остаются текстовыми состояниями.
 
 ### Страницы списка
@@ -105,7 +105,7 @@ Vue и MDN, Chrome/web.dev и IBM Carbon. Точные размеры, длит�
 - Заголовок страницы: 32–42 px desktop, 28–34 px mobile; subtitle 15–16 px.
 - Card title: 16–18 px; описание и значения: 14–15 px; uppercase labels и
   secondary metadata: 12–13 px с достаточным line-height. Это предлагаемая
-  шкала Lola: WCAG задаёт контраст, а не минимальный font-size.
+  шкала Retenive: WCAG задаёт контраст, а не минимальный font-size.
 - В карточке сначала показывать человекочитаемые поля: статус, вопрос,
   завершение, стоимость. UUID и provenance — вторичный раскрываемый/копируемый
   слой. Нельзя пытаться уместить семь одинаково важных колонок.
@@ -123,7 +123,7 @@ Carbon for AI использует brightness, glow и gradients как мета
 требует применять их только там, где реально присутствует AI; light spread
 ограничивается краями контейнера для сохранения контраста
 ([Carbon for AI](https://carbondesignsystem.com/guidelines/carbon-for-ai/)). Для
-Lola это означает один сильный AI-composer и сдержанные AI labels в результатах,
+Retenive это означает один сильный AI-composer и сдержанные AI labels в результатах,
 а не glow на каждой обычной карточке.
 
 ### Предлагаемая анимация
@@ -215,7 +215,7 @@ Lola это означает один сильный AI-composer и сдержа
 ([MDN: prefers-reduced-motion](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion),
 [W3C SC 2.3.3](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html)).
 
-Контракт Lola:
+Контракт Retenive:
 
 - aura остаётся статичной: AI-присутствие не исчезает вместе с motion;
 - enter/leave превращается в мгновенную смену либо короткий opacity-only fade;
@@ -271,12 +271,12 @@ WCAG AA требует target не меньше `24 × 24 CSS px` либо до�
 усиленный ориентир — `44 × 44 CSS px`
 ([W3C SC 2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum),
 [W3C SC 2.5.5](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced)).
-Для Lola принять 44 px как внутренний минимум, 48 px — для основных кнопок и
+Для Retenive принять 44 px как внутренний минимум, 48 px — для основных кнопок и
 полей на телефоне.
 
 ### Правила
 
-- `Спросить Lola`, `Применить`, `Обновить`, close/back, date picker,
+- `Спросить Retenive`, `Применить`, `Обновить`, close/back, date picker,
   select-chevron, copy ID и icon-only actions получают реальную кликабельную
   область 44–48 px, даже если иконка визуально 16–20 px.
 - При `<= 600 px` composer: padding 16 px, heading/form/actions в одну колонку,

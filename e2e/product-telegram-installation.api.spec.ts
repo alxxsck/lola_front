@@ -63,7 +63,7 @@ async function installFixtures(page: Page) {
             publicKey: "public-key",
             defaultLocale: "ru",
             supportedLocales: ["ru"],
-            assistantName: "Lola",
+            assistantName: "Retenive",
             systemPrompt: "",
             voiceInstructions: "",
             settings: {},
@@ -107,8 +107,8 @@ async function installFixtures(page: Page) {
       installation = {
         id: installationId,
         projectId,
-        botUsername: "LolaProductBot",
-        deepLinkBase: "https://t.me/LolaProductBot",
+        botUsername: "ReteniveProductBot",
+        deepLinkBase: "https://t.me/ReteniveProductBot",
         telegramBotId: "9007199254740993",
         credentialFingerprint: "0123456789abcdef",
         status: "PENDING_SETUP",
@@ -253,7 +253,7 @@ test("project admin creates, tests, rotates and disables the separate product bo
   await page.getByLabel("Bot token", { exact: true }).fill(token);
   await page.getByRole("button", { name: "Подключить product bot" }).click();
 
-  await expect(page.getByText("@LolaProductBot")).toBeVisible();
+  await expect(page.getByText("@ReteniveProductBot")).toBeVisible();
   await expect(page.getByText("0123456789abcdef")).toBeVisible();
   await expect(page.getByText("12", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(token);

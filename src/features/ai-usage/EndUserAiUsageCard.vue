@@ -512,7 +512,7 @@ h3 i {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--status-violet);
+  background: var(--status-accent);
 }
 .category-row strong,
 .category-row small {

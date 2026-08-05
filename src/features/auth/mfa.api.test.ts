@@ -3,10 +3,10 @@ import {
   iamMfaCompleteAuthentication,
   iamMfaCompleteRecovery,
   iamMfaEnrollmentOptions,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import { mfaApi } from "./mfa.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   iamMfaCompleteAuthentication: vi.fn(),
   iamMfaCompleteEnrollment: vi.fn(),
   iamMfaCompleteRecovery: vi.fn(),

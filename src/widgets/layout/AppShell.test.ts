@@ -150,7 +150,7 @@ describe("AppShell", () => {
     await flushPromises();
 
     expect(auth.project?.id).toBe("project-2");
-    expect(sessionStorage.getItem("lola-cms-selected-project-v1")).toBe(
+    expect(sessionStorage.getItem("retenive-cms-selected-project-v1")).toBe(
       "project-2",
     );
     expect(router.currentRoute.value.path).toBe("/overview");
@@ -194,7 +194,7 @@ describe("AppShell", () => {
 
     expect(open).toHaveBeenCalledWith("", "_blank");
     expect(setItem).toHaveBeenCalledWith(
-      "lola-cms-selected-project-v1",
+      "retenive-cms-selected-project-v1",
       "project-2",
     );
     expect(openedTab.opener).toBeNull();
@@ -223,7 +223,7 @@ describe("AppShell", () => {
         publicKey: "public",
         defaultLocale: "ru",
         supportedLocales: ["ru"],
-        assistantName: "Lola",
+        assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
         settings: {},
@@ -309,7 +309,7 @@ describe("AppShell", () => {
         publicKey: "public",
         defaultLocale: "ru",
         supportedLocales: ["ru"],
-        assistantName: "Lola",
+        assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
         settings: {},
@@ -360,7 +360,7 @@ describe("AppShell", () => {
         publicKey: "public",
         defaultLocale: "ru",
         supportedLocales: ["ru"],
-        assistantName: "Lola",
+        assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
         settings: {},
@@ -600,7 +600,7 @@ describe("AppShell", () => {
         publicKey: "public",
         defaultLocale: "ru",
         supportedLocales: ["ru"],
-        assistantName: "Lola",
+        assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
         settings: {},
@@ -662,7 +662,7 @@ describe("AppShell", () => {
         publicKey: "public",
         defaultLocale: "ru",
         supportedLocales: ["ru"],
-        assistantName: "Lola",
+        assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
         settings: {},
@@ -689,7 +689,7 @@ describe("AppShell", () => {
     });
 
     expect(wrapper.text()).not.toContain("База знаний");
-    expect(wrapper.text()).not.toContain("Предложения Lola");
+    expect(wrapper.text()).not.toContain("Предложения Retenive");
     expect(wrapper.text()).not.toContain("AI-анализы");
     expect(wrapper.text()).not.toContain("Журнал AI");
     expect(wrapper.text()).not.toContain("Журнал событий");
@@ -715,7 +715,7 @@ describe("AppShell", () => {
         publicKey: "public",
         defaultLocale: "ru",
         supportedLocales: ["ru"],
-        assistantName: "Lola",
+        assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
         settings: {},

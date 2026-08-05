@@ -57,4 +57,4 @@ Scenario Authoring catalog и catalog действий загружаются н
 
 Поведение покрыто unit и component-тестами для команд AST, сериализации, mapping issues, естественных summary, Drawer, групп, focus recovery, request state machines, Event Log picker, explanation и интеграции Scenario Studio.
 
-Ручной проход выполнен на живом Lola Backend: aggregate rule, backend validation, Event Log selection и preview explanation. Layout проверен при 1440, 1024, 768, 390 и 320 px, а также в landscape. На адаптивных размерах нет собственного горизонтального переполнения; этапы прокручиваются как компактная лента, а builder и preview идут последовательно по странице.
+Ручной проход выполнен на живом Retenive Backend: aggregate rule, backend validation, Event Log selection и preview explanation. Layout проверен при 1440, 1024, 768, 390 и 320 px, а также в landscape. На адаптивных размерах нет собственного горизонтального переполнения; этапы прокручиваются как компактная лента, а builder и preview идут последовательно по странице.

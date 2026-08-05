@@ -11,7 +11,7 @@ const generated = vi.hoisted(() => ({
   activate: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   integrationConnectionCreateAmplitudeInbound: generated.createAmplitude,
   integrationConnectionCreateCustomerIoInbound: generated.createCustomerIo,
   integrationConnectionSetupAmplitudeInbound: generated.setupAmplitude,

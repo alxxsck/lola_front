@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ASSISTANT_ANIMATIONS } from "./assistant-animations";
 
 describe("assistant animation catalog", () => {
-  it("matches the public Lola SDK animation contract", () => {
+  it("matches the public Retenive SDK animation contract", () => {
     expect(ASSISTANT_ANIMATIONS).toEqual([
       "deposit",
       "excited",

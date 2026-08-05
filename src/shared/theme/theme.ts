@@ -2,7 +2,8 @@ import { readonly, ref } from 'vue'
 
 export type Theme = 'light' | 'dark'
 
-export const THEME_STORAGE_KEY = 'lola-theme'
+export const THEME_STORAGE_KEY = 'retenive-theme'
+const LEGACY_THEME_STORAGE_KEY = 'lola-theme'
 
 const activeTheme = ref<Theme>('light')
 let systemThemeQuery: MediaQueryList | null = null
@@ -16,6 +17,13 @@ function resolveThemePreference(): { theme: Theme; mediaQuery: MediaQueryList | 
   let storedTheme: string | null = null
   try {
     storedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (!isTheme(storedTheme)) {
+      const legacyTheme = localStorage.getItem(LEGACY_THEME_STORAGE_KEY)
+      if (isTheme(legacyTheme)) {
+        storedTheme = legacyTheme
+        localStorage.setItem(THEME_STORAGE_KEY, legacyTheme)
+      }
+    }
   } catch {
     // Storage can be denied by browser privacy policy; system preference remains usable.
   }
@@ -30,7 +38,7 @@ export function resolveInitialTheme(): Theme {
 
 export function applyTheme(theme: Theme): void {
   activeTheme.value = theme
-  document.documentElement.classList.toggle('lola-dark', theme === 'dark')
+  document.documentElement.classList.toggle('retenive-dark', theme === 'dark')
   document.documentElement.style.colorScheme = theme
 }
 

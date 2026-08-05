@@ -40,7 +40,7 @@ async function focusError() {
 <template>
   <main class="recovery-page">
     <section class="recovery-card" aria-live="polite">
-      <div class="brand"><span>L</span><strong>Lola CMS</strong></div>
+      <div class="brand"><span>R</span><strong>Retenive CMS</strong></div>
 
       <template v-if="state === 'SUCCESS'">
         <div class="state-icon"><i class="pi pi-envelope" /></div>

@@ -103,7 +103,7 @@ function webAuthnError(cause: unknown): string {
 <template>
   <main class="mfa-page">
     <section class="mfa-card">
-      <div class="brand"><span>Lo</span><strong>Lola</strong></div>
+      <div class="brand"><span>R</span><strong>Retenive</strong></div>
 
       <template v-if="showingCodes">
         <div class="heading">
@@ -271,8 +271,8 @@ function webAuthnError(cause: unknown): string {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 15px;
-  background: var(--status-violet);
-  color: var(--on-status-violet);
+  background: var(--status-accent);
+  color: var(--on-status-accent);
   font-size: 1.1rem;
 }
 .icon.success {

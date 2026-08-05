@@ -1,4 +1,4 @@
-const REDIRECT_BASE = "https://lola.invalid";
+const REDIRECT_BASE = "https://retenive.invalid";
 
 export function safeInternalRedirect(value: unknown): string | null {
   if (

@@ -625,7 +625,7 @@ async function save() {
         <div class="eyebrow">Поля профиля пользователей</div>
         <h1>{{ isEditing ? "Изменить поле" : "Новое поле профиля" }}</h1>
         <p class="subtitle">
-          Укажите, какие данные передаёт ваш продукт и где Lola сможет их
+          Укажите, какие данные передаёт ваш продукт и где Retenive сможет их
           использовать.
         </p>
       </div>
@@ -716,7 +716,7 @@ async function save() {
           aria-describedby="profile-field-kind-description"
         >
           <legend class="visually-hidden">
-            Как Lola должна понимать это поле?
+            Как Retenive должна понимать это поле?
           </legend>
           <div
             id="profile-field-kind-description"
@@ -725,10 +725,10 @@ async function save() {
             <span class="section-number"><i class="pi pi-sparkles" /></span>
             <span>
               <span class="preset-title"
-                >Как Lola должна понимать это поле?</span
+                >Как Retenive должна понимать это поле?</span
               >
               <small>
-                Сначала выберите назначение. Для системного поля Lola подставит
+                Сначала выберите назначение. Для системного поля Retenive подставит
                 безопасную заготовку и сразу покажет нужные настройки.
               </small>
               <small class="preset-required">Выберите один вариант.</small>
@@ -817,7 +817,7 @@ async function save() {
                 <small v-if="fieldErrors.label" class="control-error">{{
                   fieldErrors.label
                 }}</small>
-                <small>Так поле будет называться в Lola.</small>
+                <small>Так поле будет называться в Retenive.</small>
               </label>
               <label class="field-control">
                 <span>Ключ для передачи данных *</span>
@@ -1266,7 +1266,7 @@ async function save() {
   align-items: center;
   gap: 8px;
   margin-bottom: 22px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.76rem;
   font-weight: 800;
 }
@@ -1365,12 +1365,12 @@ async function save() {
 }
 .preset-option:hover:not(.unavailable) {
   transform: translateY(-1px);
-  border-color: var(--status-violet);
+  border-color: var(--status-accent);
 }
 .preset-option.selected {
-  border-color: var(--status-violet);
-  background: var(--status-violet-soft);
-  box-shadow: inset 0 0 0 1px var(--status-violet);
+  border-color: var(--status-accent);
+  background: var(--status-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--status-accent);
 }
 .preset-option.unavailable {
   opacity: 0.58;
@@ -1398,7 +1398,7 @@ async function save() {
   cursor: not-allowed;
 }
 .preset-option:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--status-violet) 45%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--status-accent) 45%, transparent);
   outline-offset: 2px;
 }
 .preset-icon {
@@ -1408,7 +1408,7 @@ async function save() {
   height: 38px;
   border-radius: 12px;
   background: var(--surface-card);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .preset-copy strong,
 .preset-copy small {
@@ -1469,7 +1469,7 @@ async function save() {
 }
 .preset-dialog-notice i {
   margin-top: 2px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .preset-dialog-copy ul {
   display: grid;
@@ -1607,8 +1607,8 @@ async function save() {
   width: 42px;
   height: 42px;
   border-radius: 13px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .usage-option {
   display: grid;
@@ -1640,7 +1640,7 @@ async function save() {
   height: 32px;
   border-radius: 10px;
   background: var(--surface-card);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .usage-option strong,
 .usage-option small {
@@ -1658,7 +1658,7 @@ async function save() {
 .purpose-control {
   padding: 15px;
   border-radius: 14px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .field-control .purpose-example {
   display: flex;
@@ -1666,14 +1666,14 @@ async function save() {
   gap: 8px;
   margin-top: 3px;
   padding: 9px 10px;
-  border: 1px solid color-mix(in srgb, var(--status-violet) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-accent) 18%, transparent);
   border-radius: 10px;
   background: var(--surface-card);
   color: var(--text-primary);
 }
 .purpose-example i {
   margin-top: 2px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .purpose-example strong {
   font-weight: 700;
@@ -1683,9 +1683,9 @@ async function save() {
   gap: 12px;
   margin-top: 17px;
   padding: 16px;
-  border: 1px solid var(--status-violet);
+  border: 1px solid var(--status-accent);
   border-radius: 14px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .locale-editor p {
   margin: 3px 0 0;
@@ -1755,8 +1755,8 @@ async function save() {
   width: 42px;
   height: 42px;
   border-radius: 13px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .advanced-section[open] summary > i {
   transform: rotate(180deg);

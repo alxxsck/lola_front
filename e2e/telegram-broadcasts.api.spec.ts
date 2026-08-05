@@ -88,7 +88,7 @@ async function installFixtures(
     id: revisionId,
     revisionNumber: 1,
     contentHash,
-    text: "В Lola появилось новое обновление.",
+    text: "В Retenive появилось новое обновление.",
     createdAt: "2026-07-23T10:00:00.000Z",
   });
   const summary = () => ({
@@ -158,7 +158,7 @@ async function installFixtures(
             publicKey: "public-key",
             defaultLocale: "ru",
             supportedLocales: ["ru"],
-            assistantName: "Lola",
+            assistantName: "Retenive",
             systemPrompt: "",
             voiceInstructions: "",
             settings: {},
@@ -314,7 +314,7 @@ test("runs the approved Telegram broadcast lifecycle through generated API contr
   await page.getByLabel("Название рассылки").fill("Июльское обновление");
   await page
     .getByLabel("Сообщение")
-    .fill("В Lola появилось новое обновление.");
+    .fill("В Retenive появилось новое обновление.");
   await page.getByRole("button", { name: "Сохранить черновик" }).click();
 
   await expect(page).toHaveURL(
@@ -373,7 +373,7 @@ test("runs the approved Telegram broadcast lifecycle through generated API contr
     status: 201,
     body: {
       title: "Июльское обновление",
-      text: "В Lola появилось новое обновление.",
+      text: "В Retenive появилось новое обновление.",
     },
   });
   const testCommand = fixture.commands.find((item) =>

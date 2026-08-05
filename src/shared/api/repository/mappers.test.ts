@@ -61,14 +61,14 @@ describe("repository domain mappers", () => {
       id: "project-1",
       version: 1,
       organizationId: "org-1",
-      name: "Lola",
-      slug: "lola",
+      name: "Retenive",
+      slug: "retenive",
       status: "ACTIVE",
       publicKey: "public",
       serverKeyPrefix: "secret-prefix",
       defaultLocale: "ru",
       supportedLocales: ["ru"],
-      assistantName: "Lola",
+      assistantName: "Retenive",
       systemPrompt: "Help",
       voiceInstructions: "Speak warmly",
       settings: { timezone: "UTC" },
@@ -296,7 +296,7 @@ describe("repository domain mappers", () => {
       actor: {
         type: "CMS_USER",
         id: "admin-1",
-        email: "owner@lola.dev",
+        email: "owner@retenive.dev",
         displayName: "Owner",
       },
       target: { kind: "PROJECT", id: "project-1" },
@@ -333,7 +333,7 @@ describe("repository domain mappers", () => {
     expect(audit.actor).toEqual({
       id: "admin-1",
       type: "CMS_USER",
-      email: "owner@lola.dev",
+      email: "owner@retenive.dev",
       name: "Owner",
     });
     expect(audit).toMatchObject({

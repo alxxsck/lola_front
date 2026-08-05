@@ -52,17 +52,17 @@ const currentRateDate = computed(() => {
   gap: 10px;
   padding: 11px 13px;
   border: 1px solid
-    color-mix(in srgb, var(--status-violet) 30%, var(--border-default));
+    color-mix(in srgb, var(--status-accent) 30%, var(--border-default));
   border-radius: 12px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.7rem;
   line-height: 1.45;
 }
 
 .tts-pricing-context > i {
   margin-top: 2px;
-  color: var(--status-violet);
+  color: var(--status-accent);
 }
 
 .tts-pricing-context > div {

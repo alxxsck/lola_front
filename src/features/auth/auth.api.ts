@@ -5,7 +5,7 @@ import {
   initialAccessLogin,
   initialAccessRefresh,
   initialAccessSetupPassword,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   CmsAuthenticatedResponseDto,
   CmsAuthenticatedUserResponseDto,
@@ -43,9 +43,9 @@ import {
   type MfaEnrollmentOptions,
 } from "./mfa.api";
 
-const DEMO_SESSION_KEY = "lola-cms-demo-auth-v1";
-const DEMO_KNOWLEDGE_PREFIX = "lola-cms-demo-knowledge-v1:";
-const TRANSLATION_JOB_PREFIX = "lola:translation-jobs:";
+const DEMO_SESSION_KEY = "retenive-cms-demo-auth-v1";
+const DEMO_KNOWLEDGE_PREFIX = "retenive-cms-demo-knowledge-v1:";
+const TRANSLATION_JOB_PREFIX = "retenive:translation-jobs:";
 const pendingEnrollmentOptions = new Map<string, MfaEnrollmentOptions>();
 type AuthenticationOperationGuard = () => boolean;
 

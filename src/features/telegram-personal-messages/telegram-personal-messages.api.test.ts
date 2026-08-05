@@ -3,13 +3,13 @@ import {
   telegramPersonalOutboundCreate,
   telegramPersonalOutboundGet,
   telegramPersonalOutboundList,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import {
   TELEGRAM_PERSONAL_UPLOAD_TIMEOUT_MS,
   telegramPersonalMessagesApi,
 } from "./telegram-personal-messages.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   telegramPersonalOutboundCreate: vi.fn(),
   telegramPersonalOutboundGet: vi.fn(),
   telegramPersonalOutboundList: vi.fn(),

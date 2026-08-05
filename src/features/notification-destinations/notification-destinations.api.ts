@@ -7,7 +7,7 @@ import {
   notificationDestinationTestTelegram,
   notificationDestinationUpdate,
   notificationDestinationUpdateTelegram,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   CreateSlackNotificationDestinationDto,
   CreateOperationalTelegramDestinationDto,

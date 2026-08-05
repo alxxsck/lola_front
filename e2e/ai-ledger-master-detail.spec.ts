@@ -56,13 +56,15 @@ test.describe("AI ledger master-detail", () => {
     page,
   }) => {
     await page.goto("/ai-operations");
-    await expect(page.locator(".operation-card")).toHaveCount(2);
+    await expect(
+      page.getByRole("table", { name: "Журнал AI-операций" }).locator("tbody tr"),
+    ).toHaveCount(2);
     await page.evaluate(() => window.scrollTo(0, 180));
     const scrollBefore = await page.evaluate(() => window.scrollY);
 
     await page
       .getByRole("link", {
-        name: "Открыть детали AI-операции 2241: Депозиты по GEO за вчера",
+        name: "Открыть операцию № 2241: Депозиты по GEO за вчера",
       })
       .click();
 
@@ -106,7 +108,7 @@ test.describe("AI ledger master-detail", () => {
   }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto(
-      "/ai-analyses/mock-analysis-succeeded?projectId=prj_lola_demo",
+      "/ai-analyses/mock-analysis-succeeded?projectId=prj_retenive_demo",
     );
     await expect(page.locator(".ai-ledger-drawer")).toBeVisible();
 

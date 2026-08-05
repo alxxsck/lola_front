@@ -72,7 +72,7 @@ const resolutionSources = [
   { value: "END_USER_EXPLICIT", label: "Подтвердил пользователь" },
   { value: "CMS_USER", label: "Подтвердил администратор" },
   { value: "TRUSTED_VERIFICATION", label: "Проверено по данным" },
-  { value: "AI_INFERENCE", label: "Оценка Lola" },
+  { value: "AI_INFERENCE", label: "Оценка Retenive" },
 ];
 const assignments = [
   { value: undefined, label: "Любой" },
@@ -408,8 +408,8 @@ const advancedVisible = ref(false);
         <InputText
           :model-value="modelValue.aiCapabilityCode"
           maxlength="100"
-          placeholder="Код инструмента Lola"
-          aria-label="Код инструмента Lola"
+          placeholder="Код инструмента Retenive"
+          aria-label="Код инструмента Retenive"
           @update:model-value="
             update({ aiCapabilityCode: $event || undefined })
           "

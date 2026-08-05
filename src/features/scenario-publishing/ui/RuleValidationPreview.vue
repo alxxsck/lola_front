@@ -1351,8 +1351,8 @@ button {
   border-radius: 11px;
 }
 .audience-issues li {
-  border-color: var(--status-violet);
-  background: var(--status-violet-soft);
+  border-color: var(--status-accent);
+  background: var(--status-accent-soft);
 }
 .event-list label {
   display: flex;

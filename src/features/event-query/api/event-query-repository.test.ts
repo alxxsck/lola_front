@@ -10,10 +10,10 @@ import {
   eventQueryPolicyListItems,
   eventQueryPolicyListRequests,
   eventQueryPolicyPreview,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import { eventQueryRepository } from "./event-query-repository";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   caseVerificationEstimate: vi.fn(),
   caseVerificationGet: vi.fn(),
   caseVerificationStart: vi.fn(),

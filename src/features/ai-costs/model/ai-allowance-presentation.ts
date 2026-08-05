@@ -16,10 +16,10 @@ const COST_QUALITY_LABELS: Record<AiAllowanceCostQuality, string> = {
 };
 
 const CATEGORY_LABELS: Record<AiAllowanceCategory, string> = {
-  CHAT: "Чат с Lola",
+  CHAT: "Чат с Retenive",
   VOICE: "Голосовой чат",
   SPEECH: "Озвучивание текста",
-  MEMORY: "Память Lola",
+  MEMORY: "Память Retenive",
   AI_REVIEW: "Проверка сообщений",
   AI_ANALYSIS: "AI-анализ",
   CMS_AGENT: "AI-помощник сотрудников",

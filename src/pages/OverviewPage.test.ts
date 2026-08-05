@@ -10,8 +10,8 @@ const mocks = vi.hoisted(() => ({
   auth: {
     project: {
       id: "project-1",
-      name: "Lola",
-      assistantName: "Lola",
+      name: "Retenive",
+      assistantName: "Retenive",
       effectivePermissionCodes: [] as string[],
     },
     user: { name: "Алексей" },

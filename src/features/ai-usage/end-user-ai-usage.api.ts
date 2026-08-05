@@ -1,4 +1,4 @@
-import { endUserAiUsageReport } from "@/shared/api/generated/lola-backend";
+import { endUserAiUsageReport } from "@/shared/api/generated/retenive-backend";
 import { isMockMode } from "@/shared/config/data-mode";
 import { parseDecimalString } from "@/shared/lib/decimal-money";
 import {

@@ -3,7 +3,7 @@ import {
   startAuthentication,
   startRegistration,
 } from "@simplewebauthn/browser";
-import { cmsSessionContextMe } from "@/shared/api/generated/lola-backend";
+import { cmsSessionContextMe } from "@/shared/api/generated/retenive-backend";
 import {
   clearAuthSession,
   coordinateAuthSessionMutation,
@@ -26,7 +26,7 @@ vi.mock("./mfa.api", () => ({
   },
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   cmsSecuritySettingsLogout: vi.fn(),
   cmsSecuritySettingsLogoutAll: vi.fn(),
   cmsSessionContextMe: vi.fn(),

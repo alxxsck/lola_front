@@ -33,7 +33,7 @@ Advanced mode больше не применяет текст сразу. Сна
 
 ## Исправленные дефекты
 
-- UI row id теперь всегда отдельный и уникальный. Повторяющийся `x-lola-field-key` больше не ломает Vue keys и не приводит к изменению двух строк одновременно.
+- UI row id теперь всегда отдельный и уникальный. Повторяющийся `x-retenive-field-key` больше не ломает Vue keys и не приводит к изменению двух строк одновременно.
 - Catalog field связывается по `fieldKey`. Fallback по path разрешён только для старого поля без stable identity.
 - Capability summary разделяет два контекста: поле trigger Event и фильтр/расчёт по истории.
 - Невалидная advanced schema остаётся в редакторе с понятной ошибкой и не заменяет draft.
@@ -60,7 +60,7 @@ Backend acceptance подтвердил сохранение `countsAsActivity`,
 
 ## Что всё ещё ограничено backend
 
-BE-FE-03 не даёт надёжную current-head identity и provenance Event Definition. Поэтому frontend не группирует revisions по `code` и не угадывает managed state по префиксу `lola.*`.
+BE-FE-03 не даёт надёжную current-head identity и provenance Event Definition. Поэтому frontend не группирует revisions по `code` и не угадывает managed state по префиксу `retenive.*`.
 
 BE-FE-04 не даёт revision history, compatibility и impact API. Локальный diff показывает, что изменил администратор, но не обещает совместимость внешних producers или опубликованных сценариев.
 

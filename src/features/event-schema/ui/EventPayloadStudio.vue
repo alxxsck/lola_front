@@ -1023,8 +1023,8 @@ watch(
   font-weight: 700;
 }
 .secondary-button {
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .primary-inline-button {
   background: var(--action-primary);
@@ -1033,7 +1033,7 @@ watch(
 .link-button {
   padding: 3px 0;
   background: transparent;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.76rem;
 }
 .icon-button {
@@ -1228,7 +1228,7 @@ watch(
 }
 .sample-details summary {
   cursor: pointer;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.76rem;
   font-weight: 700;
 }

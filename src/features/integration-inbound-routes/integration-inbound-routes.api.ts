@@ -1,7 +1,7 @@
 import {
   integrationEventRouteCreateAmplitudeInbound,
   integrationEventRouteCreateCustomerIoInbound,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type { CreateAmplitudeInboundRouteDto } from "@/shared/api/generated/models";
 import type { InboundIntegrationProvider } from "@/features/integration-inbound-connections/integration-inbound-connections.api";
 

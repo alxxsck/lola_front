@@ -213,7 +213,7 @@
           "source": {
             "enum": [
               "END_USER_REQUEST",
-              "LOLA_DECISION",
+              "RETENIVE_DECISION",
               "CMS_USER",
               "SYSTEM_POLICY"
             ],
@@ -2029,9 +2029,6 @@
           "inputPricePerMillion": {
             "type": "string"
           },
-          "lolaTested": {
-            "type": "boolean"
-          },
           "outputPricePerMillion": {
             "type": "string"
           },
@@ -2054,6 +2051,9 @@
           "reasoningRequired": {
             "type": "boolean"
           },
+          "reteniveTested": {
+            "type": "boolean"
+          },
           "selectable": {
             "type": "boolean"
           },
@@ -2071,7 +2071,7 @@
           "workload",
           "reasoningEfforts",
           "reasoningRequired",
-          "lolaTested",
+          "reteniveTested",
           "selectable",
           "providerAvailable",
           "inputPricePerMillion",
@@ -4915,7 +4915,7 @@
           },
           "headerName": {
             "enum": [
-              "x-lola-amplitude-secret"
+              "x-retenive-amplitude-secret"
             ],
             "type": "string"
           },
@@ -13912,7 +13912,7 @@
             "enum": [
               "CMS_USER",
               "END_USER",
-              "LOLA",
+              "RETENIVE",
               "SYSTEM",
               "BREAK_GLASS"
             ],
@@ -14052,7 +14052,7 @@
           "source": {
             "enum": [
               "END_USER_REQUEST",
-              "LOLA_DECISION",
+              "RETENIVE_DECISION",
               "CMS_USER",
               "SYSTEM_POLICY"
             ],
@@ -15334,7 +15334,7 @@
           "origin": {
             "enum": [
               "CUSTOM",
-              "LOLA_MANAGED"
+              "RETENIVE_MANAGED"
             ],
             "type": "string"
           },
@@ -15667,7 +15667,7 @@
       "EventDefinitionOrigin": {
         "enum": [
           "CUSTOM",
-          "LOLA_MANAGED"
+          "RETENIVE_MANAGED"
         ],
         "type": "string"
       },
@@ -31855,7 +31855,7 @@
             "type": "string"
           },
           "text": {
-            "description": "Exact first phrase that Lola will synthesize after the user accepts the call.",
+            "description": "Exact first phrase that Retenive will synthesize after the user accepts the call.",
             "maxLength": 2000,
             "minLength": 1,
             "type": "string"
@@ -32283,7 +32283,7 @@
       "TelegramBindingChallengeResponseDto": {
         "properties": {
           "botUsername": {
-            "example": "LolaOpsBot",
+            "example": "ReteniveOpsBot",
             "type": "string"
           },
           "command": {
@@ -36751,8 +36751,8 @@
   },
   "info": {
     "contact": {},
-    "description": "CMS, integration, chat and realtime API for Lola AI Assistant",
-    "title": "Lola Backend Platform",
+    "description": "CMS, integration, chat and realtime API for Retenive AI Assistant",
+    "title": "Retenive Backend Platform",
     "version": "0.1.0"
   },
   "openapi": "3.0.0",
@@ -64918,8 +64918,19 @@
             }
           },
           {
+            "deprecated": true,
             "in": "header",
             "name": "x-lola-amplitude-secret",
+            "required": false,
+            "schema": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-retenive-amplitude-secret",
             "required": true,
             "schema": {
               "maxLength": 512,

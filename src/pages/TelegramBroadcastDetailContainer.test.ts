@@ -85,7 +85,7 @@ async function mountRoute() {
       publicKey: "public",
       defaultLocale: "ru",
       supportedLocales: ["ru"],
-      assistantName: "Lola",
+      assistantName: "Retenive",
       systemPrompt: "",
       voiceInstructions: "",
       settings: {},

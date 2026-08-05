@@ -24,7 +24,7 @@ import {
   endUserCasesTransferEscalation,
   endUserCasesUnlinkMessage,
   endUserCasesWorkflow,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   AssignEndUserCaseDto,
   CancelEndUserCaseEscalationDto,

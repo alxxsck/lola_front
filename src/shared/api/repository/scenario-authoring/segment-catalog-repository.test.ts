@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { segmentCatalogCatalog } from '@/shared/api/generated/lola-backend'
+import { segmentCatalogCatalog } from '@/shared/api/generated/retenive-backend'
 import { segmentCatalogRepository } from './segment-catalog-repository'
 
-vi.mock('@/shared/api/generated/lola-backend', () => ({ segmentCatalogCatalog: vi.fn() }))
+vi.mock('@/shared/api/generated/retenive-backend', () => ({ segmentCatalogCatalog: vi.fn() }))
 
 describe('segment-owned catalog repository', () => {
   beforeEach(() => vi.clearAllMocks())

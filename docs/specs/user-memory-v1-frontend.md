@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-CMS Users cannot see or control the context Lola remembers across Conversations. Project
+CMS Users cannot see or control the context Retenive remembers across Conversations. Project
 administrators also need a simple way to stop memory-related AI spend without deleting stored
 facts, while operators need provenance before trusting or removing a fact.
 
@@ -25,11 +25,11 @@ current PrimeVue patterns.
 4. As a Project administrator, I want to see the fact TTL, so that retention is explicit.
 5. As a read-only CMS User, I want to see settings without editable controls, so that permission
    boundaries are clear.
-6. As an operator, I want to see an End User's active memory facts, so that I know what Lola may use.
+6. As an operator, I want to see an End User's active memory facts, so that I know what Retenive may use.
 7. As an operator, I want each fact to show category, value, source time, and expiry, so that I can
    judge whether it is still relevant.
 8. As an authorized operator, I want to delete one incorrect fact, so that it stops influencing
-   Lola immediately.
+   Retenive immediately.
 9. As an authorized operator, I want to clear all memory only after confirmation, so that accidental
    bulk deletion is difficult.
 10. As an operator, I want disabled memory to be visibly described as paused rather than deleted, so

@@ -47,7 +47,7 @@ const statCards = computed(() =>
           label: "Активные сценарии",
           value: stats.value?.scenarios ?? 0,
           icon: "pi pi-sitemap",
-          tone: "violet",
+          tone: "accent",
           hint: "Запущены сейчас",
           suffix: undefined,
           permissions: ["project.scenarios.read"],
@@ -91,7 +91,7 @@ const statCards = computed(() =>
           label: "Активные сценарии",
           value: stats.value?.scenarios ?? 0,
           icon: "pi pi-sitemap",
-          tone: "violet",
+          tone: "accent",
           hint: "Запущены сейчас",
         },
         {
@@ -127,7 +127,7 @@ const quickLinks = computed(() =>
       description: "Свяжите событие с действиями ассистента",
       icon: "pi pi-sitemap",
       to: "/scenarios",
-      tone: "violet",
+      tone: "accent",
       permission: "project.scenarios.write",
     },
     {
@@ -375,7 +375,7 @@ onMounted(loadDashboard);
           }}</span>
           <span
             ><small>Ваш ассистент</small
-            ><strong>{{ auth.project?.assistantName || "Lola" }}</strong></span
+            ><strong>{{ auth.project?.assistantName || "Retenive" }}</strong></span
           >
           <span class="project-note-action">Настроить</span>
         </RouterLink>
@@ -541,9 +541,9 @@ onMounted(loadDashboard);
   --card-color: var(--overview-tone-coral-foreground);
   --card-soft: var(--overview-tone-coral-soft);
 }
-.tone-violet {
-  --card-color: var(--overview-tone-violet-foreground);
-  --card-soft: var(--overview-tone-violet-soft);
+.tone-accent {
+  --card-color: var(--overview-tone-accent-foreground);
+  --card-soft: var(--overview-tone-accent-soft);
 }
 .online-label {
   display: flex;
@@ -727,8 +727,8 @@ onMounted(loadDashboard);
   width: 37px;
   height: 37px;
   border-radius: 50%;
-  background: var(--status-violet);
-  color: var(--on-status-violet);
+  background: var(--status-accent);
+  color: var(--on-status-accent);
   font: 700 0.9rem var(--font-display);
 }
 .project-note > span:nth-child(2) {

@@ -4,7 +4,7 @@ import {
   aIReviewSettings,
   aIReviewStart,
   aIReviewUpdateSettings,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import { isMockMode } from "@/shared/config/data-mode";
 import type {
   AIReviewEstimate,

@@ -146,11 +146,11 @@ function clearPendingTestsView(): void {
 }
 
 function pendingTestsStorageKey(projectId: string): string {
-  return `lola:${providerUi.value.slug}-pending-tests:${projectId}`;
+  return `retenive:${providerUi.value.slug}-pending-tests:${projectId}`;
 }
 
 function unresolvedSecretStorageKey(projectId: string): string {
-  return `lola:${providerUi.value.slug}-unresolved-secret:${projectId}`;
+  return `retenive:${providerUi.value.slug}-unresolved-secret:${projectId}`;
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -1085,7 +1085,7 @@ function setActionFailure(cause: unknown, retryAvailable = false): void {
     return;
   }
   actionError.value = retryAvailable
-    ? "Сервер не подтвердил результат. Повторите запрос — Lola использует тот же безопасный ключ повтора."
+    ? "Сервер не подтвердил результат. Повторите запрос — Retenive использует тот же безопасный ключ повтора."
     : providerUi.value.connectionMutationError;
 }
 
@@ -1333,7 +1333,7 @@ onBeforeUnmount(() => {
                 </p>
               </div>
               <label class="integration-field">
-                <span>Название в Lola</span>
+                <span>Название в Retenive</span>
                 <input
                   v-model="metadataDrafts[connection.id]!.displayName"
                   maxlength="120"
@@ -1434,111 +1434,115 @@ onBeforeUnmount(() => {
       </p>
     </div>
 
-    <form
-      v-if="canManage && (!hasConnections || showCreate)"
-      :id="`${providerUi.slug}-create-connection`"
-      class="secret-form provider-create-form"
-      :data-form="`create-${providerUi.slug}`"
-      @submit.prevent="create"
-    >
-      <div class="form-intro">
-        <span class="setup-step"
-          ><i class="pi pi-plus" aria-hidden="true"
-        /></span>
-        <div>
-          <h3>
-            {{
-              hasConnections ? "Новое подключение" : "Подключите первый проект"
-            }}
-          </h3>
-          <p>
-            Lola сохранит ключ в зашифрованном виде и сразу выполнит тестовую
-            отправку.
-          </p>
+    <Transition name="integration-reveal">
+      <form
+        v-if="canManage && (!hasConnections || showCreate)"
+        :id="`${providerUi.slug}-create-connection`"
+        class="secret-form provider-create-form"
+        :data-form="`create-${providerUi.slug}`"
+        @submit.prevent="create"
+      >
+        <div class="form-intro">
+          <span class="setup-step"
+            ><i class="pi pi-plus" aria-hidden="true"
+          /></span>
+          <div>
+            <h3>
+              {{
+                hasConnections
+                  ? "Новое подключение"
+                  : "Подключите первый проект"
+              }}
+            </h3>
+            <p>
+              Retenive сохранит ключ в зашифрованном виде и сразу выполнит тестовую
+              отправку.
+            </p>
+          </div>
         </div>
-      </div>
-      <label class="integration-field">
-        <span>Название в Lola</span>
-        <input
-          v-model="displayName"
-          :name="`${providerUi.formNamePrefix}DisplayName`"
-          maxlength="120"
-        />
-        <small>Например, «Основной проект» или «Продакшен».</small>
-      </label>
-      <label class="integration-field">
-        <span>Где хранятся данные</span>
-        <Select
-          v-model="region"
-          :name="`${providerUi.formNamePrefix}Region`"
-          :options="integrationRegionOptions"
-          option-label="label"
-          option-value="value"
-          fluid
-        />
-        <small>
-          Выберите регион внешнего проекта. От него зависит адрес API, в который
-          Lola отправляет события.
-        </small>
-      </label>
-      <label class="integration-field">
-        <span>Проект в {{ providerUi.title }} (необязательно)</span>
-        <input
-          v-model="remoteProjectLabel"
-          :name="`${providerUi.formNamePrefix}RemoteProjectLabel`"
-          maxlength="120"
-        />
-        <small>
-          Любая понятная подпись внешнего проекта или рабочего пространства. Это
-          справочное поле.
-        </small>
-      </label>
-      <label class="integration-field">
-        <span>{{ providerUi.credentialShortLabel }}</span>
-        <input
-          v-model="credentialSecret"
-          :name="`${providerUi.formNamePrefix}${providerUi.credentialName[0]!.toUpperCase()}${providerUi.credentialName.slice(1)}`"
-          type="password"
-          autocomplete="off"
-          :maxlength="providerUi.credentialMaxLength"
-          :placeholder="providerUi.credentialPlaceholder"
-          :disabled="secretRetryPending && !createRetry"
-        />
-      </label>
-      <small>{{ providerUi.credentialHelp }}</small>
-      <div class="form-actions">
-        <button
-          type="submit"
-          :disabled="
-            creating || pendingConnectionId !== null || secretRetryPending
-          "
-        >
-          Создать и проверить
-        </button>
-        <button
-          v-if="createRetry"
-          type="button"
-          class="secondary"
-          :data-action="`retry-create-${providerUi.slug}`"
-          :disabled="
-            creating || pendingConnectionId !== null || !credentialSecret
-          "
-          @click="retryCreate"
-        >
-          Повторить неподтверждённый запрос
-        </button>
-        <button
-          v-if="createRetry"
-          type="button"
-          class="secondary"
-          :data-action="`discard-create-${providerUi.slug}`"
-          :disabled="creating || pendingConnectionId !== null"
-          @click="discardCreateRetry"
-        >
-          Отменить безопасный повтор
-        </button>
-      </div>
-    </form>
+        <label class="integration-field">
+          <span>Название в Retenive</span>
+          <input
+            v-model="displayName"
+            :name="`${providerUi.formNamePrefix}DisplayName`"
+            maxlength="120"
+          />
+          <small>Например, «Основной проект» или «Продакшен».</small>
+        </label>
+        <label class="integration-field">
+          <span>Где хранятся данные</span>
+          <Select
+            v-model="region"
+            :name="`${providerUi.formNamePrefix}Region`"
+            :options="integrationRegionOptions"
+            option-label="label"
+            option-value="value"
+            fluid
+          />
+          <small>
+            Выберите регион внешнего проекта. От него зависит адрес API, в
+            который Retenive отправляет события.
+          </small>
+        </label>
+        <label class="integration-field">
+          <span>Проект в {{ providerUi.title }} (необязательно)</span>
+          <input
+            v-model="remoteProjectLabel"
+            :name="`${providerUi.formNamePrefix}RemoteProjectLabel`"
+            maxlength="120"
+          />
+          <small>
+            Любая понятная подпись внешнего проекта или рабочего пространства.
+            Это справочное поле.
+          </small>
+        </label>
+        <label class="integration-field">
+          <span>{{ providerUi.credentialShortLabel }}</span>
+          <input
+            v-model="credentialSecret"
+            :name="`${providerUi.formNamePrefix}${providerUi.credentialName[0]!.toUpperCase()}${providerUi.credentialName.slice(1)}`"
+            type="password"
+            autocomplete="off"
+            :maxlength="providerUi.credentialMaxLength"
+            :placeholder="providerUi.credentialPlaceholder"
+            :disabled="secretRetryPending && !createRetry"
+          />
+        </label>
+        <small>{{ providerUi.credentialHelp }}</small>
+        <div class="form-actions">
+          <button
+            type="submit"
+            :disabled="
+              creating || pendingConnectionId !== null || secretRetryPending
+            "
+          >
+            Создать и проверить
+          </button>
+          <button
+            v-if="createRetry"
+            type="button"
+            class="secondary"
+            :data-action="`retry-create-${providerUi.slug}`"
+            :disabled="
+              creating || pendingConnectionId !== null || !credentialSecret
+            "
+            @click="retryCreate"
+          >
+            Повторить неподтверждённый запрос
+          </button>
+          <button
+            v-if="createRetry"
+            type="button"
+            class="secondary"
+            :data-action="`discard-create-${providerUi.slug}`"
+            :disabled="creating || pendingConnectionId !== null"
+            @click="discardCreateRetry"
+          >
+            Отменить безопасный повтор
+          </button>
+        </div>
+      </form>
+    </Transition>
   </section>
 </template>
 

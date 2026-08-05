@@ -225,7 +225,7 @@ describe("conversation translation controller", () => {
     expect(controller.draft.value).toBeNull();
     expect(
       sessionStorage.getItem(
-        "lola:reply-translation-draft:project-1:user-1:conversation-2",
+        "retenive:reply-translation-draft:project-1:user-1:conversation-2",
       ),
     ).toBeNull();
   });
@@ -403,7 +403,7 @@ describe("conversation translation controller", () => {
     vi.useFakeTimers();
     try {
       sessionStorage.setItem(
-        "lola:reply-translation-draft:project-1:user-1:conversation-1",
+        "retenive:reply-translation-draft:project-1:user-1:conversation-1",
         JSON.stringify({
           draftId: "draft-1",
           sourceTextHash: "hash-1",
@@ -528,7 +528,7 @@ describe("conversation translation controller", () => {
 
   it("не сохраняет source plaintext в CMS-scoped session recovery envelope", async () => {
     const storageKey =
-      "lola:reply-translation-draft:project-1:user-1:conversation-1";
+      "retenive:reply-translation-draft:project-1:user-1:conversation-1";
     const controller = createConversationTranslationController(
       {
         projectId: () => "project-1",
@@ -605,7 +605,7 @@ describe("conversation translation controller", () => {
 
   it("немедленно удаляет legacy recovery envelope с source plaintext", async () => {
     const storageKey =
-      "lola:reply-translation-draft:project-1:user-1:conversation-1";
+      "retenive:reply-translation-draft:project-1:user-1:conversation-1";
     sessionStorage.setItem(
       storageKey,
       JSON.stringify({
@@ -642,7 +642,7 @@ describe("conversation translation controller", () => {
 
   it("удаляет legacy plaintext до завершения первого network request", async () => {
     const storageKey =
-      "lola:reply-translation-draft:project-1:user-1:conversation-1";
+      "retenive:reply-translation-draft:project-1:user-1:conversation-1";
     sessionStorage.setItem(
       storageKey,
       JSON.stringify({
@@ -694,7 +694,7 @@ describe("conversation translation controller", () => {
     "очищает recovery envelope, если в авторизованном GET %s",
     async (_case, responsePatch) => {
       const storageKey =
-        "lola:reply-translation-draft:project-1:user-1:conversation-1";
+        "retenive:reply-translation-draft:project-1:user-1:conversation-1";
       sessionStorage.setItem(
         storageKey,
         JSON.stringify({
@@ -755,7 +755,7 @@ describe("conversation translation controller", () => {
     expect(controller.draft.value).toBeNull();
     expect(
       sessionStorage.getItem(
-        "lola:reply-translation-draft:project-1:user-1:conversation-1",
+        "retenive:reply-translation-draft:project-1:user-1:conversation-1",
       ),
     ).toBeNull();
   });

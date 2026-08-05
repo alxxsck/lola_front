@@ -364,7 +364,7 @@ describe("translation job controller", () => {
 
   it("restores pending state for every field in a recovered batch job", async () => {
     sessionStorage.setItem(
-      "lola:translation-jobs:p:allowance-policy",
+      "retenive:translation-jobs:p:allowance-policy",
       JSON.stringify([
         {
           jobId: "job-batch-recovered",
@@ -420,7 +420,7 @@ describe("translation job controller", () => {
 
   it("recovers an accepted job from the same-tab session and cleans terminal storage", async () => {
     sessionStorage.setItem(
-      "lola:translation-jobs:p:s",
+      "retenive:translation-jobs:p:s",
       JSON.stringify([
         {
           jobId: "job-recovered",

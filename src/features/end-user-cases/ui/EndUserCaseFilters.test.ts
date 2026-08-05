@@ -123,7 +123,7 @@ describe("EndUserCaseFilters", () => {
     field("Просроченность").vm.$emit("update:modelValue", "NO");
     field("Состояние анализа").vm.$emit("update:modelValue", "YES");
     field("Канал").vm.$emit("update:modelValue", ["VOICE"]);
-    field("Код инструмента Lola").vm.$emit(
+    field("Код инструмента Retenive").vm.$emit(
       "update:modelValue",
       "check_deposit",
     );

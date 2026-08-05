@@ -7,10 +7,10 @@ import {
   projectRoleList,
   projectRoleReassign,
   projectRoleUpdate,
-} from '@/shared/api/generated/lola-backend'
+} from '@/shared/api/generated/retenive-backend'
 import { projectRoleApi } from './project-role.api'
 
-vi.mock('@/shared/api/generated/lola-backend', () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   projectPermissionList: vi.fn(),
   projectRoleArchive: vi.fn(),
   projectRoleCreate: vi.fn(),

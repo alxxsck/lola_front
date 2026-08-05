@@ -1,7 +1,7 @@
 import {
   aiPricingRevisionGet,
   aiPricingRevisionPublish,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type { PublishAiPricingRevisionDto } from "@/shared/api/generated/models";
 
 const REVISION_LIMIT = 100;

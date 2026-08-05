@@ -115,7 +115,7 @@ watch(() => props.projectId, load);
       title="Доступ AI к событиям"
       description="Общий доступ к событиям и безопасная проверка данных."
       icon="pi pi-shield"
-      tone="violet"
+      tone="accent"
       content-id="event-query-policy-settings"
     />
 

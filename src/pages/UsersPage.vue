@@ -589,8 +589,8 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .callout-action {
   display: inline-flex;
@@ -667,8 +667,8 @@ onBeforeUnmount(() => {
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-weight: 800;
 }
 .load-more {

@@ -4,14 +4,14 @@ import {
   type AccessTokenLock,
 } from "./access-token-coordinator";
 
-const PROJECT_KEY = "lola-cms-selected-project-v1";
-const TRANSLATION_JOB_PREFIX = "lola:translation-jobs:";
-const REPLY_TRANSLATION_DRAFT_PREFIX = "lola:reply-translation-draft:";
-const AMPLITUDE_PENDING_TEST_PREFIX = "lola:amplitude-pending-tests:";
-const AMPLITUDE_UNRESOLVED_SECRET_PREFIX = "lola:amplitude-unresolved-secret:";
+const PROJECT_KEY = "retenive-cms-selected-project-v1";
+const TRANSLATION_JOB_PREFIX = "retenive:translation-jobs:";
+const REPLY_TRANSLATION_DRAFT_PREFIX = "retenive:reply-translation-draft:";
+const AMPLITUDE_PENDING_TEST_PREFIX = "retenive:amplitude-pending-tests:";
+const AMPLITUDE_UNRESOLVED_SECRET_PREFIX = "retenive:amplitude-unresolved-secret:";
 const AMPLITUDE_PENDING_ROUTE_CREATE_PREFIX =
-  "lola:amplitude-pending-route-create:";
-const AUTH_CHANNEL_NAME = "lola-cms-auth-session-v1";
+  "retenive:amplitude-pending-route-create:";
+const AUTH_CHANNEL_NAME = "retenive-cms-auth-session-v1";
 
 function browserChannel(): AccessTokenChannel | undefined {
   if (

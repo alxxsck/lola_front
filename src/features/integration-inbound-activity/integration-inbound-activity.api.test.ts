@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const generated = vi.hoisted(() => ({ activity: vi.fn(), health: vi.fn() }));
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   integrationEventRouteInboundActivityList: generated.activity,
   integrationEventRouteInboundHealthRead: generated.health,
 }));

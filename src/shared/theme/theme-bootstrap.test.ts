@@ -24,9 +24,18 @@ describe('theme bootstrap', () => {
     window.eval(bootstrapSource)
 
     expect({
-      hasDarkClass: document.documentElement.classList.contains('lola-dark'),
+      hasDarkClass: document.documentElement.classList.contains('retenive-dark'),
       colorScheme: document.documentElement.style.colorScheme,
     }).toEqual({ hasDarkClass: true, colorScheme: 'dark' })
+  })
+
+  it('migrates a valid legacy preference synchronously', () => {
+    localStorage.setItem('lola-theme', 'dark')
+
+    window.eval(bootstrapSource)
+
+    expect(document.documentElement.classList.contains('retenive-dark')).toBe(true)
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark')
   })
 
   it.each([
@@ -41,7 +50,7 @@ describe('theme bootstrap', () => {
       removeEventListener: vi.fn(),
     }))
     window.eval(bootstrapSource)
-    const bootstrapTheme = document.documentElement.classList.contains('lola-dark') ? 'dark' : 'light'
+    const bootstrapTheme = document.documentElement.classList.contains('retenive-dark') ? 'dark' : 'light'
     document.documentElement.className = ''
     document.documentElement.style.colorScheme = ''
 

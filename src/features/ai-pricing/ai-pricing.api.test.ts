@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   aiPricingRevisionGet,
   aiPricingRevisionPublish,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import {
   fetchTextToSpeechPricing,
   parseTextToSpeechPricing,
   publishTextToSpeechPricing,
 } from "./ai-pricing.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   aiPricingRevisionGet: vi.fn(),
   aiPricingRevisionPublish: vi.fn(),
 }));

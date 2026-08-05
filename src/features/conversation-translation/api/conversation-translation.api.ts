@@ -8,7 +8,7 @@ import {
   replyTranslationDraftEdit,
   replyTranslationDraftGet,
   replyTranslationDraftRetry,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   ConversationMessageTranslationItemResponseDto,
   ConversationMessageTranslationsResponseDto,
@@ -27,7 +27,7 @@ const mockMessageTranslations = new Map<
 const mockDrafts = new Map<string, ReplyTranslationDraftResponseDto>();
 
 function mockPreferenceStorageKey(conversationId: string): string {
-  return `lola:mock-conversation-translation:${conversationId}`;
+  return `retenive:mock-conversation-translation:${conversationId}`;
 }
 
 function readStoredMockPreference(

@@ -17,7 +17,7 @@
 Исследование опирается на первичные источники: Material Design, IBM Carbon,
 Microsoft Fluent 2 и W3C/WAI. Nielsen Norman Group используется только для
 прямых выводов из их исследований сканирования listing pages. Предложения для
-Lola — синтез источников, а не копирование готового компонента одной системы.
+Retenive — синтез источников, а не копирование готового компонента одной системы.
 
 ## Что именно не работало в исходном экране
 
@@ -39,7 +39,7 @@ switch и несколько действий. Поэтому важный ди�
   элементов, чтобы поддерживать быстрое сравнение
   ([NN/g: The Anatomy of a List Entry](https://www.nngroup.com/articles/list-entries/)).
 
-## Главные решения для Lola
+## Главные решения для Retenive
 
 1. **Сделать визуальную CSS-grid, но сохранить семантику обычного списка
    статей.** Карточки являются однородной коллекцией Event Definition и
@@ -239,7 +239,7 @@ status message был доступен assistive technology без перено�
 ([W3C: Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html)).
 
 Для read-only/system события switch либо заменяется статическим текстом
-«Управляется Lola», либо остаётся disabled только если рядом видна причина.
+«Управляется Retenive», либо остаётся disabled только если рядом видна причина.
 Disabled styling сам по себе не обязан проходить контраст в Carbon, поэтому
 полагаться только на бледный switch нельзя
 ([Carbon: Tag disabled state](https://carbondesignsystem.com/components/tag/usage/#behaviors)).
@@ -252,7 +252,7 @@ Disabled styling сам по себе не обязан проходить ко�
    взаимоисключающих набора.
 2. Внутри активного набора toolbar содержит search, filters и sort.
 3. Результаты по умолчанию разделены headings:
-   `Проектные события · N` и `Системные Lola · N`.
+   `Проектные события · N` и `Системные Retenive · N`.
 
 Content switcher подходит для альтернативных представлений одного связанного
 набора и использует короткие noun labels, но только один section виден
@@ -296,7 +296,7 @@ search остаётся полной ширины, а фильтры откры�
 
 ## Responsive-композиция
 
-Следующие размеры — стартовые ограничения прототипа Lola, а не универсальные
+Следующие размеры — стартовые ограничения прототипа Retenive, а не универсальные
 брейкпоинты из дизайн-системы. Переключение должно происходить по доступной
 ширине content container, а не по названию устройства. Fluent описывает
 reposition, resize, reflow и show/hide как responsive techniques, а Android
@@ -305,7 +305,7 @@ controls
 ([Fluent 2: Layout](https://fluent2.microsoft.design/layout),
 [Android: Adapt layouts](https://developer.android.com/design/ui/mobile/guides/layout-and-content/adapt-layout)).
 
-| Доступная ширина каталога | Предложение Lola | Поведение                                                            |
+| Доступная ширина каталога | Предложение Retenive | Поведение                                                            |
 | ------------------------- | ---------------- | -------------------------------------------------------------------- |
 | ≳ 1200 px                 | 3 колонки        | Bounded content; toolbar в одну строку; одинаковые card slots        |
 | ≈ 720–1199 px             | 2 колонки        | Filters могут перейти на вторую строку; card footer остаётся снизу   |
@@ -403,7 +403,7 @@ Fluent допускает show/hide secondary metadata, но responsive layout �
 | Filters             | inline toolbar                            | wrap или compact trigger                     | full-width search + drawer             |
 | Accessibility       | Tab order, screen reader names, 200% text | portrait/landscape                           | 400% zoom/320 CSS px, touch            |
 
-Viewport-набор — тестовый минимум Lola; нормативная часть состоит в сохранении
+Viewport-набор — тестовый минимум Retenive; нормативная часть состоит в сохранении
 функций при 320 CSS px/400% zoom и достаточном target size
 ([W3C: Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html),
 [W3C: Target Size Minimum](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)).
@@ -440,7 +440,7 @@ Viewport-набор — тестовый минимум Lola; нормативн
 
 Внешние источники подтверждают иерархию, поведение карточек, disclosure,
 filtering, responsive и accessibility, но не доказывают, что именно три
-колонки или ровно четыре строки preview оптимальны для данных Lola. Эти числа
+колонки или ровно четыре строки preview оптимальны для данных Retenive. Эти числа
 являются стартовой гипотезой и должны быть проверены на реальных Event
 Definitions, особенно с длинными русскими названиями/code и максимальными
 описаниями. NN/g прямо рекомендует определять атрибуты listing entry через

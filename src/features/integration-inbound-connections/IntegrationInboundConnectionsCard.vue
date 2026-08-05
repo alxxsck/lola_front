@@ -21,9 +21,9 @@ const providerUi = computed(() =>
     ? {
         slug: "amplitude",
         title: "Amplitude",
-        header: "x-lola-amplitude-secret",
+        header: "x-retenive-amplitude-secret",
         warning:
-          "Amplitude API Call не подписывает webhook: секретный заголовок Lola обязателен.",
+          "Amplitude API Call не подписывает webhook: секретный заголовок Retenive обязателен.",
       }
     : {
         slug: "customer-io",
@@ -271,7 +271,7 @@ onMounted(() => void load());
         <h2>Защищённый приём из {{ providerUi.title }}</h2>
         <p>
           Это не второй аккаунт {{ providerUi.title }} и не ещё один API-ключ.
-          Lola создаёт отдельный адрес webhook и секрет, чтобы проверять каждый
+          Retenive создаёт отдельный адрес webhook и секрет, чтобы проверять каждый
           входящий запрос до обработки.
         </p>
       </div>
@@ -401,25 +401,27 @@ onMounted(() => void load());
           >
             Настроить webhook
           </button>
-          <button
-            v-else
-            type="button"
-            class="secondary"
-            :data-action="`rotate-inbound-${providerUi.slug}`"
-            :disabled="pending"
-            @click="configure(connection, 'ROTATE')"
-          >
-            Заменить секрет
-          </button>
-          <label v-if="connection.inbound.configured" class="overlap-field">
-            <span>Переходный период, секунд</span>
-            <input
-              v-model.number="overlapSeconds"
-              type="number"
-              min="0"
-              max="3600"
-            />
-          </label>
+          <div v-else class="credential-rotation">
+            <label class="integration-field overlap-field">
+              <span>Переходный период, секунд</span>
+              <input
+                v-model.number="overlapSeconds"
+                name="overlapSeconds"
+                type="number"
+                min="0"
+                max="3600"
+              />
+            </label>
+            <button
+              type="button"
+              class="secondary"
+              :data-action="`rotate-inbound-${providerUi.slug}`"
+              :disabled="pending"
+              @click="configure(connection, 'ROTATE')"
+            >
+              Заменить секрет
+            </button>
+          </div>
           <button
             v-if="
               connection.lifecycle !== 'ACTIVE' && connection.inbound.configured
@@ -446,12 +448,12 @@ onMounted(() => void load());
           <h3>Новый защищённый адрес</h3>
           <p>
             Укажите его в {{ providerUi.title }} как получателя событий. После
-            создания Lola покажет адрес webhook и секрет только один раз.
+            создания Retenive покажет адрес webhook и секрет только один раз.
           </p>
         </div>
       </div>
       <label class="integration-field">
-        <span>Название адреса в Lola</span>
+        <span>Название адреса в Retenive</span>
         <input
           v-model="displayName"
           name="inboundDisplayName"
@@ -522,7 +524,13 @@ onMounted(() => void load());
 }
 .overlap-field {
   display: grid;
-  gap: 4px;
+  gap: 7px;
+}
+.credential-rotation {
+  display: grid;
+  grid-template-columns: minmax(210px, 260px) auto;
+  align-items: end;
+  gap: 10px;
 }
 @media (max-width: 700px) {
   .card-heading,
@@ -530,6 +538,9 @@ onMounted(() => void load());
   .actions {
     align-items: stretch;
     flex-direction: column;
+  }
+  .credential-rotation {
+    grid-template-columns: 1fr;
   }
 }
 </style>

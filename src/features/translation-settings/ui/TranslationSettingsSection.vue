@@ -182,7 +182,7 @@ watch(
       title="Переводы"
       description="Единые правила для сценариев и диалогов поддержки."
       icon="pi pi-language"
-      tone="violet"
+      tone="accent"
       content-id="translation-settings"
     />
     <div
@@ -391,7 +391,7 @@ watch(
   align-items: center;
   width: fit-content;
   gap: 7px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.68rem;
   font-weight: 700;
   text-decoration: none;
@@ -431,7 +431,7 @@ watch(
 }
 .translation-policy i {
   width: 20px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .working-locale {
   min-height: 42px;

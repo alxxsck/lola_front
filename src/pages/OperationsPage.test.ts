@@ -379,7 +379,7 @@ describe("OperationsPage", () => {
         id: "admin-1",
         type: "CMS_USER",
         name: "Owner",
-        email: "owner@lola.dev",
+        email: "owner@retenive.dev",
       },
       target: { kind: "PROJECT", id: "project-1" },
       resourceType: "SCENARIO",

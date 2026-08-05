@@ -392,10 +392,10 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
       <p class="intro">
         {{
           kind === "userAttribute"
-            ? "При запуске сценария Lola проверит последнее сохранённое значение выбранного поля."
+            ? "При запуске сценария Retenive проверит последнее сохранённое значение выбранного поля."
             : kind === "segmentMembership"
-              ? "При запуске сценария Lola проверит, входит ли пользователь в выбранный сегмент."
-              : "При запуске сценария Lola проверит выбранные данные пользователя."
+              ? "При запуске сценария Retenive проверит, входит ли пользователь в выбранный сегмент."
+              : "При запуске сценария Retenive проверит выбранные данные пользователя."
         }}
       </p>
       <div
@@ -788,7 +788,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   gap: 12px;
 }
 .leaf-editor header span {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: var(--font-size-caption);
   font-weight: 800;
   text-transform: uppercase;
@@ -918,8 +918,8 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   border: 0;
   border-radius: 9px;
   padding: 0 12px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-weight: 800;
 }
 .field-error {

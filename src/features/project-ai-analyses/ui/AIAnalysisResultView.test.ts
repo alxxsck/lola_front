@@ -23,7 +23,7 @@ describe("AIAnalysisResultView", () => {
     );
     expect(wrapper.text()).toContain("deposit.completed");
     expect(wrapper.text()).toContain("deposit.accepted");
-    expect(wrapper.text()).toContain("Новые запросы Lola");
+    expect(wrapper.text()).toContain("Новые запросы Retenive");
   });
 
   it("renders a validated answer, table and limitations", () => {

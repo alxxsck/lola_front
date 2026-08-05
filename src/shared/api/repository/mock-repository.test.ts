@@ -8,11 +8,11 @@ describe("демонстрационное хранилище", () => {
   });
 
   it("updates scenario metadata with the same concurrency contract as the API", async () => {
-    const listPromise = mockRepository.getScenarios("prj_lola_demo");
+    const listPromise = mockRepository.getScenarios("prj_retenive_demo");
     await vi.runAllTimersAsync();
     const [scenario] = await listPromise;
     const updatePromise = mockRepository.updateScenarioMetadata(
-      "prj_lola_demo",
+      "prj_retenive_demo",
       scenario!.id,
       {
         status: "PAUSED",
@@ -42,21 +42,21 @@ describe("демонстрационное хранилище", () => {
     };
 
     const firstPromise = mockRepository.sendAdminMessage(
-      "prj_lola_demo",
+      "prj_retenive_demo",
       "usr_1",
       request,
     );
     await vi.runAllTimersAsync();
     const first = await firstPromise;
     const replayPromise = mockRepository.sendAdminMessage(
-      "prj_lola_demo",
+      "prj_retenive_demo",
       "usr_1",
       request,
     );
     await vi.runAllTimersAsync();
     const replay = await replayPromise;
     const messagesPromise = mockRepository.getMessages(
-      "prj_lola_demo",
+      "prj_retenive_demo",
       "usr_1",
       "conv_1",
     );
@@ -76,7 +76,7 @@ describe("демонстрационное хранилище", () => {
 
   it("filters active waits by the requested stable Event Definition key", async () => {
     const matchingPromise = mockRepository.getScenarioRunsPage(
-      "prj_lola_demo",
+      "prj_retenive_demo",
       {
         eventDefinitionKeyId: "evt_1",
         limit: 50,
@@ -85,7 +85,7 @@ describe("демонстрационное хранилище", () => {
     await vi.runAllTimersAsync();
     const matching = await matchingPromise;
     const unrelatedPromise = mockRepository.getScenarioRunsPage(
-      "prj_lola_demo",
+      "prj_retenive_demo",
       {
         eventDefinitionKeyId: "evt_unrelated",
         limit: 50,
@@ -105,7 +105,7 @@ describe("демонстрационное хранилище", () => {
 
   it("дополняет сохранённые demo-диалоги признаками текущей сессии после обновления схемы", async () => {
     localStorage.setItem(
-      "lola-cms-demo-data-v2",
+      "retenive-cms-demo-data-v2",
       JSON.stringify({
         conversations: [
           {
@@ -127,7 +127,7 @@ describe("демонстрационное хранилище", () => {
       }),
     );
 
-    const pending = mockRepository.getConversations("prj_lola_demo", "usr_1");
+    const pending = mockRepository.getConversations("prj_retenive_demo", "usr_1");
     await vi.runAllTimersAsync();
 
     await expect(pending).resolves.toMatchObject({

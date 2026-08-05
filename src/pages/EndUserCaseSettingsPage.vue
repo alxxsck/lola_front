@@ -247,7 +247,7 @@ function toDraft(compiled: Record<string, unknown>) {
         <div class="eyebrow">Обращения пользователей</div>
         <h1>Категории и приоритеты</h1>
         <p class="subtitle">
-          Опубликованный список помогает Lola группировать и приоритизировать
+          Опубликованный список помогает Retenive группировать и приоритизировать
           обращения, но не ограничивает обнаружение новых тем.
         </p>
       </div>
@@ -269,7 +269,7 @@ function toDraft(compiled: Record<string, unknown>) {
 
     <div v-if="cost" class="cost-grid">
       <div>
-        <span>Запросы Lola</span
+        <span>Запросы Retenive</span
         ><strong>{{ integerFormatter.format(Number(cost.requestCount)) }}</strong>
       </div>
       <div>
@@ -332,7 +332,7 @@ function toDraft(compiled: Record<string, unknown>) {
             </li>
           </ul>
           <span v-else
-            >Пользовательские категории пока не заданы. Lola всё равно будет
+            >Пользовательские категории пока не заданы. Retenive всё равно будет
             находить новые темы.</span
           >
           <span
@@ -344,7 +344,7 @@ function toDraft(compiled: Record<string, unknown>) {
           <summary>Расширенное редактирование</summary>
           <p>
             Технический формат предназначен для специалиста. Перед публикацией
-            Lola проверит правила и покажет понятный итог справа.
+            Retenive проверит правила и покажет понятный итог справа.
           </p>
           <Textarea
             v-model="editor"
@@ -379,7 +379,7 @@ function toDraft(compiled: Record<string, unknown>) {
       </section>
 
       <aside class="card card-pad preview-card">
-        <h2>Что будет применять Lola</h2>
+        <h2>Что будет применять Retenive</h2>
         <template v-if="preview">
           <p>Версия правил {{ previewVersion }}</p>
           <div class="preview-summary">

@@ -6,7 +6,7 @@ const generated = vi.hoisted(() => ({
   execute: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   projectAIAnalysisEstimate: generated.estimate,
   cmsAgentRequestSubmit: generated.submit,
   cmsAgentRequestExecute: generated.execute,

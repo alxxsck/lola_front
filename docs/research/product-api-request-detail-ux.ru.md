@@ -10,7 +10,7 @@
 клавиатурой и screen reader.
 
 Исследование опирается на первичные источники: официальные документации PrimeVue,
-IBM Carbon, PatternFly, GOV.UK, W3C WAI/WCAG и Highlight.js. Рекомендации для Lola
+IBM Carbon, PatternFly, GOV.UK, W3C WAI/WCAG и Highlight.js. Рекомендации для Retenive
 ниже — выводы из них с учётом существующего кода, а не прямое копирование одной
 дизайн-системы.
 
@@ -131,7 +131,7 @@ multi-column и responsive orientation. Carbon structured list также рек
 ([PatternFly: Description list](https://www.patternfly.org/components/description-list/),
 [Carbon: Structured list](https://carbondesignsystem.com/components/structured-list/usage/))
 
-Для Lola:
+Для Retenive:
 
 - desktop: две колонки пар `minmax(0, 1fr)`, но каждая пара вертикальная —
   короткий muted label над значением;

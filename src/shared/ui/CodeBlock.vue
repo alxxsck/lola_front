@@ -217,7 +217,7 @@ onBeforeUnmount(() => window.clearTimeout(copyFeedbackTimer));
   background: var(--surface-emphasis-hover);
 }
 .code-block :deep(.hljs-attr) {
-  color: var(--palette-violet-300);
+  color: var(--palette-blue-300);
 }
 .code-block :deep(.hljs-string) {
   color: var(--status-success-on-emphasis);

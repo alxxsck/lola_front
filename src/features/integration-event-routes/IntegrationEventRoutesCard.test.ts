@@ -142,7 +142,7 @@ describe("IntegrationEventRoutesCard", () => {
             type: "object",
             properties: {
               amount: { type: "number" },
-              internalNote: { type: "string", "x-lola-sensitive": true },
+              internalNote: { type: "string", "x-retenive-sensitive": true },
               payment_currency: { type: "string" },
               user_id: { type: "string" },
               constructor: { type: "string" },
@@ -213,7 +213,7 @@ describe("IntegrationEventRoutesCard", () => {
           eventId: "event-1",
           provider: "AMPLITUDE",
           providerEventName: "deposit",
-          providerIdempotencyId: "lola:event-1",
+          providerIdempotencyId: "retenive:event-1",
           occurredAt: "2026-08-03T12:00:00.000Z",
           status: "DELIVERED",
           attemptCount: 1,
@@ -369,7 +369,7 @@ describe("IntegrationEventRoutesCard", () => {
       ],
     });
     window.sessionStorage.setItem(
-      "lola:amplitude-pending-route-create:project-1",
+      "retenive:amplitude-pending-route-create:project-1",
       JSON.stringify({
         projectId: "project-1",
         idempotencyKey: "amplitude-route-command",
@@ -705,7 +705,7 @@ describe("IntegrationEventRoutesCard", () => {
     await flushPromises();
     expect(
       window.sessionStorage.getItem(
-        "lola:amplitude-pending-route-create:project-1",
+        "retenive:amplitude-pending-route-create:project-1",
       ),
     ).toContain("command-key");
     first.unmount();
@@ -727,7 +727,7 @@ describe("IntegrationEventRoutesCard", () => {
     );
     expect(
       window.sessionStorage.getItem(
-        "lola:amplitude-pending-route-create:project-1",
+        "retenive:amplitude-pending-route-create:project-1",
       ),
     ).toBeNull();
     second.unmount();
@@ -761,6 +761,9 @@ describe("IntegrationEventRoutesCard", () => {
 
     expect(wrapper.findAll("[data-route-row]")).toHaveLength(10);
     expect(wrapper.findAll("[data-activity-row]")).toHaveLength(10);
+    expect(
+      wrapper.get('input[aria-label="Поиск по правилам передачи"]'),
+    ).toBeTruthy();
     expect(wrapper.text()).toContain("1–10 из 24");
     expect(wrapper.text()).toContain("1–10 из 23");
 
@@ -783,6 +786,12 @@ describe("IntegrationEventRoutesCard", () => {
             providerEventName: "first_deposit",
           },
         }),
+        ...Array.from({ length: 9 }, (_, index) =>
+          route({
+            id: `route-extra-${index}`,
+            name: `Служебное правило ${index}`,
+          }),
+        ),
       ],
     });
 
@@ -800,5 +809,93 @@ describe("IntegrationEventRoutesCard", () => {
     expect(wrapper.findAll("[data-route-row]")).toHaveLength(1);
     expect(wrapper.text()).toContain("Первый депозит");
     expect(wrapper.text()).not.toContain("Регистрация");
+  });
+
+  it("keeps small rule lists compact and pagination outside the table scroll", async () => {
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: false,
+        canReadActivity: true,
+      },
+    });
+    await flushPromises();
+
+    expect(
+      wrapper.find('input[aria-label="Поиск по правилам передачи"]').exists(),
+    ).toBe(false);
+    expect(
+      wrapper.get(".delivery-activity .table-pagination").element.parentElement
+        ?.classList,
+    ).toContain("delivery-activity");
+  });
+
+  it("does not show an empty delivery journal while routes are still loading", async () => {
+    let resolveRoutes!: (value: { items: unknown[] }) => void;
+    mocks.listRoutes.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRoutes = resolve;
+      }),
+    );
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReadActivity: true,
+      },
+    });
+    await Promise.resolve();
+
+    expect(wrapper.get('[data-testid="routes-loading"]').text()).toContain(
+      "Загружаем правила и доставки",
+    );
+    expect(wrapper.text()).not.toContain("Последние доставки");
+
+    resolveRoutes({ items: [] });
+    await flushPromises();
+    expect(wrapper.find('[data-testid="routes-loading"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain("Последние доставки");
+  });
+
+  it("does not promise delivery data while the journal is unavailable", async () => {
+    mocks.listRoutes.mockReturnValue(new Promise(() => undefined));
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReadActivity: false,
+      },
+    });
+    await Promise.resolve();
+
+    expect(wrapper.get('[data-testid="routes-loading"]').text()).toContain(
+      "Загружаем правила",
+    );
+    expect(wrapper.get('[data-testid="routes-loading"]').text()).not.toContain(
+      "доставки",
+    );
+  });
+
+  it("exposes the rule form state while it opens", async () => {
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReadActivity: false,
+      },
+    });
+    await flushPromises();
+    const toggle = wrapper.get(
+      'button[aria-controls="amplitude-create-route"]',
+    );
+
+    expect(toggle.attributes("aria-expanded")).toBe("false");
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+    expect(wrapper.get("#amplitude-create-route").isVisible()).toBe(true);
   });
 });

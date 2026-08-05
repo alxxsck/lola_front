@@ -2,16 +2,16 @@ import type { ProjectAction } from "./project-action";
 
 const actionCopy: Record<string, { name: string; description: string }> = {
   SHOW_ASSISTANT: {
-    name: "Показать Lola",
-    description: "Показывает или возвращает окно Lola на странице.",
+    name: "Показать Retenive",
+    description: "Показывает или возвращает окно Retenive на странице.",
   },
   HIDE_ASSISTANT: {
-    name: "Скрыть Lola",
-    description: "Скрывает окно Lola на странице.",
+    name: "Скрыть Retenive",
+    description: "Скрывает окно Retenive на странице.",
   },
   PLAY_ANIMATION: {
     name: "Проиграть анимацию",
-    description: "Запускает выбранную анимацию Lola.",
+    description: "Запускает выбранную анимацию Retenive.",
   },
   HIGHLIGHT_ELEMENT: {
     name: "Подсветить элемент",
@@ -29,7 +29,7 @@ const actionCopy: Record<string, { name: string; description: string }> = {
   },
   SAY: {
     name: "Сказать текст",
-    description: "Добавляет в сценарий новую реплику Lola.",
+    description: "Добавляет в сценарий новую реплику Retenive.",
   },
   ASK_CHOICE: {
     name: "Задать вопрос с вариантами",
@@ -43,11 +43,11 @@ const actionCopy: Record<string, { name: string; description: string }> = {
   },
   OPEN_CHAT: {
     name: "Открыть чат",
-    description: "Открывает пользователю окно чата с Lola.",
+    description: "Открывает пользователю окно чата с Retenive.",
   },
   CLOSE_CHAT: {
     name: "Закрыть чат",
-    description: "Закрывает окно чата с Lola.",
+    description: "Закрывает окно чата с Retenive.",
   },
   REMOVE_HIGHLIGHT: {
     name: "Убрать подсветку",
@@ -82,7 +82,7 @@ const actionCopy: Record<string, { name: string; description: string }> = {
   REQUEST_ADMIN_ATTENTION: {
     name: "Запросить помощь администратора",
     description:
-      "Создаёт обращение для команды, когда пользователь явно просит помощи человека. Lola ничего не выполняет без решения администратора.",
+      "Создаёт обращение для команды, когда пользователь явно просит помощи человека. Retenive ничего не выполняет без решения администратора.",
   },
 };
 

@@ -750,7 +750,7 @@ function askDelete(document: KnowledgeDocument) {
   if (!canManage.value || document.projectId !== projectId.value) return;
   confirm.require({
     header: "Удалить документ?",
-    message: `«${document.title}» перестанет использоваться в ответах Lola. Отменить удаление будет нельзя.`,
+    message: `«${document.title}» перестанет использоваться в ответах Retenive. Отменить удаление будет нельзя.`,
     icon: "pi pi-exclamation-triangle",
     rejectLabel: "Отмена",
     acceptLabel: "Удалить",
@@ -901,7 +901,7 @@ onBeforeUnmount(() => {
         <div class="eyebrow">AI knowledge</div>
         <h1>База знаний</h1>
         <p class="subtitle">
-          Материалы проекта {{ auth.project?.name }}, на которые Lola опирается
+          Материалы проекта {{ auth.project?.name }}, на которые Retenive опирается
           в текстовых и голосовых ответах.
         </p>
       </div>
@@ -956,7 +956,7 @@ onBeforeUnmount(() => {
           <h2>Состояние базы знаний</h2>
           <p>
             Следите за загрузкой и индексацией материалов. Документы со статусом
-            «Готово» уже участвуют в ответах Lola.
+            «Готово» уже участвуют в ответах Retenive.
           </p>
         </div>
       </div>
@@ -1149,7 +1149,7 @@ onBeforeUnmount(() => {
           {{
             documents.length
               ? "Измените запрос или фильтр статуса."
-              : "Загрузите файлы или добавьте структурированный текст, чтобы Lola отвечала точнее."
+              : "Загрузите файлы или добавьте структурированный текст, чтобы Retenive отвечала точнее."
           }}
         </p>
         <div v-if="!documents.length && canManage" class="empty-actions">

@@ -5,7 +5,7 @@ import {
   projectMembershipList,
   projectMembershipRemove,
   projectMembershipUpdate,
-} from '@/shared/api/generated/lola-backend'
+} from '@/shared/api/generated/retenive-backend'
 import type {
   CreateProjectMembershipDto,
   ProjectMembershipListParams,

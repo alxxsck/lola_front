@@ -40,9 +40,9 @@ describe("ProfileIntegrationPage", () => {
     expect(wrapper.text()).toContain("Порядковый номер обновления");
     const example = wrapper.find('code-block-stub[language="JavaScript"]');
     expect(example.attributes("code")).toContain(
-      'const lolaUrl = "https://your-lola.example.com"',
+      'const reteniveUrl = "https://your-retenive.example.com"',
     );
-    expect(example.attributes("code")).toContain("fetch(`${lolaUrl}/api");
+    expect(example.attributes("code")).toContain("fetch(`${reteniveUrl}/api");
     expect(example.attributes("code")).toContain(
       "Authorization: `Bearer ${token}`",
     );

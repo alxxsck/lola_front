@@ -149,10 +149,10 @@ type StudioStage =
   "trigger" | "audience" | "eligibility" | "actions" | "delivery";
 
 const systemEventNames: Record<string, string> = {
-  "lola.activity_day_started": "Начался день активности",
-  "lola.became_offline": "Пользователь вышел из сети",
-  "lola.became_online": "Пользователь появился в сети",
-  "lola.visit_started": "Начался визит",
+  "retenive.activity_day_started": "Начался день активности",
+  "retenive.became_offline": "Пользователь вышел из сети",
+  "retenive.became_online": "Пользователь появился в сети",
+  "retenive.visit_started": "Начался визит",
 };
 
 function eventDisplayName(code: string, fallback: string) {
@@ -3253,7 +3253,7 @@ function leave() {
 }
 .studio-stages button:hover,
 .studio-stages button.active {
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .stage-index {
   display: grid;
@@ -3353,8 +3353,8 @@ function leave() {
   background: var(--surface-card);
 }
 .action-outline-item.active {
-  border-color: var(--status-violet);
-  box-shadow: 0 0 0 2px var(--status-violet-soft);
+  border-color: var(--status-accent);
+  box-shadow: 0 0 0 2px var(--status-accent-soft);
 }
 .action-outline-item > span {
   display: grid;
@@ -3362,8 +3362,8 @@ function leave() {
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .action-outline-item > div {
   min-width: 0;
@@ -3413,10 +3413,10 @@ function leave() {
   gap: 8px;
   min-height: 42px;
   padding: 9px 11px;
-  border: 1px solid var(--status-violet);
+  border: 1px solid var(--status-accent);
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.7rem;
   font-weight: 800;
   list-style: none;
@@ -3490,8 +3490,8 @@ function leave() {
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .library-group button > div {
   min-width: 0;
@@ -3513,7 +3513,7 @@ function leave() {
   line-height: 1.35;
 }
 .library-group button .library-executor {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.58rem;
   font-weight: 700;
 }
@@ -3577,8 +3577,8 @@ function leave() {
 }
 .graph-toolbar button:hover,
 .mobile-graph-button:hover {
-  border-color: var(--status-violet);
-  color: var(--status-violet-text);
+  border-color: var(--status-accent);
+  color: var(--status-accent-text);
 }
 .scenario-studio :deep(.rule-validation-preview) {
   height: 100%;
@@ -3778,8 +3778,8 @@ function leave() {
   width: 54px;
   height: 54px;
   border-radius: 17px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   place-items: center;
 }
 .action-empty h1 {
@@ -3810,8 +3810,8 @@ function leave() {
   cursor: pointer;
 }
 .action-empty-options button:hover {
-  border-color: var(--status-violet);
-  background: var(--status-violet-soft);
+  border-color: var(--status-accent);
+  background: var(--status-accent-soft);
 }
 .action-empty-options i {
   margin-right: 7px;
@@ -3879,8 +3879,8 @@ function leave() {
   width: 36px;
   height: 36px;
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   place-items: center;
 }
 .first-action-card > div {
@@ -3946,7 +3946,7 @@ function leave() {
 }
 .readonly-stage-card > i {
   margin-top: 3px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 1.1rem;
 }
 .readonly-stage-card h2,
@@ -4110,7 +4110,7 @@ function leave() {
   background: var(--surface-card);
 }
 .stage-aside > i {
-  color: var(--status-violet);
+  color: var(--status-accent);
 }
 .stage-aside strong {
   display: block;
@@ -4190,9 +4190,9 @@ function leave() {
   align-items: center;
   gap: 10px;
   padding: 13px 15px;
-  border: 1px solid var(--status-violet);
+  border: 1px solid var(--status-accent);
   border-radius: 14px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .segment-library-link div {
   min-width: 0;
@@ -4215,7 +4215,7 @@ function leave() {
   padding: 8px 10px;
   border-radius: 9px;
   background: var(--surface-card);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.65rem;
   font-weight: 800;
   text-decoration: none;
@@ -4287,8 +4287,8 @@ function leave() {
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .mobile-node-card strong,
 .mobile-node-card small {
@@ -4361,8 +4361,8 @@ function leave() {
   min-height: 40px;
   border: 0;
   border-radius: 9px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   text-align: left;
   padding: 9px;
 }

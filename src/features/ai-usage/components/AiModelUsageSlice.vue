@@ -234,7 +234,7 @@ watch(costAvailable, (available) => {
   padding: 16px;
   margin-top: 14px;
   border: 1px solid
-    color-mix(in srgb, var(--status-violet) 24%, var(--border-default));
+    color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
   border-radius: 16px;
   background: var(--surface-subtle);
 }
@@ -250,8 +250,8 @@ watch(costAvailable, (available) => {
   height: 36px;
   flex: 0 0 auto;
   border-radius: 13px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet);
+  background: var(--status-accent-soft);
+  color: var(--status-accent);
 }
 
 .case-summary {

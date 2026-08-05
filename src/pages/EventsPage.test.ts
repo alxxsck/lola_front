@@ -260,7 +260,7 @@ describe("EventsPage event editor journey", () => {
           ...existingEvent.metadata,
           name: "Системный визит",
         },
-        origin: "LOLA_MANAGED",
+        origin: "RETENIVE_MANAGED",
         readOnly: true,
       },
     ]);
@@ -493,13 +493,13 @@ describe("EventsPage event editor journey", () => {
       {
         ...existingEvent,
         definitionKeyId: "definition-system",
-        code: "lola.became_offline",
+        code: "retenive.became_offline",
         metadata: {
           ...existingEvent.metadata,
           name: "Пользователь стал офлайн",
-          description: "Пользователь отключился от Lola",
+          description: "Пользователь отключился от Retenive",
         },
-        origin: "LOLA_MANAGED",
+        origin: "RETENIVE_MANAGED",
         readOnly: true,
       },
     ]);
@@ -511,10 +511,10 @@ describe("EventsPage event editor journey", () => {
       wrapper
         .findAll(".event-group-header h2")
         .map((heading) => heading.text()),
-    ).toEqual(["Системные события Lola", "События проекта"]);
+    ).toEqual(["Системные события Retenive", "События проекта"]);
     expect(cards[0]?.find("h3").text()).toBe("Пользователь стал офлайн");
     expect(cards[0]?.find(".system-description").text()).toBe(
-      "Пользователь отключился от Lola",
+      "Пользователь отключился от Retenive",
     );
     expect(cards[0]?.get(".system-lock").attributes("aria-label")).toBe(
       "Почему событие нельзя изменить",
@@ -522,7 +522,7 @@ describe("EventsPage event editor journey", () => {
     expect(cards[0]?.get('[role="tooltip"]').text()).toContain(
       "техническое имя и схема данных задаются системой",
     );
-    expect(cards[0]?.text()).not.toContain("Lola managed");
+    expect(cards[0]?.text()).not.toContain("Retenive managed");
     expect(cards[0]?.text()).not.toContain("stable identity");
     await cards[0]
       ?.get('button-stub[aria-label="Просмотреть Пользователь стал офлайн"]')

@@ -804,7 +804,7 @@ function errorMessage(cause: unknown, fallback: string) {
             </button>
           </template>
           <span v-else-if="definition.readOnly" class="read-only-badge"
-            ><i class="pi pi-lock" /> Управляется Lola · только чтение</span
+            ><i class="pi pi-lock" /> Управляется Retenive · только чтение</span
           >
         </div>
       </header>
@@ -871,7 +871,7 @@ function errorMessage(cause: unknown, fallback: string) {
           <strong>Контракт интеграции остаётся стабильным</strong>
           <p>
             Сервер продукта отправляет <code>eventCode + payload</code>. Номер
-            версии схемы передавать не нужно: его определяет Lola.
+            версии схемы передавать не нужно: его определяет Retenive.
           </p>
         </div>
       </aside>
@@ -1007,7 +1007,7 @@ function errorMessage(cause: unknown, fallback: string) {
             </div>
             <p>
               Не изменяется после создания. Именно этот код сервер продукта
-              передаёт в Lola.
+              передаёт в Retenive.
             </p>
           </div>
 
@@ -1042,7 +1042,7 @@ function errorMessage(cause: unknown, fallback: string) {
           <strong>v{{ definition.currentSchema.revisionNumber }}</strong>
           <code>{{ definition.currentSchema.revisionId }}</code>
           <p>
-            Эту версию определяет Lola. Она нужна для истории и диагностики, но
+            Эту версию определяет Retenive. Она нужна для истории и диагностики, но
             не передаётся сервером продукта.
           </p>
         </aside>
@@ -1228,7 +1228,7 @@ function errorMessage(cause: unknown, fallback: string) {
             >
             <h2>Схема данных</h2>
             <p>
-              Текущая структура данных события. Номер версии назначает Lola.
+              Текущая структура данных события. Номер версии назначает Retenive.
             </p>
           </div>
           <EventDefinitionHistory
@@ -1615,13 +1615,13 @@ function errorMessage(cause: unknown, fallback: string) {
   padding: 16px 18px;
   border-color: color-mix(
     in srgb,
-    var(--status-violet) 35%,
+    var(--status-accent) 35%,
     var(--border-default)
   );
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .producer-contract > i {
-  color: var(--status-violet);
+  color: var(--status-accent);
   font-size: 1.1rem;
 }
 .producer-contract strong {
@@ -1630,7 +1630,7 @@ function errorMessage(cause: unknown, fallback: string) {
 .producer-contract p {
   margin: 4px 0 0;
   overflow-wrap: anywhere;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.75rem;
   line-height: 1.5;
 }
@@ -1814,7 +1814,7 @@ function errorMessage(cause: unknown, fallback: string) {
 }
 .section-heading > div > span,
 .revision-card > span {
-  color: var(--status-violet);
+  color: var(--status-accent);
   font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;

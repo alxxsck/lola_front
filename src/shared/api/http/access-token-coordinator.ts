@@ -64,7 +64,7 @@ export interface AccessTokenCoordinator {
   close(): void;
 }
 
-const REFRESH_LOCK_NAME = "lola-cms-access-token-refresh-v1";
+const REFRESH_LOCK_NAME = "retenive-cms-access-token-refresh-v1";
 
 export function createAccessTokenCoordinator({
   channel,

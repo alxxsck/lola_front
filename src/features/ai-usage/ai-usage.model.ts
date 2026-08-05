@@ -208,10 +208,10 @@ export const AI_USAGE_RANGE_OPTIONS: ReadonlyArray<{
 ];
 
 export const AI_USAGE_CATEGORY_LABELS: Record<AiUsageCategory, string> = {
-  CHAT: "Чат с Lola",
+  CHAT: "Чат с Retenive",
   VOICE: "Голосовой чат",
   SPEECH: "Озвучивание текста",
-  MEMORY: "Память Lola",
+  MEMORY: "Память Retenive",
   AI_REVIEW: "Проверка сообщений",
   AI_ANALYSIS: "AI-анализ",
   CMS_AGENT: "AI-агент CMS",

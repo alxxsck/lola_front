@@ -11,13 +11,13 @@ import {
 } from './event-schema'
 
 describe('event schema model', () => {
-  it('round-trips Lola metadata, constraints and unknown JSON Schema keywords', () => {
+  it('round-trips Retenive metadata, constraints and unknown JSON Schema keywords', () => {
     const schema = {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       type: 'object',
       additionalProperties: { type: 'string' },
       required: ['amountMinor', 'currency'],
-      'x-lola-contract-note': 'kept verbatim',
+      'x-retenive-contract-note': 'kept verbatim',
       properties: {
         amountMinor: {
           type: 'integer',
@@ -26,24 +26,48 @@ describe('event schema model', () => {
           minimum: 1,
           maximum: 999_999,
           multipleOf: 1,
-          'x-lola-field-key': 'deposit.amount',
-          'x-lola-semantic-type': 'money',
-          'x-lola-unit': 'minor',
-          'x-lola-display-scale': 0.01,
-          'x-lola-display-precision': 2,
-          'x-lola-sensitive': false,
+          'x-retenive-field-key': 'deposit.amount',
+          'x-retenive-semantic-type': 'money',
+          'x-retenive-unit': 'minor',
+          'x-retenive-display-scale': 0.01,
+          'x-retenive-display-precision': 2,
+          'x-retenive-sensitive': false,
         },
         currency: {
           type: 'string',
           title: 'Currency',
           enum: ['EUR', 'USD'],
-          'x-lola-field-key': 'deposit.currency',
-          'x-lola-semantic-type': 'currency',
+          'x-retenive-field-key': 'deposit.currency',
+          'x-retenive-semantic-type': 'currency',
         },
       },
     }
 
     expect(serializeEventSchema(parseEventSchema(schema))).toEqual(schema)
+  })
+
+  it('keeps legacy Lola metadata read-only and serializes it without changing its hash', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+          'x-lola-field-key': 'profile.email',
+          'x-lola-semantic-type': 'email',
+          'x-lola-sensitive': true,
+        },
+      },
+    }
+
+    const draft = parseEventSchema(schema)
+
+    expect(draft.fields[0]).toMatchObject({
+      fieldKey: 'profile.email',
+      semanticType: 'email',
+      sensitive: true,
+      visuallyEditable: false,
+    })
+    expect(serializeEventSchema(draft)).toEqual(schema)
   })
 
   it('keeps unsupported property schemas opaque instead of replacing them', () => {
@@ -74,8 +98,8 @@ describe('event schema model', () => {
     const draft = parseEventSchema({
       type: 'object',
       properties: {
-        amount: { type: 'integer', 'x-lola-field-key': 'deposit.value' },
-        fee: { type: 'integer', 'x-lola-field-key': 'deposit.value' },
+        amount: { type: 'integer', 'x-retenive-field-key': 'deposit.value' },
+        fee: { type: 'integer', 'x-retenive-field-key': 'deposit.value' },
       },
     })
 
@@ -91,7 +115,7 @@ describe('event schema model', () => {
         amount: {
           type: 'integer',
           title: 'Amount',
-          'x-lola-field-key': 'deposit.amount',
+          'x-retenive-field-key': 'deposit.amount',
           'x-product-owner': 'payments',
         },
       },
@@ -120,12 +144,12 @@ describe('event schema model', () => {
           title: 'Amount in minor units',
           minimum: 1,
           maximum: 500_000,
-          'x-lola-field-key': 'deposit.amount',
-          'x-lola-semantic-type': 'money',
-          'x-lola-unit': 'minor',
-          'x-lola-display-scale': 0.01,
-          'x-lola-display-precision': 2,
-          'x-lola-sensitive': true,
+          'x-retenive-field-key': 'deposit.amount',
+          'x-retenive-semantic-type': 'money',
+          'x-retenive-unit': 'minor',
+          'x-retenive-display-scale': 0.01,
+          'x-retenive-display-precision': 2,
+          'x-retenive-sensitive': true,
           'x-product-owner': 'payments',
         },
       },
@@ -138,7 +162,7 @@ describe('event schema model', () => {
       type: 'object',
       properties: {
         '': { type: 'string' },
-        amountMinor: { type: 'integer', minimum: 125, 'x-lola-unit': 'minor' },
+        amountMinor: { type: 'integer', minimum: 125, 'x-retenive-unit': 'minor' },
         currency: { type: 'string', enum: ['EUR', 'USD'] },
       },
     })
@@ -211,10 +235,10 @@ describe('event schema model', () => {
       properties: {
         'amount-minor': {
           type: 'integer',
-          'x-lola-semantic-type': 'money',
-          'x-lola-unit': 'minor',
-          'x-lola-display-scale': 0.01,
-          'x-lola-display-precision': 2,
+          'x-retenive-semantic-type': 'money',
+          'x-retenive-unit': 'minor',
+          'x-retenive-display-scale': 0.01,
+          'x-retenive-display-precision': 2,
         },
       },
     })
@@ -235,16 +259,16 @@ describe('event schema model', () => {
     const before = {
       type: 'object',
       properties: {
-        amount: { type: 'integer', 'x-lola-field-key': 'deposit.amount' },
-        currency: { type: 'string', 'x-lola-field-key': 'deposit.currency' },
+        amount: { type: 'integer', 'x-retenive-field-key': 'deposit.amount' },
+        currency: { type: 'string', 'x-retenive-field-key': 'deposit.currency' },
       },
       required: ['amount'],
     }
     const after = {
       type: 'object',
       properties: {
-        amountMinor: { type: 'number', 'x-lola-field-key': 'deposit.amount' },
-        currency: { type: 'string', 'x-lola-field-key': 'payment.currency' },
+        amountMinor: { type: 'number', 'x-retenive-field-key': 'deposit.amount' },
+        currency: { type: 'string', 'x-retenive-field-key': 'payment.currency' },
       },
       required: ['amountMinor'],
     }
@@ -280,7 +304,7 @@ describe('event schema model', () => {
       type: 'object',
       additionalProperties: false,
       properties: {
-        amount: { type: 'integer', minimum: 1, title: 'Amount', 'x-lola-unit': 'minor' },
+        amount: { type: 'integer', minimum: 1, title: 'Amount', 'x-retenive-unit': 'minor' },
       },
     }
     const after = {
@@ -288,7 +312,7 @@ describe('event schema model', () => {
       additionalProperties: true,
       required: ['amount'],
       properties: {
-        amount: { type: 'integer', minimum: 5, title: 'Deposit amount', 'x-lola-unit': 'major' },
+        amount: { type: 'integer', minimum: 5, title: 'Deposit amount', 'x-retenive-unit': 'major' },
       },
     }
 

@@ -18,6 +18,7 @@ import { canReadProjectRoles } from "@/features/project-roles/model/project-role
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
+import { productBrand } from "@/shared/config/product-brand";
 import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
 import ThemeSwitch from "./ThemeSwitch.vue";
 
@@ -385,8 +386,8 @@ onBeforeUnmount(() => {
     <aside class="sidebar" :class="{ open: sidebarOpen }">
       <div class="sidebar-header">
         <div class="brand">
-          <div class="brand-mark"><span>Lo</span></div>
-          <div><strong>Lola</strong><small>Центр управления</small></div>
+          <div class="brand-mark"><span>{{ productBrand.mark }}</span></div>
+          <div><strong>{{ productBrand.name }}</strong><small>Центр управления</small></div>
         </div>
 
         <div class="project-pill">
@@ -461,7 +462,7 @@ onBeforeUnmount(() => {
             ><span>{{
               repository.mode === "mock"
                 ? "Изменения сохраняются локально"
-                : "Данные с сервера Lola"
+                : `Данные с сервера ${productBrand.name}`
             }}</span>
           </div>
         </div>
@@ -528,7 +529,7 @@ onBeforeUnmount(() => {
           :aria-expanded="sidebarOpen"
           @click="sidebarOpen = !sidebarOpen"
         />
-        <strong>Lola CMS</strong>
+        <strong>{{ productBrand.cmsName }}</strong>
         <Tag
           :value="repository.mode === 'mock' ? 'ДЕМО' : 'API'"
           severity="secondary"
@@ -715,7 +716,7 @@ nav {
   padding: 1px 6px;
   border-radius: 999px;
   background: var(--action-primary);
-  color: var(--text-on-primary);
+  color: var(--on-action-primary);
   font-size: 0.68rem;
   font-weight: 700;
   line-height: 18px;

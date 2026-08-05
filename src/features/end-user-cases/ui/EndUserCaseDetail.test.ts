@@ -437,7 +437,7 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Анализ временно отстаёт");
     expect(wrapper.text()).toContain("Сводка ещё формируется");
     expect(wrapper.text()).toContain("Каналы: не определены");
-    expect(wrapper.text()).toContain("Инструменты Lola ещё не использовались");
+    expect(wrapper.text()).toContain("Инструменты Retenive ещё не использовались");
     expect(wrapper.text()).toContain("Часть диалога не относится");
     expect(wrapper.text()).toContain("Администратор");
     await wrapper.get("#case-history-tab").trigger("click");

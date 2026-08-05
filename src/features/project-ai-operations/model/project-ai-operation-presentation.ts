@@ -122,7 +122,7 @@ export function aiOperationChargedAccountLabel(
 
 export function aiOperationActorLabel(actor: AiOperationActorDto): string {
   if (actor.displayName?.trim()) return actor.displayName.trim();
-  if (actor.type === "SYSTEM") return "Система Lola";
+  if (actor.type === "SYSTEM") return "Система Retenive";
   if (actor.type === "CMS_USER")
     return actor.id ? `Администратор ${actor.id}` : "Администратор неизвестен";
   return actor.id ? `Пользователь ${actor.id}` : "Пользователь неизвестен";

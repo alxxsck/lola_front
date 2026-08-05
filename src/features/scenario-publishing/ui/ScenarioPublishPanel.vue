@@ -776,7 +776,7 @@ header p {
   background: var(--surface-card);
 }
 .review-grid i {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .review-grid strong,
 .review-grid span,

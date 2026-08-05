@@ -23,7 +23,7 @@ Object.assign(process.env, {
   CMS_CORS_ALLOWED_ORIGINS: '["http://localhost:4173"]',
   ASSISTANT_CORS_ALLOWED_ORIGINS: "[]",
   IAM_WEBAUTHN_RP_ID: "localhost",
-  IAM_WEBAUTHN_RP_NAME: "Lola CMS OpenAPI Export",
+  IAM_WEBAUTHN_RP_NAME: "Retenive CMS OpenAPI Export",
   IAM_MFA_CAPABILITY_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
   IAM_EMAIL_DELIVERY_ENABLED: "false",
 });
@@ -60,9 +60,9 @@ try {
     CMS_COOKIE_AUTH_ENABLED: process.env.CMS_COOKIE_AUTH_ENABLED,
   });
   const config = new DocumentBuilder()
-    .setTitle("Lola Backend Platform")
+    .setTitle("Retenive Backend Platform")
     .setDescription(
-      "CMS, integration, chat and realtime API for Lola AI Assistant",
+      "CMS, integration, chat and realtime API for Retenive AI Assistant",
     )
     .setVersion("0.1.0")
     .addBearerAuth()

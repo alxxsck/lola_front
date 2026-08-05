@@ -851,7 +851,7 @@ h3 {
   margin-top: 7px;
 }
 .choice-target > i {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.72rem;
 }
 .choice-target .p-select,

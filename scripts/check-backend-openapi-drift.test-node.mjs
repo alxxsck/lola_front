@@ -32,9 +32,9 @@ function digest(content) {
 }
 
 async function fixture(snapshotDocument = baseDocument) {
-  const root = await mkdtemp(path.join(tmpdir(), "lola-openapi-drift-"));
-  const snapshot = path.join(root, "lola-backend.json");
-  const metadata = path.join(root, "lola-backend.contract.json");
+  const root = await mkdtemp(path.join(tmpdir(), "retenive-openapi-drift-"));
+  const snapshot = path.join(root, "retenive-backend.json");
+  const metadata = path.join(root, "retenive-backend.contract.json");
   const backendDocumentPath = path.join(root, "backend-openapi.json");
   const snapshotContent = `${JSON.stringify(snapshotDocument, null, 2)}\n`;
   await writeFile(snapshot, snapshotContent);
@@ -88,7 +88,7 @@ function runChecker({
       ],
       {
         cwd: cwd ?? repositoryRoot,
-        env: { ...process.env, LOLA_BACKEND_DIR: "" },
+        env: { ...process.env, RETENIVE_BACKEND_DIR: "" },
         stdio: ["ignore", "pipe", "pipe"],
       },
     );
@@ -126,7 +126,7 @@ function runCommand(command, args, cwd) {
 
 test("standalone check verifies the committed artifact without a sibling backend", async () => {
   const paths = await fixture();
-  const unrelatedCwd = await mkdtemp(path.join(tmpdir(), "lola-standalone-"));
+  const unrelatedCwd = await mkdtemp(path.join(tmpdir(), "retenive-standalone-"));
   try {
     const result = await runChecker({
       ...paths,

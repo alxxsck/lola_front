@@ -86,13 +86,13 @@ describe('InterfacePage AI target exposure', () => {
     await wrapper.find('button-stub[label="Изменить"]').trigger('click')
     const aiToggle = wrapper
       .findAllComponents(ToggleSwitch)
-      .find((item) => item.attributes('aria-label') === 'Разрешить Lola')!
+      .find((item) => item.attributes('aria-label') === 'Разрешить Retenive')!
     aiToggle.vm.$emit('update:modelValue', true)
     await wrapper.vm.$nextTick()
     await wrapper.get('#element-form').trigger('submit')
 
     expect(wrapper.text()).toContain(
-      'Описание для Lola должно содержать от 20 до 1000 символов',
+      'Описание для Retenive должно содержать от 20 до 1000 символов',
     )
     expect(mocks.updateElement).not.toHaveBeenCalled()
 

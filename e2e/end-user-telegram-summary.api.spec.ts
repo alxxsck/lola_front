@@ -150,7 +150,7 @@ async function installFixtures(
             publicKey: "public-key",
             defaultLocale: "ru",
             supportedLocales: ["ru"],
-            assistantName: "Lola",
+            assistantName: "Retenive",
             systemPrompt: "",
             voiceInstructions: "",
             settings: {},

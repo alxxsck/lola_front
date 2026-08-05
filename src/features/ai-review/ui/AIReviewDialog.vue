@@ -337,7 +337,7 @@ function formatRange(value: string) {
   >
     <div class="review-form">
       <Message severity="warn" :closable="false">
-        Анализ использует токены. Сначала Lola посчитает объём без обращения к
+        Анализ использует токены. Сначала Retenive посчитает объём без обращения к
         модели; дорогой запрос потребует отдельного подтверждения.
       </Message>
       <Message v-if="error" severity="error" :closable="false">{{
@@ -467,7 +467,7 @@ function formatRange(value: string) {
         </Message>
         <div v-if="running" class="running">
           <ProgressSpinner stroke-width="5" />
-          <span>Lola анализирует события в фоне…</span>
+          <span>Retenive анализирует события в фоне…</span>
         </div>
         <section
           v-if="run?.status === 'SUCCEEDED'"
@@ -617,8 +617,8 @@ function formatRange(value: string) {
 .estimate .cost {
   padding: 5px 9px;
   border-radius: 999px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-weight: 800;
 }
 .estimate[data-cost="HIGH"] .cost {

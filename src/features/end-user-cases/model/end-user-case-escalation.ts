@@ -48,7 +48,7 @@ export const endUserCaseEscalationSourceLabel = (
 ): string =>
   ({
     END_USER_REQUEST: "Попросил пользователь",
-    LOLA_DECISION: "Решение Lola",
+    RETENIVE_DECISION: "Решение Retenive",
     CMS_USER: "Запросил администратор",
     SYSTEM_POLICY: "Правило проекта",
   })[value] ?? value;

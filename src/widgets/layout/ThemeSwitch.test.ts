@@ -18,7 +18,7 @@ describe('ThemeSwitch', () => {
     expect({
       label: wrapper.text(),
       storedTheme: localStorage.getItem(THEME_STORAGE_KEY),
-      hasDarkClass: document.documentElement.classList.contains('lola-dark'),
+      hasDarkClass: document.documentElement.classList.contains('retenive-dark'),
     }).toEqual({ label: 'ТемаТёмная', storedTheme: 'dark', hasDarkClass: true })
   })
 })

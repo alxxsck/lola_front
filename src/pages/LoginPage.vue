@@ -94,10 +94,10 @@ async function chooseProject(projectId: string) {
 <template>
   <main class="login-page">
     <section class="intro">
-      <div class="logo"><span>Lo</span><strong>Lola</strong></div>
+      <div class="logo"><span>R</span><strong>Retenive</strong></div>
       <div class="intro-copy">
         <div class="eyebrow">Control room</div>
-        <h1>Настраивайте путь пользователя, пока Lola ведёт его к цели.</h1>
+        <h1>Настраивайте путь пользователя, пока Retenive ведёт его к цели.</h1>
         <p>
           События, интерфейс и сценарии — в одном спокойном рабочем
           пространстве.
@@ -121,10 +121,10 @@ async function chooseProject(projectId: string) {
         :aria-busy="loading"
         @submit.prevent="submit"
       >
-        <div class="mobile-logo logo"><span>Lo</span><strong>Lola</strong></div>
+        <div class="mobile-logo logo"><span>R</span><strong>Retenive</strong></div>
         <div>
           <div class="eyebrow">Добро пожаловать</div>
-          <h2>Войти в Lola</h2>
+          <h2>Войти в Retenive</h2>
           <p>После входа мы откроем доступное вам рабочее пространство.</p>
         </div>
         <div class="field">
@@ -208,7 +208,7 @@ async function chooseProject(projectId: string) {
           {{
             auth.mode === "mock"
               ? "Demo-режим: подойдёт любой email."
-              : "Вход в административное пространство Lola."
+              : "Вход в административное пространство Retenive."
           }}
         </p>
       </form>
@@ -235,7 +235,7 @@ async function chooseProject(projectId: string) {
           <i class="pi pi-arrow-right" />
         </button>
       </section>
-      <footer>© 2026 Lola AI · Безопасность · Поддержка</footer>
+      <footer>© 2026 Retenive AI · Безопасность · Поддержка</footer>
     </section>
   </main>
 </template>
@@ -310,8 +310,8 @@ async function chooseProject(projectId: string) {
   width: 48px;
   height: 48px;
   border-radius: 15px;
-  background: var(--status-violet);
-  color: var(--on-status-violet);
+  background: var(--status-accent);
+  color: var(--on-status-accent);
   font: 700 1.2rem var(--font-display);
 }
 .signal-card strong,
@@ -360,7 +360,7 @@ async function chooseProject(projectId: string) {
   height: 520px;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--status-violet) 17%, transparent),
+    color-mix(in srgb, var(--status-accent) 17%, transparent),
     transparent 70%
   );
   left: -150px;
@@ -396,7 +396,7 @@ async function chooseProject(projectId: string) {
 }
 .forgot {
   font-size: 0.72rem;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-weight: 600;
 }
 .password-wrap {
@@ -452,7 +452,7 @@ async function chooseProject(projectId: string) {
   transition: 0.18s ease;
 }
 .project-option:hover {
-  border-color: var(--status-violet);
+  border-color: var(--status-accent);
   box-shadow: var(--shadow-raised);
   transform: translateY(-1px);
 }
@@ -462,8 +462,8 @@ async function chooseProject(projectId: string) {
   display: grid;
   place-items: center;
   border-radius: 13px;
-  background: var(--status-violet);
-  color: var(--on-status-violet);
+  background: var(--status-accent);
+  color: var(--on-status-accent);
   font-weight: 700;
 }
 .project-option > span:nth-child(2) {
@@ -478,7 +478,7 @@ async function chooseProject(projectId: string) {
   color: var(--muted);
 }
 .project-option > i {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 @media (max-width: 900px) {
   .login-page {

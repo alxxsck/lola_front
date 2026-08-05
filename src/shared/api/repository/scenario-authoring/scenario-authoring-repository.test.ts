@@ -24,7 +24,7 @@ import {
   scenarioAuthoringValidate,
   scenarioAuthoringValidateScenarioDraft,
   scenarioRunsExplain,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   AudienceRuleDto,
   ConditionCatalogResponseDto,
@@ -38,7 +38,7 @@ import { ApiError } from "@/shared/api/http/api-error";
 import { scenarioAuthoringRepository } from "./index";
 import type { ScenarioPublishInput } from "./index";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   scenarioAudienceArchive: vi.fn(),
   scenarioAudienceCreate: vi.fn(),
   scenarioAudienceDetail: vi.fn(),

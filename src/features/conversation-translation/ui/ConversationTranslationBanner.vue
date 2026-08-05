@@ -250,7 +250,7 @@ function isSupportedLocale(
   flex: 0 0 auto;
   border-radius: 8px;
   background: var(--surface-card);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 .translation-banner__controls :deep(.p-select) {

@@ -8,7 +8,7 @@ import '@/app/styles/theme.css'
 import '@/app/styles/main.css'
 import App from './App.vue'
 import { router } from '@/app/router'
-import { LolaPrimePreset } from '@/app/theme/lola-prime-preset'
+import { RetenivePrimePreset } from '@/app/theme/retenive-prime-preset'
 import { primeVueRussianLocale } from '@/app/primevue-ru'
 import { initializeTheme } from '@/shared/theme/theme'
 
@@ -20,8 +20,8 @@ createApp(App)
   .use(PrimeVue, {
     locale: primeVueRussianLocale,
     theme: {
-      preset: LolaPrimePreset,
-      options: { darkModeSelector: '.lola-dark', cssLayer: false },
+      preset: RetenivePrimePreset,
+      options: { darkModeSelector: '.retenive-dark', cssLayer: false },
     },
   })
   .use(ToastService)

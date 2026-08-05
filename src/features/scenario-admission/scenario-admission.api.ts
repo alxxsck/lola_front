@@ -2,7 +2,7 @@ import {
   scenarioAdmissionDecisionsPage,
   platformOperationsScenarioAdmissionSettings,
   platformOperationsUpdateScenarioAdmissionSettings,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   ScenarioAdmissionDecisionsPageParams,
   UpdateScenarioAdmissionSettingsDto,

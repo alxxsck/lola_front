@@ -235,8 +235,8 @@ watch(
 .ticket-drawer input:focus,
 .ticket-drawer select:focus,
 .ticket-drawer textarea:focus {
-  border-color: var(--palette-violet-400);
-  box-shadow: 0 0 0 3px var(--status-violet-soft);
+  border-color: var(--palette-blue-400);
+  box-shadow: 0 0 0 3px var(--status-accent-soft);
 }
 .ticket-drawer__row {
   display: grid;
@@ -332,7 +332,7 @@ watch(
   color: var(--on-action-primary);
 }
 .ticket-drawer footer .primary:disabled {
-  background: var(--palette-violet-300);
+  background: var(--palette-blue-300);
   cursor: not-allowed;
 }
 .ticket-drawer-enter-active,

@@ -229,7 +229,7 @@ export function createConversationTranslationController(
 
   function draftStorageKey(): string | null {
     const key = contextKey(context);
-    return key ? `lola:reply-translation-draft:${key}` : null;
+    return key ? `retenive:reply-translation-draft:${key}` : null;
   }
 
   function hasStoredReplyDraft(): boolean {

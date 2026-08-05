@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-const snapshotUrl = new URL("../openapi/lola-backend.json", import.meta.url);
+const snapshotUrl = new URL("../openapi/retenive-backend.json", import.meta.url);
 const document = JSON.parse(await readFile(snapshotUrl, "utf8"));
 
 const unversionedPaths = Object.keys(document.paths ?? {}).filter(

@@ -6,7 +6,7 @@ import {
   initialAccessLogin,
   initialAccessRefresh,
   initialAccessSetupPassword,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   CmsAuthenticatedResponseDto,
   CmsSessionContextResponseDto,
@@ -27,7 +27,7 @@ import {
 } from "./interactive-login-requirement";
 import { authApi } from "./auth.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   cmsSecuritySettingsLogout: vi.fn(),
   cmsSecuritySettingsLogoutAll: vi.fn(),
   cmsSessionContextMe: vi.fn(),
@@ -66,7 +66,7 @@ function project(
     organizationId: "organization-1",
     defaultLocale: "ru",
     supportedLocales: ["ru"],
-    assistantName: "Lola",
+    assistantName: "Retenive",
     systemPrompt: "",
     voiceInstructions: "",
     settings: {},
@@ -320,14 +320,14 @@ describe("target CMS User auth API", () => {
 
   it("clears local credentials even when refresh cannot reach the server", async () => {
     storeAccessToken({ accessToken: "expired", expiresIn: -1 });
-    sessionStorage.setItem("lola:translation-jobs:project-1:scenario-1", "[]");
+    sessionStorage.setItem("retenive:translation-jobs:project-1:scenario-1", "[]");
     vi.mocked(initialAccessRefresh).mockRejectedValue(new Error("network"));
 
     await expect(authApi.logout()).resolves.toBeUndefined();
     expect(cmsSecuritySettingsLogout).not.toHaveBeenCalled();
     expect(getAccessToken()).toBeNull();
     expect(
-      sessionStorage.getItem("lola:translation-jobs:project-1:scenario-1"),
+      sessionStorage.getItem("retenive:translation-jobs:project-1:scenario-1"),
     ).toBeNull();
   });
 

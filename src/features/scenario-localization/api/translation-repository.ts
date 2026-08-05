@@ -5,7 +5,7 @@ import {
   translationGet,
   translationRetryTarget,
   translationUsageReport,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   CreateTranslationJobDto,
   TranslationUsageReportParams,

@@ -195,7 +195,7 @@ function formatDuration(value: number): string {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--chart-series-1), var(--status-violet-text));
+  background: linear-gradient(90deg, var(--chart-series-1), var(--status-accent-text));
   transition: width 0.35s ease;
 }
 .chart-note {

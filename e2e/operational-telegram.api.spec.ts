@@ -54,7 +54,7 @@ async function installFixtures(page: Page) {
             publicKey: "public-key",
             defaultLocale: "ru",
             supportedLocales: ["ru"],
-            assistantName: "Lola",
+            assistantName: "Retenive",
             systemPrompt: "",
             voiceInstructions: "",
             settings: {},
@@ -78,7 +78,7 @@ async function installFixtures(page: Page) {
           destination = {
             ...destination,
             destinationChatId: "-100123",
-            destinationTitle: "Lola Ops",
+            destinationTitle: "Retenive Ops",
             telegramInstallationStatus: "BOUND",
             routingRevision: 2,
             version: 2,
@@ -114,7 +114,7 @@ async function installFixtures(page: Page) {
         updatedByActorType: "CMS_USER",
         updatedByActorId: "user-1",
         updatedAt: "2026-07-23T12:00:00.000Z",
-        botUsername: "LolaOpsBot",
+        botUsername: "ReteniveOpsBot",
         telegramBotId: "10001",
         destinationChatId: null,
         destinationTitle: null,
@@ -135,7 +135,7 @@ async function installFixtures(page: Page) {
           id: "00000000-0000-4000-8000-000000000313",
           command: "/connect AbCdEf1234567890abcd",
           expiresAt: "2026-07-23T12:05:00.000Z",
-          botUsername: "LolaOpsBot",
+          botUsername: "ReteniveOpsBot",
         },
         201,
       );
@@ -248,7 +248,7 @@ test("Project admin binds, tests and activates a separate operational Telegram b
   await expect(page.locator("body")).not.toContainText(token);
 
   await page.getByRole("button", { name: "Проверить привязку" }).click();
-  await expect(page.getByText("Lola Ops")).toBeVisible();
+  await expect(page.getByText("Retenive Ops")).toBeVisible();
   await page.getByRole("button", { name: "Проверить подключение" }).click();
   await expect(page.getByText("Тестовое сообщение отправлено")).toBeVisible();
   await page.getByRole("button", { name: "Активировать" }).click();

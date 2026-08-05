@@ -1,4 +1,4 @@
-# Насыщенные карточки и master-detail для AI-журналов Lola
+# Насыщенные карточки и master-detail для AI-журналов Retenive
 
 Дата исследования: 1 августа 2026 года.
 
@@ -12,9 +12,9 @@ progressive disclosure UUID/metadata, copy affordance, плотные фильт
 
 Использованы только официальные источники: IBM Carbon, Microsoft Fluent 2,
 Material, Shopify Polaris, W3C/WAI, MDN и Vue Router. Конкретные брейкпоинты и
-состав полей ниже — рекомендации для Lola.
+состав полей ниже — рекомендации для Retenive.
 
-## Решение для Lola
+## Решение для Retenive
 
 ### 1. Не сжимать две полноценные карточки рядом
 
@@ -33,7 +33,7 @@ drawer, когда пользователю одновременно нужны 
 ([Material canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview),
 [Fluent Drawer](https://fluent2.microsoft.design/components/web/react/core/drawer/usage)).
 
-Для Lola лучше постоянный двухпанельный desktop layout: журнал — рабочий экран,
+Для Retenive лучше постоянный двухпанельный desktop layout: журнал — рабочий экран,
 где пользователь последовательно просматривает несколько операций. Выбранная
 строка остаётся выделенной, а list и detail имеют независимый вертикальный
 scroll.
@@ -219,7 +219,7 @@ Carbon размещает search, complex filters и display settings в toolbar
 
 В repeated product UI использовать одну productive scale:
 
-| Роль               | Lola token      | Размер / line-height        |
+| Роль               | Retenive token      | Размер / line-height        |
 | ------------------ | --------------- | --------------------------- |
 | Page title         | `heading-page`  | 32–40 / 40–48 px            |
 | Detail title       | `heading-panel` | 20–24 / 26–32 px            |
@@ -254,7 +254,7 @@ desktop data table будет быстрее: Carbon рекомендует tabl
 дать максимальную доступную ширину, а не помещать в узкую панель
 ([Carbon Data table](https://carbondesignsystem.com/components/data-table/usage/)).
 
-Практичный гибрид Lola:
+Практичный гибрид Retenive:
 
 - desktop master — компактная structured list/table-like row;
 - detail — rich sections;
@@ -276,7 +276,7 @@ desktop data table будет быстрее: Carbon рекомендует tabl
   перекрывают содержимое
   ([W3C Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html)).
 - Close, Back, Copy, disclosure и mobile filter actions имеют target не меньше
-  44 × 44 CSS px как внутренний стандарт Lola
+  44 × 44 CSS px как внутренний стандарт Retenive
   ([W3C Target Size Minimum](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum),
   [W3C Target Size Enhanced](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced)).
 

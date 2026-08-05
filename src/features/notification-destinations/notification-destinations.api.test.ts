@@ -8,10 +8,10 @@ import {
   notificationDestinationTestTelegram,
   notificationDestinationUpdate,
   notificationDestinationUpdateTelegram,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import { notificationDestinationsApi } from "./notification-destinations.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   notificationDestinationCreate: vi.fn(),
   notificationDestinationCreateTelegram: vi.fn(),
   notificationDestinationCreateTelegramBindingChallenge: vi.fn(),

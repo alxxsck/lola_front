@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   adminEndUserProfilesHistory,
   adminEndUserProfilesList,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import { endUserProfileRepository } from "./end-user-profile-repository";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   adminEndUserProfilesHistory: vi.fn(),
   adminEndUserProfilesList: vi.fn(),
   adminEndUserProfilesProfile: vi.fn(),

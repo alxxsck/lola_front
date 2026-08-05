@@ -15,10 +15,10 @@ import {
   platformCmsUserSessionList,
   platformCmsUserSessionRevoke,
   projectRoleList,
-} from '@/shared/api/generated/lola-backend'
+} from '@/shared/api/generated/retenive-backend'
 import { cmsUserManagementApi } from './cms-user-management.api'
 
-vi.mock('@/shared/api/generated/lola-backend', () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   cmsUserProvisioningProvision: vi.fn(),
   cmsUserLifecycleDeactivate: vi.fn(),
   cmsUserLifecycleGet: vi.fn(),

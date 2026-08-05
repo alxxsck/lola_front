@@ -1,11 +1,11 @@
-# Современный AI prompt composer для Lola
+# Современный AI prompt composer для Retenive
 
 Дата исследования: 1 августа 2026 года.
 
 ## Задача и границы
 
 Нужно полностью пересобрать блок «Что нужно узнать о проекте?» на обзорной
-странице Lola: сделать его современным, визуально спокойным и понятным при
+странице Retenive: сделать его современным, визуально спокойным и понятным при
 первом использовании, не меняя существующий процесс оценки стоимости,
 подтверждения и выполнения запроса.
 
@@ -14,7 +14,7 @@
 AI, а также W3C/WAI и WCAG 2.2. Официальные продукты документируют поведение и
 расположение функций, но не публикуют универсальную сетку или точные размеры
 своих composer. Поэтому ниже отдельно отмечены подтверждённые паттерны и
-продуктовые выводы для Lola.
+продуктовые выводы для Retenive.
 
 ## Короткое решение
 
@@ -22,7 +22,7 @@ AI, а также W3C/WAI и WCAG 2.2. Официальные продукты �
 можно сохранить на широком desktop, но он не должен конкурировать с вводом.**
 Сам composer строится как один управляемый объект:
 
-1. компактный header с Lola и кратким обещанием результата;
+1. компактный header с Retenive и кратким обещанием результата;
 2. явный label «Запрос» и многострочное поле;
 3. единая нижняя action-rail: контекст/ограничения слева, счётчик и shortcut в
    середине, основная отправка справа;
@@ -32,7 +32,7 @@ AI, а также W3C/WAI и WCAG 2.2. Официальные продукты �
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
-│ Запрос к Lola                            Только чтение · В журнал │
+│ Запрос к Retenive                            Только чтение · В журнал │
 │                                                                  │
 │ Запрос                                                           │
 │ Что вы хотите узнать о пользователях или событиях проекта?       │
@@ -57,11 +57,11 @@ Claude размещает `Search and tools` в нижней левой част
 
 ## Что видно в современных продуктах
 
-| Продукт | Подтверждённый паттерн | Вывод для Lola |
+| Продукт | Подтверждённый паттерн | Вывод для Retenive |
 | --- | --- | --- |
 | ChatGPT | Официальная справка показывает единый округлый composer с placeholder и нижней строкой attachment/tools/actions; Projects помещает plus-menu для фото, файлов и режимов туда же; agent mode выбирается из dropdown в composer ([Connectors + screenshot](https://help.openai.com/en/articles/9237897-connectors-in-chatgpt), [Projects](https://help.openai.com/en/articles/10169521-projects-in-chatgpt), [Operator update](https://openai.com/index/introducing-operator/)). | Источники и режим исполнения относятся к текущему запросу и должны быть внутри/рядом с composer, а не в отдельном тяжёлом информационном столбце. |
 | Claude | `Search and tools`, выбор style, web search и connectors находятся в нижней левой зоне chat input ([Styles](https://support.anthropic.com/en/articles/10181068-configuring-and-using-styles), [Web search](https://support.anthropic.com/en/articles/10684626-enabling-and-using-web-search), [Connectors](https://support.anthropic.com/en/articles/11817150-connect-your-tools-to-unlock-a-smarter-more-capable-ai-companion)). | Левый край footer — естественное место для вторичного контекста; основной submit остаётся изолирован справа. |
-| Gemini | На web пользователь вводит prompt в text box снизу, может добавить файл и отправляет отдельным Submit; на mobile suggestion chips появляются над chat box ([Gemini Apps](https://support.google.com/gemini/answer/13275745?hl=en), [screen actions](https://support.google.com/gemini/answer/15850607)). | Примеры допустимы как короткие chips над/под полем, но не должны конкурировать с вводом. Для Lola безопаснее подставлять пример в draft, а не запускать дорогой запрос автоматически. |
+| Gemini | На web пользователь вводит prompt в text box снизу, может добавить файл и отправляет отдельным Submit; на mobile suggestion chips появляются над chat box ([Gemini Apps](https://support.google.com/gemini/answer/13275745?hl=en), [screen actions](https://support.google.com/gemini/answer/15850607)). | Примеры допустимы как короткие chips над/под полем, но не должны конкурировать с вводом. Для Retenive безопаснее подставлять пример в draft, а не запускать дорогой запрос автоматически. |
 | Claude mobile | Внутри input доступны отдельные понятные controls: send вверх, stop во время ответа, plus для camera/photos/files и voice рядом с microphone ([Claude voice mode](https://support.anthropic.com/en/articles/11101966-using-voice-mode-on-claude-mobile-apps)). | Состояние действия лучше передавать заменой иконки/подписи в стабильном 44 px control, а не перестраивать всю форму. Stop добавлять только если backend действительно умеет отмену. |
 | Notion AI | Notion Agent держит page context, `@`-references, `All sources`, attachment и model/Auto рядом с prompt; AI Block имеет prompt, `Specified context`, `Search`, затем отдельные `Done` и `Generate`; глобальный shortcut настраивается ([Notion Agent](https://www.notion.com/help/notion-agent), [Notion AI FAQ](https://www.notion.com/help/notion-ai-faqs)). | «Разрешённые источники» можно оформить как раскрываемый context-chip. Shortcut должен быть видимым, документированным и платформенно корректным. |
 
@@ -71,16 +71,16 @@ Claude размещает `Search and tools` в нижней левой част
 отправить». Это вывод из сопоставления официально описанных интерфейсов, а не
 формальное правило одной дизайн-системы.
 
-## Рекомендуемая композиция Lola
+## Рекомендуемая композиция Retenive
 
 ### 1. Уровень страницы
 
-- На широком desktop можно сохранить существующий левый контекст о Lola, но
+- На широком desktop можно сохранить существующий левый контекст о Retenive, но
   снизить его контраст и отдать правой форме большую долю ширины. Ниже
   breakpoint две части складываются в одну колонку.
 - Правый composer должен выглядеть как самостоятельная светлее очерченная
   поверхность, а не как огромное пустое продолжение фонового баннера. Рабочая
-  ширина `560–760 px`; точное значение — рекомендация Lola, которую нужно
+  ширина `560–760 px`; точное значение — рекомендация Retenive, которую нужно
   проверить на реальном экране.
 - Один нейтральный raised surface, тонкая граница, локальный brand-accent.
   Gradient/glow может подсветить край или submit, но не лежать под текстом и не
@@ -89,9 +89,9 @@ Claude размещает `Search and tools` в нижней левой част
 ### 2. Header
 
 - Если левый контекстный блок сохраняется, внутри composer достаточно маленького
-  label **«Запрос к Lola»**; вторую крупную Lola-mark и ещё один заголовок не
+  label **«Запрос к Retenive»**; вторую крупную Retenive-mark и ещё один заголовок не
   добавлять. В самостоятельной одноколоночной версии допустимы небольшая
-  `32–40 px` mark и заголовок **«Спросить Lola»**.
+  `32–40 px` mark и заголовок **«Спросить Retenive»**.
 - Справа или второй строкой: два коротких доверительных сигнала
   **«Только чтение»** и **«Сохранится в журнале»**. Подробное объяснение — в
   tooltip/popover по кнопке «Как это работает», а не постоянным абзацем.
@@ -122,9 +122,9 @@ Claude размещает `Search and tools` в нижней левой част
   **«Только чтение»**. Если список нельзя менять, это non-interactive status с
   tooltip; если можно просмотреть — button с явным accessible name и popover.
 - По центру/справа: `⌘ Enter` на macOS, `Ctrl Enter` на Windows/Linux; на узком
-  экране подсказку скрыть. Существующий shortcut Lola безопаснее, чем
+  экране подсказку скрыть. Существующий shortcut Retenive безопаснее, чем
   `Enter = submit`, потому что запрос многострочный и может потребовать
-  подтверждения стоимости. Это продуктовое решение Lola, не требование
+  подтверждения стоимости. Это продуктовое решение Retenive, не требование
   исследованных систем.
 - Счётчик `0 / 10 000` оставить тихим secondary metadata. До 80% лимита он не
   должен быть главным объектом; после порога усилить цвет/вес, а превышение
@@ -132,7 +132,7 @@ Claude размещает `Search and tools` в нижней левой част
   идентифицировать поле и описать ошибку текстом
   ([SC 3.3.1](https://www.w3.org/WAI/WCAG22/Understanding/error-identification)).
 - Submit справа: desktop compact button **«Спросить» + arrow-up**, mobile —
-  круглая arrow-up button с `aria-label="Спросить Lola"`. Button должен
+  круглая arrow-up button с `aria-label="Спросить Retenive"`. Button должен
   активироваться `Enter` и `Space` и иметь accessible name
   ([WAI-ARIA Button Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)).
 
@@ -175,7 +175,7 @@ Claude размещает `Search and tools` в нижней левой част
 ### Busy
 
 - Зафиксировать введённый текст; вместо arrow показать spinner и подпись
-  **«Lola анализирует»** на desktop. Не очищать поле до подтверждённого успеха.
+  **«Retenive анализирует»** на desktop. Не очищать поле до подтверждённого успеха.
 - Если отмены нет, не показывать stop — Claude использует stop как отдельный
   control именно во время прерываемой генерации
   ([Claude voice controls](https://support.anthropic.com/en/articles/11101966-using-voice-mode-on-claude-mobile-apps)).
@@ -223,7 +223,7 @@ Gemini. Она описывает gradients как context builders и пере�
 внутренняя активность показывает thinking/analysis
 ([Google Design: Illustrating the Gemini App](https://design.google/library/gemini-ai-visual-design)).
 При этом Google отдельно говорит, что движение не декоративно и у каждой
-анимации есть определённые начало и конец. Следовательно, для Lola aurora —
+анимации есть определённые начало и конец. Следовательно, для Retenive aurora —
 правильный AI-сигнал, но бесконечная активность всей hero-surface не является
 паттерном, который этот источник поддерживает.
 
@@ -231,7 +231,7 @@ Gemini. Она описывает gradients как context builders и пере�
 clean/modern и направленным на более простой старт conversation, а в мае 2026
 описывает следующий expressive UI как интерфейс, который «оживает» после prompt
 за счёт fluid animations, color, typography и haptics. Практический вывод для
-Lola — выраженность лучше усиливать **после действия**, а не держать всю surface
+Retenive — выраженность лучше усиливать **после действия**, а не держать всю surface
 одинаково активной всегда
 ([Gemini 3 app redesign](https://blog.google/products-and-platforms/products/gemini/gemini-3-gemini-app/),
 [next evolution of the Gemini app](https://blog.google/innovation-and-ai/products/gemini-app/next-evolution-gemini-app/)).
@@ -252,7 +252,7 @@ motion направляет внимание к одному focal point; нес
 конкурирующих движений отвлекают
 ([Material Motion: Choreography](https://m1.material.io/motion/choreography.html)).
 
-### Визуальный контракт светлой Lola-surface
+### Визуальный контракт светлой Retenive-surface
 
 Рекомендуемая desktop-композиция:
 
@@ -260,7 +260,7 @@ motion направляет внимание к одному focal point; нес
 ┌ light outer wrapper · faint lime/violet aurora ─────────────────┐
 │  ✦ AI WORKSPACE                                                 │
 │  Что нужно узнать о проекте?     ┌ raised composer ───────────┐ │
-│  Короткое доверительное          │ Запрос к Lola              │ │
+│  Короткое доверительное          │ Запрос к Retenive              │ │
 │  пояснение                       │ textarea                   │ │
 │                                  │ source · count · shortcut ↑│ │
 │                                  └────────────────────────────┘ │
@@ -269,7 +269,7 @@ motion направляет внимание к одному focal point; нес
 
 - Outer wrapper: почти белая/neutral surface с очень слабым tint, тонкая
   граница, radius примерно `28–32 px`, мягкая широкая тень. Точные значения —
-  продуктовая рекомендация Lola, не стандарт источников.
+  продуктовая рекомендация Retenive, не стандарт источников.
 - Aurora: два-три больших radial-gradient слоя **за контентом** — lime у
   AI-label/иконки, violet/blue у composer/submit. Начальная opacity примерно
   `0.08–0.16`; ни один цветной слой не должен проходить непосредственно под
@@ -289,7 +289,7 @@ motion направляет внимание к одному focal point; нес
 
 ### Motion по состояниям
 
-| Состояние | Рекомендуемое движение Lola | Интенсивность |
+| Состояние | Рекомендуемое движение Retenive | Интенсивность |
 | --- | --- | --- |
 | Первое появление | Один aurora-intro: fade + drift слоя, затем полная остановка | `700–1000 ms`, translate до `2%`, opacity delta до `0.08` |
 | Idle, рекомендуемый вариант | Статичный мягкий gradient после intro | Нет постоянного движения |
@@ -301,7 +301,7 @@ motion направляет внимание к одному focal point; нес
 | Success/error | Короткий fade статуса; цвет + иконка + текст | `200–400 ms` |
 | Reduced motion | Сразу конечный статичный кадр, без drift/scale/sweep | `animation: none`; допустима мгновенная смена или короткий opacity-only fade |
 
-Числа в таблице — проектные параметры Lola. Для обычных state transitions они
+Числа в таблице — проектные параметры Retenive. Для обычных state transitions они
 укладываются в Material duration-scale, а длинный `28–40 s` цикл — отдельная
 ambient-гипотеза, не Material token. Длинный цикл выбран именно для малой
 скорости и малой амплитуды. В platform-specific разделе visionOS Apple отдельно
@@ -417,7 +417,7 @@ transition; для idle не переиспользовать `900 ms` loop — 
 
 ```text
 ┌────────────────────────────┐
-│ ✦ Спросить Lola      ⓘ     │
+│ ✦ Спросить Retenive      ⓘ     │
 │ Только чтение · В журнал   │
 │                            │
 │ Запрос                     │
@@ -439,7 +439,7 @@ transition; для idle не переиспользовать `900 ms` loop — 
   ([SC 2.4.11](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum)).
 - На mobile примерные prompts могут идти горизонтальными chips под header, но
   tap только заполняет поле. Gemini допускает suggestion chips над chat box и
-  отдельно документирует auto-submit; для Lola с оценкой стоимости безопаснее
+  отдельно документирует auto-submit; для Retenive с оценкой стоимости безопаснее
   не запускать их автоматически
   ([Gemini screen actions](https://support.google.com/gemini/answer/15850607)).
 
@@ -452,10 +452,10 @@ transition; для idle не переиспользовать `900 ms` loop — 
 | Сейчас | После редизайна |
 | --- | --- |
 | Поле визуально растворено в большом тёмном баннере | Спокойная raised surface с ясной границей внутри блока |
-| В форме нет собственной короткой иерархии | `Запрос к Lola` + input + компактная action-rail |
+| В форме нет собственной короткой иерархии | `Запрос к Retenive` + input + компактная action-rail |
 | Огромная textarea-зона с длинным placeholder | Видимый label, короткий пример, контролируемый auto-grow |
 | Счётчик и shortcut одинаково заметны с действием | Secondary metadata; submit — единственный primary accent |
-| Широкая pill «Спросить Lola» | Compact 44–48 px action, label на desktop и icon на mobile |
+| Широкая pill «Спросить Retenive» | Compact 44–48 px action, label на desktop и icon на mobile |
 | Aura/orbit/breathe как постоянный AI-образ | Статичный brand accent; motion только на смене состояния |
 
 ## Критерии готовности
@@ -483,6 +483,6 @@ transition; для idle не переиспользовать `900 ms` loop — 
 Официальные справки подтверждают структуру современных composer, размещение
 tools/context рядом с prompt, отдельную отправку, mobile controls и keyboard/
 accessibility-контракты. Они не задают общие точные радиусы, отступы или цвета.
-Конкретные значения Lola выше — проектная гипотеза; её следует проверить
+Конкретные значения Retenive выше — проектная гипотеза; её следует проверить
 визуально на desktop (`1440 px`), tablet (`768–1024 px`) и mobile
 (`320/390 px`) в обеих темах.

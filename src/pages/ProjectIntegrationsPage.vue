@@ -570,7 +570,7 @@ onMounted(load);
           <span class="integration-section-intro__eyebrow">Оповещения</span>
           <h2>Каналы для команды</h2>
           <p>
-            Сюда Lola отправляет операционные уведомления и эскалации для
+            Сюда Retenive отправляет операционные уведомления и эскалации для
             сотрудников проекта.
           </p>
         </div>
@@ -712,7 +712,7 @@ onMounted(load);
               />
             </label>
             <small
-              >После замены Lola проверит подключение. URL очистится сразу после
+              >После замены Retenive проверит подключение. URL очистится сразу после
               отправки.</small
             >
             <div class="form-actions">
@@ -757,7 +757,7 @@ onMounted(load);
           </label>
           <small
             >Создайте Incoming Webhook в Slack и вставьте URL. После сохранения
-            Lola сразу проверит подключение.</small
+            Retenive сразу проверит подключение.</small
           >
           <div class="form-actions">
             <button
@@ -796,7 +796,7 @@ onMounted(load);
           <h2>Каналы для пользователей</h2>
           <p>
             Подключения, через которые пользователи взаимодействуют с продуктом
-            Lola.
+            Retenive.
           </p>
         </div>
       </header>

@@ -91,7 +91,7 @@ const exampleUsesPublishedFields = computed(
   () => exampleProfile.value.usesPublishedFields,
 );
 const directExample = computed(
-  () => `curl -X PUT "$LOLA_URL/api/v1/end-user-profile-snapshots" \\
+  () => `curl -X PUT "$RETENIVE_URL/api/v1/end-user-profile-snapshots" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   --data '${JSON.stringify(
@@ -107,7 +107,7 @@ const directExample = computed(
   )}'`,
 );
 const sessionExample = computed(
-  () => `const lolaUrl = "https://your-lola.example.com";
+  () => `const reteniveUrl = "https://your-retenive.example.com";
 const token = "YOUR_SERVER_TOKEN";
 
 const body = ${JSON.stringify(
@@ -125,7 +125,7 @@ const body = ${JSON.stringify(
     2,
   )};
 
-await fetch(\`${"${lolaUrl}"}/api/v1/interaction-sessions\`, {
+await fetch(\`${"${reteniveUrl}"}/api/v1/interaction-sessions\`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -286,7 +286,7 @@ async function load() {
         <div class="eyebrow">Поля профиля пользователей</div>
         <h1>Как передавать данные</h1>
         <p class="subtitle">
-          Подключите сервер вашего продукта к Lola и проверьте первый профиль
+          Подключите сервер вашего продукта к Retenive и проверьте первый профиль
           пользователя.
         </p>
       </div>
@@ -405,7 +405,7 @@ async function load() {
           <div class="step-content">
             <h2>Отправьте тестовый профиль</h2>
             <p v-if="method === 'direct'">
-              Скопируйте команду, подставьте адрес Lola и серверный токен, затем
+              Скопируйте команду, подставьте адрес Retenive и серверный токен, затем
               выполните её на сервере вашего продукта.
             </p>
             <p v-else>
@@ -432,8 +432,8 @@ async function load() {
             />
             <div class="replace-list">
               <div>
-                <code>{{ method === "session" ? "lolaUrl" : "$LOLA_URL" }}</code
-                ><span>Адрес API вашего проекта Lola</span>
+                <code>{{ method === "session" ? "reteniveUrl" : "$RETENIVE_URL" }}</code
+                ><span>Адрес API вашего проекта Retenive</span>
               </div>
               <div>
                 <code>{{ method === "session" ? "token" : "$TOKEN" }}</code
@@ -498,7 +498,7 @@ async function load() {
               <span
                 ><strong>{{
                   health?.lastSuccessfulSnapshotAt
-                    ? "Lola уже получает профили"
+                    ? "Retenive уже получает профили"
                     : "Первый профиль пока не получен"
                 }}</strong
                 ><small v-if="health?.lastSuccessfulSnapshotAt"
@@ -545,7 +545,7 @@ async function load() {
   align-items: center;
   gap: 8px;
   margin-bottom: 22px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.76rem;
   font-weight: 800;
 }
@@ -676,7 +676,7 @@ async function load() {
   font-size: 0.66rem;
 }
 .readiness a {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.7rem;
   font-weight: 800;
 }
@@ -699,10 +699,10 @@ async function load() {
   cursor: pointer;
 }
 .method-grid button.selected {
-  border-color: var(--status-violet-text);
-  background: var(--status-violet-soft);
+  border-color: var(--status-accent-text);
+  background: var(--status-accent-soft);
   box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--status-violet) 12%, transparent);
+    color-mix(in srgb, var(--status-accent) 12%, transparent);
 }
 .method-icon {
   display: grid;
@@ -711,7 +711,7 @@ async function load() {
   height: 42px;
   border-radius: 13px;
   background: var(--surface-card);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .method-grid strong,
 .method-grid small {
@@ -757,7 +757,7 @@ async function load() {
   display: block;
 }
 .replace-list code {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.65rem;
 }
 .replace-list span {

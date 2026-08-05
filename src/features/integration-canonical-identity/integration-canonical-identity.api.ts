@@ -2,7 +2,7 @@ import {
   integrationEventIdentityPolicyCurrent,
   integrationEventIdentityPolicyPreview,
   integrationEventIdentityPolicyPublish,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   PreviewCanonicalIdentityPolicyDto,
   PublishCanonicalIdentityPolicyDto,

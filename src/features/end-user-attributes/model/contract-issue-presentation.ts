@@ -39,7 +39,7 @@ const issueCopy: Record<string, CopyBuilder> = {
   ATTRIBUTE_REQUIRED_WARN_ADDED: (field) => ({
     title: `Поле стало желательным: «${field}».`,
     detail:
-      "Профиль будет принят без значения, но Lola покажет предупреждение. Убедитесь, что продукт начнёт передавать поле.",
+      "Профиль будет принят без значения, но Retenive покажет предупреждение. Убедитесь, что продукт начнёт передавать поле.",
   }),
   ATTRIBUTE_REQUIRED_ENFORCED_ADDED: (field) => ({
     title: `Поле стало обязательным: «${field}».`,

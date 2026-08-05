@@ -89,10 +89,10 @@ function breakdown(patch: Partial<AiUsageBreakdown> = {}): AiUsageBreakdown {
 describe("AI usage model", () => {
   it("uses user-facing labels for every end-user AI and speech category", () => {
     expect(AI_USAGE_CATEGORY_LABELS).toMatchObject({
-      CHAT: "Чат с Lola",
+      CHAT: "Чат с Retenive",
       VOICE: "Голосовой чат",
       SPEECH: "Озвучивание текста",
-      MEMORY: "Память Lola",
+      MEMORY: "Память Retenive",
       AI_REVIEW: "Проверка сообщений",
       AI_ANALYSIS: "AI-анализ",
       CASE_INTELLIGENCE: "Анализ и проверка обращений",

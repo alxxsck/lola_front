@@ -37,8 +37,8 @@ import {
   conversationAISuspensionsExtend,
   conversationAISuspensionsResume,
   conversationAISuspensionsHistory,
-} from "@/shared/api/generated/lola-backend";
-import type { LolaRepository, RepositoryCapabilities } from "./contracts";
+} from "@/shared/api/generated/retenive-backend";
+import type { ReteniveRepository, RepositoryCapabilities } from "./contracts";
 import { UnsupportedRepositoryCapabilityError } from "./contracts";
 import {
   mapEndUser,
@@ -82,7 +82,7 @@ function unsupported(capability: keyof RepositoryCapabilities): never {
 
 const optionalString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
-export const apiRepository: LolaRepository = {
+export const apiRepository: ReteniveRepository = {
   mode: "api",
   capabilities,
 

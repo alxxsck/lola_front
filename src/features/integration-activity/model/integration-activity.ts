@@ -131,7 +131,7 @@ export function activityOriginLabel(kind: string): string {
   return (
     {
       CMS_USER: "CMS User",
-      AI: "Lola AI",
+      AI: "Retenive AI",
       SCENARIO: "Сценарий",
       SYSTEM: "Система",
       END_USER: "End User",

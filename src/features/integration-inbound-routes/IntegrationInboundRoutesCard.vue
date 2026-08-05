@@ -329,7 +329,7 @@ async function mutate(
       cause instanceof ApiError &&
       cause.code === "CUSTOMER_IO_INBOUND_DELIVERY_ID_NOT_VERIFIED"
         ? "Customer.io ещё не подтвердил messageId для текущего секрета подписи. Отправьте подписанное контрольное событие track и повторите операцию."
-        : "Изменение отклонено: без объединения дублей у события Lola может быть только один включённый входящий источник.";
+        : "Изменение отклонено: без объединения дублей у события Retenive может быть только один включённый входящий источник.";
   } finally {
     pending.value = false;
   }
@@ -355,11 +355,11 @@ onMounted(() => void load());
         <h2>Правила приёма событий из {{ title }}</h2>
         <p>
           Шаг 2. Укажите, какое внешнее событие должно превратиться в выбранное
-          событие Lola.
+          событие Retenive.
         </p>
         <p v-if="provider === 'CUSTOMER_IO'">
           Перед включением отправьте контрольное событие <code>track</code> с
-          уникальным <code>messageId</code>, подписанное текущим секретом. Lola
+          уникальным <code>messageId</code>, подписанное текущим секретом. Retenive
           проверит подпись и только после этого разрешит принимать рабочие
           события. После замены секрета проверку нужно повторить.
         </p>
@@ -369,6 +369,8 @@ onMounted(() => void load());
         type="button"
         :data-action="`show-create-inbound-${slug}`"
         :disabled="pending"
+        :aria-expanded="showCreate"
+        :aria-controls="`${slug}-create-inbound-route`"
         @click="showCreate = !showCreate"
       >
         {{ showCreate ? "Закрыть" : "Добавить правило" }}
@@ -378,128 +380,132 @@ onMounted(() => void load());
     <p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
     <p v-if="loading" class="empty-state">Загружаем входящие маршруты…</p>
 
-    <form
-      v-if="showCreate && canManage"
-      class="route-form"
-      :data-form="`create-inbound-route-${slug}`"
-      @submit.prevent="create"
-    >
-      <div class="form-intro">
-        <span class="setup-step">Шаг 2</span>
-        <div>
-          <h3>Новое правило приёма</h3>
-          <p>
-            Правило определяет, какое внешнее событие станет событием Lola, и
-            откуда взять его свойства. Название правила Lola сформирует
-            автоматически.
-          </p>
+    <Transition name="integration-reveal">
+      <form
+        v-if="showCreate && canManage"
+        :id="`${slug}-create-inbound-route`"
+        class="route-form"
+        :data-form="`create-inbound-route-${slug}`"
+        @submit.prevent="create"
+      >
+        <div class="form-intro">
+          <span class="setup-step">Шаг 2</span>
+          <div>
+            <h3>Новое правило приёма</h3>
+            <p>
+              Правило определяет, какое внешнее событие станет событием Retenive, и
+              откуда взять его свойства. Название правила Retenive сформирует
+              автоматически.
+            </p>
+          </div>
         </div>
-      </div>
-      <label class="integration-field">
-        <span>1. Защищённый адрес приёма</span>
-        <Select
-          v-model="connectionId"
-          :options="connectionOptions"
-          option-label="label"
-          option-value="value"
-          placeholder="Выберите адрес"
-          :disabled="pending"
-          fluid
-        >
-          <template #option="slotProps">
-            <div class="select-option">
-              <strong>{{ slotProps.option.label }}</strong>
-              <small>{{ slotProps.option.description }}</small>
-            </div>
-          </template>
-        </Select>
-        <small>
-          Это адрес webhook и секрет, созданные на предыдущем шаге. Исходящий
-          API-ключ здесь не используется.
-        </small>
-      </label>
-      <EventDefinitionSelect
-        v-model="definitionId"
-        class="integration-field"
-        :project-id="projectId"
-        label="2. Событие Lola"
-        placeholder="Найдите событие по названию или коду"
-        :disabled="pending"
-      />
-      <label class="integration-field">
-        <span>3. Название события в {{ title }}</span>
-        <input
-          v-model="providerEventName"
-          name="inboundProviderEventName"
-          maxlength="120"
-          required
-        />
-        <small>
-          Lola будет принимать только события с этим точным названием.
-        </small>
-      </label>
-      <fieldset v-if="schemaFields.length" class="mapping-fields">
-        <legend>4. Откуда брать свойства события Lola</legend>
-        <p class="field-help">
-          Для каждого свойства укажите путь в JSON, который присылает
-          {{ title }}. Пример: <code>properties.transaction_id</code>.
-        </p>
-        <label
-          v-for="field in schemaFields"
-          :key="field.key"
-          class="mapping-row"
-        >
-          <span
-            ><code>{{ field.key }}</code
-            >{{ field.required ? " · обязательно" : "" }}</span
+        <label class="integration-field">
+          <span>1. Защищённый адрес приёма</span>
+          <Select
+            v-model="connectionId"
+            :options="connectionOptions"
+            option-label="label"
+            option-value="value"
+            placeholder="Выберите адрес"
+            :disabled="pending"
+            fluid
           >
+            <template #option="slotProps">
+              <div class="select-option">
+                <strong>{{ slotProps.option.label }}</strong>
+                <small>{{ slotProps.option.description }}</small>
+              </div>
+            </template>
+          </Select>
+          <small>
+            Это адрес webhook и секрет, созданные на предыдущем шаге. Исходящий
+            API-ключ здесь не используется.
+          </small>
+        </label>
+        <EventDefinitionSelect
+          v-model="definitionId"
+          class="integration-field"
+          :project-id="projectId"
+          label="2. Событие Retenive"
+          placeholder="Найдите событие по названию или коду"
+          :disabled="pending"
+        />
+        <label class="integration-field">
+          <span>3. Название события в {{ title }}</span>
           <input
-            v-model="sourcePaths[field.key]"
-            :name="`sourcePath-${field.key}`"
-            maxlength="520"
-            placeholder="properties.field"
+            v-model="providerEventName"
+            name="inboundProviderEventName"
+            maxlength="120"
             required
           />
+          <small>
+            Retenive будет принимать только события с этим точным названием.
+          </small>
         </label>
-      </fieldset>
-      <details class="advanced-settings">
-        <summary>Объединение дублей из нескольких источников</summary>
-        <p>
-          Заполняйте этот блок, только если одно бизнес-событие может прийти и
-          из Customer.io, и из Amplitude. Lola сравнит стабильный идентификатор,
-          например <code>transaction_id</code>, и не создаст дубль.
-        </p>
-        <div class="advanced-settings__grid">
-          <label class="mapping-row">
-            <span>Путь к стабильному идентификатору</span>
-            <input
-              v-model="canonicalKeySourcePath"
-              name="canonicalKeySourcePath"
-              maxlength="520"
-              placeholder="properties.transaction_id"
-            />
-            <small
-              >Оставьте пустым, если событие приходит только из одного
-              источника.</small
+        <fieldset v-if="schemaFields.length" class="mapping-fields">
+          <legend>4. Откуда брать свойства события Retenive</legend>
+          <p class="field-help">
+            Для каждого свойства укажите путь в JSON, который присылает
+            {{ title }}. Пример: <code>properties.transaction_id</code>.
+          </p>
+          <label
+            v-for="field in schemaFields"
+            :key="field.key"
+            class="mapping-row"
+          >
+            <span
+              ><code>{{ field.key }}</code
+              >{{ field.required ? " · обязательно" : "" }}</span
             >
-          </label>
-          <label class="mapping-row">
-            <span>Как сравнивать значения</span>
-            <Select
-              v-model="canonicalKeyNormalization"
-              name="canonicalKeyNormalization"
-              :options="normalizationOptions"
-              option-label="label"
-              option-value="value"
-              fluid
+            <input
+              v-model="sourcePaths[field.key]"
+              :name="`sourcePath-${field.key}`"
+              maxlength="520"
+              placeholder="properties.field"
+              required
             />
           </label>
+        </fieldset>
+        <details class="advanced-settings">
+          <summary>Объединение дублей из нескольких источников</summary>
+          <p>
+            Заполняйте этот блок, только если одно бизнес-событие может прийти и
+            из Customer.io, и из Amplitude. Retenive сравнит стабильный
+            идентификатор, например <code>transaction_id</code>, и не создаст
+            дубль.
+          </p>
+          <div class="advanced-settings__grid">
+            <label class="mapping-row">
+              <span>Путь к стабильному идентификатору</span>
+              <input
+                v-model="canonicalKeySourcePath"
+                name="canonicalKeySourcePath"
+                maxlength="520"
+                placeholder="properties.transaction_id"
+              />
+              <small
+                >Оставьте пустым, если событие приходит только из одного
+                источника.</small
+              >
+            </label>
+            <label class="mapping-row">
+              <span>Как сравнивать значения</span>
+              <Select
+                v-model="canonicalKeyNormalization"
+                name="canonicalKeyNormalization"
+                :options="normalizationOptions"
+                option-label="label"
+                option-value="value"
+                fluid
+              />
+            </label>
+          </div>
+        </details>
+        <div class="form-actions">
+          <button type="submit" :disabled="pending">Создать черновик</button>
         </div>
-      </details>
-      <div class="form-actions">
-        <button type="submit" :disabled="pending">Создать черновик</button>
-      </div>
-    </form>
+      </form>
+    </Transition>
 
     <section v-if="!loading && routes.length" class="integration-records">
       <div class="integration-records__header">
@@ -507,11 +513,14 @@ onMounted(() => void load());
           <h3>Правила приёма</h3>
           <p>{{ rulesCountLabel(routes.length) }} · по 10 на странице</p>
         </div>
-        <label class="integration-records__search">
-          <span class="sr-only">Поиск по правилам приёма</span>
+        <label
+          v-if="routes.length > PAGE_SIZE"
+          class="integration-records__search"
+        >
           <input
             v-model="routeQuery"
             type="search"
+            aria-label="Поиск по правилам приёма"
             placeholder="Найти правило или событие"
           />
         </label>
@@ -543,7 +552,10 @@ onMounted(() => void load());
                   >{{ statusLabel(route) }}</span
                 >
               </td>
-              <td v-if="canManage" class="integration-table__action actions">
+              <td
+                v-if="canManage"
+                class="integration-table__action route-actions"
+              >
                 <button
                   v-if="route.draftRevision"
                   type="button"
@@ -606,6 +618,9 @@ onMounted(() => void load());
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+.route-actions {
+  white-space: nowrap;
 }
 .route-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));

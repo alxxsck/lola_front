@@ -182,7 +182,7 @@ const eventGroups = computed(() =>
   [
     {
       key: "system",
-      title: "Системные события Lola",
+      title: "Системные события Retenive",
       description: "Создаются и обновляются системой",
       items: filteredEvents.value.filter(isSystemEvent),
     },
@@ -820,7 +820,7 @@ function eventFields(item: EventDefinition) {
 }
 
 function isSystemEvent(item: EventDefinition) {
-  return item.origin === "LOLA_MANAGED" || Boolean(item.readOnly);
+  return item.origin === "RETENIVE_MANAGED" || Boolean(item.readOnly);
 }
 
 function openEventLogs(item: EventDefinition) {
@@ -1067,7 +1067,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                       :id="`system-event-tooltip-${item.id}`"
                       class="system-tooltip"
                       role="tooltip"
-                      >Это системное событие Lola. Его техническое имя и схема
+                      >Это системное событие Retenive. Его техническое имя и схема
                       данных задаются системой и недоступны для изменения.</span
                     >
                   </span>
@@ -1162,7 +1162,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                   <strong>Приём события</strong>
                   <small>{{
                     item.readOnly
-                      ? "Управляется Lola"
+                      ? "Управляется Retenive"
                       : item.enabled
                         ? "Новые события принимаются"
                         : "Новые события отклоняются"
@@ -1676,8 +1676,8 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
 }
 .summary-icon.bolt,
 .event-icon {
-  background: var(--status-violet-soft);
-  color: var(--status-violet);
+  background: var(--status-accent-soft);
+  color: var(--status-accent);
 }
 .summary-icon.live {
   background: var(--status-success-soft);
@@ -1798,8 +1798,8 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
 .active-filter-count {
   padding: 4px 7px;
   border-radius: 999px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.65rem;
   font-weight: 700;
   white-space: nowrap;
@@ -1875,7 +1875,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
 .event-card.system {
   background: color-mix(
     in srgb,
-    var(--status-violet-soft) 20%,
+    var(--status-accent-soft) 20%,
     var(--surface-card)
   );
 }
@@ -1909,8 +1909,8 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   flex: 0 0 auto;
   padding: 4px 8px;
   border-radius: 999px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.66rem;
   font-weight: 700;
   line-height: 1;
@@ -2277,15 +2277,15 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   font-size: 0.66rem;
 }
 .event-steps button.active {
-  border-color: var(--status-violet);
-  background: var(--status-violet-soft);
+  border-color: var(--status-accent);
+  background: var(--status-accent-soft);
 }
 .event-steps button.active > span {
   background: var(--action-primary);
   color: var(--on-action-primary);
 }
 .event-steps button.active strong {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .event-step-panel {
   display: flex;
@@ -2297,7 +2297,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   outline-offset: 4px;
 }
 .step-intro span {
-  color: var(--status-violet);
+  color: var(--status-accent);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -2365,14 +2365,14 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
 .publication-note {
   padding: 14px;
   border-radius: 10px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 .publication-note strong {
   font-size: 0.8rem;
 }
 .publication-note p {
   margin: 5px 0 0;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.76rem;
   line-height: 1.45;
 }

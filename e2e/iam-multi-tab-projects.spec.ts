@@ -132,7 +132,7 @@ test("tabs share auth generations while keeping independent Projects across relo
       const page = await context.newPage();
       await page.addInitScript((selectedProjectId) => {
         sessionStorage.setItem(
-          "lola-cms-selected-project-v1",
+          "retenive-cms-selected-project-v1",
           selectedProjectId,
         );
       }, projectId);
@@ -151,7 +151,7 @@ test("tabs share auth generations while keeping independent Projects across relo
     await expect
       .poll(() =>
         page.evaluate(() =>
-          sessionStorage.getItem("lola-cms-selected-project-v1"),
+          sessionStorage.getItem("retenive-cms-selected-project-v1"),
         ),
       )
       .toBe(projectId);

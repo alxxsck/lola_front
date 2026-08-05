@@ -6,7 +6,7 @@ describe("AISettingsSectionCard", () => {
   it("keeps AI settings collapsed by default and reveals the mounted editor", async () => {
     const wrapper = mount(AISettingsSectionCard, {
       props: {
-        title: "Память Lola",
+        title: "Память Retenive",
         description: "Настройки памяти",
         loading: false,
       },

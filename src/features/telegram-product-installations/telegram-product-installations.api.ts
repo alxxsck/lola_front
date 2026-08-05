@@ -6,7 +6,7 @@ import {
   telegramChannelAdminSetBroadcastsEnabled,
   telegramChannelAdminTest,
   telegramLinkAdminGet,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   ConfigureTelegramChannelDto,
   DisableTelegramChannelDto,

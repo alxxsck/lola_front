@@ -65,16 +65,16 @@ export function validateUiElementAiExposure(
   const issues: string[] = []
   const exposureChanged = aiExposureChanged(current, draft)
   if (exposureChanged && !canManageAi)
-    issues.push('Разрешать Lola новые элементы может только владелец проекта.')
+    issues.push('Разрешать Retenive новые элементы может только владелец проекта.')
   if (draft.aiEnabled && !draft.enabled)
-    issues.push('Сначала включите элемент, а затем разрешите его Lola.')
+    issues.push('Сначала включите элемент, а затем разрешите его Retenive.')
   if (draft.aiEnabled && !aiTargetBound(draft))
     issues.push(
       'Сначала заполните адрес страницы, имя окна или признак элемента и включите его.',
     )
   const descriptionLength = draft.aiDescription.trim().length
   if (draft.aiEnabled && (descriptionLength < 20 || descriptionLength > 1000)) {
-    issues.push('Описание для Lola должно содержать от 20 до 1000 символов.')
+    issues.push('Описание для Retenive должно содержать от 20 до 1000 символов.')
   }
   const aliases = aiAliases(draft.aiAliasesText)
   if (aliases.length > 20 || aliases.some((alias) => alias.length > 100)) {
@@ -87,7 +87,7 @@ export function validateUiElementAiExposure(
     requiresUiElementAiAuditReason(current, draft) &&
     (auditReasonLength < 10 || auditReasonLength > 500)
   ) {
-    issues.push('Объясните, зачем Lola нужен доступ: от 10 до 500 символов.')
+    issues.push('Объясните, зачем Retenive нужен доступ: от 10 до 500 символов.')
   }
   return issues
 }

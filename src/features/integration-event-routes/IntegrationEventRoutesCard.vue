@@ -180,7 +180,7 @@ function providerTargetKey(path: string[]): string {
     : `field_${normalized}`;
   const safe =
     providerUi.value.reservedTargetKeys.has(prefixed) ||
-    prefixed.startsWith("lola_")
+    prefixed.startsWith("retenive_")
       ? `event_${prefixed}`
       : prefixed;
   return safe.slice(0, 64);
@@ -220,7 +220,10 @@ function collectScalarSchemaFields(
     return output;
   if (path.length > 0 && !isExportableSourcePath(path)) return output;
   const node = schema as Record<string, unknown>;
-  const sensitive = inheritedSensitive || node["x-lola-sensitive"] === true;
+  const sensitive =
+    inheritedSensitive ||
+    node["x-retenive-sensitive"] === true ||
+    node["x-lola-sensitive"] === true;
   const declaredTypes = Array.isArray(node.type) ? node.type : [node.type];
   const scalar =
     path.length > 0 &&
@@ -288,7 +291,7 @@ watch(
 onMounted(() => void switchProject());
 
 function pendingCreateStorageKey(projectId: string): string {
-  return `lola:${providerUi.value.slug}-pending-route-create:${projectId}`;
+  return `retenive:${providerUi.value.slug}-pending-route-create:${projectId}`;
 }
 
 function rememberPendingCreate(command: PendingCreate): void {
@@ -647,7 +650,7 @@ function rulesCountLabel(count: number): string {
           Передача событий в {{ providerUi.title }}
         </h2>
         <p>
-          Шаг 2. Свяжите событие Lola с названием события в
+          Шаг 2. Свяжите событие Retenive с названием события в
           {{ providerUi.title }} и выберите разрешённые свойства.
         </p>
       </div>
@@ -655,6 +658,8 @@ function rulesCountLabel(count: number): string {
         v-if="canManage"
         type="button"
         :disabled="pending"
+        :aria-expanded="showCreate"
+        :aria-controls="`${providerUi.slug}-create-route`"
         @click="showCreate = !showCreate"
       >
         {{ showCreate ? "Закрыть" : "Добавить правило" }}
@@ -663,114 +668,138 @@ function rulesCountLabel(count: number): string {
 
     <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
     <p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
-    <p v-if="loading" class="empty-state">Загружаем маршруты…</p>
-
-    <form
-      v-if="showCreate && canManage"
-      class="route-form"
-      @submit.prevent="createRoute"
+    <div
+      v-if="loading"
+      class="integration-loading"
+      data-testid="routes-loading"
+      role="status"
+      aria-live="polite"
     >
-      <div class="form-intro">
-        <span class="setup-step">Шаг 2</span>
-        <div>
-          <h3>Новое правило передачи</h3>
-          <p>
-            Правило определяет, какое событие Lola отправлять, как оно будет
-            называться у провайдера и какие свойства можно передавать.
-          </p>
-        </div>
+      <span>{{
+        canReadActivity ? "Загружаем правила и доставки…" : "Загружаем правила…"
+      }}</span>
+      <div class="integration-loading__rows" aria-hidden="true">
+        <i />
+        <i />
+        <i />
       </div>
-      <label class="integration-field">
-        <span>1. Подключение</span>
-        <Select
-          v-model="connectionId"
-          :options="connectionOptions"
-          option-label="label"
-          option-value="value"
-          placeholder="Выберите подключение"
-          :disabled="pending"
-          fluid
-        >
-          <template #option="slotProps">
-            <div class="select-option">
-              <strong>{{ slotProps.option.label }}</strong>
-              <small>{{ slotProps.option.description }}</small>
-            </div>
-          </template>
-        </Select>
-        <small>Ключ и регион берутся из выбранного подключения.</small>
-      </label>
-      <EventDefinitionSelect
-        v-model="definitionId"
-        class="integration-field"
-        :project-id="projectId"
-        label="2. Событие Lola"
-        placeholder="Найдите событие по названию или коду"
-        :disabled="pending"
-      />
-      <label class="integration-field">
-        <span>3. {{ providerUi.eventNameLabel }}</span>
-        <input
-          v-model="providerEventName"
-          maxlength="120"
-          required
+    </div>
+
+    <Transition name="integration-reveal">
+      <form
+        v-if="showCreate && canManage"
+        :id="`${providerUi.slug}-create-route`"
+        class="route-form"
+        @submit.prevent="createRoute"
+      >
+        <div class="form-intro">
+          <span class="setup-step">Шаг 2</span>
+          <div>
+            <h3>Новое правило передачи</h3>
+            <p>
+              Правило определяет, какое событие Retenive отправлять, как оно будет
+              называться у провайдера и какие свойства можно передавать.
+            </p>
+          </div>
+        </div>
+        <label class="integration-field">
+          <span>1. Подключение</span>
+          <Select
+            v-model="connectionId"
+            :options="connectionOptions"
+            option-label="label"
+            option-value="value"
+            placeholder="Выберите подключение"
+            :disabled="pending"
+            fluid
+          >
+            <template #option="slotProps">
+              <div class="select-option">
+                <strong>{{ slotProps.option.label }}</strong>
+                <small>{{ slotProps.option.description }}</small>
+              </div>
+            </template>
+          </Select>
+          <small>Ключ и регион берутся из выбранного подключения.</small>
+        </label>
+        <EventDefinitionSelect
+          v-model="definitionId"
+          class="integration-field"
+          :project-id="projectId"
+          label="2. Событие Retenive"
+          placeholder="Найдите событие по названию или коду"
           :disabled="pending"
         />
-        <small>
-          Такое имя появится в {{ providerUi.title }}. По умолчанию используется
-          технический код события Lola.
-        </small>
-      </label>
-
-      <fieldset v-if="schemaFields.length" class="mapping-fields">
-        <legend>4. Какие свойства передавать</legend>
-        <p class="field-help">
-          Отметьте только необходимые поля. Чувствительные свойства Lola
-          блокирует автоматически.
-        </p>
-        <div v-for="field in schemaFields" :key="field.key" class="mapping-row">
-          <label class="mapping-toggle">
-            <input
-              v-model="selectedFields[field.key]"
-              type="checkbox"
-              :disabled="
-                pending ||
-                field.sensitive ||
-                (!selectedFields[field.key] && selectionLimitReached)
-              "
-            />
-            <code>{{ field.key }}</code>
-            <span v-if="field.sensitive">Не экспортируется</span>
-          </label>
+        <label class="integration-field">
+          <span>3. {{ providerUi.eventNameLabel }}</span>
           <input
-            v-model="targetKeys[field.key]"
-            maxlength="64"
-            pattern="[A-Za-z][A-Za-z0-9_.-]{0,63}"
-            :placeholder="field.defaultTargetKey"
-            :disabled="pending || field.sensitive || !selectedFields[field.key]"
-            :aria-label="`Поле ${providerUi.title} для ${field.key}`"
+            v-model="providerEventName"
+            maxlength="120"
+            required
+            :disabled="pending"
           />
-          <label class="required-toggle">
+          <small>
+            Такое имя появится в {{ providerUi.title }}. По умолчанию
+            используется технический код события Retenive.
+          </small>
+        </label>
+
+        <fieldset v-if="schemaFields.length" class="mapping-fields">
+          <legend>4. Какие свойства передавать</legend>
+          <p class="field-help">
+            Отметьте только необходимые поля. Чувствительные свойства Retenive
+            блокирует автоматически.
+          </p>
+          <div
+            v-for="field in schemaFields"
+            :key="field.key"
+            class="mapping-row"
+          >
+            <label class="mapping-toggle">
+              <input
+                v-model="selectedFields[field.key]"
+                type="checkbox"
+                :disabled="
+                  pending ||
+                  field.sensitive ||
+                  (!selectedFields[field.key] && selectionLimitReached)
+                "
+              />
+              <code>{{ field.key }}</code>
+              <span v-if="field.sensitive">Не экспортируется</span>
+            </label>
             <input
-              v-model="requiredFields[field.key]"
-              type="checkbox"
+              v-model="targetKeys[field.key]"
+              maxlength="64"
+              pattern="[A-Za-z][A-Za-z0-9_.-]{0,63}"
+              :placeholder="field.defaultTargetKey"
               :disabled="
                 pending || field.sensitive || !selectedFields[field.key]
               "
+              :aria-label="`Поле ${providerUi.title} для ${field.key}`"
             />
-            Обязательное
-          </label>
+            <label class="required-toggle">
+              <input
+                v-model="requiredFields[field.key]"
+                type="checkbox"
+                :disabled="
+                  pending || field.sensitive || !selectedFields[field.key]
+                "
+              />
+              Обязательное
+            </label>
+          </div>
+        </fieldset>
+        <p v-else-if="definitionId" class="empty-state">
+          В текущей схеме нет доступных верхнеуровневых свойств.
+        </p>
+        <div class="form-actions">
+          <button type="submit" :disabled="pending || !canSubmit">
+            Создать черновик
+          </button>
         </div>
-      </fieldset>
-      <p v-else-if="definitionId" class="empty-state">
-        В текущей схеме нет доступных верхнеуровневых свойств.
-      </p>
-      <div class="form-actions">
-        <button type="submit" :disabled="pending || !canSubmit">
-          Создать черновик
-        </button>
-      </div>
-    </form>
+      </form>
+    </Transition>
 
     <section v-if="!loading && routes.length" class="integration-records">
       <div class="integration-records__header">
@@ -778,11 +807,14 @@ function rulesCountLabel(count: number): string {
           <h3>Правила передачи</h3>
           <p>{{ rulesCountLabel(routes.length) }} · по 10 на странице</p>
         </div>
-        <label class="integration-records__search">
-          <span class="sr-only">Поиск по правилам передачи</span>
+        <label
+          v-if="routes.length > PAGE_SIZE"
+          class="integration-records__search"
+        >
           <input
             v-model="routeQuery"
             type="search"
+            aria-label="Поиск по правилам передачи"
             placeholder="Найти правило или событие"
           />
         </label>
@@ -855,13 +887,13 @@ function rulesCountLabel(count: number): string {
     </p>
 
     <section
-      v-if="canReadActivity"
+      v-if="canReadActivity && !loading"
       class="integration-records delivery-activity"
     >
       <div class="integration-records__header">
         <div>
           <h3>Последние доставки</h3>
-          <p>
+          <p v-if="activity.length">
             {{
               activity.length === 100
                 ? "Последние 100 записей"
@@ -869,6 +901,7 @@ function rulesCountLabel(count: number): string {
             }}
             · по 10 на странице
           </p>
+          <p v-else>Появятся после первой попытки отправки</p>
         </div>
       </div>
       <div v-if="activity.length" class="integration-table-wrap">
@@ -896,14 +929,15 @@ function rulesCountLabel(count: number): string {
             </tr>
           </tbody>
         </table>
-        <TablePagination
-          v-model:page="activityPage"
-          :total="activity.length"
-          :page-size="PAGE_SIZE"
-          previous-label="Предыдущая страница доставок"
-          next-label="Следующая страница доставок"
-        />
       </div>
+      <TablePagination
+        v-if="activity.length"
+        v-model:page="activityPage"
+        :total="activity.length"
+        :page-size="PAGE_SIZE"
+        previous-label="Предыдущая страница доставок"
+        next-label="Следующая страница доставок"
+      />
       <p v-else class="empty-state">Доставок пока нет.</p>
     </section>
   </section>

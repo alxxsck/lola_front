@@ -203,7 +203,7 @@ async function create(): Promise<void> {
     createRetryKey.value = "";
     destination.value = created;
     success.value =
-      "Бот проверен. Lola регистрирует защищённый webhook — обновите статус через несколько секунд.";
+      "Бот проверен. Retenive регистрирует защищённый webhook — обновите статус через несколько секунд.";
   } catch (cause) {
     if (isCurrent(operation)) error.value = safeError(cause);
   } finally {
@@ -403,7 +403,7 @@ async function rotate(): Promise<void> {
     success.value =
       rotated.telegramWebhookSetupStatus === "SUCCEEDED"
         ? "Новый бот проверен. Получите новую команду привязки."
-        : "Новый бот проверен. Lola регистрирует защищённый webhook — обновите статус через несколько секунд.";
+        : "Новый бот проверен. Retenive регистрирует защищённый webhook — обновите статус через несколько секунд.";
   } catch (cause) {
     if (isCurrent(operation)) error.value = safeError(cause);
   } finally {
@@ -676,7 +676,7 @@ onMounted(load);
         />
       </label>
       <small
-        >Скопируйте токен из BotFather. Lola проверит бота и выдаст команду
+        >Скопируйте токен из BotFather. Retenive проверит бота и выдаст команду
         привязки чата.</small
       >
       <div class="form-actions">

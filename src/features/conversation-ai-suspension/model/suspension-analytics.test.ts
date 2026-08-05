@@ -4,7 +4,7 @@ import { reportSuspensionEvent } from './suspension-analytics'
 describe('безопасная статистика приостановок AI', () => {
   it('передаёт только разрешённые поля без комментария и текста сообщения', () => {
     const listener = vi.fn()
-    window.addEventListener('lola:analytics', listener)
+    window.addEventListener('retenive:analytics', listener)
 
     reportSuspensionEvent('conversation_ai_suspension_started', {
       duration_bucket: '1h',
@@ -19,6 +19,6 @@ describe('безопасная статистика приостановок AI'
       name: 'conversation_ai_suspension_started',
       payload: { duration_bucket: '1h', reason: 'OPERATOR_TAKEOVER', source: 'conversation_banner' },
     })
-    window.removeEventListener('lola:analytics', listener)
+    window.removeEventListener('retenive:analytics', listener)
   })
 })

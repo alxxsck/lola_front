@@ -1,6 +1,6 @@
-# Пользовательские поля и журнал событий в Lola CMS
+# Пользовательские поля и журнал событий в Retenive CMS
 
-Frontend использует контракты Lola Backend из актуального Swagger snapshot `openapi/lola-backend.json`. Клиент пересобирается через `npm run api:update`, а `npm run api:check` отдельно проверяет наличие новых CMS operations и синхронность generated‑файлов.
+Frontend использует контракты Retenive Backend из актуального Swagger snapshot `openapi/retenive-backend.json`. Клиент пересобирается через `npm run api:update`, а `npm run api:check` отдельно проверяет наличие новых CMS operations и синхронность generated‑файлов.
 
 Backend‑контракт, правила ingestion и модель хранения подробно описаны в `Lola_backend/docs/user-attributes-and-event-logs.ru.md`. Этот документ фиксирует поведение CMS.
 

@@ -192,7 +192,7 @@ async function afterPublished(segmentId: string) {
       route-name="segments-guide"
     />
     <Message severity="info" :closable="false"
-      >Чтобы проверить условие, укажите одного пользователя. Lola покажет,
+      >Чтобы проверить условие, укажите одного пользователя. Retenive покажет,
       подходит ли он сегменту и насколько свежие данные использовались.</Message
     >
     <Message v-if="error" severity="error" :closable="false"

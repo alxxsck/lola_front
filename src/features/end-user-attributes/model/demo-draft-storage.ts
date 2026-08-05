@@ -1,7 +1,7 @@
 import type { AttributeContractDocumentDto } from "@/shared/api/generated/models";
 
 function storageKey(projectId: string) {
-  return `lola:demo:profile-fields:${projectId}`;
+  return `retenive:demo:profile-fields:${projectId}`;
 }
 
 export function readDemoContractDraft(

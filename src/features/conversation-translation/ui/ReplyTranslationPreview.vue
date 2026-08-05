@@ -206,11 +206,11 @@ watch(
 .reply-preview__ready {
   padding: 10px 12px;
   border: 1px solid
-    color-mix(in srgb, var(--status-violet-text) 18%, var(--line));
+    color-mix(in srgb, var(--status-accent-text) 18%, var(--line));
   border-radius: 12px;
   background: color-mix(
     in srgb,
-    var(--status-violet-soft) 34%,
+    var(--status-accent-soft) 34%,
     var(--surface-card)
   );
 }
@@ -231,12 +231,12 @@ watch(
 }
 .reply-preview__processing {
   min-height: 64px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.67rem;
 }
 .reply-preview__heading i {
   margin-right: 6px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .reply-preview__processing {
   justify-content: flex-start;
@@ -253,9 +253,9 @@ watch(
   border-radius: 5px;
   background: linear-gradient(
     90deg,
-    var(--palette-violet-100) 25%,
-    var(--palette-violet-100) 37%,
-    var(--palette-violet-100) 63%
+    var(--palette-blue-100) 25%,
+    var(--palette-blue-100) 37%,
+    var(--palette-blue-100) 63%
   );
   background-size: 360px 100%;
   animation: translation-shimmer 1.3s infinite;
@@ -279,10 +279,10 @@ watch(
   align-items: center;
   min-height: 22px;
   padding: 0 7px;
-  border: 1px solid var(--palette-violet-200);
+  border: 1px solid var(--palette-blue-200);
   border-radius: 5px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 10px;
   font-weight: 700;

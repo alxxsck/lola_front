@@ -7,7 +7,7 @@ describe('ScenarioGuidePage', () => {
   it('renders the CMS Markdown as an indexed administrator guide', () => {
     const wrapper = mount(ScenarioGuidePage, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
 
-    expect(wrapper.get('h1').text()).toBe('Как работают сценарии Lola')
+    expect(wrapper.get('h1').text()).toBe('Как работают сценарии Retenive')
     expect(wrapper.get('.guide-back').text()).toContain('Вся документация')
     expect(wrapper.findAll('.guide-nav nav a').length).toBeGreaterThan(20)
     expect(wrapper.get('.skip-guide').attributes('href')).toBe('#guide-content')

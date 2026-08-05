@@ -194,7 +194,7 @@ describe("IntegrationCanonicalIdentityPolicyCard", () => {
       ],
     });
     expect(wrapper.text()).toContain(
-      "Lola зафиксирует конфликт и не станет объединять события автоматически",
+      "Retenive зафиксирует конфликт и не станет объединять события автоматически",
     );
     expect(wrapper.text()).toContain(
       "Одинаковый идентификатор и одинаковые данные будут приняты один раз",

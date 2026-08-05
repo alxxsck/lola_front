@@ -281,7 +281,7 @@ onUnmounted(() => window.clearInterval(timer))
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--status-violet) 10%, transparent),
+    color-mix(in srgb, var(--status-accent) 10%, transparent),
     transparent 70%
   );
   pointer-events: none;
@@ -332,8 +332,8 @@ onUnmounted(() => window.clearInterval(timer))
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .summary-icon i {
   font-size: 0.78rem;
@@ -461,8 +461,8 @@ onUnmounted(() => window.clearInterval(timer))
   height: 40px;
   display: grid;
   place-items: center;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   border-radius: 13px;
   font-weight: 700;
 }

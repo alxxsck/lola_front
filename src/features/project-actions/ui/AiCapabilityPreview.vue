@@ -61,11 +61,11 @@ function issueMessage(code: string): string {
   return (
     {
       AI_ACTION_DISABLED:
-        "Разрешите Lola использовать это действие и сохраните изменения.",
+        "Разрешите Retenive использовать это действие и сохраните изменения.",
       AI_ACTION_TARGETS_UNAVAILABLE:
-        "В разделе «Интерфейс» пока нет опубликованных элементов, которые Lola может использовать.",
+        "В разделе «Интерфейс» пока нет опубликованных элементов, которые Retenive может использовать.",
     }[code] ??
-    "Lola пока не может использовать это действие. Проверьте настройки и повторите попытку."
+    "Retenive пока не может использовать это действие. Проверьте настройки и повторите попытку."
   );
 }
 </script>
@@ -74,9 +74,9 @@ function issueMessage(code: string): string {
   <section class="ai-preview" aria-labelledby="ai-preview-heading">
     <div class="preview-heading">
       <div>
-        <h3 id="ai-preview-heading">Как Lola будет использовать действие</h3>
+        <h3 id="ai-preview-heading">Как Retenive будет использовать действие</h3>
         <p>
-          Здесь показано, когда действие доступно Lola и какие данные она может
+          Здесь показано, когда действие доступно Retenive и какие данные она может
           передать при выполнении.
         </p>
       </div>
@@ -96,7 +96,7 @@ function issueMessage(code: string): string {
       <div class="tool-card">
         <div class="tool-status">
           <i class="pi pi-check-circle" />
-          <strong>Действие доступно Lola</strong>
+          <strong>Действие доступно Retenive</strong>
         </div>
         <div class="tool-metrics">
           <span>{{
@@ -107,7 +107,7 @@ function issueMessage(code: string): string {
           }}</span>
         </div>
         <div class="usage-copy">
-          <small>Когда Lola выберет действие</small>
+          <small>Когда Retenive выберет действие</small>
           <p>{{ preview.tool.description }}</p>
         </div>
         <details class="technical-details">
@@ -120,9 +120,9 @@ function issueMessage(code: string): string {
     <div v-else class="preview-empty">
       <i class="pi pi-eye-slash" />
       <div>
-        <strong>Действие пока недоступно Lola</strong>
+        <strong>Действие пока недоступно Retenive</strong>
         <span>
-          Проверьте, что доступ для Lola включён и сохранён. Если действие
+          Проверьте, что доступ для Retenive включён и сохранён. Если действие
           открывает страницу, окно или элемент, сначала опубликуйте его в
           разделе «Интерфейс».
         </span>

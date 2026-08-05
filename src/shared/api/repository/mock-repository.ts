@@ -33,10 +33,10 @@ import type { ConversationAISuspensionHistoryItemResponseDto } from "@/shared/ap
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
   ConversationAISuspensionMutationResult,
-  LolaRepository,
+  ReteniveRepository,
 } from "./contracts";
 
-const DATA_KEY = "lola-cms-demo-data-v2";
+const DATA_KEY = "retenive-cms-demo-data-v2";
 
 interface DemoData {
   project: Project;
@@ -317,7 +317,7 @@ function mockUserAttributeSchema(data: DemoData): UserAttributeSchema {
   };
 }
 
-export const mockRepository: LolaRepository = {
+export const mockRepository: ReteniveRepository = {
   mode: "mock",
   capabilities: {
     projectSettings: true,
@@ -1047,7 +1047,7 @@ export const mockRepository: LolaRepository = {
         actor: {
           type: "CMS_USER",
           id: "member_1",
-          email: "admin@lola.demo",
+          email: "admin@retenive.demo",
           name: "Алексей",
         },
         target: { kind: "PROJECT", id: demoProject.id },
@@ -1067,7 +1067,7 @@ export const mockRepository: LolaRepository = {
         actor: {
           type: "CMS_USER",
           id: "member_1",
-          email: "admin@lola.demo",
+          email: "admin@retenive.demo",
           name: "Алексей",
         },
         target: { kind: "PROJECT", id: demoProject.id },
@@ -1104,7 +1104,7 @@ export const mockRepository: LolaRepository = {
     const items = [
       {
         id: "product_api_request_1",
-        credentialId: "lola_sk_demo",
+        credentialId: "retenive_sk_demo",
         requestId: "req_demo_1",
         externalUserId: "demo-user",
         method: "POST",
@@ -1137,7 +1137,7 @@ export const mockRepository: LolaRepository = {
     await pause();
     return {
       id: requestLogId,
-      credentialId: "lola_sk_demo",
+      credentialId: "retenive_sk_demo",
       requestId: "req_demo_1",
       externalUserId: "demo-user",
       method: "POST",

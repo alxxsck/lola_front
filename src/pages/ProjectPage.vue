@@ -345,7 +345,7 @@ function validate() {
     validationError.value = "WebSocket URL должен использовать WSS.";
   else if (!hasValidVoiceOption.value)
     validationError.value =
-      "Выберите доступный голос Lola перед сохранением проекта.";
+      "Выберите доступный голос Retenive перед сохранением проекта.";
   else if (form.voiceInstructions.length > 20_000)
     validationError.value =
       "Инструкция для голосовой модели не должна превышать 20 000 символов.";
@@ -636,7 +636,7 @@ onBeforeUnmount(() => {
               title="Языки контента"
               description="Языки настраиваются единым Locale Attribute в полях пользователя."
               icon="pi pi-language"
-              tone="violet"
+              tone="accent"
               content-id="project-content-locales"
             />
             <div id="project-content-locales" v-show="localeSettingsExpanded">
@@ -762,7 +762,7 @@ onBeforeUnmount(() => {
                 <span
                   ><strong>Поля профиля пользователей</strong
                   ><small
-                    >Какие данные получает Lola и где их можно
+                    >Какие данные получает Retenive и где их можно
                     использовать</small
                   ></span
                 >
@@ -806,7 +806,7 @@ onBeforeUnmount(() => {
             <ProjectSettingsSectionHeader
               v-model:expanded="assistantSettingsExpanded"
               title="Ассистент"
-              description="Имя и базовая инструкция определяют голос Lola в этом проекте."
+              description="Имя и базовая инструкция определяют голос Retenive в этом проекте."
               icon="pi pi-sparkles"
               tone="coral"
               content-id="assistant-settings"
@@ -829,7 +829,7 @@ onBeforeUnmount(() => {
                   ><InputText
                     id="assistant-name"
                     v-model="form.assistantName"
-                    placeholder="Lola"
+                    placeholder="Retenive"
                     :disabled="saving || !canEditSettings"
                   />
                 </div>
@@ -898,7 +898,7 @@ onBeforeUnmount(() => {
           >
             <ProjectSettingsSectionHeader
               v-model:expanded="voiceSettingsExpanded"
-              title="Голос Lola"
+              title="Голос Retenive"
               description="Один голос для голосовых диалогов и команд «Озвучить текст»."
               icon="pi pi-microphone"
               tone="blue"
@@ -926,7 +926,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="form-grid columns">
                 <div class="field">
-                  <label for="voice">Голос Lola</label
+                  <label for="voice">Голос Retenive</label
                   ><Select
                     id="voice"
                     v-model="form.voice"
@@ -1111,8 +1111,8 @@ onBeforeUnmount(() => {
   font-size: 0.7rem;
 }
 .content-locale-chips span.primary {
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .content-locale-chips code {
   margin-left: 3px;
@@ -1123,7 +1123,7 @@ onBeforeUnmount(() => {
 }
 .content-locale-empty > i {
   font-size: 1.3rem;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .content-locale-empty p {
   margin: 3px 0 0;
@@ -1208,12 +1208,12 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background: linear-gradient(
     145deg,
-    var(--status-violet),
+    var(--status-accent),
     var(--action-primary)
   );
   box-shadow:
-    0 0 0 8px var(--status-violet-soft),
-    0 13px 26px color-mix(in srgb, var(--status-violet) 24%, transparent);
+    0 0 0 8px var(--status-accent-soft),
+    0 13px 26px color-mix(in srgb, var(--status-accent) 24%, transparent);
   margin: 8px 0 20px;
 }
 .assistant-orbit span {

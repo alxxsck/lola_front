@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as generated from "@/shared/api/generated/lola-backend";
+import * as generated from "@/shared/api/generated/retenive-backend";
 import { integrationRecoveryApi } from "./integration-recovery.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   integrationConnectionList: vi.fn(),
   integrationRecoveryOperationsCancelDispatch: vi.fn(),
   integrationRecoveryOperationsDetail: vi.fn(),

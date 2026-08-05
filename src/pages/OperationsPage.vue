@@ -678,7 +678,7 @@ onMounted(() => void refresh());
           ><i class="pi pi-database" />
           {{
             repository.mode === "api"
-              ? "Lola Backend · live data"
+              ? "Retenive Backend · live data"
               : "Демонстрационные данные"
           }}</span
         >
@@ -1375,11 +1375,11 @@ onMounted(() => void refresh());
 }
 .row-detail-button:hover {
   background: var(--surface-hover);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .row-detail-button:focus-visible {
   outline: 3px solid
-    color-mix(in srgb, var(--focus-ring) 35%, transparent);
+    var(--focus-ring-outer);
   outline-offset: 2px;
 }
 .loading-list {
@@ -1542,7 +1542,7 @@ onMounted(() => void refresh());
   font-weight: 650;
 }
 .request-vitals i {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.68rem;
 }
 .request-section {
@@ -1600,11 +1600,11 @@ onMounted(() => void refresh());
 .request-metadata button:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .request-metadata button:focus-visible {
   outline: 3px solid
-    color-mix(in srgb, var(--focus-ring) 35%, transparent);
+    var(--focus-ring-outer);
   outline-offset: 2px;
 }
 .request-payload > h3 {
@@ -1636,8 +1636,8 @@ onMounted(() => void refresh());
   width: 30px;
   height: 30px;
   border-radius: 10px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-weight: 700;
   font-size: 0.75rem;
 }

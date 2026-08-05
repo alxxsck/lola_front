@@ -156,7 +156,7 @@ const leafPresentation = computed(() => {
 }
 .group-card .logic-switch button[aria-pressed="true"] {
   background: var(--surface-card);
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   box-shadow: var(--shadow-raised);
 }
 .group-count {
@@ -172,7 +172,7 @@ const leafPresentation = computed(() => {
   gap: 9px;
   margin: 13px 0 0;
   padding: 0 0 0 14px;
-  border-left: 2px solid var(--status-violet);
+  border-left: 2px solid var(--status-accent);
 }
 .group-card footer,
 .group-actions,
@@ -214,8 +214,8 @@ const leafPresentation = computed(() => {
 .group-card footer button {
   padding: 7px 9px;
   border: 0;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.67rem;
   font-weight: 700;
   line-height: 1.2;
@@ -259,8 +259,8 @@ const leafPresentation = computed(() => {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   place-items: center;
 }
 .leaf-card span,

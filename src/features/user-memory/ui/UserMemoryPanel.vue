@@ -118,7 +118,7 @@ function date(value: string): string {
   <section class="memory-panel">
     <header>
       <div>
-        <span>Память Lola</span>
+        <span>Память Retenive</span>
         <small>Непроверенный контекст из сообщений пользователя</small>
       </div>
       <Button
@@ -138,7 +138,7 @@ function date(value: string): string {
       <i class="pi pi-spin pi-spinner" /> Загружаем память…
     </p>
     <p v-else-if="!facts.length" class="state">
-      Lola пока ничего не сохранила.
+      Retenive пока ничего не сохранила.
     </p>
     <article v-for="fact in facts" v-else :key="fact.id">
       <div>
@@ -164,7 +164,7 @@ function date(value: string): string {
   <Dialog
     v-model:visible="clearVisible"
     modal
-    :header="`Очистить память Lola для ${userLabel}?`"
+    :header="`Очистить память Retenive для ${userLabel}?`"
     :style="{ width: 'min(440px, 94vw)' }"
   >
     <p>

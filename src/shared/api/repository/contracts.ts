@@ -195,7 +195,7 @@ export interface EventLogFilters extends CursorPageRequest {
   occurredTo?: string;
 }
 
-export interface LolaRepository {
+export interface ReteniveRepository {
   readonly mode: RepositoryMode;
   readonly capabilities: RepositoryCapabilities;
   getProject(projectId: string): Promise<Project>;

@@ -13,12 +13,12 @@ import {
   eventCatalogSchemaDraft,
   eventCatalogUpdateMetadata,
   eventCatalogUpdatePolicy,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type { EventDefinitionCatalogResponseDto } from "@/shared/api/generated/models";
 import { ApiError } from "@/shared/api/http/api-error";
 import { apiEventCatalogRepository } from "./event-catalog-repository";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   eventCatalogAnalyzeSchemaDraft: vi.fn(),
   eventCatalogArchive: vi.fn(),
   eventCatalogDiscardSchemaDraft: vi.fn(),

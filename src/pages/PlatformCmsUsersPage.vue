@@ -525,7 +525,7 @@ onMounted(async () => {
       <div>
         <div class="eyebrow">Control plane</div>
         <h1>CMS Users</h1>
-        <p class="subtitle">Глобальные identities и их доступ к административным поверхностям Lola.</p>
+        <p class="subtitle">Глобальные identities и их доступ к административным поверхностям Retenive.</p>
       </div>
       <div class="header-actions">
         <Button v-if="canCreate" label="Создать CMS User" icon="pi pi-user-plus" @click="openCreate" />
@@ -763,7 +763,7 @@ onMounted(async () => {
 .table-card { overflow: hidden; }
 .loading-list { display: grid; gap: 9px; padding: 18px; }
 .identity { display: flex; align-items: center; gap: 11px; }
-.identity > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--status-violet-soft); color: var(--status-violet-text); font-weight: 800; }
+.identity > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--status-accent-soft); color: var(--status-accent-text); font-weight: 800; }
 .identity strong, .identity small { display: block; }
 .identity small { margin-top: 3px; color: var(--muted); }
 .load-more { display: flex; justify-content: center; padding: 14px; border-top: 1px solid var(--line); }

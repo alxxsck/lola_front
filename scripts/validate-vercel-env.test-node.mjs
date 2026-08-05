@@ -24,7 +24,7 @@ test("Vercel accepts the explicit production API configuration", () => {
     validateVercelEnvironment({
       VERCEL: "1",
       VITE_DATA_MODE: "api",
-      VITE_API_BASE_URL: "https://lola-back.example/api/v1",
+      VITE_API_BASE_URL: "https://retenive-back.example/api/v1",
     }),
     [],
   );

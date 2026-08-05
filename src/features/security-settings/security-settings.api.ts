@@ -3,7 +3,7 @@ import {
   cmsSecuritySettingsList,
   cmsSecuritySettingsRevoke,
   cmsSecuritySettingsRevokeOthers,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   CmsPasswordChangeRequestDto,
   CmsSessionSummaryDto,

@@ -6,7 +6,7 @@ const generated = vi.hoisted(() => ({
   cancel: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   projectAIAnalysisList: generated.list,
   projectAIAnalysisDetail: generated.detail,
   projectAIAnalysisCancel: generated.cancel,

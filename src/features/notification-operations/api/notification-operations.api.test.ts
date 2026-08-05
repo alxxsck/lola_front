@@ -8,7 +8,7 @@ const generated = vi.hoisted(() => ({
   quarantine: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   notificationOperationsHealth: generated.health,
   notificationOperationsDeliveries: generated.deliveries,
   notificationOperationsIntegrations: generated.integrations,

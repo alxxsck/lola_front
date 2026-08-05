@@ -75,7 +75,7 @@ test("scenario author sees importance and quiet-hours semantics", async ({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          projectId: "prj_lola_demo",
+          projectId: "prj_retenive_demo",
           revision: "catalog-admission-e2e",
           version: 1,
           events: [

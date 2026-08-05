@@ -7,7 +7,7 @@ const generated = vi.hoisted(() => ({
   publish: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   integrationEventIdentityPolicyCurrent: generated.current,
   integrationEventIdentityPolicyPreview: generated.preview,
   integrationEventIdentityPolicyPublish: generated.publish,

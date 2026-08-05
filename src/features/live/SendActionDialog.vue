@@ -41,7 +41,7 @@ const sessionOptions = computed(() => availableSessions.value.map((item) => ({
   value: item.id,
 })))
 const apiTypes = computed(() => [
-  { label: 'Текст от Lola', value: 'TEXT' },
+  { label: 'Текст от Retenive', value: 'TEXT' },
   ...(availableSessions.value.length ? [
     { label: 'CTA-кнопка', value: 'BUTTON' },
     { label: 'Анимация', value: 'ANIMATION' },
@@ -143,7 +143,7 @@ async function send() {
     toast.add({
       severity: result.duplicate ? 'info' : 'success',
       summary: result.duplicate ? 'Сообщение уже было принято' : 'Сообщение отправлено',
-      detail: result.duplicate ? 'Backend вернул сохранённый результат без повторной доставки.' : `${recipient.value} получит сообщение от Lola.`,
+      detail: result.duplicate ? 'Backend вернул сохранённый результат без повторной доставки.' : `${recipient.value} получит сообщение от Retenive.`,
       life: 4000,
     })
     emit('sent')
@@ -168,7 +168,7 @@ async function send() {
       <div v-if="availableSessions.length" class="field"><label>Активная сессия</label><Select v-model="selectedSessionId" :options="sessionOptions" option-label="label" option-value="value" /><small>Для текста backend может выбрать сессию автоматически. Кнопка или frontend-команда будет отправлена строго в выбранную сессию.</small></div>
       <template v-if="form.type === 'TEXT' || form.type === 'VOICE'">
         <div v-if="form.type === 'VOICE'" class="field"><label>Голос</label><Select v-model="form.voice" :options="['ara', 'eve', 'leo', 'rex', 'sal']" /></div>
-        <div class="field"><label>{{ form.type === 'VOICE' ? 'Текст для озвучивания' : 'Сообщение' }}</label><Textarea v-model="form.text" rows="5" maxlength="10000" placeholder="Что Lola должна сказать пользователю?" /></div>
+        <div class="field"><label>{{ form.type === 'VOICE' ? 'Текст для озвучивания' : 'Сообщение' }}</label><Textarea v-model="form.text" rows="5" maxlength="10000" placeholder="Что Retenive должна сказать пользователю?" /></div>
       </template>
       <template v-else-if="form.type === 'BUTTON' || form.type === 'COMMAND'">
         <div class="grid grid-2"><div v-if="form.type === 'BUTTON'" class="field"><label>Текст кнопки</label><InputText v-model="form.label" placeholder="Открыть бонусы" /></div><div class="field"><label>Действие</label><Select v-model="form.action" :options="buttonActions" option-label="label" option-value="value" /></div></div>

@@ -124,7 +124,7 @@ function submit() {
       field: "configuration",
       code: "PROJECT_ACTION_CONFIGURATION_SCHEMA_UNSUPPORTED",
       message:
-        "Эти настройки пока нельзя безопасно изменить в Lola. Обратитесь к разработчику проекта.",
+        "Эти настройки пока нельзя безопасно изменить в Retenive. Обратитесь к разработчику проекта.",
     });
   } else {
     issues.value.push(
@@ -194,7 +194,7 @@ function confirmArchive() {
       severity="info"
       :closable="false"
     >
-      <p>Настройки доступа Lola может изменять только владелец проекта.</p>
+      <p>Настройки доступа Retenive может изменять только владелец проекта.</p>
       <p v-if="action.aiEnabled">
         Конфигурацию AI-enabled действия может изменять только владелец.
         Сценарии и архивирование доступны администратору.
@@ -257,16 +257,16 @@ function confirmArchive() {
         <label class="surface-control ai" :class="{ unsupported: !supportsAi }">
           <span class="surface-copy"
             ><strong
-              ><i class="pi pi-sparkles" /> Разрешить помощнику Lola</strong
+              ><i class="pi pi-sparkles" /> Разрешить помощнику Retenive</strong
             ><small>{{
               supportsAi
-                ? "Lola сможет выбрать это действие, когда оно подходит к запросу пользователя."
-                : "Lola не умеет самостоятельно выбирать это действие."
+                ? "Retenive сможет выбрать это действие, когда оно подходит к запросу пользователя."
+                : "Retenive не умеет самостоятельно выбирать это действие."
             }}</small></span
           >
           <ToggleSwitch
             v-model="draft.aiEnabled"
-            aria-label="Разрешить помощнику Lola"
+            aria-label="Разрешить помощнику Retenive"
             :disabled="!canEditAiExposure || !supportsAi"
           />
         </label>
@@ -276,7 +276,7 @@ function confirmArchive() {
     <section v-if="supportsAi" class="editor-section ai-setup">
       <div class="section-heading">
         <div>
-          <h3>Когда Lola может выбрать действие</h3>
+          <h3>Когда Retenive может выбрать действие</h3>
           <p>
             Объясните простыми словами, в каких запросах пользователя это
             действие уместно, а в каких — нет.
@@ -285,7 +285,7 @@ function confirmArchive() {
         <span>{{ draft.aiUsageDescription.trim().length }}/2000</span>
       </div>
       <label for="ai-usage-description" class="field-label"
-        >Подсказка для Lola</label
+        >Подсказка для Retenive</label
       >
       <Textarea
         id="ai-usage-description"
@@ -304,7 +304,7 @@ function confirmArchive() {
       </div>
       <label v-if="needsAuditReason" for="ai-audit-reason" class="audit-field">
         <span class="field-label"
-          >Зачем Lola нужен доступ <em>обязательно</em></span
+          >Зачем Retenive нужен доступ <em>обязательно</em></span
         >
         <InputText
           id="ai-audit-reason"
@@ -326,7 +326,7 @@ function confirmArchive() {
           <h3>Настройки действия</h3>
           <p>
             Здесь показаны только настройки, которые можно менять безопасно.
-            Адреса, ключи доступа и программный код Lola не принимает.
+            Адреса, ключи доступа и программный код Retenive не принимает.
           </p>
         </div>
       </div>
@@ -392,7 +392,7 @@ function confirmArchive() {
     <div class="confirmation">
       <Message severity="warn" :closable="false"
         ><strong>Настройки вступят в силу сразу после сохранения.</strong>
-        Использование в сценариях и доступ для Lola включаются независимо друг
+        Использование в сценариях и доступ для Retenive включаются независимо друг
         от друга.</Message
       >
       <dl>
@@ -408,11 +408,11 @@ function confirmArchive() {
           <dd>{{ draft.scenarioEnabled ? "Включено" : "Выключено" }}</dd>
         </div>
         <div>
-          <dt>Для Lola</dt>
+          <dt>Для Retenive</dt>
           <dd>{{ draft.aiEnabled ? "Включено" : "Выключено" }}</dd>
         </div>
         <div v-if="draft.aiEnabled">
-          <dt>Когда Lola может выбрать действие</dt>
+          <dt>Когда Retenive может выбрать действие</dt>
           <dd>{{ draft.aiUsageDescription.trim() }}</dd>
         </div>
         <div>
@@ -436,7 +436,7 @@ function confirmArchive() {
         <div>
           <dt>Что изменится после сохранения</dt>
           <dd>
-            Lola применит выбранные разрешения к версии
+            Retenive применит выбранные разрешения к версии
             {{ action.actionTypeRevision.version }} этого действия.
           </dd>
         </div>
@@ -446,7 +446,7 @@ function confirmArchive() {
         </div>
       </dl>
       <Message v-if="draft.aiEnabled" severity="info" :closable="false"
-        >После сохранения Lola автоматически обновит опубликованные настройки
+        >После сохранения Retenive автоматически обновит опубликованные настройки
         действия.</Message
       >
     </div>
@@ -533,7 +533,7 @@ function confirmArchive() {
   align-items: start;
 }
 .eyebrow {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;

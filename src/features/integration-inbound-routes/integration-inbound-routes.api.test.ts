@@ -4,7 +4,7 @@ const generated = vi.hoisted(() => ({
   amplitude: vi.fn(),
   customerIo: vi.fn(),
 }));
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   integrationEventRouteCreateAmplitudeInbound: generated.amplitude,
   integrationEventRouteCreateCustomerIoInbound: generated.customerIo,
 }));

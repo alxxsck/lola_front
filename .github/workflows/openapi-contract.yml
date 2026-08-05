@@ -94,11 +94,11 @@ jobs:
       - name: Verify committed and live OpenAPI contracts
         working-directory: frontend
         env:
-          LOLA_BACKEND_DIR: ${{ github.workspace }}/backend
+          RETENIVE_BACKEND_DIR: ${{ github.workspace }}/backend
         run: npm run api:check
 
       - name: Build production frontend
         working-directory: frontend
         env:
-          LOLA_BACKEND_DIR: ${{ github.workspace }}/backend
+          RETENIVE_BACKEND_DIR: ${{ github.workspace }}/backend
         run: npm run build

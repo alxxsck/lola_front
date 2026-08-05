@@ -1029,7 +1029,7 @@ function errorMessage(cause: unknown, fallback: string) {
   line-height: 1.5;
 }
 .eyebrow {
-  color: var(--status-violet);
+  color: var(--status-accent);
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1144,8 +1144,8 @@ function errorMessage(cause: unknown, fallback: string) {
   background: var(--status-warning-soft);
 }
 .new-definition-panel {
-  border-color: var(--status-violet);
-  background: var(--status-violet-soft);
+  border-color: var(--status-accent);
+  background: var(--status-accent-soft);
 }
 .new-definition-panel input {
   width: 100%;

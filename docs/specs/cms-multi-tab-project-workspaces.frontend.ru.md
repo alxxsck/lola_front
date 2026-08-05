@@ -24,7 +24,7 @@ reuse detection отзывает всю session family.
 4. Перезагрузка вкладки сохраняет выбранный в ней Project.
 5. Закрытие вкладки не требует восстановления её Project при следующем ручном
    открытии CMS.
-6. Вкладки различимы по favicon Lola и названию выбранного Project.
+6. Вкладки различимы по favicon Retenive и названию выбранного Project.
 
 ## Не входит в объём
 
@@ -39,7 +39,7 @@ reuse detection отзывает всю session family.
 ### Tab-local Project
 
 - Выбранный Project продолжает храниться под существующим ключом
-  `lola-cms-selected-project-v1` в `sessionStorage`.
+  `retenive-cms-selected-project-v1` в `sessionStorage`.
 - Меню профиля содержит один список «Переключить проект»: клик по строке
   переключает текущую вкладку, а отдельная иконка справа открывает этот Project
   в новой вкладке.
@@ -51,7 +51,7 @@ reuse detection отзывает всю session family.
   отсоединяется и вкладка переходит на `/overview`. Project не появляется в URL.
 - Если браузер блокирует создание вкладки, текущая вкладка и её Project не
   изменяются.
-- Favicon повторяет лаймовый знак Lola из sidebar. Заголовок вкладки имеет
+- Favicon повторяет лаймовый знак Retenive из sidebar. Заголовок вкладки имеет
   формат `Lo | <Project name>` и реактивно обновляется при смене Project; без
   выбранного Project используется `Lo | CMS`.
 

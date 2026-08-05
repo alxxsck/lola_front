@@ -20,7 +20,7 @@ const state = ref<'READY' | 'PENDING' | 'SUCCESS' | 'ERROR' | 'MISSING'>(
 
 const copy = computed(() => ({
   'initial-access': {
-    eyebrow: 'Приглашение в Lola CMS',
+    eyebrow: 'Приглашение в Retenive CMS',
     title: 'Завершите создание аккаунта',
     description: 'Подтвердите переход, чтобы задать постоянный пароль.',
     button: 'Продолжить настройку',
@@ -67,7 +67,7 @@ async function consume() {
 <template>
   <main class="email-action-page" :data-action="action">
     <section class="email-action-card" aria-live="polite">
-      <div class="brand"><span>L</span><strong>Lola CMS</strong></div>
+      <div class="brand"><span>R</span><strong>Retenive CMS</strong></div>
 
       <template v-if="state === 'SUCCESS'">
         <div class="state-icon success"><i class="pi pi-check" /></div>

@@ -7,10 +7,10 @@ import {
   telegramChannelAdminSetBroadcastsEnabled,
   telegramChannelAdminTest,
   telegramLinkAdminGet,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import { telegramProductInstallationsApi } from "./telegram-product-installations.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   telegramChannelAdminCreate: vi.fn(),
   telegramChannelAdminDisable: vi.fn(),
   telegramChannelAdminGet: vi.fn(),

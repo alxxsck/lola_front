@@ -3,7 +3,7 @@ import {
   telegramPersonalOutboundCreate,
   telegramPersonalOutboundGet,
   telegramPersonalOutboundList,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type { TelegramPersonalOutboundCreateBody } from "@/shared/api/generated/models";
 import type { TelegramPersonalDraft } from "./telegram-personal-message.model";
 import type { TelegramPersonalMessagesApi } from "./use-telegram-personal-messages";

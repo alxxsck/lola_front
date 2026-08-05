@@ -6,7 +6,7 @@ import { AdminGuidePage } from '@/features/documentation/ui'
 <template>
   <AdminGuidePage
     :source="guideSource"
-    title="Как работают сценарии Lola"
+    title="Как работают сценарии Retenive"
     description="От события и аудитории до публикации, ожиданий и безопасного отката — без устройства API и базы данных."
     :meta="[
       { icon: 'pi pi-clock', label: '20 минут' },

@@ -24,13 +24,13 @@ const provider = computed(() =>
         eyebrow: "Коммуникации с клиентами",
         heroClass: "provider-workspace__hero--customer-io",
         summary:
-          "Передавайте продуктовые события в Customer.io Pipelines или принимайте подписанные события Customer.io в Lola.",
-        outboundTitle: "Из Lola в Customer.io",
+          "Передавайте продуктовые события в Customer.io Pipelines или принимайте подписанные события Customer.io в Retenive.",
+        outboundTitle: "Из Retenive в Customer.io",
         outboundDescription:
-          "Выберите, какие события и свойства Lola отправляет в Customer.io.",
-        inboundTitle: "Из Customer.io в Lola",
+          "Выберите, какие события и свойства Retenive отправляет в Customer.io.",
+        inboundTitle: "Из Customer.io в Retenive",
         inboundDescription:
-          "Lola выдаст отдельный адрес webhook и секрет проверки — это защита входящих запросов, а не второе подключение аккаунта. Затем сопоставьте события Customer.io с событиями Lola.",
+          "Retenive выдаст отдельный адрес webhook и секрет проверки — это защита входящих запросов, а не второе подключение аккаунта. Затем сопоставьте события Customer.io с событиями Retenive.",
       }
     : {
         title: "Amplitude",
@@ -38,13 +38,13 @@ const provider = computed(() =>
         eyebrow: "Аналитика продукта",
         heroClass: "provider-workspace__hero--amplitude",
         summary:
-          "Передавайте события Lola в Amplitude или принимайте события из Amplitude по явно настроенным правилам.",
-        outboundTitle: "Из Lola в Amplitude",
+          "Передавайте события Retenive в Amplitude или принимайте события из Amplitude по явно настроенным правилам.",
+        outboundTitle: "Из Retenive в Amplitude",
         outboundDescription:
-          "Выберите, какие события и свойства Lola отправляет в Amplitude.",
-        inboundTitle: "Из Amplitude в Lola",
+          "Выберите, какие события и свойства Retenive отправляет в Amplitude.",
+        inboundTitle: "Из Amplitude в Retenive",
         inboundDescription:
-          "Lola выдаст отдельный адрес webhook и секрет проверки — исходящий API-ключ для приёма не используется. Затем сопоставьте внешние события с Lola.",
+          "Retenive выдаст отдельный адрес webhook и секрет проверки — исходящий API-ключ для приёма не используется. Затем сопоставьте внешние события с Retenive.",
       },
 );
 </script>
@@ -70,12 +70,6 @@ const provider = computed(() =>
         <li><span>3</span>Проверьте и включите</li>
       </ol>
     </header>
-
-    <IntegrationInboundActivityCard
-      :project-id="projectId"
-      :can-read-activity="canReadActivity"
-      :provider="props.provider"
-    />
 
     <div class="provider-workspace__direction" data-direction="outbound">
       <span class="provider-workspace__direction-icon pi pi-arrow-up-right" />
@@ -119,6 +113,11 @@ const provider = computed(() =>
       :project-id="projectId"
       :can-read="canRead"
       :can-manage="canManage"
+      :provider="props.provider"
+    />
+    <IntegrationInboundActivityCard
+      :project-id="projectId"
+      :can-read-activity="canReadActivity"
       :provider="props.provider"
     />
   </div>

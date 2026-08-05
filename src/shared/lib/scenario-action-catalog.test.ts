@@ -116,7 +116,7 @@ describe('scenario action catalog schema helpers', () => {
       configSchema: { required: ['text'] },
     })
     expect(definition?.uiSchema.fields.map((field) => field.key)).toEqual(['text', 'voice', 'onUnavailable'])
-    expect(validateActionConfig(definition!, {})).toBe('Первая голосовая реплика Lola: обязательное поле')
+    expect(validateActionConfig(definition!, {})).toBe('Первая голосовая реплика Retenive: обязательное поле')
     expect(validateActionConfig(definition!, { text: 'Привет!', voice: 'eve', onUnavailable: 'continue' })).toBe('')
     expect(validateActionConfig(definition!, { text: 'Привет!', voice: 'marin' })).toBe('Голос: содержит недопустимое значение')
     expect(validateActionConfig(definition!, { text: 'Привет!', onUnavailable: 'stop' })).toBe('Если голос недоступен: содержит недопустимое значение')

@@ -63,7 +63,7 @@ async function installScenarioAuthoringFixtures(
         path.endsWith("/scenario-authoring/catalog")
       ) {
         return json(route, {
-          projectId: "prj_lola_demo",
+          projectId: "prj_retenive_demo",
           revision: catalogRevision,
           version: 1,
           events: [
@@ -260,7 +260,7 @@ async function installScenarioAuthoringFixtures(
       ) {
         return json(route, {
           scenarioId,
-          projectId: "prj_lola_demo",
+          projectId: "prj_retenive_demo",
           code: "e2e_scenario",
           name: "E2E сценарий",
           status: "ACTIVE",
@@ -375,11 +375,11 @@ test("theme choice survives a page reload", async ({ page }) => {
   const themeSwitch = page.locator(".theme-switch input");
 
   await themeSwitch.check();
-  await expect(page.locator("html")).toHaveClass(/lola-dark/);
+  await expect(page.locator("html")).toHaveClass(/retenive-dark/);
   await page.reload();
 
   await expect(page.locator(".theme-switch input")).toBeChecked();
-  await expect(page.locator("html")).toHaveClass(/lola-dark/);
+  await expect(page.locator("html")).toHaveClass(/retenive-dark/);
 });
 
 test("Actions catalog stays compact and keeps the editor readable", async ({
@@ -467,7 +467,7 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
   page,
 }) => {
   await page.evaluate(() =>
-    localStorage.removeItem("lola-cms-demo-product-actions-v2"),
+    localStorage.removeItem("retenive-cms-demo-product-actions-v2"),
   );
   await page.goto("/interface/page");
   const bonusesTarget = page.locator("article").filter({
@@ -475,9 +475,9 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
   });
   await bonusesTarget.getByRole("button", { name: "Изменить" }).click();
   const targetEditor = page.getByRole("dialog", { name: "Изменить элемент" });
-  await targetEditor.getByRole("switch", { name: "Разрешить Lola" }).click();
+  await targetEditor.getByRole("switch", { name: "Разрешить Retenive" }).click();
   await targetEditor
-    .getByLabel("Описание для Lola 20–1000 символов")
+    .getByLabel("Описание для Retenive 20–1000 символов")
     .fill(
       "Страница, где пользователь просматривает доступные бонусы и награды.",
     );
@@ -485,10 +485,10 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
     .getByLabel("Другие названия через запятую, до 20")
     .fill("награды, бонусы");
   await targetEditor
-    .getByLabel("Зачем Lola нужен доступ обязательно")
+    .getByLabel("Зачем Retenive нужен доступ обязательно")
     .fill("Разрешаем безопасную страницу бонусов для OPEN_PAGE");
   await targetEditor.getByRole("button", { name: "Сохранить" }).click();
-  await expect(bonusesTarget).toContainText("Доступно Lola");
+  await expect(bonusesTarget).toContainText("Доступно Retenive");
 
   await page.goto("/actions");
 
@@ -500,16 +500,16 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
   await card.click();
 
   const editor = page.locator(".project-action-dialog");
-  await expect(editor.getByText("Действие пока недоступно Lola")).toBeVisible();
+  await expect(editor.getByText("Действие пока недоступно Retenive")).toBeVisible();
   await editor.getByLabel("Использовать в сценариях").click();
-  await editor.getByLabel("Разрешить помощнику Lola").click();
+  await editor.getByLabel("Разрешить помощнику Retenive").click();
   await editor
-    .getByLabel("Подсказка для Lola")
+    .getByLabel("Подсказка для Retenive")
     .fill(
       "Используй, когда пользователь явно просит открыть страницу с бонусами.",
     );
   await editor
-    .getByLabel("Зачем Lola нужен доступ обязательно")
+    .getByLabel("Зачем Retenive нужен доступ обязательно")
     .fill("Разрешаем безопасный переход на зарегистрированную страницу");
   await editor.locator('[data-test="save-project-action"]').click();
 
@@ -517,7 +517,7 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
     name: "Проверьте изменения перед сохранением",
   });
   await expect(confirmation).toContainText("СценарииВыключено");
-  await expect(confirmation).toContainText("Для LolaВключено");
+  await expect(confirmation).toContainText("Для ReteniveВключено");
   await confirmation
     .locator('[data-test="confirm-project-action-save"]')
     .click();
@@ -526,12 +526,12 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
     .getByText("Технические сведения для разработчика", { exact: true })
     .click();
   await expect(
-    editor.getByText("lola_open_page", { exact: true }),
+    editor.getByText("retenive_open_page", { exact: true }),
   ).toBeVisible();
   await expect(editor.locator("pre")).toContainText('"bonuses_page"');
   await expect(editor.locator("pre")).not.toContainText("route");
   await expect(editor.getByLabel("Использовать в сценариях")).not.toBeChecked();
-  await expect(editor.getByLabel("Разрешить помощнику Lola")).toBeChecked();
+  await expect(editor.getByLabel("Разрешить помощнику Retenive")).toBeChecked();
 
   await editor.getByLabel("Использовать в сценариях").click();
   await editor.locator('[data-test="save-project-action"]').click();
@@ -540,7 +540,7 @@ test("OWNER publishes OPEN_PAGE for AI without coupling the Scenario surface", a
     .locator('[data-test="confirm-project-action-save"]')
     .click();
   await expect(editor.getByLabel("Использовать в сценариях")).toBeChecked();
-  await expect(editor.getByLabel("Разрешить помощнику Lola")).toBeChecked();
+  await expect(editor.getByLabel("Разрешить помощнику Retenive")).toBeChecked();
 });
 
 test("core operator pages load without horizontal overflow or serious accessibility violations", async ({
@@ -716,13 +716,13 @@ test("documentation catalog opens the scenario guide", async ({ page }) => {
   ).toHaveAttribute("href", "/docs");
   await page.goto("/docs");
   await expect(
-    page.getByRole("heading", { name: "Документация Lola", level: 1 }),
+    page.getByRole("heading", { name: "Документация Retenive", level: 1 }),
   ).toBeVisible();
   await expect(page.locator(".guide-card")).toHaveCount(3);
-  await page.getByRole("link", { name: /Как работают сценарии Lola/ }).click();
+  await page.getByRole("link", { name: /Как работают сценарии Retenive/ }).click();
   await expect(page).toHaveURL(/\/docs\/scenarios$/);
   await expect(
-    page.getByRole("heading", { name: "Как работают сценарии Lola", level: 1 }),
+    page.getByRole("heading", { name: "Как работают сценарии Retenive", level: 1 }),
   ).toBeVisible();
 });
 
@@ -730,7 +730,7 @@ test("contextual scenario documentation is discoverable from scenarios and event
   page,
 }) => {
   for (const item of [
-    { path: "/scenarios", title: "Как работают сценарии Lola" },
+    { path: "/scenarios", title: "Как работают сценарии Retenive" },
     { path: "/events", title: "Как события запускают сценарии" },
   ]) {
     await page.goto(item.path);
@@ -742,7 +742,7 @@ test("contextual scenario documentation is discoverable from scenarios and event
     await expect(page).toHaveURL(/\/docs\/scenarios$/);
     await expect(
       page.getByRole("heading", {
-        name: "Как работают сценарии Lola",
+        name: "Как работают сценарии Retenive",
         level: 1,
       }),
     ).toBeVisible();
@@ -927,7 +927,7 @@ test("scenario author can save, validate, preview, publish and safely roll back 
   await page.locator("#scenario-name").fill("E2E сценарий");
   await page.getByRole("button", { name: /Действия/ }).click();
   await page
-    .locator(".action-empty-options button", { hasText: "Показать Lola" })
+    .locator(".action-empty-options button", { hasText: "Показать Retenive" })
     .click();
   await page.getByRole("button", { name: /Условия/ }).click();
   await page.locator(".recipe-panel > summary").click();
@@ -1195,18 +1195,18 @@ test("приостановка AI остаётся понятной в обеи�
     page.getByRole("button", { name: /Первый депозит/ }),
   ).toContainText("AI");
   await expect(
-    page.getByRole("button", { name: /Знакомство с Lola/ }),
+    page.getByRole("button", { name: /Знакомство с Retenive/ }),
   ).not.toContainText("AI ⏸");
   await page.getByRole("button", { name: /Первый депозит/ }).click();
 
   for (const theme of ["light", "dark"] as const) {
     await page.evaluate((value) => {
-      localStorage.setItem("lola-theme", value);
-      document.documentElement.classList.toggle("lola-dark", value === "dark");
+      localStorage.setItem("retenive-theme", value);
+      document.documentElement.classList.toggle("retenive-dark", value === "dark");
       document.documentElement.style.colorScheme = value;
     }, theme);
     await expect(page.locator("html")).toHaveClass(
-      theme === "dark" ? /lola-dark/ : /^(?!.*lola-dark)/,
+      theme === "dark" ? /retenive-dark/ : /^(?!.*retenive-dark)/,
     );
     await expect(workspace).toBeVisible();
     expect(

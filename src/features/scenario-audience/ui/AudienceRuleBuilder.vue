@@ -363,7 +363,7 @@ defineExpose({ focusIssue });
       <summary>Когда проверяется пользователь?</summary>
       <p>
         Первый раз — при запуске сценария. Если включена повторная проверка
-        перед отправкой, Lola проверит новые данные по тем же правилам и
+        перед отправкой, Retenive проверит новые данные по тем же правилам и
         сохранит результат отдельно.
       </p>
       <p v-if="isV2">
@@ -567,10 +567,10 @@ defineExpose({ focusIssue });
   display: flex;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--status-violet);
+  border: 1px solid var(--status-accent);
   border-radius: 13px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .semantics-note strong,
 .semantics-note span {
@@ -669,7 +669,7 @@ defineExpose({ focusIssue });
   justify-content: space-between;
 }
 .source-picker header span {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: var(--font-size-caption);
   font-weight: 800;
   text-transform: uppercase;
@@ -710,11 +710,11 @@ defineExpose({ focusIssue });
   cursor: pointer;
 }
 .source-grid > button:hover {
-  border-color: var(--status-violet-text);
-  background: var(--status-violet-soft);
+  border-color: var(--status-accent-text);
+  background: var(--status-accent-soft);
 }
 .source-grid i {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .source-grid strong,
 .source-grid small {

@@ -90,7 +90,7 @@ describe("IntegrationInboundRoutesCard", () => {
     ]);
   });
 
-  it("creates only an inbound route and maps provider paths to the pinned Lola schema", async () => {
+  it("creates only an inbound route and maps provider paths to the pinned Retenive schema", async () => {
     const wrapper = mount(IntegrationInboundRoutesCard, {
       props: {
         projectId: "project-1",
@@ -214,7 +214,7 @@ describe("IntegrationInboundRoutesCard", () => {
 
     expect(wrapper.text()).toContain("1. Защищённый адрес приёма");
     expect(wrapper.text()).toContain(
-      "Правило определяет, какое внешнее событие станет событием Lola",
+      "Правило определяет, какое внешнее событие станет событием Retenive",
     );
   });
 
@@ -298,8 +298,86 @@ describe("IntegrationInboundRoutesCard", () => {
 
     expect(wrapper.findAll("[data-route-row]")).toHaveLength(10);
     expect(wrapper.text()).toContain("1–10 из 22");
+    expect(
+      wrapper.get('input[aria-label="Поиск по правилам приёма"]'),
+    ).toBeTruthy();
     await wrapper.get('input[type="search"]').setValue("external_22");
     expect(wrapper.findAll("[data-route-row]")).toHaveLength(1);
     expect(wrapper.text()).toContain("Входящее правило 22");
+  });
+
+  it("does not spend header space on search for a single inbound rule", async () => {
+    mocks.listRoutes.mockResolvedValue({
+      items: [
+        {
+          id: "route-1",
+          projectId: "project-1",
+          connectionId: "connection-1",
+          direction: "INBOUND",
+          name: "Единственное правило",
+          lifecycle: "ACTIVE",
+          enabled: true,
+          version: 1,
+          draftRevision: null,
+          publishedRevision: {
+            provider: "AMPLITUDE",
+            providerEventName: "single_event",
+            propertyBindings: [],
+          },
+        },
+      ],
+    });
+    const wrapper = mount(IntegrationInboundRoutesCard, {
+      props: {
+        projectId: "project-1",
+        provider: "AMPLITUDE",
+        canRead: true,
+        canManage: true,
+      },
+    });
+    await flushPromises();
+
+    expect(
+      wrapper.find('input[aria-label="Поиск по правилам приёма"]').exists(),
+    ).toBe(false);
+  });
+
+  it("keeps the rule action in a compact table cell", async () => {
+    mocks.listRoutes.mockResolvedValue({
+      items: [
+        {
+          id: "route-1",
+          projectId: "project-1",
+          connectionId: "connection-1",
+          direction: "INBOUND",
+          name: "Deposit",
+          lifecycle: "ACTIVE",
+          enabled: true,
+          version: 1,
+          draftRevision: null,
+          publishedRevision: {
+            provider: "AMPLITUDE",
+            providerEventName: "deposit",
+            propertyBindings: [],
+          },
+        },
+      ],
+    });
+    const wrapper = mount(IntegrationInboundRoutesCard, {
+      props: {
+        projectId: "project-1",
+        provider: "AMPLITUDE",
+        canRead: true,
+        canManage: true,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.get("td.integration-table__action").classes()).toContain(
+      "route-actions",
+    );
+    expect(wrapper.get("td.integration-table__action").classes()).not.toContain(
+      "actions",
+    );
   });
 });

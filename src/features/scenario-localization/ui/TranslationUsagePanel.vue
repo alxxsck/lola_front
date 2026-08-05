@@ -236,15 +236,15 @@ onMounted(load);
 .translation-usage { display: grid; gap: 18px; margin-top: 22px; padding: 22px; border: 1px solid var(--border-default); border-radius: 20px; background: var(--surface-card); }
 .translation-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--border-subtle); }
 .translation-heading { display: flex; align-items: flex-start; gap: 13px; }
-.translation-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; background: var(--status-violet-soft); color: var(--status-violet-text); }
-.provider-label { color: var(--status-violet-text); font-size: .62rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.translation-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; background: var(--status-accent-soft); color: var(--status-accent-text); }
+.provider-label { color: var(--status-accent-text); font-size: .62rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
 .translation-header h3 { margin: 3px 0; font-size: 1rem; }
 .translation-header p, .translation-empty p { margin: 0; color: var(--muted); font-size: .7rem; line-height: 1.45; }
 .range-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .range-toolbar > span { color: var(--text-small-muted); font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .usage-ranges { display: flex; flex-wrap: wrap; gap: 5px; }
 .usage-ranges button { padding: 7px 11px; border: 1px solid var(--border-default); border-radius: 999px; background: var(--surface-subtle); color: var(--text-secondary); font: inherit; font-size: .68rem; cursor: pointer; }
-.usage-ranges button.active { border-color: var(--status-violet); background: var(--status-violet-soft); color: var(--status-violet-text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-violet) 12%, transparent); }
+.usage-ranges button.active { border-color: var(--status-accent); background: var(--status-accent-soft); color: var(--status-accent-text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-accent) 12%, transparent); }
 .custom-range { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
 .custom-range label { display: grid; gap: 4px; color: var(--muted); font-size: .65rem; }
 .custom-range input { min-height: 34px; border: 1px solid var(--border-default); border-radius: 8px; padding: 5px 8px; background: var(--surface-card); color: var(--text-primary); }
@@ -260,7 +260,7 @@ onMounted(load);
 .budget-heading small, .budget-caption, .latency-note, .loaded-at { color: var(--muted); font-size: .63rem; }
 .budget-value { font-size: 1rem; }
 .budget-track { height: 10px; overflow: hidden; border-radius: 999px; background: var(--border-subtle); box-shadow: inset 0 1px 2px color-mix(in srgb, var(--text-primary) 9%, transparent); }
-.budget-track-fill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--status-violet), var(--action-primary)); transition: width .25s ease; }
+.budget-track-fill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--status-accent), var(--action-primary)); transition: width .25s ease; }
 .budget-track-fill.exhausted { background: var(--status-danger); }
 .chart-panel { padding: 16px; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-subtle); }
 .chart-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
@@ -268,7 +268,7 @@ onMounted(load);
 .chart-heading small { color: var(--muted); font-size: .62rem; }
 .translation-chart { display: flex; align-items: end; gap: 6px; height: 145px; padding: 14px 10px 0; border-radius: 12px; background: linear-gradient(to bottom, transparent 24%, var(--border-subtle) 25%, transparent 26%, transparent 49%, var(--border-subtle) 50%, transparent 51%, transparent 74%, var(--border-subtle) 75%, transparent 76%), var(--surface-card); }
 .translation-chart > div { display: grid; grid-template-rows: 1fr auto; align-items: end; flex: 1; height: 100%; gap: 4px; }
-.translation-chart span { display: block; min-width: 5px; border-radius: 5px 5px 2px 2px; background: var(--status-violet); }
+.translation-chart span { display: block; min-width: 5px; border-radius: 5px 5px 2px 2px; background: var(--status-accent); }
 .translation-chart small { color: var(--muted); font-size: .55rem; text-align: center; }
 .translation-details { display: grid; gap: 12px; }
 .target-breakdown { display: flex; flex-wrap: wrap; gap: 6px; }

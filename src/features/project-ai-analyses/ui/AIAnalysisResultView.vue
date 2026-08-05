@@ -43,14 +43,14 @@ function formatDate(value: string): string {
         >
       </div>
       <small>
-        Этот запуск уже завершён. Новые запросы Lola сначала попробует разрешить
+        Этот запуск уже завершён. Новые запросы Retenive сначала попробует разрешить
         такую неоднозначность сама; для повторения старого запуска добавьте
         подходящий код определения в новый запрос.
       </small>
     </div>
 
     <div v-if="view.answer" class="answer">
-      <div class="result-label"><i class="pi pi-sparkles" /> Вывод Lola</div>
+      <div class="result-label"><i class="pi pi-sparkles" /> Вывод Retenive</div>
       <p>{{ view.answer }}</p>
     </div>
 

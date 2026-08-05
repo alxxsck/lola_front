@@ -60,7 +60,7 @@ describe("ProfileFieldEditorPage", () => {
     await flushPromises();
 
     const text = wrapper.text();
-    expect(text).toContain("Как Lola должна понимать это поле?");
+    expect(text).toContain("Как Retenive должна понимать это поле?");
     expect(text).toContain("Обычное поле");
     expect(text).toContain("Язык контента");
     expect(text).not.toContain("Что хранится в поле");
@@ -342,7 +342,7 @@ describe("ProfileFieldEditorPage", () => {
 
     expect(vm.error).toBe("");
     expect(
-      window.localStorage.getItem("lola:demo:profile-fields:project-1"),
+      window.localStorage.getItem("retenive:demo:profile-fields:project-1"),
     ).toContain('"key":"city"');
     expect(mocks.push).toHaveBeenCalledWith("/profile-fields");
   });

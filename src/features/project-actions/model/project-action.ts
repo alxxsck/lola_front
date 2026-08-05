@@ -125,7 +125,7 @@ export function validateProjectActionDraft(
         field: "form",
         code: "PROJECT_ACTION_AI_EXPOSURE_PERMISSION_REQUIRED",
         message:
-          "Для изменения доступа Lola к действию требуется отдельное разрешение.",
+          "Для изменения доступа Retenive к действию требуется отдельное разрешение.",
       },
     ];
   }
@@ -144,7 +144,7 @@ export function validateProjectActionDraft(
     issues.push({
       field: "aiEnabled",
       code: "ACTION_SURFACE_UNSUPPORTED",
-      message: "Lola не может самостоятельно выбирать это действие.",
+      message: "Retenive не может самостоятельно выбирать это действие.",
     });
   }
   if (draft.aiEnabled && surfaces.has("AI")) {
@@ -153,7 +153,7 @@ export function validateProjectActionDraft(
       issues.push({
         field: "aiUsageDescription",
         code: "AI_ACTION_DESCRIPTION_INVALID",
-        message: "Подсказка для Lola должна содержать от 20 до 2000 символов.",
+        message: "Подсказка для Retenive должна содержать от 20 до 2000 символов.",
       });
     }
   }
@@ -164,7 +164,7 @@ export function validateProjectActionDraft(
         field: "auditReason",
         code: "AI_ACTION_AUDIT_REASON_REQUIRED",
         message:
-          "Объясните причину включения доступа для Lola: от 10 до 500 символов.",
+          "Объясните причину включения доступа для Retenive: от 10 до 500 символов.",
       });
     }
   }

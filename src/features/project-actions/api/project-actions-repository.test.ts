@@ -6,10 +6,10 @@ import {
   productActionsConfigureProjectAction,
   productActionsPreviewProjectAction,
   productActionsProjectActions,
-} from '@/shared/api/generated/lola-backend'
+} from '@/shared/api/generated/retenive-backend'
 import { projectActionsRepository } from './project-actions-repository'
 
-vi.mock('@/shared/api/generated/lola-backend', () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   productActionsActionTypes: vi.fn(),
   productActionsArchiveProjectAction: vi.fn(),
   productActionsConfigureAiExposure: vi.fn(),

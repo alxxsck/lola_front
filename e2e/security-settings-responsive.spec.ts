@@ -85,12 +85,12 @@ test("security settings keep one control and reflow contract across themes", asy
   await page.setViewportSize({ width: 1440, height: 900 });
   const themeSwitch = page.locator(".theme-switch input");
   await themeSwitch.check();
-  await expect(page.locator("html")).toHaveClass(/lola-dark/);
+  await expect(page.locator("html")).toHaveClass(/retenive-dark/);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".security-card").first()).toBeVisible();
 
   const darkLayout = await page.evaluate(() => ({
-    dark: document.documentElement.classList.contains("lola-dark"),
+    dark: document.documentElement.classList.contains("retenive-dark"),
     overflow:
       document.documentElement.scrollWidth -
       document.documentElement.clientWidth,

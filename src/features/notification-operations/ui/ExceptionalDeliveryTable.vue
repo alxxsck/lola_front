@@ -53,7 +53,7 @@ function formatDate(value: string): string {
     <div>
       <h2 id="exceptional-deliveries-title">Исключительные доставки</h2>
       <p>
-        Replay доступен только когда Lola доказала, что provider не принял
+        Replay доступен только когда Retenive доказала, что provider не принял
         operational delivery.
       </p>
     </div>

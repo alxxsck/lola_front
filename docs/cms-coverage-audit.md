@@ -1,18 +1,18 @@
-# Lola CMS — аудит покрытия ТЗ перед owner demo
+# Retenive CMS — аудит покрытия ТЗ перед owner demo
 
 Дата проверки: 29.07.2026.
 
-Источники истины: `03-cms-admin.md`, приоритетные контракты `05-data-model-and-api-contracts.md` и критерии `06-mvp-scope-and-acceptance.md` из каталога ТЗ Lola.
+Источники истины: `03-cms-admin.md`, приоритетные контракты `05-data-model-and-api-contracts.md` и критерии `06-mvp-scope-and-acceptance.md` из каталога ТЗ Retenive.
 
 ## Результат
 
-Frontend готов к демонстрации продукта и полностью работает в demo-режиме. Реальный production MVP всей Lola ещё не готов: часть обязательных CMS-сценариев зависит от backend и SDK endpoint, которых нет в переданной реализации backend. CMS не маскирует эти ограничения фиктивными HTTP-вызовами.
+Frontend готов к демонстрации продукта и полностью работает в demo-режиме. Реальный production MVP всей Retenive ещё не готов: часть обязательных CMS-сценариев зависит от backend и SDK endpoint, которых нет в переданной реализации backend. CMS не маскирует эти ограничения фиктивными HTTP-вызовами.
 
 | Область ТЗ | Frontend | Реальный backend |
 | --- | --- | --- |
 | Login + password | Готов, включая refresh/restore/logout и выбор проекта | CMS JWT login/refresh/logout опубликованы |
 | Tenant/project isolation | Доступные проекты загружаются по membership | Project guard проверяет membership для project routes |
-| Project settings | Одна настройка «Голос Lola» управляет voice chat и `SPEAK_TEXT`; каталог приходит с backend | Generic Project PATCH сохраняет `settings.voice`, voice catalog опубликован отдельно |
+| Project settings | Одна настройка «Голос Retenive» управляет voice chat и `SPEAK_TEXT`; каталог приходит с backend | Generic Project PATCH сохраняет `settings.voice`, voice catalog опубликован отдельно |
 | Text-to-Speech | Отдельный settings-блок удалён; `SPEAK_TEXT` использует общий Project voice | xAI Text-to-Speech streaming через один `XAI_API_KEY`, PCM16 mono 24 kHz |
 | AI usage | Раздельно показаны фактические Grok, расчётные Voice и расчётные Text-to-Speech расходы | Единый xAI ledger, End User attribution и immutable pricing revisions опубликованы |
 | Dashboard | Готовы users, online, conversations, events, scenarios, CTA conversion, integration health и activity | Часть агрегатов пока demo data |
@@ -51,4 +51,4 @@ Frontend готов к демонстрации продукта и полнос
 - Полную историю диалогов из backend.
 - Полное прохождение AC-08–AC-16 на staging.
 
-Эти пункты требуют изменений Lola Backend и Frontend SDK, перечисленных в `docs/cms-mvp-spec.md`.
+Эти пункты требуют изменений Retenive Backend и Frontend SDK, перечисленных в `docs/cms-mvp-spec.md`.

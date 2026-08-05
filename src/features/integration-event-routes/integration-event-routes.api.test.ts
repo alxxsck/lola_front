@@ -3,7 +3,7 @@ import { integrationEventRoutesApi } from "./integration-event-routes.api";
 
 const generated = vi.hoisted(() => ({ createCustomerIo: vi.fn() }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   eventCatalogList: vi.fn(),
   integrationEventRouteActivityList: vi.fn(),
   integrationEventRouteCreateAmplitude: vi.fn(),

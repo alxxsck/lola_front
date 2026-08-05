@@ -100,7 +100,7 @@ describe("IntegrationInboundConnectionsCard", () => {
       connectionId: "connection-new",
       connectionVersion: 2,
       endpointPath: "/api/v1/integrations/inbound/amplitude/public-key",
-      headerName: "x-lola-amplitude-secret",
+      headerName: "x-retenive-amplitude-secret",
       secret: "one-time-secret",
       credentialRevision: 1,
       credentialFingerprint: "1234567890abcdef",
@@ -132,7 +132,7 @@ describe("IntegrationInboundConnectionsCard", () => {
 
     expect(api.create).toHaveBeenCalledBefore(api.setup);
     expect(wrapper.text()).toContain("one-time-secret");
-    expect(wrapper.text()).toContain("x-lola-amplitude-secret");
+    expect(wrapper.text()).toContain("x-retenive-amplitude-secret");
     expect(wrapper.text()).toContain("event_type");
 
     await wrapper.setProps({ canManage: false });
@@ -165,7 +165,7 @@ describe("IntegrationInboundConnectionsCard", () => {
       connectionId: "connection-1",
       connectionVersion: 2,
       endpointPath: "/api/v1/integrations/inbound/amplitude/public-key",
-      headerName: "x-lola-amplitude-secret",
+      headerName: "x-retenive-amplitude-secret",
       secret: "late-one-time-secret",
       credentialRevision: 1,
       credentialFingerprint: "1234567890abcdef",
@@ -176,5 +176,41 @@ describe("IntegrationInboundConnectionsCard", () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("late-one-time-secret");
+  });
+
+  it("groups secret rotation with its transition period field", async () => {
+    api.list.mockResolvedValue({
+      items: [
+        inboundConnection({
+          lifecycle: "ACTIVE",
+          inbound: {
+            configured: true,
+            credentialRevision: 2,
+            credentialFingerprint: "1234567890abcdef",
+            rotatedAt: "2026-08-04T10:00:00.000Z",
+            overlapEndsAt: null,
+            admissionReady: true,
+          },
+        }),
+      ],
+    });
+    const wrapper = mount(IntegrationInboundConnectionsCard, {
+      props: {
+        projectId: "project-1",
+        provider: "AMPLITUDE",
+        canRead: true,
+        canManage: true,
+      },
+    });
+    await flushPromises();
+
+    const rotation = wrapper.get(".credential-rotation");
+    expect(
+      rotation.get('input[name="overlapSeconds"]').attributes(),
+    ).toMatchObject({
+      min: "0",
+      max: "3600",
+    });
+    expect(rotation.get("button").text()).toBe("Заменить секрет");
   });
 });

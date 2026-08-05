@@ -14,8 +14,8 @@ import {
   type KnowledgeTextInput,
 } from './knowledge.model'
 
-const DEMO_KEY = 'lola-cms-demo-knowledge-v1'
-const DEMO_AUTH_KEY = 'lola-cms-demo-auth-v1'
+const DEMO_KEY = 'retenive-cms-demo-knowledge-v1'
+const DEMO_AUTH_KEY = 'retenive-cms-demo-auth-v1'
 
 function demoStorageKey(): string {
   try {

@@ -3,10 +3,10 @@ import {
   integrationActivityContent,
   integrationActivityGet,
   integrationActivityList,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import { apiIntegrationActivityRepository } from "./integration-activity.api";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   integrationActivityList: vi.fn(),
   integrationActivityGet: vi.fn(),
   integrationActivityContent: vi.fn(),

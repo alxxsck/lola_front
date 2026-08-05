@@ -6,10 +6,10 @@ import {
   projectMembershipList,
   projectMembershipRemove,
   projectMembershipUpdate,
-} from '@/shared/api/generated/lola-backend'
+} from '@/shared/api/generated/retenive-backend'
 import { projectMembershipApi } from './project-membership.api'
 
-vi.mock('@/shared/api/generated/lola-backend', () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   projectMembershipAssignableRoles: vi.fn(),
   projectMembershipCreate: vi.fn(),
   projectMembershipGet: vi.fn(),

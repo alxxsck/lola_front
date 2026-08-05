@@ -19,8 +19,8 @@ vi.mock("./telegram-product-installations.api", () => ({
 const installation = (overrides: Record<string, unknown> = {}) => ({
   id: "installation-1",
   projectId: "project-1",
-  botUsername: "LolaProductBot",
-  deepLinkBase: "https://t.me/LolaProductBot",
+  botUsername: "ReteniveProductBot",
+  deepLinkBase: "https://t.me/ReteniveProductBot",
   telegramBotId: "9007199254740993",
   credentialFingerprint: "a1b2c3d4e5f60708",
   status: "ACTIVE",
@@ -313,7 +313,7 @@ describe("ProductTelegramCard", () => {
     await flushPromises();
     expect(confirm).toHaveBeenNthCalledWith(
       1,
-      "Заменить product bot @LolaProductBot? Подключение другого бота разорвёт активные связи 12 пользователей.",
+      "Заменить product bot @ReteniveProductBot? Подключение другого бота разорвёт активные связи 12 пользователей.",
     );
     expect(mocks.rotate).toHaveBeenCalledWith("project-1", {
       botToken: "123456789:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
@@ -327,7 +327,7 @@ describe("ProductTelegramCard", () => {
     await flushPromises();
     expect(confirm).toHaveBeenNthCalledWith(
       2,
-      "Отключить product bot @LolaProductBot? Будут разорваны активные связи 12 пользователей.",
+      "Отключить product bot @ReteniveProductBot? Будут разорваны активные связи 12 пользователей.",
     );
     expect(mocks.disable).toHaveBeenCalledWith("project-1", {
       expectedVersion: 4,
@@ -842,6 +842,6 @@ describe("ProductTelegramCard", () => {
 
     await wrapper.setProps({ canRead: false });
     await flushPromises();
-    expect(wrapper.text()).not.toContain("LolaProductBot");
+    expect(wrapper.text()).not.toContain("ReteniveProductBot");
   });
 });

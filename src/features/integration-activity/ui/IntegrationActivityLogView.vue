@@ -793,7 +793,7 @@ function formatBytes(value: number): string {
           severity="warn"
           :closable="false"
         >
-          Lola не может доказать итог доставки. Это не означает, что сообщение
+          Retenive не может доказать итог доставки. Это не означает, что сообщение
           точно не доставлено.
         </Message>
         <Message

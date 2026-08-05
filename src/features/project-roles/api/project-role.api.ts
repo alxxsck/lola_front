@@ -6,7 +6,7 @@ import {
   projectRoleList,
   projectRoleReassign,
   projectRoleUpdate,
-} from '@/shared/api/generated/lola-backend'
+} from '@/shared/api/generated/retenive-backend'
 import type {
   ArchiveProjectRoleDto,
   CreateProjectRoleDto,

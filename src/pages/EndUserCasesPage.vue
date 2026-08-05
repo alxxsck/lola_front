@@ -169,7 +169,7 @@ watch(canRead, async (allowed) => {
   <section class="page cases-page">
     <header class="page-header cases-header">
       <div>
-        <div class="eyebrow">Качество поддержки Lola</div>
+        <div class="eyebrow">Качество поддержки Retenive</div>
         <h1>Обращения пользователей</h1>
         <p class="subtitle">
           Цели и проблемы пользователей — от первого сообщения до проверенного

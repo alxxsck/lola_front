@@ -20,7 +20,7 @@ describe("project AI operation presentation", () => {
         displayName: "Анна",
       }),
     ).toBe("Анна");
-    expect(aiOperationActorLabel({ type: "SYSTEM" })).toBe("Система Lola");
+    expect(aiOperationActorLabel({ type: "SYSTEM" })).toBe("Система Retenive");
     expect(aiOperationActorLabel({ type: "END_USER", id: "user-1" })).toBe(
       "Пользователь user-1",
     );

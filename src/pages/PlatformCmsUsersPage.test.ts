@@ -107,7 +107,7 @@ describe('Platform CMS User management page', () => {
     vi.mocked(cmsUserManagementApi.get).mockResolvedValue(detail)
     vi.mocked(cmsUserManagementApi.update).mockResolvedValue(detail)
     vi.mocked(cmsUserManagementApi.projects).mockResolvedValue([
-      { id: 'project-1', name: 'Lola', slug: 'lola' },
+      { id: 'project-1', name: 'Retenive', slug: 'retenive' },
     ] as never)
     vi.mocked(cmsUserManagementApi.roles).mockResolvedValue({
       items: [{ id: 'role-1', projectId: 'project-1', name: 'Администратор' }],

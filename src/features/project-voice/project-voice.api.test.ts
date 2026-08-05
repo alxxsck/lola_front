@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { xaiVoiceCatalogList } from "@/shared/api/generated/lola-backend";
+import { xaiVoiceCatalogList } from "@/shared/api/generated/retenive-backend";
 import {
   fetchProjectVoiceCatalog,
   parseProjectVoiceCatalog,
@@ -7,7 +7,7 @@ import {
 
 const mocks = vi.hoisted(() => ({ mockMode: false }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   xaiVoiceCatalogList: vi.fn(),
 }));
 vi.mock("@/shared/config/data-mode", () => ({

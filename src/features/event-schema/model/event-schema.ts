@@ -85,6 +85,14 @@ function optionalNumber(value: unknown): number | undefined {
   return typeof value === 'number' ? value : undefined
 }
 
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined
+}
+
+function hasLegacyReteniveMetadata(definition: Record<string, unknown>): boolean {
+  return Object.keys(definition).some((key) => key.startsWith('x-lola-'))
+}
+
 function fieldType(value: unknown): EventSchemaFieldType | undefined {
   return eventSchemaFieldTypes.find((type) => type === value)
 }
@@ -109,7 +117,8 @@ export function parseEventSchema(schema: Record<string, unknown>): EventSchemaDr
     fields: Object.entries(properties).map(([wireKey, source]) => {
       const reason = unsupportedReason(source)
       const definition = isRecord(source) ? source : {}
-      const stableKey = optionalString(definition['x-lola-field-key'])
+      const legacyMetadata = hasLegacyReteniveMetadata(definition)
+      const stableKey = optionalString(definition['x-retenive-field-key'] ?? definition['x-lola-field-key'])
 
       return {
         id: uid('schema_field'),
@@ -122,13 +131,13 @@ export function parseEventSchema(schema: Record<string, unknown>): EventSchemaDr
         minimum: optionalNumber(definition.minimum),
         maximum: optionalNumber(definition.maximum),
         fieldKey: stableKey,
-        semanticType: optionalString(definition['x-lola-semantic-type']),
-        unit: optionalString(definition['x-lola-unit']),
-        displayScale: optionalNumber(definition['x-lola-display-scale']),
-        displayPrecision: optionalNumber(definition['x-lola-display-precision']),
-        sensitive: typeof definition['x-lola-sensitive'] === 'boolean' ? definition['x-lola-sensitive'] : undefined,
-        visuallyEditable: !reason,
-        unsupportedReason: reason,
+        semanticType: optionalString(definition['x-retenive-semantic-type'] ?? definition['x-lola-semantic-type']),
+        unit: optionalString(definition['x-retenive-unit'] ?? definition['x-lola-unit']),
+        displayScale: optionalNumber(definition['x-retenive-display-scale'] ?? definition['x-lola-display-scale']),
+        displayPrecision: optionalNumber(definition['x-retenive-display-precision'] ?? definition['x-lola-display-precision']),
+        sensitive: optionalBoolean(definition['x-retenive-sensitive'] ?? definition['x-lola-sensitive']),
+        visuallyEditable: !reason && !legacyMetadata,
+        unsupportedReason: reason ?? (legacyMetadata ? 'Историческая схема с метаданными Lola доступна только для чтения.' : undefined),
         source: cloneValue(source),
       }
     }),
@@ -155,12 +164,12 @@ function serializeField(field: EventSchemaFieldDraft): unknown {
   assignOptional(schema, 'enum', field.enumValues)
   assignOptional(schema, 'minimum', field.minimum)
   assignOptional(schema, 'maximum', field.maximum)
-  assignOptional(schema, 'x-lola-field-key', field.fieldKey)
-  assignOptional(schema, 'x-lola-semantic-type', field.semanticType)
-  assignOptional(schema, 'x-lola-unit', field.unit)
-  assignOptional(schema, 'x-lola-display-scale', field.displayScale)
-  assignOptional(schema, 'x-lola-display-precision', field.displayPrecision)
-  assignOptional(schema, 'x-lola-sensitive', field.sensitive)
+  assignOptional(schema, 'x-retenive-field-key', field.fieldKey)
+  assignOptional(schema, 'x-retenive-semantic-type', field.semanticType)
+  assignOptional(schema, 'x-retenive-unit', field.unit)
+  assignOptional(schema, 'x-retenive-display-scale', field.displayScale)
+  assignOptional(schema, 'x-retenive-display-precision', field.displayPrecision)
+  assignOptional(schema, 'x-retenive-sensitive', field.sensitive)
   if (field.type === 'array' && !isRecord(schema.items)) schema.items = {}
   return schema
 }

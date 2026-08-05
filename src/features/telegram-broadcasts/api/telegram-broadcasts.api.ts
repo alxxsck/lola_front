@@ -12,7 +12,7 @@ import {
   telegramBroadcastStart,
   telegramBroadcastTest,
   telegramBroadcastUpdate,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   TelegramBroadcastDetailResponseDto,
   TelegramBroadcastOutcomeDto,

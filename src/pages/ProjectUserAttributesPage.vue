@@ -918,7 +918,7 @@ function archiveImpactedField() {
         <div class="eyebrow">Данные пользователей</div>
         <h1>Поля профиля пользователей</h1>
         <p class="subtitle">
-          Задайте, какие данные о пользователе Lola получает от вашего продукта
+          Задайте, какие данные о пользователе Retenive получает от вашего продукта
           и где их можно использовать.
         </p>
       </div>
@@ -1064,7 +1064,7 @@ function archiveImpactedField() {
           }}</strong
           ><small>{{
             workspace.currentPublication
-              ? `Настройки Lola · контракт v${workspace.currentPublication.contractVersion}`
+              ? `Настройки Retenive · контракт v${workspace.currentPublication.contractVersion}`
               : "Сначала добавьте хотя бы одно поле"
           }}</small>
         </article>
@@ -1150,7 +1150,7 @@ function archiveImpactedField() {
             <div>
               <h2>Качество поступающих данных</h2>
               <p>
-                Показывает, получает ли Lola профили и какие проблемы
+                Показывает, получает ли Retenive профили и какие проблемы
                 встречаются.
               </p>
             </div>
@@ -1193,7 +1193,7 @@ function archiveImpactedField() {
                     )
                   : "Ещё не было"
               }}</strong
-              ><small>Успешно принято Lola</small>
+              ><small>Успешно принято Retenive</small>
             </div>
             <div>
               <span>Ожидают обработки</span
@@ -1478,8 +1478,8 @@ function archiveImpactedField() {
             dirty
               ? validation?.changes.contractChanged
                 ? "Публикация создаст новую версию интеграционного контракта."
-                : "Настройки Lola изменятся без новой версии контракта."
-              : "Текущая публикация уже используется Lola."
+                : "Настройки Retenive изменятся без новой версии контракта."
+              : "Текущая публикация уже используется Retenive."
           }}</small>
         </div>
         <Button
@@ -1671,7 +1671,7 @@ function archiveImpactedField() {
             <strong>Связанных разделов нет</strong>
             <p>
               Поле не используется в активных сегментах, шаблонах или других
-              настройках Lola.
+              настройках Retenive.
             </p>
           </div>
         </div>
@@ -1786,8 +1786,8 @@ function archiveImpactedField() {
   height: 42px;
   flex: 0 0 auto;
   border-radius: 13px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .setup-copy strong,
 .setup-copy p {
@@ -1992,7 +1992,7 @@ function archiveImpactedField() {
 .raw-health summary {
   padding: 14px 0 0;
   cursor: pointer;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.68rem;
   font-weight: 800;
 }
@@ -2148,7 +2148,7 @@ function archiveImpactedField() {
 .field-card:hover {
   border-color: color-mix(
     in srgb,
-    var(--status-violet) 26%,
+    var(--status-accent) 26%,
     var(--border-default)
   );
   box-shadow: var(--shadow-raised);
@@ -2165,8 +2165,8 @@ function archiveImpactedField() {
   display: grid;
   place-items: center;
   border-radius: 13px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .field-title {
   display: flex;
@@ -2274,7 +2274,7 @@ function archiveImpactedField() {
   }
 }
 .empty-help {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.7rem;
   font-weight: 800;
 }
@@ -2308,8 +2308,8 @@ button.tool-card {
   color: var(--status-success-text);
 }
 .tool-icon.ai {
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .tool-card strong,
 .tool-card small {

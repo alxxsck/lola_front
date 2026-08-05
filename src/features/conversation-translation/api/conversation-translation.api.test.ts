@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   retryDraft: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   conversationMessageTranslationCreate: mocks.createMessages,
   conversationMessageTranslationGet: vi.fn(),
   conversationMessageTranslationRetry: mocks.retryMessage,

@@ -1,6 +1,6 @@
-const INTERACTIVE_LOGIN_REQUIRED_KEY = "lola-cms-interactive-login-required-v1";
+const INTERACTIVE_LOGIN_REQUIRED_KEY = "retenive-cms-interactive-login-required-v1";
 const INTERACTIVE_LOGIN_REQUIRED_FALLBACK_KEY =
-  "lola-cms-interactive-login-required-tab-v1";
+  "retenive-cms-interactive-login-required-tab-v1";
 let currentDocumentRequirement: boolean | undefined;
 
 function setFallbackMarker(): void {

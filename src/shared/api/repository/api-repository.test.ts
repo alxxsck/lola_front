@@ -33,14 +33,14 @@ import {
   conversationAISuspensionsExtend,
   conversationAISuspensionsResume,
   conversationAISuspensionsHistory,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   ProjectResponseDto,
   UiElementResponseDto,
 } from "@/shared/api/generated/models";
 import { apiRepository } from "./api-repository";
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   uiRegistryCreate: vi.fn(),
   uiRegistryList: vi.fn(),
   uiRegistryRemove: vi.fn(),
@@ -196,7 +196,7 @@ describe("api repository adapter", () => {
           actor: {
             type: "CMS_USER",
             id: "admin-1",
-            email: "owner@lola.dev",
+            email: "owner@retenive.dev",
             displayName: "Owner",
           },
           target: { kind: "PROJECT", id: "project-1" },
@@ -307,13 +307,13 @@ describe("api repository adapter", () => {
       version: 1,
       organizationId: "org-1",
       name: "Updated",
-      slug: "lola",
+      slug: "retenive",
       status: "ACTIVE",
       publicKey: "public",
       serverKeyPrefix: "secret",
       defaultLocale: "ru",
       supportedLocales: ["ru"],
-      assistantName: "Lola",
+      assistantName: "Retenive",
       systemPrompt: "Help",
       voiceInstructions: "",
       settings: {},

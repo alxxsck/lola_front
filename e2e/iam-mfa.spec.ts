@@ -52,7 +52,7 @@ async function installMfaFixtures(page: Page) {
         expiresAt: '2026-07-21T22:10:00.000Z',
         publicKey: {
           challenge: 'cmVnaXN0cmF0aW9uLWNoYWxsZW5nZQ',
-          rp: { id: 'localhost', name: 'Lola' },
+          rp: { id: 'localhost', name: 'Retenive' },
           user: {
             id: 'cGxhdGZvcm0tb3BlcmF0b3I',
             name: identifier,

@@ -47,21 +47,21 @@ describe("auth session", () => {
 
   it("clears project selection and scoped background-job state on logout", () => {
     storeSelectedProjectId("project-2");
-    sessionStorage.setItem("lola:translation-jobs:project-2:scenario-1", "[]");
+    sessionStorage.setItem("retenive:translation-jobs:project-2:scenario-1", "[]");
     sessionStorage.setItem(
-      "lola:reply-translation-draft:project-2:user-1:conversation-1",
+      "retenive:reply-translation-draft:project-2:user-1:conversation-1",
       '{"draftId":"private-draft"}',
     );
     sessionStorage.setItem(
-      "lola:amplitude-pending-tests:project-2",
+      "retenive:amplitude-pending-tests:project-2",
       '[{"state":"REQUESTING"}]',
     );
     sessionStorage.setItem(
-      "lola:amplitude-unresolved-secret:project-2",
+      "retenive:amplitude-unresolved-secret:project-2",
       '{"operation":"ROTATE"}',
     );
     sessionStorage.setItem(
-      "lola:amplitude-pending-route-create:project-2",
+      "retenive:amplitude-pending-route-create:project-2",
       '{"idempotencyKey":"actor-scoped-receipt"}',
     );
 
@@ -72,15 +72,15 @@ describe("auth session", () => {
 
   it("also clears integration receipts on a local-only session reset", () => {
     sessionStorage.setItem(
-      "lola:amplitude-pending-tests:project-2",
+      "retenive:amplitude-pending-tests:project-2",
       '[{"state":"POLLING"}]',
     );
     sessionStorage.setItem(
-      "lola:amplitude-unresolved-secret:project-2",
+      "retenive:amplitude-unresolved-secret:project-2",
       '{"operation":"CREATE"}',
     );
     sessionStorage.setItem(
-      "lola:amplitude-pending-route-create:project-2",
+      "retenive:amplitude-pending-route-create:project-2",
       '{"idempotencyKey":"actor-scoped-receipt"}',
     );
 

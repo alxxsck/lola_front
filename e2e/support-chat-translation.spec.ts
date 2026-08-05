@@ -291,7 +291,7 @@ test("language source is explicit and conversation preference survives reload wi
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "К списку диалогов" }).click();
   }
-  await page.getByRole("button", { name: /Знакомство с Lola/ }).click();
+  await page.getByRole("button", { name: /Знакомство с Retenive/ }).click();
   await openTranslationSettings(page);
   await expect(
     page.getByRole("switch", { name: "Переводить этот диалог" }),

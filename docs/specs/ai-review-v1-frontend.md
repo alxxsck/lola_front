@@ -3,7 +3,7 @@
 ## Problem Statement
 
 Operators can inspect Events manually but do not have a bounded UI for requesting an
-evidence-linked Lola proposal about selected Events. A free-form prompt box would hide scope and
+evidence-linked Retenive proposal about selected Events. A free-form prompt box would hide scope and
 cost, while a synchronous action would provide poor progress and retry feedback.
 
 ## Solution

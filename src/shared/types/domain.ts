@@ -156,7 +156,7 @@ export interface EventDefinition {
   definitionKeyId?: string;
   currentRevisionId?: string | null;
   isCurrent?: boolean;
-  origin?: "CUSTOM" | "LOLA_MANAGED";
+  origin?: "CUSTOM" | "RETENIVE_MANAGED";
   readOnly?: boolean;
   policyVersion?: number;
   policyUpdatedAt?: string;
@@ -180,7 +180,7 @@ export interface EventDefinitionRevision extends EventDefinition {
   definitionKeyId: string;
   currentRevisionId: string | null;
   isCurrent: boolean;
-  origin: "CUSTOM" | "LOLA_MANAGED";
+  origin: "CUSTOM" | "RETENIVE_MANAGED";
   readOnly: boolean;
   pinnedScenarioRevisionCount: number;
   compatibility: "CURRENT" | "PINNED" | "SUPERSEDED";

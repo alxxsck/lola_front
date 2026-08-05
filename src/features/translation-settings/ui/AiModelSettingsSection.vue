@@ -69,7 +69,7 @@ const workloadCards = [
 
 function modelOptions(workload: Workload) {
   return catalogs[workload].map((model) => ({
-    label: `${model.displayName}${model.lolaTested ? " · проверено Lola" : ""}`,
+    label: `${model.displayName}${model.reteniveTested ? " · проверено Retenive" : ""}`,
     value: model.id,
     disabled: !model.selectable || model.providerAvailable === false,
   }));
@@ -172,7 +172,7 @@ async function load(): Promise<void> {
       displayName: id === "grok-4.5" ? "Grok 4.5" : "Grok 4.3",
       workload,
       selectable: true,
-      lolaTested: true,
+      reteniveTested: true,
       providerAvailable: true,
       reasoningRequired,
       reasoningEfforts: ["none", "low", "medium", "high"] as ReasoningEffort[],
@@ -502,8 +502,8 @@ watch(
   width: 38px;
   height: 38px;
   border-radius: 11px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .model-card header > div,
 .model-card label {

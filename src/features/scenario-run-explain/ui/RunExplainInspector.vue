@@ -543,7 +543,7 @@ header p,
 .goal-list a {
   display: inline-block;
   margin-top: 6px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.67rem;
 }
 .explain-section {
@@ -685,7 +685,7 @@ header p,
 }
 .timeline i {
   margin-top: 5px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
   font-size: 0.42rem;
 }
 .timeline strong,
@@ -716,8 +716,8 @@ header p,
 .dependency-counts span {
   padding: 5px 7px;
   border-radius: 8px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.61rem;
 }
 .dependency-ids {
@@ -743,8 +743,8 @@ header p,
   display: grid;
   gap: 8px;
   padding: 11px;
-  border-left: 3px solid var(--status-violet-text);
+  border-left: 3px solid var(--status-accent-text);
   border-radius: 10px;
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
 }
 </style>

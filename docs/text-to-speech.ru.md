@@ -1,4 +1,4 @@
-# Text-to-Speech в Lola CMS
+# Text-to-Speech в Retenive CMS
 
 Команда `SPEAK_TEXT` синтезирует речь через xAI Text-to-Speech. Голос берётся из
 `Project.settings.voice`: одна настройка используется и для голосового чата, и для команд
@@ -7,7 +7,7 @@
 
 ## Настройка голоса
 
-На странице Project используется одна секция «Голос Lola»:
+На странице Project используется одна секция «Голос Retenive»:
 
 - `GET /api/v1/admin/projects/{projectId}/voice-catalog` возвращает актуальный каталог xAI;
 - Project PATCH сохраняет выбранный `settings.voice`;
@@ -20,7 +20,7 @@
 
 Чтение и изменение настроек защищены `project.settings.read/write`. Сохранённый голос остаётся
 видимым, даже если каталог временно недоступен. OpenAPI snapshot хранится в
-`openapi/lola-backend.json`, а клиент генерируется в `src/shared/api/generated`; generated-файлы
+`openapi/retenive-backend.json`, а клиент генерируется в `src/shared/api/generated`; generated-файлы
 вручную не редактируются.
 
 ## Потребление

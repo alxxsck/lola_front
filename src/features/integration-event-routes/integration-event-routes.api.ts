@@ -7,7 +7,7 @@ import {
   integrationEventRouteEnable,
   integrationEventRouteList,
   integrationEventRoutePublish,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   CreateAmplitudeOutboundRouteDto,
   CreateCustomerIoOutboundRouteDto,

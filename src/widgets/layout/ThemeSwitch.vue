@@ -21,7 +21,7 @@ function changeTheme(event: Event) {
 
 <style scoped>
 .theme-switch { position:relative; display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:12px; background:var(--sidebar-surface-hover); color:var(--sidebar-text); cursor:pointer; }
-.theme-switch:has(input:focus-visible) { outline:3px solid color-mix(in srgb,var(--focus-ring) 55%,transparent); outline-offset:2px; }
+.theme-switch:has(input:focus-visible) { outline:3px solid var(--focus-ring-outer); outline-offset:2px; }
 .theme-switch input { position:absolute; z-index:1; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
 .theme-switch>i { width:18px; color:var(--brand); text-align:center; font-size:.82rem; }
 .theme-copy { display:flex; min-width:0; flex:1; flex-direction:column; }

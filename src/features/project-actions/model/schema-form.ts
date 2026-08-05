@@ -72,7 +72,7 @@ export function buildProjectActionForm(
         {
           code: "SCHEMA_ROOT_UNSUPPORTED",
           message:
-            "Эти настройки пока нельзя изменить в Lola. Обратитесь к разработчику проекта.",
+            "Эти настройки пока нельзя изменить в Retenive. Обратитесь к разработчику проекта.",
         },
       ],
       blocked: true,
@@ -111,7 +111,7 @@ export function buildProjectActionForm(
       issues.push({
         code: "SCHEMA_CONTROL_UNSUPPORTED",
         field: key,
-        message: `Поле «${humanize(key)}» пока нельзя безопасно изменить в Lola.`,
+        message: `Поле «${humanize(key)}» пока нельзя безопасно изменить в Retenive.`,
       });
       continue;
     }

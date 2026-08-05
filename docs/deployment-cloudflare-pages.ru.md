@@ -1,4 +1,4 @@
-# Деплой Lola CMS из GitLab CI в Cloudflare Pages
+# Деплой Retenive CMS из GitLab CI в Cloudflare Pages
 
 ## Принятое решение
 

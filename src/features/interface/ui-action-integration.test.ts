@@ -12,11 +12,11 @@ describe('UI action integration guide', () => {
     const guide = buildUiActionIntegrationGuide({
       code: 'account_page',
       kind: 'PAGE',
-      route: '/account?source=lola',
+      route: '/account?source=retenive',
     })
 
     expect(guide).toContain('pageCode: "account_page"')
-    expect(guide).toContain('route: "/account?source=lola"')
+    expect(guide).toContain('route: "/account?source=retenive"')
     expect(guide).toContain('openPage: async ({ route }) =>')
     expect(guide).toContain('await router.push(route)')
     expect(guide).toContain('один раз для всех страниц')

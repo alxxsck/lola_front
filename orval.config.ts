@@ -1,12 +1,12 @@
 import { defineConfig } from 'orval'
 
 export default defineConfig({
-  lolaBackend: {
+  reteniveBackend: {
     input: {
-      target: './openapi/lola-backend.json',
+      target: './openapi/retenive-backend.json',
     },
     output: {
-      target: './src/shared/api/generated/lola-backend.ts',
+      target: './src/shared/api/generated/retenive-backend.ts',
       schemas: './src/shared/api/generated/models',
       client: 'axios-functions',
       clean: true,

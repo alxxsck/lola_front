@@ -32,7 +32,7 @@ const contentId = `${useId()}-content`;
       :title="props.title"
       :description="props.description"
       :icon="props.icon"
-      tone="violet"
+      tone="accent"
       :content-id="contentId"
     />
     <div v-show="expanded" :id="contentId">
@@ -86,12 +86,12 @@ const contentId = `${useId()}-content`;
   padding: 19px 20px;
   border-color: color-mix(
     in srgb,
-    var(--status-violet) 18%,
+    var(--status-accent) 18%,
     var(--border-subtle)
   );
   background: color-mix(
     in srgb,
-    var(--status-violet-soft) 48%,
+    var(--status-accent-soft) 48%,
     var(--surface-card)
   );
 }

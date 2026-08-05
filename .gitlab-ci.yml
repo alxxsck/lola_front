@@ -1,4 +1,4 @@
-# GitLab pipeline for Lola CMS — build & push a container image.
+# GitLab pipeline for Retenive CMS — build & push a container image.
 # Deployment is GitOps: Flux image-automation on k3s-prod picks up the newest
 # `main-<ts>-<sha>` tag and rolls out the nginx/SPA image. (Cloudflare Pages deploy
 # has been replaced by the container build.)

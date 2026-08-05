@@ -209,7 +209,7 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     );
   });
 
-  it("shows stable producer identity separately from read-only Lola revision metadata", async () => {
+  it("shows stable producer identity separately from read-only Retenive revision metadata", async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
 
@@ -879,16 +879,16 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     expect(button(wrapper, "История").exists()).toBe(true);
   });
 
-  it("keeps Lola-managed definitions read-only without lifecycle actions", async () => {
+  it("keeps Retenive-managed definitions read-only without lifecycle actions", async () => {
     mocks.getDefinition.mockResolvedValue({
       ...workspace,
-      origin: "LOLA_MANAGED",
+      origin: "RETENIVE_MANAGED",
       readOnly: true,
     });
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Управляется Lola · только чтение");
+    expect(wrapper.text()).toContain("Управляется Retenive · только чтение");
     expect(
       wrapper.findAll("button").some((item) => item.text() === "Архивировать"),
     ).toBe(false);

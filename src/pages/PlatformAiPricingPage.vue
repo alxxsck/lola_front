@@ -595,8 +595,8 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  background: var(--status-violet-soft);
-  color: var(--status-violet);
+  background: var(--status-accent-soft);
+  color: var(--status-accent);
 }
 
 .pricing-mark {

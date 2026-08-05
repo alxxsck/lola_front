@@ -345,7 +345,7 @@ onMounted(() => void load());
       v-if="definitions.length"
       v-model="eventDefinitionKeyId"
       :project-id="projectId"
-      label="Событие Lola"
+      label="Событие Retenive"
       placeholder="Найдите событие по названию или коду"
       :disabled="loading || pending"
       @select="selectEvent"
@@ -427,7 +427,7 @@ onMounted(() => void load());
         <legend>Источники события — минимум два разных провайдера</legend>
         <small
           >Показываются только включённые правила приёма для текущей версии
-          события Lola.</small
+          события Retenive.</small
         >
         <label
           v-for="route in eligibleRoutes"
@@ -465,7 +465,7 @@ onMounted(() => void load());
       </fieldset>
       <p class="read-only-note">
         Одинаковый идентификатор и одинаковые данные будут приняты один раз.
-        Если идентификатор совпадает, а данные различаются, Lola зафиксирует
+        Если идентификатор совпадает, а данные различаются, Retenive зафиксирует
         конфликт и не станет объединять события автоматически.
       </p>
       <div class="form-actions">

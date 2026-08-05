@@ -138,12 +138,12 @@ const visibleCatalog = computed(() =>
 const surfaceOptions = [
   { label: "Где используется: везде", value: "ALL" },
   { label: "В сценариях", value: "SCENARIO" },
-  { label: "Помощником Lola", value: "AI" },
+  { label: "Помощником Retenive", value: "AI" },
 ];
 const statusOptions = [
   { label: "Состояние: любое", value: "ALL" },
   { label: "Доступно в сценариях", value: "SCENARIO_ENABLED" },
-  { label: "Доступно Lola", value: "AI_ENABLED" },
+  { label: "Доступно Retenive", value: "AI_ENABLED" },
   { label: "Полностью выключено", value: "DISABLED" },
   { label: "В архиве", value: "ARCHIVED" },
   { label: "Требуют внимания", value: "ISSUES" },
@@ -269,7 +269,7 @@ function schemaPropertyCount(schema: Record<string, unknown>): number {
 }
 
 function surfaceLabel(value: string): string {
-  return value === "SCENARIO" ? "В сценариях" : "Помощником Lola";
+  return value === "SCENARIO" ? "В сценариях" : "Помощником Retenive";
 }
 </script>
 
@@ -280,7 +280,7 @@ function surfaceLabel(value: string): string {
         <div class="eyebrow">Возможности проекта</div>
         <h1>Действия</h1>
         <p class="subtitle">
-          Выберите, какие действия доступны в сценариях и какие Lola может
+          Выберите, какие действия доступны в сценариях и какие Retenive может
           предлагать пользователям. Все изменения проверяются перед сохранением.
         </p>
       </div>
@@ -301,7 +301,7 @@ function surfaceLabel(value: string): string {
           <strong>Безопасность включена по умолчанию</strong>
           <p>
             Новое действие недоступно, пока владелец проекта явно не разрешит
-            его. Доступ для сценариев и для Lola настраивается отдельно.
+            его. Доступ для сценариев и для Retenive настраивается отдельно.
           </p>
         </div>
       </div>
@@ -312,7 +312,7 @@ function surfaceLabel(value: string): string {
         </div>
         <div>
           <strong>{{ aiEnabledCount }}</strong
-          ><span>для Lola</span>
+          ><span>для Retenive</span>
         </div>
         <div :class="{ warning: issueCount }">
           <strong>{{ issueCount }}</strong
@@ -337,7 +337,7 @@ function surfaceLabel(value: string): string {
         @click="setView('AI')"
       >
         <i class="pi pi-sparkles" /><span
-          >Возможности помощника<small>Что Lola сможет сделать</small></span
+          >Возможности помощника<small>Что Retenive сможет сделать</small></span
         >
       </button>
       <button
@@ -346,7 +346,7 @@ function surfaceLabel(value: string): string {
         @click="setView('SYSTEM')"
       >
         <i class="pi pi-box" /><span
-          >Встроенные действия<small>Готовые возможности Lola</small></span
+          >Встроенные действия<small>Готовые возможности Retenive</small></span
         >
       </button>
       <button
@@ -466,10 +466,10 @@ function surfaceLabel(value: string): string {
         </div>
         <div v-else class="empty">
           <i class="pi pi-sparkles" /><strong
-            >Для Lola пока не разрешено ни одного действия</strong
+            >Для Retenive пока не разрешено ни одного действия</strong
           >
           <p>
-            Откройте нужное действие, включите «Разрешить помощнику Lola»,
+            Откройте нужное действие, включите «Разрешить помощнику Retenive»,
             добавьте понятную подсказку и сохраните изменения.
           </p>
         </div>
@@ -733,7 +733,7 @@ function surfaceLabel(value: string): string {
 }
 .view-tabs button.active {
   color: var(--text-primary);
-  background: var(--status-violet-soft);
+  background: var(--status-accent-soft);
   box-shadow: inset 0 0 0 1px
     color-mix(in srgb, var(--action-primary) 35%, transparent);
 }
@@ -742,7 +742,7 @@ function surfaceLabel(value: string): string {
   flex: 0 0 20px;
   place-items: center;
   width: 20px;
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .view-tabs button span {
   display: grid;
@@ -880,8 +880,8 @@ function surfaceLabel(value: string): string {
   place-items: center;
   width: 42px;
   height: 42px;
-  color: var(--status-violet-text);
-  background: var(--status-violet-soft);
+  color: var(--status-accent-text);
+  background: var(--status-accent-soft);
   border-radius: 12px;
 }
 .type-icon i,
@@ -914,7 +914,7 @@ function surfaceLabel(value: string): string {
   border-radius: 999px;
 }
 .type-tags b {
-  color: var(--status-violet-text);
+  color: var(--status-accent-text);
 }
 .type-card > p {
   margin: 0;

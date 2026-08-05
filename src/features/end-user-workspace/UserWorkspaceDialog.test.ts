@@ -1138,7 +1138,7 @@ describe("единое рабочее пространство пользова�
     mocks.permissions.push("project.translation.create");
     const sourceText = "Пожалуйста, уточните номер заказа";
     sessionStorage.setItem(
-      `lola:reply-translation-draft:project-1:user-1:${current.id}`,
+      `retenive:reply-translation-draft:project-1:user-1:${current.id}`,
       JSON.stringify({
         draftId: "draft-reload",
         sourceTextHash: "hash-reload",

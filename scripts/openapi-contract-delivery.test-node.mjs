@@ -38,7 +38,7 @@ test("CI checks the committed artifact against an explicitly configured backend 
   assert.doesNotMatch(workflow, /LOLA_BACKEND_REF \|\| 'main'/u);
   assert.match(workflow, /secrets\.LOLA_BACKEND_READ_TOKEN/u);
   assert.match(workflow, /test -n "\$LOLA_BACKEND_READ_TOKEN"/u);
-  assert.match(workflow, /LOLA_BACKEND_DIR/u);
+  assert.match(workflow, /RETENIVE_BACKEND_DIR/u);
   assert.match(workflow, /run: npm run api:check/u);
   assert.doesNotMatch(workflow, /curl|api:fetch|docs-json/u);
 });

@@ -1501,8 +1501,8 @@ function json(value: unknown) {
   width: 29px;
   height: 29px;
   border-radius: 9px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet);
+  background: var(--status-accent-soft);
+  color: var(--status-accent);
   font-size: 0.62rem;
   font-weight: 800;
 }

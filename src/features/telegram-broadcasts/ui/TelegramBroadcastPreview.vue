@@ -62,7 +62,7 @@ function sendTest(): void {
       <span>Ревизия {{ preview.revisionId }}</span>
     </header>
     <div class="message-preview">
-      <span>Lola в Telegram</span>
+      <span>Retenive в Telegram</span>
       <p>{{ preview.renderedText }}</p>
     </div>
     <div class="audience-summary">

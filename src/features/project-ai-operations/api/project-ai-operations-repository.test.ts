@@ -8,7 +8,7 @@ const generated = vi.hoisted(() => ({
   accessHistory: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   aiOperationsList: generated.list,
   aiOperationsSummary: generated.summary,
   aiOperationsDetail: generated.detail,

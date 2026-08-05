@@ -1,12 +1,12 @@
-# Lola CMS — ТЗ на MVP
+# Retenive CMS — ТЗ на MVP
 
 ## 1. Цель
 
-Lola CMS — SaaS-интерфейс администратора для настройки одного заранее созданного проекта и управления реакциями Lola на продуктовые события. CMS общается только с Lola Backend; прямой связи CMS с пользовательским виджетом нет.
+Retenive CMS — SaaS-интерфейс администратора для настройки одного заранее созданного проекта и управления реакциями Retenive на продуктовые события. CMS общается только с Retenive Backend; прямой связи CMS с пользовательским виджетом нет.
 
 Поток ручной или сценарной команды:
 
-`CMS → Lola Backend → realtime session channel → Frontend SDK → пользовательский интерфейс → acknowledgement`.
+`CMS → Retenive Backend → realtime session channel → Frontend SDK → пользовательский интерфейс → acknowledgement`.
 
 ## 2. Границы MVP
 
@@ -44,7 +44,7 @@ Frontend не хранит server API key или глобальный CMS API ke
 | --- | --- |
 | `/login` | Вход и автоматическое определение проекта |
 | `/overview` | Состояние конфигурации и быстрые переходы |
-| `/project` | Настройки текущего проекта и Lola |
+| `/project` | Настройки текущего проекта и Retenive |
 | `/interface/buttons` | Кнопки и элементы интерфейса |
 | `/interface/pages` | Страницы продукта |
 | `/interface/modals` | Модальные окна |
@@ -63,7 +63,7 @@ Frontend не хранит server API key или глобальный CMS API ke
 
 Общие поля: `name`, уникальный `code`, `kind`, `enabled`, описание и fallback в `config`.
 
-- Кнопка/элемент: CSS selector или `data-lola-*` атрибут, доступные actions.
+- Кнопка/элемент: CSS selector или `data-retenive-*` атрибут, доступные actions.
 - Страница: route pattern, разрешение прямого перехода.
 - Модальное окно: frontend handler либо URL-based способ открытия, fallback URL.
 
@@ -79,7 +79,7 @@ MVP использует линейный action builder, потому что ba
 
 Сценарий содержит `name`, `code`, `status`, `eventDefinitionId`, `priority`, AND-условия, cooldown, max runs per user, период активности и actions. Frontend перед сохранением перенумеровывает `position` от нуля.
 
-Минимальные actions: показать/скрыть Lola, открыть/закрыть чат, текст, анимация, подсветка элемента, убрать подсветку, CTA, открыть страницу, открыть модальное окно, track и завершение. CTA содержит label и вложенную цель: page, modal или element.
+Минимальные actions: показать/скрыть Retenive, открыть/закрыть чат, текст, анимация, подсветка элемента, убрать подсветку, CTA, открыть страницу, открыть модальное окно, track и завершение. CTA содержит label и вложенную цель: page, modal или element.
 
 ## 9. Пользователи и presence
 
@@ -99,7 +99,7 @@ Online означает активное realtime-соединение с heartb
 
 Admin command принимает `sessionId`, idempotency key и discriminated union payload:
 
-- `TEXT` — текст от Lola;
+- `TEXT` — текст от Retenive;
 - `VOICE` — текст для TTS и optional voice code;
 - `BUTTON` — label, action, target code;
 - `ANIMATION` — animation code.

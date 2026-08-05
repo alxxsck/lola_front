@@ -2,7 +2,7 @@ import {
   integrationActivityContent,
   integrationActivityGet,
   integrationActivityList,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   IntegrationActivityContentResponseDto,
   IntegrationActivityDetailResponseDto,

@@ -20,9 +20,16 @@ describe('theme preference', () => {
 
     expect({
       theme,
-      hasDarkClass: document.documentElement.classList.contains('lola-dark'),
+      hasDarkClass: document.documentElement.classList.contains('retenive-dark'),
       colorScheme: document.documentElement.style.colorScheme,
     }).toEqual({ theme: 'dark', hasDarkClass: true, colorScheme: 'dark' })
+  })
+
+  it('migrates a valid legacy preference before following the system theme', () => {
+    localStorage.setItem('lola-theme', 'dark')
+
+    expect(initializeTheme()).toBe('dark')
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark')
   })
 
   it('applies and persists a manual theme choice', () => {
@@ -30,7 +37,7 @@ describe('theme preference', () => {
 
     expect({
       storedTheme: localStorage.getItem(THEME_STORAGE_KEY),
-      hasDarkClass: document.documentElement.classList.contains('lola-dark'),
+      hasDarkClass: document.documentElement.classList.contains('retenive-dark'),
       colorScheme: document.documentElement.style.colorScheme,
     }).toEqual({ storedTheme: 'dark', hasDarkClass: true, colorScheme: 'dark' })
   })
@@ -47,7 +54,7 @@ describe('theme preference', () => {
     onChange?.({ matches: true } as MediaQueryListEvent)
 
     expect({
-      hasDarkClass: document.documentElement.classList.contains('lola-dark'),
+      hasDarkClass: document.documentElement.classList.contains('retenive-dark'),
       colorScheme: document.documentElement.style.colorScheme,
     }).toEqual({ hasDarkClass: true, colorScheme: 'dark' })
   })
@@ -67,7 +74,7 @@ describe('theme preference', () => {
 
     expect({
       storedTheme: localStorage.getItem(THEME_STORAGE_KEY),
-      hasDarkClass: document.documentElement.classList.contains('lola-dark'),
+      hasDarkClass: document.documentElement.classList.contains('retenive-dark'),
     }).toEqual({ storedTheme: 'dark', hasDarkClass: true })
   })
 
@@ -89,13 +96,13 @@ describe('theme preference', () => {
     } as unknown as MediaQueryList)
 
     expect(() => initializeTheme()).not.toThrow()
-    expect(document.documentElement.classList.contains('lola-dark')).toBe(true)
+    expect(document.documentElement.classList.contains('retenive-dark')).toBe(true)
   })
 
   it('still applies a manual theme when storage persistence is denied', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Denied', 'SecurityError') })
 
     expect(() => setTheme('dark')).not.toThrow()
-    expect(document.documentElement.classList.contains('lola-dark')).toBe(true)
+    expect(document.documentElement.classList.contains('retenive-dark')).toBe(true)
   })
 })

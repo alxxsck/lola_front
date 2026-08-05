@@ -66,7 +66,7 @@ const skippedText = computed(() =>
       {{
         displayText ||
         (message.status === "WRITING"
-          ? "Lola печатает…"
+          ? "Retenive печатает…"
           : "Сообщение без текста")
       }}
     </p>

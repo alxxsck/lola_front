@@ -1,4 +1,4 @@
-import { xaiVoiceCatalogList } from "@/shared/api/generated/lola-backend";
+import { xaiVoiceCatalogList } from "@/shared/api/generated/retenive-backend";
 import { isMockMode } from "@/shared/config/data-mode";
 
 export interface ProjectVoiceCatalogItem {

@@ -6,14 +6,14 @@ const props = withDefaults(
     title: string;
     description: string;
     icon: string;
-    tone?: "lime" | "violet" | "coral" | "green" | "blue" | "brand";
+    tone?: "lime" | "accent" | "coral" | "green" | "blue" | "brand";
     contentId?: string;
     headingId?: string;
     expanded?: boolean;
     eyebrow?: string;
   }>(),
   {
-    tone: "violet",
+    tone: "accent",
     contentId: undefined,
     headingId: undefined,
     expanded: false,
@@ -116,9 +116,9 @@ function toggle() {
   background: var(--project-tone-lime-soft);
   color: var(--project-tone-lime-foreground);
 }
-.tone-violet {
-  background: var(--project-tone-violet-soft);
-  color: var(--project-tone-violet-foreground);
+.tone-accent {
+  background: var(--project-tone-accent-soft);
+  color: var(--project-tone-accent-foreground);
 }
 .tone-coral {
   background: var(--project-tone-coral-soft);

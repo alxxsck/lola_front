@@ -4,7 +4,7 @@ import {
   aiOperationsList,
   aiOperationsSubjects,
   aiOperationsSummary,
-} from "@/shared/api/generated/lola-backend";
+} from "@/shared/api/generated/retenive-backend";
 import type {
   AiOperationDetailResponseDto,
   AiOperationListItemDto,
@@ -249,7 +249,7 @@ const mockRepository: ProjectAIOperationsRepository = {
             new Date(item.startedAt).getTime() + 12_000,
           ).toISOString(),
           eventType: "DATA_ACCESS_COMPLETED",
-          actor: { type: "SYSTEM", id: null, displayName: "Lola runtime" },
+          actor: { type: "SYSTEM", id: null, displayName: "Retenive runtime" },
           status: "SUCCEEDED",
           name: "query_project_data_v1",
           summary: "Агрегация deposit.completed по GEO",

@@ -265,7 +265,7 @@ function errorMessage(cause: unknown) {
         <div class="eyebrow">Automation studio</div>
         <h1>Сценарии</h1>
         <p class="subtitle">
-          Собирайте реакции Lola как наглядный граф: вопросы, условия, ветки и
+          Собирайте реакции Retenive как наглядный граф: вопросы, условия, ветки и
           безопасные действия.
         </p>
       </div>
@@ -278,7 +278,7 @@ function errorMessage(cause: unknown) {
     </header>
 
     <DocumentationCallout
-      title="Как работают сценарии Lola"
+      title="Как работают сценарии Retenive"
       text="Trigger, Audience, Eligibility, действия, Goal, доставка, публикация и откат — в одном практическом руководстве."
       icon="pi pi-sitemap"
     />
@@ -352,7 +352,7 @@ function errorMessage(cause: unknown) {
               {{
                 scenarios.length
                   ? "Измените поиск или фильтр статуса."
-                  : "Выберите событие и добавьте действия Lola."
+                  : "Выберите событие и добавьте действия Retenive."
               }}
             </p>
             <Button
@@ -538,8 +538,8 @@ function errorMessage(cause: unknown) {
   color: var(--status-success-text);
 }
 .metric-icon.draft {
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
 }
 .metric-strip p {
   margin: 0 0 0 auto;
@@ -547,7 +547,7 @@ function errorMessage(cause: unknown) {
   font-size: 0.76rem;
 }
 .metric-strip p i {
-  color: var(--violet);
+  color: var(--accent-primary);
   margin-right: 5px;
 }
 .load-error {
@@ -628,8 +628,8 @@ function errorMessage(cause: unknown) {
   width: 29px;
   height: 29px;
   border-radius: 9px;
-  background: var(--status-violet-soft);
-  color: var(--status-violet-text);
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
   font-size: 0.68rem;
 }
 .priority {

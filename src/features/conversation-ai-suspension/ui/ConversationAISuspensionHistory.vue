@@ -95,7 +95,7 @@ function reasonLabel(reason?: ConversationAISuspensionHistoryItemResponseDto['re
 <style scoped>
 .suspension-history { display: grid; gap: 0; margin: 0 0 14px; padding: 0; list-style: none; }
 .suspension-history li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; }
-.history-marker { position: relative; padding-top: 4px; color: var(--status-violet); font-size: .45rem; text-align: center; }
+.history-marker { position: relative; padding-top: 4px; color: var(--status-accent); font-size: .45rem; text-align: center; }
 .history-marker::after { content: ''; position: absolute; top: 15px; bottom: -4px; left: 50%; width: 1px; background: var(--border-default); }
 .suspension-history li:last-child .history-marker::after { display: none; }
 .suspension-history article { padding: 0 0 18px; }

@@ -177,7 +177,7 @@ async function preview() {
     );
     if (!identity) {
       error.value =
-        "Пользователь не найден. Укажите UUID Lola или точный ID пользователя в продукте.";
+        "Пользователь не найден. Укажите UUID Retenive или точный ID пользователя в продукте.";
       return;
     }
     resolvedIdentity.value = identity;

@@ -17,7 +17,7 @@ const api = vi.hoisted(() => ({
   workflow: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/lola-backend", () => ({
+vi.mock("@/shared/api/generated/retenive-backend", () => ({
   endUserCasesList: api.list,
   endUserCasesDetail: api.detail,
   endUserCasesMessages: api.messages,
