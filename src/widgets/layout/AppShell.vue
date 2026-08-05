@@ -575,8 +575,8 @@ onBeforeUnmount(() => {
   border-radius: 13px;
   display: grid;
   place-items: center;
-  background: var(--brand);
-  color: var(--on-brand);
+  background: var(--brand-primary);
+  color: var(--on-action-primary);
   font-family: var(--font-display);
   font-weight: 700;
   transform: rotate(-3deg);

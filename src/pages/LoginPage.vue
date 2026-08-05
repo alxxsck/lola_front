@@ -267,8 +267,8 @@ async function chooseProject(projectId: string) {
   place-items: center;
   width: 40px;
   height: 40px;
-  background: var(--accent);
-  color: var(--surface-emphasis);
+  background: var(--brand-primary);
+  color: var(--on-action-primary);
   border-radius: 13px;
   transform: rotate(-4deg);
 }

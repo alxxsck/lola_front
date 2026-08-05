@@ -253,7 +253,8 @@ function webAuthnError(cause: unknown): string {
   height: 34px;
   place-items: center;
   border-radius: 11px;
-  background: var(--accent);
+  background: var(--brand-primary);
+  color: var(--on-action-primary);
 }
 .heading {
   display: flex;
