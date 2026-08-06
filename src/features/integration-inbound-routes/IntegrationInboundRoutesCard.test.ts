@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   listDefinitions: vi.fn(),
   listConnections: vi.fn(),
   create: vi.fn(),
+  editDraft: vi.fn(),
   publish: vi.fn(),
   enable: vi.fn(),
   disable: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock(
     integrationEventRoutesApi: {
       list: mocks.listRoutes,
       listEventDefinitions: mocks.listDefinitions,
+      editDraft: mocks.editDraft,
       publish: mocks.publish,
       enable: mocks.enable,
       disable: mocks.disable,
@@ -88,6 +90,7 @@ describe("IntegrationInboundRoutesCard", () => {
         },
       },
     ]);
+    mocks.editDraft.mockResolvedValue({});
   });
 
   it("creates only an inbound route and maps provider paths to the pinned Retenive schema", async () => {
@@ -257,7 +260,10 @@ describe("IntegrationInboundRoutesCard", () => {
       },
     });
     await flushPromises();
-    await wrapper.get("[data-route-row] button").trigger("click");
+    await wrapper
+      .findAll("[data-route-row] button")
+      .find((button) => button.text() === "Опубликовать")!
+      .trigger("click");
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toBe(
@@ -340,6 +346,133 @@ describe("IntegrationInboundRoutesCard", () => {
     expect(
       wrapper.find('input[aria-label="Поиск по правилам приёма"]').exists(),
     ).toBe(false);
+  });
+
+  it("edits a paused Customer.io receiving rule as a new draft", async () => {
+    mocks.listConnections.mockResolvedValue({
+      items: [
+        {
+          id: "connection-1",
+          projectId: "project-1",
+          provider: "CUSTOMER_IO",
+          displayName: "Customer.io inbound",
+          inboundEnabled: true,
+          lifecycle: "ACTIVE",
+          region: "EU",
+        },
+      ],
+    });
+    mocks.listRoutes.mockResolvedValue({
+      items: [
+        {
+          id: "route-1",
+          projectId: "project-1",
+          connectionId: "connection-1",
+          direction: "INBOUND",
+          name: "Customer.io → Deposit",
+          lifecycle: "ACTIVE",
+          enabled: false,
+          version: 4,
+          draftRevision: null,
+          publishedRevision: {
+            id: "route-revision-1",
+            revision: 1,
+            state: "PUBLISHED",
+            provider: "CUSTOMER_IO",
+            region: "EU",
+            providerCallType: "TRACK",
+            eventDefinitionKeyId: "event-1",
+            eventDefinitionRevisionId: "revision-1",
+            providerEventName: "Deposit Made",
+            propertyBindings: [
+              {
+                sourcePath: ["data", "amount"],
+                targetKey: "amount",
+                required: true,
+              },
+            ],
+            canonicalKeyExtractor: {
+              sourcePath: ["messageId"],
+              normalization: "TRIM",
+            },
+            compiledHash: "hash",
+            compilerVersion: "integration-inbound-mapping.v1",
+            createdAt: "2026-08-06T10:00:00.000Z",
+            publishedAt: "2026-08-06T10:01:00.000Z",
+          },
+        },
+      ],
+    });
+    const wrapper = mount(IntegrationInboundRoutesCard, {
+      props: {
+        projectId: "project-1",
+        provider: "CUSTOMER_IO",
+        canRead: true,
+        canManage: true,
+        focusRouteId: "route-1",
+      },
+    });
+    await flushPromises();
+
+    expect(
+      wrapper.get('[data-inbound-route-id="route-1"]').classes(),
+    ).toContain("route-row--focused");
+
+    await wrapper
+      .findAll("[data-route-row] button")
+      .find((button) => button.text() === "Изменить")!
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Изменить правило приёма");
+    expect(
+      (
+        wrapper.get('input[name="inboundProviderEventName"]')
+          .element as HTMLInputElement
+      ).value,
+    ).toBe("Deposit Made");
+    expect(
+      (
+        wrapper.get('input[name="sourcePath-amount"]')
+          .element as HTMLInputElement
+      ).value,
+    ).toBe("data.amount");
+    await wrapper
+      .get('input[name="inboundProviderEventName"]')
+      .setValue("Deposit Completed");
+    await wrapper
+      .get('input[name="sourcePath-amount"]')
+      .setValue("properties.amount");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(mocks.editDraft).toHaveBeenCalledWith(
+      "project-1",
+      "route-1",
+      {
+        expectedVersion: 4,
+        reason: "Редактирование правила приёма Customer.io через CMS",
+        name: "Customer.io → Deposit",
+        eventDefinitionKeyId: "event-1",
+        eventDefinitionRevisionId: "revision-1",
+        providerEventName: "Deposit Completed",
+        propertyBindings: [
+          {
+            sourcePath: ["properties", "amount"],
+            targetKey: "amount",
+            required: true,
+          },
+        ],
+        canonicalKeyExtractor: {
+          sourcePath: ["messageId"],
+          normalization: "TRIM",
+        },
+      },
+      "command-key",
+    );
+    expect(wrapper.text()).toContain(
+      "Изменения сохранены в новой черновой версии",
+    );
   });
 
   it("keeps the rule action in a compact table cell", async () => {

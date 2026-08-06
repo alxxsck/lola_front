@@ -116,6 +116,7 @@ const provider = computed(() =>
       :can-read="canRead"
       :can-manage="canManage"
       :provider="props.provider"
+      :focus-route-id="focusRouteId"
     />
     <IntegrationInboundActivityCard
       :project-id="projectId"

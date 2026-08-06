@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import Select from "primevue/select";
 import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
 import TablePagination from "@/shared/ui/TablePagination.vue";
@@ -21,6 +21,7 @@ const props = defineProps<{
   provider: InboundIntegrationProvider;
   canRead: boolean;
   canManage: boolean;
+  focusRouteId?: string;
 }>();
 
 const slug = computed(() =>
@@ -35,6 +36,7 @@ const definitions = ref<EventDefinitionCatalogResponseDto[]>([]);
 const loading = ref(false);
 const pending = ref(false);
 const showCreate = ref(false);
+const editingRoute = ref<IntegrationEventRouteResponseDto | null>(null);
 const routeQuery = ref("");
 const routePage = ref(1);
 const error = ref("");
@@ -131,6 +133,7 @@ const normalizationOptions = [
 const selectedDefinition = computed(() =>
   definitions.value.find((definition) => definition.id === definitionId.value),
 );
+const isEditing = computed(() => editingRoute.value !== null);
 const schemaFields = computed(() => {
   const schema = selectedDefinition.value?.currentRevision?.payloadSchema as
     { properties?: Record<string, unknown>; required?: string[] } | undefined;
@@ -196,6 +199,19 @@ async function load(): Promise<void> {
         route.direction === "INBOUND" && revision?.provider === props.provider
       );
     });
+    const focusedRoute = routes.value.find(
+      ({ id }) => id === props.focusRouteId,
+    );
+    if (focusedRoute) {
+      routeQuery.value = focusedRoute.name;
+      routePage.value = 1;
+      await nextTick();
+      document
+        .querySelector<HTMLElement>(
+          `[data-inbound-route-id="${focusedRoute.id}"]`,
+        )
+        ?.scrollIntoView?.({ block: "center" });
+    }
     connections.value = connectionResult.items;
     definitions.value = definitionResult;
     connectionId.value = providerConnections.value[0]?.id ?? "";
@@ -207,7 +223,49 @@ async function load(): Promise<void> {
   }
 }
 
-async function create(): Promise<void> {
+function openCreate(): void {
+  editingRoute.value = null;
+  showCreate.value = true;
+  connectionId.value = providerConnections.value[0]?.id ?? "";
+  definitionId.value = "";
+  routeName.value = "";
+  providerEventName.value = "";
+  canonicalKeySourcePath.value = "";
+  canonicalKeyNormalization.value = "TRIM_LOWERCASE";
+  for (const key of Object.keys(sourcePaths)) delete sourcePaths[key];
+}
+
+function closeEditor(): void {
+  showCreate.value = false;
+  editingRoute.value = null;
+}
+
+async function startEdit(
+  route: IntegrationEventRouteResponseDto,
+): Promise<void> {
+  const revision = route.draftRevision ?? route.publishedRevision;
+  if (!revision) return;
+  editingRoute.value = route;
+  showCreate.value = true;
+  connectionId.value = route.connectionId;
+  definitionId.value = revision.eventDefinitionKeyId;
+  await nextTick();
+  routeName.value = route.name;
+  providerEventName.value = revision.providerEventName;
+  for (const binding of revision.propertyBindings) {
+    sourcePaths[binding.targetKey] = binding.sourcePath.join(".");
+  }
+  canonicalKeySourcePath.value =
+    revision.canonicalKeyExtractor?.sourcePath.join(".") ?? "";
+  canonicalKeyNormalization.value =
+    revision.canonicalKeyExtractor?.normalization ?? "TRIM_LOWERCASE";
+  await nextTick();
+  document
+    .getElementById(`${slug.value}-create-inbound-route`)
+    ?.scrollIntoView?.({ block: "start" });
+}
+
+async function save(): Promise<void> {
   const definition = selectedDefinition.value;
   const revision = definition?.currentRevision;
   const bindings = schemaFields.value.map((field) => ({
@@ -253,24 +311,50 @@ async function create(): Promise<void> {
       : {}),
   };
   const signature = `create:${JSON.stringify(input)}`;
+  let completedSignature = signature;
   pending.value = true;
   error.value = "";
   try {
-    await integrationInboundRoutesApi.create(
-      props.provider,
-      projectId,
-      input,
-      commandKey(signature),
-    );
+    if (editingRoute.value) {
+      const route = editingRoute.value;
+      const editInput = {
+        expectedVersion: route.version,
+        reason: `Редактирование правила приёма ${title.value} через CMS`,
+        name: input.name,
+        eventDefinitionKeyId: input.eventDefinitionKeyId,
+        eventDefinitionRevisionId: input.eventDefinitionRevisionId,
+        providerEventName: input.providerEventName,
+        propertyBindings: input.propertyBindings,
+        ...(input.canonicalKeyExtractor
+          ? { canonicalKeyExtractor: input.canonicalKeyExtractor }
+          : {}),
+      };
+      completedSignature = `edit:${route.id}:${JSON.stringify(editInput)}`;
+      await integrationEventRoutesApi.editDraft(
+        projectId,
+        route.id,
+        editInput,
+        commandKey(completedSignature),
+      );
+    } else {
+      await integrationInboundRoutesApi.create(
+        props.provider,
+        projectId,
+        input,
+        commandKey(signature),
+      );
+    }
     if (projectId !== props.projectId) return;
-    notice.value = "Черновик входящего маршрута создан.";
-    commandKeys.delete(signature);
-    showCreate.value = false;
+    notice.value = editingRoute.value
+      ? "Изменения сохранены в новой черновой версии. Проверьте и опубликуйте её."
+      : "Черновик входящего маршрута создан.";
+    commandKeys.delete(completedSignature);
+    closeEditor();
     await load();
   } catch {
     if (projectId === props.projectId)
       error.value =
-        "Не удалось создать правило приёма. Проверьте пути и схему события.";
+        "Не удалось сохранить правило приёма. Проверьте пути и схему события.";
   } finally {
     pending.value = false;
   }
@@ -359,9 +443,9 @@ onMounted(() => void load());
         </p>
         <p v-if="provider === 'CUSTOMER_IO'">
           Перед включением отправьте контрольное событие <code>track</code> с
-          уникальным <code>messageId</code>, подписанное текущим секретом. Retenive
-          проверит подпись и только после этого разрешит принимать рабочие
-          события. После замены секрета проверку нужно повторить.
+          уникальным <code>messageId</code>, подписанное текущим секретом.
+          Retenive проверит подпись и только после этого разрешит принимать
+          рабочие события. После замены секрета проверку нужно повторить.
         </p>
       </div>
       <button
@@ -371,7 +455,7 @@ onMounted(() => void load());
         :disabled="pending"
         :aria-expanded="showCreate"
         :aria-controls="`${slug}-create-inbound-route`"
-        @click="showCreate = !showCreate"
+        @click="showCreate ? closeEditor() : openCreate()"
       >
         {{ showCreate ? "Закрыть" : "Добавить правило" }}
       </button>
@@ -386,16 +470,22 @@ onMounted(() => void load());
         :id="`${slug}-create-inbound-route`"
         class="route-form"
         :data-form="`create-inbound-route-${slug}`"
-        @submit.prevent="create"
+        @submit.prevent="save"
       >
         <div class="form-intro">
           <span class="setup-step">Шаг 2</span>
           <div>
-            <h3>Новое правило приёма</h3>
+            <h3>
+              {{
+                isEditing ? "Изменить правило приёма" : "Новое правило приёма"
+              }}
+            </h3>
             <p>
-              Правило определяет, какое внешнее событие станет событием Retenive, и
-              откуда взять его свойства. Название правила Retenive сформирует
-              автоматически.
+              {{
+                isEditing
+                  ? "Сохранение создаст новую черновую версию. Приём событий не изменится до публикации."
+                  : "Правило определяет, какое внешнее событие станет событием Retenive, и откуда взять его свойства. Название правила Retenive сформирует автоматически."
+              }}
             </p>
           </div>
         </div>
@@ -407,7 +497,7 @@ onMounted(() => void load());
             option-label="label"
             option-value="value"
             placeholder="Выберите адрес"
-            :disabled="pending"
+            :disabled="pending || isEditing"
             fluid
           >
             <template #option="slotProps">
@@ -437,6 +527,7 @@ onMounted(() => void load());
             name="inboundProviderEventName"
             maxlength="120"
             required
+            :disabled="pending"
           />
           <small>
             Retenive будет принимать только события с этим точным названием.
@@ -463,6 +554,7 @@ onMounted(() => void load());
               maxlength="520"
               placeholder="properties.field"
               required
+              :disabled="pending"
             />
           </label>
         </fieldset>
@@ -502,7 +594,9 @@ onMounted(() => void load());
           </div>
         </details>
         <div class="form-actions">
-          <button type="submit" :disabled="pending">Создать черновик</button>
+          <button type="submit" :disabled="pending">
+            {{ isEditing ? "Сохранить изменения" : "Создать черновик" }}
+          </button>
         </div>
       </form>
     </Transition>
@@ -538,7 +632,13 @@ onMounted(() => void load());
             </tr>
           </thead>
           <tbody>
-            <tr v-for="route in visibleRoutes" :key="route.id" data-route-row>
+            <tr
+              v-for="route in visibleRoutes"
+              :key="route.id"
+              data-route-row
+              :data-inbound-route-id="route.id"
+              :class="{ 'route-row--focused': route.id === focusRouteId }"
+            >
               <td>
                 <strong>{{ route.name }}</strong>
               </td>
@@ -556,6 +656,13 @@ onMounted(() => void load());
                 v-if="canManage"
                 class="integration-table__action route-actions"
               >
+                <button
+                  type="button"
+                  :disabled="pending"
+                  @click="startEdit(route)"
+                >
+                  Изменить
+                </button>
                 <button
                   v-if="route.draftRevision"
                   type="button"
@@ -611,6 +718,11 @@ onMounted(() => void load());
 .status-chip[data-status="active"] {
   background: var(--status-success-soft);
   color: var(--status-success-text);
+}
+.route-row--focused {
+  outline: 2px solid var(--status-accent);
+  outline-offset: -2px;
+  background: var(--status-accent-soft);
 }
 .card-heading,
 .actions {
