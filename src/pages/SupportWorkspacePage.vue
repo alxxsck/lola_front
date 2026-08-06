@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
+import Avatar from "primevue/avatar";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
+import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
+import { supportWorkspaceSource } from "@/features/support-workspace/api/support-workspace-source";
+import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
+import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
 import { repository } from "@/shared/api/repository";
 import { relativeTime } from "@/shared/lib/format";
+import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import type { ConversationMessage } from "@/shared/types/domain";
 
 const auth = useAuthStore();
@@ -16,90 +23,90 @@ const route = useRoute();
 const router = useRouter();
 const inbox = createSupportInboxController(
   { projectId: () => auth.project?.id },
-  repository,
+  supportWorkspaceSource,
 );
-const messages = ref<ConversationMessage[]>([]);
-const messagesLoading = ref(false);
-const messagesError = ref("");
-let messageGeneration = 0;
 
-const selectedConversation = computed(() => {
+const routeConversationId = computed(() => {
   const routeId = route.params.conversationId;
-  const conversationId = typeof routeId === "string" ? routeId : undefined;
+  return typeof routeId === "string" ? routeId : undefined;
+});
+const requestedConversationId = computed(
+  () => routeConversationId.value ?? inbox.items.value[0]?.id,
+);
+const conversation = createSupportConversationController(
+  {
+    projectId: () => auth.project?.id,
+    conversationId: () => requestedConversationId.value,
+  },
+  supportWorkspaceSource,
+);
+const selectedConversation = computed(() => {
+  if (routeConversationId.value)
+    return conversation.selection.value?.conversation ?? null;
   return (
-    inbox.items.value.find((item) => item.id === conversationId) ??
-    inbox.items.value[0] ??
-    null
+    conversation.selection.value?.conversation ?? inbox.items.value[0] ?? null
   );
 });
-
 const selectedName = computed(
-  () => selectedConversation.value?.endUser.externalId ?? "Диалог",
+  () => conversation.selection.value?.endUser.externalId ?? "Диалог",
 );
+const live = createSupportWorkspaceLiveController(
+  { reconcile: () => conversation.reconcile() },
+  cmsRealtimeClient,
+);
+const reply = createSupportReplyController(
+  {
+    projectId: () => auth.project?.id,
+    selection: () => conversation.selection.value,
+    reconcile: () => conversation.reconcile(),
+  },
+  repository,
+);
+const realtimeTag = computed(() => {
+  if (live.state.value === "CONNECTED")
+    return { label: "Live", severity: "success" as const };
+  if (live.state.value === "CONNECTING")
+    return { label: "Синхронизация", severity: "warning" as const };
+  return { label: "Связь восстанавливается", severity: "secondary" as const };
+});
 
-function messageAuthor(message: ConversationMessage): string {
-  if (message.authorSnapshot?.displayName)
-    return message.authorSnapshot.displayName;
-  return {
-    USER: "Пользователь",
-    ASSISTANT: auth.project?.assistantName ?? "Lola",
-    ADMIN: "Оператор",
-    SCENARIO: "Сценарий",
-    SYSTEM: "Система",
-  }[message.author];
+function messageAuthorName(message: ConversationMessage): string {
+  return (
+    message.authorSnapshot?.displayName ??
+    {
+      USER: "Пользователь",
+      ASSISTANT: auth.project?.assistantName ?? "Lola",
+      ADMIN: "Оператор",
+      SCENARIO: "Сценарий",
+      SYSTEM: "Система",
+    }[message.author]
+  );
 }
 
-function messageClass(message: ConversationMessage): string {
-  if (message.author === "USER") return "from-user";
-  if (message.author === "ADMIN") return "from-operator";
-  return "from-system";
+function initials(value: string): string {
+  return value
+    .split(/\s+/u)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
 }
 
 async function openConversation(conversationId: string): Promise<void> {
-  if (conversationId === selectedConversation.value?.id) return;
+  if (conversationId === routeConversationId.value) return;
   await router.push({
     name: "support-inbox-conversation",
     params: { conversationId },
   });
 }
 
-async function loadMessages(): Promise<void> {
-  const selected = selectedConversation.value;
-  const projectId = auth.project?.id;
-  const requestGeneration = ++messageGeneration;
-  messages.value = [];
-  messagesError.value = "";
-  if (!selected || !projectId) {
-    messagesLoading.value = false;
-    return;
-  }
-  messagesLoading.value = true;
-  try {
-    const page = await repository.getMessages(
-      projectId,
-      selected.endUser.id,
-      selected.id,
-      { limit: 50 },
-    );
-    if (requestGeneration !== messageGeneration) return;
-    messages.value = [...page.items].sort(
-      (left, right) =>
-        (left.ordinal ?? Number.MAX_SAFE_INTEGER) -
-          (right.ordinal ?? Number.MAX_SAFE_INTEGER) ||
-        left.createdAt.localeCompare(right.createdAt) ||
-        left.id.localeCompare(right.id),
-    );
-  } catch {
-    if (requestGeneration !== messageGeneration) return;
-    messagesError.value = "Не удалось загрузить сообщения выбранного диалога";
-  } finally {
-    if (requestGeneration === messageGeneration) messagesLoading.value = false;
-  }
+async function backToInbox(): Promise<void> {
+  await router.push({ name: "support-inbox" });
 }
 
 async function reload(): Promise<void> {
   await inbox.load();
-  await loadMessages();
+  await conversation.load();
 }
 
 onMounted(async () => {
@@ -107,19 +114,43 @@ onMounted(async () => {
 });
 
 watch(
-  () => [auth.project?.id, selectedConversation.value?.id],
-  () => void loadMessages(),
+  () => auth.project?.id,
+  () => {
+    conversation.reset();
+    inbox.reset();
+    void inbox.load();
+  },
+);
+
+watch(
+  () => requestedConversationId.value,
+  () => void conversation.load(),
   { immediate: true },
 );
 
 watch(
-  () => auth.project?.id,
-  () => inbox.reset(),
+  () => conversation.selection.value?.conversation,
+  (selected) => {
+    reply.syncSelection();
+    if (selected) inbox.upsert(selected);
+  },
+);
+
+watch(
+  () => [
+    auth.project?.id,
+    conversation.selection.value?.conversation?.id,
+  ] as const,
+  ([projectId, conversationId]) =>
+    void live.setSelection(projectId, conversationId),
+  { immediate: true },
 );
 
 onBeforeUnmount(() => {
+  live.dispose();
+  reply.reset();
   inbox.reset();
-  messageGeneration += 1;
+  conversation.reset();
 });
 </script>
 
@@ -134,24 +165,27 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <div class="header-actions">
-        <Tag value="Read-only foundation" severity="secondary" />
+        <Tag :value="realtimeTag.label" :severity="realtimeTag.severity" />
         <Button
           label="Обновить"
           icon="pi pi-refresh"
           severity="secondary"
           outlined
-          :loading="inbox.loading.value || messagesLoading"
+          :loading="inbox.loading.value || conversation.loading.value"
           @click="reload"
         />
       </div>
     </header>
 
     <Message severity="info" :closable="false" class="workspace-notice">
-      Отправка, назначение, SLA и delivery появятся после публикации их
-      серверных контрактов. Этот экран не подменяет их локальными статусами.
+      Данные и разрешения приходят одним серверным срезом. Отправка,
+      назначение, SLA и delivery будут включаться только через эти разрешения.
     </Message>
 
-    <div class="support-workspace card">
+    <div
+      class="support-workspace card"
+      :class="{ 'has-route-selection': Boolean(routeConversationId) }"
+    >
       <aside class="inbox-pane" aria-label="Диалоги проекта">
         <div class="pane-heading">
           <div>
@@ -195,15 +229,29 @@ onBeforeUnmount(() => {
                 relativeTime(conversation.updatedAt)
               }}</time>
             </div>
-            <span class="conversation-row__user">{{
-              conversation.endUser.externalId
-            }}</span>
-            <p>{{ conversation.lastMessage?.text ?? "Сообщений пока нет" }}</p>
+            <span class="conversation-row__user">
+              Пользователь раскрывается после выбора диалога
+            </span>
+            <p>
+              {{
+                conversation.lastMessageAt
+                  ? `Последняя активность: ${relativeTime(conversation.lastMessageAt)}`
+                  : "Сообщений пока нет"
+              }}
+            </p>
             <span class="conversation-row__meta">
               {{ conversation.messageCount }} сообщений
               <span v-if="conversation.isCurrent">· текущий</span>
             </span>
           </button>
+          <Button
+            v-if="inbox.nextCursor.value"
+            label="Показать ещё"
+            severity="secondary"
+            text
+            :loading="inbox.loading.value"
+            @click="inbox.loadMore"
+          />
         </div>
       </aside>
 
@@ -211,20 +259,28 @@ onBeforeUnmount(() => {
         <template v-if="selectedConversation">
           <header class="conversation-header">
             <div>
+              <Button
+                class="mobile-back"
+                label="Назад к списку диалогов"
+                icon="pi pi-arrow-left"
+                severity="secondary"
+                text
+                @click="backToInbox"
+              />
               <span class="eyebrow">{{
-                selectedConversation.status === "ACTIVE"
+                selectedConversation.status === "OPEN"
                   ? "Активный диалог"
                   : "Архивный диалог"
               }}</span>
               <h2>{{ selectedConversation.title }}</h2>
-              <p>{{ selectedConversation.endUser.externalId }}</p>
+              <p>{{ selectedName }}</p>
             </div>
             <Tag
               :value="
-                selectedConversation.status === 'ACTIVE' ? 'Активен' : 'Архив'
+                selectedConversation.status === 'OPEN' ? 'Активен' : 'Архив'
               "
               :severity="
-                selectedConversation.status === 'ACTIVE'
+                selectedConversation.status === 'OPEN'
                   ? 'success'
                   : 'secondary'
               "
@@ -232,7 +288,7 @@ onBeforeUnmount(() => {
           </header>
 
           <div
-            v-if="messagesLoading"
+            v-if="conversation.loading.value"
             class="message-skeletons"
             aria-busy="true"
           >
@@ -243,44 +299,135 @@ onBeforeUnmount(() => {
               border-radius="14px"
             />
           </div>
-          <Message v-else-if="messagesError" severity="error" :closable="false">
-            {{ messagesError }}
+          <Message
+            v-else-if="conversation.error.value"
+            severity="error"
+            :closable="false"
+          >
+            {{ conversation.error.value }}
           </Message>
           <div
             v-else
             class="message-log"
             role="log"
-            aria-live="polite"
+            aria-live="off"
             aria-label="История сообщений"
           >
+            <Button
+              v-if="conversation.nextMessageCursor.value"
+              label="Загрузить более ранние сообщения"
+              severity="secondary"
+              outlined
+              class="load-older"
+              :loading="conversation.loadingOlder.value"
+              @click="conversation.loadOlder"
+            />
             <article
-              v-for="message in messages"
+              v-for="message in conversation.messages.value"
               :key="message.id"
               class="message"
-              :class="messageClass(message)"
+              :class="{
+                'from-user': message.author === 'USER',
+                'from-operator': message.author === 'ADMIN',
+                'from-system':
+                  message.author !== 'USER' && message.author !== 'ADMIN',
+              }"
             >
               <div class="message-meta">
-                <strong>{{ messageAuthor(message) }}</strong>
+                <span class="message-author">
+                  <Avatar
+                    :image="message.authorSnapshot?.avatarUrl ?? undefined"
+                    :label="initials(messageAuthorName(message))"
+                    shape="circle"
+                    class="message-avatar"
+                    :aria-label="`Автор: ${messageAuthorName(message)}`"
+                  />
+                  <strong>{{ messageAuthorName(message) }}</strong>
+                </span>
                 <time :datetime="message.createdAt">{{
                   relativeTime(message.createdAt)
                 }}</time>
               </div>
               <p>{{ message.text }}</p>
             </article>
-            <p v-if="!messages.length" class="empty-pane">
+            <p v-if="!conversation.messages.value.length" class="empty-pane">
               В этом диалоге пока нет сообщений.
             </p>
           </div>
+          <form
+            v-if="conversation.selection.value"
+            class="reply-composer"
+            aria-label="Ответ оператором"
+            @submit.prevent="reply.send"
+          >
+            <Message
+              v-if="reply.error.value"
+              severity="error"
+              :closable="false"
+            >
+              {{ reply.error.value }}
+            </Message>
+            <Message
+              v-else-if="reply.deliveryStatus.value === 'PENDING'"
+              severity="info"
+              :closable="false"
+            >
+              Сообщение принято и ожидает доставки.
+            </Message>
+            <Textarea
+              :model-value="reply.draft.value"
+              :disabled="!reply.canReply.value"
+              rows="3"
+              auto-resize
+              maxlength="10000"
+              placeholder="Ответить пользователю…"
+              aria-label="Текст ответа"
+              @update:model-value="reply.draft.value = $event"
+              @keydown.ctrl.enter.prevent="reply.send"
+              @keydown.meta.enter.prevent="reply.send"
+            />
+            <div class="reply-composer__actions">
+              <span v-if="!reply.canReply.value" class="reply-hint">
+                Сервер не выдал разрешение на ответ в этом диалоге.
+              </span>
+              <span v-else class="reply-hint">
+                Ctrl/⌘ + Enter — отправить
+              </span>
+              <Button
+                type="submit"
+                label="Отправить"
+                icon="pi pi-send"
+                :loading="reply.sending.value"
+                :disabled="!reply.canReply.value || !reply.draft.value.trim()"
+              />
+            </div>
+          </form>
         </template>
+        <div
+          v-else-if="inbox.loading.value || conversation.loading.value"
+          class="empty-selection"
+          aria-busy="true"
+        >
+          <Skeleton width="180px" height="24px" />
+          <Skeleton width="240px" height="16px" />
+        </div>
         <div v-else class="empty-selection">
           <i class="pi pi-comments" aria-hidden="true" />
-          <h2>Выберите диалог</h2>
-          <p>История и безопасный контекст появятся здесь.</p>
+          <template v-if="route.params.conversationId">
+            <h2>Диалог недоступен</h2>
+            <p>
+              Диалог не найден или у вас больше нет прав на его просмотр.
+            </p>
+          </template>
+          <template v-else>
+            <h2>Выберите диалог</h2>
+            <p>История и безопасный контекст появятся здесь.</p>
+          </template>
         </div>
       </main>
 
       <aside
-        v-if="selectedConversation"
+        v-if="selectedConversation && conversation.selection.value"
         class="context-pane"
         aria-label="Контекст диалога"
       >
@@ -299,7 +446,7 @@ onBeforeUnmount(() => {
             <dt>Статус</dt>
             <dd>
               {{
-                selectedConversation.status === "ACTIVE"
+                selectedConversation.status === "OPEN"
                   ? "Активный"
                   : "Архивный"
               }}
@@ -314,13 +461,17 @@ onBeforeUnmount(() => {
             <dd>{{ selectedConversation.currentInteractionSessionCount }}</dd>
           </div>
           <div>
+            <dt>Язык</dt>
+            <dd>{{ conversation.selection.value.endUser.locale ?? "Не указан" }}</dd>
+          </div>
+          <div>
             <dt>Обновлён</dt>
             <dd>{{ relativeTime(selectedConversation.updatedAt) }}</dd>
           </div>
         </dl>
         <Message severity="secondary" :closable="false">
-          Полный профиль, события и sensitive поля загрузятся только при наличии
-          отдельных разрешений.
+          Полный профиль, события и sensitive поля не запрашиваются этим
+          экраном. Доступные действия определяет серверная capability-модель.
         </Message>
       </aside>
     </div>
@@ -398,6 +549,10 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 8px;
 }
+.conversation-list > :deep(.p-button),
+.load-older {
+  justify-self: start;
+}
 .conversation-row {
   width: 100%;
   padding: 12px;
@@ -465,6 +620,9 @@ onBeforeUnmount(() => {
 .conversation-header p {
   margin: 4px 0 0;
 }
+.mobile-back {
+  display: none;
+}
 .message-log {
   flex: 1;
   padding: 22px;
@@ -499,10 +657,44 @@ onBeforeUnmount(() => {
   gap: 14px;
   margin-bottom: 5px;
 }
+.message-author {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.message-avatar {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  font-size: 0.62rem;
+}
 .message p {
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+.reply-composer {
+  display: grid;
+  gap: 10px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-card);
+}
+.reply-composer :deep(textarea) {
+  width: 100%;
+  resize: vertical;
+}
+.reply-composer__actions {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.reply-hint {
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 .context-list {
   display: grid;
@@ -560,6 +752,11 @@ onBeforeUnmount(() => {
   .support-workspace {
     display: block;
   }
+  .support-workspace:not(.has-route-selection) .conversation-pane,
+  .support-workspace:not(.has-route-selection) .context-pane,
+  .support-workspace.has-route-selection .inbox-pane {
+    display: none;
+  }
   .inbox-pane {
     border-right: 0;
     border-bottom: 1px solid var(--line);
@@ -572,8 +769,13 @@ onBeforeUnmount(() => {
     align-items: flex-start;
     padding: 16px;
   }
+  .mobile-back {
+    display: inline-flex;
+    margin: -8px 0 8px -8px;
+  }
   .message-log,
-  .message-skeletons {
+  .message-skeletons,
+  .reply-composer {
     padding: 16px;
   }
   .message {

@@ -1,16 +1,13 @@
 import { ref } from "vue";
 import type {
-  CursorPage,
-  CursorPageRequest,
-} from "@/shared/api/repository/contracts";
-import type { SupportInboxConversation } from "@/shared/types/domain";
+  SupportWorkspaceConversation,
+  SupportWorkspaceSource,
+} from "@/features/support-workspace/api/support-workspace-source";
 
-export interface SupportInboxSource {
-  getProjectConversations(
-    projectId: string,
-    request?: CursorPageRequest,
-  ): Promise<CursorPage<SupportInboxConversation>>;
-}
+export type SupportInboxSource = Pick<
+  SupportWorkspaceSource,
+  "readConversations"
+>;
 
 export interface SupportInboxContext {
   projectId(): string | undefined;
@@ -24,7 +21,7 @@ export function createSupportInboxController(
   context: SupportInboxContext,
   source: SupportInboxSource,
 ) {
-  const items = ref<SupportInboxConversation[]>([]);
+  const items = ref<SupportWorkspaceConversation[]>([]);
   const nextCursor = ref<string | null>(null);
   const loading = ref(false);
   const error = ref("");
@@ -38,6 +35,23 @@ export function createSupportInboxController(
     error.value = "";
   }
 
+  function append(pageItems: readonly SupportWorkspaceConversation[]): void {
+    const knownIds = new Set(items.value.map((item) => item.id));
+    const unseen = pageItems.filter((item) => !knownIds.has(item.id));
+    if (unseen.length) items.value = [...items.value, ...unseen];
+  }
+
+  function upsert(item: SupportWorkspaceConversation): void {
+    const index = items.value.findIndex((current) => current.id === item.id);
+    if (index === -1) {
+      items.value = [...items.value, item];
+      return;
+    }
+    const next = [...items.value];
+    next[index] = item;
+    items.value = next;
+  }
+
   async function load(): Promise<void> {
     const projectId = context.projectId();
     const requestGeneration = ++generation;
@@ -48,7 +62,7 @@ export function createSupportInboxController(
     loading.value = true;
     error.value = "";
     try {
-      const page = await source.getProjectConversations(projectId, {
+      const page = await source.readConversations(projectId, {
         limit: 30,
       });
       if (requestGeneration !== generation) return;
@@ -62,5 +76,25 @@ export function createSupportInboxController(
     }
   }
 
-  return { items, nextCursor, loading, error, load, reset };
+  async function loadMore(): Promise<void> {
+    const projectId = context.projectId();
+    const cursor = nextCursor.value;
+    if (!projectId || !cursor || loading.value) return;
+    const requestGeneration = ++generation;
+    loading.value = true;
+    error.value = "";
+    try {
+      const page = await source.readConversations(projectId, { cursor, limit: 30 });
+      if (requestGeneration !== generation) return;
+      append(page.items);
+      nextCursor.value = page.nextCursor;
+    } catch {
+      if (requestGeneration !== generation) return;
+      error.value = "Не удалось загрузить следующую страницу диалогов";
+    } finally {
+      if (requestGeneration === generation) loading.value = false;
+    }
+  }
+
+  return { items, nextCursor, loading, error, load, loadMore, upsert, reset };
 }

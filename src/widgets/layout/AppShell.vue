@@ -19,9 +19,11 @@ import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import {
   conversationAISuspensionEnabled,
-  supportWorkspaceEnabled,
 } from "@/shared/config/features";
-import { canReadSupportWorkspace as canReadSupportWorkspaceAccess } from "@/features/support-workspace/model/support-workspace-access";
+import {
+  canReadSupportWorkspace as canReadSupportWorkspaceAccess,
+  isSupportWorkspaceShellEnabled,
+} from "@/features/support-workspace/model/support-workspace-access";
 import { productBrand } from "@/shared/config/product-brand";
 import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
 import ThemeSwitch from "./ThemeSwitch.vue";
@@ -65,7 +67,7 @@ const canReadProjectIntegrations = computed(() =>
 );
 const canReadSupportWorkspace = computed(
   () =>
-    supportWorkspaceEnabled &&
+    isSupportWorkspaceShellEnabled(auth.project) &&
     canReadSupportWorkspaceAccess(auth.project?.effectivePermissionCodes ?? []),
 );
 

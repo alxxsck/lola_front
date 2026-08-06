@@ -166,7 +166,10 @@ describe("AppShell", () => {
     ]);
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [{ path: "/overview", component: { template: "<div />" } }],
+      routes: [
+        { path: "/overview", component: { template: "<div />" } },
+        { path: "/support/inbox", component: { template: "<div />" } },
+      ],
     });
     await router.push("/overview");
     await router.isReady();
@@ -226,7 +229,7 @@ describe("AppShell", () => {
         assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
-        settings: {},
+        settings: { support_workspace_shell: true },
         effectivePermissionCodes: [
           "project.settings.read",
           "project.notifications.read",
@@ -272,6 +275,10 @@ describe("AppShell", () => {
         .findAll(".sidebar-scroll nav a")
         .find((link) => link.text().includes("Поля профиля"))
         ?.attributes("href"),
+      supportWorkspaceLink: wrapper
+        .findAll(".sidebar-scroll nav a")
+        .find((link) => link.text().includes("Поддержка"))
+        ?.attributes("href"),
       themeSwitchVisible: wrapper.find(".theme-switch").exists(),
       profileInFooter: wrapper
         .find(".sidebar-footer .sidebar-profile")
@@ -280,8 +287,9 @@ describe("AppShell", () => {
       analysesVisible: wrapper.text().includes("AI-анализы"),
       operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 18,
+      navigationLinks: 19,
       profileFieldsLink: "/profile-fields",
+      supportWorkspaceLink: "/support/inbox",
       themeSwitchVisible: true,
       profileInFooter: true,
       modeInFooter: true,

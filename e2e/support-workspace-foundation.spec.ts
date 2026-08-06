@@ -45,3 +45,37 @@ test("opens a project conversation as a deep link without horizontal overflow", 
     geometry.clientWidth + 0.5,
   );
 });
+
+test("does not substitute another conversation for an unavailable deep link", async ({
+  page,
+}) => {
+  await page.goto("/support/inbox/conversations/conv_not_available");
+
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Диалог недоступен" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Бонусы и программа лояльности",
+    }),
+  ).not.toBeVisible();
+});
+
+test("uses route-aware inbox and chat panes on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/support/inbox");
+
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Активный диалог" }),
+  ).not.toBeVisible();
+
+  await page.getByRole("button", { name: /Бонусы и программа лояльности/ }).click();
+  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3$/);
+  await expect(
+    page.getByRole("button", { name: "Назад к списку диалогов" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Назад к списку диалогов" }).click();
+  await expect(page).toHaveURL(/\/support\/inbox$/);
+});

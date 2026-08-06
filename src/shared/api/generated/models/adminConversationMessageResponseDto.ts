@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AdminConversationMessageResponseDtoAuthor } from "./adminConversationMessageResponseDtoAuthor";
+import type { AdminMessageDeliveryResponseDto } from "./adminMessageDeliveryResponseDto";
 import type { MessageRole } from "./messageRole";
 import type { MessageStatus } from "./messageStatus";
 import type { AdminConversationMessageTranslationResponseDto } from "./adminConversationMessageTranslationResponseDto";
@@ -14,6 +15,7 @@ export interface AdminConversationMessageResponseDto {
   /** @nullable */
   author: AdminConversationMessageResponseDtoAuthor;
   createdAt: string;
+  delivery?: AdminMessageDeliveryResponseDto;
   id: string;
   /** @minimum 1 */
   ordinal: number;

@@ -633,6 +633,7 @@ describe("api repository adapter", () => {
       duplicate: true,
       commandIds: ["command-1"],
       message: { id: "message-1", threadId: "thread-1", status: "COMPLETED" },
+      delivery: { status: "PENDING" },
       aiSuspension: {
         replayed: false,
         state: {
@@ -678,6 +679,7 @@ describe("api repository adapter", () => {
       duplicate: true,
       messageId: "message-1",
       commandIds: ["command-1"],
+      deliveryStatus: "PENDING",
       aiSuspension: { state: { version: "1" } },
     });
   });

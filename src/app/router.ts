@@ -18,8 +18,10 @@ import {
 import AppShell from "@/widgets/layout/AppShell.vue";
 import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance";
 import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
-import { canReadSupportWorkspace } from "@/features/support-workspace/model/support-workspace-access";
-import { supportWorkspaceEnabled } from "@/shared/config/features";
+import {
+  canReadSupportWorkspace,
+  isSupportWorkspaceShellEnabled,
+} from "@/features/support-workspace/model/support-workspace-access";
 
 const AI_LEDGER_ROUTE_GROUPS = new Map([
   ["ai-analyses", "analyses"],
@@ -490,8 +492,8 @@ router.beforeEach(async (to) => {
     return auth.authenticatedLandingPath;
   if (
     to.meta.supportWorkspaceAccess &&
-    (!supportWorkspaceEnabled ||
-      !auth.project ||
+    (!auth.project ||
+      !isSupportWorkspaceShellEnabled(auth.project) ||
       !canReadSupportWorkspace(auth.project.effectivePermissionCodes ?? []))
   )
     return auth.authenticatedLandingPath;

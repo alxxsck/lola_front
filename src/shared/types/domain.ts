@@ -625,7 +625,14 @@ export interface AdminMessageResult {
   threadId: string;
   commandIds: string[];
   status: string;
-  deliveryStatus?: "DELIVERED" | "NOT_REDELIVERED";
+  deliveryStatus?:
+    | "PENDING"
+    | "DELIVERING"
+    | "DELIVERED"
+    | "READ"
+    | "FAILED"
+    | "CANCELLED"
+    | "NOT_REDELIVERED";
   aiSuspension?: {
     state: ConversationAISuspensionDetail;
     replayed: boolean;

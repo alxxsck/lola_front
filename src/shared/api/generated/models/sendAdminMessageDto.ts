@@ -25,6 +25,8 @@ export interface SendAdminMessageDto {
   endUserCaseId?: string;
   /** Optional preferred online session. If omitted, backend selects the most recently active session. */
   interactionSessionId?: string;
+  /** Editable Support Macro Reply Draft consumed atomically with the ADMIN message. */
+  macroReplyDraftId?: string;
   /** READY outbound translation draft consumed atomically with the ADMIN message. */
   replyTranslationDraftId?: string;
   sendWithoutTranslation?: SendAdminMessageWithoutTranslationDto;

@@ -52,6 +52,7 @@ export const demoProject: Project = {
     voiceEnabled: false,
     voiceTranscriptEnabled: true,
     voice: 'eve',
+    support_workspace_shell: true,
   },
   organization: { id: 'org_1', name: 'Lucky Group', slug: 'lucky_group' },
   _count: { users: 1284, scenarios: 4, eventLogs: 18742 },
@@ -747,6 +748,7 @@ export const demoMessages: ConversationMessage[] = [
   {
     id: 'msg_1',
     conversationId: 'conv_1',
+    ordinal: 1,
     author: 'SCENARIO',
     text: 'Регистрация завершена. Давайте сделаем следующий шаг.',
     status: 'COMPLETED',
@@ -755,6 +757,7 @@ export const demoMessages: ConversationMessage[] = [
   {
     id: 'msg_2',
     conversationId: 'conv_1',
+    ordinal: 2,
     author: 'USER',
     text: 'Как лучше пополнить баланс?',
     status: 'COMPLETED',
@@ -763,6 +766,7 @@ export const demoMessages: ConversationMessage[] = [
   {
     id: 'msg_3',
     conversationId: 'conv_1',
+    ordinal: 3,
     author: 'ASSISTANT',
     text: 'Откройте личный кабинет и выберите удобный способ. Я могу подсветить нужную кнопку.',
     status: 'COMPLETED',
@@ -771,6 +775,7 @@ export const demoMessages: ConversationMessage[] = [
   {
     id: 'msg_4',
     conversationId: 'conv_1',
+    ordinal: 4,
     author: 'ADMIN',
     text: 'Анна, нужна помощь с первым шагом?',
     status: 'COMPLETED',
@@ -779,6 +784,7 @@ export const demoMessages: ConversationMessage[] = [
   {
     id: 'msg_5',
     conversationId: 'conv_2',
+    ordinal: 1,
     author: 'ASSISTANT',
     text: 'Привет! Я Retenive и помогу быстро освоиться.',
     status: 'COMPLETED',
@@ -787,6 +793,7 @@ export const demoMessages: ConversationMessage[] = [
   {
     id: 'msg_6',
     conversationId: 'conv_3',
+    ordinal: 1,
     author: 'USER',
     text: 'Какие бонусы доступны сегодня?',
     status: 'COMPLETED',
@@ -795,6 +802,7 @@ export const demoMessages: ConversationMessage[] = [
   {
     id: 'msg_7',
     conversationId: 'conv_3',
+    ordinal: 2,
     author: 'ASSISTANT',
     text: 'Сейчас проверю активные предложения для вашего сегмента.',
     status: 'COMPLETED',

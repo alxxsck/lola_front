@@ -10,6 +10,7 @@ import type {
   AIReviewRunResponseDto,
   AIReviewScopeDto,
   AIReviewSettingsResponseDto,
+  AcknowledgeSupportOperationalAlertDto,
   ActionTypeResponseDto,
   ActiveUserResponseDto,
   ActivitySettingsResponseDto,
@@ -68,8 +69,12 @@ import type {
   ArchiveProjectDto,
   ArchiveProjectRoleDto,
   ArchiveScenarioAuthoringDto,
+  ArchiveSupportIdentityDto,
+  ArchiveSupportKnowledgeDocumentDto,
+  ArchiveSupportQueueDto,
   ArchivedSegmentResponseDto,
   AssignEndUserCaseDto,
+  AssignSupportCaseAssignmentDto,
   AssignableProjectRoleCatalogResponseDto,
   AttributeContractDraftResponseDto,
   AttributeContractPublicationsParams,
@@ -91,9 +96,11 @@ import type {
   CaseVerificationEstimateResponseDto,
   CaseVerificationRunResponseDto,
   ChangeIntegrationDirectionPauseDto,
+  ChangeSupportOperationalAlertOwnerDto,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   ChatSend200,
+  ClaimSupportCaseAssignmentDto,
   ClassifyEndUserCaseDto,
   CloseEndUserCaseEscalationDto,
   CmsAgentImmediateExecutionResponseDto,
@@ -146,6 +153,8 @@ import type {
   ConversationTranslationPutParams,
   ConversationTranslationResponseDto,
   CorrectAiAllowanceDto,
+  CorrectSupportInternalNoteDto,
+  CorrectSupportSlaClockDto,
   CreateAmplitudeConnectionDto,
   CreateAmplitudeInboundConnectionDto,
   CreateAmplitudeInboundRouteDto,
@@ -169,9 +178,19 @@ import type {
   CreateProjectMembershipDto,
   CreateProjectRoleDto,
   CreateReplyTranslationDraftDto,
+  CreateSavedSupportViewDto,
   CreateScenarioAuthoringDto,
   CreateScenarioAuthoringResponseDto,
   CreateSlackNotificationDestinationDto,
+  CreateSupportContentLegalHoldDto,
+  CreateSupportInternalNoteDto,
+  CreateSupportKnowledgeTextDocumentDto,
+  CreateSupportMacroDto,
+  CreateSupportMacroReplyDraftDto,
+  CreateSupportQueueDto,
+  CreateSupportRoutingPolicyDto,
+  CreateSupportSkillDto,
+  CreateSupportTeamDto,
   CreateTelegramBindingChallengeDto,
   CreateTelegramBroadcastDto,
   CreateTranslationJobDto,
@@ -181,8 +200,12 @@ import type {
   DisableTelegramChannelDto,
   EditIntegrationEventRouteDraftDto,
   EditReplyTranslationDraftDto,
+  EditSupportMacroReplyDraftDto,
   EmailCaseEscalationPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
+  EmptySupportAvailabilityHeartbeatDto,
+  EmptySupportSlaConfigurationCommandDto,
+  EmptySupportWorkforceCommandDto,
   EndUserAiUsageReportParams,
   EndUserAiUsageReportResponseDto,
   EndUserCaseAssigneesResponseDto,
@@ -296,6 +319,7 @@ import type {
   IntegrationRecoveryOperationListResponseDto,
   IntegrationRecoveryOperationsListParams,
   InteractionSessionResponseDto,
+  IssueSupportRoutingAdmissionReceiptDto,
   KnowledgeDocumentDetailResponseDto,
   KnowledgeDocumentListResponseDto,
   KnowledgeDocumentMutationResponseDto,
@@ -307,6 +331,7 @@ import type {
   ManualAllowanceGrantDto,
   MergeEndUserCasesDto,
   MergeEndUserCasesResponseDto,
+  MigrateSupportSlaCasePolicyDto,
   MutateEndUserAttributesDto,
   NotificationDestinationListResponseDto,
   NotificationDestinationResponseDto,
@@ -388,18 +413,30 @@ import type {
   ReassignProjectRoleDto,
   ReceiveCustomerIoIntegrationEventsBody,
   ReconcileAiSpendReservationDto,
+  ReleaseSupportCaseAssignmentDto,
   RemoveProjectMembershipDto,
   RenameConversationDto,
+  RenameSupportIdentityDto,
   ReplaceCmsUserPlatformRolesDto,
+  ReplaceSavedSupportViewDraftDto,
+  ReplaceSupportMacroDraftDto,
+  ReplaceSupportQueueDraftDto,
+  ReplaceSupportRoutingPolicyDraftDto,
+  ReplaceSupportSlaConfigurationDraftDto,
+  ReplaceSupportWorkforceDraftDto,
   ReplayIntegrationDispatchDto,
   ReplayIntegrationIngressDto,
   ReplyTranslationDraftResponseDto,
   RequestEndUserCaseEscalationDto,
+  RequestSupportRoutingShadowRunDto,
   ResolveAiSpendAttemptDto,
+  ResolveSupportOperationalAlertDto,
   RestoreEventDefinitionDto,
   ResumeConversationAIDto,
   RevokeCmsUserSessionDto,
+  RevokeSupportRoutingAdmissionReceiptDto,
   RollbackScenarioDto,
+  RollbackSupportKnowledgeAdmissionDto,
   RotateAmplitudeCredentialDto,
   RotateAmplitudeInboundCredentialDto,
   RotateCustomerIoCredentialDto,
@@ -410,6 +447,7 @@ import type {
   SaveEventQueryPolicyDraftDto,
   SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
+  SavedSupportViewQueryDto,
   ScenarioAdmissionDecisionPageResponseDto,
   ScenarioAdmissionDecisionResponseDto,
   ScenarioAdmissionDecisionsPageParams,
@@ -432,6 +470,7 @@ import type {
   SendAdminMessageDto,
   SendAdminMessageResponseDto,
   SendChatMessageDto,
+  SetSupportOperatorAvailabilityDto,
   SetTelegramBroadcastsEnabledDto,
   SplitEndUserCaseDto,
   SplitEndUserCaseResponseDto,
@@ -439,8 +478,94 @@ import type {
   StartAdminVoiceConversationDto,
   StartCaseVerificationDto,
   StartConversationAISuspensionDto,
+  StartSupportKnowledgeFileUploadDto,
   StartVoiceSessionDto,
   SubmitCmsAgentRequestDto,
+  SupportActivityResponseDto,
+  SupportCaseAssignmentMutationResponseDto,
+  SupportContentGovernanceListHoldsParams,
+  SupportContentGovernancePreviewRetentionParams,
+  SupportContentLegalHoldPageResponseDto,
+  SupportContentLegalHoldResponseDto,
+  SupportContentPanelReadParams,
+  SupportContentPanelResponseDto,
+  SupportContentRetentionPolicyResponseDto,
+  SupportContentRetentionPreviewDto,
+  SupportContentRolloutResponseDto,
+  SupportInternalKnowledgeCreateFileDownloadParams,
+  SupportInternalKnowledgeManagePageParams,
+  SupportInternalKnowledgeOpenParams,
+  SupportInternalKnowledgeSearchParams,
+  SupportInternalNoteListParams,
+  SupportInternalNotePageResponseDto,
+  SupportInternalNoteResponseDto,
+  SupportInternalNoteRevisionPageResponseDto,
+  SupportInternalNoteRevisionsParams,
+  SupportKnowledgeAdmissionRollbackResponseDto,
+  SupportKnowledgeCommandReceiptResponseDto,
+  SupportKnowledgeFileDownloadResponseDto,
+  SupportKnowledgeFileUploadStartResponseDto,
+  SupportKnowledgeManagedDocumentDetailResponseDto,
+  SupportKnowledgeManagedDocumentsPageResponseDto,
+  SupportKnowledgeSearchPageResponseDto,
+  SupportKnowledgeTextDocumentResponseDto,
+  SupportLeadActivityParams,
+  SupportLeadCapacityRisksParams,
+  SupportLeadCapacityRisksResponseDto,
+  SupportLeadCaseRisksParams,
+  SupportLeadCaseRisksResponseDto,
+  SupportLeadInvestigationParams,
+  SupportLeadInvestigationResponseDto,
+  SupportLeadSummaryResponseDto,
+  SupportMacroCatalogParams,
+  SupportMacroCatalogResponseDto,
+  SupportMacroReplyDraftResponseDto,
+  SupportMacroResponseDto,
+  SupportOperationalAlertCommandReceiptDto,
+  SupportOperationalAlertDetailParams,
+  SupportOperationalAlertDetailResponseDto,
+  SupportOperationalAlertListParams,
+  SupportOperationalAlertListResponseDto,
+  SupportOperatorAvailabilityResponseDto,
+  SupportQueueCasesPageResponseDto,
+  SupportQueueCasesParams,
+  SupportQueueCatalogResponseDto,
+  SupportQueueDetailResponseDto,
+  SupportQueueDraftPreviewResponseDto,
+  SupportQueueListParams,
+  SupportQueueMutationResponseDto,
+  SupportQueuePreviewDto,
+  SupportRoutingAdmissionReceiptCatalogResponseDto,
+  SupportRoutingAdmissionReceiptResponseDto,
+  SupportRoutingDecisionCatalogResponseDto,
+  SupportRoutingDecisionDetailResponseDto,
+  SupportRoutingListParams,
+  SupportRoutingOfferActionDto,
+  SupportRoutingOfferActionReceiptDto,
+  SupportRoutingOfferListParams,
+  SupportRoutingOwnOfferCatalogDto,
+  SupportRoutingPolicyCatalogResponseDto,
+  SupportRoutingPolicyMutationResponseDto,
+  SupportRoutingPolicyResponseDto,
+  SupportRoutingQueueSlotResponseDto,
+  SupportRoutingRolloutResponseDto,
+  SupportRoutingRuntimeAdmissionListParams,
+  SupportRoutingRuntimeDecisionListParams,
+  SupportRoutingShadowControlResponseDto,
+  SupportRoutingShadowRunResponseDto,
+  SupportSearchQueryDto,
+  SupportSlaConfigurationDiscardDraft200,
+  SupportSlaConfigurationPublish200,
+  SupportSlaConfigurationReplaceDraft200,
+  SupportSlaConfigurationSettingsResponseDto,
+  SupportSlaCorrectClockMutationResponseDto,
+  SupportSlaMigratePolicyMutationResponseDto,
+  SupportWorkforceListSkillsParams,
+  SupportWorkforceListTeamsParams,
+  SupportWorkforceMutationResponseDto,
+  SupportWorkforceSettingsResponseDto,
+  SupportWorkspaceRead200,
+  SupportWorkspaceReadParams,
   SyncAttributeSnapshotDto,
   TelegramAdminLinkSummaryResponseDto,
   TelegramBindingChallengeResponseDto,
@@ -467,7 +592,10 @@ import type {
   TestNotificationDestinationDto,
   TestTelegramBroadcastDto,
   TestTelegramChannelDto,
+  TombstoneSupportInternalNoteDto,
   TransferEndUserCaseEscalationDto,
+  TransferSupportCaseAssignmentDto,
+  TransitionSupportRoutingQueueActivationDto,
   TranslationJobAcceptedResponseDto,
   TranslationJobResponseDto,
   TranslationUsageReportParams,
@@ -495,6 +623,11 @@ import type {
   UpdateScenarioAdmissionSettingsDto,
   UpdateScenarioAuthoringMetadataDto,
   UpdateSlackNotificationDestinationDto,
+  UpdateSupportContentRetentionDraftDto,
+  UpdateSupportContentRolloutDto,
+  UpdateSupportRoutingProjectRolloutDto,
+  UpdateSupportRoutingQueueSlotDto,
+  UpdateSupportRoutingShadowControlDto,
   UpdateTelegramBroadcastDto,
   UpdateUiElementDto,
   UpdateUserMemorySettingsDto,
@@ -1798,6 +1931,94 @@ export const projectAuditEventsList = (
       url: `/api/v1/admin/projects/${projectId}/audit-events`,
       method: "GET",
       params,
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteList = (
+  projectId: string,
+  caseId: string,
+  params?: SupportInternalNoteListParams,
+  options?: SecondParameter<typeof request<SupportInternalNotePageResponseDto>>,
+) => {
+  return request<SupportInternalNotePageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteCreate = (
+  projectId: string,
+  caseId: string,
+  createSupportInternalNoteDto: BodyType<CreateSupportInternalNoteDto>,
+  options?: SecondParameter<typeof request<SupportInternalNoteResponseDto>>,
+) => {
+  return request<SupportInternalNoteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportInternalNoteDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteCorrection = (
+  projectId: string,
+  caseId: string,
+  noteId: string,
+  correctSupportInternalNoteDto: BodyType<CorrectSupportInternalNoteDto>,
+  options?: SecondParameter<typeof request<SupportInternalNoteResponseDto>>,
+) => {
+  return request<SupportInternalNoteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/corrections`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: correctSupportInternalNoteDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteRevisions = (
+  projectId: string,
+  caseId: string,
+  noteId: string,
+  params?: SupportInternalNoteRevisionsParams,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteRevisionPageResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteRevisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteTombstone = (
+  projectId: string,
+  caseId: string,
+  noteId: string,
+  tombstoneSupportInternalNoteDto: BodyType<TombstoneSupportInternalNoteDto>,
+  options?: SecondParameter<typeof request<SupportInternalNoteResponseDto>>,
+) => {
+  return request<SupportInternalNoteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/tombstone`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: tombstoneSupportInternalNoteDto,
     },
     options,
   );
@@ -5069,6 +5290,355 @@ export const platformOperationsUpdateProjectSettings = (
   );
 };
 
+/**
+ * @summary Read protected bounded Support Activity facts for one subject
+ */
+export const supportLeadActivity = (
+  projectId: string,
+  params?: SupportLeadActivityParams,
+  options?: SecondParameter<typeof request<SupportActivityResponseDto>>,
+) => {
+  return request<SupportActivityResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/activity`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Read one bounded keyset page of Support Operational Alerts
+ */
+export const supportOperationalAlertList = (
+  projectId: string,
+  params?: SupportOperationalAlertListParams,
+  options?: SecondParameter<
+    typeof request<SupportOperationalAlertListResponseDto>
+  >,
+) => {
+  return request<SupportOperationalAlertListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/alerts`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Read one Operational Alert and a bounded immutable timeline
+ */
+export const supportOperationalAlertDetail = (
+  projectId: string,
+  alertId: string,
+  params?: SupportOperationalAlertDetailParams,
+  options?: SecondParameter<
+    typeof request<SupportOperationalAlertDetailResponseDto>
+  >,
+) => {
+  return request<SupportOperationalAlertDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/alerts/${alertId}`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportOperationalAlertCommandAcknowledge = (
+  projectId: string,
+  alertId: string,
+  acknowledgeSupportOperationalAlertDto: BodyType<AcknowledgeSupportOperationalAlertDto>,
+  options?: SecondParameter<
+    typeof request<SupportOperationalAlertCommandReceiptDto>
+  >,
+) => {
+  return request<SupportOperationalAlertCommandReceiptDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/alerts/${alertId}/acknowledge`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: acknowledgeSupportOperationalAlertDto,
+    },
+    options,
+  );
+};
+
+export const supportOperationalAlertCommandChangeOwner = (
+  projectId: string,
+  alertId: string,
+  changeSupportOperationalAlertOwnerDto: BodyType<ChangeSupportOperationalAlertOwnerDto>,
+  options?: SecondParameter<
+    typeof request<SupportOperationalAlertCommandReceiptDto>
+  >,
+) => {
+  return request<SupportOperationalAlertCommandReceiptDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/alerts/${alertId}/owner`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: changeSupportOperationalAlertOwnerDto,
+    },
+    options,
+  );
+};
+
+export const supportOperationalAlertCommandResolve = (
+  projectId: string,
+  alertId: string,
+  resolveSupportOperationalAlertDto: BodyType<ResolveSupportOperationalAlertDto>,
+  options?: SecondParameter<
+    typeof request<SupportOperationalAlertCommandReceiptDto>
+  >,
+) => {
+  return request<SupportOperationalAlertCommandReceiptDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/alerts/${alertId}/resolve`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: resolveSupportOperationalAlertDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseAssignmentAssign = (
+  projectId: string,
+  caseId: string,
+  assignSupportCaseAssignmentDto: BodyType<AssignSupportCaseAssignmentDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentMutationResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/assignment/assign`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: assignSupportCaseAssignmentDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseAssignmentClaim = (
+  projectId: string,
+  caseId: string,
+  claimSupportCaseAssignmentDto: BodyType<ClaimSupportCaseAssignmentDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentMutationResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/assignment/claim`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: claimSupportCaseAssignmentDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseAssignmentRelease = (
+  projectId: string,
+  caseId: string,
+  releaseSupportCaseAssignmentDto: BodyType<ReleaseSupportCaseAssignmentDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentMutationResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/assignment/release`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: releaseSupportCaseAssignmentDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseAssignmentTransfer = (
+  projectId: string,
+  caseId: string,
+  transferSupportCaseAssignmentDto: BodyType<TransferSupportCaseAssignmentDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentMutationResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/assignment/transfer`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: transferSupportCaseAssignmentDto,
+    },
+    options,
+  );
+};
+
+export const supportContentPanelRead = (
+  projectId: string,
+  caseId: string,
+  params?: SupportContentPanelReadParams,
+  options?: SecondParameter<typeof request<SupportContentPanelResponseDto>>,
+) => {
+  return request<SupportContentPanelResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/content`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportContentGovernanceListHolds = (
+  projectId: string,
+  params?: SupportContentGovernanceListHoldsParams,
+  options?: SecondParameter<
+    typeof request<SupportContentLegalHoldPageResponseDto>
+  >,
+) => {
+  return request<SupportContentLegalHoldPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-legal-holds`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportContentGovernanceCreateHold = (
+  projectId: string,
+  createSupportContentLegalHoldDto: BodyType<CreateSupportContentLegalHoldDto>,
+  options?: SecondParameter<typeof request<SupportContentLegalHoldResponseDto>>,
+) => {
+  return request<SupportContentLegalHoldResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-legal-holds`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportContentLegalHoldDto,
+    },
+    options,
+  );
+};
+
+export const supportContentGovernanceReleaseHold = (
+  projectId: string,
+  holdId: string,
+  options?: SecondParameter<typeof request<SupportContentLegalHoldResponseDto>>,
+) => {
+  return request<SupportContentLegalHoldResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-legal-holds/${holdId}/release`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportContentGovernanceRetention = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportContentRetentionPolicyResponseDto>
+  >,
+) => {
+  return request<SupportContentRetentionPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-retention/internal-notes`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportContentGovernanceReplaceRetentionDraft = (
+  projectId: string,
+  updateSupportContentRetentionDraftDto: BodyType<UpdateSupportContentRetentionDraftDto>,
+  options?: SecondParameter<
+    typeof request<SupportContentRetentionPolicyResponseDto>
+  >,
+) => {
+  return request<SupportContentRetentionPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-retention/internal-notes`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: updateSupportContentRetentionDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportContentGovernancePublishRetention = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportContentRetentionPolicyResponseDto>
+  >,
+) => {
+  return request<SupportContentRetentionPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-retention/internal-notes/publish`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportContentGovernancePreviewRetention = (
+  projectId: string,
+  params?: SupportContentGovernancePreviewRetentionParams,
+  options?: SecondParameter<
+    typeof request<SupportContentRetentionPreviewDto[]>
+  >,
+) => {
+  return request<SupportContentRetentionPreviewDto[]>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-retention/internal-notes/purge-preview`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportContentGovernanceRollout = (
+  projectId: string,
+  options?: SecondParameter<typeof request<SupportContentRolloutResponseDto>>,
+) => {
+  return request<SupportContentRolloutResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-rollout`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportContentGovernanceUpdateRollout = (
+  projectId: string,
+  updateSupportContentRolloutDto: BodyType<UpdateSupportContentRolloutDto>,
+  options?: SecondParameter<typeof request<SupportContentRolloutResponseDto>>,
+) => {
+  return request<SupportContentRolloutResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/content-rollout`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: updateSupportContentRolloutDto,
+    },
+    options,
+  );
+};
+
 export const adminProjectConversationsList = (
   projectId: string,
   params?: AdminProjectConversationsListParams,
@@ -5079,6 +5649,1508 @@ export const adminProjectConversationsList = (
   return request<AdminProjectConversationsPageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/conversations`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeRollbackAdmission = (
+  projectId: string,
+  rollbackSupportKnowledgeAdmissionDto: BodyType<RollbackSupportKnowledgeAdmissionDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeAdmissionRollbackResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeAdmissionRollbackResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/admission/rollback`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rollbackSupportKnowledgeAdmissionDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeOpen = (
+  projectId: string,
+  documentId: string,
+  params: SupportInternalKnowledgeOpenParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeTextDocumentResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeTextDocumentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeArchive = (
+  projectId: string,
+  documentId: string,
+  archiveSupportKnowledgeDocumentDto: BodyType<ArchiveSupportKnowledgeDocumentDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archiveSupportKnowledgeDocumentDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeCreateFileDownload = (
+  projectId: string,
+  documentId: string,
+  params: SupportInternalKnowledgeCreateFileDownloadParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeFileDownloadResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeFileDownloadResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/download`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgePublish = (
+  projectId: string,
+  documentId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/revisions/${revisionId}/publish`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeSubmitForScan = (
+  projectId: string,
+  documentId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/revisions/${revisionId}/scan`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeUpdateTextDraft = (
+  projectId: string,
+  documentId: string,
+  revisionId: string,
+  createSupportKnowledgeTextDocumentDto: BodyType<CreateSupportKnowledgeTextDocumentDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/revisions/${revisionId}/text-draft`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportKnowledgeTextDocumentDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeCreateTextRevision = (
+  projectId: string,
+  documentId: string,
+  createSupportKnowledgeTextDocumentDto: BodyType<CreateSupportKnowledgeTextDocumentDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/text-drafts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportKnowledgeTextDocumentDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeCreateTextDraft = (
+  projectId: string,
+  createSupportKnowledgeTextDocumentDto: BodyType<CreateSupportKnowledgeTextDocumentDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/text-drafts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportKnowledgeTextDocumentDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeStartFileUpload = (
+  projectId: string,
+  startSupportKnowledgeFileUploadDto: BodyType<StartSupportKnowledgeFileUploadDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeFileUploadStartResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeFileUploadStartResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/file-uploads`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: startSupportKnowledgeFileUploadDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeCompleteFileUpload = (
+  projectId: string,
+  sessionId: string,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/file-uploads/${sessionId}/complete`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeManagePage = (
+  projectId: string,
+  params?: SupportInternalKnowledgeManagePageParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeManagedDocumentsPageResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeManagedDocumentsPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/documents`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeManageDetail = (
+  projectId: string,
+  documentId: string,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeManagedDocumentDetailResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeManagedDocumentDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/documents/${documentId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeSearch = (
+  projectId: string,
+  params: SupportInternalKnowledgeSearchParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeSearchPageResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeSearchPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/search`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Read bounded causal evidence for one Case
+ */
+export const supportLeadInvestigation = (
+  projectId: string,
+  caseId: string,
+  params?: SupportLeadInvestigationParams,
+  options?: SecondParameter<
+    typeof request<SupportLeadInvestigationResponseDto>
+  >,
+) => {
+  return request<SupportLeadInvestigationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/lead/cases/${caseId}/investigation`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Read bounded capacity risk capability state
+ */
+export const supportLeadCapacityRisks = (
+  projectId: string,
+  params?: SupportLeadCapacityRisksParams,
+  options?: SecondParameter<
+    typeof request<SupportLeadCapacityRisksResponseDto>
+  >,
+) => {
+  return request<SupportLeadCapacityRisksResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/lead/risks/capacity`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Read a bounded keyset page of Case risks
+ */
+export const supportLeadCaseRisks = (
+  projectId: string,
+  params: SupportLeadCaseRisksParams,
+  options?: SecondParameter<typeof request<SupportLeadCaseRisksResponseDto>>,
+) => {
+  return request<SupportLeadCaseRisksResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/lead/risks/cases`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Read one bounded Team Lead operational summary
+ */
+export const supportLeadSummary = (
+  projectId: string,
+  options?: SecondParameter<typeof request<SupportLeadSummaryResponseDto>>,
+) => {
+  return request<SupportLeadSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/lead/summary`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportMacroCatalog = (
+  projectId: string,
+  params?: SupportMacroCatalogParams,
+  options?: SecondParameter<typeof request<SupportMacroCatalogResponseDto>>,
+) => {
+  return request<SupportMacroCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportMacroCreate = (
+  projectId: string,
+  createSupportMacroDto: BodyType<CreateSupportMacroDto>,
+  options?: SecondParameter<typeof request<SupportMacroResponseDto>>,
+) => {
+  return request<SupportMacroResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportMacroDto,
+    },
+    options,
+  );
+};
+
+export const supportMacroRead = (
+  projectId: string,
+  macroId: string,
+  options?: SecondParameter<typeof request<SupportMacroResponseDto>>,
+) => {
+  return request<SupportMacroResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/${macroId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportMacroArchive = (
+  projectId: string,
+  macroId: string,
+  options?: SecondParameter<typeof request<SupportMacroResponseDto>>,
+) => {
+  return request<SupportMacroResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/${macroId}/archive`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportMacroReplaceDraft = (
+  projectId: string,
+  macroId: string,
+  replaceSupportMacroDraftDto: BodyType<ReplaceSupportMacroDraftDto>,
+  options?: SecondParameter<typeof request<SupportMacroResponseDto>>,
+) => {
+  return request<SupportMacroResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/${macroId}/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: replaceSupportMacroDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportMacroPublish = (
+  projectId: string,
+  macroId: string,
+  options?: SecondParameter<typeof request<SupportMacroResponseDto>>,
+) => {
+  return request<SupportMacroResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/${macroId}/publish`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportRoutingOfferList = (
+  projectId: string,
+  params?: SupportRoutingOfferListParams,
+  options?: SecondParameter<typeof request<SupportRoutingOwnOfferCatalogDto>>,
+) => {
+  return request<SupportRoutingOwnOfferCatalogDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/offers`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportRoutingOfferAccept = (
+  projectId: string,
+  assignmentId: string,
+  supportRoutingOfferActionDto: BodyType<SupportRoutingOfferActionDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingOfferActionReceiptDto>
+  >,
+) => {
+  return request<SupportRoutingOfferActionReceiptDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/offers/${assignmentId}/accept`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportRoutingOfferActionDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingOfferDecline = (
+  projectId: string,
+  assignmentId: string,
+  supportRoutingOfferActionDto: BodyType<SupportRoutingOfferActionDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingOfferActionReceiptDto>
+  >,
+) => {
+  return request<SupportRoutingOfferActionReceiptDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/offers/${assignmentId}/decline`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportRoutingOfferActionDto,
+    },
+    options,
+  );
+};
+
+export const supportOperatorAvailabilityRead = (
+  projectId: string,
+  operatorId: string,
+  options?: SecondParameter<
+    typeof request<SupportOperatorAvailabilityResponseDto>
+  >,
+) => {
+  return request<SupportOperatorAvailabilityResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/operators/${operatorId}/availability`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportOperatorAvailabilityOverrideOperator = (
+  projectId: string,
+  operatorId: string,
+  setSupportOperatorAvailabilityDto: BodyType<SetSupportOperatorAvailabilityDto>,
+  options?: SecondParameter<
+    typeof request<SupportOperatorAvailabilityResponseDto>
+  >,
+) => {
+  return request<SupportOperatorAvailabilityResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/operators/${operatorId}/availability`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: setSupportOperatorAvailabilityDto,
+    },
+    options,
+  );
+};
+
+export const supportOperatorAvailabilitySetOwn = (
+  projectId: string,
+  setSupportOperatorAvailabilityDto: BodyType<SetSupportOperatorAvailabilityDto>,
+  options?: SecondParameter<
+    typeof request<SupportOperatorAvailabilityResponseDto>
+  >,
+) => {
+  return request<SupportOperatorAvailabilityResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/operators/me/availability`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: setSupportOperatorAvailabilityDto,
+    },
+    options,
+  );
+};
+
+export const supportOperatorAvailabilityHeartbeatOwn = (
+  projectId: string,
+  emptySupportAvailabilityHeartbeatDto?: BodyType<EmptySupportAvailabilityHeartbeatDto>,
+  options?: SecondParameter<
+    typeof request<SupportOperatorAvailabilityResponseDto>
+  >,
+) => {
+  return request<SupportOperatorAvailabilityResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/operators/me/availability/heartbeat`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportAvailabilityHeartbeatDto,
+    },
+    options,
+  );
+};
+
+export const supportQueueList = (
+  projectId: string,
+  params?: SupportQueueListParams,
+  options?: SecondParameter<typeof request<SupportQueueCatalogResponseDto>>,
+) => {
+  return request<SupportQueueCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportQueueCreate = (
+  projectId: string,
+  createSupportQueueDto: BodyType<CreateSupportQueueDto>,
+  options?: SecondParameter<typeof request<SupportQueueMutationResponseDto>>,
+) => {
+  return request<SupportQueueMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportQueueDto,
+    },
+    options,
+  );
+};
+
+export const supportQueueDetail = (
+  projectId: string,
+  queueId: string,
+  options?: SecondParameter<typeof request<SupportQueueDetailResponseDto>>,
+) => {
+  return request<SupportQueueDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportQueueArchive = (
+  projectId: string,
+  queueId: string,
+  archiveSupportQueueDto: BodyType<ArchiveSupportQueueDto>,
+  options?: SecondParameter<typeof request<SupportQueueMutationResponseDto>>,
+) => {
+  return request<SupportQueueMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archiveSupportQueueDto,
+    },
+    options,
+  );
+};
+
+export const supportQueueCases = (
+  projectId: string,
+  queueId: string,
+  params?: SupportQueueCasesParams,
+  options?: SecondParameter<typeof request<SupportQueueCasesPageResponseDto>>,
+) => {
+  return request<SupportQueueCasesPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/cases`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportQueueReplaceDraft = (
+  projectId: string,
+  queueId: string,
+  replaceSupportQueueDraftDto: BodyType<ReplaceSupportQueueDraftDto>,
+  options?: SecondParameter<typeof request<SupportQueueMutationResponseDto>>,
+) => {
+  return request<SupportQueueMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: replaceSupportQueueDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportQueuePreviewDraft = (
+  projectId: string,
+  queueId: string,
+  supportQueuePreviewDto: BodyType<SupportQueuePreviewDto>,
+  options?: SecondParameter<
+    typeof request<SupportQueueDraftPreviewResponseDto>
+  >,
+) => {
+  return request<SupportQueueDraftPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/draft/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportQueuePreviewDto,
+    },
+    options,
+  );
+};
+
+export const supportQueuePublish = (
+  projectId: string,
+  queueId: string,
+  options?: SecondParameter<typeof request<SupportQueueMutationResponseDto>>,
+) => {
+  return request<SupportQueueMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/publish`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeActivation = (
+  projectId: string,
+  options?: SecondParameter<typeof request<SupportRoutingRolloutResponseDto>>,
+) => {
+  return request<SupportRoutingRolloutResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/activation`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeTransitionProjectActivation = (
+  projectId: string,
+  updateSupportRoutingProjectRolloutDto: BodyType<UpdateSupportRoutingProjectRolloutDto>,
+  options?: SecondParameter<typeof request<SupportRoutingRolloutResponseDto>>,
+) => {
+  return request<SupportRoutingRolloutResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/activation/project/transition`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: updateSupportRoutingProjectRolloutDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeTransitionQueueActivation = (
+  projectId: string,
+  queueId: string,
+  transitionSupportRoutingQueueActivationDto: BodyType<TransitionSupportRoutingQueueActivationDto>,
+  options?: SecondParameter<typeof request<SupportRoutingRolloutResponseDto>>,
+) => {
+  return request<SupportRoutingRolloutResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/activation/queues/${queueId}/transition`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: transitionSupportRoutingQueueActivationDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeAdmissionList = (
+  projectId: string,
+  params?: SupportRoutingRuntimeAdmissionListParams,
+  options?: SecondParameter<
+    typeof request<SupportRoutingAdmissionReceiptCatalogResponseDto>
+  >,
+) => {
+  return request<SupportRoutingAdmissionReceiptCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/admission-receipts`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeIssueAdmission = (
+  projectId: string,
+  issueSupportRoutingAdmissionReceiptDto: BodyType<IssueSupportRoutingAdmissionReceiptDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingAdmissionReceiptResponseDto>
+  >,
+) => {
+  return request<SupportRoutingAdmissionReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/admission-receipts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: issueSupportRoutingAdmissionReceiptDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeAdmissionDetail = (
+  projectId: string,
+  receiptId: string,
+  options?: SecondParameter<
+    typeof request<SupportRoutingAdmissionReceiptResponseDto>
+  >,
+) => {
+  return request<SupportRoutingAdmissionReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/admission-receipts/${receiptId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeRevokeAdmission = (
+  projectId: string,
+  receiptId: string,
+  revokeSupportRoutingAdmissionReceiptDto: BodyType<RevokeSupportRoutingAdmissionReceiptDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingAdmissionReceiptResponseDto>
+  >,
+) => {
+  return request<SupportRoutingAdmissionReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/admission-receipts/${receiptId}/revoke`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: revokeSupportRoutingAdmissionReceiptDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeDecisionList = (
+  projectId: string,
+  params?: SupportRoutingRuntimeDecisionListParams,
+  options?: SecondParameter<
+    typeof request<SupportRoutingDecisionCatalogResponseDto>
+  >,
+) => {
+  return request<SupportRoutingDecisionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/decisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeDecisionDetail = (
+  projectId: string,
+  decisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportRoutingDecisionDetailResponseDto>
+  >,
+) => {
+  return request<SupportRoutingDecisionDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/decisions/${decisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportRoutingList = (
+  projectId: string,
+  params?: SupportRoutingListParams,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyCatalogResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportRoutingCreate = (
+  projectId: string,
+  createSupportRoutingPolicyDto: BodyType<CreateSupportRoutingPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyMutationResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportRoutingPolicyDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingDetail = (
+  projectId: string,
+  policyId: string,
+  options?: SecondParameter<typeof request<SupportRoutingPolicyResponseDto>>,
+) => {
+  return request<SupportRoutingPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies/${policyId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportRoutingArchive = (
+  projectId: string,
+  policyId: string,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyMutationResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies/${policyId}/archive`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportRoutingReplaceDraft = (
+  projectId: string,
+  policyId: string,
+  replaceSupportRoutingPolicyDraftDto: BodyType<ReplaceSupportRoutingPolicyDraftDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyMutationResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies/${policyId}/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: replaceSupportRoutingPolicyDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingPublish = (
+  projectId: string,
+  policyId: string,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyMutationResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies/${policyId}/publish`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeQueueSlot = (
+  projectId: string,
+  queueId: string,
+  updateSupportRoutingQueueSlotDto: BodyType<UpdateSupportRoutingQueueSlotDto>,
+  options?: SecondParameter<typeof request<SupportRoutingQueueSlotResponseDto>>,
+) => {
+  return request<SupportRoutingQueueSlotResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/queue-slots/${queueId}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: updateSupportRoutingQueueSlotDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeControl = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportRoutingShadowControlResponseDto>
+  >,
+) => {
+  return request<SupportRoutingShadowControlResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/shadow-controls`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeSetControl = (
+  projectId: string,
+  updateSupportRoutingShadowControlDto: BodyType<UpdateSupportRoutingShadowControlDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingShadowControlResponseDto>
+  >,
+) => {
+  return request<SupportRoutingShadowControlResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/shadow-controls`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: updateSupportRoutingShadowControlDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeRequest = (
+  projectId: string,
+  requestSupportRoutingShadowRunDto: BodyType<RequestSupportRoutingShadowRunDto>,
+  options?: SecondParameter<typeof request<SupportRoutingShadowRunResponseDto>>,
+) => {
+  return request<SupportRoutingShadowRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/shadow-runs`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: requestSupportRoutingShadowRunDto,
+    },
+    options,
+  );
+};
+
+export const savedSupportViewCatalog = (
+  projectId: string,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/saved-views`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const savedSupportViewCreate = (
+  projectId: string,
+  createSavedSupportViewDto: BodyType<CreateSavedSupportViewDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/saved-views`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSavedSupportViewDto,
+    },
+    options,
+  );
+};
+
+export const savedSupportViewArchive = (
+  projectId: string,
+  viewId: string,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/saved-views/${viewId}/archive`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const savedSupportViewReplace = (
+  projectId: string,
+  viewId: string,
+  replaceSavedSupportViewDraftDto: BodyType<ReplaceSavedSupportViewDraftDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/saved-views/${viewId}/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: replaceSavedSupportViewDraftDto,
+    },
+    options,
+  );
+};
+
+export const savedSupportViewPublish = (
+  projectId: string,
+  viewId: string,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/saved-views/${viewId}/publish`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const savedSupportViewQuery = (
+  projectId: string,
+  viewId: string,
+  savedSupportViewQueryDto: BodyType<SavedSupportViewQueryDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/saved-views/${viewId}/query`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: savedSupportViewQueryDto,
+    },
+    options,
+  );
+};
+
+export const supportSearchCases = (
+  projectId: string,
+  supportSearchQueryDto: BodyType<SupportSearchQueryDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/search/cases/query`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportSearchQueryDto,
+    },
+    options,
+  );
+};
+
+export const supportSearchConversations = (
+  projectId: string,
+  supportSearchQueryDto: BodyType<SupportSearchQueryDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/search/conversations/query`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportSearchQueryDto,
+    },
+    options,
+  );
+};
+
+export const supportSearchMessages = (
+  projectId: string,
+  supportSearchQueryDto: BodyType<SupportSearchQueryDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/search/messages/query`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportSearchQueryDto,
+    },
+    options,
+  );
+};
+
+export const supportSearchMaintenanceRequestRebuild = (
+  projectId: string,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/search/rebuild`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportWorkforceListSkills = (
+  projectId: string,
+  params?: SupportWorkforceListSkillsParams,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceSettingsResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/skills`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceCreateSkill = (
+  projectId: string,
+  createSupportSkillDto: BodyType<CreateSupportSkillDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/skills`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportSkillDto,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceRenameSkill = (
+  projectId: string,
+  skillId: string,
+  renameSupportIdentityDto: BodyType<RenameSupportIdentityDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/skills/${skillId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: renameSupportIdentityDto,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceArchiveSkill = (
+  projectId: string,
+  skillId: string,
+  archiveSupportIdentityDto: BodyType<ArchiveSupportIdentityDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/skills/${skillId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archiveSupportIdentityDto,
+    },
+    options,
+  );
+};
+
+export const supportSlaHumanCommandCorrectClock = (
+  projectId: string,
+  caseId: string,
+  correctSupportSlaClockDto: BodyType<CorrectSupportSlaClockDto>,
+  options?: SecondParameter<
+    typeof request<SupportSlaCorrectClockMutationResponseDto>
+  >,
+) => {
+  return request<SupportSlaCorrectClockMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/cases/${caseId}/commands/correct-clock`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: correctSupportSlaClockDto,
+    },
+    options,
+  );
+};
+
+export const supportSlaHumanCommandMigratePolicy = (
+  projectId: string,
+  caseId: string,
+  migrateSupportSlaCasePolicyDto: BodyType<MigrateSupportSlaCasePolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportSlaMigratePolicyMutationResponseDto>
+  >,
+) => {
+  return request<SupportSlaMigratePolicyMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/cases/${caseId}/commands/migrate-policy`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: migrateSupportSlaCasePolicyDto,
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationRead = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportSlaConfigurationSettingsResponseDto>
+  >,
+) => {
+  return request<SupportSlaConfigurationSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationReplaceDraft = (
+  projectId: string,
+  replaceSupportSlaConfigurationDraftDto: BodyType<ReplaceSupportSlaConfigurationDraftDto>,
+  options?: SecondParameter<
+    typeof request<SupportSlaConfigurationReplaceDraft200>
+  >,
+) => {
+  return request<SupportSlaConfigurationReplaceDraft200>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: replaceSupportSlaConfigurationDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationDiscardDraft = (
+  projectId: string,
+  emptySupportSlaConfigurationCommandDto: BodyType<EmptySupportSlaConfigurationCommandDto>,
+  options?: SecondParameter<
+    typeof request<SupportSlaConfigurationDiscardDraft200>
+  >,
+) => {
+  return request<SupportSlaConfigurationDiscardDraft200>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/draft/discard`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportSlaConfigurationCommandDto,
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationPublish = (
+  projectId: string,
+  emptySupportSlaConfigurationCommandDto: BodyType<EmptySupportSlaConfigurationCommandDto>,
+  options?: SecondParameter<typeof request<SupportSlaConfigurationPublish200>>,
+) => {
+  return request<SupportSlaConfigurationPublish200>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportSlaConfigurationCommandDto,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceListTeams = (
+  projectId: string,
+  params?: SupportWorkforceListTeamsParams,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceSettingsResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/teams`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceCreateTeam = (
+  projectId: string,
+  createSupportTeamDto: BodyType<CreateSupportTeamDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/teams`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportTeamDto,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceGetTeam = (
+  projectId: string,
+  teamId: string,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceSettingsResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/teams/${teamId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportWorkforceRenameTeam = (
+  projectId: string,
+  teamId: string,
+  renameSupportIdentityDto: BodyType<RenameSupportIdentityDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/teams/${teamId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: renameSupportIdentityDto,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceArchiveTeam = (
+  projectId: string,
+  teamId: string,
+  archiveSupportIdentityDto: BodyType<ArchiveSupportIdentityDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/teams/${teamId}/archive`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: archiveSupportIdentityDto,
+    },
+    options,
+  );
+};
+
+export const supportViewPresetQuery = (
+  projectId: string,
+  savedSupportViewQueryDto: BodyType<SavedSupportViewQueryDto>,
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/view-presets/my-active/query`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: savedSupportViewQueryDto,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceGetWorkforce = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceSettingsResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceSettingsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workforce`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportWorkforceReplaceDraft = (
+  projectId: string,
+  replaceSupportWorkforceDraftDto: BodyType<ReplaceSupportWorkforceDraftDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workforce/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: replaceSupportWorkforceDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceDiscardDraft = (
+  projectId: string,
+  emptySupportWorkforceCommandDto: BodyType<EmptySupportWorkforceCommandDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workforce/draft/discard`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportWorkforceCommandDto,
+    },
+    options,
+  );
+};
+
+export const supportWorkforcePublish = (
+  projectId: string,
+  emptySupportWorkforceCommandDto: BodyType<EmptySupportWorkforceCommandDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workforce/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportWorkforceCommandDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Read one bounded authoritative Support workspace projection
+ */
+export const supportWorkspaceRead = (
+  projectId: string,
+  params: SupportWorkspaceReadParams,
+  options?: SecondParameter<typeof request<SupportWorkspaceRead200>>,
+) => {
+  return request<SupportWorkspaceRead200>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workspace`,
       method: "GET",
       params,
     },
@@ -5761,6 +7833,59 @@ export const adminConversationsGet = (
     {
       url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportMacroReplyDraftCreate = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  createSupportMacroReplyDraftDto: BodyType<CreateSupportMacroReplyDraftDto>,
+  options?: SecondParameter<typeof request<SupportMacroReplyDraftResponseDto>>,
+) => {
+  return request<SupportMacroReplyDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/macro-reply-drafts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportMacroReplyDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportMacroReplyDraftRead = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  draftId: string,
+  options?: SecondParameter<typeof request<SupportMacroReplyDraftResponseDto>>,
+) => {
+  return request<SupportMacroReplyDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/macro-reply-drafts/${draftId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportMacroReplyDraftEdit = (
+  projectId: string,
+  userId: string,
+  conversationId: string,
+  draftId: string,
+  editSupportMacroReplyDraftDto: BodyType<EditSupportMacroReplyDraftDto>,
+  options?: SecondParameter<typeof request<SupportMacroReplyDraftResponseDto>>,
+) => {
+  return request<SupportMacroReplyDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/conversations/${conversationId}/macro-reply-drafts/${draftId}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: editSupportMacroReplyDraftDto,
     },
     options,
   );
@@ -7450,6 +9575,21 @@ export type AttributeDefinitionImpactResult = NonNullable<
 export type ProjectAuditEventsListResult = NonNullable<
   Awaited<ReturnType<typeof projectAuditEventsList>>
 >;
+export type SupportInternalNoteListResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteList>>
+>;
+export type SupportInternalNoteCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteCreate>>
+>;
+export type SupportInternalNoteCorrectionResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteCorrection>>
+>;
+export type SupportInternalNoteRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteRevisions>>
+>;
+export type SupportInternalNoteTombstoneResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteTombstone>>
+>;
 export type EndUserCasePolicyGetResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasePolicyGet>>
 >;
@@ -8044,8 +10184,336 @@ export type PlatformOperationsProjectSettingsResult = NonNullable<
 export type PlatformOperationsUpdateProjectSettingsResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsUpdateProjectSettings>>
 >;
+export type SupportLeadActivityResult = NonNullable<
+  Awaited<ReturnType<typeof supportLeadActivity>>
+>;
+export type SupportOperationalAlertListResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperationalAlertList>>
+>;
+export type SupportOperationalAlertDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperationalAlertDetail>>
+>;
+export type SupportOperationalAlertCommandAcknowledgeResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperationalAlertCommandAcknowledge>>
+>;
+export type SupportOperationalAlertCommandChangeOwnerResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperationalAlertCommandChangeOwner>>
+>;
+export type SupportOperationalAlertCommandResolveResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperationalAlertCommandResolve>>
+>;
+export type SupportCaseAssignmentAssignResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentAssign>>
+>;
+export type SupportCaseAssignmentClaimResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentClaim>>
+>;
+export type SupportCaseAssignmentReleaseResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentRelease>>
+>;
+export type SupportCaseAssignmentTransferResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentTransfer>>
+>;
+export type SupportContentPanelReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentPanelRead>>
+>;
+export type SupportContentGovernanceListHoldsResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernanceListHolds>>
+>;
+export type SupportContentGovernanceCreateHoldResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernanceCreateHold>>
+>;
+export type SupportContentGovernanceReleaseHoldResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernanceReleaseHold>>
+>;
+export type SupportContentGovernanceRetentionResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernanceRetention>>
+>;
+export type SupportContentGovernanceReplaceRetentionDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernanceReplaceRetentionDraft>>
+>;
+export type SupportContentGovernancePublishRetentionResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernancePublishRetention>>
+>;
+export type SupportContentGovernancePreviewRetentionResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernancePreviewRetention>>
+>;
+export type SupportContentGovernanceRolloutResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernanceRollout>>
+>;
+export type SupportContentGovernanceUpdateRolloutResult = NonNullable<
+  Awaited<ReturnType<typeof supportContentGovernanceUpdateRollout>>
+>;
 export type AdminProjectConversationsListResult = NonNullable<
   Awaited<ReturnType<typeof adminProjectConversationsList>>
+>;
+export type SupportInternalKnowledgeRollbackAdmissionResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeRollbackAdmission>>
+>;
+export type SupportInternalKnowledgeOpenResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeOpen>>
+>;
+export type SupportInternalKnowledgeArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeArchive>>
+>;
+export type SupportInternalKnowledgeCreateFileDownloadResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCreateFileDownload>>
+>;
+export type SupportInternalKnowledgePublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgePublish>>
+>;
+export type SupportInternalKnowledgeSubmitForScanResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeSubmitForScan>>
+>;
+export type SupportInternalKnowledgeUpdateTextDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeUpdateTextDraft>>
+>;
+export type SupportInternalKnowledgeCreateTextRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCreateTextRevision>>
+>;
+export type SupportInternalKnowledgeCreateTextDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCreateTextDraft>>
+>;
+export type SupportInternalKnowledgeStartFileUploadResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeStartFileUpload>>
+>;
+export type SupportInternalKnowledgeCompleteFileUploadResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCompleteFileUpload>>
+>;
+export type SupportInternalKnowledgeManagePageResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeManagePage>>
+>;
+export type SupportInternalKnowledgeManageDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeManageDetail>>
+>;
+export type SupportInternalKnowledgeSearchResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeSearch>>
+>;
+export type SupportLeadInvestigationResult = NonNullable<
+  Awaited<ReturnType<typeof supportLeadInvestigation>>
+>;
+export type SupportLeadCapacityRisksResult = NonNullable<
+  Awaited<ReturnType<typeof supportLeadCapacityRisks>>
+>;
+export type SupportLeadCaseRisksResult = NonNullable<
+  Awaited<ReturnType<typeof supportLeadCaseRisks>>
+>;
+export type SupportLeadSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof supportLeadSummary>>
+>;
+export type SupportMacroCatalogResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroCatalog>>
+>;
+export type SupportMacroCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroCreate>>
+>;
+export type SupportMacroReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroRead>>
+>;
+export type SupportMacroArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroArchive>>
+>;
+export type SupportMacroReplaceDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroReplaceDraft>>
+>;
+export type SupportMacroPublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroPublish>>
+>;
+export type SupportRoutingOfferListResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingOfferList>>
+>;
+export type SupportRoutingOfferAcceptResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingOfferAccept>>
+>;
+export type SupportRoutingOfferDeclineResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingOfferDecline>>
+>;
+export type SupportOperatorAvailabilityReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperatorAvailabilityRead>>
+>;
+export type SupportOperatorAvailabilityOverrideOperatorResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperatorAvailabilityOverrideOperator>>
+>;
+export type SupportOperatorAvailabilitySetOwnResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperatorAvailabilitySetOwn>>
+>;
+export type SupportOperatorAvailabilityHeartbeatOwnResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperatorAvailabilityHeartbeatOwn>>
+>;
+export type SupportQueueListResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueList>>
+>;
+export type SupportQueueCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueCreate>>
+>;
+export type SupportQueueDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueDetail>>
+>;
+export type SupportQueueArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueArchive>>
+>;
+export type SupportQueueCasesResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueCases>>
+>;
+export type SupportQueueReplaceDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueReplaceDraft>>
+>;
+export type SupportQueuePreviewDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueuePreviewDraft>>
+>;
+export type SupportQueuePublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueuePublish>>
+>;
+export type SupportRoutingRuntimeActivationResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeActivation>>
+>;
+export type SupportRoutingRuntimeTransitionProjectActivationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof supportRoutingRuntimeTransitionProjectActivation>>
+  >;
+export type SupportRoutingRuntimeTransitionQueueActivationResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeTransitionQueueActivation>>
+>;
+export type SupportRoutingRuntimeAdmissionListResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeAdmissionList>>
+>;
+export type SupportRoutingRuntimeIssueAdmissionResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeIssueAdmission>>
+>;
+export type SupportRoutingRuntimeAdmissionDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeAdmissionDetail>>
+>;
+export type SupportRoutingRuntimeRevokeAdmissionResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeRevokeAdmission>>
+>;
+export type SupportRoutingRuntimeDecisionListResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeDecisionList>>
+>;
+export type SupportRoutingRuntimeDecisionDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeDecisionDetail>>
+>;
+export type SupportRoutingListResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingList>>
+>;
+export type SupportRoutingCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingCreate>>
+>;
+export type SupportRoutingDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingDetail>>
+>;
+export type SupportRoutingArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingArchive>>
+>;
+export type SupportRoutingReplaceDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingReplaceDraft>>
+>;
+export type SupportRoutingPublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingPublish>>
+>;
+export type SupportRoutingRuntimeQueueSlotResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeQueueSlot>>
+>;
+export type SupportRoutingRuntimeControlResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeControl>>
+>;
+export type SupportRoutingRuntimeSetControlResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeSetControl>>
+>;
+export type SupportRoutingRuntimeRequestResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeRequest>>
+>;
+export type SavedSupportViewCatalogResult = NonNullable<
+  Awaited<ReturnType<typeof savedSupportViewCatalog>>
+>;
+export type SavedSupportViewCreateResult = NonNullable<
+  Awaited<ReturnType<typeof savedSupportViewCreate>>
+>;
+export type SavedSupportViewArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof savedSupportViewArchive>>
+>;
+export type SavedSupportViewReplaceResult = NonNullable<
+  Awaited<ReturnType<typeof savedSupportViewReplace>>
+>;
+export type SavedSupportViewPublishResult = NonNullable<
+  Awaited<ReturnType<typeof savedSupportViewPublish>>
+>;
+export type SavedSupportViewQueryResult = NonNullable<
+  Awaited<ReturnType<typeof savedSupportViewQuery>>
+>;
+export type SupportSearchCasesResult = NonNullable<
+  Awaited<ReturnType<typeof supportSearchCases>>
+>;
+export type SupportSearchConversationsResult = NonNullable<
+  Awaited<ReturnType<typeof supportSearchConversations>>
+>;
+export type SupportSearchMessagesResult = NonNullable<
+  Awaited<ReturnType<typeof supportSearchMessages>>
+>;
+export type SupportSearchMaintenanceRequestRebuildResult = NonNullable<
+  Awaited<ReturnType<typeof supportSearchMaintenanceRequestRebuild>>
+>;
+export type SupportWorkforceListSkillsResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceListSkills>>
+>;
+export type SupportWorkforceCreateSkillResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceCreateSkill>>
+>;
+export type SupportWorkforceRenameSkillResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceRenameSkill>>
+>;
+export type SupportWorkforceArchiveSkillResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceArchiveSkill>>
+>;
+export type SupportSlaHumanCommandCorrectClockResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaHumanCommandCorrectClock>>
+>;
+export type SupportSlaHumanCommandMigratePolicyResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaHumanCommandMigratePolicy>>
+>;
+export type SupportSlaConfigurationReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationRead>>
+>;
+export type SupportSlaConfigurationReplaceDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationReplaceDraft>>
+>;
+export type SupportSlaConfigurationDiscardDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationDiscardDraft>>
+>;
+export type SupportSlaConfigurationPublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationPublish>>
+>;
+export type SupportWorkforceListTeamsResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceListTeams>>
+>;
+export type SupportWorkforceCreateTeamResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceCreateTeam>>
+>;
+export type SupportWorkforceGetTeamResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceGetTeam>>
+>;
+export type SupportWorkforceRenameTeamResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceRenameTeam>>
+>;
+export type SupportWorkforceArchiveTeamResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceArchiveTeam>>
+>;
+export type SupportViewPresetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof supportViewPresetQuery>>
+>;
+export type SupportWorkforceGetWorkforceResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceGetWorkforce>>
+>;
+export type SupportWorkforceReplaceDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceReplaceDraft>>
+>;
+export type SupportWorkforceDiscardDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceDiscardDraft>>
+>;
+export type SupportWorkforcePublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforcePublish>>
+>;
+export type SupportWorkspaceReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkspaceRead>>
 >;
 export type TelegramBroadcastListResult = NonNullable<
   Awaited<ReturnType<typeof telegramBroadcastList>>
@@ -8172,6 +10640,15 @@ export type AdminConversationsListResult = NonNullable<
 >;
 export type AdminConversationsGetResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationsGet>>
+>;
+export type SupportMacroReplyDraftCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroReplyDraftCreate>>
+>;
+export type SupportMacroReplyDraftReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroReplyDraftRead>>
+>;
+export type SupportMacroReplyDraftEditResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroReplyDraftEdit>>
 >;
 export type ConversationMessageTranslationCreateResult = NonNullable<
   Awaited<ReturnType<typeof conversationMessageTranslationCreate>>

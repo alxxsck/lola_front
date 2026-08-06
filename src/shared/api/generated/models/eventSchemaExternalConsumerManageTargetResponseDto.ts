@@ -5,12 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventSchemaExternalConsumerManageTargetResponseDtoSection } from "./eventSchemaExternalConsumerManageTargetResponseDtoSection";
 import type { EventSchemaExternalConsumerManageTargetResponseDtoWorkspace } from "./eventSchemaExternalConsumerManageTargetResponseDtoWorkspace";
 
 export interface EventSchemaExternalConsumerManageTargetResponseDto {
   resourceId: string;
-  /** @nullable */
-  section: EventSchemaExternalConsumerManageTargetResponseDtoSection;
+  /**
+   * Provider-neutral section identifier within the Integrations workspace.
+   * @nullable
+   */
+  section: string | null;
   workspace: EventSchemaExternalConsumerManageTargetResponseDtoWorkspace;
 }

@@ -8,16 +8,29 @@
 
 export interface CreateReplyTranslationDraftDto {
   endUserCaseId?: string;
+  /** Actor-bound Support Macro Reply Draft source. */
+  macroReplyDraftId?: string;
+  /**
+   * Exact rendered Macro Reply Draft source hash.
+   * @pattern ^sha256:[a-f0-9]{64}$
+   */
+  macroReplyDraftSourceHash?: string;
+  /**
+   * Exact Macro Reply Draft optimistic version.
+   * @minimum 1
+   */
+  macroReplyDraftVersion?: number;
   /**
    * @minLength 1
    * @maxLength 64
    */
   sourceLocale: string;
   /**
+   * Required unless a Macro Reply Draft source is provided.
    * @minLength 1
    * @maxLength 10000
    */
-  sourceText: string;
+  sourceText?: string;
   /**
    * @minLength 1
    * @maxLength 64

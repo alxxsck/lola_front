@@ -6,11 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Acceptance is PENDING; only an authenticated client ACK may advance to DELIVERED or READ.
+ */
 export type AdminMessageDeliveryResponseDtoStatus =
   (typeof AdminMessageDeliveryResponseDtoStatus)[keyof typeof AdminMessageDeliveryResponseDtoStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AdminMessageDeliveryResponseDtoStatus = {
+  PENDING: "PENDING",
+  DELIVERING: "DELIVERING",
   DELIVERED: "DELIVERED",
+  READ: "READ",
+  FAILED: "FAILED",
+  CANCELLED: "CANCELLED",
   NOT_REDELIVERED: "NOT_REDELIVERED",
 } as const;

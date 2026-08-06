@@ -601,6 +601,8 @@ export const mockRepository: ReteniveRepository = {
     const items = readDemo().conversations.filter(
       (item) => item.userId === userId,
     );
+    // TODO(F1): share cursor pagination with getConversations when its mock
+    // contract is next touched, keeping the two deliberately independent today.
     const offset = request?.cursor
       ? items.findIndex((item) => item.id === request.cursor) + 1
       : 0;
