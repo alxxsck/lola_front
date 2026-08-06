@@ -179,6 +179,7 @@ import type {
   CustomerIoInboundBatchReceiptDto,
   DeleteKnowledgeDocumentResponseDto,
   DisableTelegramChannelDto,
+  EditIntegrationEventRouteDraftDto,
   EditReplyTranslationDraftDto,
   EmailCaseEscalationPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
@@ -3567,6 +3568,23 @@ export const integrationEventRouteDisable = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: integrationEventRouteVersionDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteEditDraft = (
+  projectId: string,
+  routeId: string,
+  editIntegrationEventRouteDraftDto: BodyType<EditIntegrationEventRouteDraftDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/draft`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: editIntegrationEventRouteDraftDto,
     },
     options,
   );
@@ -7746,6 +7764,9 @@ export type IntegrationEventRouteListResult = NonNullable<
 >;
 export type IntegrationEventRouteDisableResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteDisable>>
+>;
+export type IntegrationEventRouteEditDraftResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteEditDraft>>
 >;
 export type IntegrationEventRouteEnableResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteEnable>>

@@ -86,6 +86,7 @@ const impact = {
   },
   impact: {
     consumers: [],
+    externalConsumers: [],
     activeWaits: [],
     summary: {
       consumerCount: 2,
@@ -460,6 +461,58 @@ describe("EventSchemaAuthoring", () => {
       button(wrapper, "Опубликовать версию 5").attributes("disabled"),
     ).toBeDefined();
     expect(mocks.publishSchemaDraft).not.toHaveBeenCalled();
+  });
+
+  it("shows an actionable Customer.io blocker and its migration order", async () => {
+    mocks.getSchemaDraft.mockResolvedValue(draft);
+    mocks.analyzeSchemaDraft.mockResolvedValue({
+      ...impact,
+      impact: {
+        ...impact.impact,
+        externalConsumers: [
+          {
+            dependencyId: "route-dependency-1",
+            consumerKind: "integration.route.outbound",
+            displayName: "Депозит → Customer.io",
+            state: "ACTIVE",
+            exposures: ["ACTIVE_RUNTIME"],
+            consumerResourceId: "route-1",
+            consumerRevisionId: "route-revision-1",
+            matchingMode: "EXACT",
+            fieldDependencies: [
+              { fieldKey: "deposit.amount", path: ["amount"] },
+            ],
+            reasonCodes: ["EXACT_REVISION_PINNED"],
+            blocking: true,
+            resolutionActions: ["DISABLE"],
+            resolutionPlan: [
+              "DISABLE_CONSUMER",
+              "PUBLISH_EVENT_SCHEMA",
+              "EDIT_CONSUMER_FOR_CURRENT_REVISION",
+              "REPUBLISH_CONSUMER",
+              "ENABLE_CONSUMER",
+            ],
+            manageTarget: {
+              workspace: "PROJECT_INTEGRATIONS",
+              resourceId: "route-1",
+              section: "CUSTOMER_IO",
+            },
+          },
+        ],
+        summary: { ...impact.impact.summary, blockingConsumerCount: 1 },
+      },
+    });
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await button(wrapper, "Проверить влияние").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Депозит → Customer.io");
+    expect(wrapper.text()).toContain("Правило передачи события");
+    expect(wrapper.text()).toContain("Приостановить правило");
+    expect(wrapper.text()).toContain("Обновить событие и поля в правиле");
+    expect(wrapper.text()).toContain("Открыть и изменить правило");
   });
 
   it("renders archived definitions without any schema mutation controls", async () => {

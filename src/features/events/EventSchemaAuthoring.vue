@@ -489,11 +489,44 @@ function reasonTitle(code: string) {
 function resolutionTitle(action: string) {
   return (
     {
+      DISABLE: "Приостановить правило",
       MIGRATE: "Мигрировать binding",
       REPUBLISH: "Перепубликовать сценарий",
       DRAIN: "Дождаться завершения",
       CANCEL: "Отменить ожидание",
     }[action] ?? action
+  );
+}
+
+function externalConsumerTitle(kind: string) {
+  return (
+    {
+      "integration.route.inbound": "Правило приёма события",
+      "integration.route.outbound": "Правило передачи события",
+      "ai-allowance.accrual-rule": "Правило AI allowance",
+    }[kind] ?? kind
+  );
+}
+
+function externalConsumerState(state: string) {
+  return (
+    {
+      ACTIVE: "Активно",
+      PAUSED: "Приостановлено",
+      UNKNOWN: "Статус неизвестен",
+    }[state] ?? state
+  );
+}
+
+function migrationStepTitle(step: string) {
+  return (
+    {
+      DISABLE_CONSUMER: "Приостановить правило",
+      PUBLISH_EVENT_SCHEMA: "Опубликовать новую схему события",
+      EDIT_CONSUMER_FOR_CURRENT_REVISION: "Обновить событие и поля в правиле",
+      REPUBLISH_CONSUMER: "Опубликовать новую версию правила",
+      ENABLE_CONSUMER: "Снова включить правило",
+    }[step] ?? step
   );
 }
 
@@ -765,6 +798,63 @@ function errorMessage(cause: unknown, fallback: string) {
         </section>
 
         <section
+          v-if="impact.impact.externalConsumers?.length"
+          class="dependency-group"
+          aria-labelledby="schema-external-consumers-title"
+        >
+          <h4 id="schema-external-consumers-title">
+            Интеграции и внешние правила
+          </h4>
+          <article
+            v-for="consumer in impact.impact.externalConsumers ?? []"
+            :key="consumer.dependencyId"
+            class="dependency-row external-dependency"
+            :class="{ blocking: consumer.blocking }"
+          >
+            <div>
+              <strong>{{
+                consumer.displayName ||
+                externalConsumerTitle(consumer.consumerKind)
+              }}</strong>
+              <span>
+                {{ externalConsumerTitle(consumer.consumerKind) }} ·
+                {{ externalConsumerState(consumer.state) }} ·
+                {{ consumer.matchingMode }}
+              </span>
+            </div>
+            <div class="dependency-evidence">
+              <span v-if="consumer.fieldDependencies.length">
+                Поля:
+                {{
+                  consumer.fieldDependencies
+                    .map(fieldDependencyTitle)
+                    .join(", ")
+                }}
+              </span>
+              <ol v-if="consumer.resolutionPlan.length" class="migration-plan">
+                <li v-for="step in consumer.resolutionPlan" :key="step">
+                  {{ migrationStepTitle(step) }}
+                </li>
+              </ol>
+              <RouterLink
+                v-if="consumer.manageTarget"
+                class="secondary-button manage-dependency-link"
+                :to="{
+                  name: 'project-integrations',
+                  query: {
+                    section: consumer.manageTarget.section || undefined,
+                    routeId: consumer.manageTarget.resourceId,
+                  },
+                }"
+              >
+                Открыть и изменить правило
+              </RouterLink>
+              <strong v-if="consumer.blocking">Блокирует публикацию</strong>
+            </div>
+          </article>
+        </section>
+
+        <section
           v-if="impact.impact.activeWaits.length"
           class="dependency-group"
           aria-labelledby="schema-waits-title"
@@ -800,8 +890,8 @@ function errorMessage(cause: unknown, fallback: string) {
         </section>
 
         <div v-if="blockingCount > 0" class="publish-blocker" role="alert">
-          Сначала разрешите зависимости в сценариях или активных ожиданиях,
-          затем обновите проверку влияния.
+          Сначала разрешите зависимости в сценариях или активных ожиданиях, а
+          также в интеграциях, затем обновите проверку влияния.
         </div>
         <div v-else-if="semanticBreak" class="publish-blocker" role="alert">
           Смысл события изменился. Создайте новую Event Definition с новым
@@ -1271,6 +1361,18 @@ function errorMessage(cause: unknown, fallback: string) {
 }
 .dependency-evidence strong {
   color: var(--status-danger-text);
+}
+.migration-plan {
+  display: grid;
+  gap: 5px;
+  margin: 4px 0;
+  padding-left: 20px;
+  color: var(--text-primary);
+}
+.manage-dependency-link {
+  justify-self: start;
+  margin-top: 4px;
+  text-decoration: none;
 }
 .publish-form,
 .discard-panel {

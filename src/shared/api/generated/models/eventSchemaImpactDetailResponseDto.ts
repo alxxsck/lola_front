@@ -8,11 +8,13 @@
 import type { EventSchemaActiveWaitImpactResponseDto } from "./eventSchemaActiveWaitImpactResponseDto";
 import type { EventSchemaConsumerImpactResponseDto } from "./eventSchemaConsumerImpactResponseDto";
 import type { EventSchemaEventQueryPolicyImpactResponseDto } from "./eventSchemaEventQueryPolicyImpactResponseDto";
+import type { EventSchemaExternalConsumerImpactResponseDto } from "./eventSchemaExternalConsumerImpactResponseDto";
 import type { EventSchemaImpactSummaryResponseDto } from "./eventSchemaImpactSummaryResponseDto";
 
 export interface EventSchemaImpactDetailResponseDto {
   activeWaits: EventSchemaActiveWaitImpactResponseDto[];
   consumers: EventSchemaConsumerImpactResponseDto[];
   eventQueryPolicies: EventSchemaEventQueryPolicyImpactResponseDto[];
+  externalConsumers: EventSchemaExternalConsumerImpactResponseDto[];
   summary: EventSchemaImpactSummaryResponseDto;
 }

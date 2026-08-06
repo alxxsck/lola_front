@@ -69,6 +69,7 @@ function emptyImpact(
     },
     impact: {
       consumers: [],
+      externalConsumers: [],
       activeWaits: [],
       eventQueryPolicies: [],
       summary: {

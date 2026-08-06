@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import Select from "primevue/select";
 import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
 import TablePagination from "@/shared/ui/TablePagination.vue";
@@ -27,6 +27,7 @@ const props = withDefaults(
     canReadActivity: boolean;
     provider?: OutboundIntegrationProvider;
     connectionsRevision?: number;
+    focusRouteId?: string;
   }>(),
   { provider: "AMPLITUDE", connectionsRevision: 0 },
 );
@@ -47,6 +48,7 @@ const pending = ref(false);
 const error = ref("");
 const notice = ref("");
 const showCreate = ref(false);
+const editingRoute = ref<IntegrationEventRouteResponseDto | null>(null);
 const routeQuery = ref("");
 const routePage = ref(1);
 const activityPage = ref(1);
@@ -267,6 +269,7 @@ const canSubmit = computed(
     selectedCount.value > 0 &&
     selectedCount.value <= MAX_PROPERTY_BINDINGS,
 );
+const isEditing = computed(() => editingRoute.value !== null);
 
 watch(definitionId, () => {
   selectedFields.value = emptyFieldMap();
@@ -354,6 +357,7 @@ async function switchProject(): Promise<void> {
   commandKeys.clear();
   pendingCreate = null;
   showCreate.value = false;
+  editingRoute.value = null;
   connectionId.value = "";
   definitionId.value = "";
   routeName.value = "";
@@ -407,6 +411,17 @@ async function load(): Promise<void> {
         route.direction === "OUTBOUND" && revision?.provider === props.provider
       );
     });
+    const focusedRoute = routes.value.find(
+      ({ id }) => id === props.focusRouteId,
+    );
+    if (focusedRoute) {
+      routeQuery.value = focusedRoute.name;
+      routePage.value = 1;
+      await nextTick();
+      document
+        .querySelector<HTMLElement>(`[data-route-id="${focusedRoute.id}"]`)
+        ?.scrollIntoView?.({ block: "center" });
+    }
     if (connectionEpoch === connectionsLoadEpoch) {
       connections.value = connectionResult.items;
     }
@@ -452,7 +467,51 @@ function keyFor(signature: string): string {
   return created;
 }
 
-async function createRoute(): Promise<void> {
+function openCreate(): void {
+  editingRoute.value = null;
+  showCreate.value = true;
+  connectionId.value = providerConnections.value[0]?.id ?? "";
+  definitionId.value = "";
+  routeName.value = "";
+  providerEventName.value = "";
+  selectedFields.value = emptyFieldMap();
+  targetKeys.value = emptyFieldMap();
+  requiredFields.value = emptyFieldMap();
+}
+
+function closeEditor(): void {
+  showCreate.value = false;
+  editingRoute.value = null;
+}
+
+async function startEdit(
+  route: IntegrationEventRouteResponseDto,
+): Promise<void> {
+  const revision = route.draftRevision ?? route.publishedRevision;
+  if (!revision) return;
+  editingRoute.value = route;
+  showCreate.value = true;
+  connectionId.value = route.connectionId;
+  definitionId.value = revision.eventDefinitionKeyId;
+  await nextTick();
+  routeName.value = route.name;
+  providerEventName.value = revision.providerEventName;
+  selectedFields.value = emptyFieldMap();
+  targetKeys.value = emptyFieldMap();
+  requiredFields.value = emptyFieldMap();
+  for (const binding of revision.propertyBindings) {
+    const key = binding.sourcePath.join(".");
+    selectedFields.value[key] = true;
+    targetKeys.value[key] = binding.targetKey;
+    requiredFields.value[key] = binding.required;
+  }
+  await nextTick();
+  document
+    .getElementById(`${providerUi.value.slug}-route-editor`)
+    ?.scrollIntoView?.({ block: "start" });
+}
+
+async function saveRoute(): Promise<void> {
   const definition = selectedDefinition.value;
   if (
     !props.canManage ||
@@ -476,6 +535,32 @@ async function createRoute(): Promise<void> {
     providerEventName: providerEventName.value.trim(),
     propertyBindings: bindings,
   };
+  if (editingRoute.value) {
+    const route = editingRoute.value;
+    const editInput = {
+      expectedVersion: route.version,
+      reason: `Редактирование правила ${providerUi.value.title} через CMS`,
+      name: input.name,
+      eventDefinitionKeyId: input.eventDefinitionKeyId,
+      eventDefinitionRevisionId: input.eventDefinitionRevisionId,
+      providerEventName: input.providerEventName,
+      propertyBindings: input.propertyBindings,
+    };
+    const signature = `edit:${route.id}:${JSON.stringify(editInput)}`;
+    const saved = await mutate(
+      signature,
+      () =>
+        integrationEventRoutesApi.editDraft(
+          props.projectId,
+          route.id,
+          editInput,
+          keyFor(signature),
+        ),
+      "Изменения сохранены в новой черновой версии. Проверьте и опубликуйте её.",
+    );
+    if (saved) closeEditor();
+    return;
+  }
   const signature = `create:${JSON.stringify(input)}`;
   const command = {
     projectId: props.projectId,
@@ -579,22 +664,24 @@ async function mutate(
   signature: string,
   action: () => Promise<unknown>,
   success: string,
-): Promise<void> {
-  if (!props.canManage || pending.value) return;
+): Promise<boolean> {
+  if (!props.canManage || pending.value) return false;
   const projectId = props.projectId;
   pending.value = true;
   error.value = "";
   notice.value = "";
   try {
     await action();
-    if (projectId !== props.projectId) return;
+    if (projectId !== props.projectId) return false;
     commandKeys.delete(signature);
     notice.value = success;
     await load();
+    return true;
   } catch {
-    if (projectId !== props.projectId) return;
+    if (projectId !== props.projectId) return false;
     error.value =
       "Не удалось изменить маршрут. Обновите данные и повторите запрос.";
+    return false;
   } finally {
     pending.value = false;
   }
@@ -659,8 +746,8 @@ function rulesCountLabel(count: number): string {
         type="button"
         :disabled="pending"
         :aria-expanded="showCreate"
-        :aria-controls="`${providerUi.slug}-create-route`"
-        @click="showCreate = !showCreate"
+        :aria-controls="`${providerUi.slug}-route-editor`"
+        @click="showCreate ? closeEditor() : openCreate()"
       >
         {{ showCreate ? "Закрыть" : "Добавить правило" }}
       </button>
@@ -688,17 +775,26 @@ function rulesCountLabel(count: number): string {
     <Transition name="integration-reveal">
       <form
         v-if="showCreate && canManage"
-        :id="`${providerUi.slug}-create-route`"
+        :id="`${providerUi.slug}-route-editor`"
         class="route-form"
-        @submit.prevent="createRoute"
+        @submit.prevent="saveRoute"
       >
         <div class="form-intro">
           <span class="setup-step">Шаг 2</span>
           <div>
-            <h3>Новое правило передачи</h3>
+            <h3>
+              {{
+                isEditing
+                  ? "Изменить правило передачи"
+                  : "Новое правило передачи"
+              }}
+            </h3>
             <p>
-              Правило определяет, какое событие Retenive отправлять, как оно будет
-              называться у провайдера и какие свойства можно передавать.
+              {{
+                isEditing
+                  ? "Сохранение создаст новую черновую версию. Текущая отправка не изменится до публикации."
+                  : "Правило определяет, какое событие Retenive отправлять, как оно будет называться у провайдера и какие свойства можно передавать."
+              }}
             </p>
           </div>
         </div>
@@ -710,7 +806,7 @@ function rulesCountLabel(count: number): string {
             option-label="label"
             option-value="value"
             placeholder="Выберите подключение"
-            :disabled="pending"
+            :disabled="pending || isEditing"
             fluid
           >
             <template #option="slotProps">
@@ -795,7 +891,7 @@ function rulesCountLabel(count: number): string {
         </p>
         <div class="form-actions">
           <button type="submit" :disabled="pending || !canSubmit">
-            Создать черновик
+            {{ isEditing ? "Сохранить изменения" : "Создать черновик" }}
           </button>
         </div>
       </form>
@@ -833,7 +929,13 @@ function rulesCountLabel(count: number): string {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="route in visibleRoutes" :key="route.id" data-route-row>
+            <tr
+              v-for="route in visibleRoutes"
+              :key="route.id"
+              data-route-row
+              :data-route-id="route.id"
+              :class="{ 'route-row--focused': route.id === focusRouteId }"
+            >
               <td>
                 <strong>{{ route.name }}</strong>
               </td>
@@ -852,6 +954,14 @@ function rulesCountLabel(count: number): string {
                 v-if="canManage"
                 class="integration-table__action route-actions"
               >
+                <button
+                  type="button"
+                  class="secondary-action"
+                  :disabled="pending"
+                  @click="startEdit(route)"
+                >
+                  Изменить
+                </button>
                 <button
                   v-if="route.draftRevision"
                   type="button"
@@ -1018,6 +1128,11 @@ function rulesCountLabel(count: number): string {
 .status-chip[data-status="active"] {
   background: var(--status-success-soft);
   color: var(--status-success-text);
+}
+.route-row--focused {
+  outline: 2px solid var(--status-accent);
+  outline-offset: -2px;
+  background: var(--status-accent-soft);
 }
 .feedback {
   margin: 0;

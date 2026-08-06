@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   listActivity: vi.fn(),
   create: vi.fn(),
   createCustomerIo: vi.fn(),
+  editDraft: vi.fn(),
   publish: vi.fn(),
   enable: vi.fn(),
   disable: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock("./integration-event-routes.api", () => ({
     listActivity: mocks.listActivity,
     createAmplitude: mocks.create,
     createCustomerIo: mocks.createCustomerIo,
+    editDraft: mocks.editDraft,
     publish: mocks.publish,
     enable: mocks.enable,
     disable: mocks.disable,
@@ -224,6 +226,7 @@ describe("IntegrationEventRoutesCard", () => {
       ],
     });
     mocks.create.mockResolvedValue(route());
+    mocks.editDraft.mockResolvedValue(route({ version: 2 }));
     mocks.publish.mockResolvedValue(
       route({ draftRevision: null, lifecycle: "ACTIVE", version: 2 }),
     );
@@ -432,7 +435,10 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
 
-    await wrapper.get(".route-actions button").trigger("click");
+    await wrapper
+      .findAll(".route-actions button")
+      .find((button) => button.text() === "Включить")!
+      .trigger("click");
 
     expect(window.confirm).toHaveBeenCalledWith(
       expect.stringContaining("нужном проекте Customer.io"),
@@ -596,6 +602,86 @@ describe("IntegrationEventRoutesCard", () => {
       "command-key",
     );
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("edits the Customer.io event name and mappings as a new draft", async () => {
+    mocks.listRoutes.mockResolvedValue({
+      items: [
+        route({
+          name: "Депозит → Customer.io",
+          connectionId: "customer-connection-1",
+          draftRevision: {
+            ...route().draftRevision,
+            provider: "CUSTOMER_IO",
+            providerEventName: "Deposit Made",
+          },
+          version: 4,
+        }),
+      ],
+    });
+    mocks.listConnections.mockResolvedValue({
+      items: [
+        {
+          id: "customer-connection-1",
+          projectId: "project-1",
+          provider: "CUSTOMER_IO",
+          displayName: "Customer journeys",
+          region: "EU",
+          outboundEnabled: true,
+          lifecycle: "ACTIVE",
+          health: "HEALTHY",
+          credential: { revision: 1 },
+        },
+      ],
+    });
+    const wrapper = mount(IntegrationEventRoutesCard, {
+      props: {
+        projectId: "project-1",
+        canRead: true,
+        canManage: true,
+        canReadActivity: false,
+        provider: "CUSTOMER_IO",
+      },
+    });
+    await flushPromises();
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Изменить")!
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Изменить правило передачи");
+    expect(
+      wrapper.get('input[aria-label="Поле Customer.io для amount"]').element,
+    ).toMatchObject({
+      value: "amount",
+    });
+    const eventName = wrapper.get('input[maxlength="120"]');
+    expect((eventName.element as HTMLInputElement).value).toBe("Deposit Made");
+    await eventName.setValue("Deposit Completed");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(mocks.editDraft).toHaveBeenCalledWith(
+      "project-1",
+      "route-1",
+      {
+        expectedVersion: 4,
+        reason: "Редактирование правила Customer.io через CMS",
+        name: "Депозит → Customer.io",
+        eventDefinitionKeyId: "event-key-1",
+        eventDefinitionRevisionId: "event-revision-1",
+        providerEventName: "Deposit Completed",
+        propertyBindings: [
+          { sourcePath: ["amount"], targetKey: "amount", required: true },
+        ],
+      },
+      "command-key",
+    );
+    expect(wrapper.text()).toContain(
+      "Изменения сохранены в новой черновой версии",
+    );
   });
 
   it("caps the property allowlist at the API limit of 32 bindings", async () => {
@@ -890,12 +976,12 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
     const toggle = wrapper.get(
-      'button[aria-controls="amplitude-create-route"]',
+      'button[aria-controls="amplitude-route-editor"]',
     );
 
     expect(toggle.attributes("aria-expanded")).toBe("false");
     await toggle.trigger("click");
     expect(toggle.attributes("aria-expanded")).toBe("true");
-    expect(wrapper.get("#amplitude-create-route").isVisible()).toBe(true);
+    expect(wrapper.get("#amplitude-route-editor").isVisible()).toBe(true);
   });
 });

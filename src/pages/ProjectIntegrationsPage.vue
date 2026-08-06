@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import "@/app/styles/project-integrations.css";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
@@ -17,6 +17,7 @@ import { formatAuditActor } from "@/shared/lib/format";
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const projectId = computed(() => auth.project?.id ?? "");
 const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
@@ -45,6 +46,9 @@ type IntegrationSection =
   "team" | "users" | "CUSTOMER_IO" | "AMPLITUDE" | "operations";
 
 const activeSection = ref<IntegrationSection>("team");
+const focusRouteId = computed(() =>
+  typeof route.query.routeId === "string" ? route.query.routeId : undefined,
+);
 const integrationSections = computed<
   Array<{ id: IntegrationSection; label: string; icon: string }>
 >(() => [
@@ -515,6 +519,20 @@ watch(
   { immediate: true },
 );
 
+watch(
+  [() => route.query.section, canReadIntegrations],
+  ([section, allowed]) => {
+    if (
+      allowed &&
+      typeof section === "string" &&
+      (section === "CUSTOMER_IO" || section === "AMPLITUDE")
+    ) {
+      activeSection.value = section;
+    }
+  },
+  { immediate: true },
+);
+
 onMounted(load);
 </script>
 
@@ -712,8 +730,8 @@ onMounted(load);
               />
             </label>
             <small
-              >После замены Retenive проверит подключение. URL очистится сразу после
-              отправки.</small
+              >После замены Retenive проверит подключение. URL очистится сразу
+              после отправки.</small
             >
             <div class="form-actions">
               <button
@@ -823,6 +841,7 @@ onMounted(load);
         :can-manage="canManageIntegrations"
         :can-read-activity="canReadIntegrationActivity"
         provider="AMPLITUDE"
+        :focus-route-id="focusRouteId"
       />
     </section>
 
@@ -841,6 +860,7 @@ onMounted(load);
         :can-manage="canManageIntegrations"
         :can-read-activity="canReadIntegrationActivity"
         provider="CUSTOMER_IO"
+        :focus-route-id="focusRouteId"
       />
     </section>
 

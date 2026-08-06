@@ -4,6 +4,7 @@ import {
   integrationEventRouteCreateAmplitude,
   integrationEventRouteCreateCustomerIo,
   integrationEventRouteDisable,
+  integrationEventRouteEditDraft,
   integrationEventRouteEnable,
   integrationEventRouteList,
   integrationEventRoutePublish,
@@ -11,6 +12,7 @@ import {
 import type {
   CreateAmplitudeOutboundRouteDto,
   CreateCustomerIoOutboundRouteDto,
+  EditIntegrationEventRouteDraftDto,
   IntegrationEventRouteVersionDto,
   PublishIntegrationEventRouteDto,
 } from "@/shared/api/generated/models";
@@ -53,6 +55,20 @@ export const integrationEventRoutesApi = {
   ) {
     return integrationEventRouteCreateCustomerIo(
       projectId,
+      input,
+      commandOptions(idempotencyKey),
+    );
+  },
+
+  editDraft(
+    projectId: string,
+    routeId: string,
+    input: EditIntegrationEventRouteDraftDto,
+    idempotencyKey: string,
+  ) {
+    return integrationEventRouteEditDraft(
+      projectId,
+      routeId,
       input,
       commandOptions(idempotencyKey),
     );

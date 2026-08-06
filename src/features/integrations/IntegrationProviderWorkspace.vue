@@ -13,6 +13,7 @@ const props = defineProps<{
   canRead: boolean;
   canManage: boolean;
   canReadActivity: boolean;
+  focusRouteId?: string;
 }>();
 const connectionsRevision = ref(0);
 
@@ -93,6 +94,7 @@ const provider = computed(() =>
       :can-read-activity="canReadActivity"
       :provider="props.provider"
       :connections-revision="connectionsRevision"
+      :focus-route-id="focusRouteId"
     />
 
     <div class="provider-workspace__direction" data-direction="inbound">

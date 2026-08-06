@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     logout: ReturnType<typeof vi.fn>;
   },
   replace: vi.fn(),
+  routeQuery: {} as Record<string, string>,
 }));
 
 vi.mock(
@@ -41,6 +42,7 @@ vi.mock("@/features/auth/auth.store", () => ({
 }));
 
 vi.mock("vue-router", () => ({
+  useRoute: () => ({ query: mocks.routeQuery }),
   useRouter: () => ({ replace: mocks.replace }),
 }));
 
@@ -100,6 +102,7 @@ vi.mock(
         "canManage",
         "canReadActivity",
         "provider",
+        "focusRouteId",
       ],
       template: `
         <section
@@ -108,6 +111,7 @@ vi.mock(
           :data-can-read="String(canRead)"
           :data-can-manage="String(canManage)"
           :data-can-read-activity="String(canReadActivity)"
+          :data-focus-route-id="focusRouteId"
         />
       `,
     },
@@ -210,6 +214,8 @@ describe("ProjectIntegrationsPage", () => {
   beforeEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+    for (const key of Object.keys(mocks.routeQuery))
+      delete mocks.routeQuery[key];
     mocks.permissions = [
       "project.notifications.read",
       "project.notifications.manage",
@@ -356,6 +362,25 @@ describe("ProjectIntegrationsPage", () => {
       "data-can-read": "true",
       "data-can-manage": "true",
     });
+  });
+
+  it("opens a linked Customer.io route from an Event Schema blocker", async () => {
+    mocks.permissions = ["project.integrations.read"];
+    mocks.auth.project.effectivePermissionCodes = [...mocks.permissions];
+    mocks.routeQuery.section = "CUSTOMER_IO";
+    mocks.routeQuery.routeId = "route-1";
+
+    const wrapper = mount(ProjectIntegrationsPage);
+    await flushPromises();
+
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toBe(
+      "Customer.io",
+    );
+    expect(
+      wrapper
+        .get('[data-testid="CUSTOMER_IO-routes-card-stub"]')
+        .attributes("data-focus-route-id"),
+    ).toBe("route-1");
   });
 
   it("uses the existing logout redirect flow for product Telegram step-up", async () => {

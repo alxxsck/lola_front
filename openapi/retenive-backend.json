@@ -13391,6 +13391,62 @@
         ],
         "type": "object"
       },
+      "EditIntegrationEventRouteDraftDto": {
+        "properties": {
+          "canonicalKeyExtractor": {
+            "$ref": "#/components/schemas/IntegrationCanonicalKeyExtractorDto"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "eventDefinitionKeyId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventDefinitionRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "propertyBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationEventPropertyBindingDto"
+            },
+            "maxItems": 32,
+            "type": "array"
+          },
+          "providerEventName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "eventDefinitionKeyId",
+          "eventDefinitionRevisionId",
+          "providerEventName",
+          "propertyBindings",
+          "expectedVersion",
+          "reason"
+        ],
+        "type": "object"
+      },
       "EditReplyTranslationDraftDto": {
         "properties": {
           "editedTranslatedText": {
@@ -18048,6 +18104,148 @@
         ],
         "type": "object"
       },
+      "EventSchemaExternalConsumerImpactResponseDto": {
+        "properties": {
+          "blocking": {
+            "type": "boolean"
+          },
+          "consumerKind": {
+            "enum": [
+              "ai-allowance.accrual-rule",
+              "integration.route.inbound",
+              "integration.route.outbound"
+            ],
+            "type": "string"
+          },
+          "consumerResourceId": {
+            "type": "string"
+          },
+          "consumerRevisionId": {
+            "type": "string"
+          },
+          "dependencyId": {
+            "type": "string"
+          },
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "exposures": {
+            "items": {
+              "enum": [
+                "ACTIVE_RUNTIME"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "fieldDependencies": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "manageTarget": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventSchemaExternalConsumerManageTargetResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "matchingMode": {
+            "enum": [
+              "STABLE_TYPE",
+              "COMPATIBLE_RANGE",
+              "EXACT"
+            ],
+            "type": "string"
+          },
+          "reasonCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resolutionActions": {
+            "items": {
+              "enum": [
+                "DISABLE",
+                "MIGRATE",
+                "REPUBLISH"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resolutionPlan": {
+            "items": {
+              "enum": [
+                "DISABLE_CONSUMER",
+                "PUBLISH_EVENT_SCHEMA",
+                "EDIT_CONSUMER_FOR_CURRENT_REVISION",
+                "REPUBLISH_CONSUMER",
+                "ENABLE_CONSUMER"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "state": {
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "dependencyId",
+          "consumerKind",
+          "displayName",
+          "state",
+          "exposures",
+          "consumerResourceId",
+          "consumerRevisionId",
+          "matchingMode",
+          "fieldDependencies",
+          "reasonCodes",
+          "blocking",
+          "resolutionActions",
+          "resolutionPlan",
+          "manageTarget"
+        ],
+        "type": "object"
+      },
+      "EventSchemaExternalConsumerManageTargetResponseDto": {
+        "properties": {
+          "resourceId": {
+            "type": "string"
+          },
+          "section": {
+            "enum": [
+              "CUSTOMER_IO",
+              "AMPLITUDE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "workspace": {
+            "enum": [
+              "PROJECT_INTEGRATIONS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace",
+          "resourceId",
+          "section"
+        ],
+        "type": "object"
+      },
       "EventSchemaImpactDetailResponseDto": {
         "properties": {
           "activeWaits": {
@@ -18068,12 +18266,19 @@
             },
             "type": "array"
           },
+          "externalConsumers": {
+            "items": {
+              "$ref": "#/components/schemas/EventSchemaExternalConsumerImpactResponseDto"
+            },
+            "type": "array"
+          },
           "summary": {
             "$ref": "#/components/schemas/EventSchemaImpactSummaryResponseDto"
           }
         },
         "required": [
           "consumers",
+          "externalConsumers",
           "activeWaits",
           "eventQueryPolicies",
           "summary"
@@ -27942,6 +28147,7 @@
       "RealtimeModel": {
         "enum": [
           "grok-voice-think-fast-1.0",
+          "grok-voice-think-fast-2.0",
           "grok-voice-latest"
         ],
         "type": "string"
@@ -50868,6 +51074,75 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/IntegrationEventRouteVersionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventRouteResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Integration Event Routes"
+        ],
+        "x-iam-permission": {
+          "code": "project.integrations.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/integration-event-routes/{routeId}/draft": {
+      "post": {
+        "operationId": "IntegrationEventRoute_editDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditIntegrationEventRouteDraftDto"
               }
             }
           },
