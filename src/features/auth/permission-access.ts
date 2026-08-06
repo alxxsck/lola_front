@@ -93,6 +93,7 @@ export const PROJECT_PERMISSION_CODES = [
   "project.translation.read",
   "project.translation.cancel",
   "project.conversations.reply_without_translation",
+  "project.support.lead_control.read",
   "project.ai_usage.read",
   "project.notifications.read",
   "project.notifications.manage",

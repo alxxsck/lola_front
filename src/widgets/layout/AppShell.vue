@@ -21,6 +21,7 @@ import {
   conversationAISuspensionEnabled,
 } from "@/shared/config/features";
 import {
+  canReadSupportControl as canReadSupportControlAccess,
   canReadSupportWorkspace as canReadSupportWorkspaceAccess,
   isSupportWorkspaceRolloutEnabled,
 } from "@/features/support-workspace/model/support-workspace-access";
@@ -70,6 +71,11 @@ const canReadSupportWorkspace = computed(
   () =>
     isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) &&
     canReadSupportWorkspaceAccess(auth.project?.effectivePermissionCodes ?? []),
+);
+const canReadSupportControl = computed(
+  () =>
+    isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) &&
+    canReadSupportControlAccess(auth.project?.effectivePermissionCodes ?? []),
 );
 
 const navigation = computed(() =>
@@ -188,6 +194,13 @@ const navigation = computed(() =>
       supportWorkspace: true,
     },
     {
+      label: "Операционный обзор",
+      icon: "pi pi-chart-line",
+      to: "/support/control",
+      project: true,
+      supportLeadControl: true,
+    },
+    {
       label: "AI-анализы",
       icon: "pi pi-sparkles",
       to: "/ai-analyses",
@@ -297,7 +310,8 @@ const navigation = computed(() =>
         )) &&
       (!item.projectMemberships || canReadMemberships.value) &&
       (!item.projectRoles || canReadRoles.value) &&
-      (!item.supportWorkspace || canReadSupportWorkspace.value),
+      (!item.supportWorkspace || canReadSupportWorkspace.value) &&
+      (!item.supportLeadControl || canReadSupportControl.value),
   ),
 );
 

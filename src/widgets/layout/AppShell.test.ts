@@ -247,6 +247,7 @@ describe("AppShell", () => {
           "project.scenario_runs.read",
           "project.end_users.read",
           "project.conversations.read",
+          "project.support.lead_control.read",
         ],
       },
     });
@@ -279,6 +280,10 @@ describe("AppShell", () => {
         .findAll(".sidebar-scroll nav a")
         .find((link) => link.text().includes("Поддержка"))
         ?.attributes("href"),
+      supportControlLink: wrapper
+        .findAll(".sidebar-scroll nav a")
+        .find((link) => link.text().includes("Операционный обзор"))
+        ?.attributes("href"),
       themeSwitchVisible: wrapper.find(".theme-switch").exists(),
       profileInFooter: wrapper
         .find(".sidebar-footer .sidebar-profile")
@@ -287,9 +292,10 @@ describe("AppShell", () => {
       analysesVisible: wrapper.text().includes("AI-анализы"),
       operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 19,
+      navigationLinks: 20,
       profileFieldsLink: "/profile-fields",
       supportWorkspaceLink: "/support/inbox",
+      supportControlLink: "/support/control",
       themeSwitchVisible: true,
       profileInFooter: true,
       modeInFooter: true,

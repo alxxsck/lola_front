@@ -1,5 +1,7 @@
 import { hasProjectPermission } from "@/features/auth/permission-access";
 const supportWorkspaceReadPermission = "project.conversations.read" as const;
+const supportLeadControlReadPermission =
+  "project.support.lead_control.read" as const;
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
@@ -11,6 +13,15 @@ export function canReadSupportWorkspace(
   return hasProjectPermission(
     effectivePermissionCodes,
     supportWorkspaceReadPermission,
+  );
+}
+
+export function canReadSupportControl(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportLeadControlReadPermission,
   );
 }
 

@@ -8,10 +8,13 @@ import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { hasProjectPermission } from "@/features/auth/permission-access";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
 import { supportWorkspaceSource } from "@/features/support-workspace/api/support-workspace-source";
+import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
+import { createSupportUserProfileController } from "@/features/support-user-profile/model/use-support-user-profile";
 import { relativeTime } from "@/shared/lib/format";
 import type { ConversationMessage } from "@/shared/types/domain";
 
@@ -45,6 +48,36 @@ const selectedConversation = computed(() => {
   );
 });
 const contextDrawerVisible = ref(false);
+const canOpenSelectedCase = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.cases.read",
+  ),
+);
+const profileAccessDenied = ref(false);
+const canReadProfile = computed(() =>
+  !profileAccessDenied.value &&
+  hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.profiles.read",
+    ),
+);
+const profile = createSupportUserProfileController(
+  {
+    projectId: () => auth.project?.id,
+    endUserId: () => conversation.selection.value?.endUser.id,
+    canRead: () => canReadProfile.value,
+    async onForbidden() {
+      profileAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // The sensitive projection is already purged; the next route guard owns recovery.
+      }
+    },
+  },
+  supportUserProfileSource,
+);
 
 function messageAuthorName(message: ConversationMessage): string {
   return (
@@ -94,6 +127,8 @@ watch(
   () => auth.project?.id,
   () => {
     contextDrawerVisible.value = false;
+    profileAccessDenied.value = false;
+    profile.reset();
     conversation.reset();
     inbox.reset();
     void inbox.load();
@@ -104,6 +139,8 @@ watch(
   () => requestedConversationId.value,
   () => {
     contextDrawerVisible.value = false;
+    profileAccessDenied.value = false;
+    profile.reset();
     void conversation.load();
   },
   { immediate: true },
@@ -116,7 +153,12 @@ watch(
   },
 );
 
+watch(canReadProfile, (allowed) => {
+  if (!allowed) profile.reset();
+});
+
 onBeforeUnmount(() => {
+  profile.reset();
   inbox.reset();
   conversation.reset();
 });
@@ -365,6 +407,12 @@ onBeforeUnmount(() => {
         <SupportConversationContext
           :conversation="selectedConversation"
           :selection="conversation.selection.value"
+          :can-open-case="canOpenSelectedCase"
+          :can-read-profile="canReadProfile"
+          :profile="profile.profile.value"
+          :profile-loading="profile.loading.value"
+          :profile-error="profile.error.value"
+          @load-profile="profile.load"
         />
       </aside>
     </div>
@@ -379,6 +427,12 @@ onBeforeUnmount(() => {
       <SupportConversationContext
         :conversation="selectedConversation"
         :selection="conversation.selection.value"
+        :can-open-case="canOpenSelectedCase"
+        :can-read-profile="canReadProfile"
+        :profile="profile.profile.value"
+        :profile-loading="profile.loading.value"
+        :profile-error="profile.error.value"
+        @load-profile="profile.load"
       />
     </Drawer>
   </section>

@@ -51,6 +51,7 @@ function selection(
       lastSeenAt: "2026-08-06T10:00:00.000Z",
       locale: "ru",
     },
+    case: null,
     conversation: conversation(conversationId),
     messages: {
       items: preserveMessageConversationIds

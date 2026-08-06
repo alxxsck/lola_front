@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canReadSupportControl,
   canReadSupportWorkspace,
   isSupportWorkspaceRolloutEnabled,
 } from "./support-workspace-access";
@@ -21,6 +22,13 @@ describe("support workspace access", () => {
     expect(
       canReadSupportWorkspace(legacyContext.effectivePermissionCodes),
     ).toBe(false);
+  });
+
+  it("requires the exact lead-control permission for operational statistics", () => {
+    expect(canReadSupportControl(["project.support.lead_control.read"])).toBe(
+      true,
+    );
+    expect(canReadSupportControl(["project.conversations.read"])).toBe(false);
   });
 
   it("accepts only an explicit rollout enablement", () => {

@@ -1,20 +1,106 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import Button from "primevue/button";
 import Message from "primevue/message";
+import type {
+  ProfileProjectionResponseDto,
+  ProfileProjectionFieldResponseDto,
+} from "@/shared/api/generated/models";
+import {
+  formatProfileValue,
+  profileValueStateLabel,
+} from "@/features/end-user-profile/model/profile-value";
 import { relativeTime } from "@/shared/lib/format";
 import type {
   SupportWorkspaceConversation,
   SupportWorkspaceSelection,
 } from "@/features/support-workspace/api/support-workspace-source";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   conversation: SupportWorkspaceConversation;
   selection: SupportWorkspaceSelection;
-}>();
+  canOpenCase: boolean;
+  canReadProfile?: boolean;
+  profile?: ProfileProjectionResponseDto | null;
+  profileLoading?: boolean;
+  profileError?: string;
+}>(), {
+  canReadProfile: false,
+  profile: null,
+  profileLoading: false,
+  profileError: "",
+});
+
+const emit = defineEmits<{ loadProfile: [] }>();
 
 const userLabel = computed(() =>
   props.selection.endUser.isGuest ? "Гостевой пользователь" : "Пользователь",
 );
+
+function labelCaseStatus(value: string): string {
+  return (
+    {
+      OPEN: "Открыт",
+      IN_PROGRESS: "В работе",
+      PENDING: "Ожидает",
+      WAITING_END_USER: "Ожидает пользователя",
+      WAITING_SYSTEM: "Ожидает системы",
+      WAITING_ADMIN: "Ожидает оператора",
+      RESOLVED: "Решён",
+      UNRESOLVED: "Не решён",
+      CANCELLED: "Отменён",
+    }[value] ?? value
+  );
+}
+
+function labelCasePriority(value: string): string {
+  return (
+    {
+      LOW: "Низкий",
+      NORMAL: "Обычный",
+      HIGH: "Высокий",
+      URGENT: "Срочный",
+      CRITICAL: "Критический",
+    }[value] ?? value
+  );
+}
+
+const visibleProfileFields = computed(() =>
+  props.profile?.fields.filter((field) => field.access !== "FORBIDDEN") ?? [],
+);
+
+function profileFieldValue(field: ProfileProjectionFieldResponseDto): string {
+  if (field.access === "REDACTED") return "Скрыто";
+  if (field.availability !== "AVAILABLE" || !field.value)
+    return profileValueStateLabel(field.availability);
+  return formatProfileValue(field.value);
+}
+
+function profileSyncStatusLabel(value: ProfileProjectionResponseDto["syncStatus"]): string {
+  return (
+    {
+      VALID: "Снимок проверен",
+      VALID_WITH_WARNINGS: "Снимок с предупреждениями",
+      NO_VALID_SNAPSHOT: "Нет проверенного снимка",
+    }[value] ?? value
+  );
+}
+
+function profileProvenanceLabel(value: ProfileProjectionResponseDto["provenance"]): string {
+  return value === "PRODUCT_PROFILE" ? "Профиль продукта" : value;
+}
+
+function profileClassificationLabel(
+  value: ProfileProjectionFieldResponseDto["classification"],
+): string {
+  return (
+    {
+      INTERNAL: "Внутреннее",
+      PERSONAL: "Персональное",
+      SENSITIVE: "Чувствительное",
+    }[value] ?? value
+  );
+}
 </script>
 
 <template>
@@ -51,6 +137,97 @@ const userLabel = computed(() =>
         <dd>{{ relativeTime(conversation.updatedAt) }}</dd>
       </div>
     </dl>
+    <section v-if="selection.case" class="case-summary" aria-label="Case">
+      <span class="eyebrow">Case #{{ selection.case.projectSequence }}</span>
+      <h3>{{ selection.case.title }}</h3>
+      <dl>
+        <div>
+          <dt>Статус</dt>
+          <dd>{{ labelCaseStatus(selection.case.status) }}</dd>
+        </div>
+        <div>
+          <dt>Приоритет</dt>
+          <dd>{{ labelCasePriority(selection.case.priority) }}</dd>
+        </div>
+        <div>
+          <dt>Назначен</dt>
+          <dd>
+            {{
+              selection.case.assignment?.operatorName ??
+              selection.case.assignee?.displayName ??
+              "Не назначен"
+            }}
+          </dd>
+        </div>
+        <div v-if="selection.case.assignment">
+          <dt>Команда</dt>
+          <dd>{{ selection.case.assignment.teamName }}</dd>
+        </div>
+      </dl>
+      <RouterLink
+        v-if="canOpenCase"
+        class="case-link"
+        :to="{ name: 'end-user-case-detail', params: { caseId: selection.case.id } }"
+      >
+        Открыть Case
+      </RouterLink>
+    </section>
+    <section
+      v-if="canReadProfile"
+      class="profile-summary"
+      aria-label="Профиль пользователя"
+    >
+      <div class="profile-summary__heading">
+        <div>
+          <span class="eyebrow">Профиль</span>
+          <h3>Разрешённые данные</h3>
+        </div>
+        <Button
+          label="Загрузить"
+          icon="pi pi-refresh"
+          severity="secondary"
+          text
+          :loading="profileLoading"
+          @click="emit('loadProfile')"
+        />
+      </div>
+      <Message v-if="profileError" severity="error" :closable="false">
+        {{ profileError }}
+      </Message>
+      <template v-else-if="profile">
+        <p class="profile-summary__freshness">
+          {{
+            profile.observedAt
+              ? `Снимок обновлён ${relativeTime(profile.observedAt)}`
+              : "Время снимка не передано"
+          }}
+        </p>
+        <p class="profile-summary__metadata">
+          {{ profileSyncStatusLabel(profile.syncStatus) }} · источник:
+          {{ profileProvenanceLabel(profile.provenance) }}
+        </p>
+        <dl v-if="visibleProfileFields.length" class="profile-fields">
+          <div v-for="field in visibleProfileFields" :key="field.definitionId">
+            <dt>{{ field.label }}</dt>
+            <dd>{{ profileFieldValue(field) }}</dd>
+            <small>
+              {{ profileValueStateLabel(field.availability) }}
+              · {{ profileClassificationLabel(field.classification) }}
+              <template v-if="field.observedAt">
+                · обновлено {{ relativeTime(field.observedAt) }}
+              </template>
+              <template v-if="field.untrustedData"> · требует проверки</template>
+            </small>
+          </div>
+        </dl>
+        <p v-else class="profile-summary__empty">
+          Разрешённых полей в актуальном снимке нет.
+        </p>
+      </template>
+      <p v-else class="profile-summary__empty">
+        Загрузите отдельный серверный снимок профиля.
+      </p>
+    </section>
     <Message severity="secondary" :closable="false">
       Полный профиль, события и sensitive поля не запрашиваются этим экраном.
       Доступные действия определяет серверная capability-модель.
@@ -85,6 +262,91 @@ const userLabel = computed(() =>
 }
 .context-list dd {
   margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.case-summary {
+  margin: 0 0 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+.case-summary h3 {
+  margin: 4px 0 12px;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+.case-summary dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.case-summary dl > div {
+  display: grid;
+  gap: 3px;
+}
+.case-summary dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.case-summary dd {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.case-link {
+  display: inline-flex;
+  margin-top: 12px;
+  color: var(--brand);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.case-link:hover,
+.case-link:focus-visible {
+  text-decoration: underline;
+}
+.profile-summary {
+  margin: 0 0 18px;
+}
+.profile-summary__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.profile-summary h3 {
+  margin: 4px 0 0;
+  font-size: 0.92rem;
+}
+.profile-summary__freshness,
+.profile-summary__metadata,
+.profile-summary__empty {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.profile-fields {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+}
+.profile-fields > div {
+  display: grid;
+  gap: 3px;
+}
+.profile-fields dt,
+.profile-fields small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.profile-fields dd {
+  margin: 0;
+  font-size: 0.82rem;
   font-weight: 600;
   overflow-wrap: anywhere;
 }

@@ -19,6 +19,7 @@ import AppShell from "@/widgets/layout/AppShell.vue";
 import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance";
 import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
 import {
+  canReadSupportControl,
   canReadSupportWorkspace,
   isSupportWorkspaceRolloutEnabled,
 } from "@/features/support-workspace/model/support-workspace-access";
@@ -273,6 +274,12 @@ export const router = createRouter({
           meta: { supportWorkspaceAccess: true },
         },
         {
+          path: "support/control",
+          name: "support-control",
+          component: () => import("@/pages/SupportControlPage.vue"),
+          meta: { supportLeadControlAccess: true },
+        },
+        {
           path: "ai-analyses",
           name: "ai-analyses",
           component: () => import("@/pages/AIAnalysesPage.vue"),
@@ -496,6 +503,13 @@ router.beforeEach(async (to) => {
     (!auth.project ||
       !isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) ||
       !canReadSupportWorkspace(auth.project.effectivePermissionCodes ?? []))
+  )
+    return auth.authenticatedLandingPath;
+  if (
+    to.meta.supportLeadControlAccess &&
+    (!auth.project ||
+      !isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) ||
+      !canReadSupportControl(auth.project.effectivePermissionCodes ?? []))
   )
     return auth.authenticatedLandingPath;
   if (

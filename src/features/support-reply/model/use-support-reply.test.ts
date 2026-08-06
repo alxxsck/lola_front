@@ -26,6 +26,7 @@ function selection(reply = true, conversationId = "conversation-1"): SupportWork
       lastSeenAt: "2026-08-06T10:00:00.000Z",
       locale: "ru",
     },
+    case: null,
     conversation: {
       id: conversationId,
       endUserId: "user-1",

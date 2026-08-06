@@ -21,6 +21,11 @@ mode включён для проверки). Он не читает `project.se
 `project.settings.read`, но не заменяет per-project rollout: массовое включение
 по-прежнему заблокировано typed server contract.
 
+Этот же временный switch пока включает `/support/inbox` и `/support/control`
+вместе; `project.support.lead_control.read` остаётся обязательным permission,
+но независимого server-owned rollout для lead control нет. Поэтому нельзя
+считать этот global switch заменой поэтапного project rollout control center.
+
 ## P1: аватары оператора и пользователя
 
 `AdminConversationMessageResponseDto.author.avatarUrl` можно безопасно

@@ -96,3 +96,19 @@ test("opens the selected conversation context in a mobile drawer", async ({
   await expect(drawer.locator("dd", { hasText: "Пользователь" })).toBeVisible();
   await expect(drawer.getByText("user_11603", { exact: true })).toHaveCount(0);
 });
+
+test("loads the profile only from the permission-gated inspector", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+  await page.getByRole("button", { name: "Контекст" }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
+  await expect(drawer.getByText("Marco Silva", { exact: true })).toHaveCount(0);
+  await drawer.getByRole("button", { name: "Загрузить" }).click();
+  await expect(drawer.getByText("Marco Silva", { exact: true })).toBeVisible();
+  await expect(drawer.getByText("user_11603", { exact: true })).toHaveCount(0);
+});

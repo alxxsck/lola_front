@@ -4,6 +4,7 @@ import type { CursorPage, CursorPageRequest } from "@/shared/api/repository/cont
 import { mapConversationMessage } from "@/shared/api/repository/mappers";
 import { isMockMode } from "@/shared/config/data-mode";
 import type { ConversationMessage } from "@/shared/types/domain";
+import type { SupportWorkspaceSelectionCaseResponseDto } from "@/shared/api/generated/models";
 
 export interface SupportWorkspaceConversation {
   id: string;
@@ -40,8 +41,30 @@ export interface SupportWorkspaceSelection {
     lastSeenAt: string;
     locale?: string | null;
   };
+  case: SupportWorkspaceCase | null;
   conversation: SupportWorkspaceConversation | null;
   messages: CursorPage<ConversationMessage>;
+}
+
+export interface SupportWorkspaceCase {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  groupCode: string;
+  projectSequence: string;
+  attentionRequired: boolean;
+  lastActivityAt: string;
+  updatedAt: string;
+  version: number;
+  assignee: { id?: string; displayName?: string } | null;
+  assignment: {
+    id: string;
+    state: string;
+    operatorName: string;
+    teamName: string;
+    version: number;
+  } | null;
 }
 
 export interface SupportWorkspaceSource {
@@ -98,6 +121,45 @@ function mapSelectionMessages(
   });
 }
 
+export function mapWorkspaceCase(
+  value: SupportWorkspaceSelectionCaseResponseDto | null,
+  expectedEndUserId: string,
+): SupportWorkspaceCase | null {
+  if (!value) return null;
+  if (value.endUserId !== expectedEndUserId) {
+    throw new Error("Support workspace returned a case from another end user");
+  }
+  return {
+    id: value.id,
+    title: value.title,
+    status: value.status,
+    priority: value.priority,
+    groupCode: value.groupCode,
+    projectSequence: value.projectSequence,
+    attentionRequired: value.attentionRequired,
+    lastActivityAt: value.lastActivityAt,
+    updatedAt: value.updatedAt,
+    version: value.version,
+    assignee: value.assignee
+      ? {
+          ...(value.assignee.id ? { id: value.assignee.id } : {}),
+          ...(value.assignee.displayName
+            ? { displayName: value.assignee.displayName }
+            : {}),
+        }
+      : null,
+    assignment: value.assignment
+      ? {
+          id: value.assignment.id,
+          state: value.assignment.state,
+          operatorName: value.assignment.operator.displayName,
+          teamName: value.assignment.team.name,
+          version: value.assignment.version,
+        }
+      : null,
+  };
+}
+
 const apiSupportWorkspaceSource: SupportWorkspaceSource = {
   async readConversations(projectId, request) {
     const response = await supportWorkspaceRead(projectId, {
@@ -128,11 +190,15 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
     if (conversation.id !== conversationId) {
       throw new Error("Support workspace returned a different conversation");
     }
+    if (conversation.endUserId !== response.endUser.id) {
+      throw new Error("Support workspace returned a conversation from another end user");
+    }
     return {
       checkpoint: response.checkpoint,
       capabilitiesRevision: response.capabilitiesRevision,
       capabilities: response.capabilities,
       endUser: response.endUser,
+      case: mapWorkspaceCase(response.case, response.endUser.id),
       conversation,
       messages: {
         items: mapSelectionMessages(conversationId, response.messages.items),
@@ -199,6 +265,7 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         lastSeenAt: selected.updatedAt,
         locale: null,
       },
+      case: null,
       conversation: {
         id: selected.id,
         endUserId: selected.endUser.id,
