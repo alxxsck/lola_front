@@ -272,6 +272,58 @@ async function backToInbox(): Promise<void> {
   await router.push({ name: "support-inbox" });
 }
 
+function keyboardNavigationIsBlocked(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return true;
+  return Boolean(
+    target.closest(
+      "input, textarea, select, button, a, [contenteditable='true'], [role='button'], [role='dialog'], [role='textbox'], [role='menuitem'], [role='option']",
+    ) || document.querySelector("[role='dialog'][aria-modal='true']"),
+  );
+}
+
+function moveInboxSelection(direction: -1 | 1): void {
+  const items = inbox.items.value;
+  if (!items.length) return;
+  const currentId = selectedConversation.value?.id;
+  const currentIndex = currentId
+    ? items.findIndex((item) => item.id === currentId)
+    : -1;
+  const nextIndex = Math.max(
+    0,
+    Math.min(
+      items.length - 1,
+      currentIndex < 0
+        ? direction > 0
+          ? 0
+          : items.length - 1
+        : currentIndex + direction,
+    ),
+  );
+  const next = items[nextIndex];
+  if (next) void openConversation(next.id);
+}
+
+function handleWorkspaceKeydown(event: KeyboardEvent): void {
+  if (
+    event.defaultPrevented ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey ||
+    keyboardNavigationIsBlocked(event.target)
+  )
+    return;
+  const direction =
+    event.key === "ArrowDown" || event.key.toLowerCase() === "j"
+      ? 1
+      : event.key === "ArrowUp" || event.key.toLowerCase() === "k"
+        ? -1
+        : null;
+  if (!direction) return;
+  event.preventDefault();
+  moveInboxSelection(direction);
+}
+
 async function reload(): Promise<void> {
   assignmentReleaseAccessDenied.value = false;
   aiSuspensionAccessDenied.value = false;
@@ -368,6 +420,7 @@ async function submitAiSuspension(value: {
 }
 
 onMounted(async () => {
+  window.addEventListener("keydown", handleWorkspaceKeydown);
   await inbox.load();
   if (canReadAvailability.value) await availability.load();
   if (canManageRoutingOffers.value) await routingOffers.load();
@@ -473,6 +526,7 @@ watch(canReadProfile, (allowed) => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleWorkspaceKeydown);
   profile.reset();
   availability.reset();
   routingOffers.reset();

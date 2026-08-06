@@ -46,6 +46,28 @@ test("opens a project conversation as a deep link without horizontal overflow", 
   );
 });
 
+test("moves through visible inbox rows with j/k and arrows without hijacking inputs", async ({
+  page,
+}) => {
+  const rows = page.locator(".conversation-row");
+  await expect(rows).toHaveCount(3);
+
+  await page.keyboard.press("ArrowDown");
+  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3$/);
+  await expect(page.locator(".conversation-row.selected")).toHaveCount(1);
+
+  await page.keyboard.press("j");
+  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_2$/);
+  await expect(page.locator(".conversation-row.selected")).toHaveCount(1);
+
+  await page.getByRole("region", { name: "Статус для новых обращений" })
+    .locator("select")
+    .first()
+    .focus();
+  await page.keyboard.press("k");
+  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_2$/);
+});
+
 test("shows and changes only the operator's authoritative availability intent", async ({
   page,
 }) => {
