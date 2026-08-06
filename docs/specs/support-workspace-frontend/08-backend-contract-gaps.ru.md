@@ -91,6 +91,18 @@ capabilities (`read` + `self_manage`).
 target-authority projection; frontend не выводит кандидатов из inbox, presence
 или browser state.
 
+## P1: ручной self-claim и transfer
+
+В `SupportWorkspaceSelection` есть version и server capability Case, но нет
+каталога допустимых Team текущего оператора. `claim` требует именно `teamId`, а
+`transfer` — ещё Team и target operator. Нельзя подставлять Team из предыдущего
+Assignment, inbox, browser state или membership UI: это нарушит server-side
+eligibility и может назначить Case не туда.
+
+Пока frontend поддерживает только actor-bound routing offers: их own-list
+выдаёт opaque capability, ETag и exact assignment version. Для ручного
+self-claim/transfer требуется отдельная eligible-target projection.
+
 ## Недостающие поля строки inbox
 
 `ALL_CONVERSATIONS` намеренно отдаёт только безопасные metadata. В нём нет

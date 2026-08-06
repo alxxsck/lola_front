@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   canManageOwnSupportAvailability,
+  canManageOwnSupportAssignments,
+  canReceiveSupportRoutingOffers,
   canReadSupportAvailability,
   canReadSupportControl,
   canReadSupportWorkspace,
@@ -46,6 +48,34 @@ describe("support workspace access", () => {
     expect(
       canManageOwnSupportAvailability([
         "project.support.availability.self_manage",
+      ]),
+    ).toBe(false);
+  });
+
+  it("does not infer own assignment authority from case or lead permissions", () => {
+    expect(
+      canManageOwnSupportAssignments([
+        "project.support.assignments.self_manage",
+      ]),
+    ).toBe(true);
+    expect(canManageOwnSupportAssignments(["project.cases.assign"])).toBe(
+      false,
+    );
+    expect(
+      canManageOwnSupportAssignments(["project.support.assignments.override"]),
+    ).toBe(false);
+  });
+
+  it("requires both self-assignment authority and routing-receive permission for offers", () => {
+    expect(
+      canReceiveSupportRoutingOffers([
+        "project.support.assignments.self_manage",
+        "project.support.routing.receive",
+      ]),
+    ).toBe(true);
+    expect(
+      canReceiveSupportRoutingOffers([
+        "project.support.assignments.self_manage",
       ]),
     ).toBe(false);
   });

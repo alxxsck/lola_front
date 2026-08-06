@@ -14,9 +14,13 @@ import { createSupportInboxController } from "@/features/support-inbox/model/use
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
 import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
 import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
+import { supportRoutingOfferSource } from "@/features/support-routing-offers/api/support-routing-offer-source";
+import { createSupportRoutingOffersController } from "@/features/support-routing-offers/model/use-support-routing-offers";
+import SupportRoutingOffers from "@/features/support-routing-offers/ui/SupportRoutingOffers.vue";
 import { supportWorkspaceSource } from "@/features/support-workspace/api/support-workspace-source";
 import {
   canManageOwnSupportAvailability,
+  canReceiveSupportRoutingOffers,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
@@ -88,6 +92,32 @@ const availability = createSupportAvailabilityController(
   },
   supportAvailabilitySource,
 );
+const routingOffersAccessDenied = ref(false);
+const canManageRoutingOffers = computed(
+  () =>
+    !routingOffersAccessDenied.value &&
+    canReceiveSupportRoutingOffers(
+      auth.project?.effectivePermissionCodes ?? [],
+    ),
+);
+const routingOffers = createSupportRoutingOffersController(
+  {
+    projectId: () => auth.project?.id,
+    canManage: () => canManageRoutingOffers.value,
+    async onForbidden() {
+      routingOffersAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // The private offer capabilities have already been purged.
+      }
+    },
+    async onChanged() {
+      await Promise.all([inbox.load(), conversation.reconcile()]);
+    },
+  },
+  supportRoutingOfferSource,
+);
 const profileAccessDenied = ref(false);
 const canReadProfile = computed(() =>
   !profileAccessDenied.value &&
@@ -153,12 +183,14 @@ async function reload(): Promise<void> {
     inbox.load(),
     conversation.load(),
     canReadAvailability.value ? availability.load() : Promise.resolve(),
+    canManageRoutingOffers.value ? routingOffers.load() : Promise.resolve(),
   ]);
 }
 
 onMounted(async () => {
   await inbox.load();
   if (canReadAvailability.value) await availability.load();
+  if (canManageRoutingOffers.value) await routingOffers.load();
 });
 
 watch(
@@ -167,7 +199,9 @@ watch(
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
     availabilityAccessDenied.value = false;
+    routingOffersAccessDenied.value = false;
     availability.reset();
+    routingOffers.reset();
     profile.reset();
     conversation.reset();
     inbox.reset();
@@ -177,6 +211,10 @@ watch(
 
 watch(canReadAvailability, (allowed) => {
   if (!allowed) availability.reset();
+});
+
+watch(canManageRoutingOffers, (allowed) => {
+  if (!allowed) routingOffers.reset();
 });
 
 watch(
@@ -204,6 +242,7 @@ watch(canReadProfile, (allowed) => {
 onBeforeUnmount(() => {
   profile.reset();
   availability.reset();
+  routingOffers.reset();
   inbox.reset();
   conversation.reset();
 });
@@ -230,7 +269,9 @@ onBeforeUnmount(() => {
             inbox.loading.value ||
             conversation.loading.value ||
             availability.loading.value ||
-            availability.changing.value
+            availability.changing.value ||
+            routingOffers.loading.value ||
+            Boolean(routingOffers.changingOfferId.value)
           "
           @click="reload"
         />
@@ -238,9 +279,10 @@ onBeforeUnmount(() => {
     </header>
 
     <Message severity="info" :closable="false" class="workspace-notice">
-      Данные и разрешения приходят одним серверным срезом. Отправка, live
-      collaboration, назначение, SLA и delivery включаются только после
-      публикации соответствующих серверных контрактов.
+      Данные и разрешения приходят одним серверным срезом. Статус оператора и
+      персональные предложения назначений используют опубликованные server-side
+      capabilities; отправка, live collaboration, SLA и delivery остаются
+      выключенными до публикации своих контрактов.
     </Message>
 
     <SupportAvailabilityStatus
@@ -258,6 +300,20 @@ onBeforeUnmount(() => {
       @change="availability.change"
       @retry="availability.retryUnknownOutcome"
       @retry-after-reconcile="availability.retryAfterReconcile"
+    />
+
+    <SupportRoutingOffers
+      v-if="canManageRoutingOffers"
+      :offers="routingOffers.offers.value"
+      :loading="routingOffers.loading.value"
+      :changing-offer-id="routingOffers.changingOfferId.value"
+      :error="routingOffers.error.value"
+      :unknown-outcome="routingOffers.unknownOutcome.value"
+      :last-outcome="routingOffers.lastOutcome.value"
+      :can-retry="routingOffers.canRetry.value"
+      @refresh="routingOffers.load"
+      @action="routingOffers.act"
+      @retry="routingOffers.retryUnknownOutcome"
     />
 
     <div

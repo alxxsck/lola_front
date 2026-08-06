@@ -64,6 +64,16 @@ test("shows and changes only the operator's authoritative availability intent", 
   await expect(status).toContainText("Новые обращения не назначаются");
 });
 
+test("shows only the operator's server-authoritative routing offers", async ({
+  page,
+}) => {
+  const offers = page.getByRole("region", { name: "Предложения из очереди" });
+
+  await expect(offers).toBeVisible();
+  await expect(offers).toContainText("Активных предложений сейчас нет.");
+  await expect(offers.getByText(/assignmentId|offerToken|queueId/)).toHaveCount(0);
+});
+
 test("does not substitute another conversation for an unavailable deep link", async ({
   page,
 }) => {

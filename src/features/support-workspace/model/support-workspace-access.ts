@@ -6,6 +6,10 @@ const supportAvailabilityReadPermission =
   "project.support.availability.read" as const;
 const supportAvailabilitySelfManagePermission =
   "project.support.availability.self_manage" as const;
+const supportAssignmentSelfManagePermission =
+  "project.support.assignments.self_manage" as const;
+const supportRoutingReceivePermission =
+  "project.support.routing.receive" as const;
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
@@ -47,6 +51,24 @@ export function canManageOwnSupportAvailability(
       effectivePermissionCodes,
       supportAvailabilitySelfManagePermission,
     )
+  );
+}
+
+export function canManageOwnSupportAssignments(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportAssignmentSelfManagePermission,
+  );
+}
+
+export function canReceiveSupportRoutingOffers(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return (
+    canManageOwnSupportAssignments(effectivePermissionCodes) &&
+    hasProjectPermission(effectivePermissionCodes, supportRoutingReceivePermission)
   );
 }
 
