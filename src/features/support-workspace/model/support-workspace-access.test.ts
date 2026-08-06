@@ -7,6 +7,8 @@ import {
   canReadSupportConversationAiSuspension,
   canReadSupportInternalNoteHistory,
   canReadSupportInternalNotes,
+  canWriteSupportInternalNotes,
+  canRedactSupportInternalNotes,
   canReleaseSupportCaseAssignment,
   canReadSupportAvailability,
   canReadSupportControl,
@@ -158,6 +160,22 @@ describe("support workspace access", () => {
         "project.support.internal_notes.history_read",
       ]),
     ).toBe(false);
+  });
+
+  it("keeps note creation and redaction behind their distinct grants", () => {
+    expect(
+      canWriteSupportInternalNotes(["project.support.internal_notes.write"]),
+    ).toBe(true);
+    expect(
+      canWriteSupportInternalNotes(["project.support.internal_notes.read"]),
+    ).toBe(false);
+    expect(
+      canRedactSupportInternalNotes(["project.support.internal_notes.redact"]),
+    ).toBe(true);
+    expect(
+      canRedactSupportInternalNotes(["project.support.internal_notes.write"]),
+    ).toBe(false,
+    );
   });
 
   it("accepts only an explicit rollout enablement", () => {

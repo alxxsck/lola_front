@@ -71,6 +71,32 @@ describe("conversation translation banner", () => {
     expect(wrapper.text()).not.toContain("из профиля");
   });
 
+  it("never lets language controls submit an enclosing reply form", () => {
+    const value = state("PROFILE");
+    value.language.needsConfirmation = true;
+    value.language.conflictingLocale = "ru";
+    const wrapper = shallowMount(ConversationTranslationBanner, {
+      props: {
+        state: value,
+        loading: false,
+        saving: false,
+        canManage: true,
+        eligibleCount: 0,
+      },
+      global: {
+        stubs: {
+          Button: {
+            props: ["label", "type"],
+            template: '<button :type="type">{{ label }}</button>',
+          },
+        },
+      },
+    });
+
+    expect(wrapper.findAll("button")).not.toHaveLength(0);
+    expect(wrapper.findAll("button").every((button) => button.attributes("type") === "button")).toBe(true);
+  });
+
   it("всегда предлагает supported locales, когда язык неизвестен", async () => {
     const value = state("UNKNOWN");
     value.language.locale = null;

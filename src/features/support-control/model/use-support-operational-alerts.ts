@@ -9,6 +9,7 @@ import type {
 export interface SupportOperationalAlertsContext {
   projectId(): string | undefined;
   canRead(): boolean;
+  canManage?(): boolean;
   onForbidden?(): void | Promise<void>;
 }
 
@@ -24,10 +25,13 @@ export function createSupportOperationalAlertsController(
   const detailLoading = ref(false);
   const detailError = ref("");
   const detailAlertId = ref<string | null>(null);
+  const mutating = ref<"ACKNOWLEDGE" | "RESOLVE" | null>(null);
+  const mutationError = ref("");
   let generation = 0;
   let detailGeneration = 0;
   let listAbort: AbortController | null = null;
   let detailAbort: AbortController | null = null;
+  const attempts = new Map<string, string>();
 
   function reset(): void {
     generation += 1;
@@ -43,6 +47,9 @@ export function createSupportOperationalAlertsController(
     detailLoading.value = false;
     detailError.value = "";
     detailAlertId.value = null;
+    mutating.value = null;
+    mutationError.value = "";
+    attempts.clear();
   }
 
   function isCurrent(projectId: string, requestGeneration: number): boolean {
@@ -61,10 +68,13 @@ export function createSupportOperationalAlertsController(
     );
   }
 
-  async function load(cursor?: string): Promise<void> {
+  async function load(
+    cursor?: string,
+    options: { retainDetail?: boolean } = {},
+  ): Promise<void> {
     const projectId = context.projectId();
     const append = Boolean(cursor);
-    if (!append) closeDetail();
+    if (!append && !options.retainDetail) closeDetail();
     listAbort?.abort();
     const requestGeneration = ++generation;
     const abort = new AbortController();
@@ -95,7 +105,10 @@ export function createSupportOperationalAlertsController(
       };
     } catch (cause) {
       if (!isCurrent(projectId, requestGeneration)) return;
-      if (cause instanceof ApiError && cause.status === 403) {
+      if (
+        cause instanceof ApiError &&
+        (cause.status === 403 || cause.status === 404)
+      ) {
         reset();
         await context.onForbidden?.();
         return;
@@ -154,7 +167,10 @@ export function createSupportOperationalAlertsController(
       };
     } catch (cause) {
       if (!isCurrentDetail(projectId, requestGeneration)) return;
-      if (cause instanceof ApiError && cause.status === 403) {
+      if (
+        cause instanceof ApiError &&
+        (cause.status === 403 || cause.status === 404)
+      ) {
         reset();
         await context.onForbidden?.();
         return;
@@ -187,6 +203,112 @@ export function createSupportOperationalAlertsController(
     detailLoading.value = false;
     detailError.value = "";
     detailAlertId.value = null;
+    mutating.value = null;
+    mutationError.value = "";
+  }
+
+  function canManage(): boolean {
+    return Boolean(context.canRead() && context.canManage?.());
+  }
+
+  function commandKey(identity: string): string {
+    const existing = attempts.get(identity);
+    if (existing) return existing;
+    const next = globalThis.crypto.randomUUID();
+    attempts.set(identity, next);
+    return next;
+  }
+
+  async function command(
+    kind: "ACKNOWLEDGE" | "RESOLVE",
+    reasonCode: string,
+  ): Promise<boolean> {
+    const projectId = context.projectId();
+    const current = detail.value;
+    const alertId = detailAlertId.value;
+    if (
+      !projectId ||
+      !current ||
+      !alertId ||
+      current.alert.id !== alertId ||
+      !canManage() ||
+      mutating.value
+    )
+      return false;
+    const detailRequestGeneration = detailGeneration;
+    const identity = `${projectId}\u001f${alertId}\u001f${kind}\u001f${current.alert.version}\u001f${reasonCode}`;
+    const input = {
+      expectedVersion: current.alert.version,
+      idempotencyKey: commandKey(identity),
+      reasonCode,
+    };
+    mutating.value = kind;
+    mutationError.value = "";
+    try {
+      if (kind === "ACKNOWLEDGE") {
+        await source.acknowledge(projectId, alertId, input as Parameters<
+          SupportOperationalAlertsSource["acknowledge"]
+        >[2]);
+      } else {
+        await source.resolve(projectId, alertId, input as Parameters<
+          SupportOperationalAlertsSource["resolve"]
+        >[2]);
+      }
+      if (
+        detailRequestGeneration !== detailGeneration ||
+        context.projectId() !== projectId ||
+        detailAlertId.value !== alertId ||
+        !canManage()
+      )
+        return false;
+      attempts.delete(identity);
+      await Promise.all([
+        load(undefined, { retainDetail: true }),
+        loadDetail(alertId),
+      ]);
+      return true;
+    } catch (cause) {
+      if (
+        detailRequestGeneration !== detailGeneration ||
+        context.projectId() !== projectId ||
+        detailAlertId.value !== alertId
+      )
+        return false;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        reset();
+        await context.onForbidden?.();
+        return false;
+      }
+      mutationError.value =
+        cause instanceof ApiError && cause.status === 409
+          ? "Alert уже изменился на сервере. Обновите его перед следующим действием."
+          : "Не удалось выполнить команду alert. Ничего не считается подтверждённым.";
+      return false;
+    } finally {
+      if (
+        context.projectId() === projectId &&
+        detailAlertId.value === alertId &&
+        mutating.value === kind
+      )
+        mutating.value = null;
+    }
+  }
+
+  function acknowledge(
+    reasonCode: "INVESTIGATING" | "OWNERSHIP_ACCEPTED" | "ESCALATED",
+  ): Promise<boolean> {
+    return command("ACKNOWLEDGE", reasonCode);
+  }
+
+  function resolve(
+    reasonCode:
+      | "RISK_CLEARED"
+      | "MITIGATED"
+      | "FALSE_POSITIVE"
+      | "DUPLICATE"
+      | "EXTERNAL_INCIDENT_HANDOFF",
+  ): Promise<boolean> {
+    return command("RESOLVE", reasonCode);
   }
 
   return {
@@ -196,11 +318,15 @@ export function createSupportOperationalAlertsController(
     detail,
     detailLoading,
     detailError,
+    mutating,
+    mutationError,
     load,
     loadMore,
     openDetail,
     loadMoreDetail,
     closeDetail,
+    acknowledge,
+    resolve,
     reset,
   };
 }

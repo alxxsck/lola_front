@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 async function login(page: Page): Promise<void> {
@@ -44,6 +45,52 @@ test("opens a project conversation as a deep link without horizontal overflow", 
   expect(geometry.workspaceRight).toBeLessThanOrEqual(
     geometry.clientWidth + 0.5,
   );
+});
+
+test("sends a public reply only through the selected conversation and shows the server receipt", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+
+  const composer = page.getByRole("textbox", {
+    name: "Текст ответа пользователю",
+  });
+  await expect(composer).toBeVisible();
+  await composer.fill("Проверил обращение и вернусь с ответом сегодня.");
+  await page
+    .getByRole("button", { name: "Отправить пользователю" })
+    .click();
+
+  await expect(composer).toHaveValue("");
+  await expect(
+    page.getByText("Проверил обращение и вернусь с ответом сегодня.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Сообщение доставлено пользователю.", { exact: true }),
+  ).toBeVisible();
+});
+
+test("keeps the selected operator workspace free of serious structural accessibility violations", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa"])
+    .disableRules(["color-contrast"])
+    .analyze();
+  expect(
+    accessibility.violations.filter(
+      (violation) =>
+        violation.impact === "critical" || violation.impact === "serious",
+    ),
+  ).toEqual([]);
 });
 
 test("moves through visible inbox rows with j/k and arrows without hijacking inputs", async ({

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
@@ -17,6 +17,12 @@ const props = withDefaults(defineProps<{
   loadingMore?: boolean;
   error?: string;
   canReadHistory?: boolean;
+  canWrite?: boolean;
+  canRedact?: boolean;
+  creating?: boolean;
+  correctingNoteId?: string | null;
+  tombstoningNoteId?: string | null;
+  mutationError?: string;
   selectedHistoryNote: SupportInternalNote | null;
   history: SupportInternalNoteRevision[];
   historyNextCursor: string | null;
@@ -28,6 +34,12 @@ const props = withDefaults(defineProps<{
   loadingMore: false,
   error: "",
   canReadHistory: false,
+  canWrite: false,
+  canRedact: false,
+  creating: false,
+  correctingNoteId: null,
+  tombstoningNoteId: null,
+  mutationError: "",
   historyLoading: false,
   historyLoadingMore: false,
   historyError: "",
@@ -40,7 +52,26 @@ const emit = defineEmits<{
   openHistory: [noteId: string];
   closeHistory: [];
   loadHistoryMore: [];
+  create: [body: string, onSucceeded: () => void];
+  correct: [
+    noteId: string,
+    body: string,
+    reasonCode: string,
+    onSucceeded: () => void,
+  ];
+  tombstone: [
+    noteId: string,
+    reasonCode: string,
+    onSucceeded: () => void,
+  ];
 }>();
+
+const createBody = ref("");
+const correctionNoteId = ref<string | null>(null);
+const correctionBody = ref("");
+const correctionReason = ref("OPERATOR_CORRECTION");
+const tombstoneNoteId = ref<string | null>(null);
+const tombstoneReason = ref("CONTENT_REMOVAL");
 
 const visibleModel = computed({
   get: () => props.visible,
@@ -68,6 +99,47 @@ function dateTime(value: string): string {
     timeStyle: "short",
   });
 }
+
+function submitCreate(): void {
+  const body = createBody.value.trim();
+  if (!body || props.creating) return;
+  emit("create", body, () => {
+    createBody.value = "";
+  });
+}
+
+function startCorrection(note: SupportInternalNote): void {
+  if (!props.canWrite || note.lifecycle !== "ACTIVE" || !note.body) return;
+  correctionNoteId.value = note.id;
+  correctionBody.value = note.body;
+  correctionReason.value = "OPERATOR_CORRECTION";
+  tombstoneNoteId.value = null;
+}
+
+function submitCorrection(noteId: string): void {
+  const body = correctionBody.value.trim();
+  const reasonCode = correctionReason.value.trim().toUpperCase();
+  if (!body || !reasonCode || props.correctingNoteId) return;
+  emit("correct", noteId, body, reasonCode, () => {
+    correctionNoteId.value = null;
+    correctionBody.value = "";
+  });
+}
+
+function startTombstone(noteId: string): void {
+  if (!props.canRedact) return;
+  tombstoneNoteId.value = noteId;
+  tombstoneReason.value = "CONTENT_REMOVAL";
+  correctionNoteId.value = null;
+}
+
+function submitTombstone(noteId: string): void {
+  const reasonCode = tombstoneReason.value.trim().toUpperCase();
+  if (!reasonCode || props.tombstoningNoteId) return;
+  emit("tombstone", noteId, reasonCode, () => {
+    tombstoneNoteId.value = null;
+  });
+}
 </script>
 
 <template>
@@ -78,14 +150,42 @@ function dateTime(value: string): string {
     :style="{ width: 'min(780px, calc(100vw - 24px))' }"
   >
     <Message severity="info" :closable="false">
-      Заметки доступны только для чтения. Действия появятся после публикации
-      серверных capability для выбранного Case.
+      Внутреннюю заметку пользователь не увидит. Не вставляйте в неё секреты
+      или текст, который должен уйти в публичный ответ.
     </Message>
 
     <Message v-if="error" severity="error" :closable="false">
       {{ error }}
-      <Button label="Повторить" size="small" text @click="emit('reload')" />
+      <Button type="button" label="Повторить" size="small" text @click="emit('reload')" />
     </Message>
+    <Message v-if="mutationError" severity="error" :closable="false">
+      {{ mutationError }}
+      <Button type="button" label="Обновить список" size="small" text @click="emit('reload')" />
+    </Message>
+    <form
+      v-if="canWrite"
+      class="internal-note-composer"
+      :aria-busy="creating"
+      @submit.prevent="submitCreate"
+    >
+      <label>
+        <span>Новая внутренняя заметка</span>
+        <textarea
+          v-model="createBody"
+          rows="3"
+          maxlength="20480"
+          placeholder="Что важно передать команде? Пользователь этого не увидит."
+          :disabled="creating"
+        />
+      </label>
+      <Button
+        type="submit"
+        label="Сохранить заметку"
+        icon="pi pi-file-edit"
+        :loading="creating"
+        :disabled="!createBody.trim()"
+      />
+    </form>
     <p v-if="loading" class="internal-notes-empty">Загружаем заметки…</p>
     <p v-else-if="!notes.length && !error" class="internal-notes-empty">
       В этом Case пока нет доступных заметок.
@@ -120,24 +220,122 @@ function dateTime(value: string): string {
           <p v-if="note.hasUnavailableReferences" class="internal-note__unavailable">
             Некоторые связанные объекты больше недоступны.
           </p>
+          <form
+            v-if="correctionNoteId === note.id"
+            class="internal-note-correction"
+            :aria-busy="correctingNoteId === note.id"
+            @submit.prevent="submitCorrection(note.id)"
+          >
+            <label>
+              <span>Исправленный текст</span>
+              <textarea
+                v-model="correctionBody"
+                rows="3"
+                maxlength="20480"
+                :disabled="correctingNoteId === note.id"
+              />
+            </label>
+            <label>
+              <span>Код причины</span>
+              <input
+                v-model="correctionReason"
+                maxlength="64"
+                pattern="[A-Za-z][A-Za-z0-9_]{1,63}"
+                :disabled="correctingNoteId === note.id"
+              />
+            </label>
+            <div class="internal-note-correction__actions">
+              <Button
+                type="button"
+                label="Отменить"
+                severity="secondary"
+                text
+                :disabled="correctingNoteId === note.id"
+                @click="correctionNoteId = null"
+              />
+              <Button
+                type="submit"
+                label="Сохранить исправление"
+                :loading="correctingNoteId === note.id"
+                :disabled="!correctionBody.trim() || !correctionReason.trim()"
+              />
+            </div>
+          </form>
+          <section
+            v-if="tombstoneNoteId === note.id"
+            class="internal-note-tombstone"
+            aria-label="Подтверждение удаления заметки"
+          >
+            <strong>Удалить текст заметки?</strong>
+            <p>Текст будет скрыт, но audit trail и факт удаления сохранятся.</p>
+            <label>
+              <span>Код причины</span>
+              <input
+                v-model="tombstoneReason"
+                maxlength="64"
+                pattern="[A-Za-z][A-Za-z0-9_]{1,63}"
+                :disabled="tombstoningNoteId === note.id"
+              />
+            </label>
+            <div class="internal-note-correction__actions">
+              <Button
+                type="button"
+                label="Отменить"
+                severity="secondary"
+                text
+                :disabled="tombstoningNoteId === note.id"
+                @click="tombstoneNoteId = null"
+              />
+              <Button
+                type="button"
+                label="Удалить текст"
+                severity="danger"
+                :loading="tombstoningNoteId === note.id"
+                :disabled="!tombstoneReason.trim()"
+                @click="submitTombstone(note.id)"
+              />
+            </div>
+          </section>
           <footer>
             <time :datetime="note.updatedAt">
               Обновлено {{ dateTime(note.updatedAt) }}
             </time>
-            <Button
-              v-if="canReadHistory"
-              label="История заметки"
-              icon="pi pi-history"
-              severity="secondary"
-              text
-              @click="emit('openHistory', note.id)"
-            />
+            <div class="internal-note__actions">
+              <Button
+                v-if="canReadHistory"
+                type="button"
+                label="История заметки"
+                icon="pi pi-history"
+                severity="secondary"
+                text
+                @click="emit('openHistory', note.id)"
+              />
+              <Button
+                v-if="canWrite && note.lifecycle === 'ACTIVE'"
+                type="button"
+                label="Исправить"
+                icon="pi pi-pencil"
+                severity="secondary"
+                text
+                @click="startCorrection(note)"
+              />
+              <Button
+                v-if="canRedact && note.lifecycle === 'ACTIVE'"
+                type="button"
+                label="Удалить текст"
+                icon="pi pi-trash"
+                severity="danger"
+                text
+                @click="startTombstone(note.id)"
+              />
+            </div>
           </footer>
         </article>
       </li>
     </ol>
     <Button
       v-if="nextCursor"
+      type="button"
       label="Загрузить ещё"
       severity="secondary"
       outlined
@@ -153,6 +351,7 @@ function dateTime(value: string): string {
         </div>
         <Button
           label="Закрыть историю"
+          type="button"
           icon="pi pi-times"
           severity="secondary"
           text
@@ -163,6 +362,7 @@ function dateTime(value: string): string {
         {{ historyError }}
         <Button
           label="Повторить"
+          type="button"
           size="small"
           text
           @click="emit('openHistory', selectedHistoryNote.id)"
@@ -192,6 +392,7 @@ function dateTime(value: string): string {
       </ol>
       <Button
         v-if="historyNextCursor"
+        type="button"
         label="Загрузить ещё версий"
         severity="secondary"
         outlined
@@ -219,6 +420,72 @@ function dateTime(value: string): string {
 }
 .internal-note {
   padding: 14px;
+}
+.internal-note-composer,
+.internal-note-correction,
+.internal-note-tombstone {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-card);
+}
+.internal-note-composer > label,
+.internal-note-correction > label,
+.internal-note-tombstone > label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+}
+.internal-note-composer textarea,
+.internal-note-correction textarea,
+.internal-note-correction input,
+.internal-note-tombstone input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font: inherit;
+}
+.internal-note-composer textarea,
+.internal-note-correction textarea {
+  min-height: 76px;
+  padding: 9px;
+  resize: vertical;
+}
+.internal-note-correction input,
+.internal-note-tombstone input {
+  min-height: 34px;
+  padding: 6px 8px;
+  font-family: var(--font-mono);
+}
+.internal-note-composer > :deep(.p-button) {
+  justify-self: end;
+}
+.internal-note-correction,
+.internal-note-tombstone {
+  margin-top: 12px;
+  background: var(--surface-base);
+}
+.internal-note-tombstone {
+  border-color: color-mix(in srgb, var(--status-danger-text) 35%, var(--line));
+}
+.internal-note-tombstone p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.internal-note-correction__actions,
+.internal-note__actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 .internal-note__header,
 .internal-note footer,
@@ -298,6 +565,9 @@ function dateTime(value: string): string {
   .internal-note-history__list header {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .internal-note-composer > :deep(.p-button) {
+    width: 100%;
   }
 }
 </style>

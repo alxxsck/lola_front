@@ -6,12 +6,18 @@ import type {
 
 const generated = vi.hoisted(() => ({
   list: vi.fn(),
+  create: vi.fn(),
+  correct: vi.fn(),
   revisions: vi.fn(),
+  tombstone: vi.fn(),
 }));
 
 vi.mock("@/shared/api/generated/retenive-backend", () => ({
   supportInternalNoteList: generated.list,
+  supportInternalNoteCreate: generated.create,
+  supportInternalNoteCorrection: generated.correct,
   supportInternalNoteRevisions: generated.revisions,
+  supportInternalNoteTombstone: generated.tombstone,
 }));
 
 vi.mock("@/shared/config/data-mode", () => ({ isMockMode: false }));
@@ -63,7 +69,7 @@ function revision(
 describe("support internal notes source", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("uses the generated Case-scoped read endpoints and removes opaque command data", async () => {
+  it("uses the generated Case-scoped read endpoints and retains only mutation-safe note metadata", async () => {
     generated.list.mockResolvedValue({ items: [note()], nextCursor: "notes-2" });
     generated.revisions.mockResolvedValue({
       items: [revision()],
@@ -83,6 +89,7 @@ describe("support internal notes source", () => {
         {
           id: "note-1",
           caseId: "case-1",
+          actionEtag: '"sin1.opaque"',
           body: "Проверить историю платежа",
           lifecycle: "ACTIVE",
           currentRevisionNumber: 2,
@@ -123,6 +130,62 @@ describe("support internal notes source", () => {
       "note-1",
       { limit: 20 },
       { signal: undefined },
+    );
+  });
+
+  it("passes idempotency and the latest action etag for note mutations", async () => {
+    generated.create.mockResolvedValue(note());
+    generated.correct.mockResolvedValue(note({ currentRevisionNumber: 3 }));
+    generated.tombstone.mockResolvedValue(
+      note({ body: null, lifecycle: "TOMBSTONED" }),
+    );
+
+    await supportInternalNotesSource.create("project-1", "case-1", {
+      body: "Проверить оплату",
+      conversationId: "conversation-1",
+      idempotencyKey: "create-note-1",
+    });
+    await supportInternalNotesSource.correct("project-1", "case-1", "note-1", {
+      body: "Проверить оплату повторно",
+      reasonCode: "OPERATOR_CORRECTION",
+      actionEtag: '"sin1.opaque"',
+      idempotencyKey: "correct-note-1",
+    });
+    await supportInternalNotesSource.tombstone("project-1", "case-1", "note-1", {
+      reasonCode: "CONTENT_REMOVAL",
+      actionEtag: '"sin1.opaque"',
+      idempotencyKey: "tombstone-note-1",
+    });
+
+    expect(generated.create).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      { body: "Проверить оплату", conversationId: "conversation-1" },
+      { headers: { "Idempotency-Key": "create-note-1" } },
+    );
+    expect(generated.correct).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      "note-1",
+      { body: "Проверить оплату повторно", reasonCode: "OPERATOR_CORRECTION" },
+      {
+        headers: {
+          "Idempotency-Key": "correct-note-1",
+          "If-Match": '"sin1.opaque"',
+        },
+      },
+    );
+    expect(generated.tombstone).toHaveBeenCalledWith(
+      "project-1",
+      "case-1",
+      "note-1",
+      { reasonCode: "CONTENT_REMOVAL" },
+      {
+        headers: {
+          "Idempotency-Key": "tombstone-note-1",
+          "If-Match": '"sin1.opaque"',
+        },
+      },
     );
   });
 

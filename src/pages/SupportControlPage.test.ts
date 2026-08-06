@@ -51,6 +51,7 @@ const alertPage: SupportOperationalAlertPage = {
   items: [
     {
       id: "alert-1",
+      version: 1,
       severity: "HIGH",
       state: "NEW",
       sourceKind: "UNASSIGNED_AGED",
@@ -170,7 +171,7 @@ describe("SupportControlPage", () => {
 
     expect(wrapper.text()).toContain("Активные alerts");
     expect(wrapper.text()).toContain("Давно без назначения");
-    expect(wrapper.text()).toContain("versioned intent");
+    expect(wrapper.text()).toContain("project.support.alerts.manage");
   });
 
   it("does not request alerts for an account without support-control access", async () => {

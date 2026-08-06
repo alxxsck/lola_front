@@ -3,7 +3,7 @@
 Статус: blocking gaps для production cutover
 Источник проверки: OpenAPI, экспортированный из `Lola_backend` ветки `develop`
 на commit `866404ec167ae293777259ee2bdd60d609c914af`
-Дата: 6 августа 2026 года
+Дата: 7 августа 2026 года
 
 Этот документ не является задачей на изменение backend. Он фиксирует границы,
 за которыми frontend не должен создавать локальную «истину» или показывать
@@ -36,17 +36,20 @@ mode включён для проверки). Он не читает `project.se
 
 ## P1: live collaboration и read state
 
-Socket hints `conversation.watch.v1` и `conversation.message.upserted.v1`
-существуют в серверном коде, но не опубликованы в OpenAPI. Отсутствуют
-типизированные contracts для typing, viewers, durable personal read position и
-operator presence. Frontend использует событие только как hint и запускает
-REST reconcile; он не должен показывать «печатает», список смотрящих, unread
-или online ownership как достоверные состояния.
+Опубликованных REST-проекций Support Workspace, команды отправки публичного
+сообщения с `Idempotency-Key`, server receipt/delivery status и cursor-history
+достаточно для рабочего места оператора. Поэтому F0 монтирует public composer,
+показывает только ответивший сервер delivery status и после отправки делает
+authoritative REST reconcile. Повтор неизвестного исхода использует тот же
+idempotency key; UI не называет pending-сообщение доставленным.
 
-До публикации протокола F0 route показывает authoritative REST snapshot и
-ручное обновление, а не статус «Live». Public composer также не монтируется:
-без server-owned lookup неизвестного результата, `expectedVersion` и typed
-watch protocol нельзя честно гарантировать delivery/recovery.
+Realtime transport и события `conversation.*.upserted.v1` используются
+исключительно как invalidation hints: после них frontend заново читает
+authoritative REST snapshot. В OpenAPI по-прежнему нет типизированных
+contracts для typing, viewers, durable personal read position и operator
+presence. Поэтому UI не показывает «печатает», список смотрящих, unread или
+online ownership как достоверные состояния; индикатор соединения означает
+только состояние транспорта, а не доступность другого сотрудника.
 
 ## P1: вложения и повтор доставки
 
@@ -63,15 +66,23 @@ evidence, disputes, calibration либо individual quality analytics. Марш�
 `/support/quality` и `/support/analytics` не должны появляться как готовые
 разделы до публикации этих server-owned моделей.
 
-## P1: управляющие команды Lead Control
+## P1: неполная управляющая поверхность Lead Control
 
-В OpenAPI уже есть read-модели Case risks, alerts и их причинной истории, но
-body `acknowledge`, `resolve` и `change owner` не передают `expectedVersion`,
-`actionEtag` или client attempt/idempotency key. Frontend поэтому показывает
-эти списки и timeline в read-only режиме: при конкурентной работе lead нельзя
-безопасно повторять либо подтверждать command, не зная, относится ли она к
-актуальной generation alert. Для audited action нужен versioned intent contract
-с однозначным recovery неизвестного результата.
+Для alerts теперь опубликованы versioned `acknowledge` и `resolve`: команда
+принимает `If-Match` с текущей server version и `Idempotency-Key`, возвращает
+authoritative receipt. Frontend реализует эти два действия только при exact
+`project.support.alerts.manage`, не делает optimistic mutation и после успеха
+перечитывает список и detail. Конфликт сохраняет detail для явного refresh.
+
+Локальный allow-list `PROJECT_PERMISSION_CODES` пока не содержит
+`project.support.alerts.manage`, хотя backend команда уже его требует. Это
+frontend permission-registry gap, а не повод выдавать право: до синхронизации
+UI проверяет строку только в фактическом effective-permissions наборе, поэтому
+кнопки не появятся без server-issued permission.
+
+`change owner` всё ещё нельзя реализовать: нет published команды вместе с
+каталогом eligible operators/Teams и target-authority projection. Frontend не
+подставляет кандидатов из inbox, presence или browser state.
 
 `support/lead/risks/capacity` также пока документирован как пустой список до
 Routing Ticket 13; UI не рисует фиктивные capacity targets или предложения по
@@ -123,7 +134,7 @@ eligibility и может назначить Case не туда.
 выдаёт opaque capability, ETag и exact assignment version. Для ручного
 self-claim/transfer требуется отдельная eligible-target projection.
 
-## P1: Internal Notes commands
+## P1: Internal Notes realtime и reason-code catalog
 
 `GET /cases/{caseId}/internal-notes` и protected revision history готовы для
 read-only панели: они повторно проверяют Case target authority и имеют
@@ -131,13 +142,19 @@ read-only панели: они повторно проверяют Case target a
 `internal_notes.read` (history дополнительно требует `history_read`) и очищает
 memory state при concealed `403/404`.
 
-Но `SupportWorkspaceSelection.capabilities` не содержит case-scoped
-`internalNotes.create/correct/tombstone` и rollout capability. Нельзя выводить
-write authority из assignment, Team или project-wide permission: backend
-проверяет current Case scope на каждом command. Поэтому create/correct/tombstone
-не монтируются до server-owned action projection. Также OpenAPI описывает
-creator/author как untyped object и не публикует closed catalog reason codes;
-frontend не придумывает author fields или значения reason code.
+OpenAPI публикует create/correct/tombstone с `Idempotency-Key` и `If-Match`
+action ETag, но `SupportWorkspaceSelection` не содержит Case-scoped
+`internalNotes.create/correct/tombstone` allowed actions. Одних project
+permissions `internal_notes.write`/`internal_notes.redact` недостаточно, чтобы
+показать mutation control на текущем Case: backend правильно отклонит
+неавторизованный target, но frontend не должен приглашать к действию заранее.
+Поэтому текущая панель остаётся read-only; write/redact UI включается только
+после published Case action projection.
+
+`reasonCode` в OpenAPI — свободная строка, а не опубликованный enum/catalog с
+label. Frontend не придумывает локальный перечень причин или author fields. Для
+предсказуемого audit UX backend должен либо опубликовать конечный каталог, либо
+явно закрепить free-form semantics и правила валидации.
 
 В серверном коде есть realtime события заметок, но их watch/renew/unwatch
 протокол и payload не опубликованы в frontend-контракте. Экран не принимает

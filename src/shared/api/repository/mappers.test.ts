@@ -101,6 +101,14 @@ describe("repository domain mappers", () => {
         displayName: "Анна Оператор",
         avatarUrl: "https://cdn.example/avatar.png",
       },
+      delivery: {
+        id: "delivery-1",
+        channel: "SDK_REALTIME",
+        status: "DELIVERING",
+        acceptedAt: "2026-08-06T10:00:01.000Z",
+        interactionSessionId: "session-1",
+        commandIds: ["command-1"],
+      },
     });
 
     expect(message).toMatchObject({
@@ -110,6 +118,10 @@ describe("repository domain mappers", () => {
         cmsUserId: "cms-1",
         displayName: "Анна Оператор",
         avatarUrl: "https://cdn.example/avatar.png",
+      },
+      delivery: {
+        status: "DELIVERING",
+        acceptedAt: "2026-08-06T10:00:01.000Z",
       },
     });
   });

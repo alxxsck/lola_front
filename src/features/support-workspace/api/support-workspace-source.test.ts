@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { SupportWorkspaceSelectionCaseResponseDto } from "@/shared/api/generated/models";
-import { mapWorkspaceCase } from "./support-workspace-source";
+import {
+  mapWorkspaceCase,
+  withMockMessageOrdinals,
+} from "./support-workspace-source";
 
 const value: SupportWorkspaceSelectionCaseResponseDto = {
   id: "case-1",
@@ -86,5 +89,40 @@ describe("support workspace Case mapper", () => {
         "end-user-1",
       ),
     ).toThrow("another case");
+  });
+});
+
+describe("support workspace mock history", () => {
+  it("appends a newly written mock message after the server-ordering range", () => {
+    const messages = withMockMessageOrdinals([
+      {
+        id: "message-1",
+        conversationId: "conversation-1",
+        ordinal: 2,
+        author: "USER",
+        text: "Второе",
+        status: "COMPLETED",
+        createdAt: "2026-08-06T10:01:00.000Z",
+      },
+      {
+        id: "message-2",
+        conversationId: "conversation-1",
+        ordinal: 1,
+        author: "ADMIN",
+        text: "Первое",
+        status: "COMPLETED",
+        createdAt: "2026-08-06T10:00:00.000Z",
+      },
+      {
+        id: "message-3",
+        conversationId: "conversation-1",
+        author: "ADMIN",
+        text: "Новое сообщение",
+        status: "COMPLETED",
+        createdAt: "2026-08-06T10:02:00.000Z",
+      },
+    ]);
+
+    expect(messages.map((message) => message.ordinal)).toEqual([2, 1, 3]);
   });
 });

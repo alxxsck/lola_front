@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Avatar from "primevue/avatar";
+import Dialog from "primevue/dialog";
 import Drawer from "primevue/drawer";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
@@ -14,8 +15,16 @@ import ConversationAISuspensionBanner from "@/features/conversation-ai-suspensio
 import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
 import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
 import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
+import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
+import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
+import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
+import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
+import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
+import SupportMessageDeliveryStatus from "@/features/support-conversation/ui/SupportMessageDeliveryStatus.vue";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
+import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
+import SupportReplyComposer from "@/features/support-reply/ui/SupportReplyComposer.vue";
 import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
 import { createSupportAssignmentReleaseController } from "@/features/support-case-assignment/model/use-support-assignment-release";
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
@@ -40,7 +49,10 @@ import {
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
 import { createSupportUserProfileController } from "@/features/support-user-profile/model/use-support-user-profile";
+import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
 import { relativeTime } from "@/shared/lib/format";
+import { repository } from "@/shared/api/repository";
+import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import type { ConversationMessage } from "@/shared/types/domain";
 import type {
   ExtendConversationAISuspensionDto,
@@ -69,8 +81,134 @@ const conversation = createSupportConversationController(
   {
     projectId: () => auth.project?.id,
     conversationId: () => requestedConversationId.value,
+    onForbidden: handleConversationForbidden,
   },
   supportWorkspaceSource,
+);
+const reply = createSupportReplyController(
+  {
+    projectId: () => auth.project?.id,
+    actorId: () => auth.user?.id,
+    selection: () => conversation.selection.value,
+    async reconcile() {
+      await Promise.all([inbox.load(), conversation.reconcile()]);
+    },
+  },
+  repository,
+);
+const canManageTranslation = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.translation.create",
+  ),
+);
+const canReadTranslationDetails = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.translation.read",
+  ),
+);
+const replyTranslationRequested = ref(false);
+const translationSettingsVisible = ref(false);
+const sendWithoutTranslationVisible = ref(false);
+const sendWithoutTranslationReason = ref("");
+const messageViewMode = ref<"ORIGINAL" | "TRANSLATED">("ORIGINAL");
+let replyTranslationLoad: Promise<boolean> | null = null;
+let replyTranslationLoadScope: string | undefined;
+const translation = createConversationTranslationController({
+  projectId: () => auth.project?.id,
+  endUserId: () => conversation.selection.value?.endUser.id,
+  conversationId: () => conversation.selection.value?.conversation?.id,
+  selectedCaseId: () => conversation.selection.value?.case?.id,
+  sourceText: () => reply.draft.value,
+  restoreSourceText: (value) => {
+    reply.draft.value = value;
+  },
+  reconcileMessages: async () => {
+    await Promise.all([inbox.load(), conversation.reconcile()]);
+  },
+});
+const replyTranslationBusy = computed(
+  () =>
+    reply.sending.value ||
+    translation.loading.value ||
+    translation.previewing.value ||
+    translation.editingReply.value ||
+    translation.savingPreference.value,
+);
+const translationPolicyRequiresReviewedReply = computed(() => {
+  const preference = translation.state.value?.preference;
+  const targetLocale = translation.targetLocale.value;
+  return Boolean(
+    preference?.enabled &&
+      preference.workingLocale &&
+      (!targetLocale || preference.workingLocale !== targetLocale),
+  );
+});
+const replyPolicyChecking = computed(
+  () => canManageTranslation.value && !translation.state.value,
+);
+const canSubmitPublicReply = computed(() => {
+  if (!reply.canReply.value || replyPolicyChecking.value) return false;
+  if (
+    replyTranslationRequested.value ||
+    translationPolicyRequiresReviewedReply.value
+  )
+    return Boolean(
+      translation.readyDraft.value &&
+        !translation.previewStale.value &&
+        !replyTranslationBusy.value,
+    );
+  return true;
+});
+const publicReplyBlockedReason = computed(() => {
+  if (!reply.canReply.value) return "";
+  if (replyPolicyChecking.value)
+    return translation.error.value || "Проверяем правила перевода…";
+  if (
+    replyTranslationRequested.value ||
+    translationPolicyRequiresReviewedReply.value
+  )
+    return translation.targetLocale.value
+      ? "Сначала подготовьте и проверьте перевод."
+      : "Выберите язык ответа или используйте разрешённое исключение.";
+  return "";
+});
+const visibleTranslationMessageIds = computed(() =>
+  conversation.messages.value
+    .filter(
+      (message) =>
+        isFrontendTranslationCandidate(
+          message,
+          translation.state.value?.preference.workingLocale,
+        ) && !translation.messageTranslations.value.has(message.id),
+    )
+    .slice(-50)
+    .map((message) => message.id),
+);
+const workspaceLive = createSupportWorkspaceLiveController(
+  {
+    async reconcile() {
+      await Promise.all([inbox.load(), conversation.reconcile()]);
+    },
+  },
+  cmsRealtimeClient,
+);
+const workspaceLiveLabel = computed(() =>
+  workspaceLive.state.value === "CONNECTED"
+    ? "Обновления подключены"
+    : workspaceLive.state.value === "CONNECTING"
+      ? "Подключаем обновления"
+      : workspaceLive.state.value === "DEGRADED"
+        ? "Обновления восстанавливаются"
+        : "Снимок сервера",
+);
+const workspaceLiveSeverity = computed(() =>
+  workspaceLive.state.value === "CONNECTED"
+    ? "success"
+    : workspaceLive.state.value === "DEGRADED"
+      ? "warn"
+      : "info",
 );
 const selectedConversation = computed(() => {
   if (routeConversationId.value)
@@ -149,6 +287,16 @@ const canReadSelectedInternalNoteHistory = computed(
       auth.project?.effectivePermissionCodes ?? [],
     ),
 );
+/**
+ * The published workspace selection has no Case-scoped note action
+ * projection. Project permissions alone must not infer mutation authority.
+ */
+const canWriteSelectedInternalNotes = computed(
+  () => false,
+);
+const canRedactSelectedInternalNotes = computed(
+  () => false,
+);
 const selectedInternalNotesAuthorityKey = computed(() => {
   const selection = conversation.selection.value;
   return [
@@ -165,6 +313,8 @@ const internalNotes = createSupportInternalNotesController(
     caseId: () => conversation.selection.value?.case?.id,
     canRead: () => canReadSelectedInternalNotes.value,
     canReadHistory: () => canReadSelectedInternalNoteHistory.value,
+    canWrite: () => canWriteSelectedInternalNotes.value,
+    canRedact: () => canRedactSelectedInternalNotes.value,
     async onForbidden() {
       internalNotesAccessDenied.value = true;
       internalNotesVisible.value = false;
@@ -328,6 +478,31 @@ function openInternalNotes(): void {
   void internalNotes.load();
 }
 
+async function createInternalNote(
+  body: string,
+  onSucceeded: () => void,
+): Promise<void> {
+  const conversationId = conversation.selection.value?.conversation?.id;
+  if (await internalNotes.create(body, conversationId)) onSucceeded();
+}
+
+async function correctInternalNote(
+  noteId: string,
+  body: string,
+  reasonCode: string,
+  onSucceeded: () => void,
+): Promise<void> {
+  if (await internalNotes.correct(noteId, body, reasonCode)) onSucceeded();
+}
+
+async function tombstoneInternalNote(
+  noteId: string,
+  reasonCode: string,
+  onSucceeded: () => void,
+): Promise<void> {
+  if (await internalNotes.tombstone(noteId, reasonCode)) onSucceeded();
+}
+
 let internalNotesRefreshTimer: number | undefined;
 
 function stopInternalNotesReconciliation(): void {
@@ -409,6 +584,7 @@ async function reload(): Promise<void> {
   aiSuspensionDialogVisible.value = false;
   aiSuspensionHistoryVisible.value = false;
   internalNotesVisible.value = false;
+  setSendWithoutTranslationVisible(false);
   internalNotes.reset();
   await Promise.all([
     inbox.load(),
@@ -416,7 +592,138 @@ async function reload(): Promise<void> {
     canReadAvailability.value ? availability.load() : Promise.resolve(),
     canManageRoutingOffers.value ? routingOffers.load() : Promise.resolve(),
   ]);
+  reply.syncSelection();
   reloadSelectedAiSuspension();
+}
+
+async function sendReply(): Promise<void> {
+  const policyLoaded = canManageTranslation.value
+    ? await ensureReplyTranslationLoaded()
+    : true;
+  if (!policyLoaded) {
+    replyTranslationRequested.value = true;
+    return;
+  }
+  if (
+    replyTranslationRequested.value ||
+    translationPolicyRequiresReviewedReply.value
+  ) {
+    replyTranslationRequested.value = true;
+    if (translation.readyDraft.value) {
+      await sendTranslatedReply();
+      return;
+    }
+    await prepareReplyTranslation();
+    return;
+  }
+  await reply.send();
+}
+
+function setSendWithoutTranslationVisible(visible: boolean): void {
+  sendWithoutTranslationVisible.value = visible;
+  if (!visible) sendWithoutTranslationReason.value = "";
+}
+
+async function sendReplyWithoutTranslation(): Promise<void> {
+  const reason = sendWithoutTranslationReason.value.trim();
+  if (!reason || !reply.canSendWithoutTranslation.value) return;
+  await reply.sendWithoutTranslation(reason);
+  if (!reply.draft.value.trim()) {
+    setSendWithoutTranslationVisible(false);
+    translation.clearReplyDraft();
+    replyTranslationRequested.value = false;
+  }
+}
+
+async function ensureReplyTranslationLoaded(): Promise<boolean> {
+  if (!canManageTranslation.value) return false;
+  if (translation.state.value) return true;
+  const scope = [
+    auth.project?.id ?? "",
+    conversation.selection.value?.endUser.id ?? "",
+    conversation.selection.value?.conversation?.id ?? "",
+  ].join("\u0000");
+  if (!scope.replaceAll("\u0000", "")) return false;
+  if (replyTranslationLoad && replyTranslationLoadScope === scope)
+    return replyTranslationLoad;
+  const request = translation
+    .load()
+    .then(() => Boolean(translation.state.value))
+    .finally(() => {
+      if (replyTranslationLoad === request) {
+        replyTranslationLoad = null;
+        replyTranslationLoadScope = undefined;
+      }
+    });
+  replyTranslationLoad = request;
+  replyTranslationLoadScope = scope;
+  return request;
+}
+
+async function setTranslationEnabled(enabled: boolean): Promise<void> {
+  if (!(await ensureReplyTranslationLoaded())) return;
+  await translation.updatePreference({ enabled });
+}
+
+async function setTranslationTargetLocale(
+  locale: string | null,
+): Promise<void> {
+  if (!(await ensureReplyTranslationLoaded())) return;
+  await translation.updatePreference({ endUserLocaleOverride: locale });
+}
+
+async function showTranslatedMessages(): Promise<void> {
+  if (!(await ensureReplyTranslationLoaded())) return;
+  if (!translation.state.value?.preference.enabled) {
+    await translation.updatePreference({ enabled: true });
+  }
+  if (!translation.state.value?.preference.enabled) return;
+  await translation.translateMessages(visibleTranslationMessageIds.value);
+  messageViewMode.value = "TRANSLATED";
+}
+
+async function openTranslationSettings(): Promise<void> {
+  translationSettingsVisible.value = true;
+  await ensureReplyTranslationLoaded();
+}
+
+async function prepareReplyTranslation(): Promise<void> {
+  if (!(await ensureReplyTranslationLoaded())) return;
+  const targetLocale = translation.targetLocale.value;
+  const workingLocale = translation.state.value?.preference.workingLocale;
+  if (!targetLocale || targetLocale === workingLocale) {
+    translationSettingsVisible.value = true;
+    return;
+  }
+  replyTranslationRequested.value = true;
+  await translation.createReplyPreview();
+}
+
+async function sendTranslatedReply(editedText?: string): Promise<void> {
+  if (
+    translation.savingPreference.value ||
+    translation.previewStale.value ||
+    !reply.canReply.value
+  )
+    return;
+  const beforeEdit = translation.readyDraft.value;
+  if (
+    beforeEdit &&
+    editedText?.trim() &&
+    editedText.trim() !==
+      (beforeEdit.editedTranslatedText ?? beforeEdit.translatedText ?? "")
+  ) {
+    await translation.editReplyTranslation(editedText);
+  } else {
+    await translation.flushReplyEdit();
+  }
+  const ready = translation.readyDraft.value;
+  if (!ready) return;
+  await reply.sendTranslatedReply(ready.id);
+  if (!reply.draft.value.trim()) {
+    translation.clearReplyDraft();
+    replyTranslationRequested.value = false;
+  }
 }
 
 function reloadSelectedAiSuspension(): void {
@@ -446,6 +753,27 @@ function revokeSelectedAiSuspensionAccess(scope?: {
   aiSuspensionHistoryVisible.value = false;
   void auth.refreshContext().catch(() => undefined);
   void Promise.all([inbox.load(), conversation.reconcile()]);
+}
+
+async function handleConversationForbidden(): Promise<void> {
+  contextDrawerVisible.value = false;
+  internalNotesVisible.value = false;
+  aiSuspensionDialogVisible.value = false;
+  aiSuspensionHistoryVisible.value = false;
+  setSendWithoutTranslationVisible(false);
+  reply.reset();
+  translation.reset();
+  profile.reset();
+  internalNotes.reset();
+  assignmentRelease.reset();
+  try {
+    await auth.refreshContext();
+  } catch {
+    // The revoked conversation was purged before authority recovery.
+  }
+  await inbox.load().catch(() => undefined);
+  if (routeConversationId.value)
+    await router.replace({ name: "support-inbox" });
 }
 
 function openAiSuspensionDialog(mode: "START" | "EXTEND" | "RESUME"): void {
@@ -525,6 +853,12 @@ watch(
     routingOffers.reset();
     profile.reset();
     internalNotes.reset();
+    reply.reset();
+    replyTranslationRequested.value = false;
+    translationSettingsVisible.value = false;
+    setSendWithoutTranslationVisible(false);
+    messageViewMode.value = "ORIGINAL";
+    translation.reset();
     conversation.reset();
     inbox.reset();
     void inbox.load();
@@ -628,10 +962,49 @@ watch(
 );
 
 watch(
-  () => conversation.selection.value?.conversation,
-  (selected) => {
+  [
+    () => conversation.selection.value?.conversation?.id,
+    () => conversation.selection.value?.endUser.id,
+  ],
+  () => {
+    const selected = conversation.selection.value?.conversation;
     if (selected) inbox.upsert(selected);
+    reply.syncSelection();
+    replyTranslationRequested.value = false;
+    translationSettingsVisible.value = false;
+    setSendWithoutTranslationVisible(false);
+    messageViewMode.value = "ORIGINAL";
+    translation.reset();
+    if (canManageTranslation.value) void ensureReplyTranslationLoaded();
   },
+);
+
+watch(
+  () => reply.draft.value,
+  (draft) => {
+    if (!draft.trim()) {
+      replyTranslationRequested.value = false;
+      setSendWithoutTranslationVisible(false);
+    }
+  },
+);
+
+watch(
+  () => reply.translationRequired.value,
+  (required) => {
+    if (required) replyTranslationRequested.value = true;
+  },
+);
+
+watch(
+  [
+    () => auth.project?.id,
+    () => conversation.selection.value?.conversation?.id,
+  ],
+  ([projectId, conversationId]) => {
+    void workspaceLive.setSelection(projectId, conversationId).catch(() => undefined);
+  },
+  { immediate: true },
 );
 
 watch(canReadProfile, (allowed) => {
@@ -643,6 +1016,10 @@ onBeforeUnmount(() => {
   stopInternalNotesReconciliation();
   profile.reset();
   internalNotes.reset();
+  reply.reset();
+  translation.reset();
+  setSendWithoutTranslationVisible(false);
+  workspaceLive.dispose();
   availability.reset();
   routingOffers.reset();
   assignmentRelease.reset();
@@ -664,7 +1041,7 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <div class="header-actions">
-        <Tag value="Снимок сервера" severity="info" />
+        <Tag :value="workspaceLiveLabel" :severity="workspaceLiveSeverity" />
         <Button
           label="Обновить"
           icon="pi pi-refresh"
@@ -685,42 +1062,12 @@ onBeforeUnmount(() => {
 
     <Message severity="info" :closable="false" class="workspace-notice">
       Данные и разрешения приходят одним серверным срезом. Статус оператора,
-      персональные предложения назначений, AI Suspension и внутренние заметки
-      используют опубликованные server-side capabilities; отправка, live
-      collaboration, SLA и delivery остаются выключенными до публикации своих
-      контрактов.
+      персональные предложения назначений и AI Suspension используют
+      опубликованные server-side capabilities. Внутренние заметки пока
+      доступны только для чтения: для mutation не хватает Case-scoped actions.
+      Публичный ответ отправляется только в выбранный диалог с server-side
+      idempotency.
     </Message>
-
-    <SupportAvailabilityStatus
-      v-if="canReadAvailability"
-      :availability="availability.availability.value"
-      :loading="availability.loading.value"
-      :changing="availability.changing.value"
-      :error="availability.error.value"
-      :can-manage="canManageOwnAvailability"
-      :unknown-outcome="availability.unknownOutcome.value"
-      :needs-reconcile="availability.needsReconcile.value"
-      :can-retry-after-reconcile="availability.canRetryAfterReconcile.value"
-      :draft="availability.draft.value"
-      @refresh="availability.load"
-      @change="availability.change"
-      @retry="availability.retryUnknownOutcome"
-      @retry-after-reconcile="availability.retryAfterReconcile"
-    />
-
-    <SupportRoutingOffers
-      v-if="canManageRoutingOffers"
-      :offers="routingOffers.offers.value"
-      :loading="routingOffers.loading.value"
-      :changing-offer-id="routingOffers.changingOfferId.value"
-      :error="routingOffers.error.value"
-      :unknown-outcome="routingOffers.unknownOutcome.value"
-      :last-outcome="routingOffers.lastOutcome.value"
-      :can-retry="routingOffers.canRetry.value"
-      @refresh="routingOffers.load"
-      @action="routingOffers.act"
-      @retry="routingOffers.retryUnknownOutcome"
-    />
 
     <div
       class="support-workspace card"
@@ -829,6 +1176,33 @@ onBeforeUnmount(() => {
                   @retry="reloadSelectedAiSuspension"
                 />
               </template>
+              <div
+                v-if="canManageTranslation"
+                class="message-view-toggle"
+                role="group"
+                aria-label="Язык сообщений"
+              >
+                <Button
+                  type="button"
+                  label="Оригинал"
+                  size="small"
+                  severity="secondary"
+                  :outlined="messageViewMode !== 'ORIGINAL'"
+                  :aria-pressed="messageViewMode === 'ORIGINAL'"
+                  @click="messageViewMode = 'ORIGINAL'"
+                />
+                <Button
+                  type="button"
+                  label="Перевод"
+                  icon="pi pi-language"
+                  size="small"
+                  severity="secondary"
+                  :outlined="messageViewMode !== 'TRANSLATED'"
+                  :loading="translation.loading.value"
+                  :aria-pressed="messageViewMode === 'TRANSLATED'"
+                  @click="showTranslatedMessages"
+                />
+              </div>
               <Button
                 class="mobile-context"
                 label="Контекст"
@@ -922,12 +1296,178 @@ onBeforeUnmount(() => {
                   relativeTime(message.createdAt)
                 }}</time>
               </div>
-              <p>{{ message.text }}</p>
+              <TranslatedMessageBody
+                :message="message"
+                :requested="translation.messageTranslations.value.get(message.id)"
+                :view-mode="messageViewMode"
+              />
+              <SupportMessageDeliveryStatus
+                v-if="message.author === 'ADMIN' && message.delivery"
+                :status="message.delivery.status"
+              />
             </article>
             <p v-if="!conversation.messages.value.length" class="empty-pane">
               В этом диалоге пока нет сообщений.
             </p>
           </div>
+          <SupportReplyComposer
+            v-if="conversation.selection.value"
+            :draft="reply.draft.value"
+            :can-reply="reply.canReply.value"
+            :can-send="canSubmitPublicReply"
+            :blocked-reason="publicReplyBlockedReason"
+            :sending="reply.sending.value"
+            :error="reply.error.value"
+            :delivery-status="reply.deliveryStatus.value"
+            @update:draft="reply.draft.value = $event"
+            @send="sendReply"
+          >
+            <template #assist>
+              <ReplyTranslationPreview
+                v-if="
+                  canManageTranslation &&
+                  replyTranslationRequested &&
+                  translation.state.value
+                "
+                :draft="translation.draft.value"
+                :target-locale="translation.targetLocale.value"
+                :busy="replyTranslationBusy"
+                :stale="translation.previewStale.value"
+                :disabled="
+                  !reply.canReply.value ||
+                  !reply.draft.value.trim() ||
+                  translation.savingPreference.value ||
+                  !translation.state.value.availability.available ||
+                  translation.state.value.budget.hardExhausted
+                "
+                :show-provider-details="canReadTranslationDetails"
+                @preview="prepareReplyTranslation"
+                @reconcile="translation.reconcileReplyPreview"
+                @retry="translation.retryReplyPreview"
+                @save-edit="translation.editReplyTranslation"
+                @send="sendTranslatedReply"
+              />
+              <div
+                v-else-if="canManageTranslation && reply.draft.value.trim()"
+                class="reply-translation-assist"
+              >
+                <div>
+                  <span>Нужна языковая обработка?</span>
+                  <strong>
+                    {{
+                      translation.targetLocale.value
+                        ? `Перевести на ${translation.targetLocale.value.toUpperCase()}`
+                        : "Настройте язык ответа"
+                    }}
+                  </strong>
+                </div>
+                <Button
+                  type="button"
+                  label="Подготовить перевод"
+                  icon="pi pi-language"
+                  size="small"
+                  :loading="replyTranslationBusy"
+                  :disabled="!reply.canReply.value"
+                  @click="prepareReplyTranslation"
+                />
+              </div>
+              <Message
+                v-if="canManageTranslation && translation.error.value"
+                severity="error"
+                :closable="false"
+                class="reply-translation-error"
+              >
+                {{ translation.error.value }}
+              </Message>
+              <Button
+                v-if="
+                  reply.canSendWithoutTranslation.value &&
+                  (replyTranslationRequested ||
+                    translationPolicyRequiresReviewedReply) &&
+                  reply.draft.value.trim()
+                "
+                type="button"
+                label="Отправить без перевода"
+                icon="pi pi-exclamation-triangle"
+                severity="danger"
+                text
+                :disabled="reply.sending.value"
+                @click="setSendWithoutTranslationVisible(true)"
+              />
+              <div
+                v-if="canManageTranslation && translationSettingsVisible"
+                class="reply-translation-settings"
+              >
+                <ConversationTranslationBanner
+                  :state="translation.state.value"
+                  :loading="translation.loading.value"
+                  :saving="translation.savingPreference.value"
+                  :can-manage="canManageTranslation"
+                  :eligible-count="0"
+                  @reload="ensureReplyTranslationLoaded"
+                  @update-enabled="setTranslationEnabled($event)"
+                  @update-target-locale="setTranslationTargetLocale($event)"
+                />
+              </div>
+              <Button
+                v-else-if="canManageTranslation"
+                type="button"
+                label="Настроить язык ответа"
+                icon="pi pi-sliders-h"
+                size="small"
+                text
+                class="reply-translation-settings-toggle"
+                @click="openTranslationSettings"
+              />
+            </template>
+          </SupportReplyComposer>
+          <Dialog
+            :visible="sendWithoutTranslationVisible"
+            modal
+            header="Отправить без перевода?"
+            :style="{ width: 'min(500px, calc(100vw - 32px))' }"
+            @update:visible="setSendWithoutTranslationVisible"
+          >
+            <div class="send-without-translation">
+              <Message severity="warn" :closable="false">
+                Пользователь получит исходный текст вместо
+                {{
+                  translation.targetLocale.value
+                    ? `перевода на ${translation.targetLocale.value.toUpperCase()}`
+                    : "перевода"
+                }}.
+              </Message>
+              <label for="support-send-without-translation-reason">
+                Причина исключения
+              </label>
+              <textarea
+                id="support-send-without-translation-reason"
+                v-model="sendWithoutTranslationReason"
+                rows="3"
+                maxlength="500"
+                placeholder="Почему сообщение нужно отправить без перевода?"
+              />
+              <small>{{ sendWithoutTranslationReason.length }}/500</small>
+              <div class="send-without-translation__actions">
+                <Button
+                  type="button"
+                  label="Отмена"
+                  severity="secondary"
+                  text
+                  @click="setSendWithoutTranslationVisible(false)"
+                />
+                <Button
+                  type="button"
+                  label="Отправить исходный текст"
+                  icon="pi pi-send"
+                  severity="danger"
+                  :loading="reply.sending.value"
+                  :disabled="!sendWithoutTranslationReason.trim()"
+                  @click="sendReplyWithoutTranslation"
+                />
+              </div>
+            </div>
+          </Dialog>
         </template>
         <div
           v-else-if="inbox.loading.value || conversation.loading.value"
@@ -981,6 +1521,35 @@ onBeforeUnmount(() => {
         />
       </aside>
     </div>
+    <SupportAvailabilityStatus
+      v-if="canReadAvailability"
+      :availability="availability.availability.value"
+      :loading="availability.loading.value"
+      :changing="availability.changing.value"
+      :error="availability.error.value"
+      :can-manage="canManageOwnAvailability"
+      :unknown-outcome="availability.unknownOutcome.value"
+      :needs-reconcile="availability.needsReconcile.value"
+      :can-retry-after-reconcile="availability.canRetryAfterReconcile.value"
+      :draft="availability.draft.value"
+      @refresh="availability.load"
+      @change="availability.change"
+      @retry="availability.retryUnknownOutcome"
+      @retry-after-reconcile="availability.retryAfterReconcile"
+    />
+    <SupportRoutingOffers
+      v-if="canManageRoutingOffers"
+      :offers="routingOffers.offers.value"
+      :loading="routingOffers.loading.value"
+      :changing-offer-id="routingOffers.changingOfferId.value"
+      :error="routingOffers.error.value"
+      :unknown-outcome="routingOffers.unknownOutcome.value"
+      :last-outcome="routingOffers.lastOutcome.value"
+      :can-retry="routingOffers.canRetry.value"
+      @refresh="routingOffers.load"
+      @action="routingOffers.act"
+      @retry="routingOffers.retryUnknownOutcome"
+    />
     <Drawer
       v-if="selectedConversation && conversation.selection.value"
       :visible="contextDrawerVisible"
@@ -1021,6 +1590,12 @@ onBeforeUnmount(() => {
       :loading-more="internalNotes.loadingMore.value"
       :error="internalNotes.error.value"
       :can-read-history="canReadSelectedInternalNoteHistory"
+      :can-write="canWriteSelectedInternalNotes"
+      :can-redact="canRedactSelectedInternalNotes"
+      :creating="internalNotes.creating.value"
+      :correcting-note-id="internalNotes.correctingNoteId.value"
+      :tombstoning-note-id="internalNotes.tombstoningNoteId.value"
+      :mutation-error="internalNotes.mutationError.value"
       :selected-history-note="internalNotes.selectedHistoryNote.value"
       :history="internalNotes.history.value"
       :history-next-cursor="internalNotes.historyNextCursor.value"
@@ -1034,6 +1609,9 @@ onBeforeUnmount(() => {
       @load-history-more="
         internalNotes.loadHistory(internalNotes.historyNextCursor.value ?? undefined)
       "
+      @create="createInternalNote"
+      @correct="correctInternalNote"
+      @tombstone="tombstoneInternalNote"
     />
     <ConversationAISuspensionDialog
       v-if="
@@ -1092,11 +1670,20 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+.message-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+}
+.message-view-toggle :deep(.p-button) {
+  min-height: 32px;
+  padding-inline: 9px;
+  font-size: 0.7rem;
+}
 .workspace-notice {
   margin-bottom: 16px;
 }
 .support-workspace {
-  min-height: min(720px, calc(100dvh - 160px));
+  height: min(720px, calc(100dvh - 160px));
   padding: 0;
   display: grid;
   grid-template-columns: minmax(250px, 320px) minmax(0, 1fr) minmax(
@@ -1107,8 +1694,10 @@ onBeforeUnmount(() => {
 }
 .inbox-pane,
 .context-pane {
+  min-height: 0;
   padding: 18px;
   background: var(--surface-card);
+  overflow: auto;
 }
 .inbox-pane {
   border-right: 1px solid var(--line);
@@ -1201,6 +1790,7 @@ onBeforeUnmount(() => {
 }
 .conversation-pane {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: var(--surface-base);
@@ -1220,6 +1810,7 @@ onBeforeUnmount(() => {
   display: none;
 }
 .message-log {
+  min-height: 0;
   flex: 1;
   padding: 22px;
   display: grid;
@@ -1270,6 +1861,61 @@ onBeforeUnmount(() => {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.reply-translation-assist {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--status-accent-text) 18%, var(--line));
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--status-accent-soft) 34%,
+    var(--surface-card)
+  );
+}
+.reply-translation-assist > div {
+  display: grid;
+  gap: 3px;
+}
+.reply-translation-assist span {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+}
+.reply-translation-assist strong {
+  font-size: 0.78rem;
+}
+.reply-translation-settings {
+  padding-top: 2px;
+}
+.reply-translation-settings-toggle {
+  justify-self: start;
+  margin-top: -4px;
+}
+.send-without-translation {
+  display: grid;
+  gap: 12px;
+}
+.send-without-translation label {
+  font-weight: 600;
+}
+.send-without-translation textarea {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+}
+.send-without-translation small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-align: right;
+}
+.send-without-translation__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .empty-pane {
   color: var(--text-muted);
   line-height: 1.5;
@@ -1304,6 +1950,7 @@ onBeforeUnmount(() => {
 @media (max-width: 720px) {
   .support-workspace {
     display: block;
+    height: auto;
   }
   .support-workspace:not(.has-route-selection) .conversation-pane,
   .support-workspace:not(.has-route-selection) .context-pane,
@@ -1341,6 +1988,10 @@ onBeforeUnmount(() => {
   }
   .message {
     max-width: 92%;
+  }
+  .reply-translation-assist {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

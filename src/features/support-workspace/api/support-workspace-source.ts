@@ -124,6 +124,31 @@ function mapSelectionMessages(
   });
 }
 
+/**
+ * The demo writer does not receive a server ordinal. Its newly appended item
+ * must follow the highest known ordinal, not its reverse-chronological page
+ * position, otherwise a refresh would create a duplicate ordinal.
+ */
+export function withMockMessageOrdinals(
+  messages: readonly ConversationMessage[],
+): ConversationMessage[] {
+  let nextOrdinal =
+    Math.max(
+      0,
+      ...messages.flatMap((message) => {
+        const ordinal = message.ordinal;
+        return typeof ordinal === "number" && Number.isSafeInteger(ordinal)
+          ? [ordinal]
+          : [];
+      }),
+    ) + 1;
+  return messages.map((message) =>
+    message.ordinal === undefined
+      ? { ...message, ordinal: nextOrdinal++ }
+      : message,
+  );
+}
+
 export function mapWorkspaceCase(
   value: SupportWorkspaceSelectionCaseResponseDto | null,
   expectedEndUserId: string,
@@ -222,7 +247,7 @@ const mockCapabilities: SupportWorkspaceSelection["capabilities"] = {
   escalateCase: false,
   manageCase: false,
   releaseAssignment: false,
-  reply: false,
+  reply: true,
   replyWithoutTranslation: false,
   suspendAi: false,
   transferAssignment: false,
@@ -286,7 +311,10 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         currentInteractionSessionCount: selected.currentInteractionSessionCount,
         lastMessageAt: selected.lastMessage?.createdAt ?? null,
       },
-      messages,
+      messages: {
+        items: withMockMessageOrdinals(messages.items),
+        nextCursor: messages.nextCursor,
+      },
     };
   },
 };

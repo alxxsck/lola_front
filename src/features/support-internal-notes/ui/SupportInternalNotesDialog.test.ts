@@ -9,6 +9,7 @@ function note(
   return {
     id: "note-1",
     caseId: "case-1",
+    actionEtag: '"sin1.opaque"',
     body: "<strong>Не HTML</strong>",
     lifecycle: "ACTIVE",
     currentRevisionNumber: 1,
@@ -69,6 +70,18 @@ describe("support internal notes dialog", () => {
       false,
     );
     expect(wrapper.text()).toContain("Текст заметки удалён.");
+  });
+
+  it("emits a private note draft only after the write capability is granted", async () => {
+    const wrapper = render({ canWrite: true });
+
+    const composer = wrapper.get(".internal-note-composer");
+    await composer.get("textarea").setValue("Передать смене детали обращения");
+    await composer.trigger("submit");
+
+    const event = wrapper.emitted("create")?.[0];
+    expect(event?.[0]).toBe("Передать смене детали обращения");
+    expect(event?.[1]).toBeTypeOf("function");
   });
 
   it("delegates lazy history loading only when the separate grant is present", async () => {

@@ -376,6 +376,18 @@ export interface ConversationMessage {
   };
   text: string;
   status: "PENDING" | "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
+  /** Current server-confirmed delivery state for a public outbound message. */
+  delivery?: {
+    status:
+      | "PENDING"
+      | "DELIVERING"
+      | "DELIVERED"
+      | "READ"
+      | "FAILED"
+      | "CANCELLED"
+      | "NOT_REDELIVERED";
+    acceptedAt?: string;
+  };
   createdAt: string;
   updatedAt?: string;
   translation?: {

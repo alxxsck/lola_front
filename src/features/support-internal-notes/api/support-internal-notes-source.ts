@@ -1,6 +1,9 @@
 import {
+  supportInternalNoteCorrection,
+  supportInternalNoteCreate,
   supportInternalNoteList,
   supportInternalNoteRevisions,
+  supportInternalNoteTombstone,
 } from "@/shared/api/generated/retenive-backend";
 import type {
   SupportInternalNoteResponseDto,
@@ -14,6 +17,8 @@ import { isMockMode } from "@/shared/config/data-mode";
 export interface SupportInternalNote {
   id: string;
   caseId: string;
+  /** Opaque version authority used only for the next Case-scoped mutation. */
+  actionEtag: string;
   body: string | null;
   lifecycle: "ACTIVE" | "TOMBSTONED" | "PURGED";
   currentRevisionNumber: number;
@@ -52,6 +57,39 @@ export interface SupportInternalNotesSource {
     request?: { cursor?: string; limit?: number },
     signal?: AbortSignal,
   ): Promise<SupportInternalNotesPage<SupportInternalNoteRevision>>;
+  create(
+    projectId: string,
+    caseId: string,
+    input: {
+      body: string;
+      conversationId?: string;
+      messageId?: string;
+      macroRevisionId?: string;
+      knowledgeDocumentId?: string;
+      idempotencyKey: string;
+    },
+  ): Promise<SupportInternalNote>;
+  correct(
+    projectId: string,
+    caseId: string,
+    noteId: string,
+    input: {
+      body: string;
+      reasonCode: string;
+      actionEtag: string;
+      idempotencyKey: string;
+    },
+  ): Promise<SupportInternalNote>;
+  tombstone(
+    projectId: string,
+    caseId: string,
+    noteId: string,
+    input: {
+      reasonCode: string;
+      actionEtag: string;
+      idempotencyKey: string;
+    },
+  ): Promise<SupportInternalNote>;
 }
 
 export class SupportInternalNotesContractError extends Error {
@@ -101,6 +139,7 @@ function mapNote(
   return {
     id: value.id,
     caseId: value.endUserCaseId,
+    actionEtag: value.actionEtag,
     body: value.body,
     lifecycle: value.lifecycle,
     currentRevisionNumber: value.currentRevisionNumber,
@@ -174,6 +213,65 @@ const apiSource: SupportInternalNotesSource = {
       nextCursor: response.nextCursor,
     };
   },
+  async create(projectId, caseId, input) {
+    try {
+      const response = await supportInternalNoteCreate(
+        projectId,
+        caseId,
+        {
+          body: input.body,
+          ...(input.conversationId ? { conversationId: input.conversationId } : {}),
+          ...(input.messageId ? { messageId: input.messageId } : {}),
+          ...(input.macroRevisionId ? { macroRevisionId: input.macroRevisionId } : {}),
+          ...(input.knowledgeDocumentId
+            ? { knowledgeDocumentId: input.knowledgeDocumentId }
+            : {}),
+        },
+        { headers: { "Idempotency-Key": input.idempotencyKey } },
+      );
+      return mapNote(response, caseId);
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
+  async correct(projectId, caseId, noteId, input) {
+    try {
+      const response = await supportInternalNoteCorrection(
+        projectId,
+        caseId,
+        noteId,
+        { body: input.body, reasonCode: input.reasonCode },
+        {
+          headers: {
+            "Idempotency-Key": input.idempotencyKey,
+            "If-Match": input.actionEtag,
+          },
+        },
+      );
+      return mapNote(response, caseId);
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
+  async tombstone(projectId, caseId, noteId, input) {
+    try {
+      const response = await supportInternalNoteTombstone(
+        projectId,
+        caseId,
+        noteId,
+        { reasonCode: input.reasonCode },
+        {
+          headers: {
+            "Idempotency-Key": input.idempotencyKey,
+            "If-Match": input.actionEtag,
+          },
+        },
+      );
+      return mapNote(response, caseId);
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
 };
 
 const mockSource: SupportInternalNotesSource = {
@@ -183,6 +281,15 @@ const mockSource: SupportInternalNotesSource = {
   },
   async revisions(_projectId, _caseId, _noteId, _request, signal) {
     if (signal?.aborted) throw signal.reason;
+    throw new Error("Mock internal notes are not configured");
+  },
+  async create() {
+    throw new Error("Mock internal notes are not configured");
+  },
+  async correct() {
+    throw new Error("Mock internal notes are not configured");
+  },
+  async tombstone() {
     throw new Error("Mock internal notes are not configured");
   },
 };

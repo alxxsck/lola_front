@@ -18,6 +18,10 @@ const supportInternalNotesReadPermission =
   "project.support.internal_notes.read" as const;
 const supportInternalNotesHistoryReadPermission =
   "project.support.internal_notes.history_read" as const;
+const supportInternalNotesWritePermission =
+  "project.support.internal_notes.write" as const;
+const supportInternalNotesRedactPermission =
+  "project.support.internal_notes.redact" as const;
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
@@ -150,6 +154,24 @@ export function canReadSupportInternalNoteHistory(
       effectivePermissionCodes,
       supportInternalNotesHistoryReadPermission,
     )
+  );
+}
+
+export function canWriteSupportInternalNotes(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportInternalNotesWritePermission,
+  );
+}
+
+export function canRedactSupportInternalNotes(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportInternalNotesRedactPermission,
   );
 }
 

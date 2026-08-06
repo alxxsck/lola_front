@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AdminMessageResult } from "@/shared/types/domain";
+import { ApiError } from "@/shared/api/http/api-error";
 import type { SupportWorkspaceSelection } from "@/features/support-workspace/api/support-workspace-source";
 import { createSupportReplyController } from "./use-support-reply";
 
-function selection(reply = true, conversationId = "conversation-1"): SupportWorkspaceSelection {
+function selection(
+  reply = true,
+  conversationId = "conversation-1",
+  replyWithoutTranslation = false,
+): SupportWorkspaceSelection {
   return {
     checkpoint: "checkpoint-1",
     capabilitiesRevision: "capabilities-1",
@@ -14,7 +19,7 @@ function selection(reply = true, conversationId = "conversation-1"): SupportWork
       manageCase: false,
       releaseAssignment: false,
       reply,
-      replyWithoutTranslation: false,
+      replyWithoutTranslation,
       suspendAi: false,
       transferAssignment: false,
     },
@@ -77,6 +82,97 @@ describe("support reply controller", () => {
     expect(controller.draft.value).toBe("");
     expect(controller.deliveryStatus.value).toBe("PENDING");
     expect(reconcile).toHaveBeenCalledTimes(1);
+  });
+
+  it("binds a reviewed translation draft to the same authoritative reply", async () => {
+    const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
+    const currentSelection = selection();
+    currentSelection.case = {
+      id: "case-1",
+      title: "Проверка оплаты",
+      status: "OPEN",
+      priority: "NORMAL",
+      groupCode: "payments",
+      projectSequence: "7",
+      attentionRequired: false,
+      lastActivityAt: "2026-08-06T10:00:00.000Z",
+      updatedAt: "2026-08-06T10:00:00.000Z",
+      version: 1,
+      assignee: null,
+      assignment: null,
+    };
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => currentSelection,
+        reconcile: vi.fn(),
+      },
+      { sendAdminMessage },
+    );
+    controller.draft.value = "Добрый день";
+
+    await controller.sendTranslatedReply("translation-draft-1");
+
+    expect(sendAdminMessage).toHaveBeenCalledWith("project-1", "user-1", {
+      conversationId: "conversation-1",
+      endUserCaseId: "case-1",
+      idempotencyKey: expect.any(String),
+      replyTranslationDraftId: "translation-draft-1",
+      text: "Добрый день",
+    });
+    expect(controller.draft.value).toBe("");
+  });
+
+  it("sends a server-authorized no-translation override with the audited reason", async () => {
+    const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(true, "conversation-1", true),
+        reconcile: vi.fn(),
+      },
+      { sendAdminMessage },
+    );
+    controller.draft.value = "Срочное исходное сообщение";
+
+    await controller.sendWithoutTranslation("Провайдер перевода недоступен");
+
+    expect(sendAdminMessage).toHaveBeenCalledWith("project-1", "user-1", {
+      conversationId: "conversation-1",
+      idempotencyKey: expect.any(String),
+      sendWithoutTranslation: { reason: "Провайдер перевода недоступен" },
+      text: "Срочное исходное сообщение",
+    });
+  });
+
+  it("preserves the draft and routes a server translation requirement into the explicit flow", async () => {
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      {
+        sendAdminMessage: vi.fn().mockRejectedValue(
+          new ApiError(
+            409,
+            "Нужен подготовленный перевод",
+            undefined,
+            undefined,
+            "TRANSLATION_PREVIEW_REQUIRED",
+          ),
+        ),
+      },
+    );
+    controller.draft.value = "Не отправлять автоматически";
+
+    await controller.send();
+
+    expect(controller.draft.value).toBe("Не отправлять автоматически");
+    expect(controller.translationRequired.value).toBe(true);
   });
 
   it("fails closed when the server did not grant reply capability", async () => {

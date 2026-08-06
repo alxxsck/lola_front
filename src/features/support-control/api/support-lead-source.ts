@@ -1,6 +1,8 @@
 import {
   supportLeadCaseRisks,
   supportLeadSummary,
+  supportOperationalAlertCommandAcknowledge,
+  supportOperationalAlertCommandResolve,
   supportOperationalAlertDetail,
   supportOperationalAlertList,
 } from "@/shared/api/generated/retenive-backend";
@@ -8,6 +10,7 @@ import type {
   SupportLeadCaseRisksResponseDto,
   SupportLeadSummaryResponseDto,
   SupportOperationalAlertDetailResponseDto,
+  SupportOperationalAlertCommandReceiptDto,
   SupportOperationalAlertListResponseDto,
 } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
@@ -76,6 +79,8 @@ export interface SupportLeadCaseRiskPage {
 
 export interface SupportOperationalAlert {
   id: string;
+  /** Monotonic server version used as the next command's If-Match value. */
+  version: number;
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   state: "NEW" | "ACKNOWLEDGED" | "RESOLVED";
   sourceKind: string;
@@ -138,6 +143,37 @@ export interface SupportOperationalAlertsSource {
     request?: { cursor?: string; limit?: number },
     signal?: AbortSignal,
   ): Promise<SupportOperationalAlertDetail>;
+  acknowledge(
+    projectId: string,
+    alertId: string,
+    input: {
+      reasonCode: "INVESTIGATING" | "OWNERSHIP_ACCEPTED" | "ESCALATED";
+      expectedVersion: number;
+      idempotencyKey: string;
+    },
+  ): Promise<SupportOperationalAlertCommandReceipt>;
+  resolve(
+    projectId: string,
+    alertId: string,
+    input: {
+      reasonCode:
+        | "RISK_CLEARED"
+        | "MITIGATED"
+        | "FALSE_POSITIVE"
+        | "DUPLICATE"
+        | "EXTERNAL_INCIDENT_HANDOFF";
+      expectedVersion: number;
+      idempotencyKey: string;
+    },
+  ): Promise<SupportOperationalAlertCommandReceipt>;
+}
+
+export interface SupportOperationalAlertCommandReceipt {
+  alertId: string;
+  state: "NEW" | "ACKNOWLEDGED" | "RESOLVED";
+  version: number;
+  occurredAt: string;
+  replayed: boolean;
 }
 
 export type SupportLeadSource =
@@ -184,6 +220,7 @@ function mapCaseRisks(
 function mapAlert(item: SupportOperationalAlertListResponseDto["items"][number]): SupportOperationalAlert {
   return {
     id: item.id,
+    version: item.version,
     severity: item.currentSeverity,
     state: item.state,
     sourceKind: item.sourceKind,
@@ -191,6 +228,18 @@ function mapAlert(item: SupportOperationalAlertListResponseDto["items"][number])
     lastObservedAt: item.lastObservedAt,
     occurrenceCount: item.occurrenceCount,
     hasOwner: item.ownerCmsUserId !== null,
+  };
+}
+
+function mapAlertCommandReceipt(
+  response: SupportOperationalAlertCommandReceiptDto,
+): SupportOperationalAlertCommandReceipt {
+  return {
+    alertId: response.alertId,
+    state: response.state,
+    version: response.version,
+    occurredAt: response.occurredAt,
+    replayed: response.replayed,
   };
 }
 
@@ -285,6 +334,44 @@ const apiSource: SupportLeadSource = {
             ...(request?.cursor ? { cursor: request.cursor } : {}),
           },
           { signal },
+        ),
+      );
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
+  async acknowledge(projectId, alertId, input) {
+    try {
+      return mapAlertCommandReceipt(
+        await supportOperationalAlertCommandAcknowledge(
+          projectId,
+          alertId,
+          { reasonCode: input.reasonCode },
+          {
+            headers: {
+              "Idempotency-Key": input.idempotencyKey,
+              "If-Match": `"${input.expectedVersion}"`,
+            },
+          },
+        ),
+      );
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
+  async resolve(projectId, alertId, input) {
+    try {
+      return mapAlertCommandReceipt(
+        await supportOperationalAlertCommandResolve(
+          projectId,
+          alertId,
+          { reasonCode: input.reasonCode },
+          {
+            headers: {
+              "Idempotency-Key": input.idempotencyKey,
+              "If-Match": `"${input.expectedVersion}"`,
+            },
+          },
         ),
       );
     } catch (cause) {
@@ -393,6 +480,7 @@ const mockSource: SupportLeadSource = {
       items: [
         {
           id: "alert-demo-1",
+          version: 1,
           severity: "HIGH",
           state: "NEW",
           sourceKind: "UNASSIGNED_AGED",
@@ -411,6 +499,7 @@ const mockSource: SupportLeadSource = {
     return {
       alert: {
         id: alertId,
+        version: 1,
         severity: "HIGH",
         state: "NEW",
         sourceKind: "UNASSIGNED_AGED",
@@ -438,6 +527,26 @@ const mockSource: SupportLeadSource = {
           reasonCode: null,
         },
       ],
+    };
+  },
+  async acknowledge(_, alertId, input) {
+    if (input.expectedVersion < 1) throw new Error("Invalid alert version");
+    return {
+      alertId,
+      state: "ACKNOWLEDGED",
+      version: input.expectedVersion + 1,
+      occurredAt: new Date().toISOString(),
+      replayed: false,
+    };
+  },
+  async resolve(_, alertId, input) {
+    if (input.expectedVersion < 1) throw new Error("Invalid alert version");
+    return {
+      alertId,
+      state: "RESOLVED",
+      version: input.expectedVersion + 1,
+      occurredAt: new Date().toISOString(),
+      replayed: false,
     };
   },
 };

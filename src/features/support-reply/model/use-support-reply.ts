@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 import type { ReteniveRepository } from "@/shared/api/repository/contracts";
 import type { AdminMessageResult } from "@/shared/types/domain";
+import { ApiError } from "@/shared/api/http/api-error";
 import type { SupportWorkspaceSelection } from "@/features/support-workspace/api/support-workspace-source";
 
 export type SupportReplySource = Pick<ReteniveRepository, "sendAdminMessage">;
@@ -10,6 +11,11 @@ export interface SupportReplyContext {
   actorId(): string | undefined;
   selection(): SupportWorkspaceSelection | null;
   reconcile(): Promise<void>;
+}
+
+interface SupportReplyDelivery {
+  replyTranslationDraftId?: string;
+  sendWithoutTranslationReason?: string;
 }
 
 function idempotencyKey(): string {
@@ -52,6 +58,7 @@ export function createSupportReplyController(
   const sending = ref(false);
   const error = ref("");
   const deliveryStatus = ref<AdminMessageResult["deliveryStatus"]>();
+  const translationRequired = ref(false);
   const drafts = new Map<string, string>();
   const attempts = new Map<string, string>();
   let activeDraftKey: string | undefined;
@@ -64,12 +71,16 @@ export function createSupportReplyController(
         selection.conversation,
     );
   });
+  const canSendWithoutTranslation = computed(
+    () => Boolean(canReply.value && context.selection()?.capabilities.replyWithoutTranslation),
+  );
 
   function reset(): void {
     draft.value = "";
     sending.value = false;
     error.value = "";
     deliveryStatus.value = undefined;
+    translationRequired.value = false;
     activeDraftKey = undefined;
     drafts.clear();
     attempts.clear();
@@ -93,9 +104,10 @@ export function createSupportReplyController(
     draft.value = nextDraftKey ? (drafts.get(nextDraftKey) ?? "") : "";
     error.value = "";
     deliveryStatus.value = undefined;
+    translationRequired.value = false;
   }
 
-  async function send(): Promise<void> {
+  async function send(delivery?: SupportReplyDelivery): Promise<void> {
     syncSelection();
     const projectId = context.projectId();
     const actorId = context.actorId();
@@ -111,7 +123,21 @@ export function createSupportReplyController(
     const scope = draftKey(projectId, actorId, conversation?.id);
     if (!projectId || !actorId || !scope || !text || sending.value) return;
 
-    const identity = attemptKey(scope, text);
+    const translationDraftId = delivery?.replyTranslationDraftId?.trim();
+    const sendWithoutTranslationReason =
+      delivery?.sendWithoutTranslationReason?.trim();
+    if (translationDraftId && sendWithoutTranslationReason) {
+      error.value = "Нельзя одновременно отправить перевод и исходный текст.";
+      return;
+    }
+    if (sendWithoutTranslationReason && !canSendWithoutTranslation.value) {
+      error.value = "У вас нет права отправить сообщение без перевода.";
+      return;
+    }
+    const identity = attemptKey(
+      scope,
+      `${text}\u001f${translationDraftId ?? ""}\u001f${sendWithoutTranslationReason ?? ""}`,
+    );
     const key = attempts.get(identity) ?? idempotencyKey();
     attempts.set(identity, key);
     let accepted = false;
@@ -121,6 +147,11 @@ export function createSupportReplyController(
         conversationId: conversation.id,
         idempotencyKey: key,
         text,
+        ...(selection.case ? { endUserCaseId: selection.case.id } : {}),
+        ...(translationDraftId ? { replyTranslationDraftId: translationDraftId } : {}),
+        ...(sendWithoutTranslationReason
+          ? { sendWithoutTranslation: { reason: sendWithoutTranslationReason } }
+          : {}),
       });
       const current = context.selection();
       if (
@@ -134,6 +165,7 @@ export function createSupportReplyController(
       drafts.delete(scope);
       attempts.delete(identity);
       deliveryStatus.value = result.deliveryStatus;
+      translationRequired.value = false;
       accepted = true;
       await context.reconcile();
     } catch (caught) {
@@ -150,7 +182,14 @@ export function createSupportReplyController(
       )
         return;
       const status = httpStatus(caught);
-      if (status === 409) {
+      if (
+        caught instanceof ApiError &&
+        (caught.code === "TRANSLATION_PREVIEW_REQUIRED" ||
+          caught.code === "TRANSLATION_EXPLICIT_OVERRIDE_REQUIRED")
+      ) {
+        translationRequired.value = true;
+        error.value = "Для отправки нужен подготовленный перевод. Черновик сохранён.";
+      } else if (status === 409) {
         try {
           await context.reconcile();
         } catch {
@@ -172,14 +211,30 @@ export function createSupportReplyController(
     }
   }
 
+  async function sendTranslatedReply(
+    replyTranslationDraftId: string,
+  ): Promise<void> {
+    if (!replyTranslationDraftId.trim()) return;
+    await send({ replyTranslationDraftId });
+  }
+
+  async function sendWithoutTranslation(reason: string): Promise<void> {
+    if (!reason.trim()) return;
+    await send({ sendWithoutTranslationReason: reason });
+  }
+
   return {
     draft,
     sending,
     error,
     deliveryStatus,
+    translationRequired,
     canReply,
+    canSendWithoutTranslation,
     syncSelection,
     send,
+    sendTranslatedReply,
+    sendWithoutTranslation,
     reset,
   };
 }

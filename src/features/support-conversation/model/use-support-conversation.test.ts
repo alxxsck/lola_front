@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ConversationMessage } from "@/shared/types/domain";
+import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportWorkspaceConversation,
   SupportWorkspaceSelection,
@@ -259,5 +260,30 @@ describe("support conversation controller", () => {
       "second",
       "third",
     ]);
+  });
+
+  it("purges a visible history and ends the live selection after a concealed revoke", async () => {
+    const onForbidden = vi.fn();
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(selection("conversation-1", [message("first", 1)]))
+        .mockRejectedValueOnce(new ApiError(403, "Forbidden")),
+    };
+    const controller = createSupportConversationController(
+      {
+        projectId: () => "project-1",
+        conversationId: () => "conversation-1",
+        onForbidden,
+      },
+      source,
+    );
+
+    await controller.load();
+    await controller.reconcile();
+
+    expect(controller.selection.value).toBeNull();
+    expect(controller.messages.value).toEqual([]);
+    expect(onForbidden).toHaveBeenCalledOnce();
   });
 });

@@ -66,6 +66,7 @@ export function createSupportWorkspaceLiveController(
     [
       "conversation.message.upserted.v1",
       "conversation.message.translation.upserted.v1",
+      "conversation.message.delivery.upserted.v1",
     ],
     (value) => {
       const event = scopedConversationEvent(value);

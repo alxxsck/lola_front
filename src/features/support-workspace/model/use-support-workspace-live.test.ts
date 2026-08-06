@@ -51,6 +51,25 @@ describe("support workspace live controller", () => {
     expect(reconcile).toHaveBeenCalledTimes(1);
   });
 
+  it("reconciles the selected conversation when its delivery receipt changes", async () => {
+    vi.useFakeTimers();
+    const client = fakeRealtimeClient();
+    const reconcile = vi.fn().mockResolvedValue(undefined);
+    const controller = createSupportWorkspaceLiveController(
+      { reconcile },
+      client,
+    );
+
+    await controller.setSelection("project-1", "conversation-1");
+    client.emit("conversation.message.delivery.upserted.v1", {
+      projectId: "project-1",
+      conversationId: "conversation-1",
+    });
+    await vi.runAllTimersAsync();
+
+    expect(reconcile).toHaveBeenCalledTimes(1);
+  });
+
   it("unwatches and rejects a queued reconcile after selection changes", async () => {
     vi.useFakeTimers();
     const client = fakeRealtimeClient();

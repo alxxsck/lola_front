@@ -286,6 +286,16 @@ export function mapConversationMessage(
       : {}),
     text: dto.text,
     status: dto.status,
+    ...(dto.delivery
+      ? {
+          delivery: {
+            status: dto.delivery.status,
+            ...(dto.delivery.acceptedAt
+              ? { acceptedAt: dto.delivery.acceptedAt }
+              : {}),
+          },
+        }
+      : {}),
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
     ...(dto.translation

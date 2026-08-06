@@ -39,6 +39,13 @@ const canReadAlerts = computed(
       "project.support.alerts.read",
     ),
 );
+const canManageAlerts = computed(
+  () =>
+    canReadAlerts.value &&
+    (auth.project?.effectivePermissionCodes as readonly string[] | undefined)?.includes(
+      "project.support.alerts.manage",
+    ) === true,
+);
 const canOpenCase = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
@@ -79,6 +86,7 @@ const alerts = createSupportOperationalAlertsController(
   {
     projectId: () => auth.project?.id,
     canRead: () => canReadAlerts.value,
+    canManage: () => canManageAlerts.value,
     async onForbidden() {
       alertsAccessDenied.value = true;
       try {
@@ -91,6 +99,16 @@ const alerts = createSupportOperationalAlertsController(
   supportLeadSource,
 );
 const alertDialogVisible = ref(false);
+const alertAcknowledgeReason = ref<
+  "INVESTIGATING" | "OWNERSHIP_ACCEPTED" | "ESCALATED"
+>("INVESTIGATING");
+const alertResolveReason = ref<
+  | "RISK_CLEARED"
+  | "MITIGATED"
+  | "FALSE_POSITIVE"
+  | "DUPLICATE"
+  | "EXTERNAL_INCIDENT_HANDOFF"
+>("RISK_CLEARED");
 
 const freshness = computed(() => {
   const state = overview.summary.value?.freshnessState;
@@ -217,6 +235,14 @@ async function openAlertDetail(alertId: string): Promise<void> {
 function closeAlertDetail(): void {
   alertDialogVisible.value = false;
   alerts.closeDetail();
+}
+
+function acknowledgeAlert(): void {
+  void alerts.acknowledge(alertAcknowledgeReason.value);
+}
+
+function resolveAlert(): void {
+  void alerts.resolve(alertResolveReason.value);
 }
 
 onMounted(reload);
@@ -458,8 +484,8 @@ onBeforeUnmount(() => {
           @click="alerts.loadMore"
         />
         <Message severity="secondary" :closable="false" class="alerts-contract-note">
-          История alert доступна в read-only режиме. Команды управления появятся
-          после versioned intent и idempotency contract.
+          Команды скрываются без отдельного permission
+          `project.support.alerts.manage`.
         </Message>
       </section>
 
@@ -585,6 +611,61 @@ onBeforeUnmount(() => {
         >
           История может быть неполной: материализация ограничена.
         </Message>
+        <Message
+          v-if="alerts.mutationError.value"
+          severity="error"
+          :closable="false"
+          class="detail-warning"
+        >
+          {{ alerts.mutationError.value }}
+        </Message>
+        <section
+          v-if="canManageAlerts && alerts.detail.value.alert.state !== 'RESOLVED'"
+          class="alert-commands"
+          aria-label="Команды alert"
+        >
+          <p>Команды применяются к версии {{ alerts.detail.value.alert.version }}.</p>
+          <label v-if="alerts.detail.value.alert.state === 'NEW'">
+            <span>Подтвердить alert как</span>
+            <select
+              v-model="alertAcknowledgeReason"
+              :disabled="Boolean(alerts.mutating.value)"
+            >
+              <option value="INVESTIGATING">Идёт расследование</option>
+              <option value="OWNERSHIP_ACCEPTED">Владелец принял работу</option>
+              <option value="ESCALATED">Эскалировано</option>
+            </select>
+            <Button
+              type="button"
+              label="Подтвердить alert"
+              severity="secondary"
+              :loading="alerts.mutating.value === 'ACKNOWLEDGE'"
+              :disabled="Boolean(alerts.mutating.value)"
+              @click="acknowledgeAlert"
+            />
+          </label>
+          <label>
+            <span>Закрыть alert как</span>
+            <select
+              v-model="alertResolveReason"
+              :disabled="Boolean(alerts.mutating.value)"
+            >
+              <option value="RISK_CLEARED">Риск устранён</option>
+              <option value="MITIGATED">Применены меры</option>
+              <option value="FALSE_POSITIVE">Ложное срабатывание</option>
+              <option value="DUPLICATE">Дубликат</option>
+              <option value="EXTERNAL_INCIDENT_HANDOFF">Передано во внешний инцидент</option>
+            </select>
+            <Button
+              type="button"
+              label="Закрыть alert"
+              severity="danger"
+              :loading="alerts.mutating.value === 'RESOLVE'"
+              :disabled="Boolean(alerts.mutating.value)"
+              @click="resolveAlert"
+            />
+          </label>
+        </section>
         <ol v-if="alerts.detail.value.timeline.length" class="alert-timeline">
           <li v-for="event in alerts.detail.value.timeline" :key="event.id">
             <strong>{{ labelTimelineEvent(event.eventKind) }}</strong>
@@ -810,6 +891,38 @@ onBeforeUnmount(() => {
 .detail-warning {
   margin-bottom: 14px;
 }
+.alert-commands {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-ground);
+}
+.alert-commands > p,
+.alert-commands label span {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.alert-commands label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px) auto;
+  align-items: center;
+  gap: 10px;
+}
+.alert-commands select {
+  min-height: 34px;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.75rem;
+}
 .alert-timeline li {
   display: grid;
   gap: 3px;
@@ -881,6 +994,10 @@ onBeforeUnmount(() => {
   }
   .alert-detail-metadata {
     grid-template-columns: 1fr;
+  }
+  .alert-commands label {
+    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 }
 </style>

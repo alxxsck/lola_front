@@ -124,6 +124,7 @@ function isSupportedLocale(
     <div v-if="state" class="translation-banner__controls">
       <Button
         v-if="!state.availability.available"
+        type="button"
         label="Проверить снова"
         icon="pi pi-refresh"
         size="small"
@@ -139,6 +140,7 @@ function isSupportedLocale(
       >
         <Button
           v-if="isSupportedLocale(state.language.conflictingLocale)"
+          type="button"
           :label="`Использовать ${localeDisplayName(state.language.conflictingLocale)}`"
           size="small"
           :disabled="saving || !canManage"
@@ -146,6 +148,7 @@ function isSupportedLocale(
         />
         <Button
           v-if="isSupportedLocale(state.language.locale)"
+          type="button"
           :label="`Оставить ${localeDisplayName(state.language.locale)}`"
           size="small"
           severity="secondary"
@@ -160,6 +163,7 @@ function isSupportedLocale(
           state.preference.enabled &&
           eligibleCount
         "
+        type="button"
         icon="pi pi-language"
         size="small"
         text
@@ -198,6 +202,7 @@ function isSupportedLocale(
     </div>
     <Button
       v-else-if="!loading"
+      type="button"
       label="Настроить"
       icon="pi pi-sliders-h"
       size="small"

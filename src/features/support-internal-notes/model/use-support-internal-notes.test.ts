@@ -12,6 +12,7 @@ function note(id = "note-1"): SupportInternalNote {
   return {
     id,
     caseId: "case-1",
+    actionEtag: '"sin1.opaque"',
     body: "Проверить подтверждение оплаты",
     lifecycle: "ACTIVE",
     currentRevisionNumber: 1,
@@ -39,9 +40,14 @@ function source(
 ): SupportInternalNotesSource {
   return {
     list: vi.fn().mockResolvedValue({ items: [note()], nextCursor: null }),
+    create: vi.fn().mockResolvedValue(note()),
+    correct: vi.fn().mockResolvedValue(note()),
     revisions: vi
       .fn()
       .mockResolvedValue({ items: [revision()], nextCursor: null }),
+    tombstone: vi
+      .fn()
+      .mockResolvedValue({ ...note(), body: null, lifecycle: "TOMBSTONED" }),
     ...overrides,
   };
 }
@@ -71,6 +77,39 @@ describe("support internal notes controller", () => {
 
     expect(list).not.toHaveBeenCalled();
     expect(controller.notes.value).toEqual([]);
+  });
+
+  it("creates an internal note only with the distinct write grant and keeps its command idempotent", async () => {
+    const create = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("network timeout"))
+      .mockResolvedValueOnce(note("note-2"));
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => false,
+        canWrite: () => true,
+      },
+      source({ create }),
+    );
+
+    const first = await controller.create("Проверить реквизиты", "conversation-1");
+    const second = await controller.create("Проверить реквизиты", "conversation-1");
+
+    expect(first).toBe(false);
+    expect(second).toBe(true);
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create).toHaveBeenNthCalledWith(1, "project-1", "case-1", {
+      body: "Проверить реквизиты",
+      conversationId: "conversation-1",
+      idempotencyKey: expect.any(String),
+    });
+    expect(create.mock.calls[1]?.[2]?.idempotencyKey).toBe(
+      create.mock.calls[0]?.[2]?.idempotencyKey,
+    );
+    expect(controller.notes.value.map((item) => item.id)).toEqual(["note-2"]);
   });
 
   it("uses only the current Case scope and merges a cursor page", async () => {

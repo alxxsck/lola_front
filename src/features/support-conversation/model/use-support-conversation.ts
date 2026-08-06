@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import type { ConversationMessage } from "@/shared/types/domain";
+import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportWorkspaceSelection,
   SupportWorkspaceSource,
@@ -13,6 +14,7 @@ export type SupportConversationSource = Pick<
 export interface SupportConversationContext {
   projectId(): string | undefined;
   conversationId(): string | undefined;
+  onForbidden?(): void | Promise<void>;
 }
 
 function authoritativeOrder(
@@ -81,6 +83,11 @@ export function createSupportConversationController(
     );
   }
 
+  async function purgeConcealedSelection(): Promise<void> {
+    reset();
+    await context.onForbidden?.();
+  }
+
   function mergeMessages(
     current: readonly ConversationMessage[],
     incoming: readonly ConversationMessage[],
@@ -122,8 +129,15 @@ export function createSupportConversationController(
       selection.value = projection;
       messages.value = ordered;
       nextMessageCursor.value = projection.messages.nextCursor;
-    } catch {
+    } catch (cause) {
       if (!isCurrent(projectId, conversationId, requestGeneration)) return;
+      if (
+        cause instanceof ApiError &&
+        (cause.status === 403 || cause.status === 404)
+      ) {
+        await purgeConcealedSelection();
+        return;
+      }
       error.value = "Не удалось загрузить сообщения выбранного диалога";
     } finally {
       if (requestGeneration === generation) loading.value = false;
@@ -156,8 +170,15 @@ export function createSupportConversationController(
       selection.value = projection;
       messages.value = merged;
       nextMessageCursor.value = projection.messages.nextCursor;
-    } catch {
+    } catch (cause) {
       if (!isCurrent(projectId, conversationId, requestGeneration)) return;
+      if (
+        cause instanceof ApiError &&
+        (cause.status === 403 || cause.status === 404)
+      ) {
+        await purgeConcealedSelection();
+        return;
+      }
       error.value = "Не удалось загрузить более ранние сообщения";
     } finally {
       if (requestGeneration === generation) loadingOlder.value = false;
@@ -186,8 +207,15 @@ export function createSupportConversationController(
       selection.value = projection;
       messages.value = merged;
       nextMessageCursor.value = projection.messages.nextCursor;
-    } catch {
+    } catch (cause) {
       if (!isCurrent(projectId, conversationId, requestGeneration)) return;
+      if (
+        cause instanceof ApiError &&
+        (cause.status === 403 || cause.status === 404)
+      ) {
+        await purgeConcealedSelection();
+        return;
+      }
       error.value = "Не удалось синхронизировать выбранный диалог";
     }
   }

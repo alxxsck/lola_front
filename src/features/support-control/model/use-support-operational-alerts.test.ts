@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportOperationalAlertDetail,
   SupportOperationalAlertPage,
 } from "@/features/support-control/api/support-lead-source";
 import { createSupportOperationalAlertsController } from "./use-support-operational-alerts";
+
+function commands() {
+  return { acknowledge: vi.fn(), resolve: vi.fn() };
+}
 
 function alertPage(
   ids: string[] = [],
@@ -14,6 +19,7 @@ function alertPage(
   materializationState: "READY",
     items: ids.map((id) => ({
       id,
+      version: 1,
       severity: "HIGH",
       state: "NEW",
       sourceKind: "UNASSIGNED_AGED",
@@ -67,6 +73,7 @@ describe("support operational alerts controller", () => {
       {
         readAlerts: vi.fn().mockReturnValue(pending),
         readAlertDetail: vi.fn(),
+        ...commands(),
       },
     );
 
@@ -94,6 +101,7 @@ describe("support operational alerts controller", () => {
           signal?.addEventListener("abort", abort, { once: true });
           return pending;
         }),
+        ...commands(),
       },
     );
 
@@ -116,7 +124,7 @@ describe("support operational alerts controller", () => {
     );
     const controller = createSupportOperationalAlertsController(
       { projectId: () => "project-1", canRead: () => true },
-      { readAlerts, readAlertDetail: vi.fn() },
+      { readAlerts, readAlertDetail: vi.fn(), ...commands() },
     );
 
     await controller.load();
@@ -143,7 +151,7 @@ describe("support operational alerts controller", () => {
     );
     const controller = createSupportOperationalAlertsController(
       { projectId: () => "project-1", canRead: () => true },
-      { readAlerts: vi.fn(), readAlertDetail },
+      { readAlerts: vi.fn(), readAlertDetail, ...commands() },
     );
 
     await controller.openDetail("alert-1");
@@ -159,5 +167,93 @@ describe("support operational alerts controller", () => {
       { cursor: "cursor-2" },
       expect.any(AbortSignal),
     );
+  });
+
+  it("acknowledges only the opened alert with its current server version", async () => {
+    const acknowledge = vi.fn().mockResolvedValue({
+      alertId: "alert-1",
+      state: "ACKNOWLEDGED",
+      version: 2,
+      occurredAt: "2026-08-06T10:02:00.000Z",
+      replayed: false,
+    });
+    const controller = createSupportOperationalAlertsController(
+      {
+        projectId: () => "project-1",
+        canRead: () => true,
+        canManage: () => true,
+      },
+      {
+        readAlerts: vi.fn().mockResolvedValue(alertPage(["alert-1"])),
+        readAlertDetail: vi.fn().mockResolvedValue(alertDetail()),
+        acknowledge,
+        resolve: vi.fn(),
+      },
+    );
+
+    await controller.openDetail("alert-1");
+    await controller.acknowledge("INVESTIGATING");
+
+    expect(acknowledge).toHaveBeenCalledWith("project-1", "alert-1", {
+      expectedVersion: 1,
+      idempotencyKey: expect.any(String),
+      reasonCode: "INVESTIGATING",
+    });
+    expect(controller.mutating.value).toBeNull();
+  });
+
+  it("purges alert state and asks for authority recovery on a concealed 404", async () => {
+    const onForbidden = vi.fn();
+    const controller = createSupportOperationalAlertsController(
+      {
+        projectId: () => "project-1",
+        canRead: () => true,
+        onForbidden,
+      },
+      {
+        readAlerts: vi
+          .fn()
+          .mockResolvedValueOnce(alertPage(["alert-1"]))
+          .mockRejectedValueOnce(new ApiError(404, "not found")),
+        readAlertDetail: vi.fn(),
+        ...commands(),
+      },
+    );
+
+    await controller.load();
+    await controller.load();
+
+    expect(controller.page.value).toBeNull();
+    expect(onForbidden).toHaveBeenCalledOnce();
+  });
+
+  it("clears an in-flight command when the alert detail is closed", async () => {
+    let resolveAcknowledge!: () => void;
+    const controller = createSupportOperationalAlertsController(
+      {
+        projectId: () => "project-1",
+        canRead: () => true,
+        canManage: () => true,
+      },
+      {
+        readAlerts: vi.fn().mockResolvedValue(alertPage(["alert-1"])),
+        readAlertDetail: vi.fn().mockResolvedValue(alertDetail()),
+        acknowledge: vi.fn().mockReturnValue(
+          new Promise<void>((resolve) => {
+            resolveAcknowledge = resolve;
+          }),
+        ),
+        resolve: vi.fn(),
+      },
+    );
+
+    await controller.openDetail("alert-1");
+    const command = controller.acknowledge("INVESTIGATING");
+    expect(controller.mutating.value).toBe("ACKNOWLEDGE");
+    controller.closeDetail();
+    resolveAcknowledge();
+    await command;
+
+    expect(controller.mutating.value).toBeNull();
   });
 });
