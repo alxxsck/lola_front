@@ -20,8 +20,9 @@ import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance"
 import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
 import {
   canReadSupportWorkspace,
-  isSupportWorkspaceShellEnabled,
+  isSupportWorkspaceRolloutEnabled,
 } from "@/features/support-workspace/model/support-workspace-access";
+import { supportWorkspaceShellEnabled } from "@/shared/config/features";
 
 const AI_LEDGER_ROUTE_GROUPS = new Map([
   ["ai-analyses", "analyses"],
@@ -493,7 +494,7 @@ router.beforeEach(async (to) => {
   if (
     to.meta.supportWorkspaceAccess &&
     (!auth.project ||
-      !isSupportWorkspaceShellEnabled(auth.project) ||
+      !isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) ||
       !canReadSupportWorkspace(auth.project.effectivePermissionCodes ?? []))
   )
     return auth.authenticatedLandingPath;

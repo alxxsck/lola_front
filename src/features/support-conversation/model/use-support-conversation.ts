@@ -84,7 +84,14 @@ export function createSupportConversationController(
   function mergeMessages(
     current: readonly ConversationMessage[],
     incoming: readonly ConversationMessage[],
+    conversationId: string,
   ): ConversationMessage[] | null {
+    if (
+      [...current, ...incoming].some(
+        (message) => message.conversationId !== conversationId,
+      )
+    )
+      return null;
     const byId = new Map(current.map((message) => [message.id, message]));
     for (const message of incoming) byId.set(message.id, message);
     return authoritativeOrder([...byId.values()]);
@@ -107,7 +114,7 @@ export function createSupportConversationController(
     try {
       const projection = await source.readSelection(projectId, conversationId);
       if (!isCurrent(projectId, conversationId, requestGeneration)) return;
-      const ordered = authoritativeOrder(projection.messages.items);
+      const ordered = mergeMessages([], projection.messages.items, conversationId);
       if (!ordered) {
         error.value = "История сообщений требует обновления";
         return;
@@ -137,7 +144,11 @@ export function createSupportConversationController(
         messageLimit: 50,
       });
       if (!isCurrent(projectId, conversationId, requestGeneration)) return;
-      const merged = mergeMessages(messages.value, projection.messages.items);
+      const merged = mergeMessages(
+        messages.value,
+        projection.messages.items,
+        conversationId,
+      );
       if (!merged) {
         error.value = "История сообщений требует обновления";
         return;
@@ -163,7 +174,11 @@ export function createSupportConversationController(
         messageLimit: 50,
       });
       if (!isCurrent(projectId, conversationId, requestGeneration)) return;
-      const merged = mergeMessages(messages.value, projection.messages.items);
+      const merged = mergeMessages(
+        messages.value,
+        projection.messages.items,
+        conversationId,
+      );
       if (!merged) {
         error.value = "История сообщений требует обновления";
         return;

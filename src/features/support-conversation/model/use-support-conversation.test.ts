@@ -27,6 +27,7 @@ function selection(
   conversationId: string,
   messages: ConversationMessage[],
   nextCursor: string | null = null,
+  preserveMessageConversationIds = false,
 ): SupportWorkspaceSelection {
   return {
     checkpoint: "checkpoint-1",
@@ -51,7 +52,12 @@ function selection(
       locale: "ru",
     },
     conversation: conversation(conversationId),
-    messages: { items: messages, nextCursor },
+    messages: {
+      items: preserveMessageConversationIds
+        ? messages
+        : messages.map((item) => ({ ...item, conversationId })),
+      nextCursor,
+    },
   };
 }
 
@@ -130,6 +136,27 @@ describe("support conversation controller", () => {
           message("first", 1),
           message("fourth", 4),
         ]),
+      ),
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      source,
+    );
+
+    await controller.load();
+
+    expect(controller.messages.value).toEqual([]);
+    expect(controller.error.value).toBe("История сообщений требует обновления");
+  });
+
+  it("rejects a message that does not belong to the selected conversation", async () => {
+    const foreignMessage = {
+      ...message("foreign", 1),
+      conversationId: "another-conversation",
+    };
+    const source = {
+      readSelection: vi.fn().mockResolvedValue(
+        selection("conversation-1", [foreignMessage], null, true),
       ),
     };
     const controller = createSupportConversationController(

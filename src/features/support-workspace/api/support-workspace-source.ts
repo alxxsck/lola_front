@@ -86,6 +86,18 @@ function mapWorkspaceConversation(
   };
 }
 
+function mapSelectionMessages(
+  conversationId: string,
+  items: Parameters<typeof mapConversationMessage>[0][],
+): ConversationMessage[] {
+  return items.map((item) => {
+    const message = mapConversationMessage(item);
+    if (message.conversationId !== conversationId)
+      throw new Error("Support workspace returned a message from another conversation");
+    return message;
+  });
+}
+
 const apiSupportWorkspaceSource: SupportWorkspaceSource = {
   async readConversations(projectId, request) {
     const response = await supportWorkspaceRead(projectId, {
@@ -123,7 +135,7 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
       endUser: response.endUser,
       conversation,
       messages: {
-        items: response.messages.items.map(mapConversationMessage),
+        items: mapSelectionMessages(conversationId, response.messages.items),
         nextCursor: response.messages.nextCursor ?? null,
       },
     };

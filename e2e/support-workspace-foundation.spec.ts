@@ -79,3 +79,20 @@ test("uses route-aware inbox and chat panes on mobile", async ({ page }) => {
   await page.getByRole("button", { name: "Назад к списку диалогов" }).click();
   await expect(page).toHaveURL(/\/support\/inbox$/);
 });
+
+test("opens the selected conversation context in a mobile drawer", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+
+  await page.getByRole("button", { name: "Контекст" }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer.locator("dt", { hasText: "Пользователь" })).toBeVisible();
+  await expect(drawer.locator("dd", { hasText: "Пользователь" })).toBeVisible();
+  await expect(drawer.getByText("user_11603", { exact: true })).toHaveCount(0);
+});

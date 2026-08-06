@@ -14,9 +14,12 @@
 В contract нет явного server-owned поля или endpoint для
 `support_workspace_shell`. `ProjectResponseDto.settings` — нетипизированный
 object и выдаётся только с отдельным permission, поэтому он не является
-release-safe источником rollout. До появления typed contract маршрут должен
-оставаться выключаемым только согласованным временным механизмом и не может
-считаться готовым к массовому включению.
+release-safe источником rollout. До появления typed contract frontend использует
+временный global deployment switch `VITE_SUPPORT_WORKSPACE_ENABLED=true` (в mock
+mode включён для проверки). Он не читает `project.settings` и по умолчанию
+выключен в production. Это снимает ложный отказ оператору из-за отсутствующего
+`project.settings.read`, но не заменяет per-project rollout: массовое включение
+по-прежнему заблокировано typed server contract.
 
 ## P1: аватары оператора и пользователя
 
@@ -34,6 +37,11 @@ Socket hints `conversation.watch.v1` и `conversation.message.upserted.v1`
 operator presence. Frontend использует событие только как hint и запускает
 REST reconcile; он не должен показывать «печатает», список смотрящих, unread
 или online ownership как достоверные состояния.
+
+До публикации протокола F0 route показывает authoritative REST snapshot и
+ручное обновление, а не статус «Live». Public composer также не монтируется:
+без server-owned lookup неизвестного результата, `expectedVersion` и typed
+watch protocol нельзя честно гарантировать delivery/recovery.
 
 ## P1: вложения и повтор доставки
 

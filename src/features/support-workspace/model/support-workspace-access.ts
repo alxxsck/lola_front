@@ -1,8 +1,5 @@
 import { hasProjectPermission } from "@/features/auth/permission-access";
-import type { AuthProject } from "@/shared/types/domain";
-
 const supportWorkspaceReadPermission = "project.conversations.read" as const;
-const supportWorkspaceShellFlag = "support_workspace_shell";
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
@@ -17,9 +14,12 @@ export function canReadSupportWorkspace(
   );
 }
 
-/** Project rollout is independent from the operator's effective permissions. */
-export function isSupportWorkspaceShellEnabled(
-  project: Pick<AuthProject, "settings"> | null | undefined,
-): boolean {
-  return project?.settings?.[supportWorkspaceShellFlag] === true;
+/**
+ * The temporary global rollout must be explicitly enabled by deployment
+ * configuration. It deliberately does not read `project.settings`: that
+ * projection requires a different permission and is not a typed rollout
+ * contract.
+ */
+export function isSupportWorkspaceRolloutEnabled(value: unknown): boolean {
+  return value === true;
 }

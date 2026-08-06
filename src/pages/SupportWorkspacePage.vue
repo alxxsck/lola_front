@@ -1,21 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Avatar from "primevue/avatar";
+import Drawer from "primevue/drawer";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
 import { supportWorkspaceSource } from "@/features/support-workspace/api/support-workspace-source";
-import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
-import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
-import { repository } from "@/shared/api/repository";
+import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
 import { relativeTime } from "@/shared/lib/format";
-import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import type { ConversationMessage } from "@/shared/types/domain";
 
 const auth = useAuthStore();
@@ -47,28 +44,7 @@ const selectedConversation = computed(() => {
     conversation.selection.value?.conversation ?? inbox.items.value[0] ?? null
   );
 });
-const selectedName = computed(
-  () => conversation.selection.value?.endUser.externalId ?? "Диалог",
-);
-const live = createSupportWorkspaceLiveController(
-  { reconcile: () => conversation.reconcile() },
-  cmsRealtimeClient,
-);
-const reply = createSupportReplyController(
-  {
-    projectId: () => auth.project?.id,
-    selection: () => conversation.selection.value,
-    reconcile: () => conversation.reconcile(),
-  },
-  repository,
-);
-const realtimeTag = computed(() => {
-  if (live.state.value === "CONNECTED")
-    return { label: "Live", severity: "success" as const };
-  if (live.state.value === "CONNECTING")
-    return { label: "Синхронизация", severity: "warning" as const };
-  return { label: "Связь восстанавливается", severity: "secondary" as const };
-});
+const contextDrawerVisible = ref(false);
 
 function messageAuthorName(message: ConversationMessage): string {
   return (
@@ -101,6 +77,7 @@ async function openConversation(conversationId: string): Promise<void> {
 }
 
 async function backToInbox(): Promise<void> {
+  contextDrawerVisible.value = false;
   await router.push({ name: "support-inbox" });
 }
 
@@ -116,6 +93,7 @@ onMounted(async () => {
 watch(
   () => auth.project?.id,
   () => {
+    contextDrawerVisible.value = false;
     conversation.reset();
     inbox.reset();
     void inbox.load();
@@ -124,31 +102,21 @@ watch(
 
 watch(
   () => requestedConversationId.value,
-  () => void conversation.load(),
+  () => {
+    contextDrawerVisible.value = false;
+    void conversation.load();
+  },
   { immediate: true },
 );
 
 watch(
   () => conversation.selection.value?.conversation,
   (selected) => {
-    reply.syncSelection();
     if (selected) inbox.upsert(selected);
   },
 );
 
-watch(
-  () => [
-    auth.project?.id,
-    conversation.selection.value?.conversation?.id,
-  ] as const,
-  ([projectId, conversationId]) =>
-    void live.setSelection(projectId, conversationId),
-  { immediate: true },
-);
-
 onBeforeUnmount(() => {
-  live.dispose();
-  reply.reset();
   inbox.reset();
   conversation.reset();
 });
@@ -165,7 +133,7 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <div class="header-actions">
-        <Tag :value="realtimeTag.label" :severity="realtimeTag.severity" />
+        <Tag value="Снимок сервера" severity="info" />
         <Button
           label="Обновить"
           icon="pi pi-refresh"
@@ -178,8 +146,9 @@ onBeforeUnmount(() => {
     </header>
 
     <Message severity="info" :closable="false" class="workspace-notice">
-      Данные и разрешения приходят одним серверным срезом. Отправка,
-      назначение, SLA и delivery будут включаться только через эти разрешения.
+      Данные и разрешения приходят одним серверным срезом. Отправка, live
+      collaboration, назначение, SLA и delivery включаются только после
+      публикации соответствующих серверных контрактов.
     </Message>
 
     <div
@@ -273,18 +242,28 @@ onBeforeUnmount(() => {
                   : "Архивный диалог"
               }}</span>
               <h2>{{ selectedConversation.title }}</h2>
-              <p>{{ selectedName }}</p>
+              <p>Безопасный контекст доступен в панели диалога.</p>
             </div>
-            <Tag
-              :value="
-                selectedConversation.status === 'OPEN' ? 'Активен' : 'Архив'
-              "
-              :severity="
-                selectedConversation.status === 'OPEN'
-                  ? 'success'
-                  : 'secondary'
-              "
-            />
+            <div class="conversation-header__actions">
+              <Button
+                class="mobile-context"
+                label="Контекст"
+                icon="pi pi-user"
+                severity="secondary"
+                text
+                @click="contextDrawerVisible = true"
+              />
+              <Tag
+                :value="
+                  selectedConversation.status === 'OPEN' ? 'Активен' : 'Архив'
+                "
+                :severity="
+                  selectedConversation.status === 'OPEN'
+                    ? 'success'
+                    : 'secondary'
+                "
+              />
+            </div>
           </header>
 
           <div
@@ -310,7 +289,7 @@ onBeforeUnmount(() => {
             v-else
             class="message-log"
             role="log"
-            aria-live="off"
+            aria-live="polite"
             aria-label="История сообщений"
           >
             <Button
@@ -354,54 +333,6 @@ onBeforeUnmount(() => {
               В этом диалоге пока нет сообщений.
             </p>
           </div>
-          <form
-            v-if="conversation.selection.value"
-            class="reply-composer"
-            aria-label="Ответ оператором"
-            @submit.prevent="reply.send"
-          >
-            <Message
-              v-if="reply.error.value"
-              severity="error"
-              :closable="false"
-            >
-              {{ reply.error.value }}
-            </Message>
-            <Message
-              v-else-if="reply.deliveryStatus.value === 'PENDING'"
-              severity="info"
-              :closable="false"
-            >
-              Сообщение принято и ожидает доставки.
-            </Message>
-            <Textarea
-              :model-value="reply.draft.value"
-              :disabled="!reply.canReply.value"
-              rows="3"
-              auto-resize
-              maxlength="10000"
-              placeholder="Ответить пользователю…"
-              aria-label="Текст ответа"
-              @update:model-value="reply.draft.value = $event"
-              @keydown.ctrl.enter.prevent="reply.send"
-              @keydown.meta.enter.prevent="reply.send"
-            />
-            <div class="reply-composer__actions">
-              <span v-if="!reply.canReply.value" class="reply-hint">
-                Сервер не выдал разрешение на ответ в этом диалоге.
-              </span>
-              <span v-else class="reply-hint">
-                Ctrl/⌘ + Enter — отправить
-              </span>
-              <Button
-                type="submit"
-                label="Отправить"
-                icon="pi pi-send"
-                :loading="reply.sending.value"
-                :disabled="!reply.canReply.value || !reply.draft.value.trim()"
-              />
-            </div>
-          </form>
         </template>
         <div
           v-else-if="inbox.loading.value || conversation.loading.value"
@@ -431,50 +362,25 @@ onBeforeUnmount(() => {
         class="context-pane"
         aria-label="Контекст диалога"
       >
-        <div class="pane-heading">
-          <div>
-            <span class="eyebrow">Контекст</span>
-            <h2>Диалог</h2>
-          </div>
-        </div>
-        <dl class="context-list">
-          <div>
-            <dt>Пользователь</dt>
-            <dd>{{ selectedName }}</dd>
-          </div>
-          <div>
-            <dt>Статус</dt>
-            <dd>
-              {{
-                selectedConversation.status === "OPEN"
-                  ? "Активный"
-                  : "Архивный"
-              }}
-            </dd>
-          </div>
-          <div>
-            <dt>Сообщений</dt>
-            <dd>{{ selectedConversation.messageCount }}</dd>
-          </div>
-          <div>
-            <dt>Сессий сейчас</dt>
-            <dd>{{ selectedConversation.currentInteractionSessionCount }}</dd>
-          </div>
-          <div>
-            <dt>Язык</dt>
-            <dd>{{ conversation.selection.value.endUser.locale ?? "Не указан" }}</dd>
-          </div>
-          <div>
-            <dt>Обновлён</dt>
-            <dd>{{ relativeTime(selectedConversation.updatedAt) }}</dd>
-          </div>
-        </dl>
-        <Message severity="secondary" :closable="false">
-          Полный профиль, события и sensitive поля не запрашиваются этим
-          экраном. Доступные действия определяет серверная capability-модель.
-        </Message>
+        <SupportConversationContext
+          :conversation="selectedConversation"
+          :selection="conversation.selection.value"
+        />
       </aside>
     </div>
+    <Drawer
+      v-if="selectedConversation && conversation.selection.value"
+      :visible="contextDrawerVisible"
+      position="right"
+      aria-label="Контекст диалога"
+      :style="{ width: 'min(420px, 100vw)' }"
+      @update:visible="contextDrawerVisible = $event"
+    >
+      <SupportConversationContext
+        :conversation="selectedConversation"
+        :selection="conversation.selection.value"
+      />
+    </Drawer>
   </section>
 </template>
 
@@ -484,6 +390,7 @@ onBeforeUnmount(() => {
 .pane-heading,
 .conversation-row__top,
 .conversation-header,
+.conversation-header__actions,
 .message-meta {
   display: flex;
   align-items: center;
@@ -623,6 +530,9 @@ onBeforeUnmount(() => {
 .mobile-back {
   display: none;
 }
+.mobile-context {
+  display: none;
+}
 .message-log {
   flex: 1;
   padding: 22px;
@@ -674,46 +584,6 @@ onBeforeUnmount(() => {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.reply-composer {
-  display: grid;
-  gap: 10px;
-  padding: 14px 22px 18px;
-  border-top: 1px solid var(--line);
-  background: var(--surface-card);
-}
-.reply-composer :deep(textarea) {
-  width: 100%;
-  resize: vertical;
-}
-.reply-composer__actions {
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.reply-hint {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.context-list {
-  display: grid;
-  gap: 14px;
-  margin: 0 0 18px;
-}
-.context-list div {
-  display: grid;
-  gap: 3px;
-}
-.context-list dt {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.context-list dd {
-  margin: 0;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
 .empty-pane {
   color: var(--text-muted);
   line-height: 1.5;
@@ -744,9 +614,6 @@ onBeforeUnmount(() => {
     border-top: 1px solid var(--line);
     border-left: 0;
   }
-  .context-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 @media (max-width: 720px) {
   .support-workspace {
@@ -773,16 +640,18 @@ onBeforeUnmount(() => {
     display: inline-flex;
     margin: -8px 0 8px -8px;
   }
+  .mobile-context {
+    display: inline-flex;
+  }
+  .context-pane {
+    display: none;
+  }
   .message-log,
-  .message-skeletons,
-  .reply-composer {
+  .message-skeletons {
     padding: 16px;
   }
   .message {
     max-width: 92%;
-  }
-  .context-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

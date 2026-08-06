@@ -22,8 +22,9 @@ import {
 } from "@/shared/config/features";
 import {
   canReadSupportWorkspace as canReadSupportWorkspaceAccess,
-  isSupportWorkspaceShellEnabled,
+  isSupportWorkspaceRolloutEnabled,
 } from "@/features/support-workspace/model/support-workspace-access";
+import { supportWorkspaceShellEnabled } from "@/shared/config/features";
 import { productBrand } from "@/shared/config/product-brand";
 import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
 import ThemeSwitch from "./ThemeSwitch.vue";
@@ -67,7 +68,7 @@ const canReadProjectIntegrations = computed(() =>
 );
 const canReadSupportWorkspace = computed(
   () =>
-    isSupportWorkspaceShellEnabled(auth.project) &&
+    isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) &&
     canReadSupportWorkspaceAccess(auth.project?.effectivePermissionCodes ?? []),
 );
 

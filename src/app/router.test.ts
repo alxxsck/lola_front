@@ -834,7 +834,6 @@ describe("authentication routes", () => {
       assistantName: "Retenive",
       systemPrompt: "",
       voiceInstructions: "",
-      settings: { support_workspace_shell: false },
       effectivePermissionCodes: ["project.conversations.reply"],
     };
     auth.$patch({
@@ -853,10 +852,6 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("overview");
 
     auth.project!.effectivePermissionCodes = ["project.conversations.read"];
-    await router.push("/support/inbox/conversations/conversation-1");
-    expect(router.currentRoute.value.name).toBe("overview");
-
-    auth.project!.settings = { support_workspace_shell: true };
     await router.push("/support/inbox/conversations/conversation-1");
     expect(router.currentRoute.value.name).toBe("support-inbox-conversation");
   });
