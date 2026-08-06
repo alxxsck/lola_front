@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   canManageOwnSupportAvailability,
   canManageOwnSupportAssignments,
+  canManageSupportConversationAiSuspension,
   canReceiveSupportRoutingOffers,
+  canReadSupportConversationAiSuspension,
   canReleaseSupportCaseAssignment,
   canReadSupportAvailability,
   canReadSupportControl,
@@ -103,6 +105,37 @@ describe("support workspace access", () => {
         "operator-2",
       ),
     ).toBe(true);
+  });
+
+  it("separates AI state read access from mutation authority", () => {
+    expect(
+      canReadSupportConversationAiSuspension([
+        "project.conversations.read",
+      ]),
+    ).toBe(true);
+    expect(
+      canReadSupportConversationAiSuspension([
+        "project.conversations.ai_suspend",
+      ]),
+    ).toBe(false);
+    expect(
+      canManageSupportConversationAiSuspension(
+        ["project.conversations.ai_suspend"],
+        true,
+      ),
+    ).toBe(true);
+    expect(
+      canManageSupportConversationAiSuspension(
+        ["project.conversations.ai_suspend"],
+        false,
+      ),
+    ).toBe(false);
+    expect(
+      canManageSupportConversationAiSuspension(
+        ["project.conversations.read"],
+        true,
+      ),
+    ).toBe(false);
   });
 
   it("accepts only an explicit rollout enablement", () => {

@@ -9,6 +9,11 @@ import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
+import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
+import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
+import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
+import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
+import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
 import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
@@ -22,7 +27,9 @@ import SupportRoutingOffers from "@/features/support-routing-offers/ui/SupportRo
 import { supportWorkspaceSource } from "@/features/support-workspace/api/support-workspace-source";
 import {
   canManageOwnSupportAvailability,
+  canManageSupportConversationAiSuspension,
   canReceiveSupportRoutingOffers,
+  canReadSupportConversationAiSuspension,
   canReleaseSupportCaseAssignment,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
@@ -30,8 +37,15 @@ import SupportConversationContext from "@/features/support-workspace/ui/SupportC
 import { createSupportUserProfileController } from "@/features/support-user-profile/model/use-support-user-profile";
 import { relativeTime } from "@/shared/lib/format";
 import type { ConversationMessage } from "@/shared/types/domain";
+import type {
+  ExtendConversationAISuspensionDto,
+  ResumeConversationAIDto,
+  StartConversationAISuspensionDto,
+} from "@/shared/api/generated/models";
+import { conversationAISuspensionEnabled } from "@/shared/config/features";
 
 const auth = useAuthStore();
+const aiSuspension = useConversationAISuspensionStore();
 const route = useRoute();
 const router = useRouter();
 const inbox = createSupportInboxController(
@@ -70,6 +84,45 @@ const selectedAssignmentAuthorityKey = computed(() => {
     assignment?.actionEtag ?? "",
   ].join("\u0000");
 });
+const aiSuspensionAccessDenied = ref(false);
+const canReadSelectedAiSuspension = computed(
+  () =>
+    !aiSuspensionAccessDenied.value &&
+    conversationAISuspensionEnabled &&
+    aiSuspension.projectId === auth.project?.id &&
+    Boolean(conversation.selection.value?.conversation) &&
+    canReadSupportConversationAiSuspension(
+      auth.project?.effectivePermissionCodes ?? [],
+    ),
+);
+const canManageSelectedAiSuspension = computed(
+  () =>
+    canReadSelectedAiSuspension.value &&
+    canManageSupportConversationAiSuspension(
+      auth.project?.effectivePermissionCodes ?? [],
+      Boolean(conversation.selection.value?.capabilities.suspendAi),
+    ),
+);
+const selectedAiSuspensionEntry = computed(() => {
+  const conversationId = conversation.selection.value?.conversation?.id;
+  return conversationId ? aiSuspension.getEntry(conversationId) : undefined;
+});
+const selectedAiSuspensionError = computed(() => {
+  const conversationId = conversation.selection.value?.conversation?.id;
+  return conversationId ? aiSuspension.getError(conversationId) : null;
+});
+const selectedAiSuspensionKey = computed(() => {
+  const selection = conversation.selection.value;
+  return [
+    auth.project?.id ?? "",
+    selection?.endUser.id ?? "",
+    selection?.conversation?.id ?? "",
+    selection?.capabilities.suspendAi ? "allowed" : "denied",
+  ].join("\u0000");
+});
+const aiSuspensionDialogVisible = ref(false);
+const aiSuspensionHistoryVisible = ref(false);
+const aiSuspensionDialogMode = ref<"START" | "EXTEND" | "RESUME">("START");
 const contextDrawerVisible = ref(false);
 const canOpenSelectedCase = computed(() =>
   hasProjectPermission(
@@ -221,11 +274,96 @@ async function backToInbox(): Promise<void> {
 
 async function reload(): Promise<void> {
   assignmentReleaseAccessDenied.value = false;
+  aiSuspensionAccessDenied.value = false;
+  aiSuspensionDialogVisible.value = false;
+  aiSuspensionHistoryVisible.value = false;
   await Promise.all([
     inbox.load(),
     conversation.load(),
     canReadAvailability.value ? availability.load() : Promise.resolve(),
     canManageRoutingOffers.value ? routingOffers.load() : Promise.resolve(),
+  ]);
+  reloadSelectedAiSuspension();
+}
+
+function reloadSelectedAiSuspension(): void {
+  const selection = conversation.selection.value;
+  if (!canReadSelectedAiSuspension.value || !selection?.conversation) return;
+  aiSuspension.restoreConversation(selection.conversation.id);
+  void aiSuspension.loadDetail(selection.endUser.id, selection.conversation.id);
+}
+
+function revokeSelectedAiSuspensionAccess(scope?: {
+  projectId: string;
+  endUserId: string;
+  conversationId: string;
+}): void {
+  const selection = conversation.selection.value;
+  const conversationId = selection?.conversation?.id;
+  if (
+    scope &&
+    (scope.projectId !== auth.project?.id ||
+      scope.endUserId !== selection?.endUser.id ||
+      scope.conversationId !== conversationId)
+  )
+    return;
+  if (conversationId) aiSuspension.revokeConversation(conversationId);
+  aiSuspensionAccessDenied.value = true;
+  aiSuspensionDialogVisible.value = false;
+  aiSuspensionHistoryVisible.value = false;
+  void auth.refreshContext().catch(() => undefined);
+  void Promise.all([inbox.load(), conversation.reconcile()]);
+}
+
+function openAiSuspensionDialog(mode: "START" | "EXTEND" | "RESUME"): void {
+  if (!canManageSelectedAiSuspension.value || !selectedAiSuspensionEntry.value)
+    return;
+  aiSuspensionDialogMode.value = mode;
+  aiSuspensionDialogVisible.value = true;
+}
+
+async function submitAiSuspension(value: {
+  key: string;
+  command:
+    | StartConversationAISuspensionDto
+    | ExtendConversationAISuspensionDto
+    | ResumeConversationAIDto;
+}): Promise<void> {
+  const selection = conversation.selection.value;
+  if (
+    !selection?.conversation ||
+    !canManageSelectedAiSuspension.value ||
+    !selectedAiSuspensionEntry.value
+  )
+    return;
+  const { endUser, conversation: selected } = selection;
+  const succeeded =
+    aiSuspensionDialogMode.value === "START"
+      ? await aiSuspension.start(
+          endUser.id,
+          selected.id,
+          value.command as StartConversationAISuspensionDto,
+          value.key,
+        )
+      : aiSuspensionDialogMode.value === "EXTEND"
+        ? await aiSuspension.extend(
+            endUser.id,
+            selected.id,
+            value.command as ExtendConversationAISuspensionDto,
+            value.key,
+          )
+        : await aiSuspension.resume(
+            endUser.id,
+            selected.id,
+            value.command as ResumeConversationAIDto,
+            value.key,
+          );
+  if (!succeeded) return;
+  aiSuspensionDialogVisible.value = false;
+  await Promise.all([
+    aiSuspension.loadDetail(endUser.id, selected.id),
+    inbox.load(),
+    conversation.reconcile(),
   ]);
 }
 
@@ -243,6 +381,9 @@ watch(
     availabilityAccessDenied.value = false;
     routingOffersAccessDenied.value = false;
     assignmentReleaseAccessDenied.value = false;
+    aiSuspensionAccessDenied.value = false;
+    aiSuspensionDialogVisible.value = false;
+    aiSuspensionHistoryVisible.value = false;
     assignmentRelease.reset();
     availability.reset();
     routingOffers.reset();
@@ -265,6 +406,31 @@ watch(canReleaseSelectedAssignment, (allowed) => {
   if (!allowed) assignmentRelease.reset();
 });
 
+watch(canReadSelectedAiSuspension, (allowed) => {
+  if (allowed) {
+    reloadSelectedAiSuspension();
+    return;
+  }
+  aiSuspensionDialogVisible.value = false;
+  aiSuspensionHistoryVisible.value = false;
+});
+
+watch(selectedAiSuspensionKey, (selectionKey, previousSelectionKey) => {
+  if (selectionKey === previousSelectionKey) return;
+  aiSuspensionDialogVisible.value = false;
+  aiSuspensionHistoryVisible.value = false;
+  aiSuspensionAccessDenied.value = false;
+  reloadSelectedAiSuspension();
+});
+
+watch(
+  () => selectedAiSuspensionError.value?.kind,
+  (kind) => {
+    if (kind !== "FORBIDDEN" && kind !== "NOT_FOUND") return;
+    revokeSelectedAiSuspensionAccess();
+  },
+);
+
 watch(
   () => conversation.selection.value?.capabilities.releaseAssignment,
   (allowed) => {
@@ -285,6 +451,9 @@ watch(
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
     assignmentReleaseAccessDenied.value = false;
+    aiSuspensionAccessDenied.value = false;
+    aiSuspensionDialogVisible.value = false;
+    aiSuspensionHistoryVisible.value = false;
     assignmentRelease.reset();
     profile.reset();
     void conversation.load();
@@ -308,6 +477,8 @@ onBeforeUnmount(() => {
   availability.reset();
   routingOffers.reset();
   assignmentRelease.reset();
+  aiSuspensionDialogVisible.value = false;
+  aiSuspensionHistoryVisible.value = false;
   inbox.reset();
   conversation.reset();
 });
@@ -344,10 +515,10 @@ onBeforeUnmount(() => {
     </header>
 
     <Message severity="info" :closable="false" class="workspace-notice">
-      Данные и разрешения приходят одним серверным срезом. Статус оператора и
-      персональные предложения назначений используют опубликованные server-side
-      capabilities; отправка, live collaboration, SLA и delivery остаются
-      выключенными до публикации своих контрактов.
+      Данные и разрешения приходят одним серверным срезом. Статус оператора,
+      персональные предложения назначений и AI Suspension используют
+      опубликованные server-side capabilities; отправка, live collaboration,
+      SLA и delivery остаются выключенными до публикации своих контрактов.
     </Message>
 
     <SupportAvailabilityStatus
@@ -475,6 +646,19 @@ onBeforeUnmount(() => {
               <p>Безопасный контекст доступен в панели диалога.</p>
             </div>
             <div class="conversation-header__actions">
+              <template
+                v-if="canReadSelectedAiSuspension && selectedAiSuspensionEntry"
+              >
+                <ConversationAISuspensionHeaderActions
+                  :entry="selectedAiSuspensionEntry"
+                  :can-manage="canManageSelectedAiSuspension"
+                  :conversation-open="selectedConversation.status === 'OPEN'"
+                  :show-history="canReadSelectedAiSuspension"
+                  @start="openAiSuspensionDialog('START')"
+                  @history="aiSuspensionHistoryVisible = true"
+                  @retry="reloadSelectedAiSuspension"
+                />
+              </template>
               <Button
                 class="mobile-context"
                 label="Контекст"
@@ -495,6 +679,17 @@ onBeforeUnmount(() => {
               />
             </div>
           </header>
+
+          <ConversationAISuspensionBanner
+            v-if="canReadSelectedAiSuspension && selectedAiSuspensionEntry"
+            :entry="selectedAiSuspensionEntry"
+            :can-manage="canManageSelectedAiSuspension"
+            :conversation-open="selectedConversation.status === 'OPEN'"
+            :show-history="canReadSelectedAiSuspension"
+            @extend="openAiSuspensionDialog('EXTEND')"
+            @resume="openAiSuspensionDialog('RESUME')"
+            @history="aiSuspensionHistoryVisible = true"
+          />
 
           <div
             v-if="conversation.loading.value"
@@ -643,6 +838,33 @@ onBeforeUnmount(() => {
         @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
       />
     </Drawer>
+    <ConversationAISuspensionDialog
+      v-if="
+        canManageSelectedAiSuspension &&
+        selectedConversation &&
+        selectedAiSuspensionEntry
+      "
+      v-model:visible="aiSuspensionDialogVisible"
+      :mode="aiSuspensionDialogMode"
+      :conversation-label="selectedConversation.title"
+      :current="selectedAiSuspensionEntry.detail ?? null"
+      :server-offset-ms="selectedAiSuspensionEntry.serverOffsetMs"
+      :busy="Boolean(selectedAiSuspensionEntry.mutating)"
+      :error="selectedAiSuspensionEntry.error"
+      @submit="submitAiSuspension"
+    />
+    <ConversationAISuspensionHistory
+      v-if="
+        canReadSelectedAiSuspension &&
+        selectedConversation &&
+        conversation.selection.value
+      "
+      v-model:visible="aiSuspensionHistoryVisible"
+      :project-id="auth.project?.id ?? ''"
+      :end-user-id="conversation.selection.value.endUser.id"
+      :conversation-id="selectedConversation.id"
+      @access-revoked="revokeSelectedAiSuspensionAccess"
+    />
   </section>
 </template>
 
@@ -667,6 +889,11 @@ onBeforeUnmount(() => {
 .header-actions {
   gap: 10px;
   flex-wrap: wrap;
+}
+.conversation-header__actions {
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .workspace-notice {
   margin-bottom: 16px;
@@ -897,6 +1124,9 @@ onBeforeUnmount(() => {
   .conversation-header {
     align-items: flex-start;
     padding: 16px;
+  }
+  .conversation-header__actions {
+    justify-content: flex-end;
   }
   .mobile-back {
     display: inline-flex;

@@ -276,4 +276,59 @@ describe('хранилище приостановок AI по диалогам',
     visibility.mockRestore()
     vi.useRealTimers()
   })
+
+  it('purge-ит отозванный диалог и не даёт старому REST/realtime вернуть его в память', async () => {
+    const store = useConversationAISuspensionStore()
+    await store.activateProject('project-1')
+    store.ingestConversations([conversation('conversation-1')])
+    let finishRead!: (value: unknown) => void
+    mocks.get.mockReturnValue(new Promise((resolve) => { finishRead = resolve }))
+
+    const pending = store.loadDetail('user-1', 'conversation-1')
+    store.revokeConversation('conversation-1')
+    finishRead({
+      ...automatic,
+      mode: 'SUSPENDED',
+      lifecycle: 'ACTIVE',
+      version: '1',
+      suspendedUntil: '2026-07-20T14:00:00.000Z',
+      startedAt: '2026-07-20T13:00:00.000Z',
+      startedBy: null,
+      reason: 'OPERATOR_TAKEOVER',
+      note: 'private',
+      resumedAt: null,
+      resumedBy: null,
+    })
+    await pending
+    store.applyRealtimeEvent({
+      eventId: 'revoked-target', eventName: 'conversation.ai_suspension.started.v1', projectId: 'project-1', sequence: '1',
+      occurredAt: automatic.serverTime, actorAdminId: 'admin-1', endUserId: 'user-1', conversationId: 'conversation-1',
+      state: { ...automatic, mode: 'SUSPENDED', lifecycle: 'ACTIVE', version: '1', suspendedUntil: '2026-07-20T14:00:00.000Z' },
+    })
+
+    expect(store.getEntry('conversation-1')).toBeUndefined()
+    expect(store.getError('conversation-1')).toBeNull()
+
+    store.restoreConversation('conversation-1')
+    store.applyRealtimeEvent({
+      eventId: 'restored-target', eventName: 'conversation.ai_suspension.started.v1', projectId: 'project-1', sequence: '2',
+      occurredAt: automatic.serverTime, actorAdminId: 'admin-1', endUserId: 'user-1', conversationId: 'conversation-1',
+      state: { ...automatic, mode: 'SUSPENDED', lifecycle: 'ACTIVE', version: '1', suspendedUntil: '2026-07-20T14:00:00.000Z' },
+    })
+
+    expect(store.getEntry('conversation-1')?.summary.lifecycle).toBe('ACTIVE')
+  })
+
+  it('сохраняет concealed read error без создания ложного AI state', async () => {
+    const store = useConversationAISuspensionStore()
+    await store.activateProject('project-1')
+    mocks.get.mockRejectedValue(
+      new ApiError(403, 'forbidden', undefined, undefined, 'PROJECT_READ_FORBIDDEN'),
+    )
+
+    await expect(store.loadDetail('user-1', 'conversation-1')).resolves.toBe(false)
+
+    expect(store.getEntry('conversation-1')).toBeUndefined()
+    expect(store.getError('conversation-1')).toMatchObject({ kind: 'FORBIDDEN' })
+  })
 })

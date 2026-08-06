@@ -384,9 +384,12 @@ watch(
     if (projectId) {
       if (
         conversationAISuspensionEnabled &&
-        hasProjectPermission(
-          auth.project?.effectivePermissionCodes ?? [],
-          "project.conversations.ai_suspend",
+        ["project.conversations.read", "project.conversations.ai_suspend"].some(
+          (permission) =>
+            hasProjectPermission(
+              auth.project?.effectivePermissionCodes ?? [],
+              permission as Parameters<typeof hasProjectPermission>[1],
+            ),
         )
       )
         void suspensions.activateProject(projectId);

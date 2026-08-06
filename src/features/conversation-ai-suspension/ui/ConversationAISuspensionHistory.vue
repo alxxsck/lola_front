@@ -5,6 +5,7 @@ import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import type { ConversationAISuspensionHistoryItemResponseDto } from '@/shared/api/generated/models'
 import { repository } from '@/shared/api/repository'
+import { suspensionError } from '../model/suspension-error'
 
 const props = defineProps<{
   visible: boolean
@@ -12,7 +13,14 @@ const props = defineProps<{
   endUserId: string
   conversationId: string
 }>()
-const emit = defineEmits<{ 'update:visible': [value: boolean] }>()
+const emit = defineEmits<{
+  'update:visible': [value: boolean]
+  'access-revoked': [scope: {
+    projectId: string
+    endUserId: string
+    conversationId: string
+  }]
+}>()
 const visibleModel = computed({ get: () => props.visible, set: (value) => emit('update:visible', value) })
 const items = ref<ConversationAISuspensionHistoryItemResponseDto[]>([])
 const nextCursor = ref<string | null>(null)
@@ -21,34 +29,58 @@ const loadingMore = ref(false)
 const error = ref('')
 let requestSequence = 0
 
-watch(() => [props.visible, props.conversationId] as const, ([visible]) => {
-  if (!visible) return
+watch(() => [props.visible, props.projectId, props.endUserId, props.conversationId] as const, ([visible]) => {
+  requestSequence += 1
   items.value = []
   nextCursor.value = null
+  loading.value = false
+  loadingMore.value = false
+  error.value = ''
+  if (!visible) return
   void load()
 }, { immediate: true })
 
 async function load(cursor?: string): Promise<void> {
   const request = ++requestSequence
+  const scope = {
+    projectId: props.projectId,
+    endUserId: props.endUserId,
+    conversationId: props.conversationId,
+  }
+  const isCurrent = () =>
+    request === requestSequence &&
+    props.visible &&
+    props.projectId === scope.projectId &&
+    props.endUserId === scope.endUserId &&
+    props.conversationId === scope.conversationId
   if (cursor) loadingMore.value = true
   else loading.value = true
   error.value = ''
   try {
     const page = await repository.getConversationAISuspensionHistory(
-      props.projectId,
-      props.endUserId,
-      props.conversationId,
+      scope.projectId,
+      scope.endUserId,
+      scope.conversationId,
       { limit: 20, ...(cursor ? { cursor } : {}) },
     )
-    if (request !== requestSequence) return
+    if (!isCurrent()) return
     const byId = new Map(items.value.map((item) => [item.id, item]))
     page.items.forEach((item) => byId.set(item.id, item))
     items.value = [...byId.values()]
     nextCursor.value = page.nextCursor
-  } catch {
-    if (request === requestSequence) error.value = 'Не удалось загрузить историю. Попробуйте ещё раз.'
+  } catch (cause) {
+    if (!isCurrent()) return
+    const normalized = suspensionError(cause)
+    if (normalized.kind === 'FORBIDDEN' || normalized.kind === 'NOT_FOUND') {
+      items.value = []
+      nextCursor.value = null
+      error.value = ''
+      emit('access-revoked', scope)
+      return
+    }
+    error.value = 'Не удалось загрузить историю. Попробуйте ещё раз.'
   } finally {
-    if (request === requestSequence) {
+    if (isCurrent()) {
       loading.value = false
       loadingMore.value = false
     }

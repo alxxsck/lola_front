@@ -12,6 +12,8 @@ const supportAssignmentOverridePermission =
   "project.support.assignments.override" as const;
 const supportRoutingReceivePermission =
   "project.support.routing.receive" as const;
+const supportConversationAiSuspendPermission =
+  "project.conversations.ai_suspend" as const;
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
@@ -96,6 +98,33 @@ export function canReleaseSupportCaseAssignment(
     canManageOwnSupportAssignments(effectivePermissionCodes) &&
     Boolean(actorId) &&
     actorId === assignmentOperatorId
+  );
+}
+
+/**
+ * Current state and history are CMS-read surfaces. Commands use the distinct
+ * AI-suspension permission and additionally need the authoritative
+ * target/state capability from the selected-conversation projection.
+ */
+export function canReadSupportConversationAiSuspension(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportWorkspaceReadPermission,
+  );
+}
+
+export function canManageSupportConversationAiSuspension(
+  effectivePermissionCodes: readonly string[],
+  serverAllowsAction: boolean,
+): boolean {
+  return (
+    serverAllowsAction &&
+    hasProjectPermission(
+      effectivePermissionCodes,
+      supportConversationAiSuspendPermission,
+    )
   );
 }
 

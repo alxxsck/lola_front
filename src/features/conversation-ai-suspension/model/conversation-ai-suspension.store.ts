@@ -31,12 +31,14 @@ const REALTIME_EVENTS = [
 export const useConversationAISuspensionStore = defineStore('conversation-ai-suspension', () => {
   const projectId = ref<string | null>(null)
   const entries = ref(new Map<string, ConversationAISuspensionEntry>())
+  const transientErrors = ref(new Map<string, SuspensionError>())
   const realtimeState = ref<CmsRealtimeState>('DISCONNECTED')
   const changeRevision = ref(0)
   const seenEventIds = new Set<string>()
   const expiryTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const cancellationReconcileTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const requestSequences = new Map<string, number>()
+  const revokedConversationIds = new Set<string>()
   let lastSequence = 0n
   let generation = 0
   let hiddenAt: number | null = null
@@ -46,8 +48,19 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
     return entries.value.get(conversationId)
   }
 
+  function getError(conversationId: string): SuspensionError | null {
+    return getEntry(conversationId)?.error ?? transientErrors.value.get(conversationId) ?? null
+  }
+
   function replaceEntry(conversationId: string, entry: ConversationAISuspensionEntry): void {
     entries.value = new Map(entries.value).set(conversationId, entry)
+  }
+
+  function setTransientError(conversationId: string, error: SuspensionError | null): void {
+    const next = new Map(transientErrors.value)
+    if (error) next.set(conversationId, error)
+    else next.delete(conversationId)
+    transientErrors.value = next
   }
 
   function clearExpiryTimer(conversationId: string): void {
@@ -106,6 +119,7 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
     endUserId: string,
     incoming: ConversationAISuspensionSummary | ConversationAISuspensionDetail,
   ): boolean {
+    if (revokedConversationIds.has(conversationId)) return false
     const current = getEntry(conversationId)
     let reduced
     let clock
@@ -152,6 +166,7 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
       serverOffsetMs: clock.offsetMs,
     }
     replaceEntry(conversationId, next)
+    setTransientError(conversationId, null)
     scheduleExpiry(conversationId)
     changeRevision.value += 1
     return true
@@ -190,12 +205,13 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
 
   async function loadDetail(endUserId: string, conversationId: string): Promise<boolean> {
     const activeProjectId = projectId.value
-    if (!activeProjectId) return false
+    if (!activeProjectId || revokedConversationIds.has(conversationId)) return false
     const activeGeneration = generation
     const request = (requestSequences.get(conversationId) ?? 0) + 1
     requestSequences.set(conversationId, request)
     const current = getEntry(conversationId)
     if (current) replaceEntry(conversationId, { ...current, loading: true, error: null })
+    setTransientError(conversationId, null)
     try {
       const detail = await repository.getConversationAISuspension(activeProjectId, endUserId, conversationId)
       if (
@@ -211,6 +227,7 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
       if (generation === activeGeneration && requestSequences.get(conversationId) === request) {
         const entry = getEntry(conversationId)
         if (entry) replaceEntry(conversationId, { ...entry, loading: false, error: suspensionError(cause) })
+        else setTransientError(conversationId, suspensionError(cause))
       }
       return false
     }
@@ -244,7 +261,11 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
       }
       return stateApplied
     } catch (cause) {
-      if (generation !== activeGeneration || projectId.value !== activeProjectId) return false
+      if (
+        generation !== activeGeneration ||
+        projectId.value !== activeProjectId ||
+        revokedConversationIds.has(conversationId)
+      ) return false
       const error = suspensionError(cause)
       const entry = getEntry(conversationId)
       if (entry) replaceEntry(conversationId, { ...entry, mutating: null, error })
@@ -287,7 +308,12 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
 
   function applyRealtimeEvent(value: unknown): void {
     const event = parseSuspensionRealtimeEvent(value)
-    if (!event || event.projectId !== projectId.value || seenEventIds.has(event.eventId)) return
+    if (
+      !event ||
+      event.projectId !== projectId.value ||
+      seenEventIds.has(event.eventId) ||
+      revokedConversationIds.has(event.conversationId)
+    ) return
     seenEventIds.add(event.eventId)
     if (seenEventIds.size > 1_000) seenEventIds.delete(seenEventIds.values().next().value!)
     const sequence = BigInt(event.sequence)
@@ -331,7 +357,9 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
     cancellationReconcileTimers.forEach((timer) => clearTimeout(timer))
     cancellationReconcileTimers.clear()
     requestSequences.clear()
+    revokedConversationIds.clear()
     entries.value = new Map()
+    transientErrors.value = new Map()
     seenEventIds.clear()
     lastSequence = 0n
     changeRevision.value += 1
@@ -356,12 +384,37 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
     realtimeState.value = 'DISCONNECTED'
   }
 
+  /**
+   * A concealed 403/404 must not leave a selected conversation's state in
+   * memory or let an older request/realtime event recreate it. The caller may
+   * restore the id only after a fresh, authoritative selection is available.
+   */
+  function revokeConversation(conversationId: string): void {
+    revokedConversationIds.add(conversationId)
+    requestSequences.set(
+      conversationId,
+      (requestSequences.get(conversationId) ?? 0) + 1,
+    )
+    clearExpiryTimer(conversationId)
+    clearCancellationReconcileTimer(conversationId)
+    const nextEntries = new Map(entries.value)
+    nextEntries.delete(conversationId)
+    entries.value = nextEntries
+    setTransientError(conversationId, null)
+    changeRevision.value += 1
+  }
+
+  function restoreConversation(conversationId: string): void {
+    revokedConversationIds.delete(conversationId)
+  }
+
   return {
     projectId,
     entries,
     realtimeState,
     changeRevision,
     getEntry,
+    getError,
     ingestConversations,
     applyConfirmedState,
     loadDetail,
@@ -372,5 +425,7 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
     reconcileDetails,
     activateProject,
     deactivate,
+    revokeConversation,
+    restoreConversation,
   }
 })

@@ -91,6 +91,26 @@ capabilities (`read` + `self_manage`).
 target-authority projection; frontend не выводит кандидатов из inbox, presence
 или browser state.
 
+## P1: AI Suspension capability для закрытого диалога
+
+Нынешний `SupportWorkspaceCapabilitiesResponseDto.suspendAi` в `develop`
+вычисляется как `conversationOpen && project.conversations.ai_suspend`. Это
+достаточно для кнопки start, но не выражает отдельные права `extend`, `resume`
+и `history`: базовый контракт AI Suspension допускает early resume активного
+состояния и после закрытия Conversation.
+
+Frontend загружает безопасное текущее состояние и историю по exact
+`project.conversations.read`; read-only роль видит только server-sanitized
+detail. Любая state-changing кнопка в Support Workspace требует одновременно
+`project.conversations.ai_suspend` и текущего
+server-owned `suspendAi`. Поэтому закрытый диалог не получает выдуманный
+resume-control даже если общий AI endpoint мог бы его принять.
+
+Для полного parity нужен versioned action projection, например
+`aiSuspension: { read, start, extend, resume, history }`, где каждое поле
+отражает target/state authority. До этого frontend не преобразует один boolean
+в набор неописанных прав.
+
 ## P1: ручной self-claim и transfer
 
 В `SupportWorkspaceSelection` есть version и server capability Case, но нет
