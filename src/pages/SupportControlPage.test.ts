@@ -4,13 +4,29 @@ import PrimeVue from "primevue/config";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthStore } from "@/features/auth/auth.store";
-import type { SupportLeadSummary } from "@/features/support-control/api/support-lead-source";
+import type {
+  SupportLeadCaseRiskPage,
+  SupportLeadSummary,
+  SupportOperationalAlertDetail,
+  SupportOperationalAlertPage,
+} from "@/features/support-control/api/support-lead-source";
 import SupportControlPage from "./SupportControlPage.vue";
 
-const api = vi.hoisted(() => ({ readSummary: vi.fn() }));
+const api = vi.hoisted(() => ({
+  readSummary: vi.fn(),
+  readCaseRisks: vi.fn(),
+  readAlerts: vi.fn(),
+  readAlertDetail: vi.fn(),
+}));
 
 vi.mock("@/features/support-control/api/support-lead-source", () => ({
-  supportLeadSource: { readSummary: api.readSummary },
+  SUPPORT_LEAD_RISK_TYPES: [
+    "UNASSIGNED_AGED",
+    "SLA_AT_RISK",
+    "SLA_BREACHED",
+    "DELIVERY_OUTCOME_UNKNOWN",
+  ],
+  supportLeadSource: api,
 }));
 
 const summary: SupportLeadSummary = {
@@ -29,7 +45,47 @@ const summary: SupportLeadSummary = {
   projectionHealth: { deadLetterCount: 0, retryCount: 0, state: "AVAILABLE" },
 };
 
-async function render(value: SupportLeadSummary) {
+const alertPage: SupportOperationalAlertPage = {
+  computedAt: "2026-08-06T10:00:00.000Z",
+  materializationState: "READY",
+  items: [
+    {
+      id: "alert-1",
+      severity: "HIGH",
+      state: "NEW",
+      sourceKind: "UNASSIGNED_AGED",
+      firstObservedAt: "2026-08-06T09:55:00.000Z",
+      lastObservedAt: "2026-08-06T10:00:00.000Z",
+      occurrenceCount: 2,
+      hasOwner: false,
+    },
+  ],
+  nextCursor: null,
+};
+
+const alertDetail: SupportOperationalAlertDetail = {
+  alert: alertPage.items[0]!,
+  computedAt: "2026-08-06T10:00:00.000Z",
+  materializationState: "READY",
+  effectiveWindow: {
+    from: "2026-08-06T09:00:00.000Z",
+    to: "2026-08-06T10:00:00.000Z",
+  },
+  generation: 1,
+  policyRevisionId: "policy-r1",
+  nextCursor: null,
+  timeline: [],
+};
+
+interface RenderOptions {
+  allowAlerts?: boolean;
+  allowLeadControl?: boolean;
+  riskPage?: Omit<SupportLeadCaseRiskPage, "riskType">;
+  alertsPage?: SupportOperationalAlertPage;
+}
+
+async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
+  const { allowAlerts = false, allowLeadControl = true, riskPage, alertsPage } = options;
   const pinia = createPinia();
   setActivePinia(pinia);
   const auth = useAuthStore();
@@ -42,11 +98,26 @@ async function render(value: SupportLeadSummary) {
       name: "Project One",
       slug: "project-one",
       status: "ACTIVE",
-      effectivePermissionCodes: ["project.support.lead_control.read"],
+      effectivePermissionCodes: [
+        ...(allowLeadControl ? ["project.support.lead_control.read"] : []),
+        ...(allowAlerts ? ["project.support.alerts.read"] : []),
+      ],
     },
     projects: [],
   });
   api.readSummary.mockResolvedValue(value);
+  api.readCaseRisks.mockImplementation((_, riskType) =>
+    Promise.resolve({
+      computedAt: riskPage?.computedAt ?? "2026-08-06T10:00:00.000Z",
+      freshnessState: riskPage?.freshnessState ?? "READY",
+      slaRolloutState: riskPage?.slaRolloutState ?? "SHADOW",
+      riskType,
+      items: riskPage?.items ?? [],
+      nextCursor: riskPage?.nextCursor ?? null,
+    }),
+  );
+  api.readAlerts.mockResolvedValue(alertsPage ?? alertPage);
+  api.readAlertDetail.mockResolvedValue(alertDetail);
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -92,5 +163,48 @@ describe("SupportControlPage", () => {
 
     expect(router.currentRoute.value.name).toBe("overview");
     expect(wrapper.text()).not.toContain("Без назначения");
+  });
+
+  it("mounts active alerts only for the exact alert-read permission", async () => {
+    const { wrapper } = await render(summary, { allowAlerts: true });
+
+    expect(wrapper.text()).toContain("Активные alerts");
+    expect(wrapper.text()).toContain("Давно без назначения");
+    expect(wrapper.text()).toContain("versioned intent");
+  });
+
+  it("does not request alerts for an account without support-control access", async () => {
+    const { wrapper } = await render(summary, {
+      allowAlerts: true,
+      allowLeadControl: false,
+    });
+
+    expect(api.readAlerts).not.toHaveBeenCalled();
+    expect(wrapper.text()).not.toContain("Активные alerts");
+  });
+
+  it("does not treat an incomplete risk projection as an empty queue", async () => {
+    const { wrapper } = await render(summary, {
+      riskPage: {
+        computedAt: "2026-08-06T10:00:00.000Z",
+        freshnessState: "DEGRADED",
+        slaRolloutState: "SHADOW",
+        items: [],
+        nextCursor: null,
+      },
+    });
+
+    expect(wrapper.text()).toContain("отсутствие Cases не подтверждено");
+    expect(wrapper.text()).not.toContain("Сервер не нашёл Cases с этим риском");
+  });
+
+  it("does not treat a degraded alert materialization as no active alerts", async () => {
+    const { wrapper } = await render(summary, {
+      allowAlerts: true,
+      alertsPage: { ...alertPage, materializationState: "DEGRADED", items: [] },
+    });
+
+    expect(wrapper.text()).toContain("отсутствие active alerts не подтверждено");
+    expect(wrapper.text()).not.toContain("Активных alerts нет");
   });
 });

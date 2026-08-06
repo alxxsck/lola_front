@@ -63,6 +63,20 @@ evidence, disputes, calibration либо individual quality analytics. Марш�
 `/support/quality` и `/support/analytics` не должны появляться как готовые
 разделы до публикации этих server-owned моделей.
 
+## P1: управляющие команды Lead Control
+
+В OpenAPI уже есть read-модели Case risks, alerts и их причинной истории, но
+body `acknowledge`, `resolve` и `change owner` не передают `expectedVersion`,
+`actionEtag` или client attempt/idempotency key. Frontend поэтому показывает
+эти списки и timeline в read-only режиме: при конкурентной работе lead нельзя
+безопасно повторять либо подтверждать command, не зная, относится ли она к
+актуальной generation alert. Для audited action нужен versioned intent contract
+с однозначным recovery неизвестного результата.
+
+`support/lead/risks/capacity` также пока документирован как пустой список до
+Routing Ticket 13; UI не рисует фиктивные capacity targets или предложения по
+командам, а показывает только authoritative summary capacity.
+
 ## Недостающие поля строки inbox
 
 `ALL_CONVERSATIONS` намеренно отдаёт только безопасные metadata. В нём нет

@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
-  SupportLeadSource,
+  SupportLeadSummarySource,
   SupportLeadSummary,
 } from "@/features/support-control/api/support-lead-source";
 
@@ -14,7 +14,7 @@ export interface SupportLeadSummaryContext {
 /** Owns one authoritative lead-summary projection for the current project. */
 export function createSupportLeadSummaryController(
   context: SupportLeadSummaryContext,
-  source: SupportLeadSource,
+  source: SupportLeadSummarySource,
 ) {
   const summary = ref<SupportLeadSummary | null>(null);
   const loading = ref(false);
