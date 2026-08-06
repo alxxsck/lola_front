@@ -3,6 +3,7 @@ import {
   canManageOwnSupportAvailability,
   canManageOwnSupportAssignments,
   canReceiveSupportRoutingOffers,
+  canReleaseSupportCaseAssignment,
   canReadSupportAvailability,
   canReadSupportControl,
   canReadSupportWorkspace,
@@ -78,6 +79,30 @@ describe("support workspace access", () => {
         "project.support.assignments.self_manage",
       ]),
     ).toBe(false);
+  });
+
+  it("permits self-release only for the assignment owner, unless override is granted", () => {
+    expect(
+      canReleaseSupportCaseAssignment(
+        ["project.support.assignments.self_manage"],
+        "operator-1",
+        "operator-1",
+      ),
+    ).toBe(true);
+    expect(
+      canReleaseSupportCaseAssignment(
+        ["project.support.assignments.self_manage"],
+        "operator-1",
+        "operator-2",
+      ),
+    ).toBe(false);
+    expect(
+      canReleaseSupportCaseAssignment(
+        ["project.support.assignments.override"],
+        "operator-1",
+        "operator-2",
+      ),
+    ).toBe(true);
   });
 
   it("accepts only an explicit rollout enablement", () => {

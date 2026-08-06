@@ -103,6 +103,31 @@ eligibility и может назначить Case не туда.
 выдаёт opaque capability, ETag и exact assignment version. Для ручного
 self-claim/transfer требуется отдельная eligible-target projection.
 
+## Реализованная безопасная команда: release assignment
+
+В отличие от self-claim и transfer, `POST
+/support/cases/{caseId}/assignment/release` уже имеет полный контракт для
+безопасной команды: server-owned `releaseAssignment` в выбранной Case,
+assignment version, strong `actionEtag`, `Idempotency-Key`, reason code и
+authoritative receipt. Поэтому frontend монтирует «Снять назначение» только
+при текущей per-Case capability и активном assignment. Дополнительно он
+сверяет session authority: `self_manage` допускает только assignment текущего
+CMS user, а чужой assignment требует `override`.
+
+Клиент захватывает Case ID, assignment ID, version и ETag в момент подтверждения
+и перед commit проверяет, что тот же selection всё ещё выбран и разрешён. Он не
+показывает эти значения в DOM и не делает optimistic mutation. `409` приводит
+к reconcile выбранного Case и inbox; для concealed `403/404`
+action surface сразу purge-ится до refresh permissions, чтобы stale capability
+не отправила повторную команду. Timeout/transport error
+оставляет единственную команду для повторения с тем же idempotency key. Успешный
+receipt остаётся успешным, даже если последующий reconcile не удался; до нового
+authoritative assignment selection повторное снятие блокируется.
+
+Эта команда не снимает blocking gap для claim/transfer: release не требует
+Team или target operator, поэтому его нельзя использовать как доказательство
+наличия соответствующего каталога и authority для других lifecycle actions.
+
 ## Недостающие поля строки inbox
 
 `ALL_CONVERSATIONS` намеренно отдаёт только безопасные metadata. В нём нет

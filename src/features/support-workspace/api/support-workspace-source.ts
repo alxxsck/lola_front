@@ -61,9 +61,12 @@ export interface SupportWorkspaceCase {
   assignment: {
     id: string;
     state: string;
+    operatorId: string;
     operatorName: string;
     teamName: string;
     version: number;
+    /** Server-issued optimistic-concurrency capability. Never render it. */
+    actionEtag: string;
   } | null;
 }
 
@@ -129,6 +132,9 @@ export function mapWorkspaceCase(
   if (value.endUserId !== expectedEndUserId) {
     throw new Error("Support workspace returned a case from another end user");
   }
+  if (value.assignment && value.assignment.caseId !== value.id) {
+    throw new Error("Support workspace returned an assignment from another case");
+  }
   return {
     id: value.id,
     title: value.title,
@@ -152,9 +158,11 @@ export function mapWorkspaceCase(
       ? {
           id: value.assignment.id,
           state: value.assignment.state,
+          operatorId: value.assignment.operator.id,
           operatorName: value.assignment.operator.displayName,
           teamName: value.assignment.team.name,
           version: value.assignment.version,
+          actionEtag: value.assignment.actionEtag,
         }
       : null,
   };

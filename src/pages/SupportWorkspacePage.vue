@@ -11,6 +11,8 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
+import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
+import { createSupportAssignmentReleaseController } from "@/features/support-case-assignment/model/use-support-assignment-release";
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
 import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
 import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
@@ -21,6 +23,7 @@ import { supportWorkspaceSource } from "@/features/support-workspace/api/support
 import {
   canManageOwnSupportAvailability,
   canReceiveSupportRoutingOffers,
+  canReleaseSupportCaseAssignment,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
@@ -57,11 +60,30 @@ const selectedConversation = computed(() => {
     conversation.selection.value?.conversation ?? inbox.items.value[0] ?? null
   );
 });
+const selectedAssignmentAuthorityKey = computed(() => {
+  const supportCase = conversation.selection.value?.case;
+  const assignment = supportCase?.assignment;
+  return [
+    supportCase?.id ?? "",
+    assignment?.id ?? "",
+    assignment?.version ?? "",
+    assignment?.actionEtag ?? "",
+  ].join("\u0000");
+});
 const contextDrawerVisible = ref(false);
 const canOpenSelectedCase = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
     "project.cases.read",
+  ),
+);
+const assignmentReleaseAccessDenied = ref(false);
+const canReleaseSelectedAssignment = computed(() =>
+  !assignmentReleaseAccessDenied.value &&
+  canReleaseSupportCaseAssignment(
+    auth.project?.effectivePermissionCodes ?? [],
+    auth.user?.id,
+    conversation.selection.value?.case?.assignment?.operatorId,
   ),
 );
 const availabilityAccessDenied = ref(false);
@@ -117,6 +139,25 @@ const routingOffers = createSupportRoutingOffersController(
     },
   },
   supportRoutingOfferSource,
+);
+const assignmentRelease = createSupportAssignmentReleaseController(
+  {
+    projectId: () => auth.project?.id,
+    selection: () => conversation.selection.value,
+    canRelease: () => canReleaseSelectedAssignment.value,
+    async onForbidden() {
+      assignmentReleaseAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // The action surface is already hidden until a new authoritative selection.
+      }
+    },
+    async onChanged() {
+      await Promise.all([inbox.load(), conversation.reconcile()]);
+    },
+  },
+  supportAssignmentReleaseSource,
 );
 const profileAccessDenied = ref(false);
 const canReadProfile = computed(() =>
@@ -179,6 +220,7 @@ async function backToInbox(): Promise<void> {
 }
 
 async function reload(): Promise<void> {
+  assignmentReleaseAccessDenied.value = false;
   await Promise.all([
     inbox.load(),
     conversation.load(),
@@ -200,6 +242,8 @@ watch(
     profileAccessDenied.value = false;
     availabilityAccessDenied.value = false;
     routingOffersAccessDenied.value = false;
+    assignmentReleaseAccessDenied.value = false;
+    assignmentRelease.reset();
     availability.reset();
     routingOffers.reset();
     profile.reset();
@@ -217,11 +261,31 @@ watch(canManageRoutingOffers, (allowed) => {
   if (!allowed) routingOffers.reset();
 });
 
+watch(canReleaseSelectedAssignment, (allowed) => {
+  if (!allowed) assignmentRelease.reset();
+});
+
+watch(
+  () => conversation.selection.value?.capabilities.releaseAssignment,
+  (allowed) => {
+    if (!allowed) assignmentRelease.reset();
+  },
+);
+
+watch(
+  selectedAssignmentAuthorityKey,
+  (authorityKey, previousAuthorityKey) => {
+    if (authorityKey !== previousAuthorityKey) assignmentRelease.reset();
+  },
+);
+
 watch(
   () => requestedConversationId.value,
   () => {
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
+    assignmentReleaseAccessDenied.value = false;
+    assignmentRelease.reset();
     profile.reset();
     void conversation.load();
   },
@@ -243,6 +307,7 @@ onBeforeUnmount(() => {
   profile.reset();
   availability.reset();
   routingOffers.reset();
+  assignmentRelease.reset();
   inbox.reset();
   conversation.reset();
 });
@@ -531,11 +596,21 @@ onBeforeUnmount(() => {
           :conversation="selectedConversation"
           :selection="conversation.selection.value"
           :can-open-case="canOpenSelectedCase"
+          :can-release-assignment="canReleaseSelectedAssignment"
           :can-read-profile="canReadProfile"
           :profile="profile.profile.value"
           :profile-loading="profile.loading.value"
           :profile-error="profile.error.value"
+          :assignment-release="{
+            releasing: assignmentRelease.releasing.value,
+            error: assignmentRelease.error.value,
+            unknownOutcome: assignmentRelease.unknownOutcome.value,
+            completed: assignmentRelease.completed.value,
+            canRetry: assignmentRelease.canRetry.value,
+          }"
           @load-profile="profile.load"
+          @release-assignment="assignmentRelease.release"
+          @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
         />
       </aside>
     </div>
@@ -551,11 +626,21 @@ onBeforeUnmount(() => {
         :conversation="selectedConversation"
         :selection="conversation.selection.value"
         :can-open-case="canOpenSelectedCase"
+        :can-release-assignment="canReleaseSelectedAssignment"
         :can-read-profile="canReadProfile"
         :profile="profile.profile.value"
         :profile-loading="profile.loading.value"
         :profile-error="profile.error.value"
+        :assignment-release="{
+          releasing: assignmentRelease.releasing.value,
+          error: assignmentRelease.error.value,
+          unknownOutcome: assignmentRelease.unknownOutcome.value,
+          completed: assignmentRelease.completed.value,
+          canRetry: assignmentRelease.canRetry.value,
+        }"
         @load-profile="profile.load"
+        @release-assignment="assignmentRelease.release"
+        @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
       />
     </Drawer>
   </section>

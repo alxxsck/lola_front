@@ -2,6 +2,8 @@
 import { computed } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
+import SupportAssignmentRelease from "@/features/support-case-assignment/ui/SupportAssignmentRelease.vue";
+import type { SupportAssignmentReleaseInput } from "@/features/support-case-assignment/model/use-support-assignment-release";
 import type {
   ProfileProjectionResponseDto,
   ProfileProjectionFieldResponseDto,
@@ -20,18 +22,38 @@ const props = withDefaults(defineProps<{
   conversation: SupportWorkspaceConversation;
   selection: SupportWorkspaceSelection;
   canOpenCase: boolean;
+  canReleaseAssignment?: boolean;
   canReadProfile?: boolean;
   profile?: ProfileProjectionResponseDto | null;
   profileLoading?: boolean;
   profileError?: string;
+  assignmentRelease?: {
+    releasing: boolean;
+    error: string;
+    unknownOutcome: boolean;
+    completed: boolean;
+    canRetry: boolean;
+  };
 }>(), {
   canReadProfile: false,
+  canReleaseAssignment: false,
   profile: null,
   profileLoading: false,
   profileError: "",
+  assignmentRelease: () => ({
+    releasing: false,
+    error: "",
+    unknownOutcome: false,
+    completed: false,
+    canRetry: false,
+  }),
 });
 
-const emit = defineEmits<{ loadProfile: [] }>();
+const emit = defineEmits<{
+  loadProfile: [];
+  releaseAssignment: [input: SupportAssignmentReleaseInput];
+  retryAssignmentRelease: [];
+}>();
 
 const userLabel = computed(() =>
   props.selection.endUser.isGuest ? "Гостевой пользователь" : "Пользователь",
@@ -171,6 +193,12 @@ function profileClassificationLabel(
       >
         Открыть Case
       </RouterLink>
+      <SupportAssignmentRelease
+        v-if="canReleaseAssignment && selection.case.assignment && selection.capabilities.releaseAssignment"
+        v-bind="assignmentRelease"
+        @release="emit('releaseAssignment', $event)"
+        @retry="emit('retryAssignmentRelease')"
+      />
     </section>
     <section
       v-if="canReadProfile"

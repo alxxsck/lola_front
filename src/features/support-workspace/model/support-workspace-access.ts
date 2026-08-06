@@ -8,6 +8,8 @@ const supportAvailabilitySelfManagePermission =
   "project.support.availability.self_manage" as const;
 const supportAssignmentSelfManagePermission =
   "project.support.assignments.self_manage" as const;
+const supportAssignmentOverridePermission =
+  "project.support.assignments.override" as const;
 const supportRoutingReceivePermission =
   "project.support.routing.receive" as const;
 
@@ -69,6 +71,31 @@ export function canReceiveSupportRoutingOffers(
   return (
     canManageOwnSupportAssignments(effectivePermissionCodes) &&
     hasProjectPermission(effectivePermissionCodes, supportRoutingReceivePermission)
+  );
+}
+
+/**
+ * The workspace capability is target/state scoped. This guard supplies the
+ * session and ownership half of release authority before that capability is
+ * rendered: self-manage can release only the actor's assignment; override can
+ * release any server-authorized assignment.
+ */
+export function canReleaseSupportCaseAssignment(
+  effectivePermissionCodes: readonly string[],
+  actorId: string | undefined,
+  assignmentOperatorId: string | undefined,
+): boolean {
+  if (
+    hasProjectPermission(
+      effectivePermissionCodes,
+      supportAssignmentOverridePermission,
+    )
+  )
+    return true;
+  return (
+    canManageOwnSupportAssignments(effectivePermissionCodes) &&
+    Boolean(actorId) &&
+    actorId === assignmentOperatorId
   );
 }
 

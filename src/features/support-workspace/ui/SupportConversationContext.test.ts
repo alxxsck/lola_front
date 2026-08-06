@@ -5,6 +5,7 @@ import type {
   SupportWorkspaceConversation,
   SupportWorkspaceSelection,
 } from "@/features/support-workspace/api/support-workspace-source";
+import SupportAssignmentRelease from "@/features/support-case-assignment/ui/SupportAssignmentRelease.vue";
 import SupportConversationContext from "./SupportConversationContext.vue";
 
 const conversation: SupportWorkspaceConversation = {
@@ -57,9 +58,11 @@ const selection: SupportWorkspaceSelection = {
     assignment: {
       id: "assignment-1",
       state: "ACTIVE",
+      operatorId: "operator-1",
       operatorName: "Оператор Алина",
       teamName: "Billing",
       version: 3,
+      actionEtag: '"sa1.current.signature"',
     },
   },
   conversation,
@@ -105,6 +108,49 @@ describe("support conversation context", () => {
 
     expect(wrapper.find('[aria-label="Case"]').exists()).toBe(true);
     expect(wrapper.find("a").exists()).toBe(false);
+  });
+
+  it("requires both session assignment authority and the server Case capability for release", () => {
+    const actionableSelection: SupportWorkspaceSelection = {
+      ...selection,
+      capabilities: { ...selection.capabilities, releaseAssignment: true },
+    };
+    const denied = mount(SupportConversationContext, {
+      props: {
+        conversation,
+        selection: actionableSelection,
+        canOpenCase: true,
+        canReleaseAssignment: false,
+      },
+      global: {
+        stubs: {
+          Button: { template: "<button type=\"button\"><slot /></button>" },
+          Message: { template: "<div><slot /></div>" },
+          RouterLink: { template: "<a><slot /></a>" },
+        },
+      },
+    });
+    const allowed = mount(SupportConversationContext, {
+      props: {
+        conversation,
+        selection: actionableSelection,
+        canOpenCase: true,
+        canReleaseAssignment: true,
+      },
+      global: {
+        stubs: {
+          Button: { template: "<button type=\"button\"><slot /></button>" },
+          Message: { template: "<div><slot /></div>" },
+          RouterLink: { template: "<a><slot /></a>" },
+          Dialog: { template: "<div><slot /><slot name=\"footer\" /></div>" },
+          Select: { props: ["modelValue", "options"], template: "<select />" },
+          Textarea: { template: "<textarea />" },
+        },
+      },
+    });
+
+    expect(denied.findComponent(SupportAssignmentRelease).exists()).toBe(false);
+    expect(allowed.findComponent(SupportAssignmentRelease).exists()).toBe(true);
   });
 
   it("localizes every server Case state and priority instead of exposing enum values", () => {
