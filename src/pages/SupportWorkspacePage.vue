@@ -11,7 +11,13 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
+import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
+import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
+import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
 import { supportWorkspaceSource } from "@/features/support-workspace/api/support-workspace-source";
+import {
+  canManageOwnSupportAvailability,
+} from "@/features/support-workspace/model/support-workspace-access";
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
 import { createSupportUserProfileController } from "@/features/support-user-profile/model/use-support-user-profile";
@@ -53,6 +59,34 @@ const canOpenSelectedCase = computed(() =>
     auth.project?.effectivePermissionCodes ?? [],
     "project.cases.read",
   ),
+);
+const availabilityAccessDenied = ref(false);
+const canReadAvailability = computed(
+  () =>
+    !availabilityAccessDenied.value &&
+    canManageOwnSupportAvailability(
+      auth.project?.effectivePermissionCodes ?? [],
+    ),
+);
+const canManageOwnAvailability = computed(
+  () => canReadAvailability.value,
+);
+const availability = createSupportAvailabilityController(
+  {
+    projectId: () => auth.project?.id,
+    operatorId: () => auth.user?.id,
+    canRead: () => canReadAvailability.value,
+    canManage: () => canManageOwnAvailability.value,
+    async onForbidden() {
+      availabilityAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // The self-availability snapshot has already been purged.
+      }
+    },
+  },
+  supportAvailabilitySource,
 );
 const profileAccessDenied = ref(false);
 const canReadProfile = computed(() =>
@@ -115,12 +149,16 @@ async function backToInbox(): Promise<void> {
 }
 
 async function reload(): Promise<void> {
-  await inbox.load();
-  await conversation.load();
+  await Promise.all([
+    inbox.load(),
+    conversation.load(),
+    canReadAvailability.value ? availability.load() : Promise.resolve(),
+  ]);
 }
 
 onMounted(async () => {
   await inbox.load();
+  if (canReadAvailability.value) await availability.load();
 });
 
 watch(
@@ -128,12 +166,18 @@ watch(
   () => {
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
+    availabilityAccessDenied.value = false;
+    availability.reset();
     profile.reset();
     conversation.reset();
     inbox.reset();
     void inbox.load();
   },
 );
+
+watch(canReadAvailability, (allowed) => {
+  if (!allowed) availability.reset();
+});
 
 watch(
   () => requestedConversationId.value,
@@ -159,6 +203,7 @@ watch(canReadProfile, (allowed) => {
 
 onBeforeUnmount(() => {
   profile.reset();
+  availability.reset();
   inbox.reset();
   conversation.reset();
 });
@@ -181,7 +226,12 @@ onBeforeUnmount(() => {
           icon="pi pi-refresh"
           severity="secondary"
           outlined
-          :loading="inbox.loading.value || conversation.loading.value"
+          :loading="
+            inbox.loading.value ||
+            conversation.loading.value ||
+            availability.loading.value ||
+            availability.changing.value
+          "
           @click="reload"
         />
       </div>
@@ -192,6 +242,23 @@ onBeforeUnmount(() => {
       collaboration, назначение, SLA и delivery включаются только после
       публикации соответствующих серверных контрактов.
     </Message>
+
+    <SupportAvailabilityStatus
+      v-if="canReadAvailability"
+      :availability="availability.availability.value"
+      :loading="availability.loading.value"
+      :changing="availability.changing.value"
+      :error="availability.error.value"
+      :can-manage="canManageOwnAvailability"
+      :unknown-outcome="availability.unknownOutcome.value"
+      :needs-reconcile="availability.needsReconcile.value"
+      :can-retry-after-reconcile="availability.canRetryAfterReconcile.value"
+      :draft="availability.draft.value"
+      @refresh="availability.load"
+      @change="availability.change"
+      @retry="availability.retryUnknownOutcome"
+      @retry-after-reconcile="availability.retryAfterReconcile"
+    />
 
     <div
       class="support-workspace card"

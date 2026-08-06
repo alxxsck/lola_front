@@ -46,6 +46,24 @@ test("opens a project conversation as a deep link without horizontal overflow", 
   );
 });
 
+test("shows and changes only the operator's authoritative availability intent", async ({
+  page,
+}) => {
+  const status = page.getByRole("region", { name: "Статус для новых обращений" });
+  await expect(status).toBeVisible();
+  await expect(status.getByText("Доступен", { exact: true }).first()).toBeVisible();
+  await expect(status).toContainText("Получаете новые обращения");
+
+  const selects = status.locator("select");
+  await selects.nth(0).selectOption("AWAY");
+  await expect(selects.nth(1)).toHaveValue("BREAK");
+  await expect(status.locator('input[type="number"]')).toHaveValue("15");
+  await status.getByRole("button", { name: "Сохранить статус" }).click();
+
+  await expect(status.getByText("Отошёл", { exact: true }).first()).toBeVisible();
+  await expect(status).toContainText("Новые обращения не назначаются");
+});
+
 test("does not substitute another conversation for an unavailable deep link", async ({
   page,
 }) => {

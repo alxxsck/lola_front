@@ -2,6 +2,10 @@ import { hasProjectPermission } from "@/features/auth/permission-access";
 const supportWorkspaceReadPermission = "project.conversations.read" as const;
 const supportLeadControlReadPermission =
   "project.support.lead_control.read" as const;
+const supportAvailabilityReadPermission =
+  "project.support.availability.read" as const;
+const supportAvailabilitySelfManagePermission =
+  "project.support.availability.self_manage" as const;
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
@@ -22,6 +26,27 @@ export function canReadSupportControl(
   return hasProjectPermission(
     effectivePermissionCodes,
     supportLeadControlReadPermission,
+  );
+}
+
+export function canReadSupportAvailability(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportAvailabilityReadPermission,
+  );
+}
+
+export function canManageOwnSupportAvailability(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return (
+    canReadSupportAvailability(effectivePermissionCodes) &&
+    hasProjectPermission(
+      effectivePermissionCodes,
+      supportAvailabilitySelfManagePermission,
+    )
   );
 }
 

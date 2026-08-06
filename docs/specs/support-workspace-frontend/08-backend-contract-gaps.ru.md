@@ -77,6 +77,20 @@ body `acknowledge`, `resolve` и `change owner` не передают `expectedV
 Routing Ticket 13; UI не рисует фиктивные capacity targets или предложения по
 командам, а показывает только authoritative summary capacity.
 
+## P1: read-only availability для другого сотрудника
+
+`GET /support/operators/{operatorId}/availability` формально требует
+`project.support.availability.read`, но server-side target check допускает
+только сотрудника с `project.support.availability.self_manage`. Поэтому нельзя
+построить честный read-only inspector: участник только с read-permission
+получит concealed `404`, а не безопасную projection. Текущий workspace
+показывает только собственную availability и монтирует её лишь при обеих
+capabilities (`read` + `self_manage`).
+
+Для lead override нужен отдельный каталог eligible operators и явная
+target-authority projection; frontend не выводит кандидатов из inbox, presence
+или browser state.
+
 ## Недостающие поля строки inbox
 
 `ALL_CONVERSATIONS` намеренно отдаёт только безопасные metadata. В нём нет

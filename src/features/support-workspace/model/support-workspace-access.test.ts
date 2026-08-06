@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  canManageOwnSupportAvailability,
+  canReadSupportAvailability,
   canReadSupportControl,
   canReadSupportWorkspace,
   isSupportWorkspaceRolloutEnabled,
@@ -29,6 +31,23 @@ describe("support workspace access", () => {
       true,
     );
     expect(canReadSupportControl(["project.conversations.read"])).toBe(false);
+  });
+
+  it("requires a read grant before exposing or changing self availability", () => {
+    expect(canReadSupportAvailability(["project.support.availability.read"])).toBe(
+      true,
+    );
+    expect(
+      canManageOwnSupportAvailability([
+        "project.support.availability.read",
+        "project.support.availability.self_manage",
+      ]),
+    ).toBe(true);
+    expect(
+      canManageOwnSupportAvailability([
+        "project.support.availability.self_manage",
+      ]),
+    ).toBe(false);
   });
 
   it("accepts only an explicit rollout enablement", () => {

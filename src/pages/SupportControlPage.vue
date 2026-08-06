@@ -640,10 +640,6 @@ onBeforeUnmount(() => {
   overflow: visible;
   margin-bottom: 16px;
 }
-.support-control-page :deep(.p-message-enter-active) {
-  grid-template-rows: auto !important;
-  overflow: visible !important;
-}
 .computed-at {
   margin-bottom: 16px;
 }
