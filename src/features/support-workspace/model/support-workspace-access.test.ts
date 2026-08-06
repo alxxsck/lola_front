@@ -5,6 +5,8 @@ import {
   canManageSupportConversationAiSuspension,
   canReceiveSupportRoutingOffers,
   canReadSupportConversationAiSuspension,
+  canReadSupportInternalNoteHistory,
+  canReadSupportInternalNotes,
   canReleaseSupportCaseAssignment,
   canReadSupportAvailability,
   canReadSupportControl,
@@ -135,6 +137,26 @@ describe("support workspace access", () => {
         ["project.conversations.read"],
         true,
       ),
+    ).toBe(false);
+  });
+
+  it("requires the separate history grant in addition to internal-note read", () => {
+    expect(
+      canReadSupportInternalNotes(["project.support.internal_notes.read"]),
+    ).toBe(true);
+    expect(
+      canReadSupportInternalNotes(["project.support.internal_notes.write"]),
+    ).toBe(false);
+    expect(
+      canReadSupportInternalNoteHistory([
+        "project.support.internal_notes.read",
+        "project.support.internal_notes.history_read",
+      ]),
+    ).toBe(true);
+    expect(
+      canReadSupportInternalNoteHistory([
+        "project.support.internal_notes.history_read",
+      ]),
     ).toBe(false);
   });
 

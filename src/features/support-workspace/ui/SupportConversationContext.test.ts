@@ -110,6 +110,34 @@ describe("support conversation context", () => {
     expect(wrapper.find("a").exists()).toBe(false);
   });
 
+  it("only renders the internal-notes entry point with the dedicated read grant", async () => {
+    const denied = render(true);
+    const allowed = mount(SupportConversationContext, {
+      props: {
+        conversation,
+        selection,
+        canOpenCase: true,
+        canReadInternalNotes: true,
+      },
+      global: {
+        stubs: {
+          Button: {
+            props: ["label"],
+            emits: ["click"],
+            template: "<button type=\"button\" @click=\"$emit('click')\">{{ label }}<slot /></button>",
+          },
+          Message: { template: "<div><slot /></div>" },
+          RouterLink: { template: "<a><slot /></a>" },
+        },
+      },
+    });
+
+    expect(denied.text()).not.toContain("Внутренние заметки");
+    expect(allowed.text()).toContain("Внутренние заметки");
+    await allowed.get("button").trigger("click");
+    expect(allowed.emitted("openInternalNotes")).toHaveLength(1);
+  });
+
   it("requires both session assignment authority and the server Case capability for release", () => {
     const actionableSelection: SupportWorkspaceSelection = {
       ...selection,

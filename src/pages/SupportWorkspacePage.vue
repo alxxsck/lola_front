@@ -21,6 +21,9 @@ import { createSupportAssignmentReleaseController } from "@/features/support-cas
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
 import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
 import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
+import { supportInternalNotesSource } from "@/features/support-internal-notes/api/support-internal-notes-source";
+import { createSupportInternalNotesController } from "@/features/support-internal-notes/model/use-support-internal-notes";
+import SupportInternalNotesDialog from "@/features/support-internal-notes/ui/SupportInternalNotesDialog.vue";
 import { supportRoutingOfferSource } from "@/features/support-routing-offers/api/support-routing-offer-source";
 import { createSupportRoutingOffersController } from "@/features/support-routing-offers/model/use-support-routing-offers";
 import SupportRoutingOffers from "@/features/support-routing-offers/ui/SupportRoutingOffers.vue";
@@ -30,6 +33,8 @@ import {
   canManageSupportConversationAiSuspension,
   canReceiveSupportRoutingOffers,
   canReadSupportConversationAiSuspension,
+  canReadSupportInternalNoteHistory,
+  canReadSupportInternalNotes,
   canReleaseSupportCaseAssignment,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
@@ -129,6 +134,51 @@ const canOpenSelectedCase = computed(() =>
     auth.project?.effectivePermissionCodes ?? [],
     "project.cases.read",
   ),
+);
+const internalNotesAccessDenied = ref(false);
+const canReadSelectedInternalNotes = computed(
+  () =>
+    !internalNotesAccessDenied.value &&
+    Boolean(conversation.selection.value?.case) &&
+    canReadSupportInternalNotes(auth.project?.effectivePermissionCodes ?? []),
+);
+const canReadSelectedInternalNoteHistory = computed(
+  () =>
+    canReadSelectedInternalNotes.value &&
+    canReadSupportInternalNoteHistory(
+      auth.project?.effectivePermissionCodes ?? [],
+    ),
+);
+const selectedInternalNotesAuthorityKey = computed(() => {
+  const selection = conversation.selection.value;
+  return [
+    auth.project?.id ?? "",
+    selection?.case?.id ?? "",
+    selection?.capabilitiesRevision ?? "",
+    selection?.checkpoint ?? "",
+  ].join("\u0000");
+});
+const internalNotesVisible = ref(false);
+const internalNotes = createSupportInternalNotesController(
+  {
+    projectId: () => auth.project?.id,
+    caseId: () => conversation.selection.value?.case?.id,
+    canRead: () => canReadSelectedInternalNotes.value,
+    canReadHistory: () => canReadSelectedInternalNoteHistory.value,
+    async onForbidden() {
+      internalNotesAccessDenied.value = true;
+      internalNotesVisible.value = false;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Private note text was already purged before refreshing authority.
+      }
+      await Promise.all([inbox.load(), conversation.reconcile()]).catch(
+        () => undefined,
+      );
+    },
+  },
+  supportInternalNotesSource,
 );
 const assignmentReleaseAccessDenied = ref(false);
 const canReleaseSelectedAssignment = computed(() =>
@@ -272,6 +322,34 @@ async function backToInbox(): Promise<void> {
   await router.push({ name: "support-inbox" });
 }
 
+function openInternalNotes(): void {
+  if (!canReadSelectedInternalNotes.value) return;
+  internalNotesVisible.value = true;
+  void internalNotes.load();
+}
+
+let internalNotesRefreshTimer: number | undefined;
+
+function stopInternalNotesReconciliation(): void {
+  if (internalNotesRefreshTimer === undefined) return;
+  window.clearInterval(internalNotesRefreshTimer);
+  internalNotesRefreshTimer = undefined;
+}
+
+function syncInternalNotesReconciliation(): void {
+  stopInternalNotesReconciliation();
+  if (
+    typeof window === "undefined" ||
+    !internalNotesVisible.value ||
+    !canReadSelectedInternalNotes.value
+  )
+    return;
+  internalNotesRefreshTimer = window.setInterval(() => {
+    if (internalNotes.loading.value || internalNotes.loadingMore.value) return;
+    void internalNotes.reconcile();
+  }, 30_000);
+}
+
 function keyboardNavigationIsBlocked(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return true;
   return Boolean(
@@ -327,8 +405,11 @@ function handleWorkspaceKeydown(event: KeyboardEvent): void {
 async function reload(): Promise<void> {
   assignmentReleaseAccessDenied.value = false;
   aiSuspensionAccessDenied.value = false;
+  internalNotesAccessDenied.value = false;
   aiSuspensionDialogVisible.value = false;
   aiSuspensionHistoryVisible.value = false;
+  internalNotesVisible.value = false;
+  internalNotes.reset();
   await Promise.all([
     inbox.load(),
     conversation.load(),
@@ -435,12 +516,15 @@ watch(
     routingOffersAccessDenied.value = false;
     assignmentReleaseAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
+    internalNotesAccessDenied.value = false;
     aiSuspensionDialogVisible.value = false;
     aiSuspensionHistoryVisible.value = false;
+    internalNotesVisible.value = false;
     assignmentRelease.reset();
     availability.reset();
     routingOffers.reset();
     profile.reset();
+    internalNotes.reset();
     conversation.reset();
     inbox.reset();
     void inbox.load();
@@ -468,6 +552,25 @@ watch(canReadSelectedAiSuspension, (allowed) => {
   aiSuspensionHistoryVisible.value = false;
 });
 
+watch(canReadSelectedInternalNotes, (allowed) => {
+  if (allowed) return;
+  internalNotesVisible.value = false;
+  internalNotes.reset();
+});
+
+watch(canReadSelectedInternalNoteHistory, (allowed) => {
+  if (!allowed) internalNotes.closeHistory();
+});
+
+watch(
+  [
+    internalNotesVisible,
+    canReadSelectedInternalNotes,
+    selectedInternalNotesAuthorityKey,
+  ],
+  syncInternalNotesReconciliation,
+);
+
 watch(selectedAiSuspensionKey, (selectionKey, previousSelectionKey) => {
   if (selectionKey === previousSelectionKey) return;
   aiSuspensionDialogVisible.value = false;
@@ -491,6 +594,13 @@ watch(
   },
 );
 
+watch(selectedInternalNotesAuthorityKey, (authorityKey, previousAuthorityKey) => {
+  if (authorityKey === previousAuthorityKey) return;
+  internalNotesAccessDenied.value = false;
+  internalNotesVisible.value = false;
+  internalNotes.reset();
+});
+
 watch(
   selectedAssignmentAuthorityKey,
   (authorityKey, previousAuthorityKey) => {
@@ -505,10 +615,13 @@ watch(
     profileAccessDenied.value = false;
     assignmentReleaseAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
+    internalNotesAccessDenied.value = false;
     aiSuspensionDialogVisible.value = false;
     aiSuspensionHistoryVisible.value = false;
+    internalNotesVisible.value = false;
     assignmentRelease.reset();
     profile.reset();
+    internalNotes.reset();
     void conversation.load();
   },
   { immediate: true },
@@ -527,7 +640,9 @@ watch(canReadProfile, (allowed) => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleWorkspaceKeydown);
+  stopInternalNotesReconciliation();
   profile.reset();
+  internalNotes.reset();
   availability.reset();
   routingOffers.reset();
   assignmentRelease.reset();
@@ -570,9 +685,10 @@ onBeforeUnmount(() => {
 
     <Message severity="info" :closable="false" class="workspace-notice">
       Данные и разрешения приходят одним серверным срезом. Статус оператора,
-      персональные предложения назначений и AI Suspension используют
-      опубликованные server-side capabilities; отправка, live collaboration,
-      SLA и delivery остаются выключенными до публикации своих контрактов.
+      персональные предложения назначений, AI Suspension и внутренние заметки
+      используют опубликованные server-side capabilities; отправка, live
+      collaboration, SLA и delivery остаются выключенными до публикации своих
+      контрактов.
     </Message>
 
     <SupportAvailabilityStatus
@@ -846,6 +962,7 @@ onBeforeUnmount(() => {
           :selection="conversation.selection.value"
           :can-open-case="canOpenSelectedCase"
           :can-release-assignment="canReleaseSelectedAssignment"
+          :can-read-internal-notes="canReadSelectedInternalNotes"
           :can-read-profile="canReadProfile"
           :profile="profile.profile.value"
           :profile-loading="profile.loading.value"
@@ -860,6 +977,7 @@ onBeforeUnmount(() => {
           @load-profile="profile.load"
           @release-assignment="assignmentRelease.release"
           @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
+          @open-internal-notes="openInternalNotes"
         />
       </aside>
     </div>
@@ -876,6 +994,7 @@ onBeforeUnmount(() => {
         :selection="conversation.selection.value"
         :can-open-case="canOpenSelectedCase"
         :can-release-assignment="canReleaseSelectedAssignment"
+        :can-read-internal-notes="canReadSelectedInternalNotes"
         :can-read-profile="canReadProfile"
         :profile="profile.profile.value"
         :profile-loading="profile.loading.value"
@@ -890,8 +1009,32 @@ onBeforeUnmount(() => {
         @load-profile="profile.load"
         @release-assignment="assignmentRelease.release"
         @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
+        @open-internal-notes="openInternalNotes"
       />
     </Drawer>
+    <SupportInternalNotesDialog
+      v-if="canReadSelectedInternalNotes && conversation.selection.value?.case"
+      v-model:visible="internalNotesVisible"
+      :notes="internalNotes.notes.value"
+      :next-cursor="internalNotes.nextCursor.value"
+      :loading="internalNotes.loading.value"
+      :loading-more="internalNotes.loadingMore.value"
+      :error="internalNotes.error.value"
+      :can-read-history="canReadSelectedInternalNoteHistory"
+      :selected-history-note="internalNotes.selectedHistoryNote.value"
+      :history="internalNotes.history.value"
+      :history-next-cursor="internalNotes.historyNextCursor.value"
+      :history-loading="internalNotes.historyLoading.value"
+      :history-loading-more="internalNotes.historyLoadingMore.value"
+      :history-error="internalNotes.historyError.value"
+      @reload="internalNotes.load"
+      @load-more="internalNotes.load(internalNotes.nextCursor.value ?? undefined)"
+      @open-history="internalNotes.openHistory"
+      @close-history="internalNotes.closeHistory"
+      @load-history-more="
+        internalNotes.loadHistory(internalNotes.historyNextCursor.value ?? undefined)
+      "
+    />
     <ConversationAISuspensionDialog
       v-if="
         canManageSelectedAiSuspension &&

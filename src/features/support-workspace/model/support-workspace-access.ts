@@ -14,6 +14,10 @@ const supportRoutingReceivePermission =
   "project.support.routing.receive" as const;
 const supportConversationAiSuspendPermission =
   "project.conversations.ai_suspend" as const;
+const supportInternalNotesReadPermission =
+  "project.support.internal_notes.read" as const;
+const supportInternalNotesHistoryReadPermission =
+  "project.support.internal_notes.history_read" as const;
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
@@ -124,6 +128,27 @@ export function canManageSupportConversationAiSuspension(
     hasProjectPermission(
       effectivePermissionCodes,
       supportConversationAiSuspendPermission,
+    )
+  );
+}
+
+export function canReadSupportInternalNotes(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportInternalNotesReadPermission,
+  );
+}
+
+export function canReadSupportInternalNoteHistory(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return (
+    canReadSupportInternalNotes(effectivePermissionCodes) &&
+    hasProjectPermission(
+      effectivePermissionCodes,
+      supportInternalNotesHistoryReadPermission,
     )
   );
 }

@@ -23,6 +23,7 @@ const props = withDefaults(defineProps<{
   selection: SupportWorkspaceSelection;
   canOpenCase: boolean;
   canReleaseAssignment?: boolean;
+  canReadInternalNotes?: boolean;
   canReadProfile?: boolean;
   profile?: ProfileProjectionResponseDto | null;
   profileLoading?: boolean;
@@ -37,6 +38,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   canReadProfile: false,
   canReleaseAssignment: false,
+  canReadInternalNotes: false,
   profile: null,
   profileLoading: false,
   profileError: "",
@@ -53,6 +55,7 @@ const emit = defineEmits<{
   loadProfile: [];
   releaseAssignment: [input: SupportAssignmentReleaseInput];
   retryAssignmentRelease: [];
+  openInternalNotes: [];
 }>();
 
 const userLabel = computed(() =>
@@ -193,6 +196,15 @@ function profileClassificationLabel(
       >
         Открыть Case
       </RouterLink>
+      <Button
+        v-if="canReadInternalNotes"
+        class="internal-notes-link"
+        label="Внутренние заметки"
+        icon="pi pi-file-edit"
+        severity="secondary"
+        outlined
+        @click="emit('openInternalNotes')"
+      />
       <SupportAssignmentRelease
         v-if="canReleaseAssignment && selection.case.assignment && selection.capabilities.releaseAssignment"
         v-bind="assignmentRelease"
@@ -336,6 +348,9 @@ function profileClassificationLabel(
 .case-link:hover,
 .case-link:focus-visible {
   text-decoration: underline;
+}
+.internal-notes-link {
+  margin-top: 12px;
 }
 .profile-summary {
   margin: 0 0 18px;

@@ -123,6 +123,30 @@ eligibility и может назначить Case не туда.
 выдаёт opaque capability, ETag и exact assignment version. Для ручного
 self-claim/transfer требуется отдельная eligible-target projection.
 
+## P1: Internal Notes commands
+
+`GET /cases/{caseId}/internal-notes` и protected revision history готовы для
+read-only панели: они повторно проверяют Case target authority и имеют
+типизированные cursor response. Frontend показывает их только по exact
+`internal_notes.read` (history дополнительно требует `history_read`) и очищает
+memory state при concealed `403/404`.
+
+Но `SupportWorkspaceSelection.capabilities` не содержит case-scoped
+`internalNotes.create/correct/tombstone` и rollout capability. Нельзя выводить
+write authority из assignment, Team или project-wide permission: backend
+проверяет current Case scope на каждом command. Поэтому create/correct/tombstone
+не монтируются до server-owned action projection. Также OpenAPI описывает
+creator/author как untyped object и не публикует closed catalog reason codes;
+frontend не придумывает author fields или значения reason code.
+
+В серверном коде есть realtime события заметок, но их watch/renew/unwatch
+протокол и payload не опубликованы в frontend-контракте. Экран не принимает
+неверифицированные socket payload. Пока панель открыта, frontend повторно
+сверяет список по REST каждые 30 секунд и оставляет ручное обновление; при
+смене `checkpoint` или `capabilitiesRevision` того же Case он сразу закрывает
+панель и purge-ит текст до следующего explicit read. Для полноценной realtime
+синхронизации нужен публичный typed watch contract с server admission.
+
 ## Реализованная безопасная команда: release assignment
 
 В отличие от self-claim и transfer, `POST
