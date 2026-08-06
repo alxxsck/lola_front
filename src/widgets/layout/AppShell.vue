@@ -17,7 +17,11 @@ import { canReadProjectMemberships } from "@/features/project-memberships/model/
 import { canReadProjectRoles } from "@/features/project-roles/model/project-role-permissions";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
-import { conversationAISuspensionEnabled } from "@/shared/config/features";
+import {
+  conversationAISuspensionEnabled,
+  supportWorkspaceEnabled,
+} from "@/shared/config/features";
+import { canReadSupportWorkspace as canReadSupportWorkspaceAccess } from "@/features/support-workspace/model/support-workspace-access";
 import { productBrand } from "@/shared/config/product-brand";
 import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
 import ThemeSwitch from "./ThemeSwitch.vue";
@@ -58,6 +62,11 @@ const canReadProjectIntegrations = computed(() =>
         permission as Parameters<typeof hasProjectPermission>[1],
       ),
   ),
+);
+const canReadSupportWorkspace = computed(
+  () =>
+    supportWorkspaceEnabled &&
+    canReadSupportWorkspaceAccess(auth.project?.effectivePermissionCodes ?? []),
 );
 
 const navigation = computed(() =>
@@ -169,6 +178,13 @@ const navigation = computed(() =>
       projectPermission: "project.cases.read",
     },
     {
+      label: "Поддержка",
+      icon: "pi pi-headphones",
+      to: "/support/inbox",
+      project: true,
+      supportWorkspace: true,
+    },
+    {
       label: "AI-анализы",
       icon: "pi pi-sparkles",
       to: "/ai-analyses",
@@ -277,7 +293,8 @@ const navigation = computed(() =>
           ),
         )) &&
       (!item.projectMemberships || canReadMemberships.value) &&
-      (!item.projectRoles || canReadRoles.value),
+      (!item.projectRoles || canReadRoles.value) &&
+      (!item.supportWorkspace || canReadSupportWorkspace.value),
   ),
 );
 
@@ -386,8 +403,13 @@ onBeforeUnmount(() => {
     <aside class="sidebar" :class="{ open: sidebarOpen }">
       <div class="sidebar-header">
         <div class="brand">
-          <div class="brand-mark"><span>{{ productBrand.mark }}</span></div>
-          <div><strong>{{ productBrand.name }}</strong><small>Центр управления</small></div>
+          <div class="brand-mark">
+            <span>{{ productBrand.mark }}</span>
+          </div>
+          <div>
+            <strong>{{ productBrand.name }}</strong
+            ><small>Центр управления</small>
+          </div>
         </div>
 
         <div class="project-pill">
@@ -442,7 +464,8 @@ onBeforeUnmount(() => {
               <span
                 v-if="item.cases && (cases.summary?.attentionCount ?? 0) > 0"
                 class="nav-count"
-              >{{ cases.summary?.attentionCount }}</span>
+                >{{ cases.summary?.attentionCount }}</span
+              >
               <span v-if="item.live" class="live-pulse" />
             </RouterLink>
           </template>

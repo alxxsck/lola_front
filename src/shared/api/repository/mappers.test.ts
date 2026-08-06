@@ -85,6 +85,35 @@ describe("repository domain mappers", () => {
     expect(mapProject(dto)).not.toHaveProperty("serverKeyPrefix");
   });
 
+  it("preserves message ordinal and immutable author snapshot", () => {
+    const message = mapConversationMessage({
+      id: "message-17",
+      threadId: "conversation-1",
+      ordinal: 17,
+      role: "ADMIN",
+      status: "COMPLETED",
+      text: "Проверяю результат",
+      createdAt: "2026-08-06T10:00:00.000Z",
+      updatedAt: "2026-08-06T10:00:00.000Z",
+      author: {
+        type: "CMS_USER",
+        cmsUserId: "cms-1",
+        displayName: "Анна Оператор",
+        avatarUrl: "https://cdn.example/avatar.png",
+      },
+    });
+
+    expect(message).toMatchObject({
+      ordinal: 17,
+      authorSnapshot: {
+        type: "CMS_USER",
+        cmsUserId: "cms-1",
+        displayName: "Анна Оператор",
+        avatarUrl: "https://cdn.example/avatar.png",
+      },
+    });
+  });
+
   it("only sends editable project fields", () => {
     expect(
       toUpdateProjectSettingsDto({

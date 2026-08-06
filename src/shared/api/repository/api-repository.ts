@@ -26,6 +26,7 @@ import {
   adminMessagingSend,
   presenceList,
   adminConversationsList,
+  adminProjectConversationsList,
   adminConversationsGet,
   adminConversationsListMessages,
   adminEventLogsGet,
@@ -55,6 +56,7 @@ import {
   mapScenario,
   mapActiveSessions,
   mapConversation,
+  mapSupportInboxConversation,
   mapConversationMessage,
   mapConversationAISuspensionDetail,
 } from "./mappers";
@@ -282,6 +284,16 @@ export const apiRepository: ReteniveRepository = {
     });
     return {
       items: response.items.map(mapConversation),
+      nextCursor: response.nextCursor ?? null,
+    };
+  },
+  async getProjectConversations(projectId, request) {
+    const response = await adminProjectConversationsList(projectId, {
+      limit: request?.limit ?? 30,
+      ...(request?.cursor ? { cursor: request.cursor } : {}),
+    });
+    return {
+      items: response.items.map(mapSupportInboxConversation),
       nextCursor: response.nextCursor ?? null,
     };
   },

@@ -18,6 +18,7 @@ import type {
   Conversation,
   ConversationAISuspensionDetail,
   ConversationMessage,
+  SupportInboxConversation,
   EndUser,
   EventDefinition,
   EventLog,
@@ -600,6 +601,54 @@ export const mockRepository: ReteniveRepository = {
     const items = readDemo().conversations.filter(
       (item) => item.userId === userId,
     );
+    const offset = request?.cursor
+      ? items.findIndex((item) => item.id === request.cursor) + 1
+      : 0;
+    const limit = request?.limit ?? 30;
+    return {
+      items: items.slice(offset, offset + limit),
+      nextCursor: items[offset + limit]?.id
+        ? items[offset + limit - 1]!.id
+        : null,
+    };
+  },
+  async getProjectConversations(projectId, request) {
+    await pause();
+    const data = readDemo();
+    const usersById = new Map(data.users.map((user) => [user.id, user]));
+    const items: SupportInboxConversation[] = data.conversations
+      .map((conversation) => {
+        const lastMessage = data.messages
+          .filter((message) => message.conversationId === conversation.id)
+          .sort((left, right) =>
+            right.createdAt.localeCompare(left.createdAt),
+          )[0];
+        const user = usersById.get(conversation.userId);
+        if (!user) return null;
+        return {
+          id: conversation.id,
+          projectId,
+          endUser: { id: user.id, externalId: user.externalId },
+          title: conversation.title,
+          status: conversation.status,
+          createdAt: conversation.lastMessageAt,
+          updatedAt: conversation.updatedAt ?? conversation.lastMessageAt,
+          messageCount: conversation.messageCount,
+          isCurrent: conversation.isCurrent,
+          currentInteractionSessionCount:
+            conversation.currentInteractionSessionCount,
+          lastMessage: lastMessage
+            ? {
+                id: lastMessage.id,
+                role: lastMessage.author,
+                text: lastMessage.text,
+                createdAt: lastMessage.createdAt,
+              }
+            : null,
+        };
+      })
+      .filter((item): item is SupportInboxConversation => item !== null)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
     const offset = request?.cursor
       ? items.findIndex((item) => item.id === request.cursor) + 1
       : 0;

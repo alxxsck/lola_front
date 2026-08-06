@@ -3,6 +3,7 @@ import type {
   ActivityItem,
   Conversation,
   ConversationMessage,
+  SupportInboxConversation,
   ConversationAISuspensionDetail,
   DashboardStats,
   EndUser,
@@ -268,6 +269,10 @@ export interface ReteniveRepository {
     userId: string,
     request?: CursorPageRequest,
   ): Promise<CursorPage<Conversation>>;
+  getProjectConversations(
+    projectId: string,
+    request?: CursorPageRequest,
+  ): Promise<CursorPage<SupportInboxConversation>>;
   getConversation(
     projectId: string,
     userId: string,

@@ -18,6 +18,8 @@ import {
 import AppShell from "@/widgets/layout/AppShell.vue";
 import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance";
 import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
+import { canReadSupportWorkspace } from "@/features/support-workspace/model/support-workspace-access";
+import { supportWorkspaceEnabled } from "@/shared/config/features";
 
 const AI_LEDGER_ROUTE_GROUPS = new Map([
   ["ai-analyses", "analyses"],
@@ -256,6 +258,18 @@ export const router = createRouter({
           meta: { projectPermission: "project.cases.read" },
         },
         {
+          path: "support/inbox",
+          name: "support-inbox",
+          component: () => import("@/pages/SupportWorkspacePage.vue"),
+          meta: { supportWorkspaceAccess: true },
+        },
+        {
+          path: "support/inbox/conversations/:conversationId",
+          name: "support-inbox-conversation",
+          component: () => import("@/pages/SupportWorkspacePage.vue"),
+          meta: { supportWorkspaceAccess: true },
+        },
+        {
           path: "ai-analyses",
           name: "ai-analyses",
           component: () => import("@/pages/AIAnalysesPage.vue"),
@@ -473,6 +487,13 @@ router.beforeEach(async (to) => {
     if (auth.project?.id !== target.id) auth.selectProject(target.id);
   }
   if (to.name === "overview" && auth.isAuthenticated && !auth.project)
+    return auth.authenticatedLandingPath;
+  if (
+    to.meta.supportWorkspaceAccess &&
+    (!supportWorkspaceEnabled ||
+      !auth.project ||
+      !canReadSupportWorkspace(auth.project.effectivePermissionCodes ?? []))
+  )
     return auth.authenticatedLandingPath;
   if (
     typeof to.meta.platformPermission === "string" &&

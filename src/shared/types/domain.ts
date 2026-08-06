@@ -364,7 +364,16 @@ export interface ConversationAISuspensionDetail extends ConversationAISuspension
 export interface ConversationMessage {
   id: string;
   conversationId: string;
+  /** Server-defined canonical order when the current chat contract provides it. */
+  ordinal?: number;
   author: "USER" | "ASSISTANT" | "ADMIN" | "SCENARIO" | "SYSTEM";
+  /** Immutable author data captured when the message was accepted. */
+  authorSnapshot?: {
+    type: "CMS_USER" | "SYSTEM" | "BREAK_GLASS" | "UNKNOWN";
+    cmsUserId: string | null;
+    displayName: string;
+    avatarUrl: string | null;
+  };
   text: string;
   status: "PENDING" | "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
   createdAt: string;
@@ -383,6 +392,29 @@ export interface ConversationMessage {
     warnings: string[];
     updatedAt: string;
   };
+}
+
+/**
+ * Safe project-wide projection used by the operator inbox. It intentionally
+ * excludes profile attributes and session/device details.
+ */
+export interface SupportInboxConversation {
+  id: string;
+  projectId: string;
+  endUser: { id: string; externalId: string };
+  title: string;
+  status: Conversation["status"];
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  isCurrent: boolean;
+  currentInteractionSessionCount: number;
+  lastMessage: {
+    id: string;
+    role: ConversationMessage["author"];
+    text: string;
+    createdAt: string;
+  } | null;
 }
 
 export interface ActivityItem {

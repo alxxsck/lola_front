@@ -16,6 +16,7 @@ import {
   scenarioAuthoringListScenarios,
   scenarioAuthoringUpdateScenarioMetadata,
   adminMessagingSend,
+  adminProjectConversationsList,
   presenceList,
   adminConversationsList,
   adminConversationsListMessages,
@@ -60,6 +61,7 @@ vi.mock("@/shared/api/generated/retenive-backend", () => ({
   platformOperationsUsers: vi.fn(),
   platformOperationsUsersPage: vi.fn(),
   adminMessagingSend: vi.fn(),
+  adminProjectConversationsList: vi.fn(),
   scenarioRunsList: vi.fn(),
   presenceList: vi.fn(),
   adminConversationsList: vi.fn(),
@@ -934,6 +936,53 @@ describe("api repository adapter", () => {
       "conversation-1",
       { cursor: "older", limit: 50 },
     );
+  });
+
+  it("maps the project-wide inbox through the generated support endpoint", async () => {
+    vi.mocked(adminProjectConversationsList).mockResolvedValue({
+      items: [
+        {
+          id: "conversation-1",
+          projectId: "project-1",
+          endUserId: "user-1",
+          endUser: { id: "user-1", externalId: "user_89421" },
+          title: "Deposit",
+          status: "OPEN",
+          createdAt: "2026-08-06T09:00:00.000Z",
+          updatedAt: "2026-08-06T10:00:00.000Z",
+          messageCount: 4,
+          isCurrent: true,
+          currentInteractionSessionCount: 1,
+          lastMessage: {
+            id: "message-4",
+            role: "ADMIN",
+            text: "Проверяю результат",
+            createdAt: "2026-08-06T10:00:00.000Z",
+          },
+        },
+      ],
+      nextCursor: "conversation-1",
+    });
+
+    await expect(
+      apiRepository.getProjectConversations("project-1", {
+        cursor: "previous",
+        limit: 20,
+      }),
+    ).resolves.toEqual({
+      items: [
+        expect.objectContaining({
+          id: "conversation-1",
+          endUser: { id: "user-1", externalId: "user_89421" },
+          lastMessage: expect.objectContaining({ id: "message-4" }),
+        }),
+      ],
+      nextCursor: "conversation-1",
+    });
+    expect(adminProjectConversationsList).toHaveBeenCalledWith("project-1", {
+      cursor: "previous",
+      limit: 20,
+    });
   });
 
   it("uses the snapshot cursor CMS endpoint for filtered event logs and detail", async () => {

@@ -14,6 +14,7 @@ import type {
   ActiveUserResponseDto,
   AdminConversationResponseDto,
   AdminConversationMessageResponseDto,
+  AdminProjectConversationResponseDto,
   ConversationAISuspensionResponseDto,
   ConversationAISuspensionSummaryResponseDto,
   ScenarioAuthoringSummaryResponseDto,
@@ -33,6 +34,7 @@ import type {
   Scenario,
   ScenarioRun,
   UiElement,
+  SupportInboxConversation,
 } from "@/shared/types/domain";
 import type { CreateUiElement, UpdateUiElement } from "./contracts";
 
@@ -213,6 +215,31 @@ export function mapConversation(
   };
 }
 
+export function mapSupportInboxConversation(
+  dto: AdminProjectConversationResponseDto,
+): SupportInboxConversation {
+  return {
+    id: dto.id,
+    projectId: dto.projectId,
+    endUser: dto.endUser,
+    title: dto.title?.trim() || "Диалог без названия",
+    status: dto.status === "OPEN" ? "ACTIVE" : "ARCHIVED",
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    messageCount: dto.messageCount,
+    isCurrent: dto.isCurrent,
+    currentInteractionSessionCount: dto.currentInteractionSessionCount,
+    lastMessage: dto.lastMessage
+      ? {
+          id: dto.lastMessage.id,
+          role: dto.lastMessage.role,
+          text: dto.lastMessage.text,
+          createdAt: dto.lastMessage.createdAt,
+        }
+      : null,
+  };
+}
+
 export function mapConversationAISuspensionSummary(
   dto: ConversationAISuspensionSummaryResponseDto,
 ): ConversationAISuspensionSummary {
@@ -245,7 +272,18 @@ export function mapConversationMessage(
   return {
     id: dto.id,
     conversationId: dto.threadId,
+    ordinal: dto.ordinal,
     author: dto.role,
+    ...(dto.author
+      ? {
+          authorSnapshot: {
+            type: dto.author.type,
+            cmsUserId: dto.author.cmsUserId,
+            displayName: dto.author.displayName,
+            avatarUrl: dto.author.avatarUrl,
+          },
+        }
+      : {}),
     text: dto.text,
     status: dto.status,
     createdAt: dto.createdAt,

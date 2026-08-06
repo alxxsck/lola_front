@@ -820,4 +820,40 @@ describe("authentication routes", () => {
     await router.push("/telegram/broadcasts/broadcast-1");
     expect(router.currentRoute.value.name).toBe("telegram-broadcast-detail");
   });
+
+  it("gates Support Workspace with the exact conversation read permission", async () => {
+    const auth = useAuthStore();
+    const project = {
+      id: "project-1",
+      name: "Project One",
+      slug: "project-one",
+      status: "ACTIVE" as const,
+      publicKey: "public",
+      defaultLocale: "ru",
+      supportedLocales: ["ru"],
+      assistantName: "Retenive",
+      systemPrompt: "",
+      voiceInstructions: "",
+      settings: {},
+      effectivePermissionCodes: ["project.conversations.reply"],
+    };
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
+      project,
+      projects: [project],
+    });
+
+    await router.push("/support/inbox");
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    auth.project!.effectivePermissionCodes = ["project.conversations.read"];
+    await router.push("/support/inbox/conversations/conversation-1");
+    expect(router.currentRoute.value.name).toBe("support-inbox-conversation");
+  });
 });
