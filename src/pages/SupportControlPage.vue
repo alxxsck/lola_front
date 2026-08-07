@@ -7,7 +7,13 @@ import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
-import { canReadSupportControl } from "@/features/support-workspace/model/support-workspace-access";
+import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
+import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
+import {
+  canManageOwnSupportAvailability,
+  canReadSupportAvailability,
+  canReadSupportControl,
+} from "@/features/support-workspace/model/support-workspace-access";
 import {
   SUPPORT_LEAD_RISK_TYPES,
   supportLeadSource,
@@ -28,6 +34,35 @@ const canRead = computed(
     !accessDenied.value &&
     supportWorkspaceShellEnabled &&
     canReadSupportControl(auth.project?.effectivePermissionCodes ?? []),
+);
+const availabilityAccessDenied = ref(false);
+const canReadAvailability = computed(
+  () =>
+    canRead.value &&
+    !availabilityAccessDenied.value &&
+    canReadSupportAvailability(auth.project?.effectivePermissionCodes ?? []),
+);
+const canManageAvailability = computed(
+  () =>
+    canReadAvailability.value &&
+    canManageOwnSupportAvailability(auth.project?.effectivePermissionCodes ?? []),
+);
+const availability = createSupportAvailabilityController(
+  {
+    projectId: () => auth.project?.id,
+    operatorId: () => auth.user?.id,
+    canRead: () => canReadAvailability.value,
+    canManage: () => canManageAvailability.value,
+    async onForbidden() {
+      availabilityAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Availability is already purged by the controller.
+      }
+    },
+  },
+  supportAvailabilitySource,
 );
 const alertsAccessDenied = ref(false);
 const canReadAlerts = computed(
@@ -131,6 +166,11 @@ function reload(): void {
   void overview.load();
   void risks.load();
   if (canReadAlerts.value) void alerts.load();
+}
+
+function startAvailabilityHeartbeat(): void {
+  if (!canReadAvailability.value) return;
+  void availability.load().then(() => availability.startHeartbeat());
 }
 
 function labelRiskType(value: SupportLeadRiskType): string {
@@ -245,17 +285,23 @@ function resolveAlert(): void {
   void alerts.resolve(alertResolveReason.value);
 }
 
-onMounted(reload);
+onMounted(() => {
+  reload();
+  startAvailabilityHeartbeat();
+});
 
 watch(
   () => auth.project?.id,
   () => {
     accessDenied.value = false;
     alertsAccessDenied.value = false;
+    availabilityAccessDenied.value = false;
     overview.reset();
     risks.reset();
     alerts.reset();
+    availability.reset();
     reload();
+    startAvailabilityHeartbeat();
   },
 );
 
@@ -264,7 +310,16 @@ watch(canRead, (allowed) => {
   overview.reset();
   risks.reset();
   alerts.reset();
+  availability.reset();
   void router.replace({ name: "overview" });
+});
+
+watch(canReadAvailability, (allowed) => {
+  if (!allowed) {
+    availability.reset();
+    return;
+  }
+  startAvailabilityHeartbeat();
 });
 
 watch(canReadAlerts, (allowed) => {
@@ -277,6 +332,7 @@ onBeforeUnmount(() => {
   overview.reset();
   risks.reset();
   alerts.reset();
+  availability.reset();
 });
 </script>
 

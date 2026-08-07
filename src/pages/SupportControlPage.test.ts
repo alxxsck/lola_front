@@ -17,6 +17,9 @@ const api = vi.hoisted(() => ({
   readCaseRisks: vi.fn(),
   readAlerts: vi.fn(),
   readAlertDetail: vi.fn(),
+  readAvailability: vi.fn(),
+  setOwnAvailability: vi.fn(),
+  renewAvailability: vi.fn(),
 }));
 
 vi.mock("@/features/support-control/api/support-lead-source", () => ({
@@ -27,6 +30,14 @@ vi.mock("@/features/support-control/api/support-lead-source", () => ({
     "DELIVERY_OUTCOME_UNKNOWN",
   ],
   supportLeadSource: api,
+}));
+
+vi.mock("@/features/support-availability/api/support-availability-source", () => ({
+  supportAvailabilitySource: {
+    read: api.readAvailability,
+    setOwn: api.setOwnAvailability,
+    renewOwn: api.renewAvailability,
+  },
 }));
 
 const summary: SupportLeadSummary = {
@@ -83,10 +94,17 @@ interface RenderOptions {
   allowLeadControl?: boolean;
   riskPage?: Omit<SupportLeadCaseRiskPage, "riskType">;
   alertsPage?: SupportOperationalAlertPage;
+  allowAvailability?: boolean;
 }
 
 async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
-  const { allowAlerts = false, allowLeadControl = true, riskPage, alertsPage } = options;
+  const {
+    allowAlerts = false,
+    allowLeadControl = true,
+    allowAvailability = false,
+    riskPage,
+    alertsPage,
+  } = options;
   const pinia = createPinia();
   setActivePinia(pinia);
   const auth = useAuthStore();
@@ -102,6 +120,12 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
       effectivePermissionCodes: [
         ...(allowLeadControl ? ["project.support.lead_control.read"] : []),
         ...(allowAlerts ? ["project.support.alerts.read"] : []),
+        ...(allowAvailability
+          ? [
+              "project.support.availability.read",
+              "project.support.availability.self_manage",
+            ]
+          : []),
       ],
     },
     projects: [],
@@ -119,6 +143,22 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
   );
   api.readAlerts.mockResolvedValue(alertsPage ?? alertPage);
   api.readAlertDetail.mockResolvedValue(alertDetail);
+  const availability = {
+    operatorId: "operator-1",
+    projectId: "project-1",
+    declaredState: "AVAILABLE" as const,
+    effectiveState: "AVAILABLE" as const,
+    acceptsNewWork: true,
+    effectiveUntil: null,
+    leaseRenewedAt: "2026-08-06T10:00:00.000Z",
+    leaseUntil: "2026-08-06T10:02:00.000Z",
+    reasonCode: "SHIFT_START" as const,
+    source: "SELF" as const,
+    transitionedAt: "2026-08-06T10:00:00.000Z",
+    version: 7,
+  };
+  api.readAvailability.mockResolvedValue(availability);
+  api.renewAvailability.mockResolvedValue(availability);
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -182,6 +222,24 @@ describe("SupportControlPage", () => {
 
     expect(api.readAlerts).not.toHaveBeenCalled();
     expect(wrapper.text()).not.toContain("Активные alerts");
+  });
+
+  it("keeps an available operator lease alive while viewing support control", async () => {
+    const { wrapper } = await render(summary, { allowAvailability: true });
+
+    expect(api.readAvailability).toHaveBeenCalledWith(
+      "project-1",
+      "operator-1",
+      expect.any(AbortSignal),
+    );
+    expect(api.renewAvailability).toHaveBeenCalledWith(
+      "project-1",
+      "operator-1",
+      7,
+      expect.any(AbortSignal),
+    );
+
+    wrapper.unmount();
   });
 
   it("does not treat an incomplete risk projection as an empty queue", async () => {
