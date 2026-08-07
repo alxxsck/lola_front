@@ -476,6 +476,20 @@ Acceptance checklist:
   один Conversation Surface; shared behavior suite проверяет одинаковый
   translation toggle и message rendering через оба adapters.
 
+### Кнопка `На весь экран / Свернуть`
+
+Текущий PrimeVue maximize не является visual acceptance: на приложенном
+состоянии видны CMS sidebar и фон, у workspace остаются отступы/radius, справа
+образуется пустой canvas. Кнопка должна переключать отдельный full-tab shell,
+который занимает точный viewport вкладки, не прокручивает background и не
+перемонтирует Conversation Surface.
+
+Обязательны FLIP-анимация на `transform/opacity`, reduced-motion fallback,
+раздельные `Свернуть` и `Закрыть`, сохранение draft/selection/translation/
+message anchor, safe areas, mobile keyboard и один scroll/focus owner для
+вложенных overlays. Полное решение, размеры, motion timings и e2e assertions:
+[10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md).
+
 ## 13. Референсы и что именно из них берём
 
 - [Zendesk Agent Workspace](https://support.zendesk.com/hc/en-us/articles/4408821259930-About-the-Zendesk-Agent-Workspace):
@@ -486,6 +500,8 @@ Acceptance checklist:
   потери списка.
 - Дополнительное сопоставление первичных источников находится в
   [research note](../../research/support-platform-operator-workspace-primary-sources-2026-08-07.ru.md).
+- Browser, viewport, scroll, focus и motion основания full-tab режима находятся
+  в [отдельном исследовании](../../research/support-fullscreen-workspace-browser-platform-discovery-2026-08-07.ru.md).
 
 Референсы задают interaction pattern, но не разрешают копировать чужую
 визуальную систему. Финальный UI использует Lola tokens, существующие icon

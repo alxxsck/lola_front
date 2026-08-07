@@ -30,10 +30,15 @@ Frontend:
   progress, realtime reconcile, draft и composer;
 - подключить Users/Profile и Support adapters к одному Surface и удалить
   `.message-row` chat renderer из `EndUserCaseDetail.vue`.
+- заменить PrimeVue maximize отдельным full-tab presentation shell; сохранить
+  тот же Surface/state при `На весь экран / Свернуть`, сделать один scroll-lock
+  owner и добавить reduced-motion fallback.
 
 Exit: новый route и user chat открывают read-only выбранную Conversation через
 один Surface без регрессий старого dialog; shared behavior suite проходит для
-обоих adapters, второго message renderer в production source нет.
+обоих adapters, второго message renderer в production source нет. Full-tab
+shell совпадает с viewport вкладки, не показывает CMS background и не меняет
+selection/draft/translation/message anchor.
 
 ### F1. Project inbox и рабочая selection
 
@@ -201,6 +206,10 @@ Network мокается на repository boundary или MSW equivalent, не ч
 10. QA: snapshot → evidence → submit → received feedback по scope.
 11. Mobile route stack и browser Back с draft.
 12. Keyboard-only основной operator flow.
+13. Windowed → full-tab → windowed: exact viewport geometry, draft/selection/
+    translation/scroll anchor сохранены, background не scrollится.
+14. Full-tab + nested dialog/menu: focus/Escape stack и reference-counted
+    scroll lock не ломаются после закрытия вложенного overlay.
 
 Тестировать реальный backend API отдельно от mock mode; mock не является
 доказательством idempotency, permission или realtime ordering.
@@ -253,6 +262,12 @@ Network мокается на repository boundary или MSW equivalent, не ч
 Для каждого: light/dark, long names, long unbroken text, RTL-ready content,
 translation, 10 attachments, error banners, 200% zoom. Screenshot tests не
 заменяют interaction assertions.
+
+Full-tab suite дополнительно проверяет `x/y = 0`, ширину
+`documentElement.clientWidth`, высоту visual viewport, отсутствие document
+horizontal overflow, сохранение `scrollY` до/после overlay и открытый mobile
+keyboard. Набор размеров и motion/focus assertions зафиксирован в
+[full-tab discovery](./10-full-tab-workspace-discovery.ru.md#9-проверки-и-acceptance-criteria).
 
 ## 7. Performance budgets
 
@@ -308,6 +323,8 @@ Messages, assignments или read positions.
 - shared Conversation Surface contract suite проходит одинаково через
   Users/Profile и Support adapters, включая translation toggle и original/
   translated rendering;
+- full-tab behavioral suite проходит geometry, scroll ownership, nested
+  overlays, focus return и reduced motion;
 - telemetry/privacy review выполнен;
 - support runbook и feature flag готовы.
 

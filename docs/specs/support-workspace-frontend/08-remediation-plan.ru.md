@@ -209,11 +209,23 @@ flag → owner/release proof. Она должна жить рядом с fronten
 - Добавить primitives: `SupportStateChip`, `FreshnessLabel`,
   `AllowedActionButton`, `PermissionBoundary`, `CommandOutcome`,
   `PaneLayout` и `InspectorDrawer`.
+- Вынести presentation state из PrimeVue Dialog: добавить windowed/full-tab/
+  route shells и собственную кнопку `На весь экран / Свернуть`. Full-tab
+  занимает точный viewport через `inset: 0` / `100dvh`, не монтирует второй
+  Conversation Surface и сохраняет draft, selection, translation mode,
+  inspector tab и scroll anchor.
+- Убрать конкуренцию PrimeVue `block-scroll` и `workspace-scroll-locked`:
+  modal/full-tab overlays получают один reference-counted scroll/focus owner;
+  Support route обходится без modal body lock.
+- Реализовать FLIP-переход только на `transform/opacity`, reduced-motion
+  fallback и geometry/scroll/focus e2e из
+  [full-tab discovery](./10-full-tab-workspace-discovery.ru.md).
 
 **Exit.** Новый route и chat пользователя монтируют один Conversation Surface;
 DOM/visual/keyboard contract toggle и message feed совпадает. В repository нет
 второго full-chat/message-feed renderer; старый chat, перевод и AI Suspension
-не регрессируют.
+не регрессируют. Кнопка full-tab не показывает фон CMS, не прокручивает `body`
+и не сбрасывает состояние Conversation.
 
 ### F1 — project inbox и выбор рабочей единицы
 
@@ -457,4 +469,6 @@ approved budget and rollback exercised on pilot project.
 - [Аудит backend current state](../../../../Lola_backend/docs/research/support-platform-current-state-audit.ru.md).
 - [Первичные UX-источники и их применимость](../../research/support-platform-operator-workspace-primary-sources-2026-08-07.ru.md) — дополняется отдельным исследовательским проходом.
 - [UI/UX remediation и visual acceptance](./09-ui-ux-remediation.ru.md).
+- [Full-tab workspace discovery](./10-full-tab-workspace-discovery.ru.md).
+- [Browser-platform research full-tab режима](../../research/support-fullscreen-workspace-browser-platform-discovery-2026-08-07.ru.md).
 - [Предоставленное продуктовое описание](../../../../../.codex/attachments/48eb194a-6ff1-4449-81eb-faae2c88d42d/pasted-text.txt).

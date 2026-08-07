@@ -32,6 +32,7 @@ src/
 │   └── SupportAnalyticsPage.vue
 ├── features/
 │   ├── support-workspace/       # route composition, selection, layout
+│   │   └── presentation/        # windowed/full-tab/route shells, motion, scroll lock
 │   ├── support-inbox/           # queries, rows, views, filters, table
 │   ├── conversation-surface/    # shared Users/Support history, translation, composer
 │   ├── support-conversation/    # Support adapter/capabilities, без своего renderer
@@ -69,6 +70,7 @@ message bubble, translation toggle и composer. Call sites импортирую�
 | Модуль                 | Владеет                                              | Не владеет                    |
 | ---------------------- | ---------------------------------------------------- | ----------------------------- |
 | `support-workspace`    | route selection, pane layout, cross-feature commands | Message merge, profile fields |
+| `workspace/presentation` | windowed/full-tab/route mode, geometry, motion, root scroll/focus lifecycle | Conversation/Case domain state |
 | `support-inbox`        | query/view/cursor, row revisions, selection IDs      | Полные message bodies         |
 | `conversation-surface` | единый message renderer, translation toggle, history, draft/composer | Route layout, assignment policy |
 | `support-conversation` | Support selection adapter, read/delivery/note capabilities | Message template/CSS, translation UI |
@@ -283,6 +285,21 @@ selection/context, permissions и typed capabilities, но не slots/props дл
 другого message renderer, translation toggle или composer. Поведение
 проверяется одним shared suite через оба adapters.
 
+### Заменить PrimeVue maximize отдельным shell
+
+`UserWorkspaceDialog` не владеет полноэкранной геометрией. Кнопка
+`На весь экран / Свернуть` работает через presentation controller и переносит
+тот же Conversation Surface между `WindowedWorkspaceShell` и
+`FullViewportWorkspaceShell`. Mode switch не создаёт вторую копию ленты и не
+перезапрашивает Conversation.
+
+Full-tab shell использует `position: fixed; inset: 0; height: 100dvh`, нулевые
+margin/border/radius и отдельные scroll owners. Route shell использует ту же
+композицию без modal semantics. Root scroll lock имеет одного
+reference-counted владельца; комбинация PrimeVue `block-scroll` и отдельного
+body class запрещена. Полный контракт и migration path:
+[10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md).
+
 ### Удалить после cutover
 
 - CHAT mode монолита;
@@ -339,5 +356,9 @@ render errors и coarse UX performance без содержимого Messages/PI
 - project switch очищает scoped state/watches;
 - UI не создаёт delivery/read/assignment/metric truth локально;
 - старый dialog и новый route временно используют одни feature modules;
+- full-tab toggle сохраняет selection, draft, translation mode, message anchor
+  и focus; DOM не содержит вторую доступную копию Conversation Surface;
+- full-tab geometry совпадает с viewport вкладки и не создаёт document scroll
+  или horizontal overflow;
 - отсутствующий backend contract виден в readiness table, а не подменён mock;
 - code splitting не загружает QA/analytics/inspector sensitive modules без route.
