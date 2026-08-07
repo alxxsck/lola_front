@@ -59,6 +59,32 @@ export interface ConversationSurfaceReplyPreview {
   showProviderDetails?: boolean;
 }
 
+export interface ConversationSurfaceActionCapability {
+  visibility: "ENABLED" | "DISABLED" | "HIDDEN";
+  reason?: string;
+}
+
+export interface ConversationSurfaceComposerActions {
+  attachment: ConversationSurfaceActionCapability;
+  createTicket: ConversationSurfaceActionCapability;
+  templates: ConversationSurfaceActionCapability;
+  improveWithAI: ConversationSurfaceActionCapability;
+  sendWithoutTranslation: ConversationSurfaceActionCapability;
+}
+
+export type ConversationSurfaceComposerAction =
+  | "ATTACHMENT"
+  | "CREATE_TICKET"
+  | "TEMPLATES"
+  | "IMPROVE_WITH_AI"
+  | "SEND_WITHOUT_TRANSLATION";
+
+export interface ConversationSurfaceTranslationAssist {
+  targetLocale: string | null;
+  busy: boolean;
+  disabled: boolean;
+}
+
 interface ConversationSurfaceComposerBase {
   visibility: "ENABLED" | "DISABLED" | "HIDDEN";
   scope: {
@@ -69,6 +95,11 @@ interface ConversationSurfaceComposerBase {
   initialDraft: string;
   draftRevision: string | number;
   sending: boolean;
+  recipientStatus: {
+    label: string;
+    tone: "ONLINE" | "OFFLINE" | "NEUTRAL";
+  } | null;
+  actions: ConversationSurfaceComposerActions;
 }
 
 type SourceSendCapability =
@@ -79,11 +110,13 @@ export type ConversationSurfaceComposer =
       mode: "PUBLIC_REPLY";
       sendCapability: SourceSendCapability | { kind: "TRANSLATED_PREVIEW" };
       replyPreview: ConversationSurfaceReplyPreview | null;
+      translationAssist: ConversationSurfaceTranslationAssist | null;
     })
   | (ConversationSurfaceComposerBase & {
       mode: "INTERNAL_NOTE";
       sendCapability: SourceSendCapability;
       replyPreview: null;
+      translationAssist: null;
     });
 
 export type ConversationSurfaceReconcileIssue =

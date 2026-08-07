@@ -30,8 +30,12 @@ import ConversationAISuspensionHistory from "@/features/conversation-ai-suspensi
 import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
 import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
-import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
 import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
+import type {
+  ConversationSurfaceComposer,
+  ConversationSurfaceComposerAction,
+} from "@/features/conversation-surface/model/conversation-surface-contract";
+import ConversationComposer from "@/features/conversation-surface/ui/ConversationComposer.vue";
 import type {
   ExtendConversationAISuspensionDto,
   ProfileProjectionResponseDto,
@@ -118,7 +122,6 @@ const liveMessageIds = ref<string[]>([]);
 const telegramDraftDirty = ref(false);
 const sendWithoutTranslationVisible = ref(false);
 const sendWithoutTranslationReason = ref("");
-const composerActionsVisible = ref(false);
 const conversationMenuVisible = ref(false);
 const ticketDrawerVisible = ref(false);
 const replyTemplateGalleryVisible = ref(false);
@@ -325,6 +328,109 @@ const replyTranslationInFlight = computed(
     translation.draft.value?.status === "PENDING" ||
     translation.draft.value?.status === "RUNNING",
 );
+const userConversationComposer = computed<
+  Extract<ConversationSurfaceComposer, { mode: "PUBLIC_REPLY" }>
+>(() => {
+  const conversation = selectedConversation.value;
+  const busy =
+    messagesLoading.value ||
+    sendingReply.value ||
+    replyTranslationInFlight.value;
+  const blockedReason = messagesLoading.value
+    ? "Диалог загружается."
+    : !onlineSession.value
+      ? "Пользователь офлайн."
+      : conversation?.status !== "ACTIVE"
+        ? "Ответ в закрытом диалоге недоступен."
+        : "";
+  const actionVisibility = busy ? "DISABLED" : "ENABLED";
+  const replyPreview =
+    canManageTranslation.value &&
+    replyTranslationRequested.value &&
+    translation.state.value
+      ? {
+          draft: translation.draft.value,
+          targetLocale: translation.targetLocale.value,
+          busy:
+            translation.previewing.value ||
+            translation.editingReply.value ||
+            translation.savingPreference.value ||
+            sendingReply.value,
+          stale: translation.previewStale.value,
+          disabled:
+            messagesLoading.value ||
+            !replyText.value.trim() ||
+            !onlineSession.value ||
+            conversation?.status !== "ACTIVE" ||
+            translation.savingPreference.value ||
+            !translation.state.value.availability.available ||
+            translation.state.value.budget.hardExhausted,
+          showProviderDetails: canReadTranslationDetails.value,
+        }
+      : null;
+
+  return {
+    visibility: canReply.value ? "ENABLED" : "HIDDEN",
+    mode: "PUBLIC_REPLY",
+    scope: {
+      projectId: props.projectId,
+      actorId: auth.user?.id ?? "current-operator",
+      conversationId: conversation?.id ?? "unselected",
+    },
+    initialDraft: replyText.value,
+    draftRevision:
+      translation.draft.value?.id ?? conversation?.id ?? "unselected",
+    sending: sendingReply.value,
+    recipientStatus: {
+      label: onlineSession.value
+        ? "Пользователь онлайн"
+        : "Пользователь офлайн",
+      tone: onlineSession.value ? "ONLINE" : "OFFLINE",
+    },
+    actions: {
+      attachment: {
+        visibility: actionVisibility,
+        reason: busy ? "Дождитесь завершения текущего действия." : undefined,
+      },
+      createTicket: {
+        visibility: actionVisibility,
+        reason: busy ? "Дождитесь завершения текущего действия." : undefined,
+      },
+      templates: {
+        visibility: actionVisibility,
+        reason: busy ? "Дождитесь завершения текущего действия." : undefined,
+      },
+      improveWithAI: {
+        visibility: "DISABLED",
+        reason: "Функция пока недоступна.",
+      },
+      sendWithoutTranslation: {
+        visibility:
+          canReplyWithoutTranslation.value && replyTranslationRequested.value
+            ? replyText.value.trim()
+              ? "ENABLED"
+              : "DISABLED"
+            : "HIDDEN",
+      },
+    },
+    sendCapability: blockedReason
+      ? { kind: "BLOCKED", reason: blockedReason }
+      : replyTranslationRequested.value
+        ? { kind: "TRANSLATED_PREVIEW" }
+        : { kind: "SOURCE" },
+    replyPreview,
+    translationAssist: canManageTranslation.value
+      ? {
+          targetLocale: translation.targetLocale.value,
+          busy: translation.loading.value || translation.previewing.value,
+          disabled:
+            messagesLoading.value ||
+            !onlineSession.value ||
+            conversation?.status !== "ACTIVE",
+        }
+      : null,
+  };
+});
 const bulkTranslationIds = computed(() => [
   ...translation.translatingMessageIds.value,
 ]);
@@ -526,7 +632,6 @@ watch(
     translationFeedbackEnabled.value = false;
     replyTranslationRequested.value = false;
     translation.reset();
-    composerActionsVisible.value = false;
     conversationMenuVisible.value = false;
     ticketDrawerVisible.value = false;
     replyTemplateGalleryVisible.value = false;
@@ -706,7 +811,6 @@ function closeWorkspace(): void {
   telegramDraftDirty.value = false;
   sendWithoutTranslationReason.value = "";
   sendWithoutTranslationVisible.value = false;
-  composerActionsVisible.value = false;
   conversationMenuVisible.value = false;
   ticketDrawerVisible.value = false;
   allowanceDialogVisible.value = false;
@@ -915,7 +1019,6 @@ function applyReplyTemplate(
   template: (typeof replyTemplates)[number] = replyTemplates[0],
 ): void {
   replyText.value = template;
-  composerActionsVisible.value = false;
   replyTemplateGalleryVisible.value = false;
   toast.add({
     severity: "success",
@@ -926,12 +1029,10 @@ function applyReplyTemplate(
 }
 
 function openTicketDrawer(): void {
-  composerActionsVisible.value = false;
   ticketDrawerVisible.value = true;
 }
 
 function showUnavailableAttachment(): void {
-  composerActionsVisible.value = false;
   toast.add({
     severity: "info",
     summary: "Вложения пока недоступны",
@@ -1018,16 +1119,6 @@ async function sendReply(): Promise<void> {
   await consoleState.sendReply();
 }
 
-function handleComposerEnter(event: KeyboardEvent): void {
-  if (event.isComposing) return;
-  event.preventDefault();
-  if (translation.readyDraft.value && !translation.previewStale.value) {
-    void sendTranslatedReply();
-    return;
-  }
-  void sendReply();
-}
-
 async function sendTranslatedReply(editedText?: string): Promise<void> {
   if (
     !canReply.value ||
@@ -1102,8 +1193,28 @@ async function sendReplyWithoutTranslation(): Promise<void> {
 
 function setSendWithoutTranslationVisible(value: boolean): void {
   sendWithoutTranslationVisible.value = value;
-  composerActionsVisible.value = false;
   if (!value) sendWithoutTranslationReason.value = "";
+}
+
+function handleConversationComposerAction(
+  action: ConversationSurfaceComposerAction,
+): void {
+  switch (action) {
+    case "ATTACHMENT":
+      showUnavailableAttachment();
+      break;
+    case "CREATE_TICKET":
+      openTicketDrawer();
+      break;
+    case "TEMPLATES":
+      replyTemplateGalleryVisible.value = true;
+      break;
+    case "SEND_WITHOUT_TRANSLATION":
+      setSendWithoutTranslationVisible(true);
+      break;
+    case "IMPROVE_WITH_AI":
+      break;
+  }
 }
 
 function openSuspension(mode: SuspensionMode): void {
@@ -1851,225 +1962,20 @@ function displayField(
         >
           {{ newMessageCount }} новых сообщений <i class="pi pi-arrow-down" />
         </button>
-        <form
+        <ConversationComposer
           v-if="selectedConversation && canReply"
-          class="composer"
-          :class="{
-            'composer--translated': translation.readyDraft.value,
-            'composer--loading': messagesLoading,
-          }"
-          @submit.prevent="sendReply"
-        >
-          <div class="composer-source">
-            <div class="composer-label">
-              <span> Ваш текст · {{ workingLocaleLabel }} </span>
-              <span v-if="!onlineSession" class="composer-label__offline">
-                <i class="pi pi-wifi" aria-hidden="true" /> Пользователь офлайн
-              </span>
-            </div>
-            <Textarea
-              v-model="replyText"
-              rows="2"
-              maxlength="10000"
-              placeholder="Ответить от имени оператора"
-              aria-label="Ответ пользователю"
-              :disabled="
-                messagesLoading ||
-                !onlineSession ||
-                selectedConversation.status !== 'ACTIVE' ||
-                sendingReply ||
-                replyTranslationInFlight
-              "
-              @keydown.enter.exact="handleComposerEnter"
-            />
-          </div>
-          <ReplyTranslationPreview
-            v-if="
-              canManageTranslation &&
-              replyTranslationRequested &&
-              translation.state.value
-            "
-            :draft="translation.draft.value"
-            :target-locale="translation.targetLocale.value"
-            :busy="
-              translation.previewing.value ||
-              translation.editingReply.value ||
-              translation.savingPreference.value ||
-              sendingReply
-            "
-            :stale="translation.previewStale.value"
-            :disabled="
-              messagesLoading ||
-              !replyText.trim() ||
-              !onlineSession ||
-              selectedConversation.status !== 'ACTIVE' ||
-              translation.savingPreference.value ||
-              !translation.state.value?.availability.available ||
-              translation.state.value?.budget.hardExhausted
-            "
-            :show-provider-details="canReadTranslationDetails"
-            @preview="prepareReplyTranslation"
-            @reconcile="translation.reconcileReplyPreview"
-            @retry="translation.retryReplyPreview"
-            @save-edit="translation.editReplyTranslation"
-            @send="sendTranslatedReply"
-          />
-          <div
-            v-else-if="canManageTranslation && replyText.trim()"
-            class="composer-assist"
-          >
-            <div>
-              <span>Нужна языковая обработка?</span>
-              <strong>
-                {{
-                  translation.targetLocale.value
-                    ? `Перевод на ${translation.targetLocale.value.toUpperCase()}`
-                    : "Язык можно выбрать в меню ⋯"
-                }}
-              </strong>
-            </div>
-            <Button
-              type="button"
-              :label="
-                translation.targetLocale.value
-                  ? `Перевести на ${translation.targetLocale.value.toUpperCase()}`
-                  : 'Перевести ответ'
-              "
-              icon="pi pi-sparkles"
-              size="small"
-              :loading="
-                translation.loading.value || translation.previewing.value
-              "
-              :disabled="
-                messagesLoading ||
-                !onlineSession ||
-                selectedConversation.status !== 'ACTIVE'
-              "
-              @click="prepareReplyTranslation"
-            />
-          </div>
-          <div class="composer-footer">
-            <span>
-              {{
-                replyTranslationRequested
-                  ? `Шаг ${translation.readyDraft.value ? "2 из 2: перевод готов и проверен" : "1 из 2: сначала перевод, затем отправка"}`
-                  : "Enter — отправить · Shift+Enter — перенос строки"
-              }}
-            </span>
-            <div>
-              <div v-if="canReply" class="composer-action-menu">
-                <button
-                  v-if="composerActionsVisible"
-                  type="button"
-                  class="action-menu-backdrop"
-                  aria-label="Закрыть меню действий"
-                  @click="composerActionsVisible = false"
-                />
-                <Button
-                  type="button"
-                  label="Действие"
-                  icon="pi pi-plus"
-                  severity="secondary"
-                  outlined
-                  aria-haspopup="menu"
-                  :aria-expanded="composerActionsVisible"
-                  :disabled="
-                    messagesLoading ||
-                    !onlineSession ||
-                    sendingReply ||
-                    replyTranslationInFlight
-                  "
-                  @click="composerActionsVisible = !composerActionsVisible"
-                />
-                <div
-                  v-if="composerActionsVisible"
-                  class="composer-action-menu__panel"
-                  role="menu"
-                >
-                  <span class="mobile-sheet-handle" aria-hidden="true" />
-                  <strong class="mobile-sheet-title">Действия в диалоге</strong>
-                  <span class="menu-section-label">Сейчас</span>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    @click="showUnavailableAttachment"
-                  >
-                    <i class="pi pi-file" aria-hidden="true" />
-                    <span>
-                      <strong>Файл или скриншот</strong>
-                      <small>Live API пока принимает только текст</small>
-                    </span>
-                  </button>
-                  <span class="menu-section-label">Интеграции</span>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    class="highlighted"
-                    @click="openTicketDrawer"
-                  >
-                    <i class="pi pi-plus-square" aria-hidden="true" />
-                    <span>
-                      <strong>Создать тикет</strong>
-                      <small>Форма откроется справа от диалога</small>
-                    </span>
-                  </button>
-                  <button
-                    v-if="
-                      canReplyWithoutTranslation && replyTranslationRequested
-                    "
-                    type="button"
-                    role="menuitem"
-                    :disabled="!replyText.trim()"
-                    @click="setSendWithoutTranslationVisible(true)"
-                  >
-                    <i class="pi pi-send" aria-hidden="true" />
-                    <span>
-                      <strong>Отправить без перевода</strong>
-                      <small>Потребуется указать причину</small>
-                    </span>
-                  </button>
-                </div>
-              </div>
-              <Button
-                type="button"
-                label="Шаблоны"
-                severity="secondary"
-                outlined
-                :disabled="
-                  messagesLoading ||
-                  !onlineSession ||
-                  sendingReply ||
-                  replyTranslationInFlight
-                "
-                @click="replyTemplateGalleryVisible = true"
-              />
-              <Button
-                type="button"
-                label="Улучшить с AI"
-                icon="pi pi-sparkles"
-                severity="secondary"
-                text
-                class="composer-ai-action"
-                title="Скоро — функция пока недоступна"
-                disabled
-              />
-              <Button
-                v-if="canReply && !replyTranslationRequested"
-                type="submit"
-                label="Отправить"
-                icon="pi pi-send"
-                class="composer-primary-action"
-                :loading="sendingReply"
-                :disabled="
-                  messagesLoading ||
-                  !replyText.trim() ||
-                  !onlineSession ||
-                  selectedConversation.status !== 'ACTIVE'
-                "
-              />
-            </div>
-          </div>
-        </form>
+          :composer="userConversationComposer"
+          :draft="replyText"
+          :working-locale-label="workingLocaleLabel"
+          @update:draft="replyText = $event"
+          @send-source="sendReply"
+          @request-reply-translation="prepareReplyTranslation"
+          @reconcile-reply-translation="translation.reconcileReplyPreview"
+          @retry-reply-translation="translation.retryReplyPreview"
+          @save-reply-translation="translation.editReplyTranslation"
+          @send-reply-translation="sendTranslatedReply"
+          @action="handleConversationComposerAction"
+        />
         <ConversationTicketDrawer
           v-if="selectedConversation"
           :visible="ticketDrawerVisible"
@@ -2282,8 +2188,6 @@ function displayField(
 .pane-header,
 .chat-header,
 .chat-header-status,
-.composer-footer,
-.composer-footer > div,
 .conversation-row-title {
   display: flex;
   align-items: center;
@@ -2920,113 +2824,6 @@ function displayField(
   box-shadow: var(--shadow);
   font-size: 0.7rem;
   cursor: pointer;
-}
-.composer {
-  display: grid;
-  gap: 9px;
-  margin-top: 8px;
-  padding: 11px;
-  border: 1px solid var(--line);
-  border-radius: 15px;
-  background: color-mix(
-    in srgb,
-    var(--surface-subtle) 56%,
-    var(--surface-card)
-  );
-  box-shadow: 0 -8px 28px
-    color-mix(in srgb, var(--text-primary) 3%, transparent);
-}
-.composer-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--text-secondary);
-  font-size: 0.59rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.composer-label__offline {
-  color: var(--status-warning-text);
-  letter-spacing: normal;
-  text-transform: none;
-}
-.composer textarea {
-  width: 100%;
-}
-.composer :deep(textarea) {
-  min-height: 62px;
-  border-color: var(--line);
-  border-radius: 12px;
-  background: var(--surface-card);
-  line-height: 1.5;
-  resize: none;
-}
-.composer-footer {
-  justify-content: space-between;
-  gap: 12px;
-}
-.composer-footer > span {
-  max-width: 340px;
-  color: var(--text-secondary);
-  font-size: 0.62rem;
-}
-.composer-footer > div {
-  justify-content: flex-end;
-  gap: 6px;
-}
-.composer-primary-action {
-  min-width: 118px;
-}
-.composer-action-menu {
-  position: relative;
-}
-.composer-action-menu__panel {
-  position: absolute;
-  z-index: 5;
-  right: auto;
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: 250px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  background: var(--surface-card);
-  box-shadow: var(--shadow);
-  transform-origin: bottom left;
-  animation: action-menu-enter 0.14s ease-out;
-}
-.composer-action-menu__panel button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 48px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-.composer-action-menu__panel button:hover {
-  background: var(--surface-subtle);
-}
-.composer-action-menu__panel button > i {
-  color: var(--status-accent-text);
-}
-.composer-action-menu__panel button > span {
-  display: grid;
-  gap: 2px;
-}
-.composer-action-menu__panel strong {
-  font-size: 0.7rem;
-}
-.composer-action-menu__panel small {
-  color: var(--text-secondary);
-  font-size: 0.59rem;
 }
 .send-without-translation {
   display: grid;
@@ -3774,189 +3571,6 @@ function displayField(
   font-size: 12px;
   line-height: 1.45;
 }
-.composer {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-  margin: 0 20px 14px;
-  padding: 10px 12px 9px;
-  border: 1px solid var(--border-default);
-  border-radius: 14px;
-  background: var(--surface-subtle);
-  box-shadow: none;
-}
-.composer--translated {
-  position: relative;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-.composer-source {
-  display: grid;
-  min-width: 0;
-  gap: 7px;
-}
-.composer--translated .composer-source {
-  padding-right: 14px;
-  padding-bottom: 46px;
-  border-right: 1px solid var(--border-subtle);
-}
-.composer-label {
-  min-height: 18px;
-}
-.composer-label > span:first-child {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 7px;
-  border-radius: 5px;
-  background: var(--border-subtle);
-  color: var(--text-secondary);
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
-  letter-spacing: 0;
-}
-.composer :deep(textarea) {
-  min-height: 48px;
-  max-height: 96px;
-  padding: 6px 0;
-  overflow-y: auto;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 14px;
-  line-height: 1.5;
-  box-shadow: none;
-}
-.composer :deep(textarea:focus) {
-  box-shadow: none;
-}
-.composer-assist {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 9px 7px 11px;
-  border: 1px solid var(--palette-blue-200);
-  border-radius: 10px;
-  background: var(--status-accent-soft);
-}
-.composer-assist > div {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-}
-.composer-assist span {
-  color: var(--text-secondary);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.composer-assist strong {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.composer-assist :deep(.p-button) {
-  min-height: 34px;
-  flex: 0 0 auto;
-  border-radius: 9px;
-  font-size: 12px;
-}
-.composer-footer {
-  grid-column: 1 / -1;
-  min-height: 38px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-subtle);
-}
-.composer-footer > span {
-  max-width: 610px;
-  color: var(--text-tertiary);
-  font-size: 11px;
-}
-.composer-footer > div {
-  gap: 8px;
-}
-.composer--translated .composer-footer {
-  position: absolute;
-  bottom: 10px;
-  left: 14px;
-  width: calc(50% - 21px);
-  min-height: 42px;
-}
-.composer--translated .composer-footer > span {
-  display: none;
-}
-.composer--translated .composer-footer > div {
-  width: 100%;
-  justify-content: flex-start;
-}
-.composer-footer :deep(.p-button) {
-  min-height: 36px;
-  border-radius: 10px;
-  font-size: 12px;
-}
-.composer-primary-action {
-  min-width: 132px;
-}
-.composer-ai-action {
-  opacity: 0.58;
-}
-.composer--loading {
-  position: relative;
-  min-height: 96px;
-}
-.composer--loading > * {
-  visibility: hidden;
-}
-.composer--loading::after {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--text-tertiary);
-  content: "композер заблокирован до загрузки";
-  font-size: 12px;
-}
-.composer-action-menu__panel {
-  right: auto;
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: 290px;
-  padding: 8px;
-  border-color: var(--border-default);
-  border-radius: 14px;
-  background: var(--surface-card);
-}
-.composer-action-menu__panel button {
-  min-height: 52px;
-  border-radius: 10px;
-}
-.composer-action-menu__panel button.highlighted {
-  border: 1px solid var(--palette-blue-200);
-  background: var(--status-accent-soft);
-}
-.composer-action-menu__panel button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.composer-action-menu__panel strong {
-  color: var(--text-primary);
-  font-size: 13px;
-}
-.composer-action-menu__panel small {
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-.action-menu-backdrop {
-  display: none;
-}
-.mobile-sheet-handle,
-.mobile-sheet-title {
-  display: none;
-}
 .template-gallery-backdrop {
   position: absolute;
   z-index: 35;
@@ -4094,12 +3708,6 @@ function displayField(
     box-shadow: 0 0 0 7px transparent;
   }
 }
-@keyframes action-menu-enter {
-  from {
-    opacity: 0;
-    transform: translateY(5px) scale(0.98);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .message-bubble {
     animation: none;
@@ -4117,9 +3725,6 @@ function displayField(
   .workspace-grid {
     animation: none;
   }
-  .composer-action-menu__panel {
-    animation: none;
-  }
 }
 @media (max-width: 1150px) {
   .conversation-language-fact {
@@ -4127,21 +3732,6 @@ function displayField(
   }
   .conversation-state-rail {
     gap: 6px;
-  }
-  .composer-footer > span {
-    display: none;
-  }
-  .composer-footer > div {
-    width: 100%;
-  }
-  .composer-footer :deep(.p-button) {
-    padding: 0.55rem 0.7rem;
-    font-size: 0.72rem;
-  }
-  .composer :deep(textarea) {
-    height: 58px !important;
-    min-height: 58px;
-    overflow-y: auto !important;
   }
 }
 @media (max-width: 960px) {
@@ -4285,7 +3875,7 @@ function displayField(
   .conversation-state-rail
     :deep(.ai-suspension-header-actions .p-button-label) {
     overflow: hidden;
-    max-width: 82px;
+    max-width: 150px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -4309,56 +3899,6 @@ function displayField(
   }
   .message-bubble :deep(.translated-message > p) {
     font-size: 14px;
-  }
-  .composer {
-    margin: 0;
-    padding: 11px 12px 10px;
-    border: 0;
-    border-top: 1px solid var(--border-subtle);
-    border-radius: 0;
-    background: var(--surface-card);
-  }
-  .composer--translated {
-    grid-template-columns: 1fr;
-  }
-  .composer--translated :deep(.reply-preview) {
-    order: 1;
-  }
-  .composer--translated .composer-source {
-    order: 2;
-    padding: 10px 0 0;
-    border-top: 1px solid var(--border-subtle);
-    border-right: 0;
-  }
-  .composer--translated .composer-footer {
-    position: static;
-    width: auto;
-    order: 3;
-  }
-  .composer-footer {
-    align-items: flex-end;
-  }
-  .composer-footer > span {
-    display: none;
-  }
-  .composer-footer > div {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-  .composer-footer :deep(.p-button) {
-    flex: 1 1 auto;
-  }
-  .composer-action-menu {
-    flex: 1 1 auto;
-  }
-  .composer-action-menu > :deep(.p-button) {
-    width: 100%;
-  }
-  .composer-assist {
-    min-height: 42px;
-  }
-  .composer-ai-action {
-    flex: 1 1 auto;
   }
   .template-gallery-backdrop {
     place-items: end stretch;
@@ -4448,49 +3988,6 @@ function displayField(
   .message-view-switch button {
     padding-inline: 8px;
     white-space: nowrap;
-  }
-  .composer {
-    margin-top: 6px;
-    padding: 9px;
-    border-radius: 13px;
-  }
-  .composer-action-menu__panel {
-    position: fixed;
-    z-index: 32;
-    right: 10px;
-    bottom: 10px;
-    left: 10px;
-    width: auto;
-    max-height: calc(100dvh - 90px);
-    overflow-y: auto;
-    padding: 10px;
-    border-radius: 20px;
-    transform-origin: bottom center;
-  }
-  .mobile-sheet-handle {
-    display: block;
-    width: 40px;
-    height: 4px;
-    margin: 1px auto 7px;
-    border-radius: 3px;
-    background: var(--border-default);
-  }
-  .mobile-sheet-title {
-    display: block;
-    padding: 2px 4px 5px;
-    color: var(--text-primary);
-    font-size: 15px;
-  }
-  .action-menu-backdrop {
-    position: fixed;
-    z-index: 30;
-    inset: 0;
-    display: block;
-    border: 0;
-    background: var(--overlay-backdrop);
-  }
-  .composer-action-menu__panel button {
-    min-height: 58px;
   }
 }
 </style>

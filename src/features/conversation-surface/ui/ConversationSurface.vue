@@ -2,13 +2,13 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import Avatar from "primevue/avatar";
 import Button from "primevue/button";
-import Textarea from "primevue/textarea";
-import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
 import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
 import { relativeTime } from "@/shared/lib/format";
+import ConversationComposer from "./ConversationComposer.vue";
 import {
   conversationSurfaceDraftKey,
   type ConversationSurfaceComposer,
+  type ConversationSurfaceComposerAction,
   type ConversationSurfaceHistory,
   type ConversationSurfaceMessage,
   type ConversationSurfaceReconcileIssue,
@@ -36,6 +36,7 @@ const emit = defineEmits<{
   "retry-reply-translation": [];
   "save-reply-translation": [text: string];
   "send-reply-translation": [request: ConversationSurfaceSendRequest];
+  "composer-action": [action: ConversationSurfaceComposerAction];
 }>();
 
 const logElement = ref<HTMLElement | null>(null);
@@ -49,16 +50,6 @@ const conversationKey = computed(() => {
   const { projectId, conversationId } = props.composer.scope;
   return `${projectId}:${conversationId}`;
 });
-const composerLabel = computed(() =>
-  props.composer.mode === "INTERNAL_NOTE"
-    ? "Внутренняя заметка"
-    : "Ответ пользователю",
-);
-const composerPlaceholder = computed(() =>
-  props.composer.mode === "INTERNAL_NOTE"
-    ? "Добавьте заметку для команды…"
-    : "Напишите ответ пользователю…",
-);
 const composerDisabled = computed(
   () =>
     props.composer.visibility !== "ENABLED" ||
@@ -70,11 +61,6 @@ const canSend = computed(
     !composerDisabled.value &&
     props.composer.sendCapability.kind === "SOURCE" &&
     Boolean(draft.value.trim()),
-);
-const sendBlockedReason = computed(() =>
-  props.composer.sendCapability.kind === "BLOCKED"
-    ? props.composer.sendCapability.reason
-    : "",
 );
 const translationSendDisabled = computed(() => {
   const preview = props.composer.replyPreview;
@@ -172,23 +158,21 @@ function requestSend(): void {
   emit("send", draftRequest(text));
 }
 
-function requestTranslatedSend(text: string): void {
+function requestTranslatedSend(text?: string): void {
+  const previewText =
+    props.composer.mode === "PUBLIC_REPLY"
+      ? (props.composer.replyPreview?.draft?.editedTranslatedText ??
+        props.composer.replyPreview?.draft?.translatedText ??
+        "")
+      : "";
+  const selectedText = text ?? previewText;
   if (
     props.composer.mode !== "PUBLIC_REPLY" ||
     translationSendDisabled.value ||
-    !text.trim()
+    !selectedText.trim()
   )
     return;
-  emit("send-reply-translation", draftRequest(text));
-}
-
-function handleComposerKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || event.isComposing || event.shiftKey) return;
-  const isPlainEnter = !event.ctrlKey && !event.metaKey && !event.altKey;
-  const isCommandEnter = (event.ctrlKey || event.metaKey) && !event.altKey;
-  if (!isPlainEnter && !isCommandEnter) return;
-  event.preventDefault();
-  requestSend();
+  emit("send-reply-translation", draftRequest(selectedText));
 }
 
 function nearLatest(element = logElement.value): boolean {
@@ -468,92 +452,25 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
       <i class="pi pi-arrow-down" aria-hidden="true" />
     </button>
 
-    <section
+    <ConversationComposer
       v-if="composer.visibility !== 'HIDDEN'"
-      class="conversation-surface__composer"
-      :class="{ 'is-note': composer.mode === 'INTERNAL_NOTE' }"
-      :aria-labelledby="`conversation-composer-${conversationKey}`"
+      :composer="composer"
+      :draft="draft"
+      :working-locale-label="translation.workingLocaleLabel"
+      @update:draft="updateDraft"
+      @send-source="requestSend"
+      @request-reply-translation="emit('request-reply-translation')"
+      @reconcile-reply-translation="emit('reconcile-reply-translation')"
+      @retry-reply-translation="emit('retry-reply-translation')"
+      @save-reply-translation="emit('save-reply-translation', $event)"
+      @send-reply-translation="requestTranslatedSend"
+      @action="emit('composer-action', $event)"
+    />
+    <p
+      v-else-if="composer.sendCapability.kind === 'BLOCKED'"
+      class="conversation-surface__unavailable"
     >
-      <div class="conversation-surface__composer-header">
-        <div>
-          <span>{{
-            composer.mode === "INTERNAL_NOTE"
-              ? "Только для команды"
-              : "Публичное сообщение"
-          }}</span>
-          <h3 :id="`conversation-composer-${conversationKey}`">
-            {{ composerLabel }}
-          </h3>
-        </div>
-        <kbd>Ctrl/⌘ + Enter</kbd>
-      </div>
-      <form @submit.prevent="requestSend">
-        <Textarea
-          :model-value="draft"
-          rows="3"
-          maxlength="10000"
-          auto-resize
-          :placeholder="composerPlaceholder"
-          :aria-label="composerLabel"
-          :aria-describedby="
-            sendBlockedReason
-              ? `conversation-composer-blocked-${conversationKey}`
-              : undefined
-          "
-          :disabled="composerDisabled"
-          @update:model-value="updateDraft"
-          @keydown="handleComposerKeydown"
-        />
-        <ReplyTranslationPreview
-          v-if="composer.replyPreview"
-          :draft="composer.replyPreview.draft"
-          :target-locale="composer.replyPreview.targetLocale"
-          :busy="composer.replyPreview.busy"
-          :stale="composer.replyPreview.stale"
-          :disabled="composer.replyPreview.disabled"
-          :send-disabled="translationSendDisabled"
-          :show-provider-details="composer.replyPreview.showProviderDetails"
-          @preview="emit('request-reply-translation')"
-          @reconcile="emit('reconcile-reply-translation')"
-          @retry="emit('retry-reply-translation')"
-          @save-edit="emit('save-reply-translation', $event)"
-          @send="requestTranslatedSend"
-        />
-        <p
-          v-if="sendBlockedReason"
-          :id="`conversation-composer-blocked-${conversationKey}`"
-          class="conversation-surface__blocked"
-          role="status"
-        >
-          {{ sendBlockedReason }}
-        </p>
-        <div class="conversation-surface__composer-footer">
-          <span>
-            {{
-              composer.mode === "INTERNAL_NOTE"
-                ? "Пользователь не увидит эту заметку."
-                : "Отправится только в выбранный диалог."
-            }}
-          </span>
-          <Button
-            v-if="composer.sendCapability.kind !== 'TRANSLATED_PREVIEW'"
-            type="submit"
-            :label="
-              composer.mode === 'INTERNAL_NOTE'
-                ? 'Добавить заметку'
-                : 'Отправить пользователю'
-            "
-            :icon="
-              composer.mode === 'INTERNAL_NOTE' ? 'pi pi-lock' : 'pi pi-send'
-            "
-            :loading="composer.sending"
-            :disabled="!canSend"
-          />
-        </div>
-      </form>
-    </section>
-    <p v-else-if="sendBlockedReason" class="conversation-surface__unavailable">
-      {{ sendBlockedReason }}
+      {{ composer.sendCapability.reason }}
     </p>
   </section>
 </template>
@@ -570,8 +487,7 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
   color: var(--text-primary);
   background: var(--surface-card);
 }
-.conversation-surface__toolbar,
-.conversation-surface__composer {
+.conversation-surface__toolbar {
   position: relative;
   z-index: 2;
   background: color-mix(in srgb, var(--surface-card) 94%, transparent);
@@ -596,16 +512,14 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
 .conversation-surface__heading {
   min-width: 0;
 }
-.conversation-surface__heading > span,
-.conversation-surface__composer-header span {
+.conversation-surface__heading > span {
   color: var(--text-muted);
   font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.conversation-surface__heading h2,
-.conversation-surface__composer-header h3 {
+.conversation-surface__heading h2 {
   margin: 3px 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -815,7 +729,7 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
 .conversation-surface__new-messages {
   position: absolute;
   right: 24px;
-  bottom: 190px;
+  bottom: 126px;
   z-index: 3;
   min-height: 40px;
   padding: 0 14px;
@@ -830,57 +744,6 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
   font-size: 0.75rem;
   font-weight: 800;
   cursor: pointer;
-}
-.conversation-surface__composer {
-  padding: 14px 22px 18px;
-  border-top: 1px solid var(--line);
-}
-.conversation-surface__composer.is-note {
-  background: color-mix(
-    in srgb,
-    var(--status-warning-soft) 34%,
-    var(--surface-card)
-  );
-}
-.conversation-surface__composer-header,
-.conversation-surface__composer-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.conversation-surface__composer-header {
-  margin-bottom: 10px;
-}
-.conversation-surface__composer-header h3 {
-  font-size: 0.9rem;
-}
-.conversation-surface__composer-header kbd {
-  padding: 4px 8px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  color: var(--text-muted);
-  background: var(--surface-muted);
-  font: inherit;
-  font-size: 0.65rem;
-}
-.conversation-surface__composer :deep(.p-textarea) {
-  width: 100%;
-  max-height: 180px;
-  resize: none;
-}
-.conversation-surface__composer-footer {
-  margin-top: 10px;
-}
-.conversation-surface__composer-footer > span,
-.conversation-surface__blocked {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-.conversation-surface__blocked {
-  margin-top: 8px;
-  color: var(--status-warning-text);
 }
 @keyframes conversation-surface-shimmer {
   to {
@@ -905,30 +768,15 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
   .conversation-surface__log {
     padding: 14px 12px 22px;
   }
-  .conversation-surface__older,
-  .conversation-surface__composer :deep(.reply-preview .p-button) {
+  .conversation-surface__older {
     min-height: 44px;
   }
   .conversation-surface__message {
     max-width: 88%;
   }
-  .conversation-surface__composer {
-    padding: 12px 14px 14px;
-  }
-  .conversation-surface__composer-header kbd {
-    display: none;
-  }
-  .conversation-surface__composer-footer {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .conversation-surface__composer-footer :deep(.p-button) {
-    width: 100%;
-    min-height: 44px;
-  }
   .conversation-surface__new-messages {
     right: 14px;
-    bottom: 210px;
+    bottom: 138px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -1,0 +1,629 @@
+<script setup lang="ts">
+import { computed, ref } from "vue";
+import Button from "primevue/button";
+import Textarea from "primevue/textarea";
+import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
+import type {
+  ConversationSurfaceComposer,
+  ConversationSurfaceComposerAction,
+} from "../model/conversation-surface-contract";
+
+const props = defineProps<{
+  composer: ConversationSurfaceComposer;
+  draft: string;
+  workingLocaleLabel: string;
+}>();
+
+const emit = defineEmits<{
+  "update:draft": [value: string];
+  "send-source": [];
+  "request-reply-translation": [];
+  "reconcile-reply-translation": [];
+  "retry-reply-translation": [];
+  "save-reply-translation": [text: string];
+  "send-reply-translation": [text?: string];
+  action: [action: ConversationSurfaceComposerAction];
+}>();
+
+const actionMenuVisible = ref(false);
+const blocked = computed(
+  () =>
+    props.composer.visibility !== "ENABLED" ||
+    props.composer.sending ||
+    props.composer.sendCapability.kind === "BLOCKED",
+);
+const sourceSendEnabled = computed(
+  () =>
+    !blocked.value &&
+    props.composer.sendCapability.kind === "SOURCE" &&
+    Boolean(props.draft.trim()),
+);
+const translatedSendDisabled = computed(() => {
+  const preview = props.composer.replyPreview;
+  return (
+    blocked.value ||
+    props.composer.mode !== "PUBLIC_REPLY" ||
+    props.composer.sendCapability.kind !== "TRANSLATED_PREVIEW" ||
+    !preview ||
+    preview.busy ||
+    preview.stale ||
+    preview.disabled ||
+    preview.draft?.status !== "READY"
+  );
+});
+const blockedReason = computed(() =>
+  props.composer.sendCapability.kind === "BLOCKED"
+    ? props.composer.sendCapability.reason
+    : "",
+);
+const translated = computed(
+  () =>
+    props.composer.mode === "PUBLIC_REPLY" &&
+    Boolean(props.composer.replyPreview),
+);
+const hasActionMenuItems = computed(() =>
+  [
+    props.composer.actions.attachment,
+    props.composer.actions.createTicket,
+    props.composer.actions.sendWithoutTranslation,
+  ].some((action) => action.visibility !== "HIDDEN"),
+);
+const footerVisible = computed(
+  () =>
+    props.composer.sendCapability.kind !== "TRANSLATED_PREVIEW" ||
+    hasActionMenuItems.value ||
+    props.composer.actions.templates.visibility !== "HIDDEN" ||
+    props.composer.actions.improveWithAI.visibility !== "HIDDEN",
+);
+
+function requestSourceSend(): void {
+  if (sourceSendEnabled.value) emit("send-source");
+}
+
+function requestTranslatedSend(text?: string): void {
+  if (!translatedSendDisabled.value && (text === undefined || text.trim()))
+    emit("send-reply-translation", text);
+}
+
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.key !== "Enter" || event.isComposing || event.shiftKey) return;
+  const plain = !event.ctrlKey && !event.metaKey && !event.altKey;
+  const command = (event.ctrlKey || event.metaKey) && !event.altKey;
+  if (!plain && !command) return;
+  event.preventDefault();
+  if (props.composer.sendCapability.kind === "TRANSLATED_PREVIEW")
+    requestTranslatedSend();
+  else requestSourceSend();
+}
+
+function runAction(action: ConversationSurfaceComposerAction): void {
+  actionMenuVisible.value = false;
+  emit("action", action);
+}
+</script>
+
+<template>
+  <form
+    class="conversation-composer"
+    :class="{
+      'is-translated': translated,
+      'is-note': composer.mode === 'INTERNAL_NOTE',
+      'is-blocked': blocked,
+    }"
+    :aria-label="
+      composer.mode === 'INTERNAL_NOTE'
+        ? 'Внутренняя заметка'
+        : 'Ответ пользователю'
+    "
+    @submit.prevent="requestSourceSend"
+  >
+    <div class="conversation-composer__source">
+      <div class="conversation-composer__label">
+        <span>
+          {{ composer.mode === "INTERNAL_NOTE" ? "Заметка" : "Ваш текст" }} ·
+          {{ workingLocaleLabel }}
+        </span>
+        <span
+          v-if="composer.recipientStatus"
+          class="conversation-composer__recipient"
+          :class="`is-${composer.recipientStatus.tone.toLowerCase()}`"
+        >
+          <i
+            :class="
+              composer.recipientStatus.tone === 'ONLINE'
+                ? 'pi pi-circle-fill'
+                : 'pi pi-wifi'
+            "
+            aria-hidden="true"
+          />
+          {{ composer.recipientStatus.label }}
+        </span>
+      </div>
+      <Textarea
+        :model-value="draft"
+        rows="2"
+        maxlength="10000"
+        :placeholder="
+          composer.mode === 'INTERNAL_NOTE'
+            ? 'Добавьте заметку для команды'
+            : 'Ответить от имени оператора'
+        "
+        :aria-label="
+          composer.mode === 'INTERNAL_NOTE'
+            ? 'Внутренняя заметка'
+            : 'Ответ пользователю'
+        "
+        :disabled="blocked"
+        @update:model-value="emit('update:draft', $event)"
+        @keydown="handleKeydown"
+      />
+    </div>
+
+    <ReplyTranslationPreview
+      v-if="composer.mode === 'PUBLIC_REPLY' && composer.replyPreview"
+      :draft="composer.replyPreview.draft"
+      :target-locale="composer.replyPreview.targetLocale"
+      :busy="composer.replyPreview.busy"
+      :stale="composer.replyPreview.stale"
+      :disabled="composer.replyPreview.disabled"
+      :send-disabled="translatedSendDisabled"
+      :show-provider-details="composer.replyPreview.showProviderDetails"
+      @preview="emit('request-reply-translation')"
+      @reconcile="emit('reconcile-reply-translation')"
+      @retry="emit('retry-reply-translation')"
+      @save-edit="emit('save-reply-translation', $event)"
+      @send="requestTranslatedSend"
+    />
+
+    <div
+      v-else-if="
+        composer.mode === 'PUBLIC_REPLY' &&
+        composer.translationAssist &&
+        draft.trim()
+      "
+      class="conversation-composer__assist"
+    >
+      <div>
+        <span>Нужна языковая обработка?</span>
+        <strong>
+          {{
+            composer.translationAssist.targetLocale
+              ? `Перевод на ${composer.translationAssist.targetLocale.toUpperCase()}`
+              : "Язык можно выбрать в настройках"
+          }}
+        </strong>
+      </div>
+      <Button
+        type="button"
+        :label="
+          composer.translationAssist.targetLocale
+            ? `Перевести на ${composer.translationAssist.targetLocale.toUpperCase()}`
+            : 'Перевести ответ'
+        "
+        icon="pi pi-sparkles"
+        size="small"
+        :loading="composer.translationAssist.busy"
+        :disabled="composer.translationAssist.disabled"
+        @click="emit('request-reply-translation')"
+      />
+    </div>
+
+    <p
+      v-if="blockedReason"
+      class="conversation-composer__blocked"
+      role="status"
+    >
+      {{ blockedReason }}
+    </p>
+
+    <footer v-if="footerVisible" class="conversation-composer__footer">
+      <span>
+        {{
+          translated
+            ? `Шаг ${composer.replyPreview?.draft?.status === "READY" ? "2 из 2 · перевод готов и проверен" : "1 из 2 · сначала перевод, затем отправка"}`
+            : "Enter — отправить · Shift+Enter — перенос строки"
+        }}
+      </span>
+      <div>
+        <div v-if="hasActionMenuItems" class="conversation-composer__actions">
+          <button
+            v-if="actionMenuVisible"
+            type="button"
+            class="conversation-composer__backdrop"
+            aria-label="Закрыть меню действий"
+            @click="actionMenuVisible = false"
+          />
+          <Button
+            type="button"
+            label="Действие"
+            icon="pi pi-plus"
+            severity="secondary"
+            outlined
+            aria-haspopup="menu"
+            :aria-expanded="actionMenuVisible"
+            :disabled="blocked"
+            @click="actionMenuVisible = !actionMenuVisible"
+          />
+          <div
+            v-if="actionMenuVisible"
+            class="conversation-composer__action-menu"
+            role="menu"
+          >
+            <strong>Действия в диалоге</strong>
+            <button
+              v-if="composer.actions.attachment.visibility !== 'HIDDEN'"
+              type="button"
+              role="menuitem"
+              :disabled="composer.actions.attachment.visibility === 'DISABLED'"
+              :title="composer.actions.attachment.reason"
+              @click="runAction('ATTACHMENT')"
+            >
+              <i class="pi pi-paperclip" aria-hidden="true" />
+              <span>
+                <strong>Файл или скриншот</strong>
+                <small>Добавить вложение к ответу</small>
+              </span>
+            </button>
+            <button
+              v-if="composer.actions.createTicket.visibility !== 'HIDDEN'"
+              type="button"
+              role="menuitem"
+              :disabled="
+                composer.actions.createTicket.visibility === 'DISABLED'
+              "
+              :title="composer.actions.createTicket.reason"
+              @click="runAction('CREATE_TICKET')"
+            >
+              <i class="pi pi-plus-square" aria-hidden="true" />
+              <span>
+                <strong>Создать тикет</strong>
+                <small>Открыть форму внешнего обращения</small>
+              </span>
+            </button>
+            <button
+              v-if="
+                composer.actions.sendWithoutTranslation.visibility !== 'HIDDEN'
+              "
+              type="button"
+              role="menuitem"
+              :disabled="
+                composer.actions.sendWithoutTranslation.visibility ===
+                'DISABLED'
+              "
+              :title="composer.actions.sendWithoutTranslation.reason"
+              @click="runAction('SEND_WITHOUT_TRANSLATION')"
+            >
+              <i class="pi pi-send" aria-hidden="true" />
+              <span>
+                <strong>Отправить без перевода</strong>
+                <small>Потребуется указать причину</small>
+              </span>
+            </button>
+          </div>
+        </div>
+        <Button
+          v-if="composer.actions.templates.visibility !== 'HIDDEN'"
+          type="button"
+          label="Шаблоны"
+          severity="secondary"
+          outlined
+          :disabled="
+            composer.actions.templates.visibility === 'DISABLED' || blocked
+          "
+          :title="composer.actions.templates.reason"
+          @click="emit('action', 'TEMPLATES')"
+        />
+        <Button
+          v-if="composer.actions.improveWithAI.visibility !== 'HIDDEN'"
+          type="button"
+          label="Улучшить с AI"
+          icon="pi pi-sparkles"
+          severity="secondary"
+          text
+          class="conversation-composer__ai"
+          :disabled="
+            composer.actions.improveWithAI.visibility === 'DISABLED' || blocked
+          "
+          :title="composer.actions.improveWithAI.reason"
+          @click="emit('action', 'IMPROVE_WITH_AI')"
+        />
+        <Button
+          v-if="composer.sendCapability.kind !== 'TRANSLATED_PREVIEW'"
+          type="submit"
+          :label="
+            composer.mode === 'INTERNAL_NOTE' ? 'Добавить заметку' : 'Отправить'
+          "
+          :icon="
+            composer.mode === 'INTERNAL_NOTE' ? 'pi pi-lock' : 'pi pi-send'
+          "
+          class="conversation-composer__send"
+          :loading="composer.sending"
+          :disabled="!sourceSendEnabled"
+        />
+      </div>
+    </footer>
+  </form>
+</template>
+
+<style scoped>
+.conversation-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin: 0 20px 14px;
+  padding: 10px 12px 9px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+.conversation-composer.is-translated {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.conversation-composer.is-note {
+  background: color-mix(
+    in srgb,
+    var(--status-warning-soft) 40%,
+    var(--surface-card)
+  );
+}
+.conversation-composer.is-blocked {
+  opacity: 0.72;
+}
+.conversation-composer__source {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+.is-translated .conversation-composer__source {
+  padding-right: 14px;
+  padding-bottom: 46px;
+  border-right: 1px solid var(--border-subtle);
+}
+.conversation-composer__label {
+  display: flex;
+  min-height: 22px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.conversation-composer__label > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 5px;
+  background: var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.conversation-composer__recipient {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+.conversation-composer__recipient.is-online {
+  color: var(--status-success);
+}
+.conversation-composer__recipient.is-offline {
+  color: var(--status-warning-text);
+}
+.conversation-composer__recipient i {
+  margin-right: 4px;
+  font-size: 9px;
+}
+.conversation-composer :deep(textarea) {
+  width: 100%;
+  min-height: 48px;
+  max-height: 96px;
+  padding: 6px 0;
+  overflow-y: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  box-shadow: none;
+}
+.conversation-composer :deep(.reply-preview) {
+  min-width: 0;
+}
+.conversation-composer__assist {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px 7px 11px;
+  border: 1px solid var(--palette-blue-200);
+  border-radius: 10px;
+  background: var(--status-accent-soft);
+}
+.conversation-composer__assist > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.conversation-composer__assist span {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.conversation-composer__assist strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conversation-composer__blocked {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--status-warning-text);
+  font-size: 11px;
+}
+.conversation-composer__footer {
+  display: flex;
+  grid-column: 1 / -1;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+.conversation-composer__footer > span {
+  max-width: 610px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+.conversation-composer__footer > div {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.conversation-composer__footer :deep(.p-button) {
+  min-height: 36px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.conversation-composer__send {
+  min-width: 132px;
+}
+.conversation-composer__ai {
+  opacity: 0.58;
+}
+.is-translated .conversation-composer__footer {
+  position: absolute;
+  bottom: 10px;
+  left: 14px;
+  width: calc(50% - 21px);
+  min-height: 42px;
+}
+.is-translated .conversation-composer__footer > span {
+  display: none;
+}
+.is-translated .conversation-composer__footer > div {
+  width: 100%;
+  justify-content: flex-start;
+}
+.conversation-composer__actions {
+  position: relative;
+}
+.conversation-composer__backdrop {
+  display: none;
+}
+.conversation-composer__action-menu {
+  position: absolute;
+  z-index: 5;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: grid;
+  width: 290px;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow);
+}
+.conversation-composer__action-menu > strong {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.conversation-composer__action-menu button {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.conversation-composer__action-menu button:hover {
+  background: var(--surface-subtle);
+}
+.conversation-composer__action-menu button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.conversation-composer__action-menu button > i {
+  color: var(--status-accent-text);
+}
+.conversation-composer__action-menu button > span {
+  display: grid;
+  gap: 2px;
+}
+.conversation-composer__action-menu strong {
+  font-size: 13px;
+}
+.conversation-composer__action-menu small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+@media (max-width: 720px) {
+  .conversation-composer {
+    margin: 0;
+    padding: 11px 12px 10px;
+    border-width: 1px 0 0;
+    border-radius: 0;
+    background: var(--surface-card);
+  }
+  .conversation-composer.is-translated {
+    grid-template-columns: 1fr;
+  }
+  .is-translated :deep(.reply-preview) {
+    order: 2;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .is-translated .conversation-composer__source {
+    order: 1;
+    padding: 0;
+    border-right: 0;
+  }
+  .is-translated .conversation-composer__footer {
+    position: static;
+    width: auto;
+    order: 3;
+  }
+  .conversation-composer__footer {
+    align-items: flex-end;
+  }
+  .conversation-composer__footer > span {
+    display: none;
+  }
+  .conversation-composer__footer > div {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .conversation-composer__footer :deep(.p-button),
+  .conversation-composer__actions {
+    flex: 1 1 auto;
+  }
+  .conversation-composer__actions > :deep(.p-button) {
+    width: 100%;
+    min-height: 44px;
+  }
+  .conversation-composer__footer :deep(.p-button) {
+    min-height: 44px;
+  }
+  .conversation-composer__action-menu {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+</style>

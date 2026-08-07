@@ -4,6 +4,7 @@ import UserWorkspaceDialog from "./UserWorkspaceDialog.vue";
 import { conversationTranslationApi } from "@/features/conversation-translation/api/conversation-translation.api";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
 import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
+import ConversationComposer from "@/features/conversation-surface/ui/ConversationComposer.vue";
 import type { ConversationTranslationResponseDto } from "@/shared/api/generated/models";
 
 const mocks = vi.hoisted(() => ({
@@ -534,7 +535,12 @@ describe("единое рабочее пространство пользова�
     expect(skeletons.classes()).toContain("message-skeletons--message-sized");
     expect(skeletons.classes()).toContain("message-skeletons--full-width");
     expect(skeletons.findAll(":scope > span")).toHaveLength(20);
-    expect(wrapper.find(".composer--loading").exists()).toBe(true);
+    expect(wrapper.find(".conversation-composer.is-blocked").exists()).toBe(
+      true,
+    );
+    expect(
+      wrapper.get(".conversation-composer textarea").attributes("disabled"),
+    ).toBeDefined();
 
     resolveMessages?.({ items: [], nextCursor: null });
     await flushPromises();
@@ -1516,7 +1522,9 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
-    await wrapper.get(".composer-action-menu > button").trigger("click");
+    await wrapper
+      .get(".conversation-composer__actions > button")
+      .trigger("click");
     const ticketAction = wrapper
       .findAll('[role="menuitem"]')
       .find((item) => item.text().includes("Создать тикет"));
@@ -1532,10 +1540,12 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
-    await wrapper.get(".composer-action-menu > button").trigger("click");
-    expect(wrapper.get(".composer-action-menu__panel").text()).not.toContain(
-      "Шаблон ответа",
-    );
+    await wrapper
+      .get(".conversation-composer__actions > button")
+      .trigger("click");
+    expect(
+      wrapper.get(".conversation-composer__action-menu").text(),
+    ).not.toContain("Шаблон ответа");
 
     await wrapper
       .findAll("button")
@@ -1649,7 +1659,7 @@ describe("единое рабочее пространство пользова�
     expect(review.find("button").text()).toContain("Запросить анализ");
   });
 
-  describe("characterization: legacy Users chat before Conversation Surface migration", () => {
+  describe("characterization: Users chat during Conversation Surface migration", () => {
     it("keeps the current log, translation toggle, pagination and composer landmarks", async () => {
       mocks.permissions.push("project.translation.create");
       vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
@@ -1667,6 +1677,7 @@ describe("единое рабочее пространство пользова�
           .map((button) => button.text().replace(/\s+/g, " ").trim()),
       ).toEqual(["Оригинал", "Перевод · RU"]);
       expect(wrapper.text()).toContain("Показать предыдущие сообщения");
+      expect(wrapper.findComponent(ConversationComposer).exists()).toBe(true);
       expect(
         wrapper.get('textarea[aria-label="Ответ пользователю"]').element,
       ).toBeInstanceOf(HTMLTextAreaElement);

@@ -27,8 +27,11 @@ import ConversationAISuspensionHistory from "@/features/conversation-ai-suspensi
 import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
 import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
-import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
 import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
+import type {
+  ConversationSurfaceComposer,
+  ConversationSurfaceComposerAction,
+} from "@/features/conversation-surface/model/conversation-surface-contract";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import SupportMessageDeliveryStatus from "@/features/support-conversation/ui/SupportMessageDeliveryStatus.vue";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
@@ -186,6 +189,99 @@ const publicReplyBlockedReason = computed(() => {
       ? "Сначала подготовьте и проверьте перевод."
       : "Выберите язык ответа или используйте разрешённое исключение.";
   return "";
+});
+const supportComposerWorkingLocale = computed(
+  () =>
+    translation.state.value?.preference.workingLocale?.toUpperCase() ?? "RU",
+);
+const supportConversationComposer = computed<
+  Extract<ConversationSurfaceComposer, { mode: "PUBLIC_REPLY" }>
+>(() => {
+  const selection = conversation.selection.value;
+  const translatedMode =
+    replyTranslationRequested.value ||
+    translationPolicyRequiresReviewedReply.value;
+  const busy = replyTranslationBusy.value;
+  const replyPreview =
+    canManageTranslation.value && translatedMode && translation.state.value
+      ? {
+          draft: translation.draft.value,
+          targetLocale: translation.targetLocale.value,
+          busy,
+          stale: translation.previewStale.value,
+          disabled:
+            !reply.canReply.value ||
+            !reply.draft.value.trim() ||
+            translation.savingPreference.value ||
+            !translation.state.value.availability.available ||
+            translation.state.value.budget.hardExhausted,
+          showProviderDetails: canReadTranslationDetails.value,
+        }
+      : null;
+  const sendCapability = replyPolicyChecking.value
+    ? {
+        kind: "BLOCKED" as const,
+        reason: publicReplyBlockedReason.value,
+      }
+    : translatedMode
+      ? { kind: "TRANSLATED_PREVIEW" as const }
+      : canSubmitPublicReply.value
+        ? { kind: "SOURCE" as const }
+        : {
+            kind: "BLOCKED" as const,
+            reason:
+              publicReplyBlockedReason.value ||
+              "Ответ в этом диалоге сейчас недоступен.",
+          };
+
+  return {
+    visibility: reply.canReply.value ? "ENABLED" : "HIDDEN",
+    mode: "PUBLIC_REPLY",
+    scope: {
+      projectId: auth.project?.id ?? "unselected-project",
+      actorId: auth.user?.id ?? "current-operator",
+      conversationId: selection?.conversation?.id ?? "unselected-conversation",
+    },
+    initialDraft: reply.draft.value,
+    draftRevision:
+      translation.draft.value?.id ??
+      selection?.actionRevisions.conversationUpdatedAt ??
+      selection?.conversation?.updatedAt ??
+      "unselected",
+    sending: reply.sending.value,
+    recipientStatus: null,
+    actions: {
+      attachment: {
+        visibility: "HIDDEN",
+      },
+      createTicket: {
+        visibility: "HIDDEN",
+      },
+      templates: {
+        visibility: "HIDDEN",
+      },
+      improveWithAI: {
+        visibility: "HIDDEN",
+      },
+      sendWithoutTranslation: {
+        visibility:
+          reply.canSendWithoutTranslation.value && translatedMode
+            ? reply.draft.value.trim() && !busy
+              ? "ENABLED"
+              : "DISABLED"
+            : "HIDDEN",
+      },
+    },
+    sendCapability,
+    replyPreview,
+    translationAssist: canManageTranslation.value
+      ? {
+          targetLocale: translation.targetLocale.value,
+          busy,
+          disabled: !reply.canReply.value || busy,
+        }
+      : null,
+  };
 });
 const visibleTranslationMessageIds = computed(() =>
   conversation.messages.value
@@ -707,9 +803,12 @@ async function showTranslatedMessages(): Promise<void> {
   messageViewMode.value = "TRANSLATED";
 }
 
-async function openTranslationSettings(): Promise<void> {
-  translationSettingsVisible.value = true;
-  await ensureReplyTranslationLoaded();
+function handleSupportComposerAction(
+  action: ConversationSurfaceComposerAction,
+): void {
+  if (action === "SEND_WITHOUT_TRANSLATION") {
+    setSendWithoutTranslationVisible(true);
+  }
 }
 
 async function prepareReplyTranslation(): Promise<void> {
@@ -1382,115 +1481,43 @@ onBeforeUnmount(() => {
           </div>
           <SupportReplyComposer
             v-if="conversation.selection.value"
+            :composer="supportConversationComposer"
             :draft="reply.draft.value"
-            :can-reply="reply.canReply.value"
-            :can-send="canSubmitPublicReply"
-            :blocked-reason="publicReplyBlockedReason"
-            :sending="reply.sending.value"
+            :working-locale-label="supportComposerWorkingLocale"
             :error="reply.error.value"
             :delivery-status="reply.deliveryStatus.value"
             @update:draft="reply.draft.value = $event"
-            @send="sendReply"
+            @send-source="sendReply"
+            @request-reply-translation="prepareReplyTranslation"
+            @reconcile-reply-translation="translation.reconcileReplyPreview"
+            @retry-reply-translation="translation.retryReplyPreview"
+            @save-reply-translation="translation.editReplyTranslation"
+            @send-reply-translation="sendTranslatedReply"
+            @action="handleSupportComposerAction"
+          />
+          <Message
+            v-if="canManageTranslation && translation.error.value"
+            severity="error"
+            :closable="false"
+            class="reply-translation-error"
           >
-            <template #assist>
-              <ReplyTranslationPreview
-                v-if="
-                  canManageTranslation &&
-                  replyTranslationRequested &&
-                  translation.state.value
-                "
-                :draft="translation.draft.value"
-                :target-locale="translation.targetLocale.value"
-                :busy="replyTranslationBusy"
-                :stale="translation.previewStale.value"
-                :disabled="
-                  !reply.canReply.value ||
-                  !reply.draft.value.trim() ||
-                  translation.savingPreference.value ||
-                  !translation.state.value.availability.available ||
-                  translation.state.value.budget.hardExhausted
-                "
-                :show-provider-details="canReadTranslationDetails"
-                @preview="prepareReplyTranslation"
-                @reconcile="translation.reconcileReplyPreview"
-                @retry="translation.retryReplyPreview"
-                @save-edit="translation.editReplyTranslation"
-                @send="sendTranslatedReply"
-              />
-              <div
-                v-else-if="canManageTranslation && reply.draft.value.trim()"
-                class="reply-translation-assist"
-              >
-                <div>
-                  <span>Нужна языковая обработка?</span>
-                  <strong>
-                    {{
-                      translation.targetLocale.value
-                        ? `Перевести на ${translation.targetLocale.value.toUpperCase()}`
-                        : "Настройте язык ответа"
-                    }}
-                  </strong>
-                </div>
-                <Button
-                  type="button"
-                  label="Подготовить перевод"
-                  icon="pi pi-language"
-                  size="small"
-                  :loading="replyTranslationBusy"
-                  :disabled="!reply.canReply.value"
-                  @click="prepareReplyTranslation"
-                />
-              </div>
-              <Message
-                v-if="canManageTranslation && translation.error.value"
-                severity="error"
-                :closable="false"
-                class="reply-translation-error"
-              >
-                {{ translation.error.value }}
-              </Message>
-              <Button
-                v-if="
-                  reply.canSendWithoutTranslation.value &&
-                  (replyTranslationRequested ||
-                    translationPolicyRequiresReviewedReply) &&
-                  reply.draft.value.trim()
-                "
-                type="button"
-                label="Отправить без перевода"
-                icon="pi pi-exclamation-triangle"
-                severity="danger"
-                text
-                :disabled="reply.sending.value"
-                @click="setSendWithoutTranslationVisible(true)"
-              />
-              <div
-                v-if="canManageTranslation && translationSettingsVisible"
-                class="reply-translation-settings"
-              >
-                <ConversationTranslationBanner
-                  :state="translation.state.value"
-                  :loading="translation.loading.value"
-                  :saving="translation.savingPreference.value"
-                  :can-manage="canManageTranslation"
-                  :eligible-count="0"
-                  @reload="ensureReplyTranslationLoaded"
-                  @update-enabled="setTranslationEnabled($event)"
-                  @update-target-locale="setTranslationTargetLocale($event)"
-                />
-              </div>
-              <Button
-                v-else-if="canManageTranslation"
-                type="button"
-                label="Настроить язык ответа"
-                icon="pi pi-sliders-h"
-                size="small"
-                text
-                class="reply-translation-settings-toggle"
-                @click="openTranslationSettings"
-              />
-            </template>
-          </SupportReplyComposer>
+            {{ translation.error.value }}
+          </Message>
+          <div
+            v-if="canManageTranslation && translationSettingsVisible"
+            class="reply-translation-settings"
+          >
+            <ConversationTranslationBanner
+              :state="translation.state.value"
+              :loading="translation.loading.value"
+              :saving="translation.savingPreference.value"
+              :can-manage="canManageTranslation"
+              :eligible-count="0"
+              @reload="ensureReplyTranslationLoaded"
+              @update-enabled="setTranslationEnabled($event)"
+              @update-target-locale="setTranslationTargetLocale($event)"
+            />
+          </div>
           <Dialog
             :visible="sendWithoutTranslationVisible"
             modal
@@ -2045,38 +2072,8 @@ onBeforeUnmount(() => {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.reply-translation-assist {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent-text) 18%, var(--line));
-  border-radius: 12px;
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 34%,
-    var(--surface-card)
-  );
-}
-.reply-translation-assist > div {
-  display: grid;
-  gap: 3px;
-}
-.reply-translation-assist span {
-  color: var(--text-secondary);
-  font-size: 0.68rem;
-}
-.reply-translation-assist strong {
-  font-size: 0.78rem;
-}
 .reply-translation-settings {
   padding-top: 2px;
-}
-.reply-translation-settings-toggle {
-  justify-self: start;
-  margin-top: -4px;
 }
 .send-without-translation {
   display: grid;
@@ -2180,10 +2177,6 @@ onBeforeUnmount(() => {
   }
   .message {
     max-width: 92%;
-  }
-  .reply-translation-assist {
-    align-items: flex-start;
-    flex-direction: column;
   }
 }
 </style>

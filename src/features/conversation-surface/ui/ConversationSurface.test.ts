@@ -88,12 +88,24 @@ function composer(conversationId = "conversation-1"): PublicComposer {
     initialDraft: "",
     draftRevision: "initial",
     sending: false,
+    recipientStatus: { label: "Пользователь офлайн", tone: "OFFLINE" as const },
+    actions: {
+      attachment: { visibility: "ENABLED" as const },
+      createTicket: { visibility: "HIDDEN" as const },
+      templates: { visibility: "ENABLED" as const },
+      improveWithAI: {
+        visibility: "DISABLED" as const,
+        reason: "Функция пока недоступна",
+      },
+      sendWithoutTranslation: { visibility: "HIDDEN" as const },
+    },
   };
   return {
     ...base,
     mode: "PUBLIC_REPLY",
     sendCapability: { kind: "SOURCE" },
     replyPreview: null,
+    translationAssist: null,
   };
 }
 
@@ -103,6 +115,7 @@ function noteComposer(conversationId = "conversation-1"): NoteComposer {
     mode: "INTERNAL_NOTE",
     sendCapability: { kind: "SOURCE" },
     replyPreview: null,
+    translationAssist: null,
   };
 }
 
@@ -144,6 +157,25 @@ function mountSurface(
 }
 
 describe("ConversationSurface", () => {
+  it("preserves the compact Users composer visual contract", () => {
+    const wrapper = mountSurface();
+    const labels = wrapper.findAll("button").map((button) => button.text());
+
+    expect(
+      wrapper.find(".conversation-surface__composer-header").exists(),
+    ).toBe(false);
+    expect(wrapper.text()).toContain("Ваш текст · Русский");
+    expect(wrapper.text()).toContain(
+      "Enter — отправить · Shift+Enter — перенос строки",
+    );
+    expect(labels).toEqual(
+      expect.arrayContaining(["Действие", "Шаблоны", "Улучшить с AI"]),
+    );
+    expect(labels.filter((label) => label.includes("Отправить"))).toEqual([
+      "Отправить",
+    ]);
+  });
+
   it("renders one canonical log ordered by ordinal with author, time and textual delivery", () => {
     const wrapper = mountSurface();
     const rendered = wrapper.findAll("[data-message-id]");
@@ -239,6 +271,15 @@ describe("ConversationSurface", () => {
     expect(
       wrapper.get('[aria-label="Предпросмотр перевода ответа"]').text(),
     ).toContain("Уйдёт пользователю · EN");
+    expect(wrapper.get(".conversation-composer").classes()).toContain(
+      "is-translated",
+    );
+    expect(
+      wrapper
+        .findAll("button")
+        .map((button) => button.text())
+        .filter((label) => label.includes("Отправить")),
+    ).toEqual(["Отправить перевод"]);
     await wrapper
       .get('[aria-label="Предпросмотр перевода ответа"] button:last-of-type')
       .trigger("click");

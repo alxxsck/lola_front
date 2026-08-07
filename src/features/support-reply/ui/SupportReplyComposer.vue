@@ -1,35 +1,31 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import Button from "primevue/button";
 import Message from "primevue/message";
-import Textarea from "primevue/textarea";
+import ConversationComposer from "@/features/conversation-surface/ui/ConversationComposer.vue";
+import type {
+  ConversationSurfaceComposer,
+  ConversationSurfaceComposerAction,
+} from "@/features/conversation-surface/model/conversation-surface-contract";
 import type { AdminMessageResult } from "@/shared/types/domain";
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
+  composer: Extract<ConversationSurfaceComposer, { mode: "PUBLIC_REPLY" }>;
   draft: string;
-  canReply: boolean;
-  canSend?: boolean;
-  blockedReason?: string;
-  sending: boolean;
+  workingLocaleLabel: string;
   error: string;
   deliveryStatus?: AdminMessageResult["deliveryStatus"];
-}>(), {
-  canSend: true,
-  blockedReason: "",
-});
+}>();
 
 const emit = defineEmits<{
   "update:draft": [value: string];
-  send: [];
+  "send-source": [];
+  "request-reply-translation": [];
+  "reconcile-reply-translation": [];
+  "retry-reply-translation": [];
+  "save-reply-translation": [text: string];
+  "send-reply-translation": [text?: string];
+  action: [action: ConversationSurfaceComposerAction];
 }>();
-
-const canSend = computed(
-  () =>
-    props.canReply &&
-    props.canSend &&
-    !props.sending &&
-    props.draft.trim().length > 0,
-);
 
 const deliveryMessage = computed(() => {
   switch (props.deliveryStatus) {
@@ -51,76 +47,42 @@ const deliveryMessage = computed(() => {
       return "";
   }
 });
-
-function requestSend(): void {
-  if (canSend.value) emit("send");
-}
-
-function handleKeydown(event: KeyboardEvent): void {
-  if (
-    event.key !== "Enter" ||
-    event.isComposing ||
-    (!event.ctrlKey && !event.metaKey)
-  )
-    return;
-  event.preventDefault();
-  requestSend();
-}
 </script>
 
 <template>
   <section
-    v-if="canReply"
+    v-if="composer.visibility !== 'HIDDEN'"
     class="support-reply-composer"
-    aria-labelledby="support-reply-heading"
   >
-    <div class="support-reply-composer__header">
-      <div>
-        <span class="eyebrow">Публичное сообщение</span>
-        <h3 id="support-reply-heading">Ответ пользователю</h3>
-      </div>
-      <span class="support-reply-composer__shortcut">Ctrl/⌘ + Enter</span>
-    </div>
-    <form :aria-busy="sending" @submit.prevent="requestSend">
-      <label class="support-reply-composer__field">
-        <span class="sr-only">Текст ответа пользователю</span>
-        <Textarea
-          :model-value="draft"
-          rows="4"
-          maxlength="10000"
-          auto-resize
-          placeholder="Напишите ответ пользователю…"
-          :disabled="sending"
-          @update:model-value="emit('update:draft', $event)"
-          @keydown="handleKeydown"
-        />
-      </label>
-      <slot name="assist" />
-      <div class="support-reply-composer__footer">
-        <p>Отправляется только в выбранный диалог.</p>
-        <Button
-          label="Отправить пользователю"
-          icon="pi pi-send"
-          type="submit"
-          :loading="sending"
-          :disabled="!canSend"
-        />
-      </div>
-    </form>
-    <Message v-if="deliveryMessage" severity="success" :closable="false" role="status">
-      {{ deliveryMessage }}
-    </Message>
-    <Message
-      v-if="draft.trim() && blockedReason"
-      severity="info"
-      :closable="false"
-      role="status"
+    <ConversationComposer
+      :composer="composer"
+      :draft="draft"
+      :working-locale-label="workingLocaleLabel"
+      @update:draft="emit('update:draft', $event)"
+      @send-source="emit('send-source')"
+      @request-reply-translation="emit('request-reply-translation')"
+      @reconcile-reply-translation="emit('reconcile-reply-translation')"
+      @retry-reply-translation="emit('retry-reply-translation')"
+      @save-reply-translation="emit('save-reply-translation', $event)"
+      @send-reply-translation="emit('send-reply-translation', $event)"
+      @action="emit('action', $event)"
+    />
+    <div
+      v-if="deliveryMessage || error"
+      class="support-reply-composer__feedback"
     >
-      {{ blockedReason }}
-    </Message>
-    <Message v-if="error" severity="error" :closable="false" role="alert">
-      {{ error }}
-    </Message>
+      <Message
+        v-if="deliveryMessage"
+        severity="success"
+        :closable="false"
+        role="status"
+      >
+        {{ deliveryMessage }}
+      </Message>
+      <Message v-if="error" severity="error" :closable="false" role="alert">
+        {{ error }}
+      </Message>
+    </div>
   </section>
   <p v-else class="support-reply-unavailable">
     Ответ в этом диалоге сейчас недоступен.
@@ -129,60 +91,77 @@ function handleKeydown(event: KeyboardEvent): void {
 
 <style scoped>
 .support-reply-composer {
-  display: grid;
-  gap: 12px;
-  padding: 16px 22px 20px;
+  container-name: support-reply-composer;
+  container-type: inline-size;
+  padding-top: 10px;
   border-top: 1px solid var(--line);
   background: var(--surface-card);
 }
-.support-reply-composer__header,
-.support-reply-composer__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+.support-reply-composer__feedback {
+  display: grid;
+  gap: 6px;
+  margin: -4px 20px 12px;
 }
-.support-reply-composer__header h3 {
-  margin: 2px 0 0;
-  font-size: 0.98rem;
+.support-reply-composer__feedback :deep(.p-message) {
+  margin: 0;
 }
-.support-reply-composer__shortcut,
-.support-reply-composer__footer p,
 .support-reply-unavailable {
   margin: 0;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.support-reply-composer__shortcut {
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: var(--surface-muted);
-  white-space: nowrap;
-}
-.support-reply-composer__field,
-.support-reply-composer :deep(.p-textarea) {
-  display: block;
-  width: 100%;
-}
-.support-reply-composer__footer p {
-  line-height: 1.4;
-}
-.support-reply-unavailable {
   padding: 14px 22px 18px;
   border-top: 1px solid var(--line);
   background: var(--surface-card);
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
-@media (max-width: 520px) {
-  .support-reply-composer {
-    padding: 14px 16px 16px;
+@container support-reply-composer (max-width: 720px) {
+  .support-reply-composer :deep(.conversation-composer.is-translated) {
+    grid-template-columns: 1fr;
   }
-  .support-reply-composer__header,
-  .support-reply-composer__footer {
-    align-items: flex-start;
-    flex-direction: column;
+  .support-reply-composer
+    :deep(.conversation-composer.is-translated .reply-preview) {
+    order: 2;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
   }
-  .support-reply-composer__footer :deep(.p-button) {
+  .support-reply-composer
+    :deep(.conversation-composer.is-translated .conversation-composer__source) {
+    order: 1;
+    padding: 0;
+    border-right: 0;
+  }
+  .support-reply-composer
+    :deep(.conversation-composer.is-translated .conversation-composer__footer) {
+    position: static;
+    order: 3;
+    width: auto;
+  }
+  .support-reply-composer :deep(.conversation-composer__footer) {
+    align-items: flex-end;
+  }
+  .support-reply-composer :deep(.conversation-composer__footer > span) {
+    display: none;
+  }
+  .support-reply-composer :deep(.conversation-composer__footer > div) {
     width: 100%;
+    flex-wrap: wrap;
+  }
+  .support-reply-composer :deep(.conversation-composer__actions),
+  .support-reply-composer :deep(.conversation-composer__footer .p-button) {
+    flex: 1 1 auto;
+  }
+  .support-reply-composer :deep(.conversation-composer__actions > .p-button) {
+    width: 100%;
+  }
+}
+@media (max-width: 720px) {
+  .support-reply-composer {
+    min-height: 0;
+    max-height: 50dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .support-reply-composer__feedback {
+    margin: 8px 12px 12px;
   }
   .support-reply-unavailable {
     padding: 14px 16px 16px;
