@@ -1,4 +1,5 @@
 import {
+  supportOperatorAvailabilityHeartbeatOwn,
   supportOperatorAvailabilityRead,
   supportOperatorAvailabilitySetOwn,
 } from "@/shared/api/generated/retenive-backend";
@@ -78,6 +79,12 @@ export interface SupportAvailabilitySource {
     command: SetOwnAvailabilityCommand,
     signal?: AbortSignal,
   ): Promise<SupportAvailabilitySnapshot>;
+  renewOwn(
+    projectId: string,
+    operatorId: string,
+    expectedVersion: number,
+    signal?: AbortSignal,
+  ): Promise<SupportAvailabilitySnapshot>;
 }
 
 function mapAvailability(
@@ -128,6 +135,22 @@ const apiSource: SupportAvailabilitySource = {
               "If-Match": `"${command.expectedVersion}"`,
               "Idempotency-Key": command.idempotencyKey,
             },
+          },
+        ),
+      );
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
+  async renewOwn(projectId, _operatorId, expectedVersion, signal) {
+    try {
+      return mapAvailability(
+        await supportOperatorAvailabilityHeartbeatOwn(
+          projectId,
+          {},
+          {
+            signal,
+            headers: { "If-Match": `"${expectedVersion}"` },
           },
         ),
       );
@@ -190,6 +213,22 @@ const mockSource: SupportAvailabilitySource = {
       transitionedAt: now,
       leaseRenewedAt: now,
       version: current.version + 1,
+    };
+    mockSnapshots.set(mockKey(projectId, operatorId), next);
+    return next;
+  },
+  async renewOwn(projectId, operatorId, expectedVersion, signal) {
+    if (signal?.aborted) throw signal.reason;
+    const current = mockSnapshot(projectId, operatorId);
+    if (current.version !== expectedVersion)
+      throw new ApiError(409, "Availability version is stale");
+    if (current.effectiveState === "OFFLINE")
+      throw new ApiError(409, "Availability lease cannot be renewed");
+    const renewedAt = new Date();
+    const next: SupportAvailabilitySnapshot = {
+      ...current,
+      leaseRenewedAt: renewedAt.toISOString(),
+      leaseUntil: new Date(renewedAt.getTime() + 120_000).toISOString(),
     };
     mockSnapshots.set(mockKey(projectId, operatorId), next);
     return next;

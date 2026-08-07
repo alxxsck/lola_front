@@ -31,12 +31,50 @@ function source(
 ): SupportAvailabilitySource {
   return {
     read: vi.fn().mockResolvedValue(snapshot()),
+    renewOwn: vi.fn().mockResolvedValue(snapshot()),
     setOwn: vi.fn().mockResolvedValue(snapshot({ version: 2 })),
     ...overrides,
   };
 }
 
 describe("support availability controller", () => {
+  it("renews an active lease immediately and periodically while the workspace is active", async () => {
+    vi.useFakeTimers();
+    const renewOwn = vi.fn().mockResolvedValue(
+      snapshot({
+        leaseRenewedAt: "2026-08-06T10:00:45.000Z",
+        leaseUntil: "2026-08-06T10:02:45.000Z",
+      }),
+    );
+    const controller = createSupportAvailabilityController(
+      {
+        projectId: () => "project-1",
+        operatorId: () => "operator-1",
+        canRead: () => true,
+        canManage: () => true,
+      },
+      source({ renewOwn }),
+    );
+
+    await controller.load();
+    controller.startHeartbeat();
+    await vi.waitFor(() => expect(renewOwn).toHaveBeenCalledTimes(1));
+    expect(renewOwn).toHaveBeenLastCalledWith(
+      "project-1",
+      "operator-1",
+      1,
+      expect.any(AbortSignal),
+    );
+
+    await vi.advanceTimersByTimeAsync(45_000);
+    expect(renewOwn).toHaveBeenCalledTimes(2);
+
+    controller.reset();
+    await vi.advanceTimersByTimeAsync(45_000);
+    expect(renewOwn).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
   it("does not commit an availability snapshot for another operator", async () => {
     const controller = createSupportAvailabilityController(
       {

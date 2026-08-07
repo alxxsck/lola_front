@@ -856,7 +856,10 @@ async function submitAiSuspension(value: {
 onMounted(async () => {
   window.addEventListener("keydown", handleWorkspaceKeydown);
   await inbox.load();
-  if (canReadAvailability.value) await availability.load();
+  if (canReadAvailability.value) {
+    await availability.load();
+    availability.startHeartbeat();
+  }
   if (canManageRoutingOffers.value) await routingOffers.load();
 });
 
@@ -886,12 +889,22 @@ watch(
     translation.reset();
     conversation.reset();
     inbox.reset();
-    void inbox.load();
+    void (async () => {
+      await inbox.load();
+      if (canReadAvailability.value) {
+        await availability.load();
+        availability.startHeartbeat();
+      }
+    })();
   },
 );
 
 watch(canReadAvailability, (allowed) => {
-  if (!allowed) availability.reset();
+  if (!allowed) {
+    availability.reset();
+    return;
+  }
+  void availability.load().then(() => availability.startHeartbeat());
 });
 
 watch(canManageRoutingOffers, (allowed) => {
