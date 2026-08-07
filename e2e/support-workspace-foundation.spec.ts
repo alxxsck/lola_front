@@ -59,9 +59,7 @@ test("sends a public reply only through the selected conversation and shows the 
   });
   await expect(composer).toBeVisible();
   await composer.fill("Проверил обращение и вернусь с ответом сегодня.");
-  await page
-    .getByRole("button", { name: "Отправить пользователю" })
-    .click();
+  await page.getByRole("button", { name: "Отправить пользователю" }).click();
 
   await expect(composer).toHaveValue("");
   await expect(
@@ -107,7 +105,8 @@ test("moves through visible inbox rows with j/k and arrows without hijacking inp
   await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_2$/);
   await expect(page.locator(".conversation-row.selected")).toHaveCount(1);
 
-  await page.getByRole("region", { name: "Статус для новых обращений" })
+  await page
+    .getByRole("region", { name: "Статус для новых обращений" })
     .locator("select")
     .first()
     .focus();
@@ -118,9 +117,14 @@ test("moves through visible inbox rows with j/k and arrows without hijacking inp
 test("shows and changes only the operator's authoritative availability intent", async ({
   page,
 }) => {
-  const status = page.getByRole("region", { name: "Статус для новых обращений" });
+  await page.getByRole("button", { name: "Моя доступность" }).click();
+  const status = page.getByRole("region", {
+    name: "Статус для новых обращений",
+  });
   await expect(status).toBeVisible();
-  await expect(status.getByText("Доступен", { exact: true }).first()).toBeVisible();
+  await expect(
+    status.getByText("Доступен", { exact: true }).first(),
+  ).toBeVisible();
   await expect(status).toContainText("Получаете новые обращения");
 
   const selects = status.locator("select");
@@ -129,8 +133,28 @@ test("shows and changes only the operator's authoritative availability intent", 
   await expect(status.locator('input[type="number"]')).toHaveValue("15");
   await status.getByRole("button", { name: "Сохранить статус" }).click();
 
-  await expect(status.getByText("Отошёл", { exact: true }).first()).toBeVisible();
+  await expect(
+    status.getByText("Отошёл", { exact: true }).first(),
+  ).toBeVisible();
   await expect(status).toContainText("Новые обращения не назначаются");
+});
+
+test("switches between conversations and Cases without mixing their lists", async ({
+  page,
+}) => {
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  await expect(queue.getByRole("tab", { name: "Все диалоги" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  await queue.getByRole("tab", { name: "Обращения" }).click();
+  await expect(page).toHaveURL(/\/support\/inbox\?view=cases$/);
+  await expect(
+    queue.getByRole("heading", { name: "Обращения", level: 2 }),
+  ).toBeVisible();
+  await expect(queue.locator(".case-row").first()).toBeVisible();
+  await expect(queue.locator(".conversation-row")).toHaveCount(0);
 });
 
 test("shows only the operator's server-authoritative routing offers", async ({
@@ -140,7 +164,9 @@ test("shows only the operator's server-authoritative routing offers", async ({
 
   await expect(offers).toBeVisible();
   await expect(offers).toContainText("Активных предложений сейчас нет.");
-  await expect(offers.getByText(/assignmentId|offerToken|queueId/)).toHaveCount(0);
+  await expect(offers.getByText(/assignmentId|offerToken|queueId/)).toHaveCount(
+    0,
+  );
 });
 
 test("does not substitute another conversation for an unavailable deep link", async ({
@@ -167,7 +193,9 @@ test("uses route-aware inbox and chat panes on mobile", async ({ page }) => {
     page.getByRole("heading", { level: 2, name: "Активный диалог" }),
   ).not.toBeVisible();
 
-  await page.getByRole("button", { name: /Бонусы и программа лояльности/ }).click();
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
   await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3$/);
   await expect(
     page.getByRole("button", { name: "Назад к списку диалогов" }),
@@ -205,7 +233,13 @@ test("loads the profile only from the permission-gated inspector", async ({
 
   const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
   await expect(drawer.getByText("Marco Silva", { exact: true })).toHaveCount(0);
+  await drawer.getByRole("tab", { name: "Данные" }).click();
   await drawer.getByRole("button", { name: "Загрузить" }).click();
   await expect(drawer.getByText("Marco Silva", { exact: true })).toBeVisible();
   await expect(drawer.getByText("user_11603", { exact: true })).toHaveCount(0);
+
+  await drawer.getByRole("tab", { name: "Активность" }).click();
+  await expect(
+    drawer.getByText(/Presence — это только краткая подсказка/),
+  ).toBeVisible();
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import SupportAssignmentRelease from "@/features/support-case-assignment/ui/SupportAssignmentRelease.vue";
@@ -18,45 +18,73 @@ import type {
   SupportWorkspaceSelection,
 } from "@/features/support-workspace/api/support-workspace-source";
 
-const props = withDefaults(defineProps<{
-  conversation: SupportWorkspaceConversation;
-  selection: SupportWorkspaceSelection;
-  canOpenCase: boolean;
-  canReleaseAssignment?: boolean;
-  canReadInternalNotes?: boolean;
-  canReadProfile?: boolean;
-  profile?: ProfileProjectionResponseDto | null;
-  profileLoading?: boolean;
-  profileError?: string;
-  assignmentRelease?: {
-    releasing: boolean;
-    error: string;
-    unknownOutcome: boolean;
-    completed: boolean;
-    canRetry: boolean;
-  };
-}>(), {
-  canReadProfile: false,
-  canReleaseAssignment: false,
-  canReadInternalNotes: false,
-  profile: null,
-  profileLoading: false,
-  profileError: "",
-  assignmentRelease: () => ({
-    releasing: false,
-    error: "",
-    unknownOutcome: false,
-    completed: false,
-    canRetry: false,
-  }),
-});
+const props = withDefaults(
+  defineProps<{
+    conversation: SupportWorkspaceConversation;
+    selection: SupportWorkspaceSelection;
+    canOpenCase: boolean;
+    canManageCase?: boolean;
+    canReleaseAssignment?: boolean;
+    canReadInternalNotes?: boolean;
+    canReadProfile?: boolean;
+    profile?: ProfileProjectionResponseDto | null;
+    profileLoading?: boolean;
+    profileError?: string;
+    assignmentRelease?: {
+      releasing: boolean;
+      error: string;
+      unknownOutcome: boolean;
+      completed: boolean;
+      canRetry: boolean;
+    };
+  }>(),
+  {
+    canReadProfile: false,
+    canManageCase: false,
+    canReleaseAssignment: false,
+    canReadInternalNotes: false,
+    profile: null,
+    profileLoading: false,
+    profileError: "",
+    assignmentRelease: () => ({
+      releasing: false,
+      error: "",
+      unknownOutcome: false,
+      completed: false,
+      canRetry: false,
+    }),
+  },
+);
 
 const emit = defineEmits<{
   loadProfile: [];
   releaseAssignment: [input: SupportAssignmentReleaseInput];
   retryAssignmentRelease: [];
   openInternalNotes: [];
+  classifyCase: [];
 }>();
+
+type InspectorTab = "CASE" | "USER" | "DATA" | "ACTIVITY";
+const activeTab = ref<InspectorTab>("CASE");
+const inspectorTabs = computed(
+  () =>
+    [
+      ...(props.selection.case
+        ? [{ id: "CASE" as const, label: "Обращение" }]
+        : []),
+      { id: "USER" as const, label: "Пользователь" },
+      { id: "DATA" as const, label: "Данные" },
+      { id: "ACTIVITY" as const, label: "Активность" },
+    ] satisfies Array<{ id: InspectorTab; label: string }>,
+);
+
+watch(
+  () => props.selection.case?.id,
+  () => {
+    activeTab.value = props.selection.case ? "CASE" : "USER";
+  },
+  { immediate: true },
+);
 
 const userLabel = computed(() =>
   props.selection.endUser.isGuest ? "Гостевой пользователь" : "Пользователь",
@@ -90,8 +118,9 @@ function labelCasePriority(value: string): string {
   );
 }
 
-const visibleProfileFields = computed(() =>
-  props.profile?.fields.filter((field) => field.access !== "FORBIDDEN") ?? [],
+const visibleProfileFields = computed(
+  () =>
+    props.profile?.fields.filter((field) => field.access !== "FORBIDDEN") ?? [],
 );
 
 function profileFieldValue(field: ProfileProjectionFieldResponseDto): string {
@@ -101,7 +130,9 @@ function profileFieldValue(field: ProfileProjectionFieldResponseDto): string {
   return formatProfileValue(field.value);
 }
 
-function profileSyncStatusLabel(value: ProfileProjectionResponseDto["syncStatus"]): string {
+function profileSyncStatusLabel(
+  value: ProfileProjectionResponseDto["syncStatus"],
+): string {
   return (
     {
       VALID: "Снимок проверен",
@@ -111,7 +142,9 @@ function profileSyncStatusLabel(value: ProfileProjectionResponseDto["syncStatus"
   );
 }
 
-function profileProvenanceLabel(value: ProfileProjectionResponseDto["provenance"]): string {
+function profileProvenanceLabel(
+  value: ProfileProjectionResponseDto["provenance"],
+): string {
   return value === "PRODUCT_PROFILE" ? "Профиль продукта" : value;
 }
 
@@ -133,36 +166,28 @@ function profileClassificationLabel(
     <div class="pane-heading">
       <div>
         <span class="eyebrow">Контекст</span>
-        <h2>Диалог</h2>
+        <h2>Инспектор</h2>
       </div>
     </div>
-    <dl class="context-list">
-      <div>
-        <dt>Пользователь</dt>
-        <dd>{{ userLabel }}</dd>
-      </div>
-      <div>
-        <dt>Статус</dt>
-        <dd>{{ conversation.status === "OPEN" ? "Активный" : "Архивный" }}</dd>
-      </div>
-      <div>
-        <dt>Сообщений</dt>
-        <dd>{{ conversation.messageCount }}</dd>
-      </div>
-      <div>
-        <dt>Сессий сейчас</dt>
-        <dd>{{ conversation.currentInteractionSessionCount }}</dd>
-      </div>
-      <div>
-        <dt>Язык</dt>
-        <dd>{{ selection.endUser.locale ?? "Не указан" }}</dd>
-      </div>
-      <div>
-        <dt>Обновлён</dt>
-        <dd>{{ relativeTime(conversation.updatedAt) }}</dd>
-      </div>
-    </dl>
-    <section v-if="selection.case" class="case-summary" aria-label="Case">
+    <div class="inspector-tabs" role="tablist" aria-label="Разделы контекста">
+      <button
+        v-for="tab in inspectorTabs"
+        :key="tab.id"
+        type="button"
+        role="tab"
+        :aria-selected="activeTab === tab.id"
+        :class="{ active: activeTab === tab.id }"
+        @click="activeTab = tab.id"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <section
+      v-if="activeTab === 'CASE' && selection.case"
+      class="case-summary"
+      aria-label="Case"
+    >
       <span class="eyebrow">Case #{{ selection.case.projectSequence }}</span>
       <h3>{{ selection.case.title }}</h3>
       <dl>
@@ -192,10 +217,22 @@ function profileClassificationLabel(
       <RouterLink
         v-if="canOpenCase"
         class="case-link"
-        :to="{ name: 'end-user-case-detail', params: { caseId: selection.case.id } }"
+        :to="{
+          name: 'end-user-case-detail',
+          params: { caseId: selection.case.id },
+        }"
       >
         Открыть Case
       </RouterLink>
+      <Button
+        v-if="canManageCase"
+        class="classify-case"
+        label="Классификация и приоритет"
+        icon="pi pi-tags"
+        severity="secondary"
+        outlined
+        @click="emit('classifyCase')"
+      />
       <Button
         v-if="canReadInternalNotes"
         class="internal-notes-link"
@@ -206,16 +243,46 @@ function profileClassificationLabel(
         @click="emit('openInternalNotes')"
       />
       <SupportAssignmentRelease
-        v-if="canReleaseAssignment && selection.case.assignment && selection.capabilities.releaseAssignment"
+        v-if="
+          canReleaseAssignment &&
+          selection.case.assignment &&
+          selection.capabilities.releaseAssignment
+        "
         v-bind="assignmentRelease"
         @release="emit('releaseAssignment', $event)"
         @retry="emit('retryAssignmentRelease')"
       />
     </section>
+
     <section
-      v-if="canReadProfile"
+      v-if="activeTab === 'USER'"
+      class="inspector-section"
+      aria-label="Пользователь"
+    >
+      <dl class="context-list">
+        <div>
+          <dt>Пользователь</dt>
+          <dd>{{ userLabel }}</dd>
+        </div>
+        <div>
+          <dt>Язык</dt>
+          <dd>{{ selection.endUser.locale ?? "Не указан" }}</dd>
+        </div>
+        <div>
+          <dt>Последняя активность</dt>
+          <dd>{{ relativeTime(selection.endUser.lastSeenAt) }}</dd>
+        </div>
+      </dl>
+      <p class="inspector-hint">
+        Безопасная сводка доступна здесь; персональные поля открываются во
+        вкладке «Данные».
+      </p>
+    </section>
+
+    <section
+      v-if="activeTab === 'DATA'"
       class="profile-summary"
-      aria-label="Профиль пользователя"
+      aria-label="Данные пользователя"
     >
       <div class="profile-summary__heading">
         <div>
@@ -223,6 +290,7 @@ function profileClassificationLabel(
           <h3>Разрешённые данные</h3>
         </div>
         <Button
+          v-if="canReadProfile"
           label="Загрузить"
           icon="pi pi-refresh"
           severity="secondary"
@@ -256,7 +324,9 @@ function profileClassificationLabel(
               <template v-if="field.observedAt">
                 · обновлено {{ relativeTime(field.observedAt) }}
               </template>
-              <template v-if="field.untrustedData"> · требует проверки</template>
+              <template v-if="field.untrustedData">
+                · требует проверки</template
+              >
             </small>
           </div>
         </dl>
@@ -265,13 +335,45 @@ function profileClassificationLabel(
         </p>
       </template>
       <p v-else class="profile-summary__empty">
-        Загрузите отдельный серверный снимок профиля.
+        <template v-if="canReadProfile"
+          >Загрузите отдельный серверный снимок профиля.</template
+        >
+        <template v-else
+          >У вас нет прав на персональные данные пользователя.</template
+        >
       </p>
     </section>
-    <Message severity="secondary" :closable="false">
-      Полный профиль, события и sensitive поля не запрашиваются этим экраном.
-      Доступные действия определяет серверная capability-модель.
-    </Message>
+
+    <section
+      v-if="activeTab === 'ACTIVITY'"
+      class="inspector-section"
+      aria-label="Активность"
+    >
+      <dl class="context-list">
+        <div>
+          <dt>Статус диалога</dt>
+          <dd>
+            {{ conversation.status === "OPEN" ? "Активный" : "Архивный" }}
+          </dd>
+        </div>
+        <div>
+          <dt>Сообщений</dt>
+          <dd>{{ conversation.messageCount }}</dd>
+        </div>
+        <div>
+          <dt>Сессий сейчас</dt>
+          <dd>{{ conversation.currentInteractionSessionCount }}</dd>
+        </div>
+        <div>
+          <dt>Обновлён</dt>
+          <dd>{{ relativeTime(conversation.updatedAt) }}</dd>
+        </div>
+      </dl>
+      <p class="inspector-hint">
+        Presence — это только краткая подсказка. Он не меняет назначение
+        обращения или доступность оператора.
+      </p>
+    </section>
   </div>
 </template>
 
@@ -286,6 +388,46 @@ function profileClassificationLabel(
 .pane-heading h2 {
   margin: 0;
   font-size: 1.05rem;
+}
+.inspector-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 -2px 18px;
+  padding: 4px;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+.inspector-tabs button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.inspector-tabs button.active {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-raised);
+}
+.inspector-tabs button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.inspector-section {
+  min-height: 220px;
+}
+.inspector-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 .context-list {
   display: grid;
@@ -344,6 +486,10 @@ function profileClassificationLabel(
   font-size: 0.82rem;
   font-weight: 700;
   text-decoration: none;
+}
+.classify-case {
+  width: 100%;
+  margin-top: 12px;
 }
 .case-link:hover,
 .case-link:focus-visible {

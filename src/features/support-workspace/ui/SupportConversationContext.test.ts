@@ -80,7 +80,7 @@ function render(
     props: { conversation, selection, canOpenCase, ...profileProps },
     global: {
       stubs: {
-        Button: { template: "<button type=\"button\"><slot /></button>" },
+        Button: { template: '<button type="button"><slot /></button>' },
         Message: { template: "<div><slot /></div>" },
         RouterLink: { template: "<a><slot /></a>" },
       },
@@ -124,7 +124,8 @@ describe("support conversation context", () => {
           Button: {
             props: ["label"],
             emits: ["click"],
-            template: "<button type=\"button\" @click=\"$emit('click')\">{{ label }}<slot /></button>",
+            template:
+              '<button type="button" @click="$emit(\'click\')">{{ label }}<slot /></button>',
           },
           Message: { template: "<div><slot /></div>" },
           RouterLink: { template: "<a><slot /></a>" },
@@ -134,7 +135,7 @@ describe("support conversation context", () => {
 
     expect(denied.text()).not.toContain("Внутренние заметки");
     expect(allowed.text()).toContain("Внутренние заметки");
-    await allowed.get("button").trigger("click");
+    await allowed.get(".internal-notes-link").trigger("click");
     expect(allowed.emitted("openInternalNotes")).toHaveLength(1);
   });
 
@@ -152,7 +153,7 @@ describe("support conversation context", () => {
       },
       global: {
         stubs: {
-          Button: { template: "<button type=\"button\"><slot /></button>" },
+          Button: { template: '<button type="button"><slot /></button>' },
           Message: { template: "<div><slot /></div>" },
           RouterLink: { template: "<a><slot /></a>" },
         },
@@ -167,10 +168,10 @@ describe("support conversation context", () => {
       },
       global: {
         stubs: {
-          Button: { template: "<button type=\"button\"><slot /></button>" },
+          Button: { template: '<button type="button"><slot /></button>' },
           Message: { template: "<div><slot /></div>" },
           RouterLink: { template: "<a><slot /></a>" },
-          Dialog: { template: "<div><slot /><slot name=\"footer\" /></div>" },
+          Dialog: { template: '<div><slot /><slot name="footer" /></div>' },
           Select: { props: ["modelValue", "options"], template: "<select />" },
           Textarea: { template: "<textarea />" },
         },
@@ -200,7 +201,7 @@ describe("support conversation context", () => {
         },
         global: {
           stubs: {
-            Button: { template: "<button type=\"button\"><slot /></button>" },
+            Button: { template: '<button type="button"><slot /></button>' },
             Message: { template: "<div><slot /></div>" },
             RouterLink: { template: "<a><slot /></a>" },
           },
@@ -211,12 +212,15 @@ describe("support conversation context", () => {
     const critical = mount(SupportConversationContext, {
       props: {
         conversation,
-        selection: { ...selection, case: { ...selection.case!, priority: "CRITICAL" } },
+        selection: {
+          ...selection,
+          case: { ...selection.case!, priority: "CRITICAL" },
+        },
         canOpenCase: true,
       },
       global: {
         stubs: {
-          Button: { template: "<button type=\"button\"><slot /></button>" },
+          Button: { template: '<button type="button"><slot /></button>' },
           Message: { template: "<div><slot /></div>" },
           RouterLink: { template: "<a><slot /></a>" },
         },
@@ -225,7 +229,7 @@ describe("support conversation context", () => {
     expect(critical.get('[aria-label="Case"]').text()).toContain("Критический");
   });
 
-  it("renders allowed and redacted profile fields but removes forbidden fields", () => {
+  it("renders allowed and redacted profile fields but removes forbidden fields", async () => {
     const wrapper = render(true, {
       canReadProfile: true,
       profile: {
@@ -274,7 +278,8 @@ describe("support conversation context", () => {
       },
     });
 
-    const profile = wrapper.get('[aria-label="Профиль пользователя"]');
+    await wrapper.get('[role="tab"]:nth-child(3)').trigger("click");
+    const profile = wrapper.get('[aria-label="Данные пользователя"]');
     expect(profile.text()).toContain("Ирина");
     expect(profile.text()).toContain("Телефон");
     expect(profile.text()).toContain("Скрыто");
