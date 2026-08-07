@@ -527,6 +527,8 @@ function formatRange(value: string) {
 
 <style scoped>
 .review-form {
+  --event-picker-trigger-height: 44px;
+
   display: grid;
   gap: 14px;
   min-width: 0;

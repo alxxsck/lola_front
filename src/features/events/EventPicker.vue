@@ -444,6 +444,7 @@ function apply(): void {
 
 <style scoped>
 .event-picker {
+  container: event-picker / inline-size;
   display: grid;
   gap: 7px;
   min-width: 0;
@@ -455,14 +456,15 @@ function apply(): void {
 }
 .event-picker__trigger {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  min-height: 58px;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 11px;
+  gap: 8px;
   width: 100%;
-  padding: 8px 10px;
+  height: var(--event-picker-trigger-height, var(--control-height));
+  min-height: var(--event-picker-trigger-height, var(--control-height));
+  padding: 4px 7px;
   border: 1px solid var(--input-border);
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--input-background);
   color: var(--text-primary);
   text-align: left;
@@ -481,15 +483,15 @@ function apply(): void {
 .event-picker__trigger-icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   background: var(--status-accent-soft);
   color: var(--status-accent-text);
 }
 .event-picker__trigger-copy {
   display: grid;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
 }
 .event-picker__trigger-copy strong,
@@ -500,6 +502,7 @@ function apply(): void {
 }
 .event-picker__trigger-copy strong {
   font-size: var(--font-size-control);
+  line-height: 1.15;
 }
 .event-picker__trigger-copy small {
   color: var(--text-small-muted);
@@ -508,16 +511,17 @@ function apply(): void {
     SFMono-Regular,
     Menlo,
     monospace;
+  line-height: 1.15;
 }
 .event-picker__trigger-action {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 9px;
-  border-radius: 9px;
+  gap: 5px;
+  padding: 5px 7px;
+  border-radius: 8px;
   background: var(--surface-hover);
   color: var(--action-primary);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 .event-picker__dialog-heading {
@@ -787,6 +791,27 @@ function apply(): void {
   }
   :deep(.event-picker__clear) {
     grid-column: 1 / -1;
+  }
+}
+@container event-picker (max-width: 220px) {
+  .event-picker__trigger {
+    grid-template-columns: 28px minmax(0, 1fr) 28px;
+    gap: 6px;
+    padding-inline: 6px;
+  }
+  .event-picker__trigger-action {
+    width: 28px;
+    justify-content: center;
+    padding-inline: 5px;
+    font-size: 0;
+  }
+}
+@container event-picker (max-width: 160px) {
+  .event-picker__trigger {
+    grid-template-columns: minmax(0, 1fr) 28px;
+  }
+  .event-picker__trigger-icon {
+    display: none;
   }
 }
 </style>

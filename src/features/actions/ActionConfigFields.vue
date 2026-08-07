@@ -473,6 +473,11 @@ function fieldHint(field: ActionUiField) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 13px;
 }
+.schema-fields :deep(.p-inputtext),
+.schema-fields :deep(.p-select),
+.schema-fields :deep(.p-inputnumber) {
+  min-height: var(--control-height);
+}
 .localization-unavailable {
   grid-column: 1/-1;
   display: grid;

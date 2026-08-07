@@ -514,6 +514,9 @@ function validTimezone(value: string): boolean {
   display: grid;
   gap: 14px;
 }
+.form {
+  --event-picker-trigger-height: 44px;
+}
 .loyalty {
   padding: 24px;
   border: 1px solid var(--border-default);

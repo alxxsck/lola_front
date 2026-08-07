@@ -81,6 +81,8 @@ label:has(> .p-toggleswitch) > :not(.p-toggleswitch) { min-width: 0; }
 .p-datatable-header-cell { background: var(--surface-subtle) !important; color: var(--text-secondary) !important; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
 
 .ai-ledger-filters {
+  --event-picker-trigger-height: 44px;
+
   display: grid;
   gap: 12px;
   padding: 18px;

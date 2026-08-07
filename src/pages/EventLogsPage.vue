@@ -1112,6 +1112,10 @@ function json(value: unknown) {
 .filter-panel :deep(.p-multiselect) {
   width: 100%;
   min-width: 0;
+  min-height: var(--control-height);
+}
+.filter-panel :deep(.p-inputtext) {
+  min-height: var(--control-height);
 }
 .filter-panel :deep(.p-multiselect-label-container),
 .filter-panel :deep(.p-multiselect-label) {
