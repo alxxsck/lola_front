@@ -235,6 +235,43 @@ describe("support conversation controller", () => {
     );
   });
 
+  it("keeps a Case without a linked Conversation as an authoritative selection", async () => {
+    const caseOnly = selection("unused", []);
+    caseOnly.conversation = null;
+    caseOnly.messages = { items: [], nextCursor: null };
+    caseOnly.case = {
+      id: "case-only",
+      title: "Отдельное обращение",
+      status: "OPEN",
+      priority: "NORMAL",
+      groupCode: "GENERAL",
+      projectSequence: "52",
+      attentionRequired: false,
+      lastActivityAt: "2026-08-06T10:00:00.000Z",
+      updatedAt: "2026-08-06T10:00:00.000Z",
+      version: 1,
+      latestRevisionId: null,
+      assignee: null,
+      assignment: null,
+    };
+    const source = { readSelection: vi.fn().mockResolvedValue(caseOnly) };
+    const controller = createSupportConversationController(
+      {
+        projectId: () => "project-1",
+        conversationId: () => undefined,
+        caseId: () => "case-only",
+      },
+      source,
+    );
+
+    await controller.load();
+
+    expect(controller.error.value).toBe("");
+    expect(controller.selection.value?.case?.id).toBe("case-only");
+    expect(controller.selection.value?.conversation).toBeNull();
+    expect(controller.messages.value).toEqual([]);
+  });
+
   it("merges the older cursor page in authoritative ordinal order", async () => {
     const source = {
       readSelection: vi

@@ -133,8 +133,16 @@ export function createSupportConversationController(
       const projection = await source.readSelection(projectId, target);
       if (!isCurrent(projectId, target, requestGeneration)) return;
       const conversationId = projection.conversation?.id;
-      if (!conversationId)
-        throw new Error("Support workspace returned no conversation");
+      if (!conversationId) {
+        if (projection.messages.items.length)
+          throw new Error(
+            "Support workspace returned messages without a conversation",
+          );
+        selection.value = projection;
+        messages.value = [];
+        nextMessageCursor.value = null;
+        return;
+      }
       const ordered = mergeMessages(
         [],
         projection.messages.items,
@@ -183,8 +191,7 @@ export function createSupportConversationController(
       });
       if (!isCurrent(projectId, target, requestGeneration)) return;
       const conversationId = projection.conversation?.id;
-      if (!conversationId)
-        throw new Error("Support workspace returned no conversation");
+      if (!conversationId) return;
       const merged = mergeMessages(
         messages.value,
         projection.messages.items,
@@ -223,8 +230,16 @@ export function createSupportConversationController(
       });
       if (!isCurrent(projectId, target, requestGeneration)) return;
       const conversationId = projection.conversation?.id;
-      if (!conversationId)
-        throw new Error("Support workspace returned no conversation");
+      if (!conversationId) {
+        if (projection.messages.items.length)
+          throw new Error(
+            "Support workspace returned messages without a conversation",
+          );
+        selection.value = projection;
+        messages.value = [];
+        nextMessageCursor.value = null;
+        return;
+      }
       const merged = mergeMessages(
         messages.value,
         projection.messages.items,

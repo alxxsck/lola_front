@@ -1,5 +1,7 @@
 import { hasProjectPermission } from "@/features/auth/permission-access";
-const supportWorkspaceReadPermission = "project.conversations.read" as const;
+const supportWorkspaceConversationReadPermission =
+  "project.conversations.read" as const;
+const supportWorkspaceCaseReadPermission = "project.cases.read" as const;
 const supportLeadControlReadPermission =
   "project.support.lead_control.read" as const;
 const supportAvailabilityReadPermission =
@@ -30,9 +32,15 @@ const supportInternalNotesRedactPermission =
 export function canReadSupportWorkspace(
   effectivePermissionCodes: readonly string[],
 ): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportWorkspaceReadPermission,
+  return (
+    hasProjectPermission(
+      effectivePermissionCodes,
+      supportWorkspaceConversationReadPermission,
+    ) ||
+    hasProjectPermission(
+      effectivePermissionCodes,
+      supportWorkspaceCaseReadPermission,
+    )
   );
 }
 
@@ -80,7 +88,10 @@ export function canReceiveSupportRoutingOffers(
 ): boolean {
   return (
     canManageOwnSupportAssignments(effectivePermissionCodes) &&
-    hasProjectPermission(effectivePermissionCodes, supportRoutingReceivePermission)
+    hasProjectPermission(
+      effectivePermissionCodes,
+      supportRoutingReceivePermission,
+    )
   );
 }
 
@@ -119,7 +130,7 @@ export function canReadSupportConversationAiSuspension(
 ): boolean {
   return hasProjectPermission(
     effectivePermissionCodes,
-    supportWorkspaceReadPermission,
+    supportWorkspaceConversationReadPermission,
   );
 }
 

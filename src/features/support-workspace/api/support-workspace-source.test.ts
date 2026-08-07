@@ -7,6 +7,7 @@ import { supportWorkspaceContractFixtures } from "@/shared/api/repository/fixtur
 import {
   mapSupportWorkspaceSelection,
   mapWorkspaceCase,
+  mapWorkspaceCaseRow,
   withMockMessageOrdinals,
 } from "./support-workspace-source";
 
@@ -28,6 +29,36 @@ const value: SupportWorkspaceSelectionCaseResponseDto = {
 };
 
 describe("support workspace Case mapper", () => {
+  it("maps only the bounded authoritative Case inbox projection", () => {
+    expect(
+      mapWorkspaceCaseRow({
+        id: "case-42",
+        endUserId: "end-user-1",
+        projectSequence: "42",
+        title: "Возврат",
+        status: "WAITING_ADMIN",
+        priority: "HIGH",
+        groupCode: "BILLING",
+        attentionRequired: true,
+        lastActivityAt: "2026-08-06T10:00:00.000Z",
+        updatedAt: "2026-08-06T10:00:00.000Z",
+        version: 3,
+      }),
+    ).toEqual({
+      id: "case-42",
+      endUserId: "end-user-1",
+      projectSequence: "42",
+      title: "Возврат",
+      status: "WAITING_ADMIN",
+      priority: "HIGH",
+      groupCode: "BILLING",
+      attentionRequired: true,
+      lastActivityAt: "2026-08-06T10:00:00.000Z",
+      updatedAt: "2026-08-06T10:00:00.000Z",
+      version: 3,
+    });
+  });
+
   it("rejects a Case projection belonging to another end user", () => {
     expect(() => mapWorkspaceCase(value, "end-user-2")).toThrow(
       "another end user",
@@ -83,7 +114,11 @@ describe("support workspace Case mapper", () => {
             endedAt: null,
             id: "assignment-1",
             occurrenceNumber: 1,
-            operator: { id: "operator-1", displayName: "Алина", avatarUrl: null },
+            operator: {
+              id: "operator-1",
+              displayName: "Алина",
+              avatarUrl: null,
+            },
             startedAt: "2026-08-06T10:00:00.000Z",
             state: "ASSIGNED",
             team: { id: "team-1", code: "billing", name: "Billing" },
@@ -133,6 +168,23 @@ describe("support workspace mock history", () => {
 });
 
 describe("support workspace selection contract mapper", () => {
+  it("keeps an authoritative Case selection without fabricating a Conversation", () => {
+    const full = supportWorkspaceContractFixtures.fullSelectionSuccess;
+    const response: SupportWorkspaceSelectionResponseDto = {
+      ...full,
+      conversation: null,
+      messages: { items: [], nextCursor: null },
+    };
+
+    const mapped = mapSupportWorkspaceSelection(response, {
+      caseId: full.case.id,
+    });
+
+    expect(mapped.case?.id).toBe(full.case.id);
+    expect(mapped.conversation).toBeNull();
+    expect(mapped.messages).toEqual({ items: [], nextCursor: null });
+  });
+
   it("maps the executable minimal selection fixture", () => {
     const response = supportWorkspaceContractFixtures.minimalSelectionSuccess;
 

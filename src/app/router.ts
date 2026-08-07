@@ -246,7 +246,10 @@ export const router = createRouter({
         {
           path: "cases",
           name: "end-user-cases",
-          redirect: (to) => ({ name: "support-inbox", query: to.query }),
+          redirect: (to) => ({
+            name: "support-inbox",
+            query: { ...to.query, mode: "cases" },
+          }),
         },
         {
           path: "cases/settings",
@@ -257,11 +260,24 @@ export const router = createRouter({
         {
           path: "cases/:caseId",
           name: "end-user-case-detail",
-          redirect: (to) => ({ name: "support-inbox", query: to.query }),
+          redirect: (to) => ({
+            name: "support-inbox-case",
+            params: { caseId: to.params.caseId },
+            query: to.query,
+          }),
         },
         {
           path: "support/inbox",
           name: "support-inbox",
+          component: () => import("@/pages/SupportWorkspacePage.vue"),
+          meta: {
+            supportWorkspaceAccess: true,
+            supportWorkspacePresentation: true,
+          },
+        },
+        {
+          path: "support/inbox/cases/:caseId",
+          name: "support-inbox-case",
           component: () => import("@/pages/SupportWorkspacePage.vue"),
           meta: {
             supportWorkspaceAccess: true,

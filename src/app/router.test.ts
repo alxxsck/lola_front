@@ -429,8 +429,8 @@ describe("authentication routes", () => {
   it.each([
     [
       "/cases/case-1?projectId=project-2",
-      "support-inbox",
-      "project.conversations.read",
+      "support-inbox-case",
+      "project.cases.read",
     ],
     [
       "/users/end-user-1?conversationId=conversation-1&projectId=project-2",
@@ -483,6 +483,10 @@ describe("authentication routes", () => {
     ).toBeTruthy();
     expect(router.resolve("/cases/settings").meta.projectPermission).toBe(
       "project.cases.settings.manage",
+    );
+    expect(router.resolve("/cases/case-1").redirectedFrom).toBeUndefined();
+    expect(router.resolve("/support/inbox/cases/case-1").name).toBe(
+      "support-inbox-case",
     );
   });
 

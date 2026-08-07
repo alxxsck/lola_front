@@ -25,9 +25,7 @@ const selection: SupportWorkspaceSelection = {
   checkpoint: "42",
   capabilitiesRevision: "revision-1",
   actionRevisions: {},
-  classificationOptions: [
-    { code: "BILLING", label: "Платежи и расчёты" },
-  ],
+  classificationOptions: [{ code: "BILLING", label: "Платежи и расчёты" }],
   capabilities: {
     assignCase: false,
     claimAssignment: false,
@@ -93,6 +91,24 @@ function render(
 }
 
 describe("support conversation context", () => {
+  it("renders Case context without fabricating a linked Conversation", () => {
+    const wrapper = mount(SupportConversationContext, {
+      props: {
+        conversation: null,
+        selection: { ...selection, conversation: null },
+      },
+      global: {
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Message: { template: "<div><slot /></div>" },
+          RouterLink: { template: "<a><slot /></a>" },
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain("Нет связанного чата");
+  });
+
   it("switches from user context to the server-provided Case projection", async () => {
     const wrapper = render();
 

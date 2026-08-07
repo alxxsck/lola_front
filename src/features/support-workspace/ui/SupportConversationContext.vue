@@ -20,7 +20,7 @@ import type {
 
 const props = withDefaults(
   defineProps<{
-    conversation: SupportWorkspaceConversation;
+    conversation: SupportWorkspaceConversation | null;
     selection: SupportWorkspaceSelection;
     canManageCase?: boolean;
     canReleaseAssignment?: boolean;
@@ -200,11 +200,19 @@ function profileClassificationLabel(
         </div>
         <div class="context-field">
           <dt>Диалог</dt>
-          <dd>{{ conversation.status === "OPEN" ? "Активный" : "Закрыт" }}</dd>
+          <dd>
+            {{
+              !conversation
+                ? "Нет связанного чата"
+                : conversation.status === "OPEN"
+                  ? "Активный"
+                  : "Закрыт"
+            }}
+          </dd>
         </div>
         <div class="context-field">
           <dt>Сообщений</dt>
-          <dd>{{ conversation.messageCount }}</dd>
+          <dd>{{ conversation?.messageCount ?? "—" }}</dd>
         </div>
       </dl>
       <div class="section-heading profile-heading">

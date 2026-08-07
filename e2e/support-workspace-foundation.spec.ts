@@ -95,18 +95,32 @@ test("moves through visible inbox rows with j/k and arrows without hijacking inp
 }) => {
   const rows = page.locator(".conversation-row");
   await expect(rows).toHaveCount(3);
+  const firstId = (await rows.nth(0).getAttribute("data-selection-key"))?.split(
+    ":",
+  )[1];
+  const secondId = (
+    await rows.nth(1).getAttribute("data-selection-key")
+  )?.split(":")[1];
+  expect(firstId).toBeTruthy();
+  expect(secondId).toBeTruthy();
 
   await page.keyboard.press("ArrowDown");
-  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3$/);
+  await expect(page).toHaveURL(
+    new RegExp(`/support/inbox/conversations/${firstId}$`),
+  );
   await expect(page.locator(".conversation-row.selected")).toHaveCount(1);
 
   await page.keyboard.press("j");
-  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_2$/);
+  await expect(page).toHaveURL(
+    new RegExp(`/support/inbox/conversations/${secondId}$`),
+  );
   await expect(page.locator(".conversation-row.selected")).toHaveCount(1);
 
   await page.getByRole("textbox", { name: "Ответ пользователю" }).focus();
   await page.keyboard.press("k");
-  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_2$/);
+  await expect(page).toHaveURL(
+    new RegExp(`/support/inbox/conversations/${secondId}$`),
+  );
 });
 
 test("shows and changes only the operator's authoritative availability intent", async ({
@@ -134,15 +148,21 @@ test("shows and changes only the operator's authoritative availability intent", 
   await expect(status).toContainText("Новые обращения не назначаются");
 });
 
-test("keeps one support chat queue and exposes user, Case, and action context", async ({
+test("switches one inbox between Conversations and Cases and exposes exact context", async ({
   page,
 }) => {
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
   await expect(queue.getByRole("heading", { name: "Входящие" })).toBeVisible();
   await expect(queue.locator(".conversation-row")).toHaveCount(3);
-  await expect(queue.getByText("Обращения", { exact: true })).toHaveCount(0);
+  await expect(
+    queue.getByRole("button", { name: "Все чаты", pressed: true }),
+  ).toBeVisible();
+  await queue.getByRole("button", { name: "Обращения" }).click();
+  await expect(page).toHaveURL(/\/support\/inbox\?mode=cases$/);
+  await expect(queue.locator(".case-row")).toHaveCount(3);
 
-  await queue.locator(".conversation-row").first().click();
+  await queue.getByRole("button", { name: /Не поступил депозит/ }).click();
+  await expect(page).toHaveURL(/\/support\/inbox\/cases\/case-demo-deposit$/);
   const desktopContext = page.locator(".context-pane");
   const usesContextDrawer = (page.viewportSize()?.width ?? 1280) <= 1180;
   const context = usesContextDrawer
@@ -157,6 +177,32 @@ test("keeps one support chat queue and exposes user, Case, and action context", 
   ).toBeVisible();
   await expect(context.getByRole("tab", { name: "Кейс" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "Действия" })).toBeVisible();
+});
+
+test("restores typed inbox routes with Back and Forward and keeps a Case without a fake chat", async ({
+  page,
+}) => {
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  await queue.getByRole("button", { name: "Обращения" }).click();
+  await expect(page).toHaveURL(/\/support\/inbox\?mode=cases$/);
+  await queue.getByRole("button", { name: /Не поступил депозит/ }).click();
+  await expect(page).toHaveURL(/\/support\/inbox\/cases\/case-demo-deposit$/);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/support\/inbox\?mode=cases$/);
+  await expect(
+    queue.getByRole("button", { name: "Обращения", pressed: true }),
+  ).toBeVisible();
+
+  await page.goForward();
+  await expect(page).toHaveURL(/\/support\/inbox\/cases\/case-demo-deposit$/);
+  await page.goto("/support/inbox/cases/case-demo-resolved");
+  await expect(
+    page.getByRole("heading", { name: "У обращения нет связанного чата" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Ответ пользователю" }),
+  ).toHaveCount(0);
 });
 
 test("expands the workspace without leaving the operator workflow", async ({

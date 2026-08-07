@@ -19,6 +19,7 @@ import {
 describe("support workspace access", () => {
   it("requires the exact conversation read permission", () => {
     expect(canReadSupportWorkspace(["project.conversations.read"])).toBe(true);
+    expect(canReadSupportWorkspace(["project.cases.read"])).toBe(true);
     expect(canReadSupportWorkspace(["project.conversations.reply"])).toBe(
       false,
     );
@@ -43,9 +44,9 @@ describe("support workspace access", () => {
   });
 
   it("requires a read grant before exposing or changing self availability", () => {
-    expect(canReadSupportAvailability(["project.support.availability.read"])).toBe(
-      true,
-    );
+    expect(
+      canReadSupportAvailability(["project.support.availability.read"]),
+    ).toBe(true);
     expect(
       canManageOwnSupportAvailability([
         "project.support.availability.read",
@@ -113,9 +114,7 @@ describe("support workspace access", () => {
 
   it("separates AI state read access from mutation authority", () => {
     expect(
-      canReadSupportConversationAiSuspension([
-        "project.conversations.read",
-      ]),
+      canReadSupportConversationAiSuspension(["project.conversations.read"]),
     ).toBe(true);
     expect(
       canReadSupportConversationAiSuspension([
@@ -174,8 +173,7 @@ describe("support workspace access", () => {
     ).toBe(true);
     expect(
       canRedactSupportInternalNotes(["project.support.internal_notes.write"]),
-    ).toBe(false,
-    );
+    ).toBe(false);
   });
 
   it("accepts only an explicit rollout enablement", () => {

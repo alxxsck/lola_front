@@ -8,11 +8,31 @@ import { mapConversationMessage } from "@/shared/api/repository/mappers";
 import { isMockMode } from "@/shared/config/data-mode";
 import type { ConversationMessage } from "@/shared/types/domain";
 import type {
+  SupportWorkspaceCaseRowResponseDto,
   SupportWorkspaceSelectionCaseResponseDto,
   SupportWorkspaceSelectionResponseDto,
 } from "@/shared/api/generated/models";
 
 export type SupportWorkspaceMessage = ConversationMessage & { ordinal: number };
+export type SupportInboxMode = "CASES" | "ALL_CONVERSATIONS";
+
+export interface SupportWorkspaceCaseRow {
+  id: string;
+  endUserId: string;
+  projectSequence: string;
+  title: string;
+  status: string;
+  priority: string;
+  groupCode: string;
+  attentionRequired: boolean;
+  lastActivityAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export type SupportInboxItem =
+  | (SupportWorkspaceCaseRow & { kind: "CASE" })
+  | (SupportWorkspaceConversation & { kind: "CONVERSATION" });
 
 export interface SupportWorkspaceConversation {
   id: string;
@@ -90,6 +110,10 @@ export interface SupportWorkspaceCase {
 }
 
 export interface SupportWorkspaceSource {
+  readCases(
+    projectId: string,
+    request?: CursorPageRequest,
+  ): Promise<CursorPage<SupportWorkspaceCaseRow>>;
   readConversations(
     projectId: string,
     request?: CursorPageRequest,
@@ -138,6 +162,24 @@ function mapWorkspaceConversation(
     ...(conversation.lastMessageOrdinal !== undefined
       ? { lastMessageOrdinal: conversation.lastMessageOrdinal }
       : {}),
+  };
+}
+
+export function mapWorkspaceCaseRow(
+  value: SupportWorkspaceCaseRowResponseDto,
+): SupportWorkspaceCaseRow {
+  return {
+    id: value.id,
+    endUserId: value.endUserId,
+    projectSequence: value.projectSequence,
+    title: value.title,
+    status: value.status,
+    priority: value.priority,
+    groupCode: value.groupCode,
+    attentionRequired: value.attentionRequired,
+    lastActivityAt: value.lastActivityAt,
+    updatedAt: value.updatedAt,
+    version: value.version,
   };
 }
 
@@ -233,14 +275,13 @@ export function mapSupportWorkspaceSelection(
   response: SupportWorkspaceSelectionResponseDto,
   target: SupportWorkspaceSelectionTarget,
 ): SupportWorkspaceSelection {
-  if (!response.conversation) {
-    throw new Error("Support workspace did not return the requested conversation");
-  }
-  const conversation = mapWorkspaceConversation(response.conversation);
-  if (target.conversationId && conversation.id !== target.conversationId) {
+  const conversation = response.conversation
+    ? mapWorkspaceConversation(response.conversation)
+    : null;
+  if (target.conversationId && conversation?.id !== target.conversationId) {
     throw new Error("Support workspace returned a different conversation");
   }
-  if (conversation.endUserId !== response.endUser.id) {
+  if (conversation && conversation.endUserId !== response.endUser.id) {
     throw new Error(
       "Support workspace returned a conversation from another end user",
     );
@@ -255,8 +296,7 @@ export function mapSupportWorkspaceSelection(
     actionRevisions: {
       ...(response.actionRevisions.aiSuspensionVersion !== undefined
         ? {
-            aiSuspensionVersion:
-              response.actionRevisions.aiSuspensionVersion,
+            aiSuspensionVersion: response.actionRevisions.aiSuspensionVersion,
           }
         : {}),
       ...(response.actionRevisions.assignmentVersion !== undefined
@@ -278,13 +318,38 @@ export function mapSupportWorkspaceSelection(
     case: supportCase,
     conversation,
     messages: {
-      items: mapSelectionMessages(conversation.id, response.messages.items),
+      items: conversation
+        ? mapSelectionMessages(conversation.id, response.messages.items)
+        : response.messages.items.length
+          ? (() => {
+              throw new Error(
+                "Support workspace returned messages without a conversation",
+              );
+            })()
+          : [],
       nextCursor: response.messages.nextCursor ?? null,
     },
   };
 }
 
 const apiSupportWorkspaceSource: SupportWorkspaceSource = {
+  async readCases(projectId, request) {
+    const response = await supportWorkspaceRead(projectId, {
+      mode: "CASES",
+      limit: request?.limit ?? 30,
+      ...(request?.cursor ? { cursor: request.cursor } : {}),
+    });
+    if (response.mode !== "CASES") {
+      throw new Error(
+        "Support workspace returned an unexpected Case inbox projection",
+      );
+    }
+    return {
+      items: response.items.map(mapWorkspaceCaseRow),
+      nextCursor: response.nextCursor ?? null,
+    };
+  },
+
   async readConversations(projectId, request) {
     const response = await supportWorkspaceRead(projectId, {
       mode: "ALL_CONVERSATIONS",
@@ -337,7 +402,103 @@ const mockCapabilities: SupportWorkspaceSelection["capabilities"] = {
   transferAssignment: false,
 };
 
+type MockSupportCase = SupportWorkspaceCaseRow & {
+  conversationId: string | null;
+  externalEndUserId: string;
+};
+
+const mockSupportCases: readonly MockSupportCase[] = [
+  {
+    id: "case-demo-deposit",
+    endUserId: "usr_1",
+    externalEndUserId: "player-0042",
+    conversationId: "conv_1",
+    projectSequence: "48",
+    title: "Не поступил депозит",
+    status: "WAITING_SYSTEM",
+    priority: "URGENT",
+    groupCode: "PAYMENTS",
+    attentionRequired: false,
+    lastActivityAt: "2026-07-26T10:00:00.000Z",
+    updatedAt: "2026-07-26T10:00:00.000Z",
+    version: 2,
+  },
+  {
+    id: "case-demo-game",
+    endUserId: "usr_2",
+    externalEndUserId: "player-0198",
+    conversationId: "conv_3",
+    projectSequence: "47",
+    title: "Не запускается игра",
+    status: "WAITING_ADMIN",
+    priority: "HIGH",
+    groupCode: "GAMES",
+    attentionRequired: true,
+    lastActivityAt: "2026-07-26T09:20:00.000Z",
+    updatedAt: "2026-07-26T09:20:00.000Z",
+    version: 1,
+  },
+  {
+    id: "case-demo-resolved",
+    endUserId: "usr_3",
+    externalEndUserId: "player-0281",
+    conversationId: null,
+    projectSequence: "46",
+    title: "Восстановление доступа",
+    status: "RESOLVED",
+    priority: "NORMAL",
+    groupCode: "ACCOUNT",
+    attentionRequired: false,
+    lastActivityAt: "2026-07-26T08:30:00.000Z",
+    updatedAt: "2026-07-26T08:30:00.000Z",
+    version: 4,
+  },
+];
+
+function mockCaseSelection(value: MockSupportCase): SupportWorkspaceCase {
+  return {
+    id: value.id,
+    title: value.title,
+    status: value.status,
+    priority: value.priority,
+    groupCode: value.groupCode,
+    projectSequence: value.projectSequence,
+    attentionRequired: value.attentionRequired,
+    lastActivityAt: value.lastActivityAt,
+    updatedAt: value.updatedAt,
+    version: value.version,
+    latestRevisionId: null,
+    assignee: null,
+    assignment: null,
+  };
+}
+
 const mockSupportWorkspaceSource: SupportWorkspaceSource = {
+  async readCases(_projectId, request) {
+    const offset = request?.cursor ? Number(request.cursor) : 0;
+    const limit = request?.limit ?? 30;
+    const page = mockSupportCases.slice(offset, offset + limit);
+    return {
+      items: page.map((item) => ({
+        id: item.id,
+        endUserId: item.endUserId,
+        projectSequence: item.projectSequence,
+        title: item.title,
+        status: item.status,
+        priority: item.priority,
+        groupCode: item.groupCode,
+        attentionRequired: item.attentionRequired,
+        lastActivityAt: item.lastActivityAt,
+        updatedAt: item.updatedAt,
+        version: item.version,
+      })),
+      nextCursor:
+        offset + limit < mockSupportCases.length
+          ? String(offset + limit)
+          : null,
+    };
+  },
+
   async readConversations(projectId, request) {
     const page = await repository.getProjectConversations(projectId, request);
     return {
@@ -359,67 +520,74 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
   },
 
   async readSelection(projectId, target, request) {
-    const conversationId = target.conversationId ?? target.caseId;
-    if (!conversationId)
+    if (!target.conversationId && !target.caseId)
       throw new Error("Support workspace selection requires an exact target");
+    const selectedCase = target.caseId
+      ? mockSupportCases.find((item) => item.id === target.caseId)
+      : undefined;
+    if (target.caseId && !selectedCase)
+      throw new Error("Support workspace Case is unavailable");
+    const conversationId =
+      target.conversationId ?? selectedCase?.conversationId ?? null;
     const page = await repository.getProjectConversations(projectId, {
       limit: 100,
     });
-    const selected = page.items.find((item) => item.id === conversationId);
-    if (!selected)
+    const selected = conversationId
+      ? page.items.find((item) => item.id === conversationId)
+      : undefined;
+    if (conversationId && !selected)
       throw new Error("Support workspace conversation is unavailable");
-    const messages = await repository.getMessages(
-      projectId,
-      selected.endUser.id,
-      selected.id,
-      {
-        limit: request?.messageLimit ?? 50,
-        ...(request?.messageCursor ? { cursor: request.messageCursor } : {}),
-      },
-    );
+    if (
+      selectedCase &&
+      selected &&
+      selected.endUser.id !== selectedCase.endUserId
+    )
+      throw new Error("Mock Case points to another end user conversation");
+    const messages = selected
+      ? await repository.getMessages(
+          projectId,
+          selected.endUser.id,
+          selected.id,
+          {
+            limit: request?.messageLimit ?? 50,
+            ...(request?.messageCursor
+              ? { cursor: request.messageCursor }
+              : {}),
+          },
+        )
+      : { items: [], nextCursor: null };
+    const endUserId = selected?.endUser.id ?? selectedCase!.endUserId;
     return {
-      checkpoint: `mock:${projectId}:${conversationId}`,
+      checkpoint: `mock:${projectId}:${target.caseId ?? conversationId}`,
       capabilitiesRevision: "mock-read-only",
       actionRevisions: {},
       classificationOptions: [{ code: "GENERAL", label: "Общие вопросы" }],
       capabilities: mockCapabilities,
       endUser: {
-        id: selected.endUser.id,
-        externalId: selected.endUser.externalId,
+        id: endUserId,
+        externalId:
+          selected?.endUser.externalId ?? selectedCase!.externalEndUserId,
         isGuest: false,
-        createdAt: selected.createdAt,
-        lastSeenAt: selected.updatedAt,
+        createdAt: selected?.createdAt ?? selectedCase!.updatedAt,
+        lastSeenAt: selected?.updatedAt ?? selectedCase!.updatedAt,
         locale: null,
       },
-      case: target.caseId
+      case: selectedCase ? mockCaseSelection(selectedCase) : null,
+      conversation: selected
         ? {
-            id: target.caseId,
+            id: selected.id,
+            endUserId: selected.endUser.id,
             title: selected.title,
-            status: selected.status === "ACTIVE" ? "OPEN" : "RESOLVED",
-            priority: "NORMAL",
-            groupCode: "GENERAL",
-            projectSequence: "—",
-            attentionRequired: selected.isCurrent,
-            lastActivityAt: selected.updatedAt,
+            status: selected.status === "ACTIVE" ? "OPEN" : "CLOSED",
+            createdAt: selected.createdAt,
             updatedAt: selected.updatedAt,
-            version: 1,
-            latestRevisionId: null,
-            assignee: null,
-            assignment: null,
+            messageCount: selected.messageCount,
+            isCurrent: selected.isCurrent,
+            currentInteractionSessionCount:
+              selected.currentInteractionSessionCount,
+            lastMessageAt: selected.lastMessage?.createdAt ?? null,
           }
         : null,
-      conversation: {
-        id: selected.id,
-        endUserId: selected.endUser.id,
-        title: selected.title,
-        status: selected.status === "ACTIVE" ? "OPEN" : "CLOSED",
-        createdAt: selected.createdAt,
-        updatedAt: selected.updatedAt,
-        messageCount: selected.messageCount,
-        isCurrent: selected.isCurrent,
-        currentInteractionSessionCount: selected.currentInteractionSessionCount,
-        lastMessageAt: selected.lastMessage?.createdAt ?? null,
-      },
       messages: {
         items: withMockMessageOrdinals(messages.items),
         nextCursor: messages.nextCursor,

@@ -41,6 +41,7 @@ import ConversationTemplateGallery from "@/features/conversation-surface/ui/Conv
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import SupportConversationPane from "@/features/support-conversation/ui/SupportConversationPane.vue";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
+import SupportInboxPane from "@/features/support-inbox/ui/SupportInboxPane.vue";
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
 import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
 import { createSupportAssignmentReleaseController } from "@/features/support-case-assignment/model/use-support-assignment-release";
@@ -53,11 +54,16 @@ import SupportInternalNotesDialog from "@/features/support-internal-notes/ui/Sup
 import { supportRoutingOfferSource } from "@/features/support-routing-offers/api/support-routing-offer-source";
 import { createSupportRoutingOffersController } from "@/features/support-routing-offers/model/use-support-routing-offers";
 import SupportRoutingOffers from "@/features/support-routing-offers/ui/SupportRoutingOffers.vue";
-import { supportWorkspaceSource } from "@/features/support-workspace/api/support-workspace-source";
+import {
+  supportWorkspaceSource,
+  type SupportInboxItem,
+  type SupportInboxMode,
+} from "@/features/support-workspace/api/support-workspace-source";
 import {
   canManageOwnSupportAvailability,
   canManageSupportConversationAiSuspension,
   canReceiveSupportRoutingOffers,
+  canReadSupportWorkspace,
   canReadSupportConversationAiSuspension,
   canReadSupportInternalNoteHistory,
   canReadSupportInternalNotes,
@@ -68,7 +74,6 @@ import SupportConversationContext from "@/features/support-workspace/ui/SupportC
 import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
 import { createSupportUserProfileController } from "@/features/support-user-profile/model/use-support-user-profile";
 import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
-import { relativeTime } from "@/shared/lib/format";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import type {
@@ -83,8 +88,35 @@ const endUserCases = useEndUserCasesStore();
 const aiSuspension = useConversationAISuspensionStore();
 const route = useRoute();
 const router = useRouter();
+const canReadInbox = computed(() =>
+  canReadSupportWorkspace(auth.project?.effectivePermissionCodes ?? []),
+);
+const routeCaseId = computed(() => {
+  const routeId = route.params.caseId;
+  return typeof routeId === "string" ? routeId : undefined;
+});
+const routeConversationId = computed(() => {
+  const routeId = route.params.conversationId;
+  return typeof routeId === "string" ? routeId : undefined;
+});
+const inboxMode = computed<SupportInboxMode>(() => {
+  if (routeCaseId.value) return "CASES";
+  if (routeConversationId.value) return "ALL_CONVERSATIONS";
+  return route.query.mode === "cases" ? "CASES" : "ALL_CONVERSATIONS";
+});
 const inbox = createSupportInboxController(
-  { projectId: () => auth.project?.id },
+  {
+    projectId: () => auth.project?.id,
+    mode: () => inboxMode.value,
+    async onForbidden() {
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Rows are already purged; route recovery below remains fail-closed.
+      }
+      if (!canReadInbox.value) await router.replace({ name: "overview" });
+    },
+  },
   supportWorkspaceSource,
 );
 const availabilityDialogVisible = ref(false);
@@ -120,17 +152,18 @@ function handleWorkspacePresented(mode: "windowed" | "full-tab"): void {
   workspacePresentedFullscreen.value = mode === "full-tab";
 }
 
-const routeConversationId = computed(() => {
-  const routeId = route.params.conversationId;
-  return typeof routeId === "string" ? routeId : undefined;
-});
-const requestedConversationId = computed(
-  () => routeConversationId.value ?? inbox.items.value[0]?.id,
+const requestedSelectionKey = computed(() =>
+  routeCaseId.value
+    ? `CASE:${routeCaseId.value}`
+    : routeConversationId.value
+      ? `CONVERSATION:${routeConversationId.value}`
+      : "",
 );
 const conversation = createSupportConversationController(
   {
     projectId: () => auth.project?.id,
-    conversationId: () => requestedConversationId.value,
+    conversationId: () => routeConversationId.value,
+    caseId: () => routeCaseId.value,
     onForbidden: handleConversationForbidden,
   },
   supportWorkspaceSource,
@@ -414,12 +447,12 @@ const workspaceLiveSeverity = computed(() =>
       : "info",
 );
 const selectedConversation = computed(() => {
-  if (routeConversationId.value)
-    return conversation.selection.value?.conversation ?? null;
-  return (
-    conversation.selection.value?.conversation ?? inbox.items.value[0] ?? null
-  );
+  return conversation.selection.value?.conversation ?? null;
 });
+const selectedCase = computed(() => conversation.selection.value?.case ?? null);
+const selectedInboxKey = computed(
+  () => requestedSelectionKey.value || undefined,
+);
 const selectedAssignmentAuthorityKey = computed(() => {
   const supportCase = conversation.selection.value?.case;
   const assignment = supportCase?.assignment;
@@ -651,21 +684,23 @@ const profile = createSupportUserProfileController(
   supportUserProfileSource,
 );
 
-function initials(value: string): string {
-  return value
-    .split(/\s+/u)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
+async function openInboxItem(item: SupportInboxItem): Promise<void> {
+  if (`${item.kind}:${item.id}` === requestedSelectionKey.value) return;
+  await router.push(
+    item.kind === "CASE"
+      ? { name: "support-inbox-case", params: { caseId: item.id } }
+      : {
+          name: "support-inbox-conversation",
+          params: { conversationId: item.id },
+        },
+  );
 }
 
-async function openConversation(conversationId: string): Promise<void> {
-  if (conversationId === routeConversationId.value) return;
-  await router.push({
-    name: "support-inbox-conversation",
-    params: { conversationId },
-  });
+async function changeInboxMode(mode: SupportInboxMode): Promise<void> {
+  const query = { ...route.query };
+  if (mode === "ALL_CONVERSATIONS") delete query.mode;
+  else query.mode = "cases";
+  await router.push({ name: "support-inbox", query });
 }
 
 async function classifySelectedCase(): Promise<void> {
@@ -678,7 +713,15 @@ async function classifySelectedCase(): Promise<void> {
 
 async function backToInbox(): Promise<void> {
   contextDrawerVisible.value = false;
-  await router.push({ name: "support-inbox" });
+  await router.push({
+    name: "support-inbox",
+    query:
+      inboxMode.value === "CASES"
+        ? { ...route.query, mode: "cases" }
+        : Object.fromEntries(
+            Object.entries(route.query).filter(([key]) => key !== "mode"),
+          ),
+  });
 }
 
 function openInternalNotes(): void {
@@ -746,9 +789,9 @@ function keyboardNavigationIsBlocked(target: EventTarget | null): boolean {
 function moveInboxSelection(direction: -1 | 1): void {
   const items = inbox.items.value;
   if (!items.length) return;
-  const currentId = selectedConversation.value?.id;
-  const currentIndex = currentId
-    ? items.findIndex((item) => item.id === currentId)
+  const currentKey = requestedSelectionKey.value;
+  const currentIndex = currentKey
+    ? items.findIndex((item) => `${item.kind}:${item.id}` === currentKey)
     : -1;
   const nextIndex = Math.max(
     0,
@@ -762,7 +805,7 @@ function moveInboxSelection(direction: -1 | 1): void {
     ),
   );
   const next = items[nextIndex];
-  if (next) void openConversation(next.id);
+  if (next) void openInboxItem(next);
 }
 
 function handleWorkspaceKeydown(event: KeyboardEvent): void {
@@ -1049,8 +1092,11 @@ async function handleConversationForbidden(): Promise<void> {
     // The revoked conversation was purged before authority recovery.
   }
   await inbox.load().catch(() => undefined);
-  if (routeConversationId.value)
-    await router.replace({ name: "support-inbox" });
+  if (requestedSelectionKey.value)
+    await router.replace({
+      name: "support-inbox",
+      query: inboxMode.value === "CASES" ? { mode: "cases" } : {},
+    });
 }
 
 function openAiSuspensionDialog(mode: "START" | "EXTEND" | "RESUME"): void {
@@ -1233,8 +1279,13 @@ watch(selectedAssignmentAuthorityKey, (authorityKey, previousAuthorityKey) => {
   if (authorityKey !== previousAuthorityKey) assignmentRelease.reset();
 });
 
+watch(inboxMode, async () => {
+  inbox.reset();
+  await inbox.load();
+});
+
 watch(
-  requestedConversationId,
+  requestedSelectionKey,
   () => {
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
@@ -1258,8 +1309,6 @@ watch(
     () => conversation.selection.value?.endUser.id,
   ],
   () => {
-    const selected = conversation.selection.value?.conversation;
-    if (selected) inbox.upsert(selected);
     reply.syncSelection();
     replyTranslationRequested.value = false;
     replyTemplateGalleryVisible.value = false;
@@ -1338,10 +1387,14 @@ onBeforeUnmount(() => {
       }"
     >
       <header class="page-header support-workspace-header">
-        <div>
-          <div class="eyebrow"><i class="pi pi-headphones" /> Поддержка</div>
-          <h1>Поддержка</h1>
-          <p class="subtitle">Единая очередь чатов с пользователями.</p>
+        <div class="support-workspace-title">
+          <span class="support-workspace-title__icon">
+            <i class="pi pi-headphones" aria-hidden="true" />
+          </span>
+          <div>
+            <h1>Поддержка</h1>
+            <p>Рабочее место оператора</p>
+          </div>
         </div>
         <div class="header-actions">
           <Tag :value="workspaceLiveLabel" :severity="workspaceLiveSeverity" />
@@ -1386,92 +1439,24 @@ onBeforeUnmount(() => {
       <div
         class="support-workspace card"
         :class="{
-          'has-route-selection': Boolean(routeConversationId),
+          'has-route-selection': Boolean(requestedSelectionKey),
         }"
       >
-        <aside class="inbox-pane" aria-label="Диалоги проекта">
-          <div class="pane-heading">
-            <div>
-              <span class="eyebrow">Поддержка</span>
-              <h2>Входящие</h2>
-            </div>
-            <span class="inbox-count">{{ inbox.items.value.length }}</span>
-          </div>
-
-          <div class="queue-summary">
-            <span
-              ><i class="pi pi-inbox" aria-hidden="true" /> Все диалоги</span
-            >
-            <small>J / K для навигации</small>
-          </div>
-
-          <div
-            v-if="inbox.loading.value && !inbox.items.value.length"
-            class="inbox-skeletons"
-          >
-            <Skeleton v-for="index in 5" :key="index" height="76px" />
-          </div>
-          <Message
-            v-else-if="inbox.error.value"
-            severity="error"
-            :closable="false"
-          >
-            {{ inbox.error.value }}
-          </Message>
-          <p v-else-if="!inbox.items.value.length" class="empty-pane">
-            В этом проекте пока нет доступных диалогов.
-          </p>
-          <div v-else class="conversation-list">
-            <button
-              v-for="conversation in inbox.items.value"
-              :key="conversation.id"
-              type="button"
-              class="conversation-row"
-              :class="{
-                selected: conversation.id === selectedConversation?.id,
-              }"
-              :aria-current="
-                conversation.id === selectedConversation?.id
-                  ? 'true'
-                  : undefined
-              "
-              @click="openConversation(conversation.id)"
-            >
-              <div class="conversation-row__top">
-                <span class="conversation-avatar">{{
-                  initials(conversation.title)
-                }}</span>
-                <strong>{{ conversation.title }}</strong>
-              </div>
-              <p v-if="conversation.lastMessageAt">
-                Последняя активность
-                <time :datetime="conversation.lastMessageAt">
-                  {{ relativeTime(conversation.lastMessageAt) }}
-                </time>
-              </p>
-              <p v-else>Сообщений пока нет</p>
-              <span class="conversation-row__meta">
-                <span
-                  :class="[
-                    'conversation-state',
-                    conversation.status.toLowerCase(),
-                  ]"
-                >
-                  {{ conversation.status === "OPEN" ? "Открыт" : "Закрыт" }}
-                </span>
-                {{ conversation.messageCount }} сообщений
-              </span>
-            </button>
-            <Button
-              v-if="inbox.nextCursor.value"
-              label="Показать ещё"
-              severity="secondary"
-              text
-              :loading="inbox.loading.value"
-              @click="inbox.loadMore"
-            />
-          </div>
-        </aside>
+        <SupportInboxPane
+          :mode="inboxMode"
+          :items="inbox.items.value"
+          :selected-key="selectedInboxKey"
+          :loading="inbox.loading.value"
+          :error="inbox.error.value"
+          :failure="inbox.failure.value"
+          :has-more="Boolean(inbox.nextCursor.value)"
+          :can-read-cases="canReadInbox"
+          :can-read-conversations="canReadInbox"
+          @select="openInboxItem"
+          @change-mode="changeInboxMode"
+          @load-more="inbox.loadMore"
+          @retry="inbox.load"
+        />
 
         <main class="conversation-pane" aria-label="Выбранный диалог">
           <template v-if="selectedConversation">
@@ -1486,12 +1471,20 @@ onBeforeUnmount(() => {
                   @click="backToInbox"
                 />
                 <span class="eyebrow">{{
-                  selectedConversation.status === "OPEN"
-                    ? "Активный диалог"
-                    : "Архивный диалог"
+                  selectedCase
+                    ? `Обращение #${selectedCase.projectSequence}`
+                    : selectedConversation.status === "OPEN"
+                      ? "Активный диалог"
+                      : "Архивный диалог"
                 }}</span>
-                <h2>{{ selectedConversation.title }}</h2>
-                <p>Безопасный контекст доступен в панели диалога.</p>
+                <h2>{{ selectedCase?.title ?? selectedConversation.title }}</h2>
+                <p>
+                  {{
+                    selectedCase
+                      ? `${selectedCase.groupCode} · ${selectedConversation.title}`
+                      : "Безопасный контекст доступен в панели диалога."
+                  }}
+                </p>
               </div>
               <div class="conversation-header__actions">
                 <Button
@@ -1661,6 +1654,44 @@ onBeforeUnmount(() => {
             </Dialog>
           </template>
           <div
+            v-else-if="selectedCase && conversation.selection.value"
+            class="case-without-conversation"
+          >
+            <header class="conversation-header">
+              <div>
+                <Button
+                  class="mobile-back"
+                  label="Назад к обращениям"
+                  icon="pi pi-arrow-left"
+                  severity="secondary"
+                  text
+                  @click="backToInbox"
+                />
+                <span class="eyebrow"
+                  >Обращение #{{ selectedCase.projectSequence }}</span
+                >
+                <h2>{{ selectedCase.title }}</h2>
+                <p>Рабочий контекст обращения загружен с сервера.</p>
+              </div>
+              <Button
+                class="mobile-context"
+                label="Контекст"
+                icon="pi pi-briefcase"
+                severity="secondary"
+                text
+                @click="contextDrawerVisible = true"
+              />
+            </header>
+            <div class="case-channel-empty">
+              <i class="pi pi-comments" aria-hidden="true" />
+              <h2>У обращения нет связанного чата</h2>
+              <p>
+                Обращение остаётся доступно как отдельный рабочий объект. Чат
+                здесь не создаётся и не подменяется другим диалогом.
+              </p>
+            </div>
+          </div>
+          <div
             v-else-if="inbox.loading.value || conversation.loading.value"
             class="empty-selection"
             aria-busy="true"
@@ -1670,19 +1701,25 @@ onBeforeUnmount(() => {
           </div>
           <div v-else class="empty-selection">
             <i class="pi pi-comments" aria-hidden="true" />
-            <template v-if="route.params.conversationId">
-              <h2>Диалог недоступен</h2>
-              <p>Диалог не найден или у вас больше нет прав на его просмотр.</p>
+            <template v-if="route.params.conversationId || route.params.caseId">
+              <h2>
+                {{
+                  route.params.caseId
+                    ? "Обращение недоступно"
+                    : "Диалог недоступен"
+                }}
+              </h2>
+              <p>Он не найден или у вас больше нет прав на его просмотр.</p>
             </template>
             <template v-else>
-              <h2>Выберите диалог</h2>
+              <h2>Выберите элемент входящих</h2>
               <p>История и безопасный контекст появятся здесь.</p>
             </template>
           </div>
         </main>
 
         <aside
-          v-if="selectedConversation && conversation.selection.value"
+          v-if="conversation.selection.value"
           class="context-pane"
           aria-label="Контекст диалога"
         >
@@ -1732,7 +1769,7 @@ onBeforeUnmount(() => {
         @retry="routingOffers.retryUnknownOutcome"
       />
       <Drawer
-        v-if="selectedConversation && conversation.selection.value"
+        v-if="conversation.selection.value"
         :visible="contextDrawerVisible"
         position="right"
         aria-label="Контекст диалога"
@@ -1893,12 +1930,29 @@ onBeforeUnmount(() => {
 .support-workspace-header {
   margin-bottom: 14px;
 }
-.support-workspace-header h1 {
-  margin-top: 4px;
-  font-size: clamp(1.45rem, 2vw, 1.9rem);
+.support-workspace-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.support-workspace-header .subtitle {
-  margin-top: 4px;
+.support-workspace-title__icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.support-workspace-header h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+.support-workspace-title p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 .support-workspace-page--full-tab {
   width: 100%;
@@ -1946,21 +2000,14 @@ onBeforeUnmount(() => {
   border-color: color-mix(in srgb, var(--line) 82%, transparent);
   box-shadow: var(--shadow-raised);
 }
-.inbox-pane,
 .context-pane {
   min-height: 0;
   padding: 18px;
   background: var(--surface-card);
   overflow: auto;
 }
-.inbox-pane {
-  padding: 20px 14px;
-}
 .context-pane {
   padding: 18px 18px 24px;
-}
-.inbox-pane {
-  border-right: 1px solid var(--line);
 }
 .context-pane {
   border-left: 1px solid var(--line);
@@ -2120,6 +2167,53 @@ onBeforeUnmount(() => {
   flex-direction: column;
   background: var(--surface-base);
 }
+.case-without-conversation {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.case-channel-empty {
+  min-height: 0;
+  flex: 1;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  text-align: center;
+  background: radial-gradient(
+    circle at center,
+    var(--brand-soft),
+    transparent 46%
+  );
+}
+.case-channel-empty i {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--surface-card);
+  color: var(--brand);
+  box-shadow: var(--shadow-subtle);
+  font-size: 1.2rem;
+}
+.case-channel-empty h2,
+.case-channel-empty p {
+  margin: 0;
+}
+.case-channel-empty h2 {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+.case-channel-empty p {
+  max-width: 460px;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
 .conversation-header {
   gap: 16px;
   padding: 16px 20px;
@@ -2221,13 +2315,9 @@ onBeforeUnmount(() => {
     > div:first-child {
     width: 100%;
   }
-  .support-workspace-page--full-tab .support-workspace-header .eyebrow,
-  .support-workspace-page--full-tab .support-workspace-header .subtitle {
-    display: none;
-  }
   .support-workspace-page--full-tab .support-workspace-header h1 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
   .support-workspace-page--full-tab .header-actions {
     width: 100%;
@@ -2267,15 +2357,15 @@ onBeforeUnmount(() => {
     .conversation-pane,
   .support-workspace-page--full-tab
     .support-workspace:not(.has-route-selection)
-    .inbox-pane {
+    .support-inbox-pane {
     height: 100%;
   }
   .support-workspace:not(.has-route-selection) .conversation-pane,
   .support-workspace:not(.has-route-selection) .context-pane,
-  .support-workspace.has-route-selection .inbox-pane {
+  .support-workspace.has-route-selection .support-inbox-pane {
     display: none;
   }
-  .inbox-pane {
+  .support-inbox-pane {
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }
