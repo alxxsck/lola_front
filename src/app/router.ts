@@ -274,12 +274,6 @@ export const router = createRouter({
           meta: { supportWorkspaceAccess: true },
         },
         {
-          path: "support/inbox/cases/:caseId",
-          name: "support-inbox-case",
-          component: () => import("@/pages/SupportWorkspacePage.vue"),
-          meta: { supportWorkspaceAccess: true },
-        },
-        {
           path: "support/control",
           name: "support-control",
           component: () => import("@/pages/SupportControlPage.vue"),

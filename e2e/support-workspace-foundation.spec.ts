@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Рабочее место оператора",
+      name: "Поддержка",
     }),
   ).toBeVisible();
 });
@@ -139,27 +139,22 @@ test("shows and changes only the operator's authoritative availability intent", 
   await expect(status).toContainText("Новые обращения не назначаются");
 });
 
-test("switches between conversations and Cases without mixing their lists", async ({
+test("keeps one support chat queue and exposes user, Case, and action context", async ({
   page,
 }) => {
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
-  await expect(queue.getByRole("tab", { name: "Все диалоги" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
+  await expect(queue.getByRole("heading", { name: "Входящие" })).toBeVisible();
+  await expect(queue.locator(".conversation-row")).toHaveCount(3);
+  await expect(queue.getByText("Обращения", { exact: true })).toHaveCount(0);
 
-  await queue.getByRole("tab", { name: "Обращения" }).click();
-  await expect(page).toHaveURL(/\/support\/inbox\?view=cases$/);
+  await queue.locator(".conversation-row").first().click();
+  const context = page.locator(".context-pane");
+  await expect(context.getByRole("tab")).toHaveCount(3);
   await expect(
-    queue.getByRole("heading", { name: "Обращения", level: 2 }),
+    context.getByRole("tab", { name: "Пользователь" }),
   ).toBeVisible();
-  await expect(queue.locator(".case-row").first()).toBeVisible();
-  await expect(queue.locator(".conversation-row")).toHaveCount(0);
-
-  await queue.locator(".case-row").first().click();
-  await expect(page).toHaveURL(/\/support\/inbox\/cases\/[^?]+\?view=cases$/);
-  await expect(page.locator(".conversation-header h2")).toBeVisible();
-  await expect(page.locator(".context-pane")).toContainText("Обращение");
+  await expect(context.getByRole("tab", { name: "Кейс" })).toBeVisible();
+  await expect(context.getByRole("tab", { name: "Действия" })).toBeVisible();
 });
 
 test("expands the workspace without leaving the operator workflow", async ({
@@ -236,8 +231,7 @@ test("opens the selected conversation context in a mobile drawer", async ({
 
   const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
   await expect(drawer).toBeVisible();
-  await expect(drawer.locator("dt", { hasText: "Пользователь" })).toBeVisible();
-  await expect(drawer.locator("dd", { hasText: "Пользователь" })).toBeVisible();
+  await expect(drawer.locator(".user-card h3")).toHaveText("Пользователь");
   await expect(drawer.getByText("user_11603", { exact: true })).toHaveCount(0);
 });
 
@@ -252,13 +246,7 @@ test("loads the profile only from the permission-gated inspector", async ({
 
   const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
   await expect(drawer.getByText("Marco Silva", { exact: true })).toHaveCount(0);
-  await drawer.getByRole("tab", { name: "Данные" }).click();
-  await drawer.getByRole("button", { name: "Загрузить" }).click();
+  await drawer.getByRole("button", { name: "Обновить" }).click();
   await expect(drawer.getByText("Marco Silva", { exact: true })).toBeVisible();
   await expect(drawer.getByText("user_11603", { exact: true })).toHaveCount(0);
-
-  await drawer.getByRole("tab", { name: "Активность" }).click();
-  await expect(
-    drawer.getByText(/Presence — это только краткая подсказка/),
-  ).toBeVisible();
 });

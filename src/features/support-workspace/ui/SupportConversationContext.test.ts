@@ -70,14 +70,13 @@ const selection: SupportWorkspaceSelection = {
 };
 
 function render(
-  canOpenCase: boolean,
   profileProps: {
     canReadProfile?: boolean;
     profile?: ProfileProjectionResponseDto | null;
   } = {},
 ) {
   return mount(SupportConversationContext, {
-    props: { conversation, selection, canOpenCase, ...profileProps },
+    props: { conversation, selection, ...profileProps },
     global: {
       stubs: {
         Button: { template: '<button type="button"><slot /></button>' },
@@ -89,34 +88,37 @@ function render(
 }
 
 describe("support conversation context", () => {
-  it("renders the server-provided Case projection without revealing raw user identity", () => {
-    const wrapper = render(true);
+  it("switches from user context to the server-provided Case projection", async () => {
+    const wrapper = render();
 
-    expect(wrapper.get('[aria-label="Case"]').text()).toContain(
+    await wrapper.get('[role="tab"][aria-selected="false"]').trigger("click");
+
+    expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(
       "Проверить возврат бонусов",
     );
-    expect(wrapper.get('[aria-label="Case"]').text()).toContain("Высокий");
-    expect(wrapper.get('[aria-label="Case"]').text()).toContain(
+    expect(wrapper.get('[aria-label="Кейс"]').text()).toContain("Высокий");
+    expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(
       "Оператор Алина",
     );
     expect(wrapper.text()).not.toContain("raw-external-id-must-not-render");
-    expect(wrapper.get("a").text()).toBe("Открыть в рабочем месте");
   });
 
-  it("does not mount a Case deep link without the exact case-read permission", () => {
-    const wrapper = render(false);
+  it("exposes exactly user, Case, and actions tabs", () => {
+    const wrapper = render();
 
-    expect(wrapper.find('[aria-label="Case"]').exists()).toBe(true);
-    expect(wrapper.find("a").exists()).toBe(false);
+    expect(wrapper.findAll('[role="tab"]').map((tab) => tab.text())).toEqual([
+      "Пользователь",
+      "Кейс",
+      "Действия",
+    ]);
   });
 
   it("only renders the internal-notes entry point with the dedicated read grant", async () => {
-    const denied = render(true);
+    const denied = render();
     const allowed = mount(SupportConversationContext, {
       props: {
         conversation,
         selection,
-        canOpenCase: true,
         canReadInternalNotes: true,
       },
       global: {
@@ -133,13 +135,14 @@ describe("support conversation context", () => {
       },
     });
 
+    await allowed.findAll('[role="tab"]')[2]!.trigger("click");
     expect(denied.text()).not.toContain("Внутренние заметки");
     expect(allowed.text()).toContain("Внутренние заметки");
     await allowed.get(".internal-notes-link").trigger("click");
     expect(allowed.emitted("openInternalNotes")).toHaveLength(1);
   });
 
-  it("requires both session assignment authority and the server Case capability for release", () => {
+  it("requires both session assignment authority and the server Case capability for release", async () => {
     const actionableSelection: SupportWorkspaceSelection = {
       ...selection,
       capabilities: { ...selection.capabilities, releaseAssignment: true },
@@ -148,7 +151,6 @@ describe("support conversation context", () => {
       props: {
         conversation,
         selection: actionableSelection,
-        canOpenCase: true,
         canReleaseAssignment: false,
       },
       global: {
@@ -163,7 +165,6 @@ describe("support conversation context", () => {
       props: {
         conversation,
         selection: actionableSelection,
-        canOpenCase: true,
         canReleaseAssignment: true,
       },
       global: {
@@ -178,11 +179,13 @@ describe("support conversation context", () => {
       },
     });
 
+    await denied.findAll('[role="tab"]')[2]!.trigger("click");
+    await allowed.findAll('[role="tab"]')[2]!.trigger("click");
     expect(denied.findComponent(SupportAssignmentRelease).exists()).toBe(false);
     expect(allowed.findComponent(SupportAssignmentRelease).exists()).toBe(true);
   });
 
-  it("localizes every server Case state and priority instead of exposing enum values", () => {
+  it("localizes every server Case state and priority instead of exposing enum values", async () => {
     const cases = [
       ["IN_PROGRESS", "В работе"],
       ["WAITING_END_USER", "Ожидает пользователя"],
@@ -197,7 +200,6 @@ describe("support conversation context", () => {
         props: {
           conversation,
           selection: { ...selection, case: { ...selection.case!, status } },
-          canOpenCase: true,
         },
         global: {
           stubs: {
@@ -207,7 +209,8 @@ describe("support conversation context", () => {
           },
         },
       });
-      expect(wrapper.get('[aria-label="Case"]').text()).toContain(label);
+      await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
+      expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(label);
     }
     const critical = mount(SupportConversationContext, {
       props: {
@@ -216,7 +219,6 @@ describe("support conversation context", () => {
           ...selection,
           case: { ...selection.case!, priority: "CRITICAL" },
         },
-        canOpenCase: true,
       },
       global: {
         stubs: {
@@ -226,11 +228,12 @@ describe("support conversation context", () => {
         },
       },
     });
-    expect(critical.get('[aria-label="Case"]').text()).toContain("Критический");
+    await critical.findAll('[role="tab"]')[1]!.trigger("click");
+    expect(critical.get('[aria-label="Кейс"]').text()).toContain("Критический");
   });
 
   it("renders allowed and redacted profile fields but removes forbidden fields", async () => {
-    const wrapper = render(true, {
+    const wrapper = render({
       canReadProfile: true,
       profile: {
         endUserId: "end-user-1",
@@ -278,8 +281,7 @@ describe("support conversation context", () => {
       },
     });
 
-    await wrapper.get('[role="tab"]:nth-child(3)').trigger("click");
-    const profile = wrapper.get('[aria-label="Данные пользователя"]');
+    const profile = wrapper.get('[aria-label="Пользователь"]');
     expect(profile.text()).toContain("Ирина");
     expect(profile.text()).toContain("Телефон");
     expect(profile.text()).toContain("Скрыто");

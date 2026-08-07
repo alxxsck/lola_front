@@ -6,7 +6,6 @@ import Avatar from "primevue/avatar";
 import Menu from "primevue/menu";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
-import { useEndUserCasesStore } from "@/features/end-user-cases/model/end-user-cases.store";
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
 import {
@@ -17,9 +16,7 @@ import { canReadProjectMemberships } from "@/features/project-memberships/model/
 import { canReadProjectRoles } from "@/features/project-roles/model/project-role-permissions";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
-import {
-  conversationAISuspensionEnabled,
-} from "@/shared/config/features";
+import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import {
   canReadSupportControl as canReadSupportControlAccess,
   canReadSupportWorkspace as canReadSupportWorkspaceAccess,
@@ -34,7 +31,6 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const projectActions = useProjectActionsStore();
-const cases = useEndUserCasesStore();
 const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
@@ -177,14 +173,6 @@ const navigation = computed(() =>
       to: "/actions",
       project: true,
       projectPermission: "project.actions.read",
-    },
-    {
-      label: "Обращения",
-      icon: "pi pi-comments",
-      to: "/cases",
-      cases: true,
-      project: true,
-      projectPermission: "project.cases.read",
     },
     {
       label: "Поддержка",
@@ -364,7 +352,6 @@ function openProjectTab(projectId: string) {
 }
 
 async function logout(allDevices: boolean) {
-  cases.deactivate();
   suspensions.deactivate();
   cmsRealtimeClient.deactivateProject();
   try {
@@ -394,16 +381,7 @@ watch(
       )
         void suspensions.activateProject(projectId);
       else suspensions.deactivate();
-      if (
-        hasProjectPermission(
-          auth.project?.effectivePermissionCodes ?? [],
-          "project.cases.read",
-        )
-      )
-        void cases.activateProject(projectId);
-      else cases.deactivate();
     } else {
-      cases.deactivate();
       suspensions.deactivate();
       cmsRealtimeClient.deactivateProject();
     }
@@ -412,7 +390,6 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  cases.deactivate();
   suspensions.deactivate();
   cmsRealtimeClient.deactivateProject();
 });
@@ -481,11 +458,6 @@ onBeforeUnmount(() => {
                 "
               />
               <span>{{ item.label }}</span>
-              <span
-                v-if="item.cases && (cases.summary?.attentionCount ?? 0) > 0"
-                class="nav-count"
-                >{{ cases.summary?.attentionCount }}</span
-              >
               <span v-if="item.live" class="live-pulse" />
             </RouterLink>
           </template>

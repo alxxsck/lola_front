@@ -22,7 +22,6 @@ const props = withDefaults(
   defineProps<{
     conversation: SupportWorkspaceConversation;
     selection: SupportWorkspaceSelection;
-    canOpenCase: boolean;
     canManageCase?: boolean;
     canReleaseAssignment?: boolean;
     canReadInternalNotes?: boolean;
@@ -64,30 +63,32 @@ const emit = defineEmits<{
   classifyCase: [];
 }>();
 
-type InspectorTab = "CASE" | "USER" | "DATA" | "ACTIVITY";
-const activeTab = ref<InspectorTab>("CASE");
-const inspectorTabs = computed(
-  () =>
-    [
-      ...(props.selection.case
-        ? [{ id: "CASE" as const, label: "Обращение" }]
-        : []),
-      { id: "USER" as const, label: "Пользователь" },
-      { id: "DATA" as const, label: "Данные" },
-      { id: "ACTIVITY" as const, label: "Активность" },
-    ] satisfies Array<{ id: InspectorTab; label: string }>,
-);
+type InspectorTab = "USER" | "CASE" | "ACTIONS";
+const activeTab = ref<InspectorTab>("USER");
+const inspectorTabs = [
+  { id: "USER" as const, label: "Пользователь", icon: "pi pi-user" },
+  { id: "CASE" as const, label: "Кейс", icon: "pi pi-briefcase" },
+  { id: "ACTIONS" as const, label: "Действия", icon: "pi pi-bolt" },
+];
 
 watch(
-  () => props.selection.case?.id,
+  () => props.selection.endUser.id,
   () => {
-    activeTab.value = props.selection.case ? "CASE" : "USER";
+    activeTab.value = "USER";
   },
-  { immediate: true },
 );
 
 const userLabel = computed(() =>
   props.selection.endUser.isGuest ? "Гостевой пользователь" : "Пользователь",
+);
+const userInitial = computed(() => userLabel.value.slice(0, 1).toUpperCase());
+const hasAvailableActions = computed(
+  () =>
+    props.canManageCase ||
+    props.canReadInternalNotes ||
+    (props.canReleaseAssignment &&
+      props.selection.capabilities.releaseAssignment &&
+      Boolean(props.selection.case?.assignment)),
 );
 
 function labelCaseStatus(value: string): string {
@@ -163,12 +164,6 @@ function profileClassificationLabel(
 
 <template>
   <div class="support-conversation-context">
-    <div class="pane-heading">
-      <div>
-        <span class="eyebrow">Контекст</span>
-        <h2>Инспектор</h2>
-      </div>
-    </div>
     <div class="inspector-tabs" role="tablist" aria-label="Разделы контекста">
       <button
         v-for="tab in inspectorTabs"
@@ -179,121 +174,49 @@ function profileClassificationLabel(
         :class="{ active: activeTab === tab.id }"
         @click="activeTab = tab.id"
       >
+        <i :class="tab.icon" aria-hidden="true" />
         {{ tab.label }}
       </button>
     </div>
 
     <section
-      v-if="activeTab === 'CASE' && selection.case"
-      class="case-summary"
-      aria-label="Case"
-    >
-      <span class="eyebrow">Case #{{ selection.case.projectSequence }}</span>
-      <h3>{{ selection.case.title }}</h3>
-      <dl>
-        <div>
-          <dt>Статус</dt>
-          <dd>{{ labelCaseStatus(selection.case.status) }}</dd>
-        </div>
-        <div>
-          <dt>Приоритет</dt>
-          <dd>{{ labelCasePriority(selection.case.priority) }}</dd>
-        </div>
-        <div>
-          <dt>Назначен</dt>
-          <dd>
-            {{
-              selection.case.assignment?.operatorName ??
-              selection.case.assignee?.displayName ??
-              "Не назначен"
-            }}
-          </dd>
-        </div>
-        <div v-if="selection.case.assignment">
-          <dt>Команда</dt>
-          <dd>{{ selection.case.assignment.teamName }}</dd>
-        </div>
-      </dl>
-      <RouterLink
-        v-if="canOpenCase"
-        class="case-link"
-        :to="{
-          name: 'support-inbox-case',
-          params: { caseId: selection.case.id },
-          query: { view: 'cases' },
-        }"
-      >
-        Открыть в рабочем месте
-      </RouterLink>
-      <Button
-        v-if="canManageCase"
-        class="classify-case"
-        label="Классификация и приоритет"
-        icon="pi pi-tags"
-        severity="secondary"
-        outlined
-        @click="emit('classifyCase')"
-      />
-      <Button
-        v-if="canReadInternalNotes"
-        class="internal-notes-link"
-        label="Внутренние заметки"
-        icon="pi pi-file-edit"
-        severity="secondary"
-        outlined
-        @click="emit('openInternalNotes')"
-      />
-      <SupportAssignmentRelease
-        v-if="
-          canReleaseAssignment &&
-          selection.case.assignment &&
-          selection.capabilities.releaseAssignment
-        "
-        v-bind="assignmentRelease"
-        @release="emit('releaseAssignment', $event)"
-        @retry="emit('retryAssignmentRelease')"
-      />
-    </section>
-
-    <section
       v-if="activeTab === 'USER'"
-      class="inspector-section"
+      class="inspector-section user-section"
       aria-label="Пользователь"
     >
-      <dl class="context-list">
+      <header class="user-card">
+        <span class="user-avatar">{{ userInitial }}</span>
         <div>
-          <dt>Пользователь</dt>
-          <dd>{{ userLabel }}</dd>
+          <span class="section-kicker">Пользователь</span>
+          <h3>{{ userLabel }}</h3>
+          <p>Активность {{ relativeTime(selection.endUser.lastSeenAt) }}</p>
         </div>
-        <div>
+      </header>
+
+      <dl class="context-grid">
+        <div class="context-field">
           <dt>Язык</dt>
-          <dd>{{ selection.endUser.locale ?? "Не указан" }}</dd>
+          <dd>{{ selection.endUser.locale?.toUpperCase() ?? "Не указан" }}</dd>
         </div>
-        <div>
-          <dt>Последняя активность</dt>
-          <dd>{{ relativeTime(selection.endUser.lastSeenAt) }}</dd>
+        <div class="context-field">
+          <dt>Диалог</dt>
+          <dd>{{ conversation.status === "OPEN" ? "Активный" : "Закрыт" }}</dd>
+        </div>
+        <div class="context-field">
+          <dt>Сообщений</dt>
+          <dd>{{ conversation.messageCount }}</dd>
         </div>
       </dl>
-      <p class="inspector-hint">
-        Безопасная сводка доступна здесь; персональные поля открываются во
-        вкладке «Данные».
-      </p>
-    </section>
-
-    <section
-      v-if="activeTab === 'DATA'"
-      class="profile-summary"
-      aria-label="Данные пользователя"
-    >
-      <div class="profile-summary__heading">
+      <div class="section-heading profile-heading">
         <div>
-          <span class="eyebrow">Профиль</span>
-          <h3>Разрешённые данные</h3>
+          <span class="section-kicker">Профиль</span>
+          <h3>Данные пользователя</h3>
         </div>
         <Button
           v-if="canReadProfile"
-          label="Загрузить"
+          label="Обновить"
           icon="pi pi-refresh"
+          size="small"
           severity="secondary"
           text
           :loading="profileLoading"
@@ -304,14 +227,14 @@ function profileClassificationLabel(
         {{ profileError }}
       </Message>
       <template v-else-if="profile">
-        <p class="profile-summary__freshness">
+        <p class="profile-meta">
           {{
             profile.observedAt
               ? `Снимок обновлён ${relativeTime(profile.observedAt)}`
               : "Время снимка не передано"
           }}
         </p>
-        <p class="profile-summary__metadata">
+        <p class="profile-meta">
           {{ profileSyncStatusLabel(profile.syncStatus) }} · источник:
           {{ profileProvenanceLabel(profile.provenance) }}
         </p>
@@ -331,193 +254,305 @@ function profileClassificationLabel(
             </small>
           </div>
         </dl>
-        <p v-else class="profile-summary__empty">
+        <p v-else class="empty-copy">
           Разрешённых полей в актуальном снимке нет.
         </p>
       </template>
-      <p v-else class="profile-summary__empty">
-        <template v-if="canReadProfile"
-          >Загрузите отдельный серверный снимок профиля.</template
-        >
-        <template v-else
-          >У вас нет прав на персональные данные пользователя.</template
-        >
-      </p>
+      <div v-else class="empty-card">
+        <i class="pi pi-id-card" aria-hidden="true" />
+        <p>
+          <template v-if="canReadProfile"
+            >Загрузите актуальные данные профиля.</template
+          >
+          <template v-else
+            >У вас нет прав на персональные данные пользователя.</template
+          >
+        </p>
+      </div>
     </section>
 
     <section
-      v-if="activeTab === 'ACTIVITY'"
-      class="inspector-section"
-      aria-label="Активность"
+      v-if="activeTab === 'CASE'"
+      class="inspector-section case-section"
+      aria-label="Кейс"
     >
-      <dl class="context-list">
+      <template v-if="selection.case">
+        <header class="case-header">
+          <span class="section-kicker"
+            >Кейс #{{ selection.case.projectSequence }}</span
+          >
+          <h3>{{ selection.case.title }}</h3>
+          <div class="case-badges">
+            <span class="status-badge">{{
+              labelCaseStatus(selection.case.status)
+            }}</span>
+            <span class="priority-badge">{{
+              labelCasePriority(selection.case.priority)
+            }}</span>
+          </div>
+        </header>
+        <dl class="context-grid case-grid">
+          <div class="context-field">
+            <dt>Категория</dt>
+            <dd>{{ selection.case.groupCode }}</dd>
+          </div>
+          <div class="context-field">
+            <dt>Назначен</dt>
+            <dd>
+              {{
+                selection.case.assignment?.operatorName ??
+                selection.case.assignee?.displayName ??
+                "Не назначен"
+              }}
+            </dd>
+          </div>
+          <div
+            v-if="selection.case.assignment"
+            class="context-field context-field--wide"
+          >
+            <dt>Команда</dt>
+            <dd>{{ selection.case.assignment.teamName }}</dd>
+          </div>
+          <div class="context-field context-field--wide">
+            <dt>Последнее изменение</dt>
+            <dd>{{ relativeTime(selection.case.updatedAt) }}</dd>
+          </div>
+        </dl>
+      </template>
+      <div v-else class="empty-card">
+        <i class="pi pi-briefcase" aria-hidden="true" />
+        <p>Для этого диалога кейс не создан.</p>
+      </div>
+    </section>
+
+    <section
+      v-if="activeTab === 'ACTIONS'"
+      class="inspector-section actions-section"
+      aria-label="Действия"
+    >
+      <div class="section-heading">
         <div>
-          <dt>Статус диалога</dt>
-          <dd>
-            {{ conversation.status === "OPEN" ? "Активный" : "Архивный" }}
-          </dd>
+          <span class="section-kicker">Управление</span>
+          <h3>Действия с диалогом</h3>
         </div>
-        <div>
-          <dt>Сообщений</dt>
-          <dd>{{ conversation.messageCount }}</dd>
-        </div>
-        <div>
-          <dt>Сессий сейчас</dt>
-          <dd>{{ conversation.currentInteractionSessionCount }}</dd>
-        </div>
-        <div>
-          <dt>Обновлён</dt>
-          <dd>{{ relativeTime(conversation.updatedAt) }}</dd>
-        </div>
-      </dl>
-      <p class="inspector-hint">
-        Presence — это только краткая подсказка. Он не меняет назначение
-        обращения или доступность оператора.
-      </p>
+      </div>
+      <div v-if="hasAvailableActions" class="action-stack">
+        <Button
+          v-if="canManageCase"
+          class="classify-case"
+          label="Классификация и приоритет"
+          icon="pi pi-tags"
+          severity="secondary"
+          outlined
+          @click="emit('classifyCase')"
+        />
+        <Button
+          v-if="canReadInternalNotes"
+          class="internal-notes-link"
+          label="Внутренние заметки"
+          icon="pi pi-file-edit"
+          severity="secondary"
+          outlined
+          @click="emit('openInternalNotes')"
+        />
+        <SupportAssignmentRelease
+          v-if="
+            canReleaseAssignment &&
+            selection.case?.assignment &&
+            selection.capabilities.releaseAssignment
+          "
+          v-bind="assignmentRelease"
+          @release="emit('releaseAssignment', $event)"
+          @retry="emit('retryAssignmentRelease')"
+        />
+      </div>
+      <div v-else class="empty-card">
+        <i class="pi pi-lock" aria-hidden="true" />
+        <p>Для этого диалога сейчас нет доступных действий.</p>
+      </div>
     </section>
   </div>
 </template>
 
 <style scoped>
-.pane-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.pane-heading h2 {
-  margin: 0;
-  font-size: 1.05rem;
-}
 .inspector-tabs {
-  display: flex;
-  gap: 4px;
-  margin: 0 -2px 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  margin: -4px -8px 24px;
   padding: 4px;
   overflow-x: auto;
-  border-radius: 12px;
-  background: var(--surface-muted);
+  border-bottom: 1px solid var(--line);
 }
 .inspector-tabs button {
-  min-height: 32px;
-  padding: 0 9px;
+  min-height: 44px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
 }
+.inspector-tabs button i {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+}
 .inspector-tabs button.active {
-  background: var(--surface-card);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-raised);
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 .inspector-tabs button:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .inspector-section {
-  min-height: 220px;
+  min-height: 260px;
 }
-.inspector-hint {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
 }
-.context-list {
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
   display: grid;
-  gap: 14px;
-  margin: 0 0 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 800;
 }
-.context-list div {
-  display: grid;
-  gap: 3px;
-}
-.context-list dt {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.context-list dd {
-  margin: 0;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.case-summary {
-  margin: 0 0 18px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-muted);
-}
-.case-summary h3 {
-  margin: 4px 0 12px;
+.user-card h3,
+.case-header h3,
+.section-heading h3 {
+  margin: 3px 0 0;
+  color: var(--text-primary);
   font-size: 0.92rem;
-  overflow-wrap: anywhere;
+  line-height: 1.35;
 }
-.case-summary dl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0;
-}
-.case-summary dl > div {
-  display: grid;
-  gap: 3px;
-}
-.case-summary dt {
+.user-card p {
+  margin: 3px 0 0;
   color: var(--text-muted);
   font-size: 0.72rem;
 }
-.case-summary dd {
+.section-kicker {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin: 0;
-  font-size: 0.82rem;
-  font-weight: 600;
+}
+.context-field {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+.context-field--wide {
+  grid-column: 1 / -1;
+}
+.context-field dt {
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+.context-field dd {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
   overflow-wrap: anywhere;
 }
-.case-link {
-  display: inline-flex;
-  margin-top: 12px;
-  color: var(--brand);
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-.classify-case {
-  width: 100%;
-  margin-top: 12px;
-}
-.case-link:hover,
-.case-link:focus-visible {
-  text-decoration: underline;
-}
-.internal-notes-link {
-  margin-top: 12px;
-}
-.profile-summary {
-  margin: 0 0 18px;
-}
-.profile-summary__heading {
+.section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  margin-bottom: 14px;
 }
-.profile-summary h3 {
-  margin: 4px 0 0;
-  font-size: 0.92rem;
+.profile-heading {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
 }
-.profile-summary__freshness,
-.profile-summary__metadata,
-.profile-summary__empty {
-  margin: 10px 0 0;
+.profile-meta,
+.empty-copy {
+  margin: 8px 0 0;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.case-header {
+  margin-bottom: 18px;
+}
+.case-header h3 {
+  margin-top: 6px;
+  font-size: 1rem;
+}
+.case-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.status-badge,
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.status-badge {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.priority-badge {
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.action-stack {
+  display: grid;
+  gap: 10px;
+}
+.action-stack :deep(.p-button) {
+  width: 100%;
+  justify-content: flex-start;
+}
+.empty-card {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 24px 18px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.empty-card i {
+  color: var(--brand);
+  font-size: 1.25rem;
+}
+.empty-card p {
+  margin: 0;
+  font-size: 0.76rem;
   line-height: 1.45;
 }
 .profile-fields {
@@ -540,14 +575,9 @@ function profileClassificationLabel(
   font-weight: 600;
   overflow-wrap: anywhere;
 }
-@media (max-width: 1180px) {
-  .context-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
 @media (max-width: 720px) {
-  .context-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .inspector-tabs {
+    margin-inline: 0;
   }
 }
 </style>

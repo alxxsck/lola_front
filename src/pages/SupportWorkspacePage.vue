@@ -32,7 +32,6 @@ import TranslatedMessageBody from "@/features/conversation-translation/ui/Transl
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import SupportMessageDeliveryStatus from "@/features/support-conversation/ui/SupportMessageDeliveryStatus.vue";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
-import { createSupportCaseInboxController } from "@/features/support-inbox/model/use-support-case-inbox";
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
 import SupportReplyComposer from "@/features/support-reply/ui/SupportReplyComposer.vue";
 import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
@@ -80,13 +79,6 @@ const inbox = createSupportInboxController(
   { projectId: () => auth.project?.id },
   supportWorkspaceSource,
 );
-const casesInbox = createSupportCaseInboxController(
-  { projectId: () => auth.project?.id },
-  supportWorkspaceSource,
-);
-const inboxView = computed<"CONVERSATIONS" | "CASES">(() =>
-  route.query.view === "cases" ? "CASES" : "CONVERSATIONS",
-);
 const availabilityDialogVisible = ref(false);
 const caseDialogs = ref<InstanceType<typeof EndUserCaseDialogs> | null>(null);
 const workspaceFullscreen = ref(false);
@@ -95,24 +87,13 @@ const routeConversationId = computed(() => {
   const routeId = route.params.conversationId;
   return typeof routeId === "string" ? routeId : undefined;
 });
-const routeCaseId = computed(() => {
-  const routeId = route.params.caseId;
-  return typeof routeId === "string" ? routeId : undefined;
-});
 const requestedConversationId = computed(
-  () =>
-    routeConversationId.value ??
-    (routeCaseId.value ? undefined : inbox.items.value[0]?.id),
-);
-const selectedTargetKey = computed(
-  () =>
-    `${requestedConversationId.value ?? ""}\u0000${routeCaseId.value ?? ""}`,
+  () => routeConversationId.value ?? inbox.items.value[0]?.id,
 );
 const conversation = createSupportConversationController(
   {
     projectId: () => auth.project?.id,
     conversationId: () => requestedConversationId.value,
-    caseId: () => routeCaseId.value,
     onForbidden: handleConversationForbidden,
   },
   supportWorkspaceSource,
@@ -243,7 +224,7 @@ const workspaceLiveSeverity = computed(() =>
       : "info",
 );
 const selectedConversation = computed(() => {
-  if (routeConversationId.value || routeCaseId.value)
+  if (routeConversationId.value)
     return conversation.selection.value?.conversation ?? null;
   return (
     conversation.selection.value?.conversation ?? inbox.items.value[0] ?? null
@@ -299,12 +280,6 @@ const aiSuspensionDialogVisible = ref(false);
 const aiSuspensionHistoryVisible = ref(false);
 const aiSuspensionDialogMode = ref<"START" | "EXTEND" | "RESUME">("START");
 const contextDrawerVisible = ref(false);
-const canOpenSelectedCase = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.cases.read",
-  ),
-);
 const canManageSelectedCase = computed(
   () =>
     Boolean(conversation.selection.value?.case) &&
@@ -313,12 +288,6 @@ const canManageSelectedCase = computed(
       auth.project?.effectivePermissionCodes ?? [],
       "project.cases.manage",
     ),
-);
-const canManageCaseSettings = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.cases.settings.manage",
-  ),
 );
 const internalNotesAccessDenied = ref(false);
 const canReadSelectedInternalNotes = computed(
@@ -502,67 +471,11 @@ function initials(value: string): string {
     .join("");
 }
 
-function caseStatusLabel(value: string): string {
-  return (
-    {
-      OPEN: "Открыто",
-      IN_PROGRESS: "В работе",
-      WAITING_END_USER: "Ожидает пользователя",
-      WAITING_SYSTEM: "Ожидает систему",
-      WAITING_ADMIN: "Нужен оператор",
-      RESOLVED: "Решено",
-      UNRESOLVED: "Не решено",
-      CANCELLED: "Отменено",
-    }[value] ?? value
-  );
-}
-
-function casePriorityLabel(value: string): string {
-  return (
-    {
-      LOW: "Низкий",
-      NORMAL: "Обычный",
-      HIGH: "Высокий",
-      URGENT: "Срочный",
-      CRITICAL: "Критический",
-    }[value] ?? value
-  );
-}
-
 async function openConversation(conversationId: string): Promise<void> {
   if (conversationId === routeConversationId.value) return;
   await router.push({
     name: "support-inbox-conversation",
     params: { conversationId },
-  });
-}
-
-async function setInboxView(view: "CONVERSATIONS" | "CASES"): Promise<void> {
-  const query = { ...route.query };
-  if (view === "CASES") query.view = "cases";
-  else delete query.view;
-  await router.replace({
-    name: routeCaseId.value
-      ? "support-inbox-case"
-      : routeConversationId.value
-        ? "support-inbox-conversation"
-        : "support-inbox",
-    ...(routeCaseId.value
-      ? { params: { caseId: routeCaseId.value } }
-      : routeConversationId.value
-        ? { params: { conversationId: routeConversationId.value } }
-        : {}),
-    query,
-  });
-  if (view === "CASES" && !casesInbox.items.value.length)
-    await casesInbox.load();
-}
-
-async function openCase(caseId: string): Promise<void> {
-  await router.push({
-    name: "support-inbox-case",
-    params: { caseId },
-    query: { ...route.query, view: "cases" },
   });
 }
 
@@ -700,7 +613,6 @@ async function reload(): Promise<void> {
   internalNotes.reset();
   await Promise.all([
     inbox.load(),
-    inboxView.value === "CASES" ? casesInbox.load() : Promise.resolve(),
     conversation.load(),
     canReadAvailability.value ? availability.load() : Promise.resolve(),
     canManageRoutingOffers.value ? routingOffers.load() : Promise.resolve(),
@@ -885,7 +797,7 @@ async function handleConversationForbidden(): Promise<void> {
     // The revoked conversation was purged before authority recovery.
   }
   await inbox.load().catch(() => undefined);
-  if (routeConversationId.value || routeCaseId.value)
+  if (routeConversationId.value)
     await router.replace({ name: "support-inbox" });
 }
 
@@ -944,7 +856,6 @@ async function submitAiSuspension(value: {
 onMounted(async () => {
   window.addEventListener("keydown", handleWorkspaceKeydown);
   await inbox.load();
-  if (inboxView.value === "CASES") await casesInbox.load();
   if (canReadAvailability.value) await availability.load();
   if (canManageRoutingOffers.value) await routingOffers.load();
 });
@@ -975,15 +886,9 @@ watch(
     translation.reset();
     conversation.reset();
     inbox.reset();
-    casesInbox.reset();
     void inbox.load();
   },
 );
-
-watch(inboxView, (view) => {
-  if (view === "CASES" && !casesInbox.items.value.length)
-    void casesInbox.load();
-});
 
 watch(canReadAvailability, (allowed) => {
   if (!allowed) availability.reset();
@@ -1063,7 +968,7 @@ watch(selectedAssignmentAuthorityKey, (authorityKey, previousAuthorityKey) => {
 });
 
 watch(
-  selectedTargetKey,
+  requestedConversationId,
   () => {
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
@@ -1148,7 +1053,6 @@ onBeforeUnmount(() => {
   aiSuspensionDialogVisible.value = false;
   aiSuspensionHistoryVisible.value = false;
   inbox.reset();
-  casesInbox.reset();
   conversation.reset();
 });
 </script>
@@ -1161,10 +1065,8 @@ onBeforeUnmount(() => {
     <header class="page-header support-workspace-header">
       <div>
         <div class="eyebrow"><i class="pi pi-headphones" /> Поддержка</div>
-        <h1>Рабочее место оператора</h1>
-        <p class="subtitle">
-          Диалоги проекта и безопасный контекст выбранного пользователя.
-        </p>
+        <h1>Поддержка</h1>
+        <p class="subtitle">Единая очередь чатов с пользователями.</p>
       </div>
       <div class="header-actions">
         <Tag :value="workspaceLiveLabel" :severity="workspaceLiveSeverity" />
@@ -1205,97 +1107,43 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <p class="workspace-status-line">
-      Состояние очереди и права действий сверяются с сервером. Доступность
-      оператора открывается сверху и не зависит от online-статуса браузера.
-    </p>
-
     <div
       class="support-workspace card"
       :class="{
-        'has-route-selection': Boolean(routeConversationId || routeCaseId),
+        'has-route-selection': Boolean(routeConversationId),
       }"
     >
       <aside class="inbox-pane" aria-label="Диалоги проекта">
         <div class="pane-heading">
           <div>
-            <span class="eyebrow">Рабочая очередь</span>
-            <h2>{{ inboxView === "CASES" ? "Обращения" : "Все диалоги" }}</h2>
+            <span class="eyebrow">Поддержка</span>
+            <h2>Входящие</h2>
           </div>
-          <span class="inbox-count">{{
-            inboxView === "CASES"
-              ? casesInbox.items.value.length
-              : inbox.items.value.length
-          }}</span>
+          <span class="inbox-count">{{ inbox.items.value.length }}</span>
         </div>
 
-        <div class="inbox-view-switch" role="tablist" aria-label="Тип очереди">
-          <button
-            type="button"
-            role="tab"
-            :aria-selected="inboxView === 'CONVERSATIONS'"
-            :class="{ active: inboxView === 'CONVERSATIONS' }"
-            @click="setInboxView('CONVERSATIONS')"
-          >
-            Все диалоги
-          </button>
-          <button
-            type="button"
-            role="tab"
-            :aria-selected="inboxView === 'CASES'"
-            :class="{ active: inboxView === 'CASES' }"
-            @click="setInboxView('CASES')"
-          >
-            Обращения
-          </button>
+        <div class="queue-summary">
+          <span><i class="pi pi-inbox" aria-hidden="true" /> Все диалоги</span>
+          <small>J / K для навигации</small>
         </div>
-        <RouterLink
-          v-if="inboxView === 'CASES' && canManageCaseSettings"
-          class="case-settings-link"
-          :to="{ name: 'end-user-case-settings' }"
-        >
-          <i class="pi pi-cog" aria-hidden="true" /> Настройки обращений
-        </RouterLink>
 
         <div
-          v-if="
-            inboxView === 'CONVERSATIONS'
-              ? inbox.loading.value && !inbox.items.value.length
-              : casesInbox.loading.value && !casesInbox.items.value.length
-          "
+          v-if="inbox.loading.value && !inbox.items.value.length"
           class="inbox-skeletons"
         >
           <Skeleton v-for="index in 5" :key="index" height="76px" />
         </div>
         <Message
-          v-else-if="inboxView === 'CONVERSATIONS' && inbox.error.value"
+          v-else-if="inbox.error.value"
           severity="error"
           :closable="false"
         >
           {{ inbox.error.value }}
         </Message>
-        <Message
-          v-else-if="inboxView === 'CASES' && casesInbox.error.value"
-          severity="error"
-          :closable="false"
-          >{{ casesInbox.error.value }}</Message
-        >
-        <p
-          v-else-if="inboxView === 'CONVERSATIONS' && !inbox.items.value.length"
-          class="empty-pane"
-        >
+        <p v-else-if="!inbox.items.value.length" class="empty-pane">
           В этом проекте пока нет доступных диалогов.
         </p>
-        <p
-          v-else-if="inboxView === 'CASES' && !casesInbox.items.value.length"
-          class="empty-pane"
-        >
-          В этом представлении пока нет доступных обращений.
-        </p>
-        <div
-          v-else-if="inboxView === 'CONVERSATIONS'"
-          class="conversation-list"
-        >
+        <div v-else class="conversation-list">
           <button
             v-for="conversation in inbox.items.value"
             :key="conversation.id"
@@ -1308,25 +1156,31 @@ onBeforeUnmount(() => {
             @click="openConversation(conversation.id)"
           >
             <div class="conversation-row__top">
+              <span class="conversation-avatar">{{
+                initials(conversation.title)
+              }}</span>
               <strong>{{ conversation.title }}</strong>
               <time :datetime="conversation.updatedAt">{{
                 relativeTime(conversation.updatedAt)
               }}</time>
             </div>
-            <span class="conversation-row__user"
-              >Диалог ·
-              {{ conversation.status === "OPEN" ? "открыт" : "закрыт" }}</span
-            >
             <p>
               {{
                 conversation.lastMessageAt
-                  ? `Последняя активность: ${relativeTime(conversation.lastMessageAt)}`
+                  ? `Последняя активность ${relativeTime(conversation.lastMessageAt)}`
                   : "Сообщений пока нет"
               }}
             </p>
             <span class="conversation-row__meta">
+              <span
+                :class="[
+                  'conversation-state',
+                  conversation.status.toLowerCase(),
+                ]"
+              >
+                {{ conversation.status === "OPEN" ? "Открыт" : "Закрыт" }}
+              </span>
               {{ conversation.messageCount }} сообщений
-              <span v-if="conversation.isCurrent">· текущий</span>
             </span>
           </button>
           <Button
@@ -1336,38 +1190,6 @@ onBeforeUnmount(() => {
             text
             :loading="inbox.loading.value"
             @click="inbox.loadMore"
-          />
-        </div>
-        <div v-else class="case-list">
-          <button
-            v-for="item in casesInbox.items.value"
-            :key="item.id"
-            type="button"
-            class="case-row"
-            :class="{ selected: item.id === routeCaseId }"
-            :aria-current="item.id === routeCaseId ? 'true' : undefined"
-            @click="openCase(item.id)"
-          >
-            <div class="case-row__top">
-              <span>Case #{{ item.projectSequence }}</span>
-              <span :class="`priority-${item.priority.toLowerCase()}`">{{
-                casePriorityLabel(item.priority)
-              }}</span>
-            </div>
-            <strong>{{ item.title }}</strong>
-            <p>{{ caseStatusLabel(item.status) }}</p>
-            <span class="case-row__meta">
-              {{ item.groupCode }} · {{ relativeTime(item.lastActivityAt) }}
-              <span v-if="item.attentionRequired">· требует внимания</span>
-            </span>
-          </button>
-          <Button
-            v-if="casesInbox.nextCursor.value"
-            label="Показать ещё"
-            severity="secondary"
-            text
-            :loading="casesInbox.loading.value"
-            @click="casesInbox.loadMore"
           />
         </div>
       </aside>
@@ -1733,7 +1555,6 @@ onBeforeUnmount(() => {
         <SupportConversationContext
           :conversation="selectedConversation"
           :selection="conversation.selection.value"
-          :can-open-case="canOpenSelectedCase"
           :can-manage-case="canManageSelectedCase"
           :can-release-assignment="canReleaseSelectedAssignment"
           :can-read-internal-notes="canReadSelectedInternalNotes"
@@ -1780,7 +1601,6 @@ onBeforeUnmount(() => {
       <SupportConversationContext
         :conversation="selectedConversation"
         :selection="conversation.selection.value"
-        :can-open-case="canOpenSelectedCase"
         :can-manage-case="canManageSelectedCase"
         :can-release-assignment="canReleaseSelectedAssignment"
         :can-read-internal-notes="canReadSelectedInternalNotes"
@@ -1928,10 +1748,18 @@ onBeforeUnmount(() => {
   padding-inline: 9px;
   font-size: 0.7rem;
 }
-.workspace-status-line {
-  margin: -4px 0 16px;
-  color: var(--text-muted);
-  font-size: 0.82rem;
+.support-workspace-page {
+  min-width: 0;
+}
+.support-workspace-header {
+  margin-bottom: 14px;
+}
+.support-workspace-header h1 {
+  margin-top: 4px;
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+}
+.support-workspace-header .subtitle {
+  margin-top: 4px;
 }
 .support-workspace-page--fullscreen {
   position: fixed;
@@ -1946,14 +1774,17 @@ onBeforeUnmount(() => {
   height: calc(100dvh - 142px);
 }
 .support-workspace {
-  height: min(720px, calc(100dvh - 160px));
+  height: calc(100dvh - 150px);
+  min-height: 620px;
   padding: 0;
   display: grid;
-  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr) minmax(
-      260px,
-      320px
+  grid-template-columns: minmax(270px, 310px) minmax(480px, 1fr) minmax(
+      320px,
+      360px
     );
   overflow: hidden;
+  border-color: color-mix(in srgb, var(--line) 82%, transparent);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 }
 .inbox-pane,
 .context-pane {
@@ -1961,6 +1792,12 @@ onBeforeUnmount(() => {
   padding: 18px;
   background: var(--surface-card);
   overflow: auto;
+}
+.inbox-pane {
+  padding: 20px 14px;
+}
+.context-pane {
+  padding: 18px 18px 24px;
 }
 .inbox-pane {
   border-right: 1px solid var(--line);
@@ -1988,37 +1825,30 @@ onBeforeUnmount(() => {
   background: var(--surface-muted);
   font-weight: 700;
 }
-.inbox-view-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  margin: -2px 0 14px;
-  padding: 4px;
-  border-radius: 12px;
+.queue-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 2px 14px;
+  padding: 9px 10px;
+  border-radius: 10px;
   background: var(--surface-muted);
-}
-.inbox-view-switch button {
-  min-height: 34px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 0.74rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
   font-weight: 700;
-  cursor: pointer;
 }
-.inbox-view-switch button.active {
-  background: var(--surface-card);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-raised);
+.queue-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
-.inbox-view-switch button:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
+.queue-summary small {
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
 }
 .conversation-list,
-.case-list,
 .inbox-skeletons,
 .message-skeletons {
   display: grid;
@@ -2030,9 +1860,9 @@ onBeforeUnmount(() => {
 }
 .conversation-row {
   width: 100%;
-  padding: 12px;
+  padding: 12px 12px 12px 10px;
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: 12px;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -2051,104 +1881,65 @@ onBeforeUnmount(() => {
 }
 .conversation-row.selected {
   background: var(--brand-soft);
-  border-color: var(--brand);
-}
-.case-row {
-  width: 100%;
-  padding: 13px;
-  border: 1px solid transparent;
-  border-radius: 14px;
-  background: transparent;
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-.case-row:hover {
-  background: var(--surface-muted);
-}
-.case-row.selected {
-  border-color: var(--brand);
-  background: var(--brand-soft);
-}
-.case-row:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-.case-row__top,
-.case-row__meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-}
-.case-row__top {
-  justify-content: space-between;
-  font-weight: 700;
-}
-.case-row__top [class^="priority-"] {
-  padding: 3px 6px;
-  border-radius: 999px;
-  background: var(--surface-muted);
-}
-.case-row__top .priority-high,
-.case-row__top .priority-urgent,
-.case-row__top .priority-critical {
-  background: var(--status-warning-soft);
-  color: var(--status-warning-text);
-}
-.case-row strong {
-  display: block;
-  margin-top: 7px;
-  font-size: 0.88rem;
-  line-height: 1.35;
-}
-.case-row p {
-  margin: 5px 0 8px;
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-}
-.case-settings-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: -2px 0 12px;
-  color: var(--brand);
-  font-size: 0.76rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-.case-settings-link:hover,
-.case-settings-link:focus-visible {
-  text-decoration: underline;
+  border-color: color-mix(in srgb, var(--brand) 32%, var(--line));
+  box-shadow: inset 3px 0 0 var(--brand);
 }
 .conversation-row strong {
-  max-width: 15ch;
+  min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.conversation-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+.conversation-row.selected .conversation-avatar {
+  background: var(--brand);
+  color: white;
+}
 .conversation-row time,
-.conversation-row__user,
 .conversation-row__meta,
 .conversation-header p,
 .message-meta time {
   color: var(--text-muted);
   font-size: 0.78rem;
 }
-.conversation-row__user {
-  display: block;
-  margin-top: 3px;
-  font-family: var(--font-mono);
-}
 .conversation-row p {
-  margin: 7px 0;
+  margin: 8px 0 9px 36px;
   color: var(--text-muted);
   font-size: 0.85rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.conversation-row__meta {
+  margin-left: 36px;
+}
+.conversation-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+.conversation-state.open {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
 }
 .conversation-pane {
   min-width: 0;
@@ -2159,7 +1950,7 @@ onBeforeUnmount(() => {
 }
 .conversation-header {
   gap: 16px;
-  padding: 20px 22px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--line);
 }
 .conversation-header p {
@@ -2174,7 +1965,7 @@ onBeforeUnmount(() => {
 .message-log {
   min-height: 0;
   flex: 1;
-  padding: 22px;
+  padding: 24px 28px;
   display: grid;
   align-content: start;
   gap: 12px;
@@ -2185,21 +1976,24 @@ onBeforeUnmount(() => {
 }
 .message {
   max-width: min(82%, 620px);
-  padding: 11px 13px;
-  border-radius: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
   background: var(--surface-card);
   border: 1px solid var(--line);
 }
 .message.from-user {
   justify-self: start;
+  border-top-left-radius: 6px;
 }
 .message.from-operator {
   justify-self: end;
+  border-top-right-radius: 6px;
   background: var(--brand-soft);
   border-color: color-mix(in srgb, var(--brand) 38%, var(--line));
 }
 .message.from-assistant {
   justify-self: start;
+  border-top-left-radius: 6px;
   border-color: color-mix(in srgb, var(--status-accent-text) 30%, var(--line));
   background: color-mix(
     in srgb,
@@ -2314,9 +2108,10 @@ onBeforeUnmount(() => {
     grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
   }
   .context-pane {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--line);
-    border-left: 0;
+    display: none;
+  }
+  .mobile-context {
+    display: inline-flex;
   }
 }
 @media (max-width: 720px) {

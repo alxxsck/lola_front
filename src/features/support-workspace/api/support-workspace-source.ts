@@ -22,21 +22,6 @@ export interface SupportWorkspaceConversation {
   lastMessageAt: string | null;
 }
 
-/** Compact, safe row for the Cases inbox. Detail is only loaded after selection. */
-export interface SupportWorkspaceCaseRow {
-  id: string;
-  endUserId: string;
-  title: string;
-  status: string;
-  priority: string;
-  groupCode: string;
-  projectSequence: string;
-  attentionRequired: boolean;
-  lastActivityAt: string;
-  updatedAt: string;
-  version: number;
-}
-
 export interface SupportWorkspaceSelection {
   checkpoint: string;
   capabilitiesRevision: string;
@@ -93,10 +78,6 @@ export interface SupportWorkspaceSource {
     projectId: string,
     request?: CursorPageRequest,
   ): Promise<CursorPage<SupportWorkspaceConversation>>;
-  readCases(
-    projectId: string,
-    request?: CursorPageRequest,
-  ): Promise<CursorPage<SupportWorkspaceCaseRow>>;
   readSelection(
     projectId: string,
     target: SupportWorkspaceSelectionTarget,
@@ -108,22 +89,6 @@ export interface SupportWorkspaceSource {
 export interface SupportWorkspaceSelectionTarget {
   conversationId?: string;
   caseId?: string;
-}
-
-function mapWorkspaceCaseRow(value: {
-  id: string;
-  endUserId: string;
-  title: string;
-  status: string;
-  priority: string;
-  groupCode: string;
-  projectSequence: string;
-  attentionRequired: boolean;
-  lastActivityAt: string;
-  updatedAt: string;
-  version: number;
-}): SupportWorkspaceCaseRow {
-  return { ...value };
 }
 
 type WorkspaceConversationDto = {
@@ -259,23 +224,6 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
     };
   },
 
-  async readCases(projectId, request) {
-    const response = await supportWorkspaceRead(projectId, {
-      mode: "CASES",
-      limit: request?.limit ?? 30,
-      ...(request?.cursor ? { cursor: request.cursor } : {}),
-    });
-    if (response.mode !== "CASES") {
-      throw new Error(
-        "Support workspace returned an unexpected Cases projection",
-      );
-    }
-    return {
-      items: response.items.map(mapWorkspaceCaseRow),
-      nextCursor: response.nextCursor ?? null,
-    };
-  },
-
   async readSelection(projectId, target, request) {
     if (!target.conversationId && !target.caseId)
       throw new Error("Support workspace selection requires an exact target");
@@ -351,28 +299,6 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         currentInteractionSessionCount:
           conversation.currentInteractionSessionCount,
         lastMessageAt: conversation.lastMessage?.createdAt ?? null,
-      })),
-      nextCursor: page.nextCursor,
-    };
-  },
-
-  async readCases(projectId, request) {
-    const page = await repository.getProjectConversations(projectId, request);
-    return {
-      // Demo data has no standalone Case aggregate. Keep this mapping local to
-      // mock mode; production reads the authoritative CASES projection above.
-      items: page.items.map((conversation, index) => ({
-        id: conversation.id,
-        endUserId: conversation.endUser.id,
-        title: conversation.title,
-        status: conversation.status === "ACTIVE" ? "OPEN" : "RESOLVED",
-        priority: index === 0 ? "HIGH" : "NORMAL",
-        groupCode: "GENERAL",
-        projectSequence: String(index + 1),
-        attentionRequired: conversation.isCurrent,
-        lastActivityAt: conversation.updatedAt,
-        updatedAt: conversation.updatedAt,
-        version: 1,
       })),
       nextCursor: page.nextCursor,
     };
