@@ -141,6 +141,17 @@ test("standalone check verifies the committed artifact without a sibling backend
   }
 });
 
+test("committed contract metadata pins the exact Backend source revision", async () => {
+  const metadata = JSON.parse(
+    await readFile(
+      path.join(repositoryRoot, "openapi/retenive-backend.contract.json"),
+      "utf8",
+    ),
+  );
+
+  assert.match(metadata.backendSourceRevision, /^[0-9a-f]{40}$/u);
+});
+
 test("explicit Backend export regenerates Prisma Client before compiling", async () => {
   const source = await readFile(checker, "utf8");
   const generation = source.indexOf('["run", "prisma:generate"]');

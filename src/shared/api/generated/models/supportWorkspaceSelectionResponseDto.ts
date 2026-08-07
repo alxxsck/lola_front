@@ -22,8 +22,8 @@ export interface SupportWorkspaceSelectionResponseDto {
   capabilitiesRevision: string;
   /** @nullable */
   case: SupportWorkspaceSelectionResponseDtoCase;
-  classificationOptions: SupportWorkspaceClassificationOptionResponseDto[];
   checkpoint: string;
+  classificationOptions: SupportWorkspaceClassificationOptionResponseDto[];
   /** @nullable */
   conversation: SupportWorkspaceSelectionResponseDtoConversation;
   endUser: SupportWorkspaceEndUserResponseDto;

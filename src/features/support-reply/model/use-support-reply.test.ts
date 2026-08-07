@@ -12,6 +12,7 @@ function selection(
   return {
     checkpoint: "checkpoint-1",
     capabilitiesRevision: "capabilities-1",
+    actionRevisions: {},
     classificationOptions: [],
     capabilities: {
       assignCase: false,
@@ -99,6 +100,7 @@ describe("support reply controller", () => {
       lastActivityAt: "2026-08-06T10:00:00.000Z",
       updatedAt: "2026-08-06T10:00:00.000Z",
       version: 1,
+      latestRevisionId: null,
       assignee: null,
       assignment: null,
     };

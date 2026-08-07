@@ -7,7 +7,12 @@ import type {
 import { mapConversationMessage } from "@/shared/api/repository/mappers";
 import { isMockMode } from "@/shared/config/data-mode";
 import type { ConversationMessage } from "@/shared/types/domain";
-import type { SupportWorkspaceSelectionCaseResponseDto } from "@/shared/api/generated/models";
+import type {
+  SupportWorkspaceSelectionCaseResponseDto,
+  SupportWorkspaceSelectionResponseDto,
+} from "@/shared/api/generated/models";
+
+export type SupportWorkspaceMessage = ConversationMessage & { ordinal: number };
 
 export interface SupportWorkspaceConversation {
   id: string;
@@ -20,11 +25,13 @@ export interface SupportWorkspaceConversation {
   isCurrent: boolean;
   currentInteractionSessionCount: number;
   lastMessageAt: string | null;
+  lastMessageOrdinal?: number;
 }
 
 export interface SupportWorkspaceSelection {
   checkpoint: string;
   capabilitiesRevision: string;
+  actionRevisions: SupportWorkspaceActionRevisions;
   classificationOptions: Array<{ code: string; label: string }>;
   capabilities: {
     assignCase: boolean;
@@ -47,7 +54,14 @@ export interface SupportWorkspaceSelection {
   };
   case: SupportWorkspaceCase | null;
   conversation: SupportWorkspaceConversation | null;
-  messages: CursorPage<ConversationMessage>;
+  messages: CursorPage<SupportWorkspaceMessage>;
+}
+
+export interface SupportWorkspaceActionRevisions {
+  aiSuspensionVersion?: string | null;
+  assignmentVersion?: number | null;
+  caseVersion?: number | null;
+  conversationUpdatedAt?: string | null;
 }
 
 export interface SupportWorkspaceCase {
@@ -61,6 +75,7 @@ export interface SupportWorkspaceCase {
   lastActivityAt: string;
   updatedAt: string;
   version: number;
+  latestRevisionId: string | null;
   assignee: { id?: string; displayName?: string } | null;
   assignment: {
     id: string;
@@ -103,6 +118,7 @@ type WorkspaceConversationDto = {
   isCurrent: boolean;
   currentInteractionSessionCount: number;
   lastMessage: { createdAt: string } | null;
+  lastMessageOrdinal?: number;
 };
 
 function mapWorkspaceConversation(
@@ -119,20 +135,26 @@ function mapWorkspaceConversation(
     isCurrent: conversation.isCurrent,
     currentInteractionSessionCount: conversation.currentInteractionSessionCount,
     lastMessageAt: conversation.lastMessage?.createdAt ?? null,
+    ...(conversation.lastMessageOrdinal !== undefined
+      ? { lastMessageOrdinal: conversation.lastMessageOrdinal }
+      : {}),
   };
 }
 
 function mapSelectionMessages(
   conversationId: string,
   items: Parameters<typeof mapConversationMessage>[0][],
-): ConversationMessage[] {
+): SupportWorkspaceMessage[] {
   return items.map((item) => {
     const message = mapConversationMessage(item);
     if (message.conversationId !== conversationId)
       throw new Error(
         "Support workspace returned a message from another conversation",
       );
-    return message;
+    if (!Number.isSafeInteger(item.ordinal) || item.ordinal < 1) {
+      throw new Error("Support workspace returned an invalid message ordinal");
+    }
+    return { ...message, ordinal: item.ordinal };
   });
 }
 
@@ -143,7 +165,7 @@ function mapSelectionMessages(
  */
 export function withMockMessageOrdinals(
   messages: readonly ConversationMessage[],
-): ConversationMessage[] {
+): SupportWorkspaceMessage[] {
   let nextOrdinal =
     Math.max(
       0,
@@ -154,11 +176,10 @@ export function withMockMessageOrdinals(
           : [];
       }),
     ) + 1;
-  return messages.map((message) =>
-    message.ordinal === undefined
-      ? { ...message, ordinal: nextOrdinal++ }
-      : message,
-  );
+  return messages.map((message) => ({
+    ...message,
+    ordinal: message.ordinal ?? nextOrdinal++,
+  }));
 }
 
 export function mapWorkspaceCase(
@@ -185,6 +206,7 @@ export function mapWorkspaceCase(
     lastActivityAt: value.lastActivityAt,
     updatedAt: value.updatedAt,
     version: value.version,
+    latestRevisionId: value.latestRevisionId ?? null,
     assignee: value.assignee
       ? {
           ...(value.assignee.id ? { id: value.assignee.id } : {}),
@@ -204,6 +226,61 @@ export function mapWorkspaceCase(
           actionEtag: value.assignment.actionEtag,
         }
       : null,
+  };
+}
+
+export function mapSupportWorkspaceSelection(
+  response: SupportWorkspaceSelectionResponseDto,
+  target: SupportWorkspaceSelectionTarget,
+): SupportWorkspaceSelection {
+  if (!response.conversation) {
+    throw new Error("Support workspace did not return the requested conversation");
+  }
+  const conversation = mapWorkspaceConversation(response.conversation);
+  if (target.conversationId && conversation.id !== target.conversationId) {
+    throw new Error("Support workspace returned a different conversation");
+  }
+  if (conversation.endUserId !== response.endUser.id) {
+    throw new Error(
+      "Support workspace returned a conversation from another end user",
+    );
+  }
+  const supportCase = mapWorkspaceCase(response.case, response.endUser.id);
+  if (target.caseId && supportCase?.id !== target.caseId) {
+    throw new Error("Support workspace returned a different case");
+  }
+  return {
+    checkpoint: response.checkpoint,
+    capabilitiesRevision: response.capabilitiesRevision,
+    actionRevisions: {
+      ...(response.actionRevisions.aiSuspensionVersion !== undefined
+        ? {
+            aiSuspensionVersion:
+              response.actionRevisions.aiSuspensionVersion,
+          }
+        : {}),
+      ...(response.actionRevisions.assignmentVersion !== undefined
+        ? { assignmentVersion: response.actionRevisions.assignmentVersion }
+        : {}),
+      ...(response.actionRevisions.caseVersion !== undefined
+        ? { caseVersion: response.actionRevisions.caseVersion }
+        : {}),
+      ...(response.actionRevisions.conversationUpdatedAt !== undefined
+        ? {
+            conversationUpdatedAt:
+              response.actionRevisions.conversationUpdatedAt,
+          }
+        : {}),
+    },
+    classificationOptions: response.classificationOptions,
+    capabilities: response.capabilities,
+    endUser: response.endUser,
+    case: supportCase,
+    conversation,
+    messages: {
+      items: mapSelectionMessages(conversation.id, response.messages.items),
+      nextCursor: response.messages.nextCursor ?? null,
+    },
   };
 }
 
@@ -239,37 +316,12 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
         ? { messageCursor: request.messageCursor }
         : {}),
     });
-    if (response.mode !== "SELECTION" || !response.conversation) {
+    if (response.mode !== "SELECTION") {
       throw new Error(
         "Support workspace did not return the requested conversation",
       );
     }
-    const conversation = mapWorkspaceConversation(response.conversation);
-    if (target.conversationId && conversation.id !== target.conversationId) {
-      throw new Error("Support workspace returned a different conversation");
-    }
-    if (conversation.endUserId !== response.endUser.id) {
-      throw new Error(
-        "Support workspace returned a conversation from another end user",
-      );
-    }
-    const supportCase = mapWorkspaceCase(response.case, response.endUser.id);
-    if (target.caseId && supportCase?.id !== target.caseId) {
-      throw new Error("Support workspace returned a different case");
-    }
-    return {
-      checkpoint: response.checkpoint,
-      capabilitiesRevision: response.capabilitiesRevision,
-      classificationOptions: response.classificationOptions,
-      capabilities: response.capabilities,
-      endUser: response.endUser,
-      case: supportCase,
-      conversation,
-      messages: {
-        items: mapSelectionMessages(conversation.id, response.messages.items),
-        nextCursor: response.messages.nextCursor ?? null,
-      },
-    };
+    return mapSupportWorkspaceSelection(response, target);
   },
 };
 
@@ -328,6 +380,7 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
     return {
       checkpoint: `mock:${projectId}:${conversationId}`,
       capabilitiesRevision: "mock-read-only",
+      actionRevisions: {},
       classificationOptions: [{ code: "GENERAL", label: "Общие вопросы" }],
       capabilities: mockCapabilities,
       endUser: {
@@ -350,6 +403,7 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
             lastActivityAt: selected.updatedAt,
             updatedAt: selected.updatedAt,
             version: 1,
+            latestRevisionId: null,
             assignee: null,
             assignment: null,
           }

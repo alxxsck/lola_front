@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { SupportWorkspaceSelectionCaseResponseDto } from "@/shared/api/generated/models";
+import type {
+  SupportWorkspaceSelectionCaseResponseDto,
+  SupportWorkspaceSelectionResponseDto,
+} from "@/shared/api/generated/models";
+import { supportWorkspaceContractFixtures } from "@/shared/api/repository/fixtures/support-workspace-contract-fixtures";
 import {
+  mapSupportWorkspaceSelection,
   mapWorkspaceCase,
   withMockMessageOrdinals,
 } from "./support-workspace-source";
@@ -124,5 +129,168 @@ describe("support workspace mock history", () => {
     ]);
 
     expect(messages.map((message) => message.ordinal)).toEqual([2, 1, 3]);
+  });
+});
+
+describe("support workspace selection contract mapper", () => {
+  it("maps the executable minimal selection fixture", () => {
+    const response = supportWorkspaceContractFixtures.minimalSelectionSuccess;
+
+    const mapped = mapSupportWorkspaceSelection(response, {
+      conversationId: response.conversation.id,
+    });
+
+    expect(mapped).toMatchObject({
+      checkpoint: "checkpoint:minimal",
+      capabilitiesRevision: "capabilities:minimal",
+      actionRevisions: {},
+      case: null,
+      conversation: {
+        id: response.conversation.id,
+        title: "Диалог без названия",
+        lastMessageOrdinal: 0,
+      },
+      messages: { items: [], nextCursor: null },
+    });
+  });
+
+  it("maps the executable full selection fixture without losing recovery data", () => {
+    const response = supportWorkspaceContractFixtures.fullSelectionSuccess;
+
+    const mapped = mapSupportWorkspaceSelection(response, {
+      conversationId: response.conversation.id,
+    });
+
+    expect(mapped).toMatchObject({
+      checkpoint: "checkpoint:full",
+      capabilitiesRevision: "capabilities:full",
+      actionRevisions: response.actionRevisions,
+      case: {
+        id: response.case.id,
+        latestRevisionId: response.case.latestRevisionId,
+      },
+      conversation: {
+        id: response.conversation.id,
+        lastMessageOrdinal: 17,
+      },
+      messages: {
+        items: [
+          {
+            ordinal: 17,
+            authorSnapshot: response.messages.items[0]?.author,
+            delivery: response.messages.items[0]?.delivery,
+          },
+        ],
+        nextCursor: "messages:older",
+      },
+    });
+  });
+
+  it("preserves recovery revisions, canonical ordinal and complete delivery", () => {
+    const response: SupportWorkspaceSelectionResponseDto = {
+      mode: "SELECTION",
+      checkpoint: "checkpoint-17",
+      capabilitiesRevision: "capabilities-9",
+      actionRevisions: {
+        aiSuspensionVersion: "ai-4",
+        assignmentVersion: 3,
+        caseVersion: 8,
+        conversationUpdatedAt: "2026-08-07T10:00:00.000Z",
+      },
+      capabilities: {
+        assignCase: true,
+        claimAssignment: false,
+        escalateCase: true,
+        manageCase: true,
+        releaseAssignment: true,
+        reply: true,
+        replyWithoutTranslation: false,
+        suspendAi: true,
+        transferAssignment: true,
+      },
+      classificationOptions: [],
+      endUser: {
+        id: "end-user-1",
+        externalId: "external-1",
+        isGuest: false,
+        createdAt: "2026-08-07T09:00:00.000Z",
+        lastSeenAt: "2026-08-07T10:00:00.000Z",
+        locale: "ru",
+      },
+      case: {
+        ...value,
+        latestRevisionId: "case-revision-8",
+      },
+      conversation: {
+        id: "conversation-1",
+        endUserId: "end-user-1",
+        title: "Возврат",
+        status: "OPEN",
+        messageCount: 17,
+        lastMessage: null,
+        lastMessageOrdinal: 17,
+        isCurrent: true,
+        currentInteractionSessionCount: 0,
+        createdAt: "2026-08-07T09:00:00.000Z",
+        updatedAt: "2026-08-07T10:00:00.000Z",
+      },
+      messages: {
+        items: [
+          {
+            id: "message-17",
+            threadId: "conversation-1",
+            ordinal: 17,
+            role: "ADMIN",
+            status: "COMPLETED",
+            text: "Проверяю результат",
+            author: {
+              type: "CMS_USER",
+              cmsUserId: "operator-1",
+              displayName: "Анна",
+              avatarUrl: null,
+            },
+            delivery: {
+              id: "delivery-17",
+              channel: "SDK_REALTIME",
+              commandIds: ["command-17"],
+              interactionSessionId: null,
+              status: "PENDING",
+              acceptedAt: "2026-08-07T10:00:00.000Z",
+            },
+            createdAt: "2026-08-07T10:00:00.000Z",
+            updatedAt: "2026-08-07T10:00:00.000Z",
+          },
+        ],
+        nextCursor: "older-page",
+      },
+      relatedCases: [],
+      relatedConversations: [],
+      relatedCasesTruncated: false,
+      relatedConversationsTruncated: false,
+    };
+
+    const mapped = mapSupportWorkspaceSelection(response, {
+      conversationId: "conversation-1",
+    });
+
+    expect(mapped.actionRevisions).toEqual(response.actionRevisions);
+    expect(mapped.case?.latestRevisionId).toBe("case-revision-8");
+    expect(mapped.conversation?.lastMessageOrdinal).toBe(17);
+    expect(mapped.messages).toEqual({
+      items: [
+        expect.objectContaining({
+          ordinal: 17,
+          delivery: {
+            id: "delivery-17",
+            channel: "SDK_REALTIME",
+            commandIds: ["command-17"],
+            interactionSessionId: null,
+            status: "PENDING",
+            acceptedAt: "2026-08-07T10:00:00.000Z",
+          },
+        }),
+      ],
+      nextCursor: "older-page",
+    });
   });
 });

@@ -40202,21 +40202,6 @@
         },
         "type": "object"
       },
-      "SupportWorkspaceClassificationOptionResponseDto": {
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "label"
-        ],
-        "type": "object"
-      },
       "SupportWorkspaceCapabilitiesResponseDto": {
         "properties": {
           "assignCase": {
@@ -40346,6 +40331,21 @@
         "required": [
           "mode",
           "items"
+        ],
+        "type": "object"
+      },
+      "SupportWorkspaceClassificationOptionResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
         ],
         "type": "object"
       },
@@ -40790,14 +40790,14 @@
             "nullable": true,
             "type": "object"
           },
+          "checkpoint": {
+            "type": "string"
+          },
           "classificationOptions": {
             "items": {
               "$ref": "#/components/schemas/SupportWorkspaceClassificationOptionResponseDto"
             },
             "type": "array"
-          },
-          "checkpoint": {
-            "type": "string"
           },
           "conversation": {
             "allOf": [

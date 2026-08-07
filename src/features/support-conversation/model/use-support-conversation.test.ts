@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ConversationMessage } from "@/shared/types/domain";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportWorkspaceConversation,
+  SupportWorkspaceMessage,
   SupportWorkspaceSelection,
 } from "@/features/support-workspace/api/support-workspace-source";
 import { createSupportConversationController } from "./use-support-conversation";
@@ -24,13 +24,14 @@ function conversation(id: string): SupportWorkspaceConversation {
 
 function selection(
   conversationId: string,
-  messages: ConversationMessage[],
+  messages: SupportWorkspaceMessage[],
   nextCursor: string | null = null,
   preserveMessageConversationIds = false,
 ): SupportWorkspaceSelection {
   return {
     checkpoint: "checkpoint-1",
     capabilitiesRevision: "capabilities-1",
+    actionRevisions: {},
     classificationOptions: [],
     capabilities: {
       assignCase: false,
@@ -62,7 +63,7 @@ function selection(
   };
 }
 
-function message(id: string, ordinal: number): ConversationMessage {
+function message(id: string, ordinal: number): SupportWorkspaceMessage {
   return {
     id,
     conversationId: "conversation-1",

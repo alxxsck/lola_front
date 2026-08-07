@@ -4,11 +4,14 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Pinned OpenAPI соответствует последнему merged backend contract и проходит drift/check/generation проверки.
-- [ ] Workspace selection, history, durable send, idempotency lookup, read position, delivery и realtime hints перечислены в capability matrix.
-- [ ] Для каждой операции зафиксированы permissions, `allowedActions`, revision/etag и idempotency requirements.
-- [ ] Domain mapping сохраняет message ordinal, immutable author snapshot, delivery, checkpoint и capabilities revision.
-- [ ] Fixtures покрывают minimal/full success, forbidden/hidden, conflict, stale revision, pagination и unknown outcome.
-- [ ] Contract tests падают при потере обязательного поля или несовместимом enum.
+- [x] Pinned OpenAPI соответствует последнему merged backend contract и проходит drift/check/generation проверки.
+- [x] Workspace selection, history, durable send, idempotency lookup, read position, delivery и realtime hints перечислены в capability matrix.
+- [x] Для каждой операции зафиксированы permissions, `allowedActions`, revision/etag и idempotency requirements.
+- [x] Domain mapping сохраняет message ordinal, immutable author snapshot, delivery, checkpoint и capabilities revision.
+- [x] Fixtures покрывают minimal/full success, forbidden/hidden, conflict, stale revision, pagination и unknown outcome.
+- [x] Contract tests падают при потере обязательного поля или несовместимом enum.
+
+`Idempotency lookup`, durable CMS read position и typed realtime payload честно
+помечены `NOT_PUBLISHED`; Task 01 не подменяет backend gaps клиентской логикой.

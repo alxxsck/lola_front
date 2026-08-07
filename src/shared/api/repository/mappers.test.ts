@@ -8,6 +8,7 @@ import type {
   UiElementResponseDto,
   ProjectAuditEventResponseDto,
 } from "@/shared/api/generated/models";
+import { supportWorkspaceContractFixtures } from "./fixtures/support-workspace-contract-fixtures";
 import {
   mapActiveSessions,
   mapAuditEvent,
@@ -111,19 +112,30 @@ describe("repository domain mappers", () => {
       },
     });
 
-    expect(message).toMatchObject({
-      ordinal: 17,
-      authorSnapshot: {
-        type: "CMS_USER",
-        cmsUserId: "cms-1",
-        displayName: "Анна Оператор",
-        avatarUrl: "https://cdn.example/avatar.png",
-      },
-      delivery: {
-        status: "DELIVERING",
-        acceptedAt: "2026-08-06T10:00:01.000Z",
-      },
+    expect(message.authorSnapshot).toEqual({
+      type: "CMS_USER",
+      cmsUserId: "cms-1",
+      displayName: "Анна Оператор",
+      avatarUrl: "https://cdn.example/avatar.png",
     });
+    expect(message.delivery).toEqual({
+      id: "delivery-1",
+      channel: "SDK_REALTIME",
+      status: "DELIVERING",
+      acceptedAt: "2026-08-06T10:00:01.000Z",
+      interactionSessionId: "session-1",
+      commandIds: ["command-1"],
+    });
+  });
+
+  it("rejects an unknown delivery state instead of leaking it into UI state", () => {
+    expect(() =>
+      mapConversationMessage(
+        supportWorkspaceContractFixtures.unknownDeliveryStatusMessage as unknown as Parameters<
+          typeof mapConversationMessage
+        >[0],
+      ),
+    ).toThrow("unknown delivery status");
   });
 
   it("only sends editable project fields", () => {

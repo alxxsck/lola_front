@@ -24,6 +24,7 @@ const conversation: SupportWorkspaceConversation = {
 const selection: SupportWorkspaceSelection = {
   checkpoint: "42",
   capabilitiesRevision: "revision-1",
+  actionRevisions: {},
   classificationOptions: [
     { code: "BILLING", label: "Платежи и расчёты" },
   ],
@@ -57,6 +58,7 @@ const selection: SupportWorkspaceSelection = {
     lastActivityAt: "2026-08-06T10:15:00.000Z",
     updatedAt: "2026-08-06T10:15:00.000Z",
     version: 7,
+    latestRevisionId: null,
     assignee: { id: "operator-1", displayName: "Оператор Алина" },
     assignment: {
       id: "assignment-1",

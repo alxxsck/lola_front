@@ -46,6 +46,17 @@ const defined = <T extends object>(value: T): T =>
 const optionalString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
 
+function retainKnownValue<const T extends string>(
+  value: string,
+  knownValues: readonly T[],
+  label: string,
+): T {
+  if (!knownValues.includes(value as T)) {
+    throw new Error(`Backend returned an unknown ${label}: ${value}`);
+  }
+  return value as T;
+}
+
 export function mapProject(dto: ProjectResponseDto): Project {
   return {
     id: dto.id,
@@ -269,15 +280,29 @@ export function mapConversationAISuspensionDetail(
 export function mapConversationMessage(
   dto: AdminConversationMessageResponseDto,
 ): ConversationMessage {
+  const author = retainKnownValue(
+    dto.role,
+    ["USER", "ASSISTANT", "ADMIN", "SCENARIO", "SYSTEM"],
+    "message role",
+  );
+  const status = retainKnownValue(
+    dto.status,
+    ["WRITING", "COMPLETED", "FAILED", "CANCELLED"],
+    "message status",
+  );
   return {
     id: dto.id,
     conversationId: dto.threadId,
     ordinal: dto.ordinal,
-    author: dto.role,
+    author,
     ...(dto.author
       ? {
           authorSnapshot: {
-            type: dto.author.type,
+            type: retainKnownValue(
+              dto.author.type,
+              ["CMS_USER", "SYSTEM", "BREAK_GLASS", "UNKNOWN"],
+              "message author type",
+            ),
             cmsUserId: dto.author.cmsUserId,
             displayName: dto.author.displayName,
             avatarUrl: dto.author.avatarUrl,
@@ -285,14 +310,42 @@ export function mapConversationMessage(
         }
       : {}),
     text: dto.text,
-    status: dto.status,
+    status,
     ...(dto.delivery
       ? {
           delivery: {
-            status: dto.delivery.status,
+            ...(dto.delivery.id ? { id: dto.delivery.id } : {}),
+            ...(dto.delivery.channel
+              ? {
+                  channel: retainKnownValue(
+                    dto.delivery.channel,
+                    ["SDK_REALTIME"],
+                    "delivery channel",
+                  ),
+                }
+              : {}),
+            status: retainKnownValue(
+              dto.delivery.status,
+              [
+                "PENDING",
+                "DELIVERING",
+                "DELIVERED",
+                "READ",
+                "FAILED",
+                "CANCELLED",
+                "NOT_REDELIVERED",
+              ],
+              "delivery status",
+            ),
             ...(dto.delivery.acceptedAt
               ? { acceptedAt: dto.delivery.acceptedAt }
               : {}),
+            ...(dto.delivery.interactionSessionId !== undefined
+              ? {
+                  interactionSessionId: dto.delivery.interactionSessionId,
+                }
+              : {}),
+            commandIds: dto.delivery.commandIds,
           },
         }
       : {}),

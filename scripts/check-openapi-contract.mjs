@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
+import { validateSupportWorkspaceMessagingContract } from "./support-workspace-contract.mjs";
 
 const snapshotUrl = new URL("../openapi/retenive-backend.json", import.meta.url);
 const document = JSON.parse(await readFile(snapshotUrl, "utf8"));
+validateSupportWorkspaceMessagingContract(document);
 
 const unversionedPaths = Object.keys(document.paths ?? {}).filter(
   (path) => path !== "/health" && !path.startsWith("/api/v1/"),

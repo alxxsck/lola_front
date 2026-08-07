@@ -14,6 +14,7 @@ function selection(
   return {
     checkpoint: "checkpoint-1",
     capabilitiesRevision: "revision-1",
+    actionRevisions: {},
     capabilities: {
       assignCase: false,
       claimAssignment: false,
@@ -43,6 +44,7 @@ function selection(
       lastActivityAt: "2026-08-06T10:00:00.000Z",
       updatedAt: "2026-08-06T10:00:00.000Z",
       version: 7,
+      latestRevisionId: null,
       assignee: { id: "operator-1", displayName: "Алина" },
       assignment: {
         id: "assignment-1",

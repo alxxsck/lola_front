@@ -378,6 +378,8 @@ export interface ConversationMessage {
   status: "PENDING" | "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
   /** Current server-confirmed delivery state for a public outbound message. */
   delivery?: {
+    id?: string;
+    channel?: "SDK_REALTIME";
     status:
       | "PENDING"
       | "DELIVERING"
@@ -387,6 +389,8 @@ export interface ConversationMessage {
       | "CANCELLED"
       | "NOT_REDELIVERED";
     acceptedAt?: string;
+    interactionSessionId?: string | null;
+    commandIds: string[];
   };
   createdAt: string;
   updatedAt?: string;

@@ -71,6 +71,7 @@ dialog и Support быть не может. `/live` остаётся диагн�
 | [10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md)       | full-tab shell, кнопка, motion, scroll/focus contract                  |
 | [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md) | короткий backlog W0–F7, cutover и отдельный integration track          |
 | [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                         | видимый индекс 33 локальных задач и их blocking edges                  |
+| [13-workspace-messaging-capability-matrix.ru.md](./13-workspace-messaging-capability-matrix.ru.md) | W0 contract matrix workspace, history, send, delivery и blockers       |
 
 Исследование интерфейсов LiveChat, Intercom, Zendesk и требований W3C:
 [support-operator-workspace-ux.ru.md](../../research/support-operator-workspace-ux.ru.md).
