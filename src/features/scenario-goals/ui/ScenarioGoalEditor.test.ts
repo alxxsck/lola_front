@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
 import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
+import EventPicker from '@/features/events/EventPicker.vue'
 
 import ScenarioGoalEditor from './ScenarioGoalEditor.vue'
 
@@ -35,7 +36,8 @@ describe('ScenarioGoalEditor', () => {
       },
     })
 
-    await wrapper.get('select[aria-label="Событие цели"]').setValue('deposit.succeeded')
+    wrapper.getComponent(EventPicker).vm.$emit('update:modelValue', 'deposit.succeeded')
+    await wrapper.vm.$nextTick()
     await wrapper.get('select[aria-label="Что считать для цели"]').setValue('sum')
     await wrapper.get('select[aria-label="Поле суммы цели"]').setValue('deposit.amount')
     await wrapper.get('button[aria-label="Добавить фильтр цели"]').trigger('click')
@@ -70,7 +72,8 @@ describe('ScenarioGoalEditor', () => {
       },
     })
 
-    await wrapper.get('select[aria-label="Событие цели"]').setValue('deposit.succeeded')
+    wrapper.getComponent(EventPicker).vm.$emit('update:modelValue', 'deposit.succeeded')
+    await wrapper.vm.$nextTick()
     await wrapper.get('button[aria-label="Добавить фильтр цели"]').trigger('click')
     await wrapper.get('select[aria-label="Поле фильтра цели 1"]').setValue('deposit.amount')
     await wrapper.get('input[aria-label="Значение фильтра цели 1"]').setValue('12.5')
@@ -89,7 +92,8 @@ describe('ScenarioGoalEditor', () => {
       },
     })
 
-    await wrapper.get('select[aria-label="Событие цели"]').setValue('deposit.succeeded')
+    wrapper.getComponent(EventPicker).vm.$emit('update:modelValue', 'deposit.succeeded')
+    await wrapper.vm.$nextTick()
     await wrapper.get('button[aria-label="Добавить фильтр цели"]').trigger('click')
     await wrapper.get('select[aria-label="Поле фильтра цели 1"]').setValue('deposit.currency')
     await wrapper.get('select[aria-label="Оператор фильтра цели 1"]').setValue('in')
@@ -115,7 +119,8 @@ describe('ScenarioGoalEditor', () => {
     const wrapper = mount(ScenarioGoalEditor, {
       props: { modelValue: {}, contract: typedContract, targets: [{ label: 'Готово', value: 'done' }, { label: 'Срок', value: 'timeout' }] },
     })
-    await wrapper.get('select[aria-label="Событие цели"]').setValue('deposit.succeeded')
+    wrapper.getComponent(EventPicker).vm.$emit('update:modelValue', 'deposit.succeeded')
+    await wrapper.vm.$nextTick()
     await wrapper.get('button[aria-label="Добавить фильтр цели"]').trigger('click')
     await wrapper.get('select[aria-label="Поле фильтра цели 1"]').setValue('deposit.approved')
     await wrapper.get('select[aria-label="Значение фильтра цели 1"]').setValue('true')

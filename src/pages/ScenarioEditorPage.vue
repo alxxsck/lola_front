@@ -25,6 +25,7 @@ import "@vue-flow/controls/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
+import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
 import {
   createRuleDraft,
   mapBackendRuleIssues,
@@ -728,15 +729,6 @@ const stages = computed<
         : "invalid",
   },
 ]);
-const eventOptions = computed(() =>
-  events.value
-    .filter((event) => event.enabled || event.id === form.eventDefinitionId)
-    .map((event) => ({
-      label: eventDisplayName(event.code, event.name),
-      value: event.id,
-      code: event.code,
-    })),
-);
 const conditionPaths = computed(() => {
   const eventFields = Object.keys(
     selectedEvent.value?.payloadSchema?.properties ?? {},
@@ -2879,22 +2871,15 @@ function leave() {
             </div>
           </section>
           <section>
-            <div class="field">
-              <label for="scenario-trigger">Событие запуска *</label
-              ><Select
-                input-id="scenario-trigger"
-                v-model="form.eventDefinitionId"
-                :options="eventOptions"
-                option-label="label"
-                option-value="value"
-                ><template #option="{ option }"
-                  ><div class="event-option">
-                    <span>{{ option.label }}</span
-                    ><code>{{ option.code }}</code>
-                  </div></template
-                ></Select
-              >
-            </div>
+            <EventDefinitionSelect
+              v-model="form.eventDefinitionId"
+              :project-id="auth.project?.id ?? ''"
+              value-field="currentRevisionId"
+              label="Событие запуска *"
+              placeholder="Выберите событие запуска"
+              required
+              :disabled="!canEdit"
+            />
             <div class="field">
               <label>Первое действие</label>
               <div
@@ -4093,16 +4078,6 @@ function leave() {
 .section-copy h3 {
   margin: 0;
   font-size: 0.8rem;
-}
-.event-option {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  width: 100%;
-}
-.event-option code {
-  color: var(--text-small-muted);
-  font-size: 0.65rem;
 }
 .stage-aside {
   padding: 24px;

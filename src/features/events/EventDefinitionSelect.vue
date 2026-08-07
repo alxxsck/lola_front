@@ -3,11 +3,11 @@ import { ref, watch } from "vue";
 import { eventCatalogRepository } from "@/shared/api/repository/event-catalog";
 import type { EventCatalogDefinition } from "@/shared/api/repository/event-catalog";
 import { paginateByCursor } from "@/shared/lib/paged-search";
-import PagedSearchSelect, {
-  type PagedSearchOption,
-  type PagedSearchPage,
-  type PagedSearchRequest,
-} from "@/shared/ui/PagedSearchSelect.vue";
+import EventPicker, {
+  type EventPickerOption,
+  type EventPickerPage,
+  type EventPickerRequest,
+} from "./EventPicker.vue";
 
 export interface EventDefinitionSelection {
   definitionKeyId: string;
@@ -21,12 +21,18 @@ const props = withDefaults(
     projectId: string;
     modelValue: string;
     disabled?: boolean;
+    required?: boolean;
     label?: string;
     placeholder?: string;
+    valueField?: "definitionKeyId" | "currentRevisionId" | "code";
+    allowEmpty?: boolean;
   }>(),
   {
     label: "Событие",
+    required: false,
     placeholder: "Выберите событие",
+    valueField: "definitionKeyId",
+    allowEmpty: false,
   },
 );
 
@@ -36,7 +42,7 @@ const emit = defineEmits<{
 }>();
 
 const definitions = ref<EventCatalogDefinition[] | null>(null);
-const selectedOption = ref<PagedSearchOption>();
+const selectedOption = ref<EventPickerOption>();
 let loadedProjectId = "";
 let loadPromise: Promise<EventCatalogDefinition[]> | null = null;
 
@@ -50,7 +56,7 @@ watch(
       if (projectId !== props.projectId || modelValue !== props.modelValue)
         return;
       const event = events.find(
-        (candidate) => candidate.definitionKeyId === modelValue,
+        (candidate) => eventValue(candidate) === modelValue,
       );
       if (event) selectedOption.value = toOption(event);
     } catch {
@@ -60,14 +66,19 @@ watch(
   { immediate: true },
 );
 
-async function load(input: PagedSearchRequest): Promise<PagedSearchPage> {
+async function load(input: EventPickerRequest): Promise<EventPickerPage> {
   const events = await ensureDefinitions(props.projectId);
   const query = input.query.toLocaleLowerCase("ru-RU");
   const filtered = events.filter(
     (event) =>
-      !query ||
-      event.metadata.name.toLocaleLowerCase("ru-RU").includes(query) ||
-      event.code.toLocaleLowerCase("ru-RU").includes(query),
+      (!input.ingestion ||
+        (input.ingestion === "FRONTEND_ALLOWED"
+          ? event.policy.clientIngestible
+          : !event.policy.clientIngestible)) &&
+      (!query ||
+        event.metadata.name.toLocaleLowerCase("ru-RU").includes(query) ||
+        event.code.toLocaleLowerCase("ru-RU").includes(query) ||
+        event.metadata.description?.toLocaleLowerCase("ru-RU").includes(query)),
   );
   const page = paginateByCursor(filtered, input.cursor, input.limit);
   return {
@@ -100,17 +111,33 @@ async function ensureDefinitions(
   return definitions.value;
 }
 
-function toOption(event: EventCatalogDefinition): PagedSearchOption {
+function eventValue(event: EventCatalogDefinition): string {
+  if (props.valueField === "currentRevisionId")
+    return event.currentSchema.revisionId;
+  if (props.valueField === "code") return event.code;
+  return event.definitionKeyId;
+}
+
+function toOption(event: EventCatalogDefinition): EventPickerOption {
   return {
-    value: event.definitionKeyId,
-    label: event.metadata.name,
-    description: event.code,
+    value: eventValue(event),
+    name: event.metadata.name,
+    code: event.code,
+    description: event.metadata.description ?? undefined,
+    ingestion: event.policy.clientIngestible
+      ? "FRONTEND_ALLOWED"
+      : "BACKEND_ONLY",
+    tags: [
+      `Схема v${event.currentSchema.revisionNumber}`,
+      event.origin === "RETENIVE_MANAGED" ? "Retenive" : "Пользовательское",
+    ],
   };
 }
 
-function select(option: PagedSearchOption): void {
+function select(option: EventPickerOption | EventPickerOption[]): void {
+  if (Array.isArray(option)) return;
   const event = definitions.value?.find(
-    (candidate) => candidate.definitionKeyId === option.value,
+    (candidate) => eventValue(candidate) === option.value,
   );
   if (!event) return;
   emit("select", {
@@ -123,17 +150,20 @@ function select(option: PagedSearchOption): void {
 </script>
 
 <template>
-  <PagedSearchSelect
+  <EventPicker
     :model-value="modelValue"
-    :reload-key="projectId"
     :load="load"
     :selected-option="selectedOption"
     :disabled="disabled"
+    :required="required"
     :label="label"
     :placeholder="placeholder"
-    search-placeholder="Название или код события"
-    empty-text="События не найдены"
-    @update:model-value="emit('update:modelValue', $event)"
+    :allow-empty="allowEmpty"
+    :scope-key="projectId"
+    show-ingestion-filter
+    @update:model-value="
+      !Array.isArray($event) && emit('update:modelValue', $event)
+    "
     @select="select"
   />
 </template>

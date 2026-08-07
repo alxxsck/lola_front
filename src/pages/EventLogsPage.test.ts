@@ -211,9 +211,9 @@ describe("EventLogsPage", () => {
     const wrapper = shallowMount(EventLogsPage);
     await flushPromises();
 
-    expect(
-      wrapper.find("multi-select-stub#event-filter").attributes("placeholder"),
-    ).toBe("Все события");
+    expect(wrapper.find("event-picker-stub").attributes("placeholder")).toBe(
+      "Все события",
+    );
     expect(
       wrapper.find("multi-select-stub#status-filter").attributes("placeholder"),
     ).toBe("Все статусы");
@@ -226,10 +226,7 @@ describe("EventLogsPage", () => {
         .attributes("selection-limit"),
     ).toBe("4");
 
-    updateModel(wrapper, "multi-select-stub#event-filter", [
-      "deposit",
-      "purchase",
-    ]);
+    updateModel(wrapper, "event-picker-stub", ["deposit", "purchase"]);
     updateModel(wrapper, "multi-select-stub#status-filter", [
       "FAILED",
       "PROCESSED",

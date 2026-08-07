@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
 import Message from "primevue/message";
+import EventPicker, {
+  type EventPickerOption,
+  type EventPickerPage,
+  type EventPickerRequest,
+} from "@/features/events/EventPicker.vue";
 import type {
   CaseVerificationEstimateResponseDto,
   CaseVerificationRunResponseDto,
@@ -45,9 +49,8 @@ type VerificationState =
 const loadingPolicy = ref(true);
 const loadingEvidence = ref(false);
 const policyItems = ref<EventQueryPolicyItemDto[]>([]);
+const eventNames = ref<Record<string, string>>({});
 const policyEnabled = ref(false);
-const policySearch = ref("");
-const policySearchActive = ref(false);
 const eventCode = ref("");
 const range = ref<EventQueryRange>("CURRENT_CASE_WINDOW");
 const dialogVisible = ref(false);
@@ -61,13 +64,16 @@ const run = ref<CaseVerificationRunResponseDto | null>(
 const pendingIdempotencyKey = ref<string | null>(null);
 let evidenceGeneration = 0;
 let scopeGeneration = 0;
-let policySearchTimer: ReturnType<typeof setTimeout> | undefined;
+let policyRequestGeneration = 0;
 
 const terminalCase = computed(() =>
   ["RESOLVED", "UNRESOLVED", "CANCELLED"].includes(props.caseStatus),
 );
 const selectedItem = computed(() =>
   policyItems.value.find((item) => item.stableCode === eventCode.value),
+);
+const selectedEventOption = computed<EventPickerOption | undefined>(() =>
+  selectedItem.value ? toEventOption(selectedItem.value) : undefined,
 );
 const periodOptions = computed(() => {
   const maxHours = selectedItem.value?.maxVerificationLookbackHours ?? 24;
@@ -92,8 +98,7 @@ const state = computed<VerificationState>(() => {
   if (run.value?.evaluation) return run.value.evaluation;
   if (
     !loadingPolicy.value &&
-    (!policyEnabled.value ||
-      (!policyItems.value.length && !policySearchActive.value))
+    (!policyEnabled.value || !policyItems.value.length)
   ) {
     return "NOT_CONFIGURED";
   }
@@ -143,49 +148,84 @@ function normalizeRange() {
   }
 }
 
-async function loadPolicy(search = policySearch.value.trim()) {
+async function loadPolicy(
+  request: EventPickerRequest = { query: "", limit: 25 },
+): Promise<EventPickerPage> {
   const scope = captureScope();
+  const requestGeneration = ++policyRequestGeneration;
   loadingPolicy.value = true;
   error.value = "";
   try {
     const catalog = await eventQueryRepository.listItems(scope.projectId, {
       audience: "INTERNAL_AI",
       effective: true,
-      ...(search ? { search } : {}),
-      limit: 100,
+      ...(request.query ? { query: request.query } : {}),
+      ...(request.cursor ? { cursor: request.cursor } : {}),
+      limit: request.limit,
     });
-    if (!isCurrentScope(scope)) return;
-    policySearchActive.value = Boolean(search);
-    if (!search || catalog.items.length > 0) {
-      policyEnabled.value = catalog.items.length > 0;
-    }
-    policyItems.value = catalog.items.flatMap((candidate) => {
+    if (
+      requestGeneration !== policyRequestGeneration ||
+      !isCurrentScope(scope)
+    ) return { items: [], nextCursor: null };
+    const parsed = catalog.items.flatMap((candidate) => {
       const item = eventQueryPolicyItemFromConfiguration(
         candidate.eventCode,
         candidate.configuration,
       );
       return item ? [item] : [];
     });
-    if (
-      !policyItems.value.some((item) => item.stableCode === eventCode.value)
-    ) {
-      eventCode.value = policyItems.value[0]?.stableCode ?? "";
+    for (const candidate of catalog.items) {
+      eventNames.value[candidate.eventCode] = candidate.eventName;
     }
-    normalizeRange();
+    policyItems.value = [...policyItems.value, ...parsed].filter(
+      (item, index, all) =>
+        all.findIndex(
+          (candidate) => candidate.stableCode === item.stableCode,
+        ) === index,
+    );
+    return {
+      items: parsed.map(toEventOption),
+      nextCursor: catalog.pageInfo.nextCursor ?? null,
+    };
   } catch (cause) {
-    if (!isCurrentScope(scope)) return;
+    if (
+      requestGeneration !== policyRequestGeneration ||
+      !isCurrentScope(scope)
+    ) return { items: [], nextCursor: null };
     error.value =
       cause instanceof Error
         ? cause.message
         : "Не удалось проверить доступность событий";
+    throw cause;
   } finally {
-    if (isCurrentScope(scope)) loadingPolicy.value = false;
+    if (
+      requestGeneration === policyRequestGeneration &&
+      isCurrentScope(scope)
+    ) loadingPolicy.value = false;
   }
 }
 
-function schedulePolicySearch() {
-  if (policySearchTimer) clearTimeout(policySearchTimer);
-  policySearchTimer = setTimeout(() => void loadPolicy(), 250);
+async function initializePolicy(): Promise<void> {
+  const page = await loadPolicy();
+  policyEnabled.value = page.items.length > 0;
+  if (!eventCode.value) {
+    eventCode.value = page.items[0]?.value ?? "";
+  }
+  normalizeRange();
+}
+
+function toEventOption(item: EventQueryPolicyItemDto): EventPickerOption {
+  return {
+    value: item.stableCode,
+    name: eventNames.value[item.stableCode] ?? item.stableCode,
+    code: item.stableCode,
+    description: item.descriptionForAI,
+    tags: [`История до ${item.maxVerificationLookbackHours} ч`],
+  };
+}
+
+function selectEvent(value: string | string[]) {
+  if (!Array.isArray(value)) eventCode.value = value;
 }
 
 async function loadEvidence() {
@@ -311,6 +351,7 @@ watch(
   () => [props.projectId, props.caseId],
   () => {
     scopeGeneration += 1;
+    policyRequestGeneration += 1;
     evidenceGeneration += 1;
     loadingEvidence.value = false;
     loadingPolicy.value = true;
@@ -321,9 +362,11 @@ watch(
     run.value = props.initialRun ?? null;
     pendingIdempotencyKey.value = null;
     dialogVisible.value = false;
-    policySearch.value = "";
-    policySearchActive.value = false;
-    void loadPolicy();
+    policyItems.value = [];
+    eventNames.value = {};
+    policyEnabled.value = false;
+    eventCode.value = "";
+    void initializePolicy().catch(() => undefined);
     void loadEvidence();
   },
 );
@@ -344,11 +387,8 @@ watch([eventCode, periodOptions], () => {
   normalizeRange();
 });
 onMounted(() => {
-  void loadPolicy();
+  void initializePolicy().catch(() => undefined);
   void loadEvidence();
-});
-onBeforeUnmount(() => {
-  if (policySearchTimer) clearTimeout(policySearchTimer);
 });
 </script>
 
@@ -376,30 +416,16 @@ onBeforeUnmount(() => {
     }}</Message>
 
     <div v-if="state === 'READY'" class="verification-controls">
-      <label>
-        <span>Найти событие</span>
-        <InputText
-          v-model="policySearch"
-          placeholder="Название или код"
-          :disabled="estimating"
-          @input="schedulePolicySearch"
-        />
-        <small v-if="policySearchActive && !policyItems.length">
-          По запросу ничего не найдено
-        </small>
-      </label>
-      <label>
-        <span>Целевое событие</span>
-        <select v-model="eventCode" :disabled="estimating">
-          <option
-            v-for="item in policyItems"
-            :key="item.stableCode"
-            :value="item.stableCode"
-          >
-            {{ item.stableCode }} — {{ item.descriptionForAI }}
-          </option>
-        </select>
-      </label>
+      <EventPicker
+        :model-value="eventCode"
+        :selected-option="selectedEventOption"
+        :load="loadPolicy"
+        :scope-key="`${projectId}:${caseId}`"
+        label="Целевое событие"
+        placeholder="Выберите событие"
+        :disabled="estimating"
+        @update:model-value="selectEvent"
+      />
       <label>
         <span>Период</span>
         <select

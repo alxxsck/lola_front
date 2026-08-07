@@ -2,6 +2,11 @@
 import { computed, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
+import EventPicker, {
+  type EventPickerOption,
+  type EventPickerPage,
+  type EventPickerRequest,
+} from "@/features/events/EventPicker.vue";
 import type {
   EventQueryPolicyItemDto,
   EventQueryRequestDto,
@@ -25,9 +30,8 @@ const props = defineProps<{
 }>();
 
 const items = ref<EventQueryPolicyItemDto[]>([]);
+const eventNames = ref<Record<string, string>>({});
 const audience = ref<"INTERNAL_AI" | "END_USER_CONVERSATION">("INTERNAL_AI");
-const search = ref("");
-const nextCursor = ref<string | null>(null);
 const loadingCatalog = ref(false);
 const catalogError = ref("");
 const endUserId = ref("");
@@ -38,9 +42,14 @@ const timeRange = ref<EventQueryRange>("LAST_24_HOURS");
 const result = ref<EventQueryResultResponseDto | null>(null);
 const loading = ref(false);
 const error = ref("");
+let catalogScope = 0;
+let catalogRequestGeneration = 0;
 
 const selected = computed(() =>
   items.value.find((item) => item.stableCode === eventCode.value),
+);
+const selectedEventOption = computed<EventPickerOption | undefined>(() =>
+  selected.value ? toEventOption(selected.value) : undefined,
 );
 const periodOptions = computed(() => {
   const maxHours = selected.value?.maxInteractiveLookbackHours ?? 24;
@@ -113,16 +122,22 @@ watch(endUserId, () => {
   error.value = "";
 });
 
-async function loadCatalog(append = false) {
+async function loadCatalog(
+  request: EventPickerRequest = { query: "", limit: 25 },
+): Promise<EventPickerPage> {
+  const scope = catalogScope;
+  const requestGeneration = ++catalogRequestGeneration;
+  const projectId = props.projectId;
+  const requestedAudience = audience.value;
   loadingCatalog.value = true;
   catalogError.value = "";
   try {
-    const response = await eventQueryRepository.listItems(props.projectId, {
-      audience: audience.value,
+    const response = await eventQueryRepository.listItems(projectId, {
+      audience: requestedAudience,
       effective: true,
-      query: search.value.trim() || undefined,
-      limit: 50,
-      cursor: append ? (nextCursor.value ?? undefined) : undefined,
+      query: request.query.trim() || undefined,
+      limit: request.limit,
+      cursor: request.cursor,
     });
     const parsed = response.items.flatMap((candidate) => {
       const item = eventQueryPolicyItemFromConfiguration(
@@ -131,39 +146,89 @@ async function loadCatalog(append = false) {
       );
       return item ? [item] : [];
     });
-    items.value = append ? [...items.value, ...parsed] : parsed;
-    nextCursor.value =
-      typeof response.pageInfo.nextCursor === "string"
-        ? response.pageInfo.nextCursor
-        : null;
-    if (!items.value.some((item) => item.stableCode === eventCode.value)) {
-      eventCode.value = items.value[0]?.stableCode ?? "";
+    if (
+      requestGeneration !== catalogRequestGeneration ||
+      scope !== catalogScope ||
+      projectId !== props.projectId ||
+      requestedAudience !== audience.value
+    ) return { items: [], nextCursor: null };
+    for (const candidate of response.items) {
+      eventNames.value[candidate.eventCode] = candidate.eventName;
     }
+    items.value = [...items.value, ...parsed].filter(
+      (item, index, all) =>
+        all.findIndex(
+          (candidate) => candidate.stableCode === item.stableCode,
+        ) === index,
+    );
+    return {
+      items: parsed.map(toEventOption),
+      nextCursor: response.pageInfo.nextCursor ?? null,
+    };
   } catch (cause) {
+    if (
+      requestGeneration !== catalogRequestGeneration ||
+      scope !== catalogScope ||
+      projectId !== props.projectId ||
+      requestedAudience !== audience.value
+    ) return { items: [], nextCursor: null };
     catalogError.value =
       cause instanceof Error
         ? cause.message
         : "Не удалось загрузить каталог доступных событий";
+    throw cause;
   } finally {
-    loadingCatalog.value = false;
+    if (
+      requestGeneration === catalogRequestGeneration &&
+      scope === catalogScope &&
+      projectId === props.projectId &&
+      requestedAudience === audience.value
+    ) loadingCatalog.value = false;
   }
 }
 
+async function initializeCatalog(): Promise<void> {
+  const page = await loadCatalog();
+  if (!eventCode.value) eventCode.value = page.items[0]?.value ?? "";
+}
+
+function toEventOption(item: EventQueryPolicyItemDto): EventPickerOption {
+  return {
+    value: item.stableCode,
+    name: eventNames.value[item.stableCode] ?? item.stableCode,
+    code: item.stableCode,
+    description: item.descriptionForAI,
+    tags: [`История до ${item.maxInteractiveLookbackHours} ч`],
+  };
+}
+
+function selectEvent(value: string | string[]) {
+  if (!Array.isArray(value)) eventCode.value = value;
+}
+
 watch(audience, () => {
+  catalogScope += 1;
+  catalogRequestGeneration += 1;
+  items.value = [];
+  eventNames.value = {};
+  eventCode.value = "";
   result.value = null;
   error.value = "";
-  void loadCatalog();
+  void initializeCatalog().catch(() => undefined);
 });
 watch(
   () => props.projectId,
   () => {
+    catalogScope += 1;
+    catalogRequestGeneration += 1;
     items.value = [];
+    eventNames.value = {};
     eventCode.value = "";
     result.value = null;
-    void loadCatalog();
+    void initializeCatalog().catch(() => undefined);
   },
 );
-onMounted(() => void loadCatalog());
+onMounted(() => void initializeCatalog().catch(() => undefined));
 
 async function preview() {
   if (!endUserId.value.trim() || !eventCode.value) return;
@@ -222,23 +287,6 @@ function formatBytes(value?: number) {
           </option>
         </select>
       </label>
-      <label>
-        <span>Поиск события</span>
-        <input
-          v-model="search"
-          data-test="preview-event-search"
-          placeholder="Название или код"
-          :disabled="disabled || loadingCatalog"
-          @keydown.enter.prevent="loadCatalog()"
-        />
-      </label>
-      <Button
-        label="Найти"
-        severity="secondary"
-        :loading="loadingCatalog"
-        :disabled="disabled"
-        @click="loadCatalog()"
-      />
     </div>
     <Message v-if="catalogError" severity="error" :closable="false">
       {{ catalogError }}
@@ -261,23 +309,16 @@ function formatBytes(value?: number) {
           <code>{{ resolvedIdentity.endUserId }}</code>
         </small>
       </label>
-      <label>
-        <span>Тип события</span>
-        <select
-          data-test="preview-event"
-          v-model="eventCode"
-          :disabled="disabled || loading || !items.length"
-        >
-          <option value="">Выберите событие</option>
-          <option
-            v-for="item in items"
-            :key="item.stableCode"
-            :value="item.stableCode"
-          >
-            {{ item.stableCode }}
-          </option>
-        </select>
-      </label>
+      <EventPicker
+        :model-value="eventCode"
+        :selected-option="selectedEventOption"
+        :load="loadCatalog"
+        :scope-key="`${projectId}:${audience}`"
+        label="Тип события"
+        placeholder="Выберите событие"
+        :disabled="disabled || loading"
+        @update:model-value="selectEvent"
+      />
       <label>
         <span>Режим</span>
         <select
@@ -311,14 +352,6 @@ function formatBytes(value?: number) {
         </select>
       </label>
     </div>
-    <Button
-      v-if="nextCursor"
-      label="Показать ещё события"
-      text
-      severity="secondary"
-      :loading="loadingCatalog"
-      @click="loadCatalog(true)"
-    />
     <Button
       label="Выполнить preview"
       icon="pi pi-search"

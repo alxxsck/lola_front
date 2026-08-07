@@ -5,11 +5,15 @@ import Checkbox from "primevue/checkbox";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
 import ProgressSpinner from "primevue/progressspinner";
 import Textarea from "primevue/textarea";
 import { useRouter } from "vue-router";
 import { aiErrorMessage } from "@/features/ai-errors/model/ai-error-message";
+import EventPicker, {
+  type EventPickerOption,
+  type EventPickerPage,
+  type EventPickerRequest,
+} from "@/features/events/EventPicker.vue";
 import { eventQueryRepository } from "@/features/event-query/api/event-query-repository";
 import { aiReviewRepository } from "../api/ai-review-repository";
 import type {
@@ -28,7 +32,7 @@ const visible = defineModel<boolean>("visible", { required: true });
 const router = useRouter();
 const settings = ref<AIReviewSettings | null>(null);
 const queryPolicyEnabled = ref(false);
-const options = ref<Array<{ label: string; value: string }>>([]);
+const options = ref<EventPickerOption[]>([]);
 const estimate = ref<AIReviewEstimate | null>(null);
 const run = ref<AIReviewRun | null>(null);
 const loading = ref(false);
@@ -43,11 +47,10 @@ const form = reactive({
   instruction: "",
 });
 let pollTimer: ReturnType<typeof setTimeout> | undefined;
-let catalogSearchTimer: ReturnType<typeof setTimeout> | undefined;
 let pollFailures = 0;
 let estimateGeneration = 0;
 let loadGeneration = 0;
-let catalogGeneration = 0;
+let reviewEventGeneration = 0;
 
 const scopeReady = computed(
   () =>
@@ -114,7 +117,6 @@ watch(
 );
 onBeforeUnmount(() => {
   stopPolling();
-  if (catalogSearchTimer) clearTimeout(catalogSearchTimer);
 });
 
 async function load() {
@@ -138,10 +140,7 @@ async function load() {
     settings.value = nextSettings;
     queryPolicyEnabled.value = catalog.items.length > 0;
     const queryableCodes = new Set(catalog.items.map((item) => item.eventCode));
-    options.value = catalog.items.map((item) => ({
-      label: `${item.eventName} · ${item.eventCode}`,
-      value: item.eventCode,
-    }));
+    options.value = catalog.items.map(toEventOption);
     form.eventCodes = form.eventCodes.filter((code) =>
       queryableCodes.has(code),
     );
@@ -154,26 +153,24 @@ async function load() {
   }
 }
 
-function scheduleCatalogSearch(event: { value: string }) {
-  if (catalogSearchTimer) clearTimeout(catalogSearchTimer);
-  catalogSearchTimer = setTimeout(
-    () => void searchCatalog(event.value.trim()),
-    250,
-  );
-}
-
-async function searchCatalog(search: string) {
-  const generation = ++catalogGeneration;
+async function loadReviewEvents(
+  request: EventPickerRequest,
+): Promise<EventPickerPage> {
   const projectId = props.projectId;
+  const generation = ++reviewEventGeneration;
+  error.value = "";
   try {
     const catalog = await eventQueryRepository.listItems(projectId, {
       audience: "INTERNAL_AI",
       effective: true,
-      ...(search ? { search } : {}),
-      limit: 100,
+      ...(request.query ? { query: request.query } : {}),
+      ...(request.cursor ? { cursor: request.cursor } : {}),
+      limit: request.limit,
     });
-    if (generation !== catalogGeneration || projectId !== props.projectId)
-      return;
+    if (
+      generation !== reviewEventGeneration ||
+      projectId !== props.projectId
+    ) return { items: [], nextCursor: null };
     const selected = options.value.filter((option) =>
       form.eventCodes.includes(option.value),
     );
@@ -181,20 +178,39 @@ async function searchCatalog(search: string) {
       queryPolicyEnabled.value ||
       selected.length > 0 ||
       catalog.items.length > 0;
-    const found = catalog.items.map((item) => ({
-      label: `${item.eventName} · ${item.eventCode}`,
-      value: item.eventCode,
-    }));
+    const found = catalog.items.map(toEventOption);
     options.value = [...selected, ...found].filter(
       (option, index, all) =>
         all.findIndex((candidate) => candidate.value === option.value) ===
         index,
     );
+    return {
+      items: found,
+      nextCursor: catalog.pageInfo.nextCursor ?? null,
+    };
   } catch (cause) {
-    if (generation !== catalogGeneration) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось найти события";
+    if (
+      generation === reviewEventGeneration &&
+      projectId === props.projectId
+    ) {
+      error.value =
+        cause instanceof Error ? cause.message : "Не удалось найти события";
+    }
+    throw cause;
   }
+}
+
+function toEventOption(
+  item: Awaited<
+    ReturnType<typeof eventQueryRepository.listItems>
+  >["items"][number],
+): EventPickerOption {
+  return {
+    value: item.eventCode,
+    name: item.eventName,
+    code: item.eventCode,
+    description: item.configuration.descriptionForAI,
+  };
 }
 
 function scope() {
@@ -337,8 +353,8 @@ function formatRange(value: string) {
   >
     <div class="review-form">
       <Message severity="warn" :closable="false">
-        Анализ использует токены. Сначала Retenive посчитает объём без обращения к
-        модели; дорогой запрос потребует отдельного подтверждения.
+        Анализ использует токены. Сначала Retenive посчитает объём без обращения
+        к модели; дорогой запрос потребует отдельного подтверждения.
       </Message>
       <Message v-if="error" severity="error" :closable="false">{{
         error
@@ -367,29 +383,20 @@ function formatRange(value: string) {
           <span>Дата в часовом поясе проекта</span>
           <InputText v-model="form.localDate" type="date" :disabled="running" />
         </label>
-        <label>
-          <span>События</span>
-          <MultiSelect
-            v-model="form.eventCodes"
-            :options="options"
-            option-label="label"
-            option-value="value"
-            display="chip"
-            filter
-            placeholder="Выберите от 1 до 20 событий"
-            :max-selected-labels="5"
-            :selection-limit="20"
-            scroll-height="260px"
-            append-to="self"
-            :overlay-style="{
-              width: '100%',
-              minWidth: '100%',
-              maxWidth: '100%',
-            }"
-            :disabled="running"
-            @filter="scheduleCatalogSearch"
-          />
-        </label>
+        <EventPicker
+          :model-value="form.eventCodes"
+          multiple
+          :max-selection="20"
+          :selected-options="options"
+          :load="loadReviewEvents"
+          :scope-key="projectId"
+          label="События"
+          placeholder="Выберите от 1 до 20 событий"
+          :disabled="running"
+          @update:model-value="
+            Array.isArray($event) && (form.eventCodes = $event)
+          "
+        />
         <label>
           <span
             >Что проверить <small>необязательно, до 500 символов</small></span

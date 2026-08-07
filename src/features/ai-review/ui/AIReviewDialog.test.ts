@@ -1,6 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AIReviewDialog from "./AIReviewDialog.vue";
+import EventPicker from "@/features/events/EventPicker.vue";
 
 const mocks = vi.hoisted(() => ({
   settings: vi.fn(),
@@ -48,12 +49,6 @@ function mountDialog(canOpenAnalysis = true) {
         },
         InputText: true,
         Message: { template: "<div><slot /></div>" },
-        MultiSelect: {
-          name: "MultiSelect",
-          props: ["modelValue", "options"],
-          emits: ["filter"],
-          template: "<div />",
-        },
         ProgressSpinner: true,
         Textarea: true,
       },
@@ -137,12 +132,12 @@ describe("типизированный AI Review", () => {
       effective: true,
       limit: 100,
     });
-    expect(
-      wrapper.getComponent({ name: "MultiSelect" }).props("options"),
-    ).toEqual([
+    expect(wrapper.getComponent(EventPicker).props("selectedOptions")).toEqual([
       {
-        label: "Ошибка депозита · deposit.failed",
         value: "deposit.failed",
+        name: "Ошибка депозита",
+        code: "deposit.failed",
+        description: undefined,
       },
     ]);
   });
@@ -166,21 +161,17 @@ describe("типизированный AI Review", () => {
       ],
       pageInfo: { hasMore: false, nextCursor: null },
     });
-    vi.useFakeTimers();
-
-    wrapper
-      .getComponent({ name: "MultiSelect" })
-      .vm.$emit("filter", { value: "withdrawal" });
-    await vi.advanceTimersByTimeAsync(250);
-    await flushPromises();
+    await wrapper.getComponent(EventPicker).props("load")({
+      query: "withdrawal",
+      limit: 25,
+    });
 
     expect(mocks.policy).toHaveBeenLastCalledWith("project-1", {
       audience: "INTERNAL_AI",
       effective: true,
-      search: "withdrawal",
-      limit: 100,
+      query: "withdrawal",
+      limit: 25,
     });
-    vi.useRealTimers();
   });
 
   it("повторяет неоднозначный start с тем же idempotency key", async () => {

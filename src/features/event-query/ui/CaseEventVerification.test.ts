@@ -1,6 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eventQueryRepository } from "../api/event-query-repository";
+import EventPicker from "@/features/events/EventPicker.vue";
 import CaseEventVerification from "./CaseEventVerification.vue";
 import type {
   CaseVerificationEstimateResponseDto,
@@ -234,6 +235,25 @@ describe("CaseEventVerification", () => {
     expect(wrapper.text()).toContain("Недостаточно полных данных");
   });
 
+  it("keeps READY and the confirmed event when picker search is empty", async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    const picker = wrapper.getComponent(EventPicker);
+    expect(picker.props("modelValue")).toBe("deposit.completed");
+    vi.mocked(eventQueryRepository.listItems).mockResolvedValueOnce({
+      ...policy,
+      items: [],
+    });
+
+    await picker.props("load")({ query: "missing", limit: 25 });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain("READY");
+    expect(wrapper.getComponent(EventPicker).props("modelValue")).toBe(
+      "deposit.completed",
+    );
+  });
+
   it("restores persisted evidence after the case detail refreshes", async () => {
     const wrapper = mountComponent({
       caseStatus: "RESOLVED",
@@ -381,25 +401,19 @@ describe("CaseEventVerification", () => {
         },
       ],
     });
-    vi.useFakeTimers();
-    const vm = wrapper.vm as unknown as {
-      policySearch: string;
-      schedulePolicySearch: () => void;
-    };
-    vm.policySearch = "withdrawal";
-    vm.schedulePolicySearch();
-    await vi.advanceTimersByTimeAsync(250);
-    await flushPromises();
+    await wrapper.getComponent(EventPicker).props("load")({
+      query: "withdrawal",
+      limit: 25,
+    });
 
     expect(eventQueryRepository.listItems).toHaveBeenLastCalledWith(
       expect.any(String),
       {
         audience: "INTERNAL_AI",
         effective: true,
-        search: "withdrawal",
-        limit: 100,
+        query: "withdrawal",
+        limit: 25,
       },
     );
-    vi.useRealTimers();
   });
 });

@@ -6,7 +6,14 @@ import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
-import { LocalizedField, type TranslationUiState } from "@/features/scenario-localization/ui";
+import EventPicker, {
+  type EventPickerOption,
+} from "@/features/events/EventPicker.vue";
+import { createLocalEventPickerLoader } from "@/features/events/event-picker-loader";
+import {
+  LocalizedField,
+  type TranslationUiState,
+} from "@/features/scenario-localization/ui";
 import {
   defaultLocalizationPolicy,
   localizedPath,
@@ -96,6 +103,22 @@ const templateVariableOptions = computed(() =>
       : variable,
   ),
 );
+const eventOptions = computed<EventPickerOption[]>(() =>
+  props.events
+    .filter((event) => event.enabled)
+    .map((event) => ({
+      value: event.code,
+      name: event.name,
+      code: event.code,
+      description: event.description,
+      ingestion: event.clientIngestible ? "FRONTEND_ALLOWED" : "BACKEND_ONLY",
+      tags: [`Схема v${event.version}`],
+    })),
+);
+const loadEvents = createLocalEventPickerLoader(() => eventOptions.value);
+const eventScopeKey = computed(() =>
+  props.events.map((event) => `${event.code}:${event.version}`).join("|"),
+);
 
 watch(
   () => props.definition.type,
@@ -157,15 +180,6 @@ function selectOptions(field: ActionUiField) {
         meta: element.kind,
       }));
   }
-  if (field.control === "event") {
-    return props.events
-      .filter((event) => event.enabled)
-      .map((event) => ({
-        label: event.name,
-        value: event.code,
-        meta: `v${event.version}`,
-      }));
-  }
   return actionFieldOptions(field, propertyFor(field)).map((option) =>
     option && typeof option === "object"
       ? option
@@ -178,6 +192,12 @@ function updateField(key: string, value: unknown) {
   if (value === undefined || value === null || value === "") delete next[key];
   else next[key] = value;
   emit("update:modelValue", next);
+}
+
+function selectedEventOption(field: ActionUiField) {
+  return eventOptions.value.find(
+    (event) => event.value === props.modelValue[field.key],
+  );
 }
 
 function updateJson(field: ActionUiField) {
@@ -273,7 +293,10 @@ function fieldHint(field: ActionUiField) {
         'field-wide': field.control === 'textarea' || field.control === 'json',
       }"
     >
-      <label v-if="!localizedDescriptor(field)" :for="fieldId(field)">
+      <label
+        v-if="!localizedDescriptor(field) && field.control !== 'event'"
+        :for="fieldId(field)"
+      >
         {{ field.label }}
         <span v-if="isRequired(field)" class="required">*</span>
       </label>
@@ -285,7 +308,10 @@ function fieldHint(field: ActionUiField) {
           translationCatalog
         "
         :model-value="
-          localizedValue(modelValue[field.key], localizationCatalog.defaultLocale)
+          localizedValue(
+            modelValue[field.key],
+            localizationCatalog.defaultLocale,
+          )
         "
         :catalog="localizationCatalog"
         :translation="translationCatalog"
@@ -307,9 +333,19 @@ function fieldHint(field: ActionUiField) {
             targets: $event,
           })
         "
-        @retry="emit('translation-retry', { fieldPath: fieldPath(field), locale: $event })"
+        @retry="
+          emit('translation-retry', {
+            fieldPath: fieldPath(field),
+            locale: $event,
+          })
+        "
         @cancel="emit('translation-cancel', fieldPath(field))"
-        @manual-edit="emit('translation-manual-edit', { fieldPath: fieldPath(field), locale: $event })"
+        @manual-edit="
+          emit('translation-manual-edit', {
+            fieldPath: fieldPath(field),
+            locale: $event,
+          })
+        "
       />
       <Textarea
         v-else-if="field.control === 'textarea'"
@@ -341,12 +377,23 @@ function fieldHint(field: ActionUiField) {
         :disabled="readonly"
         @update:model-value="updateField(field.key, $event)"
       />
-      <Select
-        v-else-if="
-          field.control === 'select' ||
-          field.control === 'target' ||
-          field.control === 'event'
+      <EventPicker
+        v-else-if="field.control === 'event'"
+        :model-value="String(modelValue[field.key] ?? '')"
+        :selected-option="selectedEventOption(field)"
+        :load="loadEvents"
+        :scope-key="eventScopeKey"
+        :label="`${field.label}${isRequired(field) ? ' *' : ''}`"
+        :required="isRequired(field)"
+        placeholder="Выберите событие"
+        show-ingestion-filter
+        :disabled="readonly"
+        @update:model-value="
+          !Array.isArray($event) && updateField(field.key, $event)
         "
+      />
+      <Select
+        v-else-if="field.control === 'select' || field.control === 'target'"
         :input-id="fieldId(field)"
         :model-value="modelValue[field.key]"
         :options="selectOptions(field)"
@@ -357,9 +404,7 @@ function fieldHint(field: ActionUiField) {
         :placeholder="
           field.control === 'target'
             ? 'Выберите объект интерфейса'
-            : field.control === 'event'
-              ? 'Выберите событие'
-              : 'Выберите значение'
+            : 'Выберите значение'
         "
         @update:model-value="updateField(field.key, $event)"
       >

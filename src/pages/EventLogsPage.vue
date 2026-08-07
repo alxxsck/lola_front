@@ -13,6 +13,10 @@ import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
+import EventPicker, {
+  type EventPickerOption,
+} from "@/features/events/EventPicker.vue";
+import { createLocalEventPickerLoader } from "@/features/events/event-picker-loader";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import { repository } from "@/shared/api/repository";
 import type { EventLogFilters } from "@/shared/api/repository/contracts";
@@ -86,12 +90,17 @@ const canRead = computed(() =>
     "project.event_logs.read",
   ),
 );
-const eventOptions = computed(() =>
+const eventOptions = computed<EventPickerOption[]>(() =>
   eventDefinitions.value.map((item) => ({
-    label: `${item.name} · ${item.code}`,
     value: item.code,
+    name: item.name,
+    code: item.code,
+    description: item.description,
+    ingestion: item.clientIngestible ? "FRONTEND_ALLOWED" : "BACKEND_ONLY",
+    tags: [`Схема v${item.version}`],
   })),
 );
+const loadEvents = createLocalEventPickerLoader(() => eventOptions.value);
 const sourceOptions = [
   { label: "Backend", value: "SERVER" },
   { label: "Frontend", value: "FRONTEND" },
@@ -484,19 +493,20 @@ function json(value: unknown) {
       <section class="filter-panel card">
         <div class="filter-main">
           <div class="field">
-            <label for="event-filter">Событие</label
-            ><MultiSelect
-              id="event-filter"
-              v-model="filters.eventCode"
-              :options="eventOptions"
-              option-label="label"
-              option-value="value"
-              display="chip"
+            <EventPicker
+              :model-value="filters.eventCode"
+              multiple
+              allow-empty
+              :max-selection="50"
+              :selected-options="eventOptions"
+              :load="loadEvents"
+              :scope-key="auth.project?.id ?? ''"
+              label="События"
               placeholder="Все события"
-              filter
-              :selection-limit="50"
-              :max-selected-labels="1"
-              selected-items-label="{0} событий"
+              show-ingestion-filter
+              @update:model-value="
+                Array.isArray($event) && (filters.eventCode = $event)
+              "
             />
           </div>
           <div class="field user-filter">

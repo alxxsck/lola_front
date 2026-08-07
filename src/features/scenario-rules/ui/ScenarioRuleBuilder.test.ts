@@ -1,7 +1,9 @@
 import { defineComponent, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
+import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import EventPicker from '@/features/events/EventPicker.vue'
 import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
 import { createRuleDraft, serializeRuleDraft, type RuleDomainContext, type RuleDraft } from '../model'
 import ScenarioRuleBuilder from './ScenarioRuleBuilder.vue'
@@ -59,6 +61,7 @@ function mountBuilder() {
   }), {
     attachTo: document.body,
     global: {
+      plugins: [PrimeVue],
       stubs: {
         teleport: true,
         Drawer: {
@@ -74,6 +77,17 @@ function mountBuilder() {
 async function addSource(wrapper: ReturnType<typeof mountBuilder>, source: string) {
   await wrapper.get('button[aria-label="Добавить условие в группу Должны выполняться все условия"]').trigger('click')
   await wrapper.get(`[data-source="${source}"]`).trigger('click')
+}
+
+async function selectHistoryEvent(wrapper: ReturnType<typeof mountBuilder>, code: string) {
+  const picker = wrapper.findComponent(EventPicker)
+  await picker.get('[data-testid="event-picker-trigger"]').trigger('click')
+  await flushPromises()
+  const option = picker.findAll('[data-testid="event-picker-option"]').find((candidate) => candidate.text().includes(code))
+  if (!option) throw new Error(`Event picker option ${code} was not found`)
+  await option.trigger('click')
+  await picker.get('[data-testid="event-picker-apply"]').trigger('click')
+  await flushPromises()
 }
 
 describe('ScenarioRuleBuilder', () => {
@@ -178,7 +192,7 @@ describe('ScenarioRuleBuilder', () => {
     const wrapper = mountBuilder()
     await addSource(wrapper, 'eventAggregate')
 
-    await wrapper.get('select[aria-label="Событие из истории"]').setValue('deposit.succeeded')
+    await selectHistoryEvent(wrapper, 'deposit.succeeded')
     expect(wrapper.find('option[value="distinct_count"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('С момента запуска')
     await wrapper.get('select[aria-label="Что посчитать"]').setValue('sum')
@@ -207,7 +221,7 @@ describe('ScenarioRuleBuilder', () => {
 
     await wrapper.get('button[aria-label^="Изменить условие:"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('select[aria-label="Событие из истории"]').element).toHaveProperty('value', 'deposit.succeeded')
+    expect(wrapper.get('[data-testid="event-picker-trigger"]').text()).toContain('deposit.succeeded')
     await wrapper.get('button[aria-label="Отменить редактирование условия"]').trigger('click')
   })
 
@@ -356,7 +370,7 @@ describe('ScenarioRuleBuilder', () => {
 
     const filterWrapper = mountBuilder()
     await addSource(filterWrapper, 'eventAggregate')
-    await filterWrapper.get('select[aria-label="Событие из истории"]').setValue('deposit.succeeded')
+    await selectHistoryEvent(filterWrapper, 'deposit.succeeded')
     await filterWrapper.get('button[aria-label="Добавить фильтр события"]').trigger('click')
     await filterWrapper.get('select[aria-label="Поле фильтра 1"]').setValue('deposit.currency')
     await filterWrapper.get('select[aria-label="Оператор фильтра 1"]').setValue('in')
@@ -372,7 +386,7 @@ describe('ScenarioRuleBuilder', () => {
   it('does not turn an empty aggregate threshold into zero or accept a fractional streak', async () => {
     const aggregateWrapper = mountBuilder()
     await addSource(aggregateWrapper, 'eventAggregate')
-    await aggregateWrapper.get('select[aria-label="Событие из истории"]').setValue('deposit.succeeded')
+    await selectHistoryEvent(aggregateWrapper, 'deposit.succeeded')
     await aggregateWrapper.get('select[aria-label="Что посчитать"]').setValue('count')
     await aggregateWrapper.get('select[aria-label="Сравнение результата"]').setValue('gte')
     const threshold = aggregateWrapper.get('input[aria-label="Значение сравнения"]')

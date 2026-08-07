@@ -1,4 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
+import PrimeVue from "primevue/config";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import EventDefinitionSelect from "./EventDefinitionSelect.vue";
 
@@ -26,16 +27,18 @@ describe("EventDefinitionSelect", () => {
   it("hydrates an existing selection and emits its current revision", async () => {
     const wrapper = mount(EventDefinitionSelect, {
       props: { projectId: "project-1", modelValue: "event-1" },
+      global: { plugins: [PrimeVue] },
     });
     await flushPromises();
 
     expect(
-      wrapper.get('[data-testid="paged-search-trigger"]').text(),
+      wrapper.get('[data-testid="event-picker-trigger"]').text(),
     ).toContain("Оплата завершена");
 
-    await wrapper.get('[data-testid="paged-search-trigger"]').trigger("click");
+    await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
     await flushPromises();
-    await wrapper.get('[role="option"]').trigger("click");
+    await wrapper.get('[data-testid="event-picker-option"]').trigger("click");
+    await wrapper.get('[data-testid="event-picker-apply"]').trigger("click");
 
     expect(wrapper.emitted("select")).toEqual([
       [
@@ -64,34 +67,46 @@ describe("EventDefinitionSelect", () => {
       ]);
     const wrapper = mount(EventDefinitionSelect, {
       props: { projectId: "project-1", modelValue: "" },
+      global: { plugins: [PrimeVue] },
     });
 
-    await wrapper.get('[data-testid="paged-search-trigger"]').trigger("click");
+    await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
     await flushPromises();
-    await wrapper
-      .findAll("button")
-      .find((button) => button.text().includes("Повторить"))!
-      .trigger("click");
+    await wrapper.get('[data-testid="event-picker-retry"]').trigger("click");
     await flushPromises();
 
     expect(wrapper.text()).toContain("Оплата завершена");
     expect(mocks.listDefinitions).toHaveBeenCalledTimes(2);
   });
 
-  it("renders a neutral option row and a single-border search field", async () => {
+  it("renders a compact event row with code and description", async () => {
+    mocks.listDefinitions.mockResolvedValue([
+      {
+        definitionKeyId: "event-1",
+        code: "PAYMENT_COMPLETED",
+        lifecycle: "ACTIVE",
+        policy: { enabled: true, clientIngestible: false },
+        metadata: {
+          name: "Оплата завершена",
+          description: "Заказ успешно оплачен",
+        },
+        currentSchema: { revisionId: "revision-7", revisionNumber: 7 },
+      },
+    ]);
     const wrapper = mount(EventDefinitionSelect, {
       props: { projectId: "project-1", modelValue: "" },
+      global: { plugins: [PrimeVue] },
     });
     await flushPromises();
-    await wrapper.get('[data-testid="paged-search-trigger"]').trigger("click");
+    await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
     await flushPromises();
 
-    const option = wrapper.get('[role="option"]');
+    const option = wrapper.get('[data-testid="event-picker-option"]');
     const search = wrapper.get('input[type="search"]');
 
-    expect(option.classes()).toContain("paged-search-select__option");
-    expect(option.find("strong").exists()).toBe(false);
-    expect(search.classes()).toContain("paged-search-select__search-input");
+    expect(option.text()).toContain("PAYMENT_COMPLETED");
+    expect(option.text()).toContain("Заказ успешно оплачен");
+    expect(search.attributes("placeholder")).toContain("описание");
   });
 
   it("shows only enabled, non-archived events", async () => {
@@ -123,14 +138,45 @@ describe("EventDefinitionSelect", () => {
     ]);
     const wrapper = mount(EventDefinitionSelect, {
       props: { projectId: "project-1", modelValue: "" },
+      global: { plugins: [PrimeVue] },
     });
 
-    await wrapper.get('[data-testid="paged-search-trigger"]').trigger("click");
+    await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
     await flushPromises();
 
     expect(mocks.listDefinitions).toHaveBeenCalledWith("project-1", "ACTIVE");
     expect(wrapper.text()).toContain("Активное событие");
     expect(wrapper.text()).not.toContain("Выключенное событие");
     expect(wrapper.text()).not.toContain("Архивное событие");
+  });
+
+  it("finds an event by its description", async () => {
+    vi.useFakeTimers();
+    mocks.listDefinitions.mockResolvedValue([
+      {
+        definitionKeyId: "active-event",
+        code: "PAYMENT_COMPLETED",
+        lifecycle: "ACTIVE",
+        policy: { enabled: true, clientIngestible: false },
+        metadata: {
+          name: "Оплата завершена",
+          description: "Успешная оплата заказа",
+        },
+        currentSchema: { revisionId: "revision-1" },
+      },
+    ]);
+    const wrapper = mount(EventDefinitionSelect, {
+      props: { projectId: "project-1", modelValue: "" },
+      global: { plugins: [PrimeVue] },
+    });
+
+    await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
+    await flushPromises();
+    await wrapper.get('input[type="search"]').setValue("заказа");
+    await vi.advanceTimersByTimeAsync(250);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Оплата завершена");
+    vi.useRealTimers();
   });
 });

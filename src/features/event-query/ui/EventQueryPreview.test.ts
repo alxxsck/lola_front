@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
 import { eventQueryRepository } from "../api/event-query-repository";
+import EventPicker from "@/features/events/EventPicker.vue";
 import EventQueryPreview from "./EventQueryPreview.vue";
 
 vi.mock("../api/event-query-repository", () => ({
@@ -104,9 +105,10 @@ describe("EventQueryPreview", () => {
   it("builds a valid aggregate query and caps periods by policy", async () => {
     const wrapper = mountPreview();
     await flushPromises();
-    await wrapper
-      .get('[data-test="preview-event"]')
-      .setValue("deposit.completed");
+    wrapper
+      .getComponent(EventPicker)
+      .vm.$emit("update:modelValue", "deposit.completed");
+    await wrapper.vm.$nextTick();
     await wrapper.get('[data-test="preview-mode"]').setValue("AGGREGATE");
 
     expect(wrapper.get('[data-test="preview-period"]').text()).not.toContain(
@@ -148,7 +150,10 @@ describe("EventQueryPreview", () => {
     );
     const wrapper = mountPreview();
     await flushPromises();
-    await wrapper.get('[data-test="preview-event"]').setValue("game.started");
+    wrapper
+      .getComponent(EventPicker)
+      .vm.$emit("update:modelValue", "game.started");
+    await wrapper.vm.$nextTick();
     await wrapper
       .get('[data-test="preview-end-user"]')
       .setValue("unknown-player");
@@ -166,12 +171,16 @@ describe("EventQueryPreview", () => {
   it("normalizes mode and lookback when the selected event changes", async () => {
     const wrapper = mountPreview();
     await flushPromises();
-    await wrapper
-      .get('[data-test="preview-event"]')
-      .setValue("deposit.completed");
+    wrapper
+      .getComponent(EventPicker)
+      .vm.$emit("update:modelValue", "deposit.completed");
+    await wrapper.vm.$nextTick();
     await wrapper.get('[data-test="preview-mode"]').setValue("LATEST");
 
-    await wrapper.get('[data-test="preview-event"]').setValue("game.started");
+    wrapper
+      .getComponent(EventPicker)
+      .vm.$emit("update:modelValue", "game.started");
+    await wrapper.vm.$nextTick();
 
     expect(
       (wrapper.get('[data-test="preview-mode"]').element as HTMLSelectElement)
@@ -179,6 +188,26 @@ describe("EventQueryPreview", () => {
     ).toBe("SUMMARY");
     expect(wrapper.get('[data-test="preview-period"]').text()).not.toContain(
       "7 дней",
+    );
+  });
+
+  it("does not change the confirmed event while the picker searches", async () => {
+    const wrapper = mountPreview();
+    await flushPromises();
+    const picker = wrapper.getComponent(EventPicker);
+    expect(picker.props("modelValue")).toBe("deposit.completed");
+    vi.mocked(eventQueryRepository.listItems).mockResolvedValueOnce({
+      audience: "INTERNAL_AI",
+      effectiveOnly: true,
+      items: [],
+      pageInfo: { hasMore: false, nextCursor: null },
+    });
+
+    await picker.props("load")({ query: "missing", limit: 25 });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.getComponent(EventPicker).props("modelValue")).toBe(
+      "deposit.completed",
     );
   });
 });

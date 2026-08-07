@@ -4,6 +4,7 @@ import Button from "primevue/button";
 import DatePicker from "primevue/datepicker";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
+import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
 import type { ProjectAIAnalysisListParams } from "@/shared/api/generated/models";
 import AIFilterToggle from "@/shared/ui/AIFilterToggle.vue";
 
@@ -16,6 +17,7 @@ const props = defineProps<{
   modelValue: AIAnalysisFiltersModel;
   canReadCost: boolean;
   loading: boolean;
+  projectId?: string;
 }>();
 const emit = defineEmits<{
   "update:modelValue": [value: AIAnalysisFiltersModel];
@@ -205,11 +207,15 @@ function nextDay(value: Date): Date {
         aria-label="Тип запуска"
         :disabled="loading"
       />
-      <InputText
-        v-model="draft.eventCode"
-        placeholder="Код события"
-        aria-label="Код события"
-        :disabled="loading"
+      <EventDefinitionSelect
+        :model-value="draft.eventCode"
+        :project-id="projectId ?? ''"
+        value-field="code"
+        allow-empty
+        label="Событие"
+        placeholder="Любое событие"
+        :disabled="loading || !projectId"
+        @update:model-value="draft.eventCode = $event"
       />
     </div>
 

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 
+import EventPicker, { type EventPickerOption } from '@/features/events/EventPicker.vue'
+import { createLocalEventPickerLoader } from '@/features/events/event-picker-loader'
 import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
 import {
   createGoalDraft,
@@ -48,6 +50,15 @@ const unitOptions = [
 const supportedFilterOperators = new Set<GoalFilterOperator>(['eq', 'neq', 'in', 'exists'])
 
 const selectedEvent = computed(() => props.contract.events.find((event) => event.code === draft.eventCode))
+const eventOptions = computed<EventPickerOption[]>(() => props.contract.events.map((event) => ({
+  value: event.code,
+  name: event.name,
+  code: event.code,
+  description: event.description ?? undefined,
+  tags: [`Схема v${event.schemaVersion}`],
+})))
+const loadEvents = createLocalEventPickerLoader(() => eventOptions.value)
+const selectedEventOption = computed(() => eventOptions.value.find((event) => event.value === draft.eventCode))
 const numericFields = computed(() => selectedEvent.value?.fields.filter((field) => field.capabilities.aggregateMeasure.measures.includes('sum')) ?? [])
 const summary = computed(() => summarizeGoalDraft(draft, props.contract))
 
@@ -90,6 +101,12 @@ function changeEvent() {
   draft.numericFieldKey = undefined
   draft.filters = []
   commit()
+}
+
+function selectGoalEvent(value: string | string[]) {
+  if (Array.isArray(value)) return
+  draft.eventCode = value
+  changeEvent()
 }
 
 function changeMeasure() {
@@ -170,13 +187,15 @@ function typedFilterValue(value: string, valueType?: string): string | number | 
 
 <template>
   <div class="goal-editor">
-    <div class="field">
-      <label for="goal-event">Событие цели</label>
-      <select id="goal-event" v-model="draft.eventCode" aria-label="Событие цели" @change="changeEvent">
-        <option value="">Выберите событие</option>
-        <option v-for="event in contract.events" :key="event.definitionId" :value="event.code">{{ event.name }} · {{ event.code }}</option>
-      </select>
-    </div>
+    <EventPicker
+      :model-value="draft.eventCode"
+      :selected-option="selectedEventOption"
+      :load="loadEvents"
+      :scope-key="contract.revision"
+      label="Событие цели"
+      placeholder="Выберите событие"
+      @update:model-value="selectGoalEvent"
+    />
     <div class="field">
       <label for="goal-measure">Результат</label>
       <select id="goal-measure" v-model="draft.measure" aria-label="Что считать для цели" @change="changeMeasure">

@@ -2,6 +2,8 @@
 import { computed, nextTick, reactive, ref, toRaw, watch } from 'vue'
 import Drawer from 'primevue/drawer'
 import Message from 'primevue/message'
+import EventPicker, { type EventPickerOption } from '@/features/events/EventPicker.vue'
+import { createLocalEventPickerLoader } from '@/features/events/event-picker-loader'
 import type { ScenarioAuthoringEvent, ScenarioAuthoringField } from '@/shared/api/repository/scenario-authoring'
 import type {
   PartialRuleLeaf,
@@ -58,8 +60,17 @@ const initialSnapshot = ref('')
 const error = ref('')
 const title = computed(() => ({ eventField: 'Поле события запуска', eventAggregate: 'История событий', activityDayStreak: 'Активные дни' })[buffer.kind])
 const events = computed(() => props.context.contract.events)
+const eventOptions = computed<EventPickerOption[]>(() => events.value.map((event) => ({
+  value: event.code,
+  name: event.name,
+  code: event.code,
+  description: event.description ?? undefined,
+  tags: [`Схема v${event.schemaVersion}`],
+})))
+const loadEvents = createLocalEventPickerLoader(() => eventOptions.value)
 const triggerEvent = computed(() => events.value.find((event) => event.definitionId === props.context.triggerEventDefinitionId && event.code === props.context.triggerEventCode))
 const selectedEvent = computed(() => buffer.kind === 'eventField' ? triggerEvent.value : events.value.find((event) => event.code === buffer.eventCode))
+const selectedEventOption = computed(() => eventOptions.value.find((event) => event.value === buffer.eventCode))
 const selectedField = computed(() => selectedEvent.value?.fields.find((field) => field.fieldKey === buffer.fieldKey))
 const fieldOperators = computed(() => selectedField.value?.capabilities.eventField.operators ?? [])
 const aggregateMeasures = computed(() => selectedEvent.value?.aggregateMeasures ?? [])
@@ -153,6 +164,10 @@ function displayDuration(durationMs: number): [number, PeriodUnit] {
 
 function durationMs() {
   return buffer.period * ({ minute: 60_000, hour: 3_600_000, day: 86_400_000 } as const)[buffer.periodUnit]
+}
+
+function selectHistoryEvent(value: string | string[]) {
+  if (!Array.isArray(value)) buffer.eventCode = value
 }
 
 function needsValue(operator: string) { return !['exists', 'not_exists'].includes(operator) }
@@ -282,7 +297,7 @@ function issueDescription(...fieldPaths: string[]) { return issueMatches(...fiel
       </template>
 
       <template v-else-if="buffer.kind === 'eventAggregate'">
-        <section class="form-section"><span class="section-number">1</span><div class="section-fields"><h3>Какое событие?</h3><div class="field"><label for="history-event">Событие из истории</label><select id="history-event" v-model="buffer.eventCode" aria-label="Событие из истории" :aria-invalid="issueMatches('eventCode')" :aria-describedby="issueDescription('eventCode')"><option value="">Выберите событие</option><option v-if="buffer.eventCode && !selectedEvent" :value="buffer.eventCode">Недоступно · {{ buffer.eventCode }}</option><option v-for="event in events" :key="event.code" :value="event.code">{{ event.name }} · {{ event.code }}</option></select></div>
+        <section class="form-section"><span class="section-number">1</span><div class="section-fields"><h3>Какое событие?</h3><EventPicker :model-value="buffer.eventCode" :selected-option="selectedEventOption" :load="loadEvents" :scope-key="context.contract.revision" label="Событие из истории" placeholder="Выберите событие" @update:model-value="selectHistoryEvent" />
           <div v-if="selectedEvent" class="filters"><header><div><h4>Какие записи учитывать?</h4><p>Фильтры применяются к payload выбранного события.</p></div><button type="button" aria-label="Добавить фильтр события" :disabled="buffer.filters.length >= RULE_LIMITS.maxFilters" @click="addFilter"><i class="pi pi-plus" /> Фильтр</button></header>
             <div v-for="(filter, index) in buffer.filters" :key="filter.filterId ?? index" class="filter-row"><select v-model="filter.fieldKey" :aria-label="`Поле фильтра ${index + 1}`" :aria-invalid="issueMatches(`filters.${index}.fieldKey`)" :aria-describedby="issueDescription(`filters.${index}.fieldKey`)"><option value="">Поле</option><option v-if="filter.fieldKey && !selectedFilterField(filter)" :value="filter.fieldKey">Недоступно · {{ filter.fieldKey }}</option><option v-for="field in fieldOptions(selectedEvent, 'aggregateFilter')" :key="field.fieldKey" :value="field.fieldKey">{{ fieldLabel(field) }}</option></select><select v-model="filter.operator" :aria-label="`Оператор фильтра ${index + 1}`" :aria-invalid="issueMatches(`filters.${index}.operator`)" :aria-describedby="issueDescription(`filters.${index}.operator`)"><option value="">Оператор</option><option v-for="operator in selectedFilterField(filter)?.capabilities.aggregateFilter.operators ?? []" :key="operator" :value="operator">{{ operatorLabel(operator) }}</option></select><template v-if="needsValue(filter.operator)"><select v-if="selectedFilterField(filter)?.allowedValues?.length && filter.operator === 'in'" multiple :value="Array.isArray(filter.value) ? filter.value.map(String) : []" :aria-label="`Значение фильтра ${index + 1}`" :aria-invalid="issueMatches(`filters.${index}.value`)" :aria-describedby="issueDescription(`filters.${index}.value`)" @change="filter.value = selectValues($event, selectedFilterField(filter))"><option v-for="value in selectedFilterField(filter)?.allowedValues" :key="String(value)" :value="String(value)">{{ displayValue(value, selectedFilterField(filter)) }}</option></select><select v-else-if="selectedFilterField(filter)?.allowedValues?.length" :value="filter.value" :aria-label="`Значение фильтра ${index + 1}`" :aria-invalid="issueMatches(`filters.${index}.value`)" :aria-describedby="issueDescription(`filters.${index}.value`)" @change="filter.value = selectValue(($event.target as HTMLSelectElement).value, selectedFilterField(filter))"><option value="">Значение</option><option v-for="value in selectedFilterField(filter)?.allowedValues" :key="String(value)" :value="String(value)">{{ displayValue(value, selectedFilterField(filter)) }}</option></select><input v-else-if="filter.operator === 'in'" :value="displayListText(filter.value, selectedFilterField(filter))" placeholder="Через запятую" :aria-label="`Значение фильтра ${index + 1}`" :aria-invalid="issueMatches(`filters.${index}.value`)" :aria-describedby="issueDescription(`filters.${index}.value`)" @input="filter.value = listValues($event, selectedFilterField(filter))" /><input v-else :value="displayValue(filter.value, selectedFilterField(filter))" :type="['number', 'integer'].includes(selectedFilterField(filter)?.valueType ?? '') ? 'number' : 'text'" :step="isMoneyField(selectedFilterField(filter)) ? 'any' : selectedFilterField(filter)?.valueType === 'integer' ? 1 : 'any'" :aria-label="`Значение фильтра ${index + 1}`" :aria-invalid="issueMatches(`filters.${index}.value`)" :aria-describedby="issueDescription(`filters.${index}.value`)" @input="filter.value = inputValue($event, selectedFilterField(filter))" /></template><span v-else class="no-value">Без значения</span><button type="button" class="icon-button danger" :aria-label="`Удалить фильтр ${index + 1}`" @click="removeFilter(index)"><i class="pi pi-trash" /></button></div>
           </div></div></section>

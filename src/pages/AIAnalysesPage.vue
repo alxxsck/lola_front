@@ -550,6 +550,7 @@ onBeforeUnmount(() => {
 
     <AIAnalysisFilters
       v-model="filters"
+      :project-id="auth.project?.id"
       :can-read-cost="canReadCost"
       :loading="loading || loadingMore"
       @apply="applyFilters"
@@ -571,8 +572,8 @@ onBeforeUnmount(() => {
           <span><i class="pi pi-sparkles" /></span>
           <h2>Анализов пока нет</h2>
           <p>
-            Задайте Retenive вопрос на странице обзора. Здесь появится прозрачная
-            запись с результатом, источниками и атрибуцией.
+            Задайте Retenive вопрос на странице обзора. Здесь появится
+            прозрачная запись с результатом, источниками и атрибуцией.
           </p>
         </div>
         <AIAnalysisCard

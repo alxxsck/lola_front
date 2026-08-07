@@ -648,6 +648,7 @@ function withBoundedDefaultPeriod(
 
     <AIOperationFilters
       :model-value="filters"
+      :project-id="auth.project?.id"
       :loading="listLoading || summaryLoading || loadingMore"
       :can-read-subjects="canReadSubjects"
       @update:model-value="updateFilters"
