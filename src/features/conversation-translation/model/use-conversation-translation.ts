@@ -962,6 +962,7 @@ export function createConversationTranslationController(
     const key = contextKey(context);
     const requestGeneration = generation;
     previewing.value = true;
+    error.value = "";
     try {
       const idempotencyKey =
         retryAttemptKeys.get(current.id) ?? globalThis.crypto.randomUUID();
@@ -978,6 +979,10 @@ export function createConversationTranslationController(
       draft.value = response;
       persistDraftEnvelope(response);
       await pollDraft(response, key, requestGeneration);
+    } catch (cause) {
+      if (isCurrent(key, requestGeneration)) {
+        setOperationError(cause, "Не удалось повторить перевод ответа");
+      }
     } finally {
       if (isCurrent(key, requestGeneration)) previewing.value = false;
     }

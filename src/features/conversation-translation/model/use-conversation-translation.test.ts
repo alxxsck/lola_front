@@ -399,6 +399,37 @@ describe("conversation translation controller", () => {
     expect(client.createReplyDraft).toHaveBeenCalledTimes(1);
   });
 
+  it("оставляет failed draft и показывает стабильную ошибку, если retry недоступен", async () => {
+    const failedDraft = {
+      ...readyDraft(),
+      status: "FAILED" as const,
+      translatedText: null,
+      deliveredTextPreview: null,
+      errorCode: "PROVIDER_UNAVAILABLE",
+    };
+    const client = api({
+      createReplyDraft: vi.fn().mockResolvedValue(failedDraft),
+      retryReplyDraft: vi.fn().mockRejectedValue(new Error("network")),
+    });
+    const controller = createConversationTranslationController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => "user-1",
+        conversationId: () => "conversation-1",
+        selectedCaseId: () => undefined,
+        sourceText: () => "Здравствуйте",
+      },
+      client,
+    );
+
+    await controller.createReplyPreview({ poll: false });
+
+    await expect(controller.retryReplyPreview()).resolves.toBeUndefined();
+    expect(controller.draft.value?.status).toBe("FAILED");
+    expect(controller.error.value).toBe("Не удалось повторить перевод ответа");
+    expect(controller.previewing.value).toBe(false);
+  });
+
   it("после reload возобновляет polling незавершённого draft", async () => {
     vi.useFakeTimers();
     try {
