@@ -34,6 +34,7 @@ const props = withDefaults(
     placeholder: string;
     disabled?: boolean;
     required?: boolean;
+    hideLabel?: boolean;
     showIngestionFilter?: boolean;
     scopeKey?: string | number;
     selectedOption?: EventPickerOption;
@@ -43,6 +44,7 @@ const props = withDefaults(
   {
     disabled: false,
     required: false,
+    hideLabel: false,
     multiple: false,
     maxSelection: 50,
     allowEmpty: false,
@@ -221,7 +223,12 @@ function apply(): void {
 
 <template>
   <div class="event-picker">
-    <span :id="labelId" class="event-picker__label">{{ label }}</span>
+    <span
+      :id="labelId"
+      class="event-picker__label"
+      :class="{ 'event-picker__label--visually-hidden': hideLabel }"
+      >{{ label }}</span
+    >
     <button
       type="button"
       class="event-picker__trigger"
@@ -257,6 +264,7 @@ function apply(): void {
     <Dialog
       v-model:visible="visible"
       modal
+      :draggable="false"
       append-to="self"
       class="event-picker-dialog"
       :style="{ width: 'min(880px, calc(100vw - 24px))' }"
@@ -446,6 +454,7 @@ function apply(): void {
 .event-picker {
   container: event-picker / inline-size;
   display: grid;
+  align-content: start;
   gap: 7px;
   min-width: 0;
 }
@@ -453,6 +462,17 @@ function apply(): void {
   color: var(--text-primary);
   font-size: var(--font-size-body-small);
   font-weight: 650;
+}
+.event-picker__label--visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .event-picker__trigger {
   display: grid;

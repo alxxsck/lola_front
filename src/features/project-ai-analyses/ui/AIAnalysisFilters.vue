@@ -212,6 +212,7 @@ function nextDay(value: Date): Date {
         :project-id="projectId ?? ''"
         value-field="code"
         allow-empty
+        hide-label
         label="Событие"
         placeholder="Любое событие"
         :disabled="loading || !projectId"

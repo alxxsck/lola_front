@@ -24,6 +24,21 @@ describe("EventDefinitionSelect", () => {
     ]);
   });
 
+  it("forwards a visually hidden label to the event picker", () => {
+    const wrapper = mount(EventDefinitionSelect, {
+      props: {
+        projectId: "project-1",
+        modelValue: "",
+        hideLabel: true,
+      },
+      global: { plugins: [PrimeVue] },
+    });
+
+    expect(wrapper.get(".event-picker__label").classes()).toContain(
+      "event-picker__label--visually-hidden",
+    );
+  });
+
   it("hydrates an existing selection and emits its current revision", async () => {
     const wrapper = mount(EventDefinitionSelect, {
       props: { projectId: "project-1", modelValue: "event-1" },

@@ -1128,6 +1128,15 @@ function json(value: unknown) {
   letter-spacing: 0.07em;
   color: var(--text-secondary);
 }
+.filter-panel .field :deep(.event-picker) {
+  gap: 5px;
+}
+.filter-panel .field :deep(.event-picker__label) {
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
 .input-icon {
   position: relative;
 }

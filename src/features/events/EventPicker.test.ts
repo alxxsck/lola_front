@@ -4,6 +4,27 @@ import { describe, expect, it, vi } from "vitest";
 import EventPicker, { type EventPickerPage } from "./EventPicker.vue";
 
 describe("EventPicker", () => {
+  it("keeps a hidden field label available to assistive technology", () => {
+    const wrapper = mount(EventPicker, {
+      props: {
+        modelValue: "",
+        label: "Событие",
+        hideLabel: true,
+        placeholder: "Выберите событие",
+        load: vi.fn(),
+      },
+      global: { plugins: [PrimeVue] },
+    });
+
+    const label = wrapper.get(".event-picker__label");
+    const trigger = wrapper.get('[data-testid="event-picker-trigger"]');
+
+    expect(label.classes()).toContain("event-picker__label--visually-hidden");
+    expect(trigger.attributes("aria-labelledby")).toContain(
+      label.attributes("id"),
+    );
+  });
+
   it("applies a single event only after explicit confirmation", async () => {
     const load = vi.fn().mockResolvedValue({
       items: [

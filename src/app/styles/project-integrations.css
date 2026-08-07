@@ -411,6 +411,10 @@
   gap: 7px;
 }
 
+.integration-page .route-form .event-picker {
+  gap: 6px;
+}
+
 .integration-page .integration-field > span {
   color: var(--text-primary);
   font-size: var(--font-size-body-small);

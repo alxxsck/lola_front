@@ -22,6 +22,7 @@ const props = withDefaults(
     modelValue: string;
     disabled?: boolean;
     required?: boolean;
+    hideLabel?: boolean;
     label?: string;
     placeholder?: string;
     valueField?: "definitionKeyId" | "currentRevisionId" | "code";
@@ -30,6 +31,7 @@ const props = withDefaults(
   {
     label: "Событие",
     required: false,
+    hideLabel: false,
     placeholder: "Выберите событие",
     valueField: "definitionKeyId",
     allowEmpty: false,
@@ -156,6 +158,7 @@ function select(option: EventPickerOption | EventPickerOption[]): void {
     :selected-option="selectedOption"
     :disabled="disabled"
     :required="required"
+    :hide-label="hideLabel"
     :label="label"
     :placeholder="placeholder"
     :allow-empty="allowEmpty"
